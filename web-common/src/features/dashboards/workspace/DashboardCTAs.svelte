@@ -2,6 +2,8 @@
   import { goto } from "$app/navigation";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
+  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { Button } from "../../../components/button";
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
@@ -26,6 +28,11 @@
 
   $: isEditableDashboard = $featureFlags.readOnly === false;
 
+  $: dashboardQuery = useDashboard($runtime.instanceId, metricViewName);
+  $: dashboardIsIdle =
+    $dashboardQuery.data.meta.reconcileStatus ===
+    V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+
   function viewMetrics(metricViewName: string) {
     goto(`/dashboard/${metricViewName}/edit`);
 
@@ -47,11 +54,19 @@
   {/if}
   {#if isEditableDashboard}
     <Tooltip distance={8}>
-      <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
+      <Button
+        disabled={!dashboardIsIdle}
+        on:click={() => viewMetrics(metricViewName)}
+        type="secondary"
+      >
         Edit Metrics <MetricsIcon size="16px" />
       </Button>
       <TooltipContent slot="tooltip-content">
-        Edit this dashboard's metrics & settings
+        {#if !dashboardIsIdle}
+          Dependencies are being ingested
+        {:else}
+          Edit this dashboard's metrics & settings
+        {/if}
       </TooltipContent>
     </Tooltip>
     <Tooltip distance={8}>
@@ -66,6 +81,6 @@
 </PanelCTA>
 
 <DeployDashboardCta
-  open={showDeployDashboardModal}
   on:close={() => (showDeployDashboardModal = false)}
+  open={showDeployDashboardModal}
 />

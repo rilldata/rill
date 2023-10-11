@@ -6,7 +6,7 @@
   import {
     metricsExplorerStore,
     useDashboardStore,
-  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
     humanizeDataType,
     FormatPreset,

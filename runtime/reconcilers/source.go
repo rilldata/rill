@@ -53,7 +53,7 @@ func (r *SourceReconciler) AssignState(from, to *runtimev1.Resource) error {
 	if a == nil || b == nil {
 		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
 	}
-	b.Spec = a.Spec
+	b.State = a.State
 	return nil
 }
 
@@ -175,6 +175,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	}
 
 	// Execute ingestion
+	r.C.Logger.Info("Ingesting source data", slog.String("name", n.Name), slog.String("connector", connector))
 	ingestErr := r.ingestSource(ctx, src.Spec, stagingTableName)
 	if ingestErr != nil {
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)
@@ -359,7 +360,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	var limitExceeded bool
 	if olap, ok := sinkConn.AsOLAP(r.C.InstanceID); ok {
 		// Get storage limit
-		inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
+		inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 		if err != nil {
 			return err
 		}

@@ -1,17 +1,21 @@
 <script lang="ts">
   import { getDashboardsForProject } from "@rilldata/web-admin/features/projects/dashboards";
+  import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
   import DashboardIcon from "@rilldata/web-common/components/icons/DashboardIcon.svelte";
-  import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
+  import { Tag } from "@rilldata/web-common/components/tag";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import {
     createAdminServiceGetProject,
     V1DeploymentStatus,
     V1GetProjectResponse,
   } from "../../client";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
 
   export let organization: string;
   export let project: string;
 
-  let dashboards: V1MetricsView[];
+  let dashboards: V1Resource[];
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: if ($proj?.isSuccess && $proj.data?.prodDeployment) {
@@ -34,7 +38,7 @@
     {#each dashboards as dashboard}
       <li class="w-full h-[52px] border rounded">
         <a
-          href={`/${organization}/${project}/${dashboard.name}`}
+          href={`/${organization}/${project}/${dashboard.meta.name.name}`}
           class="w-full h-full overflow-x-auto p-3 flex items-center gap-x-6 text-gray-700 hover:text-blue-600 hover:bg-slate-50"
         >
           <!-- Icon -->
@@ -48,14 +52,16 @@
             <!-- Name -->
             <span
               class="text-sm font-medium shrink-0 truncate"
-              title={dashboard?.label || dashboard.name}
+              title={dashboard.metricsView?.state?.validSpec?.title ||
+                dashboard.meta.name.name}
             >
-              {dashboard?.label || dashboard.name}
+              {dashboard.metricsView?.state?.validSpec?.title ||
+                dashboard.meta.name.name}
             </span>
 
             <!-- We'll show errored dashboards again when we integrate the new Reconcile -->
             <!-- Error tag -->
-            <!-- {#if $proj.data.prodDeployment.status !== V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING && !dashboard.isValid}
+            {#if !dashboard.metricsView?.state?.validSpec}
               <Tooltip distance={8} location="right">
                 <TooltipContent slot="tooltip-content">
                   <ProjectAccessControls {organization} {project}>
@@ -75,14 +81,14 @@
                 </TooltipContent>
                 <Tag>Error</Tag>
               </Tooltip>
-            {/if} -->
+            {/if}
 
             <!-- Description -->
-            {#if dashboard.description}
+            {#if dashboard.metricsView?.state?.validSpec?.description}
               <!-- Note: line-clamp-2 uses `display: -webkit-box;` which overrides the `hidden` class -->
               <span
                 class="text-gray-800 text-xs font-light break-normal hidden sm:line-clamp-2"
-                >{dashboard.description}</span
+                >{dashboard.metricsView?.state?.validSpec?.description}</span
               >
             {/if}
           </div>

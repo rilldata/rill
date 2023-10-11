@@ -9,7 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/dag2"
+	"github.com/rilldata/rill/runtime/pkg/dag"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -20,6 +20,7 @@ import (
 //
 // catalogCache additionally provides various indexes of the resources: a DAG, map of soft-deleted resources, map of renamed resources.
 // It is not thread-safe, but it protects against split-brain scenarios by erroring if the underlying store is mutated by another catalog cache.
+// The catalogCache treats resource names as case insensitive.
 type catalogCache struct {
 	ctrl    *Controller
 	store   drivers.CatalogStore
@@ -29,7 +30,7 @@ type catalogCache struct {
 	resources map[string]map[string]*runtimev1.Resource
 	dirty     map[string]*runtimev1.ResourceName
 	stored    map[string]bool
-	dag       dag2.DAG[string, *runtimev1.ResourceName]
+	dag       dag.DAG[string, *runtimev1.ResourceName]
 	cyclic    map[string]*runtimev1.ResourceName
 	renamed   map[string]*runtimev1.ResourceName
 	deleted   map[string]*runtimev1.ResourceName
@@ -53,18 +54,19 @@ func newCatalogCache(ctx context.Context, ctrl *Controller, instanceID string) (
 	}
 
 	c := &catalogCache{
-		ctrl:      ctrl,
-		store:     store,
-		release:   release,
-		version:   v,
-		resources: make(map[string]map[string]*runtimev1.Resource),
-		dirty:     make(map[string]*runtimev1.ResourceName),
-		stored:    make(map[string]bool),
-		dag:       dag2.New(nameStr),
-		cyclic:    make(map[string]*runtimev1.ResourceName),
-		renamed:   make(map[string]*runtimev1.ResourceName),
-		deleted:   make(map[string]*runtimev1.ResourceName),
-		events:    make(map[string]catalogEvent),
+		ctrl:        ctrl,
+		store:       store,
+		release:     release,
+		version:     v,
+		resources:   make(map[string]map[string]*runtimev1.Resource),
+		dirty:       make(map[string]*runtimev1.ResourceName),
+		stored:      make(map[string]bool),
+		dag:         dag.New(nameStr),
+		cyclic:      make(map[string]*runtimev1.ResourceName),
+		renamed:     make(map[string]*runtimev1.ResourceName),
+		deleted:     make(map[string]*runtimev1.ResourceName),
+		events:      make(map[string]catalogEvent),
+		hasEventsCh: make(chan struct{}, 1),
 	}
 
 	rs, err := store.FindResources(ctx)
@@ -89,6 +91,7 @@ func (c *catalogCache) close(ctx context.Context) error {
 
 // flush flushes changes to the underlying store.
 // Unlike other catalog functions, it is safe to call flush concurrently with calls to get and list (i.e. under a read lock).
+// However, it is not safe to call flush concurrently with other calls to flush.
 func (c *catalogCache) flush(ctx context.Context) error {
 	for s, n := range c.dirty {
 		r, err := c.get(n, true, false)
@@ -112,12 +115,16 @@ func (c *catalogCache) flush(ctx context.Context) error {
 		if c.stored[s] {
 			// Updating
 			err = c.store.UpdateResource(ctx, c.version, resourceToDriver(r))
+			if err != nil {
+				return err
+			}
 		} else {
 			// Creating
 			err = c.store.CreateResource(ctx, c.version, resourceToDriver(r))
-		}
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+			c.stored[s] = true
 		}
 
 		delete(c.dirty, s)
@@ -219,7 +226,7 @@ func (c *catalogCache) list(kind string, withDeleted, clone bool) ([]*runtimev1.
 // It will error if a resource with the same name already exists.
 // If a soft-deleted resource exists with the same name, it will be overwritten (no longer deleted).
 // The passed resource should only have its spec populated. The meta and state fields will be populated by this function.
-func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string, r *runtimev1.Resource) error {
+func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.ResourceName, owner *runtimev1.ResourceName, paths []string, hidden bool, r *runtimev1.Resource) error {
 	existing, _ := c.get(name, true, false)
 	if existing != nil {
 		if existing.Meta.DeletedOn == nil {
@@ -228,19 +235,28 @@ func (c *catalogCache) create(name *runtimev1.ResourceName, refs []*runtimev1.Re
 		c.unlink(existing) // If creating a resource that's currently soft-deleted, it'll be like the previous delete never happened.
 	}
 	r.Meta = &runtimev1.ResourceMeta{
-		Name:           name,
-		Refs:           refs,
-		FilePaths:      paths,
-		Owner:          owner,
-		CreatedOn:      timestamppb.Now(),
-		SpecUpdatedOn:  timestamppb.Now(),
-		StateUpdatedOn: timestamppb.Now(),
+		Name:            name,
+		Refs:            refs,
+		Owner:           owner,
+		FilePaths:       paths,
+		Hidden:          hidden,
+		Version:         1,
+		SpecVersion:     1,
+		StateVersion:    1,
+		CreatedOn:       timestamppb.Now(),
+		SpecUpdatedOn:   timestamppb.Now(),
+		StateUpdatedOn:  timestamppb.Now(),
+		ReconcileStatus: runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE,
 	}
 	if existing != nil {
 		r.Meta.Version = existing.Meta.Version + 1
 		r.Meta.SpecVersion = existing.Meta.SpecVersion + 1
 	}
-	err := c.ctrl.reconciler(name.Kind).ResetState(r)
+	err := c.ctrl.reconciler(name.Kind).AssignSpec(r, r) // Self-assign spec through reconciler to ensure spec and kind have matching types
+	if err != nil {
+		return err
+	}
+	err = c.ctrl.reconciler(name.Kind).ResetState(r)
 	if err != nil {
 		return err
 	}
@@ -329,7 +345,7 @@ func (c *catalogCache) updateSpec(name *runtimev1.ResourceName, from *runtimev1.
 // updateState updates the state field of a resource.
 // It uses the state from the passed resource and disregards its other fields.
 func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1.Resource) error {
-	r, err := c.get(name, false, false)
+	r, err := c.get(name, true, false)
 	if err != nil {
 		return err
 	}
@@ -348,12 +364,20 @@ func (c *catalogCache) updateState(name *runtimev1.ResourceName, from *runtimev1
 
 // updateError updates the reconcile_error field of a resource.
 func (c *catalogCache) updateError(name *runtimev1.ResourceName, reconcileErr error) error {
-	r, err := c.get(name, false, false)
+	r, err := c.get(name, true, false)
 	if err != nil {
 		return err
 	}
+	var errStr string
+	if reconcileErr != nil {
+		errStr = reconcileErr.Error()
+	}
+	if r.Meta.ReconcileError == errStr {
+		// Since bumping the state version usually invalidates derived things, we don't want to do it redundantly.
+		return nil
+	}
 	// NOTE: No need to unlink/link because no indexed fields are edited.
-	r.Meta.ReconcileError = reconcileErr.Error()
+	r.Meta.ReconcileError = errStr
 	r.Meta.Version++
 	r.Meta.StateVersion++
 	r.Meta.StateUpdatedOn = timestamppb.Now()
@@ -436,20 +460,34 @@ func (c *catalogCache) link(r *runtimev1.Resource) {
 // unlink reverses a previous call to link.
 func (c *catalogCache) unlink(r *runtimev1.Resource) {
 	s := nameStr(r.Meta.Name)
-	if _, ok := c.deleted[s]; ok {
-		return
+
+	if r.Meta.RenamedFrom != nil {
+		delete(c.renamed, s)
+	}
+
+	if r.Meta.DeletedOn == nil {
+		if _, ok := c.cyclic[s]; ok {
+			delete(c.cyclic, s)
+		} else {
+			c.dag.Remove(r.Meta.Name)
+		}
+	} else {
+		delete(c.deleted, s)
 	}
 
 	delete(c.resources[r.Meta.Name.Kind], strings.ToLower(r.Meta.Name.Name))
-	c.dag.Remove(r.Meta.Name)
-	delete(c.cyclic, s)
-	delete(c.deleted, s)
-	delete(c.renamed, s)
 }
 
 // clone clones a resource such that it is safe to mutate without affecting a cached resource.
 func (c *catalogCache) clone(r *runtimev1.Resource) *runtimev1.Resource {
 	return proto.Clone(r).(*runtimev1.Resource)
+}
+
+// isCyclic returns true if the resource has cyclic references.
+// It must be checked before accessing the resource in c.dag (since cyclic resources are not added to the DAG).
+func (c *catalogCache) isCyclic(n *runtimev1.ResourceName) bool {
+	_, ok := c.cyclic[nameStr(n)]
+	return ok
 }
 
 // retryCyclicRefs attempts to re-link resources into the DAG that were previously rejected due to cyclic references.
@@ -492,14 +530,15 @@ func (c *catalogCache) addEvent(n *runtimev1.ResourceName, r *runtimev1.Resource
 
 // clearEvents clears all buffered events.
 // It should be called after consuming c.events.
+// It initializes a new event buffer on each call, so it is safe to use a copy of c.events after calling this method.
 func (c *catalogCache) resetEvents() {
 	c.hasEvents = false
 	c.events = make(map[string]catalogEvent)
 }
 
-// nameStr returns a string representation of a resource name.
+// nameStr returns a normalized string representation of a resource name.
 func nameStr(r *runtimev1.ResourceName) string {
-	return fmt.Sprintf("%s/%s", r.Kind, r.Name)
+	return fmt.Sprintf("%s/%s", r.Kind, strings.ToLower(r.Name))
 }
 
 // resourceFromDriver converts a drivers.Resource to a proto resource.

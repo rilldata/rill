@@ -31,9 +31,16 @@ const TableProfilingQuery: Partial<Record<QueryRequestType, boolean>> = {
 const ProfilingQueryExtractor =
   /v1\/instances\/[a-zA-Z0-9-]+\/queries\/([a-zA-Z0-9-]+)\/tables\/(.+?)"/;
 
+function isOlapQuery(queryHash: string, name: string) {
+  return (
+    queryHash.includes(`"/v1/connectors/olap/table"`) &&
+    queryHash.includes(`"${name}"`)
+  );
+}
+
 export function isProfilingQuery(query: Query, name: string): boolean {
   const queryExtractorMatch = ProfilingQueryExtractor.exec(query.queryHash);
-  if (!queryExtractorMatch) return false;
+  if (!queryExtractorMatch) return isOlapQuery(query.queryHash, name);
 
   const [, , table] = queryExtractorMatch;
   return table === name;
@@ -41,7 +48,7 @@ export function isProfilingQuery(query: Query, name: string): boolean {
 
 export function isTableProfilingQuery(query: Query, name: string): boolean {
   const queryExtractorMatch = ProfilingQueryExtractor.exec(query.queryHash);
-  if (!queryExtractorMatch) return false;
+  if (!queryExtractorMatch) return isOlapQuery(query.queryHash, name);
 
   const [, type, table] = queryExtractorMatch;
   return table === name && type in TableProfilingQuery;

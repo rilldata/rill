@@ -1,6 +1,9 @@
-import { CATEGORICALS } from "@rilldata/web-common/lib/duckdb-data-types";
+import {
+  CATEGORICALS,
+  FLOATS,
+} from "@rilldata/web-common/lib/duckdb-data-types";
 import { DEFAULT_TIMEZONES } from "@rilldata/web-common/lib/time/config";
-import type { V1Model } from "@rilldata/web-common/runtime-client";
+import type { V1StructType } from "@rilldata/web-common/runtime-client";
 import { Document, parseDocument } from "yaml";
 import { selectTimestampColumnFromSchema } from "./column-selectors";
 
@@ -64,7 +67,8 @@ available_time_zones:
 }
 
 export function generateDashboardYAMLForModel(
-  model: V1Model,
+  modelName: string,
+  schema: V1StructType,
   dashboardTitle = ""
 ) {
   const doc = new Document();
@@ -74,16 +78,31 @@ export function generateDashboardYAMLForModel(
   if (dashboardTitle) {
     doc.set("title", dashboardTitle);
   }
-  doc.set("model", model.name);
+  doc.set("model", modelName);
 
-  const timestampColumns = selectTimestampColumnFromSchema(model?.schema);
+  const timestampColumns = selectTimestampColumnFromSchema(schema);
   if (timestampColumns?.length) {
     doc.set("timeseries", timestampColumns[0]);
   } else {
     doc.set("timeseries", "");
   }
 
-  const measureNode = doc.createNode({
+  const fields = schema.fields;
+  const metricsSeq = fields
+    .filter((field) => {
+      return FLOATS.has(field.type.code);
+    })
+    .map((field) => {
+      return {
+        label: "Sum(" + field.name + ")",
+        expression: "sum(" + field.name + ")",
+        name: "sum(" + field.name + ")",
+        description: "Sum of " + capitalize(field.name),
+        format_preset: "humanize",
+        valid_percent_of_total: true,
+      };
+    });
+  metricsSeq.unshift({
     label: "Total records",
     expression: "count(*)",
     name: "total_records",
@@ -91,10 +110,9 @@ export function generateDashboardYAMLForModel(
     format_preset: "humanize",
     valid_percent_of_total: true,
   });
-  doc.set("measures", [measureNode]);
+  doc.set("measures", metricsSeq);
 
-  const fields = model.schema.fields;
-  const diemensionSeq = fields
+  const dimensionSeq = fields
     .filter((field) => {
       return CATEGORICALS.has(field.type.code);
     })
@@ -107,7 +125,7 @@ export function generateDashboardYAMLForModel(
       };
     });
 
-  const dimensionNode = doc.createNode(diemensionSeq);
+  const dimensionNode = doc.createNode(dimensionSeq);
   doc.set("dimensions", dimensionNode);
 
   doc.set("available_time_zones", DEFAULT_TIMEZONES);

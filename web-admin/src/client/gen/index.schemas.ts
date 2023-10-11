@@ -531,7 +531,6 @@ export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_UNSPECIFIED: "DEPLOYMENT_STATUS_UNSPECIFIED",
   DEPLOYMENT_STATUS_PENDING: "DEPLOYMENT_STATUS_PENDING",
   DEPLOYMENT_STATUS_OK: "DEPLOYMENT_STATUS_OK",
-  DEPLOYMENT_STATUS_RECONCILING: "DEPLOYMENT_STATUS_RECONCILING",
   DEPLOYMENT_STATUS_ERROR: "DEPLOYMENT_STATUS_ERROR",
 } as const;
 
@@ -543,7 +542,7 @@ export interface V1Deployment {
   runtimeHost?: string;
   runtimeInstanceId?: string;
   status?: V1DeploymentStatus;
-  logs?: string;
+  statusMessage?: string;
   createdOn?: string;
   updatedOn?: string;
 }

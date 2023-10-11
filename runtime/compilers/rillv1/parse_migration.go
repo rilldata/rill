@@ -15,6 +15,11 @@ type migrationYAML struct {
 func (p *Parser) parseMigration(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &migrationYAML{}
+	if p.RillYAML != nil && !p.RillYAML.Defaults.Migrations.IsZero() {
+		if err := p.RillYAML.Defaults.Migrations.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
+		}
+	}
 	if node.YAML != nil {
 		if err := node.YAML.Decode(tmp); err != nil {
 			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
@@ -27,9 +32,13 @@ func (p *Parser) parseMigration(ctx context.Context, node *Node) error {
 		return pathError{path: node.SQLPath, err: fmt.Errorf("invalid SQL annotations: %w", err)}
 	}
 
-	// Upsert resource (in practice, this will always be an insert)
-	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
-	r := p.upsertResource(ResourceKindMigration, node.Name, node.Paths, node.Refs...)
+	// Add resource
+	r, err := p.insertResource(ResourceKindMigration, node.Name, node.Paths, node.Refs...)
+	if err != nil {
+		return err
+	}
+	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
+
 	if node.Connector != "" {
 		r.MigrationSpec.Connector = node.Connector
 	}

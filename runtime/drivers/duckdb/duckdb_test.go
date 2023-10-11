@@ -39,7 +39,7 @@ func TestOpenDrop(t *testing.T) {
 	require.NoFileExists(t, walpath)
 }
 
-func TestFatalErr(t *testing.T) {
+func TestNoFatalErr(t *testing.T) {
 	// NOTE: Using this issue to create a fatal error: https://github.com/duckdb/duckdb/issues/7905
 
 	dsn := filepath.Join(t.TempDir(), "tmp.db")
@@ -92,7 +92,7 @@ func TestFatalErr(t *testing.T) {
 	`
 
 	err = olap.Exec(context.Background(), &drivers.Statement{Query: qry})
-	require.ErrorContains(t, err, "INTERNAL Error")
+	require.NoError(t, err)
 
 	err = olap.Exec(context.Background(), &drivers.Statement{Query: "SELECT * FROM a"})
 	require.NoError(t, err)
@@ -101,7 +101,7 @@ func TestFatalErr(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestFatalErrConcurrent(t *testing.T) {
+func TestNoFatalErrConcurrent(t *testing.T) {
 	// NOTE: Using this issue to create a fatal error: https://github.com/duckdb/duckdb/issues/7905
 
 	dsn := filepath.Join(t.TempDir(), "tmp.db")
@@ -198,8 +198,8 @@ func TestFatalErrConcurrent(t *testing.T) {
 
 	wg.Wait()
 
-	require.ErrorContains(t, err1, "INTERNAL Error")
-	require.ErrorContains(t, err2, "FATAL Error")
+	require.NoError(t, err1)
+	require.NoError(t, err2)
 	require.NoError(t, err3)
 
 	err = olap.Exec(context.Background(), &drivers.Statement{Query: "SELECT * FROM a"})

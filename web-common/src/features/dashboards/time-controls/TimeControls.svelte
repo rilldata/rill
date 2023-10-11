@@ -21,7 +21,10 @@
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { initLocalUserPreferenceStore } from "../user-preferences";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
   import TimeComparisonSelector from "./TimeComparisonSelector.svelte";
@@ -55,7 +58,7 @@
 
   $: if (
     $timeControlsStore.ready &&
-    !!$metaQuery?.data?.model &&
+    !!$metaQuery?.data?.table &&
     !!$metaQuery?.data?.timeDimension
   ) {
     availableTimeZones = $metaQuery?.data?.availableTimeZones;
@@ -171,7 +174,7 @@
 
 <div class="flex flex-row items-center gap-x-1">
   {#if !hasTimeSeries}
-    <NoTimeDimensionCTA {metricViewName} modelName={$metaQuery?.data?.model} />
+    <NoTimeDimensionCTA {metricViewName} modelName={$metaQuery?.data?.table} />
   {:else if allTimeRange?.start}
     <TimeRangeSelector
       {metricViewName}

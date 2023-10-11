@@ -23,8 +23,11 @@ func (q *ColumnDescriptiveStatistics) Key() string {
 	return fmt.Sprintf("ColumnDescriptiveStatistics:%s:%s", q.TableName, q.ColumnName)
 }
 
-func (q *ColumnDescriptiveStatistics) Deps() []string {
-	return []string{q.TableName}
+func (q *ColumnDescriptiveStatistics) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *ColumnDescriptiveStatistics) MarshalResult() *runtime.QueryResult {
