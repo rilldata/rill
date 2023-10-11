@@ -7,6 +7,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
+  import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     formatConnectorType,
     getFileExtension,
@@ -113,7 +114,7 @@
 <div
   class="table-profile {isSourceUnsaved && 'grayscale'} transition duration-200"
 >
-  {#if $sourceQuery?.data?.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE}
+  {#if resourceIsLoading($sourceQuery?.data)}
     <div class="h-10">
       <ReconcilingSpinner />
     </div>
@@ -163,7 +164,7 @@
 
       {#if showColumns}
         <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-          <ColumnProfile objectName={sourceName} indentLevel={0} />
+          <ColumnProfile objectName={source?.state?.table} indentLevel={0} />
         </div>
       {/if}
     </div>

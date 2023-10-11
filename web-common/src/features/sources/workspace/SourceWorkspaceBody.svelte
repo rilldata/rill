@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
+  import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { useResourceForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
@@ -76,8 +77,7 @@
         {#key sourceName}
           <ConnectedPreviewTable
             objectName={$sourceQuery?.data?.source?.state?.table}
-            loading={$sourceQuery?.data?.meta?.reconcileStatus !==
-              V1ReconcileStatus.RECONCILE_STATUS_IDLE}
+            loading={resourceIsLoading($sourceQuery?.data)}
           />
         {/key}
       {:else}

@@ -14,21 +14,15 @@
 </script>
 
 <div class="grid h-full place-content-center align-middle">
-  <div class="grid grid-flow-col">
-    <div class="w-8">
-      <Spinner
-        duration={300 + Math.random() * 200}
-        size="1.5em"
-        status={EntityStatus.Running}
-      />
+  <div>
+    <div class="grid place-content-center">
+      <Spinner size="1.5em" status={EntityStatus.Running} />
     </div>
-    <div>
-      {#each $reconcilingItems as reconcilingItem}
-        <div>
-          Ingesting {KindToName[reconcilingItem.kind]}
-          "{reconcilingItem.name}"
-        </div>
-      {/each}
-    </div>
+    {#each $reconcilingItems as reconcilingItem}
+      <div>
+        Ingesting {KindToName[reconcilingItem.kind]}
+        <span class="font-mono">{reconcilingItem.name}</span>
+      </div>
+    {/each}
   </div>
 </div>

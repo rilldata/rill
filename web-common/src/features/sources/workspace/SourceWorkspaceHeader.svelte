@@ -175,7 +175,7 @@
               style:font-size="11px"
               transition:fade|local={{ duration: 200 }}
             >
-              Imported on {formatRefreshedOn(source?.state?.refreshedOn)}
+              Ingested on {formatRefreshedOn(source?.state?.refreshedOn)}
             </div>
           {/if}
         </div>
