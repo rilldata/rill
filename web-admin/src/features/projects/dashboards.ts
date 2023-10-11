@@ -15,6 +15,7 @@ import {
   V1ReconcileStatus,
 } from "@rilldata/web-common/runtime-client";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import { fetchWrapper } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { invalidateMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation";
 import type { QueryClient } from "@tanstack/svelte-query";
 import Axios from "axios";
@@ -63,7 +64,10 @@ export function useDashboards(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.MetricsView);
 }
 
-export function useDashboardsStatus(instanceId: string) {
+export function useDashboardsStatus(
+  instanceId: string,
+  project?: V1GetProjectResponse
+) {
   return createRuntimeServiceListResources(
     instanceId,
     {
@@ -112,6 +116,34 @@ export function useDashboardsStatus(instanceId: string) {
               return PollTimeWhenProjectReady;
           }
         },
+
+        // Do a manual call for project chip. This could be placed where `runtime` is not populated
+        ...(project
+          ? {
+              queryFn: ({ signal }) => {
+                // Hack: in development, the runtime host is actually on port 8081
+                const host = project.prodDeployment.runtimeHost.replace(
+                  "localhost:9091",
+                  "localhost:8081"
+                );
+                const instanceId = project.prodDeployment.runtimeInstanceId;
+                const jwt = project.jwt;
+                return fetchWrapper({
+                  url: `${host}/v1/instances/${instanceId}/resources?kind=${ResourceKind.MetricsView}`,
+                  method: "GET",
+                  ...(jwt
+                    ? {
+                        headers: {
+                          Authorization: `Bearer ${project.jwt}`,
+                          "Content-Type": "application/json",
+                        },
+                      }
+                    : {}),
+                  signal,
+                });
+              },
+            }
+          : {}),
       },
     }
   );

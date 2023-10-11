@@ -33,8 +33,14 @@
   );
   let deploymentStatus: V1DeploymentStatus;
 
+  $: instanceId = $proj?.data?.prodDeployment?.runtimeInstanceId;
+
   let deploymentStatusFromDashboards: CreateQueryResult<V1DeploymentStatus>;
-  $: deploymentStatusFromDashboards = useDashboardsStatus($runtime?.instanceId);
+  $: if ($proj?.data)
+    deploymentStatusFromDashboards = useDashboardsStatus(
+      instanceId,
+      $proj?.data
+    );
 
   const queryClient = useQueryClient();
 
@@ -53,7 +59,7 @@
 
       // Invalidate the queries used to compose the dashboard list in the breadcrumbs
       queryClient.invalidateQueries(
-        getRuntimeServiceListResourcesQueryKey($runtime?.instanceId, {
+        getRuntimeServiceListResourcesQueryKey(instanceId, {
           kind: ResourceKind.MetricsView,
         })
       );
@@ -126,13 +132,16 @@
 
   // Merge the status from deployment and dashboards to show the chip
   let currentStatusDisplay: StatusDisplay;
-  $: if (deploymentStatus || $deploymentStatusFromDashboards.data) {
-    if (deploymentStatus !== V1DeploymentStatus.DEPLOYMENT_STATUS_OK) {
+  $: if (deploymentStatus || $deploymentStatusFromDashboards?.data) {
+    if (
+      deploymentStatus !== V1DeploymentStatus.DEPLOYMENT_STATUS_OK ||
+      !$deploymentStatusFromDashboards
+    ) {
       currentStatusDisplay = statusDisplays[deploymentStatus];
     } else {
       currentStatusDisplay =
         statusDisplays[
-          $deploymentStatusFromDashboards.data ??
+          $deploymentStatusFromDashboards?.data ??
             V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED
         ];
     }
