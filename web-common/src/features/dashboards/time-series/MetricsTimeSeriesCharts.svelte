@@ -377,9 +377,7 @@
             }}
             numberKind={nicelyFormattedTypesToNumberKind(measure?.formatPreset)}
             mouseoverFormat={(value) =>
-              formatPreset === FormatPreset.NONE
-                ? `${value}`
-                : humanizeDataType(value, measure?.formatPreset)}
+              humanizeDataType(value, measure?.formatPreset)}
           />
         {:else}
           <div>

@@ -24,11 +24,8 @@
   export let comparisonValue: number = undefined;
   export let comparisonPercChange: number = undefined;
   export let showComparison = false;
-
   export let status: EntityStatus;
-  // export let description: string = undefined;
   export let withTimeseries = true;
-  // export let formatPreset: string; // workaround, since unable to cast `string` to `FormatPreset` within MetricsTimeSeriesCharts.svelte's `#each` block
 
   $: description =
     measure?.description || measure?.label || measure?.expression;
@@ -82,11 +79,7 @@
         <Tooltip distance={8} location="bottom" alignment="start">
           <div class="w-max">
             <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-              {#if formatPreset !== FormatPreset.NONE}
-                {humanizeDataType(output, formatPreset)}
-              {:else}
-                {output}
-              {/if}
+              {humanizeDataType(output, formatPreset)}
             </WithTween>
           </div>
           <TooltipContent slot="tooltip-content">
@@ -140,11 +133,10 @@
                 no change over {TIME_COMPARISON[comparisonOption].shorthand}
               {:else}
                 {TIME_COMPARISON[comparisonOption].shorthand}
-                <span class="font-semibold"
-                  >{formatPreset !== FormatPreset.NONE
-                    ? humanizeDataType(comparisonValue, formatPreset)
-                    : comparisonValue}</span
-                >{#if !measureIsPercentage}
+                <span class="font-semibold">
+                  {humanizeDataType(comparisonValue, formatPreset)}
+                </span>
+                {#if !measureIsPercentage}
                   <span class="text-gray-300">,</span>
                   <span
                     >{tooltipPercentage.int}% {isComparisonPositive

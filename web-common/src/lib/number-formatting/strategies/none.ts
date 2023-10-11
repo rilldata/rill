@@ -15,40 +15,16 @@ export class NonFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterOptionsNoneStrategy;
   initialSample: number[];
 
-  // FIXME: we can add this back in if we want to implement
-  // alignment. If we decide that we don't want to pursue that,
-  // we can remove this commented code
-  // maxPxWidthsSampledSoFar: FormatterWidths;
-  // maxCharWidthsSampledSoFar: FormatterWidths;
-  // largestPossibleNumberStringParts: NumberParts;
-
   constructor(
     sample: number[],
     options: FormatterOptionsCommon & FormatterOptionsNoneStrategy
   ) {
     this.options = options;
     this.initialSample = sample;
-
-    // FIXME: we can add this back in if we want to implement
-    // alignment. If we decide that we don't want to pursue that,
-    // we can remove this commented code
-    // largestPossibleNumberStringParts: NumberParts;
-
-    // this.largestPossibleNumberStringParts = {
-    //   neg: "-",
-    //   dollar: options.numberKind === NumberKind.DOLLAR ? "$" : undefined,
-    //   int: "999999",
-    //   dot: ".",
-    //   frac: "0".repeat(
-    //     Math.max(maxDigitsRightSmallNums, maxDigitsRightSuffixNums)
-    //   ),
-    //   suffix: "e-324",
-    //   percent: options.numberKind === NumberKind.PERCENT ? "%" : undefined,
-    // };
   }
 
   stringFormat(x: number): string {
-    return numberPartsToString(this.partsFormat(x));
+    return x.toString();
   }
 
   partsFormat(x: number): NumberParts {
@@ -64,6 +40,7 @@ export class NonFormatter implements Formatter {
     } else {
       const str = new Intl.NumberFormat("en", {
         maximumFractionDigits: 20,
+        useGrouping: false,
       }).format(x);
       numParts = numStrToParts(str);
     }
