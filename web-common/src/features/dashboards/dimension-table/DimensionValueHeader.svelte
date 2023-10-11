@@ -18,20 +18,20 @@
   export let rows;
   export let width = config.indexWidth;
   export let horizontalScrolling;
+
   // Cell props
   export let scrolling;
   export let activeIndex;
   export let excludeMode = false;
 
-  const stateManagers = getStateManagers();
-  const { sortedByDimensionValue, sortedAscending } =
-    stateManagers.selectors.sorting;
-
   const {
     actions: {
       sorting: { sortByDimensionValue },
     },
-  } = stateManagers;
+    selectors: {
+      sorting: { sortedByDimensionValue, sortedAscending },
+    },
+  } = getStateManagers();
   const dispatch = createEventDispatcher();
 
   $: atLeastOneSelected = !!selectedIndex?.length;

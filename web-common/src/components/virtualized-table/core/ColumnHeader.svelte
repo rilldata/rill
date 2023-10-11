@@ -27,7 +27,6 @@
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;
-  // FIXME: pretty sure isSelected can be deprecated in favor of highlight
   export let isSelected = false;
   export let highlight = false;
   export let sorted: SortDirection = undefined;

@@ -31,7 +31,6 @@ export function prepareSortedQueryBody(
   measureNames: string[],
   timeControls: TimeControlState,
   sortMeasureName: string,
-
   sortType: SortType,
   sortAscending: boolean,
   filterForDimension: V1MetricsViewFilter
