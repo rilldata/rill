@@ -3,6 +3,7 @@ import {
   isoDurationToTimeRange,
 } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { describe, it, expect } from "vitest";
+import { Duration } from "luxon";
 
 describe("isoDurationToTimeRange", () => {
   it("hour range, anchored to hour", () => {
@@ -54,11 +55,11 @@ describe("isoDurationToTimeRange", () => {
 describe("humaniseISODuration", () => {
   (
     [
-      ["PT4H", "4 hours"],
-      ["P1D", "1 day"],
-      ["P14D", "14 days"],
-      ["P2W", "2 weeks"],
-      ["P1Y3WT6H", "1 year, 3 weeks and 6 hours"],
+      ["PT4H", "4 Hours"],
+      ["P1D", "1 Day"],
+      ["P14D", "14 Days"],
+      ["P2W", "2 Weeks"],
+      ["P1Y3WT6H", "1 Year, 3 Weeks and 6 Hours"],
     ] as Array<[iso: string, humanised: string]>
   ).forEach(([iso, humanised]) => {
     it(`${iso} => ${humanised}`, () => {

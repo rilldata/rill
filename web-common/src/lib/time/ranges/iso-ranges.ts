@@ -8,7 +8,7 @@ import {
   TimeRangePreset,
   TimeTruncationType,
 } from "@rilldata/web-common/lib/time/types";
-import { Duration, parse, toString, subtract } from "duration-fns";
+import { Duration } from "luxon";
 
 /**
  * Converts an ISO duration to a time range.
@@ -76,40 +76,21 @@ export function isoDurationToFullTimeRange(
 
 export function humaniseISODuration(isoDuration: string): string {
   if (!isoDuration) return "";
-  const duration = parse(isoDuration);
-  const parts = new Array<string>();
-  for (let i = PeriodAndUnits.length - 1; i >= 0; i--) {
-    if (!duration[PeriodAndUnits[i].unit]) continue;
-    let part =
-      duration[PeriodAndUnits[i].unit] +
-      " " +
-      PeriodAndUnits[i].unit.replace(/^(\w)/, (substring) =>
-        substring.toUpperCase()
-      );
-    if (duration[PeriodAndUnits[i].unit] === 1) {
-      // make the unit singular
-      part = part.replace(/s$/, "");
-    }
-    parts.push(part);
-  }
-
-  let fullString = "";
-  for (let i = 0; i < parts.length; i++) {
-    fullString += parts[i];
-    if (i < parts.length - 2) {
-      fullString += ", ";
-    } else if (i === parts.length - 2) {
-      fullString += " and ";
-    }
-  }
-
-  return fullString;
+  const duration = Duration.fromISO(isoDuration);
+  let humanISO = duration.toHuman({
+    listStyle: "long",
+  });
+  humanISO = humanISO.replace(/(\d) (\w)/g, (substring, n, c) => {
+    return `${n} ${c.toUpperCase()}`;
+  });
+  humanISO = humanISO.replace(", and", " and");
+  return humanISO;
 }
 
 function getStartTimeTransformations(
   isoDuration: string
 ): Array<RelativeTimeTransformation> {
-  const duration = parse(isoDuration);
+  const duration = Duration.fromISO(isoDuration);
   const period = getSmallestUnit(duration);
   return [
     {
@@ -118,7 +99,7 @@ function getStartTimeTransformations(
     }, // truncation
     // then offset that by -1 of smallest period
     {
-      duration: toString(subtractFromPeriod(duration, period)),
+      duration: subtractFromPeriod(duration, period).toISO(),
       operationType: TimeOffsetType.SUBTRACT,
     }, // operation
   ];
@@ -127,7 +108,7 @@ function getStartTimeTransformations(
 function getEndTimeTransformations(
   isoDuration: string
 ): Array<RelativeTimeTransformation> {
-  const duration = parse(isoDuration);
+  const duration = Duration.fromISO(isoDuration);
   const period = getSmallestUnit(duration);
   return [
     {
@@ -185,5 +166,5 @@ function getSmallestUnit(duration: Duration) {
 
 function subtractFromPeriod(duration: Duration, period: Period) {
   if (!PeriodToUnitsMap[period]) return duration;
-  return subtract(duration, { [PeriodToUnitsMap[period]]: 1 });
+  return duration.minus({ [PeriodToUnitsMap[period]]: 1 });
 }
