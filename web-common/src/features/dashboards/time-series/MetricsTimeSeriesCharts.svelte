@@ -337,23 +337,17 @@
         FormatPreset[measure?.formatPreset] || FormatPreset.HUMANIZE}
       <!-- FIXME: I can't select a time series by measure id. -->
       <MeasureBigNumber
+        {measure}
         value={bigNum}
         {showComparison}
         comparisonOption={$timeControlsStore?.selectedComparisonTimeRange?.name}
         {comparisonValue}
         {comparisonPercChange}
-        description={measure?.description ||
-          measure?.label ||
-          measure?.expression}
-        formatPreset={measure?.formatPreset}
         status={$totalsQuery?.isFetching
           ? EntityStatus.Running
           : EntityStatus.Idle}
-      >
-        <svelte:fragment slot="name">
-          {measure?.label || measure?.expression}
-        </svelte:fragment>
-      </MeasureBigNumber>
+      />
+
       <div class="time-series-body" style:height="125px">
         {#if $timeSeriesQuery?.isError}
           <div class="p-5"><CrossIcon /></div>

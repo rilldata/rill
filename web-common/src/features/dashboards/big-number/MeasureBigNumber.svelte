@@ -16,7 +16,9 @@
     FormatPreset,
     humanizeDataTypeExpanded,
   } from "../humanize-numbers";
+  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
+  export let measure: MetricsViewSpecMeasureV2;
   export let value: number;
   export let comparisonOption: TimeComparisonOption = undefined;
   export let comparisonValue: number = undefined;
@@ -24,9 +26,15 @@
   export let showComparison = false;
 
   export let status: EntityStatus;
-  export let description: string = undefined;
+  // export let description: string = undefined;
   export let withTimeseries = true;
-  export let formatPreset: string; // workaround, since unable to cast `string` to `FormatPreset` within MetricsTimeSeriesCharts.svelte's `#each` block
+  // export let formatPreset: string; // workaround, since unable to cast `string` to `FormatPreset` within MetricsTimeSeriesCharts.svelte's `#each` block
+
+  $: description =
+    measure?.description || measure?.label || measure?.expression;
+  $: formatPreset = measure?.formatPreset;
+
+  $: name = measure?.label || measure?.expression;
 
   $: formatPresetEnum = (formatPreset as FormatPreset) || FormatPreset.HUMANIZE;
   $: valueIsPresent = value !== undefined && value !== null;
@@ -51,7 +59,7 @@
       class="break-words line-clamp-2"
       style:font-size={withTimeseries ? "" : "0.8rem"}
     >
-      <slot name="name" />
+      {name}
     </h2>
     <TooltipContent slot="tooltip-content" maxWidth="280px">
       <TooltipDescription>
