@@ -29,11 +29,6 @@ export enum FormatPreset {
   INTERVAL = "interval_ms",
 }
 
-interface ColFormatSpec {
-  columnName: string;
-  formatPreset: FormatPreset;
-}
-
 export function humanizeGroupValues(
   values: Array<Record<string, number | string>>,
   type: FormatPreset,
