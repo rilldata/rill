@@ -63,7 +63,7 @@
   );
 
   $: formatPreset =
-    (activeMeasure?.formatPreset as FormatPreset) ?? FormatPreset.HUMANIZE;
+    (activeMeasure?.format as FormatPreset) ?? FormatPreset.HUMANIZE;
 
   let referenceValue: number;
   $: if (activeMeasure?.name && $totalsQuery?.data?.data) {

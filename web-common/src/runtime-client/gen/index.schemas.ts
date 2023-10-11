@@ -1824,8 +1824,7 @@ export interface MetricsViewSpecMeasureV2 {
   expression?: string;
   label?: string;
   description?: string;
-  formatPreset?: string;
-  formatD3?: string;
+  format?: string;
   validPercentOfTotal?: boolean;
 }
 

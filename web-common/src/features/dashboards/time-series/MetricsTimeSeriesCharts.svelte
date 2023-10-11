@@ -334,7 +334,7 @@
           ? (bigNum - comparisonValue) / comparisonValue
           : undefined}
       {@const formatPreset =
-        FormatPreset[measure?.formatPreset] || FormatPreset.HUMANIZE}
+        FormatPreset[measure?.format] || FormatPreset.HUMANIZE}
       <!-- FIXME: I can't select a time series by measure id. -->
       <MeasureBigNumber
         value={bigNum}
@@ -345,7 +345,7 @@
         description={measure?.description ||
           measure?.label ||
           measure?.expression}
-        formatPreset={measure?.formatPreset}
+        formatPreset={measure?.format}
         status={$totalsQuery?.isFetching
           ? EntityStatus.Running
           : EntityStatus.Idle}
@@ -381,11 +381,11 @@
                 TIME_GRAIN[interval].formatDate
               );
             }}
-            numberKind={nicelyFormattedTypesToNumberKind(measure?.formatPreset)}
+            numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
             mouseoverFormat={(value) =>
               formatPreset === FormatPreset.NONE
                 ? `${value}`
-                : humanizeDataType(value, measure?.formatPreset)}
+                : humanizeDataType(value, measure?.format)}
           />
         {:else}
           <div>
