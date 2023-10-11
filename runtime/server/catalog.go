@@ -477,7 +477,7 @@ func (s *Server) resourceToEntry(ctx context.Context, instanceID string, r *runt
 				Label:               m.Label,
 				Expression:          m.Expression,
 				Description:         m.Description,
-				Format:              m.Format,
+				Format:              m.FormatPreset,
 				ValidPercentOfTotal: m.ValidPercentOfTotal,
 			})
 		}
