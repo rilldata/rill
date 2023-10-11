@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import TDDHeader from "./TDDHeader.svelte";
   import TddNew from "./TDDNew.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";

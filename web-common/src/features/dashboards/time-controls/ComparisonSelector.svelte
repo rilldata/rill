@@ -25,7 +25,7 @@ This component needs to do the following:
   import {
     metricsExplorerStore,
     useDashboardStore,
-  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 

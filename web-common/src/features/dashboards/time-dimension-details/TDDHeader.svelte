@@ -14,7 +14,10 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { Chip } from "@rilldata/web-common/components/chip";
   import { disabledChipColors } from "@rilldata/web-common/components/chip/chip-types";
 
