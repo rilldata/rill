@@ -29,29 +29,6 @@ export enum FormatPreset {
   INTERVAL = "interval_ms",
 }
 
-export function humanizeGroupValues(
-  values: Array<Record<string, number | string>>,
-  type: FormatPreset,
-  columnName?: string
-) {
-  const valueKey = columnName ?? "value";
-  let numValues = values.map((v) => v[valueKey]);
-
-  const areAllNumbers = numValues.some((e) => typeof e === "number");
-  if (!areAllNumbers) return values;
-
-  numValues = (numValues as number[]).sort((a, b) => b - a);
-  const formattedValues = humanizeGroupValuesUtil2(numValues as number[], type);
-
-  const formattedValueKey = "__formatted_" + valueKey;
-  const humanizedValues = values.map((v) => {
-    const index = numValues.indexOf(v[valueKey]);
-    return { ...v, [formattedValueKey]: formattedValues[index] };
-  });
-
-  return humanizedValues;
-}
-
 // NOTE: the following are adapters that I think fit the API
 // used by the existing humanizer, but I'm not sure of the
 // exact details, nor am I totally confident about the options
