@@ -2,7 +2,6 @@ package admin
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -31,7 +30,7 @@ func PingCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Pong: %s\n", pong.Time.AsTime().String())
+			cmd.Printf("Pong: %s\n", pong.Time.AsTime().String())
 			return nil
 		},
 	}

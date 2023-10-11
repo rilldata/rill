@@ -1,17 +1,16 @@
 package org
 
 import (
-	"context"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func ListCmd(cfg *config.Config) *cobra.Command {
+func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pageSize uint32
 	var pageToken string
+	cfg := ch.Config
 
 	listCmd := &cobra.Command{
 		Use:   "list",
@@ -23,8 +22,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			defer client.Close()
-
-			res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{
+			res, err := client.ListOrganizations(cmd.Context(), &adminv1.ListOrganizationsRequest{
 				PageSize:  pageSize,
 				PageToken: pageToken,
 			})
@@ -37,8 +35,12 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			cmdutil.PrintlnSuccess("Organizations list")
-			cmdutil.TablePrinter(toTable(res.Organizations, cfg.Org))
+			ch.Printer.Println(printer.BoldGreen("Organizations list"))
+			err = ch.Printer.PrintResource(toTable(res.Organizations, cfg.Org))
+			if err != nil {
+				return err
+			}
+
 			if res.NextPageToken != "" {
 				cmd.Println()
 				cmd.Printf("Next page token: %s\n", res.NextPageToken)

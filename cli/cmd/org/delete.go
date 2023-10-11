@@ -5,15 +5,16 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func DeleteCmd(cfg *config.Config) *cobra.Command {
+func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 	var force bool
 	var name string
+	cfg := ch.Config
 
 	deleteCmd := &cobra.Command{
 		Use:   "delete [<org-name>]",
@@ -90,7 +91,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			cmdutil.PrintlnSuccess(fmt.Sprintf("Deleted organization: %v", name))
+			ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("Deleted organization: %v", name)))
 			return nil
 		},
 	}

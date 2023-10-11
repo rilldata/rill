@@ -1,131 +1,232 @@
 package org
 
 import (
+	"bytes"
 	"context"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
-	"net"
+	"os"
 	"testing"
+	"time"
 
+	qt "github.com/frankban/quicktest"
 	"github.com/google/go-github/v50/github"
+	"github.com/joho/godotenv"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server"
-	"github.com/rilldata/rill/admin/server/auth"
-	"github.com/rilldata/rill/admin/server/cookies"
+	admincli "github.com/rilldata/rill/cli/cmd/admin"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
-	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/cli/pkg/printer"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/test/bufconn"
+	"golang.org/x/sync/errgroup"
 
 	"go.uber.org/zap"
 )
 
-// Test create org with name
-func TestListCmd(t *testing.T) {
-
-	//---------Setup-----------//
+func TestOrgCmd(t *testing.T) {
+	c := qt.New(t)
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 
 	ctx := context.Background()
-	logger := zap.NewNop()
+	logger, _ := zap.NewDevelopment()
 
 	sender, err := email.NewConsoleSender(logger, "rakesh.sharma@rilldata.com", "")
 	require.NoError(t, err)
 	emailClient := email.New(sender, "", "")
 
-	github := &mockGithub{}
-
+	gh := &mockGithub{}
 	issuer, err := runtimeauth.NewEphemeralIssuer("")
 	require.NoError(t, err)
 
 	provisionerSpec := "{\"runtimes\":[{\"host\":\"http://localhost:9091\",\"slots\":50,\"data_dir\":\"\",\"audience_url\":\"http://localhost:8081\"}]}"
 
-	service, err := admin.New(context.Background(),
-		&admin.Options{
-			DatabaseDriver:  "postgres",
-			DatabaseDSN:     pg.DatabaseURL,
-			ProvisionerSpec: provisionerSpec,
-		},
-		logger,
-		issuer,
-		emailClient,
-		github,
-	)
+	// Init admin service
+	admOpts := &admin.Options{
+		DatabaseDriver:  "postgres",
+		DatabaseDSN:     pg.DatabaseURL,
+		ProvisionerSpec: provisionerSpec,
+	}
 
-	fmt.Println("err", err)
-	require.NoError(t, err)
+	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, gh)
+	if err != nil {
+		logger.Fatal("error creating service", zap.Error(err))
+	}
+	defer adm.Close()
 
-	authenticator, err := auth.NewAuthenticator(logger, service, cookies.New(logger, nil), &auth.AuthenticatorOptions{
-		AuthDomain: "gorillio-stage.auth0.com",
+	err = godotenv.Load("/Users/rakeshrilldata/Workspace/rill/.env")
+	if err != nil {
+		fmt.Println("Error loading .env file", err)
+	}
+
+	db := adm.DB
+	// create admin user
+	adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{
+		Email:               "admin@test.io",
+		DisplayName:         "admin",
+		QuotaSingleuserOrgs: 3,
 	})
 	require.NoError(t, err)
 
-	// db := service.DB
-
-	// // create admin and viewer users
-	// adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{
-	// 	Email:               "admin@test.io",
-	// 	DisplayName:         "admin",
-	// 	QuotaSingleuserOrgs: 3,
-	// })
-	// require.NoError(t, err)
-
-	// // issue admin and viewer tokens
-	// adminAuthToken, err := service.IssueUserAuthToken(ctx, adminUser.ID, database.AuthClientIDRillWeb, "test", nil, nil)
-	// require.NoError(t, err)
-	// require.NotNil(t, adminAuthToken)
-	// adminToken := adminAuthToken.Token().String()
-
-	// // create a server instance
-	// server := &server.Server{
-	// 	admin:         service,
-	// 	authenticator: authenticator,
-	// 	logger:        logger,
-	// }
-
-	srv, err := server.New(logger, service, nil, nil, &server.Options{})
-
-	// create a mock bufconn listener
-	lis := bufconn.Listen(1024 * 1024)
-	// create a server instance listening on the mock listener
-	s := grpc.NewServer(
-		grpc.ChainStreamInterceptor(
-			authenticator.StreamServerInterceptor(),
-		),
-		grpc.ChainUnaryInterceptor(
-			authenticator.UnaryServerInterceptor(),
-		))
-	adminv1.RegisterAdminServiceServer(s, srv)
-
-	defer s.Stop()
-
-	go func() {
-		err := s.Serve(lis)
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	// create admin and viewer clients
-	adminConn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
-		return lis.Dial()
-	}), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithPerRPCCredentials(newBearerTokenCredential("")))
+	// issue admin and viewer tokens
+	adminAuthToken, err := adm.IssueUserAuthToken(ctx, adminUser.ID, database.AuthClientIDRillWeb, "test", nil, nil)
 	require.NoError(t, err)
-	defer adminConn.Close()
+	require.NotNil(t, adminAuthToken)
 
-	adminClient := adminv1.NewAdminServiceClient(adminConn)
+	// Init config
+	var conf admincli.Config
+	err = envconfig.Process("rill_admin", &conf)
+	if err != nil {
+		fmt.Printf("failed to load config: %s\n", err.Error())
+		os.Exit(1)
+	}
 
-	fmt.Println("adminClient", adminClient)
-	cmd := ListCmd(&config.Config{})
+	conf.DatabaseURL = pg.DatabaseURL
+	keyPairs := make([][]byte, len(conf.SessionKeyPairs))
+	for idx, keyHex := range conf.SessionKeyPairs {
+		key, err := hex.DecodeString(keyHex)
+		if err != nil {
+			logger.Fatal("failed to parse session key from hex string to bytes")
+		}
+		keyPairs[idx] = key
+	}
+
+	// Make errgroup for running the processes
+	ctx = graceful.WithCancelOnTerminate(ctx)
+	group, cctx := errgroup.WithContext(ctx)
+
+	limiter := ratelimit.NewNoop()
+	srv, err := server.New(logger, adm, issuer, limiter, &server.Options{
+		HTTPPort:               conf.HTTPPort,
+		GRPCPort:               conf.GRPCPort,
+		ExternalURL:            conf.ExternalURL,
+		FrontendURL:            conf.FrontendURL,
+		SessionKeyPairs:        keyPairs,
+		AllowedOrigins:         conf.AllowedOrigins,
+		ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,
+		AuthDomain:             conf.AuthDomain,
+		AuthClientID:           conf.AuthClientID,
+		AuthClientSecret:       conf.AuthClientSecret,
+		GithubAppName:          conf.GithubAppName,
+		GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
+		GithubClientID:         conf.GithubClientID,
+		GithubClientSecret:     conf.GithubClientSecret,
+	})
+	if err != nil {
+		logger.Fatal("error creating server", zap.Error(err))
+	}
+
+	group.Go(func() error { return srv.ServeGRPC(cctx) })
+	group.Go(func() error { return srv.ServeHTTP(cctx) })
+
+	time.Sleep(05 * time.Second)
+
+	// Create organization with name
+	var buf bytes.Buffer
+	format := printer.JSON
+	p := printer.NewPrinter(&format)
+	p.SetResourceOutput(&buf)
+
+	helper := &cmdutil.Helper{
+		Config: &config.Config{
+			AdminURL:          "http://localhost:9090",
+			AdminTokenDefault: adminAuthToken.Token().String(),
+		},
+		Printer: p,
+	}
+
+	cmd := CreateCmd(helper)
+	cmd.UsageString()
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"--name", "myorg"})
 	err = cmd.Execute()
-	logger.Named("Console").Info("err", zap.Error(err))
-	fmt.Println("err", err)
+	c.Assert(err, qt.IsNil)
 
+	var data map[string]interface{}
+	err = json.Unmarshal([]byte(buf.String()), &data)
+	c.Assert(err, qt.IsNil)
+	c.Assert(data["name"], qt.Equals, "myorg")
+
+	// Create new organization with name
+	buf.Reset()
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"--name", "test"})
+	err = cmd.Execute()
+	c.Assert(err, qt.IsNil)
+	err = json.Unmarshal([]byte(buf.String()), &data)
+	c.Assert(err, qt.IsNil)
+	c.Assert(data["name"], qt.Equals, "test")
+
+	// List organizations
+	buf.Reset()
+	cmd = ListCmd(helper)
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{})
+	err = cmd.Execute()
+	c.Assert(err, qt.IsNil)
+
+	orgList := []Org{}
+	err = json.Unmarshal([]byte(buf.String()), &orgList)
+	c.Assert(err, qt.IsNil)
+	c.Assert(len(orgList), qt.Equals, 2)
+	c.Assert(orgList[0].Name, qt.Equals, "myorg")
+	c.Assert(orgList[1].Name, qt.Equals, "test")
+
+	// Delete organization
+	buf.Reset()
+	cmd = DeleteCmd(helper)
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"--org", "myorg", "--force"})
+	err = cmd.Execute()
+	c.Assert(err, qt.IsNil)
+
+	// List organizations
+	buf.Reset()
+	cmd = ListCmd(helper)
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{})
+	err = cmd.Execute()
+	c.Assert(err, qt.IsNil)
+
+	orgList = []Org{}
+	err = json.Unmarshal([]byte(buf.String()), &orgList)
+	c.Assert(err, qt.IsNil)
+	c.Assert(len(orgList), qt.Equals, 1)
+	c.Assert(orgList[0].Name, qt.Equals, "test")
+
+	// rename organization
+	buf.Reset()
+	cmd = RenameCmd(helper)
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"--org", "test", "--new-name", "new-test", "--force"})
+	err = cmd.Execute()
+	c.Assert(err, qt.IsNil)
+
+	data = map[string]interface{}{}
+	err = json.Unmarshal([]byte(buf.String()), &data)
+	c.Assert(err, qt.IsNil)
+	c.Assert(len(orgList), qt.Equals, 1)
+	c.Assert(data["name"], qt.Equals, "new-test")
+}
+
+type Org struct {
+	Name string `json:"Name"`
 }
 
 // mockGithub provides a mock implementation of admin.Github.
@@ -141,24 +242,4 @@ func (m *mockGithub) InstallationClient(installationID int64) (*github.Client, e
 
 func (m *mockGithub) InstallationToken(ctx context.Context, installationID int64) (string, error) {
 	return "", nil
-}
-
-type bearerTokenCredential struct {
-	token string
-}
-
-func newBearerTokenCredential(token string) *bearerTokenCredential {
-	return &bearerTokenCredential{
-		token: token,
-	}
-}
-
-func (c *bearerTokenCredential) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
-	return map[string]string{
-		"authorization": "Bearer " + c.token, // Set the bearer token in the metadata
-	}, nil
-}
-
-func (c *bearerTokenCredential) RequireTransportSecurity() bool {
-	return false // false for testing
 }

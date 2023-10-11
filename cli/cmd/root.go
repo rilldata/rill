@@ -24,6 +24,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/status"
@@ -125,6 +126,13 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
 	rootCmd.Flags().BoolP("version", "v", false, "Show rill version") // Adds option to get version by passing --version or -v
 
+	// Create cmdutil Helper
+	format := printer.Human
+	ch := &cmdutil.Helper{
+		Config:  cfg,
+		Printer: printer.NewPrinter(&format),
+	}
+
 	// Add sub-commands
 	rootCmd.AddCommand(start.StartCmd(cfg))
 	rootCmd.AddCommand(admin.AdminCmd(cfg))
@@ -139,7 +147,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	// Add sub-commands for admin
 	// (This allows us to add persistent flags that apply only to the admin-related commands.)
 	adminCmds := []*cobra.Command{
-		org.OrgCmd(cfg),
+		org.OrgCmd(ch),
 		project.ProjectCmd(cfg),
 		deploy.DeployCmd(cfg),
 		user.UserCmd(cfg),

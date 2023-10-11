@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func CreateCmd(cfg *config.Config) *cobra.Command {
+func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, description string
 
 	createCmd := &cobra.Command{
@@ -19,6 +19,7 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 		Short: "Create organization",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -55,8 +56,11 @@ func CreateCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Created organization")
-			cmdutil.TablePrinter(toRow(res.Organization))
+			ch.Printer.Println(printer.BoldGreen("Created organization"))
+			err = ch.Printer.PrintResource(toRow(res.Organization))
+			if err != nil {
+				return err
+			}
 			return nil
 		},
 	}

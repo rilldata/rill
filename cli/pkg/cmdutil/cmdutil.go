@@ -15,6 +15,7 @@ import (
 	"github.com/lensesio/tableprinter"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -27,6 +28,11 @@ const (
 	TSFormatLayout     = "2006-01-02 15:04:05"
 	defaultProjectName = "rill-untitled"
 )
+
+type Helper struct {
+	Config  *config.Config
+	Printer *printer.Printer
+}
 
 type PreRunCheck func(cmd *cobra.Command, args []string) error
 
