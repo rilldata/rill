@@ -67,6 +67,8 @@
     pivot?.draw();
   }
 
+  $: console.log($visible);
+
   const renderRowHeader: PivotRenderCallback = ({ value, x, y, element }) => {
     element.classList.toggle("bg-slate-50", x > 0);
     if (x === 0) {

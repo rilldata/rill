@@ -311,7 +311,6 @@ export function bisectData(value, direction, accessor, data) {
 
 /** For a scale domain returns a formatter for axis label and super label */
 export function createTimeFormat(scaleDomain) {
-  console.log("scaleDomain", scaleDomain);
   const diff = Math.abs(scaleDomain[1] - scaleDomain[0]) / 1000;
 
   const millisecondDiff = diff < 1;

@@ -47,7 +47,7 @@ function createTimeDimensionAggregation(
           filter: dashboard?.filters,
           timeStart: timeControls.adjustedStart,
           timeEnd: timeControls.adjustedEnd,
-          limit: "1000", //TODO Use blocks later
+          limit: "250",
         },
         {
           query: {
@@ -59,25 +59,19 @@ function createTimeDimensionAggregation(
   );
 }
 
-function prepareDimensionData(data, measureName) {
+function prepareDimensionData(data, measureName, filters) {
   if (!data) return;
 
+  console.log(filters);
   const rowCount = data?.length;
   // When using row headers, be careful not to accidentally merge cells
   const rowHeaderData = data?.map((row) => [
-    // Dim
-    {
-      value: row?.value,
-    },
-    // Measure total
+    { value: row?.value },
     {
       value: row?.total,
       spark: createSparkline(row?.data, (v) => v[measureName]),
     },
-    // Measure percent of total
-    {
-      value: 44 + "%",
-    },
+    { value: 44 + "%" }, // TODO Fix this
   ]);
 
   const columnCount = data?.[0]?.data?.length;
@@ -136,6 +130,7 @@ function prepareTimeData(data, measureName, hasTimeComparison) {
     console.log(rowHeaderData);
     body.push(data?.map((v) => v[`comparison.${measureName}`]));
 
+    // Push percentage change
     body.push(
       data?.map((v) => {
         const comparisonValue = v[`comparison.${measureName}`];
@@ -148,6 +143,7 @@ function prepareTimeData(data, measureName, hasTimeComparison) {
       })
     );
 
+    // Push absolute change
     body.push(
       data?.map((v) => {
         const comparisonValue = v[`comparison.${measureName}`];
@@ -196,7 +192,8 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         if (allFetched) {
           data = prepareDimensionData(
             timeSeries?.dimensionTableData,
-            measureName
+            measureName,
+            dashboardStore?.filters
           );
         }
       } else {

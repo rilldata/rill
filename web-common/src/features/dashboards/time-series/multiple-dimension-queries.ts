@@ -218,9 +218,14 @@ export function getDimensionValueTimeSeries(
                   zone
                 );
               }
+
+              let total;
+              if (surface === "table") {
+                total = dimensionValues?.totals[i];
+              }
               return {
                 value,
-                total: dimensionValues?.totals[i],
+                total,
                 strokeClass: "stroke-" + LINE_COLORS[i],
                 fillClass: "fill-" + CHECKMARK_COLORS[i],
                 data: prepData,
