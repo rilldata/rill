@@ -6,6 +6,11 @@
   } from "@rilldata/web-common/components/column-profile/queries";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
+  import {
+    formatConnectorType,
+    getFileExtension,
+  } from "@rilldata/web-common/features/sources/inspector/helpers";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import {
     formatBigNumberPercentage,
@@ -14,28 +19,24 @@
   import {
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
-    createRuntimeServiceGetCatalogEntry,
-    V1CatalogEntry,
-    V1Source,
+    V1ReconcileStatus,
+    V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { GridCell, LeftRightGrid } from "../../../components/grid";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useIsSourceUnsaved } from "../selectors";
+  import { useIsSourceUnsaved, useSource } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
 
   $: runtimeInstanceId = $runtime.instanceId;
 
-  $: getSource = createRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    sourceName
-  );
-  let sourceCatalog: V1CatalogEntry;
-  $: sourceCatalog = $getSource?.data?.entry;
+  $: sourceQuery = useSource(runtimeInstanceId, sourceName);
+  let source: V1SourceV2;
+  $: source = $sourceQuery.data?.source;
 
   let showColumns = true;
 
@@ -48,32 +49,8 @@
   let columnCount;
   let nullPercentage;
 
-  function formatConnectorType(connectorType: string) {
-    switch (connectorType) {
-      case "s3":
-        return "S3";
-      case "gcs":
-        return "GCS";
-      case "https":
-        return "http(s)";
-      case "local_file":
-        return "Local file";
-      default:
-        return "";
-    }
-  }
-
-  function getFileExtension(source: V1Source): string {
-    const path = source?.properties?.path?.toLowerCase();
-    if (path?.includes(".csv")) return "CSV";
-    if (path?.includes(".parquet")) return "Parquet";
-    if (path?.includes(".json")) return "JSON";
-    if (path?.includes(".ndjson")) return "JSON";
-    return "";
-  }
-
-  $: connectorType = formatConnectorType(sourceCatalog?.source?.connector);
-  $: fileExtension = getFileExtension(sourceCatalog);
+  $: connectorType = formatConnectorType(source);
+  $: fileExtension = getFileExtension(source);
 
   $: cardinalityQuery = createQueryServiceTableCardinality(
     $runtime.instanceId,
@@ -82,6 +59,14 @@
   $: cardinality = $cardinalityQuery?.data?.cardinality
     ? Number($cardinalityQuery?.data?.cardinality)
     : 0;
+
+  $: profileColumns = createQueryServiceTableColumns(
+    $runtime?.instanceId,
+    sourceName,
+    {},
+    { query: { keepPreviousData: true } }
+  );
+  $: profileColumnsCount = $profileColumns?.data?.profileColumns?.length ?? 0;
 
   /** get the current row count */
   $: {
@@ -92,19 +77,10 @@
 
   /** get the current column count */
   $: {
-    columnCount = `${formatInteger(
-      sourceCatalog?.source?.schema?.fields?.length
-    )} columns`;
+    columnCount = `${formatInteger(profileColumnsCount)} columns`;
   }
 
   /** total % null cells */
-
-  $: profileColumns = createQueryServiceTableColumns(
-    $runtime?.instanceId,
-    sourceName,
-    {},
-    { query: { keepPreviousData: true } }
-  );
 
   let summaries: Readable<Array<ColumnSummary>>;
   $: if ($profileColumns?.data?.profileColumns) {
@@ -120,8 +96,7 @@
     );
   }
   $: {
-    const totalCells =
-      sourceCatalog?.source?.schema?.fields?.length * cardinality;
+    const totalCells = profileColumnsCount * cardinality;
     nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
   }
 
@@ -138,7 +113,11 @@
 <div
   class="table-profile {isSourceUnsaved && 'grayscale'} transition duration-200"
 >
-  {#if sourceCatalog && !$getSource.isError}
+  {#if $sourceQuery?.data?.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE}
+    <div class="h-10">
+      <ReconcilingSpinner />
+    </div>
+  {:else if source && !$sourceQuery.isError}
     <!-- summary info -->
     <div class="p-4 pt-2">
       <LeftRightGrid>

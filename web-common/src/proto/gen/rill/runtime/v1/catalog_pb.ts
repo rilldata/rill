@@ -359,6 +359,16 @@ export class MetricsView extends Message<MetricsView> {
    */
   security?: MetricsView_Security;
 
+  /**
+   * @generated from field: uint32 first_day_of_week = 13;
+   */
+  firstDayOfWeek = 0;
+
+  /**
+   * @generated from field: uint32 first_month_of_year = 14;
+   */
+  firstMonthOfYear = 0;
+
   constructor(data?: PartialMessage<MetricsView>) {
     super();
     proto3.util.initPartial(data, this);
@@ -378,6 +388,8 @@ export class MetricsView extends Message<MetricsView> {
     { no: 10, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "security", kind: "message", T: MetricsView_Security },
+    { no: 13, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 14, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsView {

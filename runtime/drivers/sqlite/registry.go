@@ -32,7 +32,26 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	// Override ctx because sqlite sometimes segfaults on context cancellation
 	ctx := context.Background()
 
-	sql := fmt.Sprintf("SELECT id, olap_connector, repo_connector, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, annotations, connectors, project_connectors FROM instances %s ORDER BY id", whereClause)
+	sql := fmt.Sprintf(`
+		SELECT
+			id,
+			olap_connector,
+			repo_connector,
+			created_on,
+			updated_on,
+			connectors,
+			project_connectors,
+			variables,
+			project_variables,
+			annotations,
+			embed_catalog,
+			ingestion_limit_bytes,
+			watch_repo,
+			stage_changes,
+			model_default_materialize,
+			model_materialize_delay_seconds
+		FROM instances %s ORDER BY id
+	`, whereClause)
 
 	rows, err := c.db.QueryxContext(ctx, sql, args...)
 	if err != nil {
@@ -45,10 +64,38 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 		// sqlite doesn't support maps need to read as bytes and convert to map
 		var variables, projectVariables, annotations, connectors, projectConnectors []byte
 		i := &drivers.Instance{}
-		err := rows.Scan(&i.ID, &i.OLAPConnector, &i.RepoConnector, &i.EmbedCatalog, &i.CreatedOn, &i.UpdatedOn, &variables, &projectVariables, &i.IngestionLimitBytes, &annotations, &connectors, &projectConnectors)
+		err := rows.Scan(
+			&i.ID,
+			&i.OLAPConnector,
+			&i.RepoConnector,
+			&i.CreatedOn,
+			&i.UpdatedOn,
+			&connectors,
+			&projectConnectors,
+			&variables,
+			&projectVariables,
+			&annotations,
+			&i.EmbedCatalog,
+			&i.IngestionLimitBytes,
+			&i.WatchRepo,
+			&i.StageChanges,
+			&i.ModelDefaultMaterialize,
+			&i.ModelMaterializeDelaySeconds,
+		)
 		if err != nil {
 			return nil, err
 		}
+
+		i.Connectors, err = unmarshalConnectors(connectors)
+		if err != nil {
+			return nil, err
+		}
+
+		i.ProjectConnectors, err = unmarshalConnectors(projectConnectors)
+		if err != nil {
+			return nil, err
+		}
+
 		i.Variables, err = mapFromJSON(variables)
 		if err != nil {
 			return nil, err
@@ -64,15 +111,6 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			return nil, err
 		}
 
-		i.Connectors, err = unmarshalConnectors(connectors)
-		if err != nil {
-			return nil, err
-		}
-
-		i.ProjectConnectors, err = unmarshalConnectors(projectConnectors)
-		if err != nil {
-			return nil, err
-		}
 		res = append(res, i)
 	}
 
@@ -87,6 +125,88 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 	if inst.ID == "" {
 		inst.ID = uuid.NewString()
 	}
+
+	// sqlite doesn't support maps need to convert to json and write as bytes array
+	connectors, err := json.Marshal(inst.Connectors)
+	if err != nil {
+		return err
+	}
+
+	projectConnectors, err := json.Marshal(inst.ProjectConnectors)
+	if err != nil {
+		return err
+	}
+
+	variables, err := mapToJSON(inst.Variables)
+	if err != nil {
+		return err
+	}
+
+	projectVariables, err := mapToJSON(inst.ProjectVariables)
+	if err != nil {
+		return err
+	}
+
+	annotations, err := mapToJSON(inst.Annotations)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	_, err = c.db.ExecContext(
+		ctx,
+		`
+		INSERT INTO instances(
+			id,
+			olap_connector,
+			repo_connector,
+			created_on,
+			updated_on,
+			connectors,
+			project_connectors,
+			variables,
+			project_variables,
+			annotations,
+			embed_catalog,
+			ingestion_limit_bytes,
+			watch_repo,
+			stage_changes,
+			model_default_materialize,
+			model_materialize_delay_seconds
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+		`,
+		inst.ID,
+		inst.OLAPConnector,
+		inst.RepoConnector,
+		now,
+		now,
+		connectors,
+		projectConnectors,
+		variables,
+		projectVariables,
+		annotations,
+		inst.EmbedCatalog,
+		inst.IngestionLimitBytes,
+		inst.WatchRepo,
+		inst.StageChanges,
+		inst.ModelDefaultMaterialize,
+		inst.ModelMaterializeDelaySeconds,
+	)
+	if err != nil {
+		return err
+	}
+
+	// We assign manually instead of using RETURNING because it doesn't work for timestamps in SQLite
+	inst.CreatedOn = now
+	inst.UpdatedOn = now
+	return nil
+}
+
+// CreateInstance implements drivers.RegistryStore.
+func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) error {
+	// Override ctx because sqlite sometimes segfaults on context cancellation
+	ctx := context.Background()
 
 	// sqlite doesn't support maps need to convert to json and write as bytes array
 	variables, err := mapToJSON(inst.Variables)
@@ -117,77 +237,39 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
-		"INSERT INTO instances(id, olap_connector, repo_connector, embed_catalog, created_on, updated_on, variables, project_variables, ingestion_limit_bytes, annotations, connectors, project_connectors) "+
-			"VALUES ($1, $2, $3, $4, $5, $5, $6, $7, $8, $9, $10, $11)",
+		`
+		UPDATE instances SET
+			olap_connector = $2,
+			repo_connector = $3,
+			updated_on = $4,
+			connectors = $5,
+			project_connectors = $6,
+			variables = $7,
+			project_variables = $8,
+			annotations = $9,
+			embed_catalog = $10,
+			ingestion_limit_bytes = $11,
+			watch_repo = $12,
+			stage_changes = $13,
+			model_default_materialize = $14,
+			model_materialize_delay_seconds = $15
+		WHERE id = $1
+		`,
 		inst.ID,
 		inst.OLAPConnector,
 		inst.RepoConnector,
-		inst.EmbedCatalog,
 		now,
+		connectors,
+		projectConnectors,
 		variables,
 		projectVariables,
-		inst.IngestionLimitBytes,
 		annotations,
-		connectors,
-		projectConnectors,
-	)
-	if err != nil {
-		return err
-	}
-
-	// We assign manually instead of using RETURNING because it doesn't work for timestamps in SQLite
-	inst.CreatedOn = now
-	inst.UpdatedOn = now
-	return nil
-}
-
-// CreateInstance implements drivers.RegistryStore.
-func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) error {
-	// Override ctx because sqlite sometimes segfaults on context cancellation
-	ctx := context.Background()
-
-	// sqlite doesn't support maps need to convert to json and write as bytes array
-	variables, err := mapToJSON(inst.Variables)
-	if err != nil {
-		return err
-	}
-
-	projVariables, err := mapToJSON(inst.ProjectVariables)
-	if err != nil {
-		return err
-	}
-
-	annotations, err := mapToJSON(inst.Annotations)
-	if err != nil {
-		return err
-	}
-
-	connectors, err := json.Marshal(inst.Connectors)
-	if err != nil {
-		return err
-	}
-
-	projectConnectors, err := json.Marshal(inst.ProjectConnectors)
-	if err != nil {
-		return err
-	}
-
-	now := time.Now()
-	_, err = c.db.ExecContext(
-		ctx,
-		"UPDATE instances SET olap_connector = $2, repo_connector = $3, embed_catalog = $4, variables = $5, project_variables = $6, updated_on = $7, ingestion_limit_bytes = $8, annotations = $9, connectors = $10, project_connectors = $11 "+
-			"WHERE id = $1",
-		inst.ID,
-		inst.OLAPConnector,
-		inst.RepoConnector,
 		inst.EmbedCatalog,
-		variables,
-		projVariables,
-		now,
 		inst.IngestionLimitBytes,
-		annotations,
-		connectors,
-		projectConnectors,
+		inst.WatchRepo,
+		inst.StageChanges,
+		inst.ModelDefaultMaterialize,
+		inst.ModelMaterializeDelaySeconds,
 	)
 	if err != nil {
 		return err

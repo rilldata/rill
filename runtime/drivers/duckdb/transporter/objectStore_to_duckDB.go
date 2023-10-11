@@ -97,8 +97,8 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 				return err
 			}
 
-			query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", safeName(sinkCfg.Table), from)
-			if err := t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true}); err != nil {
+			err = t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
+			if err != nil {
 				return err
 			}
 		}
@@ -137,14 +137,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 		return err
 	}
 
-	var query string
-	if a.allowSchemaRelaxation {
-		query = fmt.Sprintf("INSERT INTO %s BY NAME (SELECT * FROM %s);", safeName(a.sink.Table), from)
-	} else {
-		query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", safeName(a.sink.Table), from)
-	}
-	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
-	err = a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true})
+	err = a.to.InsertTableAsSelect(ctx, a.sink.Table, a.allowSchemaRelaxation, fmt.Sprintf("SELECT * FROM %s", from))
 	if err == nil || !a.allowSchemaRelaxation || !containsAny(err.Error(), []string{"binder error", "conversion error"}) {
 		return err
 	}
@@ -155,10 +148,7 @@ func (a *appender) appendData(ctx context.Context, files []string, format string
 	if err != nil {
 		return fmt.Errorf("failed to update schema %w", err)
 	}
-
-	query = fmt.Sprintf("INSERT INTO %s BY NAME (SELECT * FROM %s);", safeName(a.sink.Table), from)
-	a.logger.Debug("generated query", zap.String("query", query), observability.ZapCtx(ctx))
-	return a.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true})
+	return a.to.InsertTableAsSelect(ctx, a.sink.Table, true, fmt.Sprintf("SELECT * FROM %s", from))
 }
 
 // updateSchema updates the schema of the table in case new file adds a new column or
@@ -218,16 +208,14 @@ func (a *appender) updateSchema(ctx context.Context, from string, fileNames []st
 
 	for colName, colType := range newCols {
 		a.tableSchema[colName] = colType
-		qry := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeName(a.sink.Table), safeName(colName), colType)
-		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry, LongRunning: true}); err != nil {
+		if err := a.to.AddTableColumn(ctx, a.sink.Table, colName, colType); err != nil {
 			return err
 		}
 	}
 
 	for colName, colType := range colTypeChanged {
 		a.tableSchema[colName] = colType
-		qry := fmt.Sprintf("ALTER TABLE %s ALTER COLUMN %s SET DATA TYPE %s", safeName(a.sink.Table), safeName(colName), colType)
-		if err := a.to.Exec(ctx, &drivers.Statement{Query: qry, LongRunning: true}); err != nil {
+		if err := a.to.AlterTableColumn(ctx, a.sink.Table, colName, colType); err != nil {
 			return err
 		}
 	}
@@ -309,8 +297,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 	}
 
 	st := time.Now()
-	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s);", dbSink.Table, sql)
-	err = t.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true})
+	err = t.to.CreateTableAsSelect(ctx, dbSink.Table, false, sql)
 	if err != nil {
 		return err
 	}

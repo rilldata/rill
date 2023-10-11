@@ -301,13 +301,63 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for RepoConnector
 
-	// no validation rules for EmbedCatalog
+	if all {
+		switch v := interface{}(m.GetCreatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, InstanceValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, InstanceValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return InstanceValidationError{
+				field:  "CreatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
-	// no validation rules for Variables
-
-	// no validation rules for ProjectVariables
-
-	// no validation rules for IngestionLimitBytes
+	if all {
+		switch v := interface{}(m.GetUpdatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, InstanceValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, InstanceValidationError{
+					field:  "UpdatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUpdatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return InstanceValidationError{
+				field:  "UpdatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	for idx, item := range m.GetConnectors() {
 		_, _ = idx, item
@@ -342,6 +392,58 @@ func (m *Instance) validate(all bool) error {
 		}
 
 	}
+
+	for idx, item := range m.GetProjectConnectors() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, InstanceValidationError{
+						field:  fmt.Sprintf("ProjectConnectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, InstanceValidationError{
+						field:  fmt.Sprintf("ProjectConnectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return InstanceValidationError{
+					field:  fmt.Sprintf("ProjectConnectors[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for Variables
+
+	// no validation rules for ProjectVariables
+
+	// no validation rules for Annotations
+
+	// no validation rules for EmbedCatalog
+
+	// no validation rules for IngestionLimitBytes
+
+	// no validation rules for WatchRepo
+
+	// no validation rules for StageChanges
+
+	// no validation rules for ModelDefaultMaterialize
+
+	// no validation rules for ModelMaterializeDelaySeconds
 
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
@@ -1058,14 +1160,6 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for RepoConnector
 
-	// no validation rules for EmbedCatalog
-
-	// no validation rules for Variables
-
-	// no validation rules for IngestionLimitBytes
-
-	// no validation rules for Annotations
-
 	for idx, item := range m.GetConnectors() {
 		_, _ = idx, item
 
@@ -1099,6 +1193,22 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for Variables
+
+	// no validation rules for Annotations
+
+	// no validation rules for EmbedCatalog
+
+	// no validation rules for IngestionLimitBytes
+
+	// no validation rules for WatchRepo
+
+	// no validation rules for StageChanges
+
+	// no validation rules for ModelDefaultMaterialize
+
+	// no validation rules for ModelMaterializeDelaySeconds
 
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
@@ -1599,6 +1709,8 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	}
 
+	// no validation rules for Variables
+
 	// no validation rules for Annotations
 
 	if m.OlapConnector != nil {
@@ -1615,6 +1727,22 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	if m.IngestionLimitBytes != nil {
 		// no validation rules for IngestionLimitBytes
+	}
+
+	if m.WatchRepo != nil {
+		// no validation rules for WatchRepo
+	}
+
+	if m.StageChanges != nil {
+		// no validation rules for StageChanges
+	}
+
+	if m.ModelDefaultMaterialize != nil {
+		// no validation rules for ModelDefaultMaterialize
+	}
+
+	if m.ModelMaterializeDelaySeconds != nil {
+		// no validation rules for ModelMaterializeDelaySeconds
 	}
 
 	if len(errors) > 0 {
@@ -1829,506 +1957,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = EditInstanceResponseValidationError{}
-
-// Validate checks the field values on EditInstanceVariablesRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *EditInstanceVariablesRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on EditInstanceVariablesRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// EditInstanceVariablesRequestMultiError, or nil if none found.
-func (m *EditInstanceVariablesRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *EditInstanceVariablesRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if !_EditInstanceVariablesRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := EditInstanceVariablesRequestValidationError{
-			field:  "InstanceId",
-			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Variables
-
-	if len(errors) > 0 {
-		return EditInstanceVariablesRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// EditInstanceVariablesRequestMultiError is an error wrapping multiple
-// validation errors returned by EditInstanceVariablesRequest.ValidateAll() if
-// the designated constraints aren't met.
-type EditInstanceVariablesRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m EditInstanceVariablesRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m EditInstanceVariablesRequestMultiError) AllErrors() []error { return m }
-
-// EditInstanceVariablesRequestValidationError is the validation error returned
-// by EditInstanceVariablesRequest.Validate if the designated constraints
-// aren't met.
-type EditInstanceVariablesRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e EditInstanceVariablesRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e EditInstanceVariablesRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e EditInstanceVariablesRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e EditInstanceVariablesRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e EditInstanceVariablesRequestValidationError) ErrorName() string {
-	return "EditInstanceVariablesRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e EditInstanceVariablesRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sEditInstanceVariablesRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = EditInstanceVariablesRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = EditInstanceVariablesRequestValidationError{}
-
-var _EditInstanceVariablesRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-// Validate checks the field values on EditInstanceVariablesResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *EditInstanceVariablesResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on EditInstanceVariablesResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// EditInstanceVariablesResponseMultiError, or nil if none found.
-func (m *EditInstanceVariablesResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *EditInstanceVariablesResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetInstance()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, EditInstanceVariablesResponseValidationError{
-					field:  "Instance",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, EditInstanceVariablesResponseValidationError{
-					field:  "Instance",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetInstance()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return EditInstanceVariablesResponseValidationError{
-				field:  "Instance",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return EditInstanceVariablesResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// EditInstanceVariablesResponseMultiError is an error wrapping multiple
-// validation errors returned by EditInstanceVariablesResponse.ValidateAll()
-// if the designated constraints aren't met.
-type EditInstanceVariablesResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m EditInstanceVariablesResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m EditInstanceVariablesResponseMultiError) AllErrors() []error { return m }
-
-// EditInstanceVariablesResponseValidationError is the validation error
-// returned by EditInstanceVariablesResponse.Validate if the designated
-// constraints aren't met.
-type EditInstanceVariablesResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e EditInstanceVariablesResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e EditInstanceVariablesResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e EditInstanceVariablesResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e EditInstanceVariablesResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e EditInstanceVariablesResponseValidationError) ErrorName() string {
-	return "EditInstanceVariablesResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e EditInstanceVariablesResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sEditInstanceVariablesResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = EditInstanceVariablesResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = EditInstanceVariablesResponseValidationError{}
-
-// Validate checks the field values on EditInstanceAnnotationsRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *EditInstanceAnnotationsRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on EditInstanceAnnotationsRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// EditInstanceAnnotationsRequestMultiError, or nil if none found.
-func (m *EditInstanceAnnotationsRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *EditInstanceAnnotationsRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if !_EditInstanceAnnotationsRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := EditInstanceAnnotationsRequestValidationError{
-			field:  "InstanceId",
-			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Annotations
-
-	if len(errors) > 0 {
-		return EditInstanceAnnotationsRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// EditInstanceAnnotationsRequestMultiError is an error wrapping multiple
-// validation errors returned by EditInstanceAnnotationsRequest.ValidateAll()
-// if the designated constraints aren't met.
-type EditInstanceAnnotationsRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m EditInstanceAnnotationsRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m EditInstanceAnnotationsRequestMultiError) AllErrors() []error { return m }
-
-// EditInstanceAnnotationsRequestValidationError is the validation error
-// returned by EditInstanceAnnotationsRequest.Validate if the designated
-// constraints aren't met.
-type EditInstanceAnnotationsRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e EditInstanceAnnotationsRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e EditInstanceAnnotationsRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e EditInstanceAnnotationsRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e EditInstanceAnnotationsRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e EditInstanceAnnotationsRequestValidationError) ErrorName() string {
-	return "EditInstanceAnnotationsRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e EditInstanceAnnotationsRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sEditInstanceAnnotationsRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = EditInstanceAnnotationsRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = EditInstanceAnnotationsRequestValidationError{}
-
-var _EditInstanceAnnotationsRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-// Validate checks the field values on EditInstanceAnnotationsResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *EditInstanceAnnotationsResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on EditInstanceAnnotationsResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// EditInstanceAnnotationsResponseMultiError, or nil if none found.
-func (m *EditInstanceAnnotationsResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *EditInstanceAnnotationsResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetInstance()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, EditInstanceAnnotationsResponseValidationError{
-					field:  "Instance",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, EditInstanceAnnotationsResponseValidationError{
-					field:  "Instance",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetInstance()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return EditInstanceAnnotationsResponseValidationError{
-				field:  "Instance",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return EditInstanceAnnotationsResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// EditInstanceAnnotationsResponseMultiError is an error wrapping multiple
-// validation errors returned by EditInstanceAnnotationsResponse.ValidateAll()
-// if the designated constraints aren't met.
-type EditInstanceAnnotationsResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m EditInstanceAnnotationsResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m EditInstanceAnnotationsResponseMultiError) AllErrors() []error { return m }
-
-// EditInstanceAnnotationsResponseValidationError is the validation error
-// returned by EditInstanceAnnotationsResponse.Validate if the designated
-// constraints aren't met.
-type EditInstanceAnnotationsResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e EditInstanceAnnotationsResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e EditInstanceAnnotationsResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e EditInstanceAnnotationsResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e EditInstanceAnnotationsResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e EditInstanceAnnotationsResponseValidationError) ErrorName() string {
-	return "EditInstanceAnnotationsResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e EditInstanceAnnotationsResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sEditInstanceAnnotationsResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = EditInstanceAnnotationsResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = EditInstanceAnnotationsResponseValidationError{}
 
 // Validate checks the field values on ListFilesRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the

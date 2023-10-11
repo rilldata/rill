@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"google.golang.org/protobuf/proto"
 )
 
 func init() {
@@ -45,7 +45,7 @@ func (r *RefreshTriggerReconciler) AssignState(from, to *runtimev1.Resource) err
 	if a == nil || b == nil {
 		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
 	}
-	b.Spec = a.Spec
+	b.State = a.State
 	return nil
 }
 
@@ -77,12 +77,25 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 	}
 
 	for _, res := range resources {
+		// Only check sources and models
+		switch res.Meta.Name.Kind {
+		case runtime.ResourceKindSource, runtime.ResourceKindModel:
+			// nothing to do
+		default:
+			// skip
+			continue
+		}
+
+		// Check if it's in OnlyNames
 		if len(trigger.Spec.OnlyNames) > 0 {
 			found := false
 			for _, n := range trigger.Spec.OnlyNames {
-				if n.Kind == "" && n.Name == res.Meta.Name.Name || proto.Equal(res.Meta.Name, n) {
-					found = true
-					break
+				if strings.EqualFold(n.Name, res.Meta.Name.Name) {
+					// If Kind is empty, match any kind
+					if n.Kind == "" || n.Kind == res.Meta.Name.Kind {
+						found = true
+						break
+					}
 				}
 			}
 			if !found {
@@ -90,6 +103,7 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 			}
 		}
 
+		// Set Trigger=true
 		updated := true
 		switch res.Meta.Name.Kind {
 		case runtime.ResourceKindSource:
