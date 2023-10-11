@@ -70,6 +70,7 @@ type Controller struct {
 	running     atomic.Bool   // Indicates if the controller is running
 	ready       chan struct{} // Closed when the controller transitions to running
 	closed      chan struct{} // Closed when the controller is closed
+	initErr     error         // error in initialising controller
 	reconcilers map[string]Reconciler
 	catalog     *catalogCache
 	// subscribers tracks subscribers to catalog events.
@@ -127,6 +128,8 @@ func NewController(rt *Runtime, instanceID string, logger *zap.Logger, ac activi
 func (c *Controller) Run(ctx context.Context) error {
 	cc, err := newCatalogCache(ctx, c, c.InstanceID)
 	if err != nil {
+		c.initErr = err
+		close(c.closed)
 		return fmt.Errorf("failed to create catalog cache: %w", err)
 	}
 	c.catalog = cc
@@ -138,6 +141,9 @@ func (c *Controller) Run(ctx context.Context) error {
 	// Check we are still the leader
 	err = c.catalog.checkLeader(ctx)
 	if err != nil {
+		c.initErr = err
+		close(c.closed)
+		c.catalog.release()
 		return err
 	}
 
@@ -342,6 +348,8 @@ func (c *Controller) Run(ctx context.Context) error {
 // WaitUntilReady returns when the controller is ready to process catalog operations
 func (c *Controller) WaitUntilReady(ctx context.Context) error {
 	select {
+	case <-c.closed: // controller was closed even before it became ready
+		return c.initErr
 	case <-c.ready:
 	case <-ctx.Done():
 	}
