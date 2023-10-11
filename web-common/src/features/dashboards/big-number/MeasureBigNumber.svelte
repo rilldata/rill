@@ -45,6 +45,11 @@
   $: diff = comparisonValue ? value - comparisonValue : false;
   $: noChange = !diff;
 
+  $: formattedDiff = `${isComparisonPositive ? "+" : ""}${humanizeDataType(
+    diff,
+    formatPreset
+  )}`;
+
   /** when the measure is a percentage, we don't show a percentage change. */
   $: measureIsPercentage = formatPreset === FormatPreset.PERCENTAGE;
 </script>
@@ -99,24 +104,14 @@
                   class="w-max text-sm ui-copy-inactive"
                   class:font-semibold={isComparisonPositive}
                 >
-                  <WithTween
-                    value={comparisonValue}
-                    tweenProps={{ duration: 500 }}
-                    let:output
-                  >
-                    {@const formattedValue =
-                      formatPreset !== FormatPreset.NONE
-                        ? humanizeDataType(diff, formatPreset)
-                        : diff}
-                    {#if !noChange}
-                      {isComparisonPositive ? "+" : ""}{formattedValue}
-                    {:else}
-                      <span
-                        class="ui-copy-disabled-faint italic"
-                        style:font-size=".9em">no change</span
-                      >
-                    {/if}
-                  </WithTween>
+                  {#if !noChange}
+                    {formattedDiff}
+                  {:else}
+                    <span
+                      class="ui-copy-disabled-faint italic"
+                      style:font-size=".9em">no change</span
+                    >
+                  {/if}
                 </div>
               {/if}
               {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
