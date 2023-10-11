@@ -100,7 +100,7 @@ func (p *Printer) PrintResource(v interface{}) error {
 	case Human:
 		var b strings.Builder
 		tableprinter.Print(&b, v)
-		fmt.Fprintln(out, b.String())
+		fmt.Fprint(out, b.String())
 		return nil
 	case JSON:
 		return p.PrintJSON(v)
@@ -115,7 +115,7 @@ func (p *Printer) PrintResource(v interface{}) error {
 
 		buf, err := gocsv.MarshalString(v)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to marshal CSV: %w", err)
 		}
 		fmt.Fprintln(out, buf)
 		return nil
@@ -149,11 +149,6 @@ func (p *Printer) Println(i ...interface{}) {
 
 func (p *Printer) Print(i ...interface{}) {
 	fmt.Fprint(p.out(), i...)
-}
-
-func (p *Printer) PrintlnSuccess1(str string) {
-	boldGreen := color.New(color.FgGreen).Add(color.Bold)
-	boldGreen.Fprintln(p.out(), str)
 }
 
 // BoldGreen returns a string formatted with green and bold.

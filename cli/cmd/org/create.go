@@ -57,7 +57,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.Printer.Println(printer.BoldGreen("Created organization"))
-			err = ch.Printer.PrintResource(toRow(res.Organization))
+			err = ch.Printer.PrintResource([]*organization{toRow(res.Organization)})
 			if err != nil {
 				return err
 			}

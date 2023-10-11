@@ -83,10 +83,11 @@ func TestOrgCmd(t *testing.T) {
 	err = cmd.Execute()
 	c.Assert(err, qt.IsNil)
 
-	var data map[string]interface{}
-	err = json.Unmarshal([]byte(buf.String()), &data)
+	orgList := []Org{}
+	err = json.Unmarshal([]byte(buf.String()), &orgList)
 	c.Assert(err, qt.IsNil)
-	c.Assert(data["name"], qt.Equals, "myorg")
+	c.Assert(len(orgList), qt.Equals, 1)
+	c.Assert(orgList[0].Name, qt.Equals, "myorg")
 
 	// Create new organization with name
 	buf.Reset()
@@ -95,9 +96,10 @@ func TestOrgCmd(t *testing.T) {
 	cmd.SetArgs([]string{"--name", "test"})
 	err = cmd.Execute()
 	c.Assert(err, qt.IsNil)
-	err = json.Unmarshal([]byte(buf.String()), &data)
+	err = json.Unmarshal([]byte(buf.String()), &orgList)
 	c.Assert(err, qt.IsNil)
-	c.Assert(data["name"], qt.Equals, "test")
+	c.Assert(len(orgList), qt.Equals, 1)
+	c.Assert(orgList[0].Name, qt.Equals, "test")
 
 	// List organizations
 	buf.Reset()
@@ -108,7 +110,6 @@ func TestOrgCmd(t *testing.T) {
 	err = cmd.Execute()
 	c.Assert(err, qt.IsNil)
 
-	orgList := []Org{}
 	err = json.Unmarshal([]byte(buf.String()), &orgList)
 	c.Assert(err, qt.IsNil)
 	c.Assert(len(orgList), qt.Equals, 2)
@@ -148,11 +149,10 @@ func TestOrgCmd(t *testing.T) {
 	err = cmd.Execute()
 	c.Assert(err, qt.IsNil)
 
-	data = map[string]interface{}{}
-	err = json.Unmarshal([]byte(buf.String()), &data)
+	err = json.Unmarshal([]byte(buf.String()), &orgList)
 	c.Assert(err, qt.IsNil)
 	c.Assert(len(orgList), qt.Equals, 1)
-	c.Assert(data["name"], qt.Equals, "new-test")
+	c.Assert(orgList[0].Name, qt.Equals, "new-test")
 
 	// Switch organization
 	buf.Reset()

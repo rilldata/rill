@@ -77,7 +77,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.Printer.Println(printer.BoldGreen("Updated organization"))
-			err = ch.Printer.PrintResource(toRow(updatedOrg.Organization))
+			err = ch.Printer.PrintResource([]*organization{toRow(updatedOrg.Organization)})
 			if err != nil {
 				return err
 			}
