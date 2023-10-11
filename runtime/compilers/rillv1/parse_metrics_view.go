@@ -10,6 +10,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"gopkg.in/yaml.v3"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 // metricsViewYAML is the raw structure of a MetricsView resource defined in YAML

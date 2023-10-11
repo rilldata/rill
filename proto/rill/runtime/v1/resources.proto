@@ -207,15 +207,14 @@ message Report {
 message ReportSpec {
   bool trigger = 1;
   string title = 2;
-  bool disabled = 3;
-  Schedule refresh_schedule = 4;
-  uint32 timeout_seconds = 5;
-  string operation_name = 6;
-  google.protobuf.Struct operation_properties = 7;
-  string operation_time_range = 8;
-  uint32 export_limit = 9;
-  ExportFormat export_format = 10;
-  repeated string recipients = 11;
+  Schedule refresh_schedule = 3;
+  uint32 timeout_seconds = 4;
+  string operation_name = 5;
+  google.protobuf.Struct operation_properties = 6;
+  string operation_time_range = 7;
+  uint32 export_limit = 8;
+  ExportFormat export_format = 9;
+  repeated string recipients = 10;
 }
 
 message ReportState {

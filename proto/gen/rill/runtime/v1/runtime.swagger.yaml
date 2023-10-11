@@ -4369,8 +4369,6 @@ definitions:
         type: boolean
       title:
         type: string
-      disabled:
-        type: boolean
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
       timeoutSeconds:

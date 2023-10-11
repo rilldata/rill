@@ -697,7 +697,6 @@ export type V1ReportSpecOperationProperties = { [key: string]: any };
 export interface V1ReportSpec {
   trigger?: boolean;
   title?: string;
-  disabled?: boolean;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
   operationName?: string;

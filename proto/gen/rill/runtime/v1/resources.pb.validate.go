@@ -3374,8 +3374,6 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for Title
 
-	// no validation rules for Disabled
-
 	if all {
 		switch v := interface{}(m.GetRefreshSchedule()).(type) {
 		case interface{ ValidateAll() error }:

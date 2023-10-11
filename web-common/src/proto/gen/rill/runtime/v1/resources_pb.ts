@@ -1440,47 +1440,42 @@ export class ReportSpec extends Message<ReportSpec> {
   title = "";
 
   /**
-   * @generated from field: bool disabled = 3;
-   */
-  disabled = false;
-
-  /**
-   * @generated from field: rill.runtime.v1.Schedule refresh_schedule = 4;
+   * @generated from field: rill.runtime.v1.Schedule refresh_schedule = 3;
    */
   refreshSchedule?: Schedule;
 
   /**
-   * @generated from field: uint32 timeout_seconds = 5;
+   * @generated from field: uint32 timeout_seconds = 4;
    */
   timeoutSeconds = 0;
 
   /**
-   * @generated from field: string operation_name = 6;
+   * @generated from field: string operation_name = 5;
    */
   operationName = "";
 
   /**
-   * @generated from field: google.protobuf.Struct operation_properties = 7;
+   * @generated from field: google.protobuf.Struct operation_properties = 6;
    */
   operationProperties?: Struct;
 
   /**
-   * @generated from field: string operation_time_range = 8;
+   * @generated from field: string operation_time_range = 7;
    */
   operationTimeRange = "";
 
   /**
-   * @generated from field: uint32 export_limit = 9;
+   * @generated from field: uint32 export_limit = 8;
    */
   exportLimit = 0;
 
   /**
-   * @generated from field: rill.runtime.v1.ExportFormat export_format = 10;
+   * @generated from field: rill.runtime.v1.ExportFormat export_format = 9;
    */
   exportFormat = ExportFormat.UNSPECIFIED;
 
   /**
-   * @generated from field: repeated string recipients = 11;
+   * @generated from field: repeated string recipients = 10;
    */
   recipients: string[] = [];
 
@@ -1494,15 +1489,14 @@ export class ReportSpec extends Message<ReportSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "disabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "refresh_schedule", kind: "message", T: Schedule },
-    { no: 5, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 6, name: "operation_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "operation_properties", kind: "message", T: Struct },
-    { no: 8, name: "operation_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 9, name: "export_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 10, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
-    { no: 11, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "refresh_schedule", kind: "message", T: Schedule },
+    { no: 4, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "operation_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "operation_properties", kind: "message", T: Struct },
+    { no: 7, name: "operation_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "export_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 10, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {

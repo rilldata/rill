@@ -17,7 +17,6 @@ import (
 type reportYAML struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title      string           `yaml:"title"`
-	Disabled   bool             `yaml:"disabled"`
 	Refresh    *scheduleYAML    `yaml:"refresh"`
 	Timeout    string           `yaml:"timeout"`
 	Operation  struct {
@@ -115,7 +114,6 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.ReportSpec.Title = tmp.Title
-	r.ReportSpec.Disabled = tmp.Disabled
 	if schedule != nil {
 		r.ReportSpec.RefreshSchedule = schedule
 	}
