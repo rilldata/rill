@@ -57,19 +57,6 @@ export function humanizeGroupValues(
   return humanizedValues;
 }
 
-export function humanizeGroupByColumns(
-  values: Array<Record<string, number | string>>,
-  columnFormatSpec: ColFormatSpec[]
-) {
-  return columnFormatSpec.reduce((valuesObj, column) => {
-    return humanizeGroupValues(
-      valuesObj,
-      column.formatPreset || FormatPreset.HUMANIZE,
-      column.columnName
-    );
-  }, values);
-}
-
 // NOTE: the following are adapters that I think fit the API
 // used by the existing humanizer, but I'm not sure of the
 // exact details, nor am I totally confident about the options
