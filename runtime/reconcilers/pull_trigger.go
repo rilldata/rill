@@ -43,7 +43,7 @@ func (r *PullTriggerReconciler) AssignState(from, to *runtimev1.Resource) error 
 	if a == nil || b == nil {
 		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
 	}
-	b.Spec = a.Spec
+	b.State = a.State
 	return nil
 }
 
@@ -62,7 +62,7 @@ func (r *PullTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{}
 	}
 
-	err = r.C.Reconcile(ctx, GlobalProjectParserName)
+	err = r.C.Reconcile(ctx, runtime.GlobalProjectParserName)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}

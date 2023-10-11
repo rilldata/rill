@@ -1,1 +1,3 @@
-<div class="text-black text-xs font-bold leading-tight">https://</div>
+<div class="text-gray-800 text-[15px] font-semibold italic leading-tight">
+  https://
+</div>

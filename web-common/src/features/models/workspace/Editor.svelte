@@ -50,16 +50,11 @@
   } from "@codemirror/view";
   import { Debounce } from "@rilldata/web-common/features/models/utils/Debounce";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import {
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServiceListCatalogEntries,
-    V1Model,
-  } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher, onMount } from "svelte";
   import { editorTheme } from "../../../components/editor/theme";
+  import { createRuntimeServiceListCatalogEntries } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
 
-  export let modelName: string;
   export let content: string;
   export let editorHeight = 0;
   export let selections: SelectionRange[] = [];
@@ -69,13 +64,6 @@
 
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
-
-  $: getModel = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
-  let model: V1Model;
-  $: model = $getModel?.data?.entry?.model;
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -115,6 +103,21 @@
         sourceTable.source?.schema?.fields?.map((field) => field.name) ?? [];
     }
   }
+
+  // From async reconcile integration...
+  // const queryClient = useQueryClient();
+  // $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
+
+  // let schema: { [table: string]: string[] };
+
+  // $: if ($allSourceColumns?.length) {
+  //   schema = {};
+  //   for (const sourceTable of $allSourceColumns) {
+  //     const sourceIdentifier = sourceTable?.tableName;
+  //     schema[sourceIdentifier] =
+  //       sourceTable.profileColumns?.map((c) => c.name) ?? [];
+  //   }
+  // }
 
   function getTableNameFromFromClause(
     sql: string,
@@ -308,8 +311,8 @@
     class="editor-container h-full w-full overflow-x-auto"
   >
     <div
-      class="w-full overflow-x-auto h-full"
       bind:this={editorContainerComponent}
+      class="w-full overflow-x-auto h-full"
       on:click={() => {
         /** give the editor focus no matter where we click */
         if (!editor.hasFocus) editor.focus();

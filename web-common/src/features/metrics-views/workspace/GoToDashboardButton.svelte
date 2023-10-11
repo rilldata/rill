@@ -7,6 +7,7 @@
   import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -15,23 +16,24 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-  import {
-    fileArtifactsStore,
-    getFileArtifactReconciliationErrors,
-  } from "../../entity-management/file-artifacts-store";
   import { EntityType } from "../../entity-management/types";
 
   export let metricsDefName;
-
-  $: fileQuery = createRuntimeServiceGetFile(
-    $runtime.instanceId,
-    getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
+  $: filePath = getFilePathFromNameAndType(
+    metricsDefName,
+    EntityType.MetricsDefinition
   );
+
+  const queryClient = useQueryClient();
+
+  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
   $: yaml = $fileQuery?.data?.blob;
-  $: errors = getFileArtifactReconciliationErrors(
-    $fileArtifactsStore,
-    `${metricsDefName}.yaml`
+  $: allErrors = getAllErrorsForFile(
+    queryClient,
+    $runtime.instanceId,
+    filePath
   );
 
   let buttonDisabled = true;
@@ -58,9 +60,9 @@
     ];
   }
   // content & errors
-  else if (errors?.length) {
+  else if ($allErrors?.length) {
     buttonDisabled = true;
-    buttonStatus = [errors[0].message, TOOLTIP_CTA];
+    buttonStatus = [$allErrors[0].message, TOOLTIP_CTA];
   }
   // preview is available
   else {

@@ -194,62 +194,84 @@ export class PingResponse extends Message<PingResponse> {
  */
 export class Instance extends Message<Instance> {
   /**
-   * Identifier (UUID)
-   *
    * @generated from field: string instance_id = 1;
    */
   instanceId = "";
 
   /**
-   * OLAP connector name (typically called : olap )
-   *
    * @generated from field: string olap_connector = 2;
    */
   olapConnector = "";
 
   /**
-   * Connector name for repo driver(typically called : repo). 
-   * Repo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting.
-   *
    * @generated from field: string repo_connector = 4;
    */
   repoConnector = "";
 
   /**
-   * If true, the runtime will store the instance's catalog in its OLAP store instead
-   * of in the runtime's metadata store. Currently only supported for the duckdb driver.
-   *
-   * @generated from field: bool embed_catalog = 6;
+   * @generated from field: google.protobuf.Timestamp created_on = 11;
    */
-  embedCatalog = false;
+  createdOn?: Timestamp;
 
   /**
-   * instance specific variables
-   *
+   * @generated from field: google.protobuf.Timestamp updated_on = 12;
+   */
+  updatedOn?: Timestamp;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.Connector connectors = 10;
+   */
+  connectors: Connector[] = [];
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.Connector project_connectors = 13;
+   */
+  projectConnectors: Connector[] = [];
+
+  /**
    * @generated from field: map<string, string> variables = 7;
    */
   variables: { [key: string]: string } = {};
 
   /**
-   * project defaults
-   *
    * @generated from field: map<string, string> project_variables = 8;
    */
   projectVariables: { [key: string]: string } = {};
 
   /**
-   * ingestion limit across all sources, 0 means no limit
-   *
+   * @generated from field: map<string, string> annotations = 14;
+   */
+  annotations: { [key: string]: string } = {};
+
+  /**
+   * @generated from field: bool embed_catalog = 6;
+   */
+  embedCatalog = false;
+
+  /**
    * @generated from field: int64 ingestion_limit_bytes = 9;
    */
   ingestionLimitBytes = protoInt64.zero;
 
   /**
-   * bare minimum connectors required by the instance. 
-   *
-   * @generated from field: repeated rill.runtime.v1.Connector connectors = 10;
+   * @generated from field: bool watch_repo = 15;
    */
-  connectors: Connector[] = [];
+  watchRepo = false;
+
+  /**
+   * @generated from field: bool stage_changes = 16;
+   */
+  stageChanges = false;
+
+  /**
+   * @generated from field: bool model_default_materialize = 17;
+   */
+  modelDefaultMaterialize = false;
+
+  /**
+   * @generated from field: uint32 model_materialize_delay_seconds = 18;
+   */
+  modelMaterializeDelaySeconds = 0;
 
   constructor(data?: PartialMessage<Instance>) {
     super();
@@ -262,11 +284,19 @@ export class Instance extends Message<Instance> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "created_on", kind: "message", T: Timestamp },
+    { no: 12, name: "updated_on", kind: "message", T: Timestamp },
+    { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
+    { no: 13, name: "project_connectors", kind: "message", T: Connector, repeated: true },
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 8, name: "project_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
+    { no: 15, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 16, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 17, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 18, name: "model_materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Instance {
@@ -532,9 +562,9 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   repoConnector = "";
 
   /**
-   * @generated from field: bool embed_catalog = 6;
+   * @generated from field: repeated rill.runtime.v1.Connector connectors = 10;
    */
-  embedCatalog = false;
+  connectors: Connector[] = [];
 
   /**
    * @generated from field: map<string, string> variables = 7;
@@ -542,19 +572,39 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   variables: { [key: string]: string } = {};
 
   /**
-   * @generated from field: int64 ingestion_limit_bytes = 8;
-   */
-  ingestionLimitBytes = protoInt64.zero;
-
-  /**
    * @generated from field: map<string, string> annotations = 9;
    */
   annotations: { [key: string]: string } = {};
 
   /**
-   * @generated from field: repeated rill.runtime.v1.Connector connectors = 10;
+   * @generated from field: bool embed_catalog = 6;
    */
-  connectors: Connector[] = [];
+  embedCatalog = false;
+
+  /**
+   * @generated from field: int64 ingestion_limit_bytes = 8;
+   */
+  ingestionLimitBytes = protoInt64.zero;
+
+  /**
+   * @generated from field: bool watch_repo = 11;
+   */
+  watchRepo = false;
+
+  /**
+   * @generated from field: bool stage_changes = 12;
+   */
+  stageChanges = false;
+
+  /**
+   * @generated from field: bool model_default_materialize = 13;
+   */
+  modelDefaultMaterialize = false;
+
+  /**
+   * @generated from field: uint32 model_materialize_delay_seconds = 14;
+   */
+  modelMaterializeDelaySeconds = 0;
 
   constructor(data?: PartialMessage<CreateInstanceRequest>) {
     super();
@@ -567,11 +617,15 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 10, name: "connectors", kind: "message", T: Connector, repeated: true },
+    { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 11, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 13, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "model_materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateInstanceRequest {
@@ -731,6 +785,21 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   repoConnector?: string;
 
   /**
+   * @generated from field: repeated rill.runtime.v1.Connector connectors = 9;
+   */
+  connectors: Connector[] = [];
+
+  /**
+   * @generated from field: map<string, string> variables = 15;
+   */
+  variables: { [key: string]: string } = {};
+
+  /**
+   * @generated from field: map<string, string> annotations = 10;
+   */
+  annotations: { [key: string]: string } = {};
+
+  /**
    * @generated from field: optional bool embed_catalog = 6;
    */
   embedCatalog?: boolean;
@@ -741,14 +810,24 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   ingestionLimitBytes?: bigint;
 
   /**
-   * @generated from field: repeated rill.runtime.v1.Connector connectors = 9;
+   * @generated from field: optional bool watch_repo = 11;
    */
-  connectors: Connector[] = [];
+  watchRepo?: boolean;
 
   /**
-   * @generated from field: map<string, string> annotations = 10;
+   * @generated from field: optional bool stage_changes = 12;
    */
-  annotations: { [key: string]: string } = {};
+  stageChanges?: boolean;
+
+  /**
+   * @generated from field: optional bool model_default_materialize = 13;
+   */
+  modelDefaultMaterialize?: boolean;
+
+  /**
+   * @generated from field: optional uint32 model_materialize_delay_seconds = 14;
+   */
+  modelMaterializeDelaySeconds?: number;
 
   constructor(data?: PartialMessage<EditInstanceRequest>) {
     super();
@@ -761,10 +840,15 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
+    { no: 15, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
-    { no: 9, name: "connectors", kind: "message", T: Connector, repeated: true },
-    { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 11, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 12, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 13, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 14, name: "model_materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceRequest {
@@ -820,174 +904,6 @@ export class EditInstanceResponse extends Message<EditInstanceResponse> {
 
   static equals(a: EditInstanceResponse | PlainMessage<EditInstanceResponse> | undefined, b: EditInstanceResponse | PlainMessage<EditInstanceResponse> | undefined): boolean {
     return proto3.util.equals(EditInstanceResponse, a, b);
-  }
-}
-
-/**
- * Request message for RuntimeService.EditInstanceVariables.
- *
- * @generated from message rill.runtime.v1.EditInstanceVariablesRequest
- */
-export class EditInstanceVariablesRequest extends Message<EditInstanceVariablesRequest> {
-  /**
-   * @generated from field: string instance_id = 1;
-   */
-  instanceId = "";
-
-  /**
-   * @generated from field: map<string, string> variables = 2;
-   */
-  variables: { [key: string]: string } = {};
-
-  constructor(data?: PartialMessage<EditInstanceVariablesRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.EditInstanceVariablesRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceVariablesRequest {
-    return new EditInstanceVariablesRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceVariablesRequest {
-    return new EditInstanceVariablesRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceVariablesRequest {
-    return new EditInstanceVariablesRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: EditInstanceVariablesRequest | PlainMessage<EditInstanceVariablesRequest> | undefined, b: EditInstanceVariablesRequest | PlainMessage<EditInstanceVariablesRequest> | undefined): boolean {
-    return proto3.util.equals(EditInstanceVariablesRequest, a, b);
-  }
-}
-
-/**
- * Response message for RuntimeService.EditInstanceVariables
- *
- * @generated from message rill.runtime.v1.EditInstanceVariablesResponse
- */
-export class EditInstanceVariablesResponse extends Message<EditInstanceVariablesResponse> {
-  /**
-   * @generated from field: rill.runtime.v1.Instance instance = 1;
-   */
-  instance?: Instance;
-
-  constructor(data?: PartialMessage<EditInstanceVariablesResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.EditInstanceVariablesResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance", kind: "message", T: Instance },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceVariablesResponse {
-    return new EditInstanceVariablesResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceVariablesResponse {
-    return new EditInstanceVariablesResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceVariablesResponse {
-    return new EditInstanceVariablesResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: EditInstanceVariablesResponse | PlainMessage<EditInstanceVariablesResponse> | undefined, b: EditInstanceVariablesResponse | PlainMessage<EditInstanceVariablesResponse> | undefined): boolean {
-    return proto3.util.equals(EditInstanceVariablesResponse, a, b);
-  }
-}
-
-/**
- * Request message for RuntimeService.EditInstanceAnnotations.
- *
- * @generated from message rill.runtime.v1.EditInstanceAnnotationsRequest
- */
-export class EditInstanceAnnotationsRequest extends Message<EditInstanceAnnotationsRequest> {
-  /**
-   * @generated from field: string instance_id = 1;
-   */
-  instanceId = "";
-
-  /**
-   * @generated from field: map<string, string> annotations = 2;
-   */
-  annotations: { [key: string]: string } = {};
-
-  constructor(data?: PartialMessage<EditInstanceAnnotationsRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.EditInstanceAnnotationsRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceAnnotationsRequest {
-    return new EditInstanceAnnotationsRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsRequest {
-    return new EditInstanceAnnotationsRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsRequest {
-    return new EditInstanceAnnotationsRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: EditInstanceAnnotationsRequest | PlainMessage<EditInstanceAnnotationsRequest> | undefined, b: EditInstanceAnnotationsRequest | PlainMessage<EditInstanceAnnotationsRequest> | undefined): boolean {
-    return proto3.util.equals(EditInstanceAnnotationsRequest, a, b);
-  }
-}
-
-/**
- * Response message for RuntimeService.EditInstanceAnnotations
- *
- * @generated from message rill.runtime.v1.EditInstanceAnnotationsResponse
- */
-export class EditInstanceAnnotationsResponse extends Message<EditInstanceAnnotationsResponse> {
-  /**
-   * @generated from field: rill.runtime.v1.Instance instance = 1;
-   */
-  instance?: Instance;
-
-  constructor(data?: PartialMessage<EditInstanceAnnotationsResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.EditInstanceAnnotationsResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instance", kind: "message", T: Instance },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): EditInstanceAnnotationsResponse {
-    return new EditInstanceAnnotationsResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsResponse {
-    return new EditInstanceAnnotationsResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): EditInstanceAnnotationsResponse {
-    return new EditInstanceAnnotationsResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: EditInstanceAnnotationsResponse | PlainMessage<EditInstanceAnnotationsResponse> | undefined, b: EditInstanceAnnotationsResponse | PlainMessage<EditInstanceAnnotationsResponse> | undefined): boolean {
-    return proto3.util.equals(EditInstanceAnnotationsResponse, a, b);
   }
 }
 

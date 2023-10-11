@@ -5,9 +5,9 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { createRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
@@ -22,23 +22,25 @@
     getRouteFromName,
   } from "../../entity-management/entity-mappers";
   import { isDuplicateName } from "../../entity-management/name-utils";
-  import { useAllNames } from "../../entity-management/selectors";
   import ModelWorkspaceCTAs from "./ModelWorkspaceCTAs.svelte";
 
   export let modelName: string;
 
+  const queryClient = useQueryClient();
+
   $: runtimeInstanceId = $runtime.instanceId;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
-  const queryClient = useQueryClient();
-  const renameModel = createRuntimeServiceRenameFileAndReconcile();
 
   const outputLayout = getContext(
     "rill:app:output-layout"
   ) as Writable<LayoutElement>;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
-  $: modelHasError = !!modelError;
+  $: modelHasError = getFileHasErrors(
+    queryClient,
+    runtimeInstanceId,
+    modelPath
+  );
 
   let contextMenuOpen = false;
 
@@ -72,12 +74,10 @@
       const toName = e.target.value;
       const entityType = EntityType.Model;
       await renameFileArtifact(
-        queryClient,
         runtimeInstanceId,
         modelName,
         toName,
-        entityType,
-        $renameModel
+        entityType
       );
       goto(getRouteFromName(toName, entityType), {
         replaceState: true,
@@ -91,9 +91,9 @@
 </script>
 
 <WorkspaceHeader
-  let:width
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
   appRunning={$appQueryStatusStore}
+  let:width
 >
   <svelte:fragment slot="workspace-controls">
     <IconButton
@@ -116,10 +116,10 @@
     <PanelCTA side="right">
       <ModelWorkspaceCTAs
         availableDashboards={$availableDashboards?.data}
-        suppressTooltips={contextMenuOpen}
-        {modelName}
         {collapse}
-        {modelHasError}
+        modelHasError={$modelHasError}
+        {modelName}
+        suppressTooltips={contextMenuOpen}
       />
     </PanelCTA>
   </svelte:fragment>

@@ -6,7 +6,7 @@
   import {
     useDashboardStore,
     metricsExplorerStore,
-  } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 

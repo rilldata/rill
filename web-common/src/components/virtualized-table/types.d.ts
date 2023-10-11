@@ -14,4 +14,6 @@ export interface VirtualizedTableConfig {
   defaultFontWeightClass: string;
   table: string;
   comparisonColumnWidth?: number;
+  headerBgColorClass: string;
+  headerBgColorHighlightClass?: string;
 }

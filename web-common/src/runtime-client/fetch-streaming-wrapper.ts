@@ -9,19 +9,14 @@ export async function* streamingFetchWrapper<T>(
   headers: HeadersInit = { "Content-Type": "application/json" },
   signal?: AbortSignal
 ): AsyncGenerator<T> {
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method,
-      ...(body ? { body: JSON.stringify(body) } : {}),
-      headers,
-      signal,
-    });
-  } catch (err) {
-    return;
-  }
+  const response = await fetch(url, {
+    method,
+    ...(body ? { body: JSON.stringify(body) } : {}),
+    headers,
+    signal,
+  });
   if (!response.body) {
-    return;
+    throw new Error("No response");
   }
   const reader = response.body.getReader();
   const decoder = new TextDecoder();

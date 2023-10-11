@@ -16,7 +16,11 @@ _**`timeseries`**_ — the timestamp column from your model that will underlie x
 
 _**`default_time_range`**_ — the default time range shown when a user initially loads the dashboard _(optional)_. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, `PT12H` for 12 hours, `P1M` for 1 month, or `P26W` for 26 weeks) or the constant value `inf` for all time (default). If not specified, defaults to the full time range of the `timeseries` column.
 
-_**`smallest_time_grain`**_ — the smallest time granularity the user is allowed to view in the dashboard _(optional)_. The valid values are: `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`. If not specified, the user will be 
+_**`smallest_time_grain`**_ — the smallest time granularity the user is allowed to view in the dashboard _(optional)_. The valid values are: `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`.
+
+_**`first_day_of_week`**_ — the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7 _(optional)_
+
+_**`first_month_of_year`**_ — the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12 _(optional)_
 
 <!-- UNCOMMENT WHEN RELEASED: -->
 <!--

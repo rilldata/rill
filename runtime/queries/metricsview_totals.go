@@ -20,7 +20,7 @@ type MetricsViewTotals struct {
 	TimeStart          *timestamppb.Timestamp               `json:"time_start,omitempty"`
 	TimeEnd            *timestamppb.Timestamp               `json:"time_end,omitempty"`
 	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
-	MetricsView        *runtimev1.MetricsView               `json:"-"`
+	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
 	Result *runtimev1.MetricsViewTotalsResponse `json:"-"`
@@ -36,8 +36,10 @@ func (q *MetricsViewTotals) Key() string {
 	return fmt.Sprintf("MetricsViewTotals:%s", r)
 }
 
-func (q *MetricsViewTotals) Deps() []string {
-	return []string{q.MetricsViewName}
+func (q *MetricsViewTotals) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindMetricsView, Name: q.MetricsViewName},
+	}
 }
 
 func (q *MetricsViewTotals) MarshalResult() *runtime.QueryResult {
@@ -97,7 +99,7 @@ func (q *MetricsViewTotals) Export(ctx context.Context, rt *runtime.Runtime, ins
 	return ErrExportNotSupported
 }
 
-func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", nil, err
@@ -134,7 +136,7 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsView, dia
 	sql := fmt.Sprintf(
 		"SELECT %s FROM %q WHERE %s",
 		strings.Join(selectCols, ", "),
-		mv.Model,
+		mv.Table,
 		whereClause,
 	)
 	return sql, args, nil

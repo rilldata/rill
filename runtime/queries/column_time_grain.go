@@ -24,8 +24,11 @@ func (q *ColumnTimeGrain) Key() string {
 	return fmt.Sprintf("ColumnTimeGrain:%s:%s", q.TableName, q.ColumnName)
 }
 
-func (q *ColumnTimeGrain) Deps() []string {
-	return []string{q.TableName}
+func (q *ColumnTimeGrain) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *ColumnTimeGrain) MarshalResult() *runtime.QueryResult {
