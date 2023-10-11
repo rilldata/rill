@@ -17,7 +17,10 @@
     getChildTimeRanges,
     prettyFormatTimeRange,
   } from "@rilldata/web-common/lib/time/ranges";
-  import { ISODurationToTimeRangePreset } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+  import {
+    humaniseISODuration,
+    ISODurationToTimeRangePreset,
+  } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import {
     DashboardTimeControls,
     TimeRange,
@@ -149,7 +152,7 @@
     }, 300);
   }
 
-  $: currentSelection = $timeControlsStore?.selectedTimeRange?.name;
+  $: currentSelection = $dashboardStore?.selectedTimeRange?.name;
   $: intermediateSelection = currentSelection;
 
   const handleMenuOpen = () => {
@@ -191,6 +194,8 @@
             <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
             {#if intermediateSelection === TimeRangePreset.CUSTOM}
               Custom range
+            {:else if intermediateSelection === TimeRangePreset.DEFAULT}
+              Last {humaniseISODuration($metaQuery.data?.defaultTimeRange)}
             {:else if currentSelection in DEFAULT_TIME_RANGES}
               {DEFAULT_TIME_RANGES[$timeControlsStore?.selectedTimeRange?.name]
                 .label}
@@ -247,7 +252,7 @@
         {allTime.label}
       </span>
     </MenuItem>
-    {#if showDefaultItem}
+    {#if showDefaultItem && $timeControlsStore.defaultTimeRange}
       <DefaultTimeRangeMenuItem
         on:before-select={setIntermediateSelection(TimeRangePreset.DEFAULT)}
         on:select={() =>

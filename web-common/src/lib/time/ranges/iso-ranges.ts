@@ -75,11 +75,17 @@ export function isoDurationToFullTimeRange(
 }
 
 export function humaniseISODuration(isoDuration: string): string {
+  if (!isoDuration) return "";
   const duration = parse(isoDuration);
   const parts = new Array<string>();
   for (let i = PeriodAndUnits.length - 1; i >= 0; i--) {
     if (!duration[PeriodAndUnits[i].unit]) continue;
-    let part = duration[PeriodAndUnits[i].unit] + " " + PeriodAndUnits[i].unit;
+    let part =
+      duration[PeriodAndUnits[i].unit] +
+      " " +
+      PeriodAndUnits[i].unit.replace(/^(\w)/, (substring) =>
+        substring.toUpperCase()
+      );
     if (duration[PeriodAndUnits[i].unit] === 1) {
       // make the unit singular
       part = part.replace(/s$/, "");

@@ -9,7 +9,7 @@
 <MenuItem animateSelect={false} on:select>
   <div class="w-full flex flex-row flex-grow items-center">
     <div class:font-bold={selected}>
-      Default range: {humaniseISODuration(isoDuration)}
+      Last {humaniseISODuration(isoDuration)}
     </div>
   </div>
 </MenuItem>
