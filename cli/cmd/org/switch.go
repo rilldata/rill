@@ -51,7 +51,7 @@ func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			cfg.Org = defaultOrg
 
-			ch.Printer.Printf("Run `rill org switch %s` to switch to other organization.\n", defaultOrg)
+			ch.Printer.Printf("Set default organization to %q.\n", defaultOrg)
 			return nil
 		},
 	}

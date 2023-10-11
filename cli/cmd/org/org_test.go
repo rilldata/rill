@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/mock"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -151,6 +153,23 @@ func TestOrgCmd(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	c.Assert(len(orgList), qt.Equals, 1)
 	c.Assert(data["name"], qt.Equals, "new-test")
+
+	// Switch organization
+	buf.Reset()
+	helper.Printer.SetHumanOutput(&buf)
+	cmd = SwitchCmd(helper)
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"new-test"})
+	err = cmd.Execute()
+	c.Assert(err, qt.IsNil)
+
+	expectedMsg := fmt.Sprintf("Set default organization to %q.\n", "new-test")
+	c.Assert(buf.String(), qt.Contains, expectedMsg)
+	org, err := dotrill.GetDefaultOrg()
+	c.Assert(err, qt.IsNil)
+	c.Assert(org, qt.Equals, "new-test")
+
 }
 
 type Org struct {
