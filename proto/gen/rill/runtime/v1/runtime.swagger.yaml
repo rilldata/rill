@@ -4389,6 +4389,10 @@ definitions:
         type: array
         items:
           type: string
+      emailOpenUrl:
+        type: string
+      emailEditUrl:
+        type: string
   v1ReportState:
     type: object
     properties:

@@ -1479,6 +1479,16 @@ export class ReportSpec extends Message<ReportSpec> {
    */
   recipients: string[] = [];
 
+  /**
+   * @generated from field: string email_open_url = 11;
+   */
+  emailOpenUrl = "";
+
+  /**
+   * @generated from field: string email_edit_url = 12;
+   */
+  emailEditUrl = "";
+
   constructor(data?: PartialMessage<ReportSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1497,6 +1507,8 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 8, name: "export_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 9, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 10, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "email_open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "email_edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {

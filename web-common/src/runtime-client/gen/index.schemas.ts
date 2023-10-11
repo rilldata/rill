@@ -705,6 +705,8 @@ export interface V1ReportSpec {
   exportLimit?: number;
   exportFormat?: V1ExportFormat;
   recipients?: string[];
+  emailOpenUrl?: string;
+  emailEditUrl?: string;
 }
 
 export interface V1ReportExecution {

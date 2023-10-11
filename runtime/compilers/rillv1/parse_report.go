@@ -28,11 +28,11 @@ type reportYAML struct {
 		Format string `yaml:"format"`
 		Limit  uint   `yaml:"limit"`
 	} `yaml:"export"`
-	Recipients []string `yaml:"recipients"`
-	Template   struct {
+	Recipients    []string `yaml:"recipients"`
+	EmailTemplate struct {
 		OpenURL string `yaml:"open_url"`
 		EditURL string `yaml:"edit_url"`
-	} `yaml:"template"`
+	} `yaml:"email_template"`
 }
 
 // parseReport parses a report definition and adds the resulting resource to p.Resources.
@@ -126,6 +126,8 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 	r.ReportSpec.ExportLimit = uint32(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
 	r.ReportSpec.Recipients = tmp.Recipients
+	r.ReportSpec.EmailOpenUrl = tmp.EmailTemplate.OpenURL
+	r.ReportSpec.EmailEditUrl = tmp.EmailTemplate.EditURL
 
 	return nil
 }

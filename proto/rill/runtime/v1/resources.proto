@@ -215,6 +215,8 @@ message ReportSpec {
   uint32 export_limit = 8;
   ExportFormat export_format = 9;
   repeated string recipients = 10;
+  string email_open_url = 11;
+  string email_edit_url = 12;
 }
 
 message ReportState {
