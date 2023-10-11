@@ -159,6 +159,16 @@ function syncDimensions(
     }
   }
 }
+//
+// function syncTimeRangeControls(
+//   metricsView: V1MetricsView,
+//   metricsExplorer: MetricsExplorerEntity,
+//   fullTimeRange: V1ColumnTimeRangeResponse | undefined
+// ) {
+//   if (!fullTimeRange) return;
+//
+//
+// }
 
 const metricViewReducers = {
   init(

@@ -3,6 +3,7 @@ import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/st
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
+import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   getComparionRangeForScrub,
   getComparisonRange,
@@ -19,6 +20,7 @@ import {
   convertTimeRangePreset,
   getAdjustedFetchTime,
 } from "@rilldata/web-common/lib/time/ranges";
+import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   TimeComparisonOption,
   TimeRange,
@@ -31,7 +33,7 @@ import {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
+import { derived, get } from "svelte/store";
 import type { Readable } from "svelte/store";
 
 export type TimeRangeState = {
@@ -58,6 +60,7 @@ export type TimeControlState = {
   // Computed properties from all time range query
   minTimeGrain?: V1TimeGrain;
   allTimeRange?: TimeRange;
+  defaultTimeRange?: TimeRange;
 
   ready?: boolean;
 } & TimeRangeState &
@@ -110,10 +113,17 @@ export function createTimeControlStore(ctx: StateManagers) {
       const minTimeGrain =
         (metricsView.data.smallestTimeGrain as V1TimeGrain) ||
         V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+      const defaultTimeRange = isoDurationToFullTimeRange(
+        metricsView.data.defaultTimeRange,
+        allTimeRange.start,
+        allTimeRange.end,
+        get(getLocalUserPreferences()).timeZone
+      );
 
       const timeRangeState = calculateTimeRangePartial(
         metricsExplorer,
         allTimeRange,
+        defaultTimeRange,
         minTimeGrain
       );
       if (!timeRangeState) {
@@ -132,6 +142,7 @@ export function createTimeControlStore(ctx: StateManagers) {
         isFetching: false,
         minTimeGrain,
         allTimeRange,
+        defaultTimeRange,
         ready: true,
 
         ...timeRangeState,
@@ -156,11 +167,16 @@ export const useTimeControlStore = memoizeMetricsStore<TimeControlStore>(
 function calculateTimeRangePartial(
   metricsExplorer: MetricsExplorerEntity,
   allTimeRange: DashboardTimeControls,
+  defaultTimeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain
 ): TimeRangeState {
   if (!metricsExplorer.selectedTimeRange) return undefined;
 
-  const selectedTimeRange = getTimeRange(metricsExplorer, allTimeRange);
+  const selectedTimeRange = getTimeRange(
+    metricsExplorer,
+    allTimeRange,
+    defaultTimeRange
+  );
   if (!selectedTimeRange) return undefined;
 
   selectedTimeRange.interval = getTimeGrain(
@@ -258,7 +274,8 @@ function calculateComparisonTimeRangePartial(
 
 function getTimeRange(
   metricsExplorer: MetricsExplorerEntity,
-  allTimeRange: DashboardTimeControls
+  allTimeRange: DashboardTimeControls,
+  defaultTimeRange: DashboardTimeControls
 ) {
   let timeRange: DashboardTimeControls;
 
@@ -268,6 +285,15 @@ function getTimeRange(
       name: TimeRangePreset.CUSTOM,
       start: new Date(metricsExplorer.selectedTimeRange.start),
       end: new Date(metricsExplorer.selectedTimeRange.end),
+    };
+  } else if (
+    metricsExplorer.selectedTimeRange?.name === TimeRangePreset.DEFAULT
+  ) {
+    /** set the time range to the fixed custom time range */
+    timeRange = {
+      name: TimeRangePreset.DEFAULT,
+      start: defaultTimeRange.start,
+      end: defaultTimeRange.end,
     };
   } else {
     /** rebuild off of relative time range */

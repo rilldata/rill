@@ -306,11 +306,18 @@ export const CUSTOM = {
   defaultComparison: TimeComparisonOption.CONTIGUOUS,
 };
 
+export const DEFAULT = {
+  label: "Default",
+  rangePreset: RangePresetType.FIXED_RANGE,
+  defaultComparison: TimeComparisonOption.CONTIGUOUS,
+};
+
 export const DEFAULT_TIME_RANGES: Record<string, TimeRangeMeta> = {
   ...LATEST_WINDOW_TIME_RANGES,
   ...PERIOD_TO_DATE_RANGES,
   ALL_TIME,
   CUSTOM,
+  DEFAULT,
 };
 
 // This is a temporary fix for the default time range setting.

@@ -80,6 +80,4 @@ export interface MetricsExplorerEntity {
   selectedDimensionName?: string;
 
   proto?: string;
-  // proto for the default set of selections
-  defaultProto?: string;
 }

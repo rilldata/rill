@@ -1,4 +1,7 @@
-import { isoDurationToTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import {
+  humaniseISODuration,
+  isoDurationToTimeRange,
+} from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { describe, it, expect } from "vitest";
 
 describe("isoDurationToTimeRange", () => {
@@ -45,6 +48,22 @@ describe("isoDurationToTimeRange", () => {
       "2023-09-11T00:00:00.000Z",
       "2023-10-09T00:00:00.000Z"
     );
+  });
+});
+
+describe("humaniseISODuration", () => {
+  (
+    [
+      ["PT4H", "4 hours"],
+      ["P1D", "1 day"],
+      ["P14D", "14 days"],
+      ["P2W", "2 weeks"],
+      ["P1Y3WT6H", "1 year, 3 weeks and 6 hours"],
+    ] as Array<[iso: string, humanised: string]>
+  ).forEach(([iso, humanised]) => {
+    it(`${iso} => ${humanised}`, () => {
+      expect(humaniseISODuration(iso)).toBe(humanised);
+    });
   });
 });
 

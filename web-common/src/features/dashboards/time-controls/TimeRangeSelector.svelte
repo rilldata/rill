@@ -3,7 +3,9 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import DefaultTimeRangeMenuItem from "@rilldata/web-common/features/dashboards/time-controls/DefaultTimeRangeMenuItem.svelte";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     ALL_TIME,
@@ -15,6 +17,7 @@
     getChildTimeRanges,
     prettyFormatTimeRange,
   } from "@rilldata/web-common/lib/time/ranges";
+  import { ISODurationToTimeRangePreset } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import {
     DashboardTimeControls,
     TimeRange,
@@ -43,13 +46,19 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const ctx = getStateManagers();
+  const timeControlsStore = useTimeControlStore(ctx);
+  const metaQuery = useMetaQuery(ctx);
 
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
 
   let latestWindowTimeRanges: TimeRangeOption[];
   let periodToDateTimeRanges: TimeRangeOption[];
+
+  $: showDefaultItem = !(
+    $metaQuery.data?.defaultTimeRange in ISODurationToTimeRangePreset
+  );
 
   // get the available latest-window time ranges
   $: if (boundaryStart && boundaryEnd) {
@@ -238,6 +247,18 @@
         {allTime.label}
       </span>
     </MenuItem>
+    {#if showDefaultItem}
+      <DefaultTimeRangeMenuItem
+        on:before-select={setIntermediateSelection(TimeRangePreset.DEFAULT)}
+        on:select={() =>
+          onSelectRelativeTimeRange(
+            $timeControlsStore.defaultTimeRange,
+            toggleFloatingElement
+          )}
+        selected={intermediateSelection === TimeRangePreset.DEFAULT}
+        isoDuration={$metaQuery.data?.defaultTimeRange}
+      />
+    {/if}
     {#if latestWindowTimeRanges}
       {#if latestWindowTimeRanges?.length}
         <Divider />

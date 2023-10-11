@@ -36,7 +36,7 @@ export function isoDurationToTimeRange(
   };
 }
 
-const ISODurationToTimeRangePreset: Record<
+export const ISODurationToTimeRangePreset: Record<
   string,
   keyof typeof TimeRangePreset
 > = {
@@ -68,10 +68,36 @@ export function isoDurationToFullTimeRange(
 
   const { startTime, endTime } = isoDurationToTimeRange(isoDuration, end, zone);
   return {
-    name: TimeRangePreset.CUSTOM,
+    name: TimeRangePreset.DEFAULT,
     start: startTime,
     end: endTime,
   };
+}
+
+export function humaniseISODuration(isoDuration: string): string {
+  const duration = parse(isoDuration);
+  const parts = new Array<string>();
+  for (let i = PeriodAndUnits.length - 1; i >= 0; i--) {
+    if (!duration[PeriodAndUnits[i].unit]) continue;
+    let part = duration[PeriodAndUnits[i].unit] + " " + PeriodAndUnits[i].unit;
+    if (duration[PeriodAndUnits[i].unit] === 1) {
+      // make the unit singular
+      part = part.replace(/s$/, "");
+    }
+    parts.push(part);
+  }
+
+  let fullString = "";
+  for (let i = 0; i < parts.length; i++) {
+    fullString += parts[i];
+    if (i < parts.length - 2) {
+      fullString += ", ";
+    } else if (i === parts.length - 2) {
+      fullString += " and ";
+    }
+  }
+
+  return fullString;
 }
 
 function getStartTimeTransformations(
