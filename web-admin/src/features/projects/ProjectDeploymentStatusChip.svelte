@@ -17,7 +17,6 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
   import type { SvelteComponent } from "svelte";
 
