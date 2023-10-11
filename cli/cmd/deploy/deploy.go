@@ -23,7 +23,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
@@ -487,32 +487,43 @@ func createProjectFlow(ctx context.Context, client *adminclient.Client, req *adm
 }
 
 func variablesFlow(ctx context.Context, projectPath, projectName string) {
-	connectorList, err := rillv1beta.ExtractConnectors(ctx, projectPath)
+	// Parse the project's connectors
+	repo, instanceID, err := cmdutil.RepoForProjectPath(projectPath)
 	if err != nil {
-		fmt.Printf("failed to extract connectors %s\n", err)
+		return
+	}
+	parser, err := rillv1.Parse(ctx, repo, instanceID, "", nil)
+	if err != nil {
+		return
+	}
+	connectors, err := parser.AnalyzeConnectors(ctx)
+	if err != nil {
 		return
 	}
 
-	// collect all sources
-	srcs := make([]*runtimev1.Source, 0)
-	for _, c := range connectorList {
+	// Exit early if all connectors can be used anonymously
+	foundNotAnonymous := false
+	for _, c := range connectors {
 		if !c.AnonymousAccess {
-			srcs = append(srcs, c.Sources...)
+			foundNotAnonymous = true
 		}
 	}
-	if len(srcs) == 0 {
+	if !foundNotAnonymous {
 		return
 	}
 
 	warn := color.New(color.Bold).Add(color.FgYellow)
 	warn.Printf("\nCould not ingest all sources. Rill requires credentials for the following sources:\n\n")
-	for _, src := range srcs {
-		props := src.Properties.AsMap()
-		if _, ok := props["path"]; ok {
-			// print URL wherever applicable
-			warn.Printf(" - %s\n", props["path"])
-		} else {
-			warn.Printf(" - %s\n", src.Name)
+	for _, c := range connectors {
+		if c.AnonymousAccess {
+			continue
+		}
+		for _, r := range c.Resources {
+			fmt.Printf(" - %s", r.Name.Name)
+			if len(r.Paths) > 0 {
+				fmt.Printf(" (%s)", r.Paths[0])
+			}
+			fmt.Print("\n")
 		}
 	}
 	warn.Printf("\nRun `rill env configure --project %s` to provide credentials.\n\n", projectName)

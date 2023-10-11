@@ -143,6 +143,9 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 			activityClient := activity.NewBufferedClient(activityOpts)
 
+			// Create ctx that cancels on termination signals
+			ctx := graceful.WithCancelOnTerminate(context.Background())
+
 			// Init runtime
 			opts := &runtime.Options{
 				ConnectionCacheSize:     conf.ConnectionCacheSize,
@@ -159,14 +162,11 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 					},
 				},
 			}
-			rt, err := runtime.New(opts, logger, activityClient)
+			rt, err := runtime.New(ctx, opts, logger, activityClient)
 			if err != nil {
 				logger.Fatal("error: could not create runtime", zap.Error(err))
 			}
 			defer rt.Close()
-
-			// Create ctx that cancels on termination signals
-			ctx := graceful.WithCancelOnTerminate(context.Background())
 
 			var limiter ratelimit.Limiter
 			if conf.RedisURL == "" {

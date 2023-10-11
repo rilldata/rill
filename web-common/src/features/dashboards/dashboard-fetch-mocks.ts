@@ -1,5 +1,9 @@
-import type { V1TimeRangeSummary } from "@rilldata/web-common/runtime-client";
-import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import type {
+  V1GetResourceResponse,
+  V1MetricsViewSpec,
+  V1TimeRangeSummary,
+} from "@rilldata/web-common/runtime-client";
 import { wait } from "@testing-library/user-event/dist/utils";
 import { afterAll, beforeAll, vi } from "vitest";
 
@@ -20,12 +24,22 @@ export class DashboardFetchMocks {
     return mock;
   }
 
-  public mockMetricsView(name: string, resp: V1MetricsView) {
-    this.responses.set(`catalog__${name}`, {
-      entry: {
-        metricsView: resp,
+  public mockMetricsView(name: string, resp: V1MetricsViewSpec) {
+    this.responses.set(`resource__${name}`, {
+      resource: {
+        meta: {
+          name: {
+            kind: ResourceKind.MetricsView,
+            name,
+          },
+        },
+        metricsView: {
+          state: {
+            validSpec: resp,
+          },
+        },
       },
-    });
+    } as V1GetResourceResponse);
   }
 
   public mockTimeRangeSummary(
@@ -47,6 +61,10 @@ export class DashboardFetchMocks {
     let key: string;
 
     switch (type) {
+      case "resource":
+        key = type + "__" + u.searchParams.get("name.name");
+        break;
+
       case "catalog":
         key = type + "__" + parts[0];
         break;

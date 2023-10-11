@@ -665,7 +665,6 @@ message SetSuperuserRequest {
 
 message SetSuperuserResponse {}
 
-// SudoGetResourceRequest
 message SudoGetResourceRequest {
   oneof id {
     string user_id = 1;
@@ -676,7 +675,6 @@ message SudoGetResourceRequest {
   }
 }
 
-// SudoGetResourceResponse
 message SudoGetResourceResponse {
   oneof resource {
     User user = 1;
@@ -687,7 +685,6 @@ message SudoGetResourceResponse {
   }
 }
 
-// SudoUpdateOrganizationQuotasRequest
 message SudoUpdateOrganizationQuotasRequest {
   string org_name = 1;
   optional uint32 projects = 2;
@@ -697,18 +694,15 @@ message SudoUpdateOrganizationQuotasRequest {
   optional uint32 outstanding_invites = 6;
 }
 
-// SudoUpdateOrganizationQuotasResponse
 message SudoUpdateOrganizationQuotasResponse {
   Organization organization = 1;
 }
 
-// SudoUpdateUserQuotasRequest
 message SudoUpdateUserQuotasRequest {
   string email = 1;
   optional uint32 singleuser_orgs = 2;
 }
 
-// SudoUpdateUserQuotasResponse
 message SudoUpdateUserQuotasResponse {
   User user = 1;
 }
@@ -780,12 +774,10 @@ message GetUserResponse {
   User user = 1;
 }
 
-// Message containing user preferences
 message UserPreferences {
   optional string time_zone = 1;
 }
 
-// Updating user preferences for the current user
 message UpdateUserPreferencesRequest {
     UserPreferences preferences = 1;
 }
@@ -827,7 +819,6 @@ message RemoveBookmarkRequest {
 
 message RemoveBookmarkResponse {}
 
-// It can be some string as well so not validating for email here
 message SearchUsersRequest {
   string email_pattern = 1 [(validate.rules).string.min_len = 1];
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
@@ -989,7 +980,6 @@ enum DeploymentStatus {
   DEPLOYMENT_STATUS_UNSPECIFIED = 0;
   DEPLOYMENT_STATUS_PENDING = 1;
   DEPLOYMENT_STATUS_OK = 2;
-  DEPLOYMENT_STATUS_RECONCILING = 3;
   DEPLOYMENT_STATUS_ERROR = 4;
 }
 
@@ -1001,7 +991,7 @@ message Deployment {
   string runtime_host = 5;
   string runtime_instance_id = 6;
   DeploymentStatus status = 7;
-  string logs = 8;
+  string status_message = 8;
   google.protobuf.Timestamp created_on = 9;
   google.protobuf.Timestamp updated_on = 10;
 }

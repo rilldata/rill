@@ -45,7 +45,7 @@ type ColumnTimeseries struct {
 	FirstMonthOfYear    uint32
 
 	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
-	MetricsView       *runtimev1.MetricsView               `json:"-"`
+	MetricsView       *runtimev1.MetricsViewSpec           `json:"-"`
 	MetricsViewFilter *runtimev1.MetricsViewFilter         `json:"filters"`
 	MetricsViewPolicy *runtime.ResolvedMetricsViewSecurity `json:"security"`
 }
@@ -60,8 +60,11 @@ func (q *ColumnTimeseries) Key() string {
 	return fmt.Sprintf("ColumnTimeseries:%s", r)
 }
 
-func (q *ColumnTimeseries) Deps() []string {
-	return []string{q.TableName}
+func (q *ColumnTimeseries) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *ColumnTimeseries) MarshalResult() *runtime.QueryResult {
@@ -411,7 +414,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 	querySQL := ` -- extract unix time
       WITH Q as (
-        SELECT extract('epoch' from ` + safeTimestampColumnName + `) as t, "` + valueColumn + `"::DOUBLE as v FROM "` + tableName + `"
+        SELECT extract('epoch' from ` + safeTimestampColumnName + `)::BIGINT as t, "` + valueColumn + `"::DOUBLE as v FROM "` + tableName + `"
       ),
       -- generate bounds
       M as (

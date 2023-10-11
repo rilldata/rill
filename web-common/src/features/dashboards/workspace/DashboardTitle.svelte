@@ -5,7 +5,7 @@
   export let metricViewName: string;
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
-  $: displayName = $metaQuery.data?.label;
+  $: displayName = $metaQuery.data?.title;
 </script>
 
 <h1 style:line-height="1.1" style:margin-top="-1px">

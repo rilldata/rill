@@ -5,17 +5,17 @@
   import { setLineStatuses } from "../../../components/editor/line-status";
   import { overlay } from "../../../layout/overlay-store";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import {
-    fileArtifactsStore,
-    getFileArtifactReconciliationErrors,
-  } from "../../entity-management/file-artifacts-store";
-  import { mapReconciliationErrorsToLines } from "../../metrics-views/errors";
   import { saveAndRefresh } from "../saveAndRefresh";
   import { useIsSourceUnsaved } from "../selectors";
   import { useSourceStore } from "../sources-store";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { mapParseErrorsToLines } from "../../metrics-views/errors";
 
   export let sourceName: string;
   export let yaml: string;
+  $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
   let editor: YAMLEditor;
   let view: EditorView;
@@ -38,16 +38,18 @@
     setLineStatuses([], view);
   }
 
+  $: allErrors = getAllErrorsForFile(
+    queryClient,
+    $runtime.instanceId,
+    filePath
+  );
+
   /**
    * Handle errors.
    */
   $: {
-    const reconciliationErrors = getFileArtifactReconciliationErrors(
-      $fileArtifactsStore,
-      `${sourceName}.yaml`
-    );
-    const lineBasedReconciliationErrors = mapReconciliationErrorsToLines(
-      reconciliationErrors,
+    const lineBasedReconciliationErrors = mapParseErrorsToLines(
+      $allErrors,
       yaml
     );
     if (view) setLineStatuses(lineBasedReconciliationErrors, view);
@@ -63,7 +65,7 @@
     // Save the source, if it's unsaved
     if (!isSourceUnsaved) return;
     overlay.set({ title: `Importing ${sourceName}.yaml` });
-    await saveAndRefresh(queryClient, sourceName, $sourceStore.clientYAML);
+    await saveAndRefresh(sourceName, $sourceStore.clientYAML);
     overlay.set(null);
   }
 </script>

@@ -10,11 +10,12 @@
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import {
-    getRuntimeServiceListCatalogEntriesQueryKey,
     getRuntimeServiceListFilesQueryKey,
+    getRuntimeServiceListResourcesQueryKey,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -55,8 +56,8 @@
         })
       );
       queryClient.invalidateQueries(
-        getRuntimeServiceListCatalogEntriesQueryKey($runtime?.instanceId, {
-          type: "OBJECT_TYPE_METRICS_VIEW",
+        getRuntimeServiceListResourcesQueryKey($runtime?.instanceId, {
+          kind: ResourceKind.MetricsView,
         })
       );
     }
@@ -64,7 +65,9 @@
 
   async function getDashboardsAndInvalidate() {
     const dashboardListItems = await getDashboardsForProject($proj.data);
-    const dashboardNames = dashboardListItems.map((listing) => listing.name);
+    const dashboardNames = dashboardListItems.map(
+      (listing) => listing.meta.name.name
+    );
     return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 
@@ -97,17 +100,17 @@
       textClass: "text-purple-600",
       wrapperClass: "bg-purple-50 border-purple-300",
     },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "syncing",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
+    // [V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING]: {
+    //   icon: Spinner,
+    //   iconProps: {
+    //     bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
+    //     className: "text-purple-600 hover:text-purple-500",
+    //     status: EntityStatus.Running,
+    //   },
+    //   text: "syncing",
+    //   textClass: "text-purple-600",
+    //   wrapperClass: "bg-purple-50 border-purple-300",
+    // },
     [V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR]: {
       icon: CancelCircle,
       iconProps: { className: "text-red-600 hover:text-red-500" },

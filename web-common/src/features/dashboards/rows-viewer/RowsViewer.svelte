@@ -23,7 +23,7 @@
   $: modelName = useMetaQuery<string>(
     $runtime.instanceId,
     metricViewName,
-    (data) => data.model
+    (data) => data.table
   );
 
   $: name = $modelName?.data as string | undefined;

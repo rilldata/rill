@@ -1,12 +1,12 @@
-import { Page, expect, test } from "@playwright/test";
-import { updateCodeEditor } from "./utils/commonHelpers";
+import { expect, Page, test } from "@playwright/test";
+import { updateCodeEditor, waitForValidResource } from "./utils/commonHelpers";
 import {
-  RequestMatcher,
   assertLeaderboards,
   clickOnFilter,
   createDashboardFromModel,
   createDashboardFromSource,
   metricsViewRequestFilterMatcher,
+  RequestMatcher,
   waitForComparisonTopLists,
   waitForTimeSeries,
 } from "./utils/dashboardHelpers";
@@ -86,9 +86,15 @@ test.describe("dashboard", () => {
   });
 
   test("Dashboard runthrough", async ({ page }) => {
-    // Uncomment for remote debugging
-    // page.on("console", (msg) => console.log(msg.text()));
-    // page.on("pageerror", (error) => console.log(error.stack));
+    // Enable to get logs in CI
+    // page.on("console", async (msg) => {
+    //   console.log(msg.text());
+    // });
+    // page.on("pageerror", (exception) => {
+    //   console.log(
+    //     `Uncaught exception: "${exception.message}"\n${exception.stack}`
+    //   );
+    // });
 
     test.setTimeout(60000);
     await page.goto("/");
@@ -304,6 +310,7 @@ test.describe("dashboard", () => {
 
         `;
     await updateCodeEditor(page, changeDisplayNameDoc);
+    await waitForDashboard(page);
 
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
@@ -346,6 +353,7 @@ test.describe("dashboard", () => {
 
         `;
     await updateCodeEditor(page, addBackTimestampColumnDoc);
+    await waitForDashboard(page);
 
     // Go to dashboard
     await page.getByRole("button", { name: "Go to Dashboard" }).click();
@@ -380,7 +388,7 @@ test.describe("dashboard", () => {
     await updateCodeEditor(page, deleteOnlyMeasureDoc);
     // Check warning message appears, Go to Dashboard is disabled
     await expect(
-      page.getByText("at least one measure should be present")
+      page.getByText("must define at least one measure")
     ).toBeVisible();
 
     await expect(
@@ -560,6 +568,7 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
       description: ""
       `;
   await updateCodeEditor(page, metricsWithValidPercentOfTotal);
+  await waitForDashboard(page);
 
   // Go to dashboard
   await page.getByRole("button", { name: "Go to dashboard" }).click();
@@ -847,4 +856,12 @@ async function interactWithTimeRangeMenu(
   await expect(
     page.getByRole("menu", { name: "Time range selector" })
   ).not.toBeVisible();
+}
+
+async function waitForDashboard(page: Page) {
+  return waitForValidResource(
+    page,
+    "AdBids_model_dashboard",
+    "rill.runtime.v1.MetricsView"
+  );
 }

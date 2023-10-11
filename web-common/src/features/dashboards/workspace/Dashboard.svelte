@@ -1,11 +1,13 @@
 <script lang="ts">
   import { getEltSize } from "@rilldata/web-common/features/dashboards/get-element-size";
-  import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
+  import {
+    useDashboard,
+    useModelHasTimeSeries,
+  } from "@rilldata/web-common/features/dashboards/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
-  import { createRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
@@ -53,12 +55,9 @@
   $: isRillDeveloper = $featureFlags.readOnly === false;
 
   // Check if the mock user (if selected) has access to the dashboard
-  $: catalogQuery = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    metricViewName
-  );
+  $: dashboard = useDashboard($runtime.instanceId, metricViewName);
   $: mockUserHasNoAccess =
-    $selectedMockUserStore && $catalogQuery.error?.response?.status === 404;
+    $selectedMockUserStore && $dashboard.error?.response?.status === 404;
 </script>
 
 <section

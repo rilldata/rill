@@ -72,7 +72,7 @@ function createTimeRangeSummary(
     ([runtime, metricsView], set) =>
       createQueryServiceColumnTimeRange(
         runtime.instanceId,
-        metricsView.data?.model,
+        metricsView.data?.table,
         {
           columnName: metricsView.data?.timeDimension,
         },

@@ -43,7 +43,12 @@ function createShowHideStore<Item>(
   const derivedStore = derived(
     [metaQuery, useDashboardStore(metricsViewName)],
     ([meta, metricsExplorer]) => {
-      if (!meta || !metricsExplorer || !meta.isSuccess || meta.isRefetching) {
+      if (
+        !meta?.data ||
+        !metricsExplorer ||
+        !meta.isSuccess ||
+        meta.isRefetching
+      ) {
         return {
           selectableItems: [],
           selectedItems: [],

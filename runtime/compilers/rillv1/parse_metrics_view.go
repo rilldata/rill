@@ -61,9 +61,9 @@ type metricsViewYAML struct {
 func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &metricsViewYAML{}
-	if p.RillYAML != nil && !p.RillYAML.Defaults.Dashboards.IsZero() {
-		if err := p.RillYAML.Defaults.Dashboards.Decode(tmp); err != nil {
-			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", newYAMLError(err))}
+	if p.RillYAML != nil && !p.RillYAML.Defaults.MetricsViews.IsZero() {
+		if err := p.RillYAML.Defaults.MetricsViews.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
 		}
 	}
 	if node.YAMLRaw != "" {
@@ -256,8 +256,11 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 	node.Refs = append(node.Refs, ResourceName{Name: table})
 
-	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
-	r := p.upsertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
+	if err != nil {
+		return err
+	}
+	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 	spec := r.MetricsViewSpec
 
 	spec.Connector = node.Connector
