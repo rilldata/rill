@@ -41,62 +41,6 @@ proto3.util.setEnumType(ReconcileStatus, "rill.runtime.v1.ReconcileStatus", [
 ]);
 
 /**
- * @generated from enum rill.runtime.v1.ReportStatus
- */
-export enum ReportStatus {
-  /**
-   * @generated from enum value: REPORT_STATUS_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: REPORT_STATUS_PENDING = 1;
-   */
-  PENDING = 1,
-
-  /**
-   * @generated from enum value: REPORT_STATUS_QUERYING = 2;
-   */
-  QUERYING = 2,
-
-  /**
-   * @generated from enum value: REPORT_STATUS_EXPORTING = 3;
-   */
-  EXPORTING = 3,
-
-  /**
-   * @generated from enum value: REPORT_STATUS_SENDING = 4;
-   */
-  SENDING = 4,
-
-  /**
-   * @generated from enum value: REPORT_STATUS_CANCELLED = 5;
-   */
-  CANCELLED = 5,
-
-  /**
-   * @generated from enum value: REPORT_STATUS_FAILED = 6;
-   */
-  FAILED = 6,
-
-  /**
-   * @generated from enum value: REPORT_STATUS_SUCCEEDED = 7;
-   */
-  SUCCEEDED = 7,
-}
-// Retrieve enum metadata with: proto3.getEnumType(ReportStatus)
-proto3.util.setEnumType(ReportStatus, "rill.runtime.v1.ReportStatus", [
-  { no: 0, name: "REPORT_STATUS_UNSPECIFIED" },
-  { no: 1, name: "REPORT_STATUS_PENDING" },
-  { no: 2, name: "REPORT_STATUS_QUERYING" },
-  { no: 3, name: "REPORT_STATUS_EXPORTING" },
-  { no: 4, name: "REPORT_STATUS_SENDING" },
-  { no: 5, name: "REPORT_STATUS_CANCELLED" },
-  { no: 6, name: "REPORT_STATUS_FAILED" },
-  { no: 7, name: "REPORT_STATUS_SUCCEEDED" },
-]);
-
-/**
  * @generated from message rill.runtime.v1.Resource
  */
 export class Resource extends Message<Resource> {
@@ -1511,32 +1455,32 @@ export class ReportSpec extends Message<ReportSpec> {
   timeoutSeconds = 0;
 
   /**
-   * @generated from field: string operation_name = 10;
+   * @generated from field: string operation_name = 6;
    */
   operationName = "";
 
   /**
-   * @generated from field: google.protobuf.Struct operation_properties = 11;
+   * @generated from field: google.protobuf.Struct operation_properties = 7;
    */
   operationProperties?: Struct;
 
   /**
-   * @generated from field: string operation_time_range = 12;
+   * @generated from field: string operation_time_range = 8;
    */
   operationTimeRange = "";
 
   /**
-   * @generated from field: uint32 export_limit = 13;
+   * @generated from field: uint32 export_limit = 9;
    */
   exportLimit = 0;
 
   /**
-   * @generated from field: rill.runtime.v1.ExportFormat export_format = 14;
+   * @generated from field: rill.runtime.v1.ExportFormat export_format = 10;
    */
   exportFormat = ExportFormat.UNSPECIFIED;
 
   /**
-   * @generated from field: repeated string recipients = 15;
+   * @generated from field: repeated string recipients = 11;
    */
   recipients: string[] = [];
 
@@ -1553,12 +1497,12 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 3, name: "disabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 4, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 5, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 10, name: "operation_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 11, name: "operation_properties", kind: "message", T: Struct },
-    { no: 12, name: "operation_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 13, name: "export_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 14, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
-    { no: 15, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "operation_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "operation_properties", kind: "message", T: Struct },
+    { no: 8, name: "operation_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "export_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 10, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 11, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {
@@ -1643,27 +1587,22 @@ export class ReportExecution extends Message<ReportExecution> {
   adhoc = false;
 
   /**
-   * @generated from field: rill.runtime.v1.ReportStatus status = 2;
-   */
-  status = ReportStatus.UNSPECIFIED;
-
-  /**
-   * @generated from field: string error_message = 3;
+   * @generated from field: string error_message = 2;
    */
   errorMessage = "";
 
   /**
-   * @generated from field: google.protobuf.Timestamp report_time = 4;
+   * @generated from field: google.protobuf.Timestamp report_time = 3;
    */
   reportTime?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp started_on = 5;
+   * @generated from field: google.protobuf.Timestamp started_on = 4;
    */
   startedOn?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp finished_on = 6;
+   * @generated from field: google.protobuf.Timestamp finished_on = 5;
    */
   finishedOn?: Timestamp;
 
@@ -1676,11 +1615,10 @@ export class ReportExecution extends Message<ReportExecution> {
   static readonly typeName = "rill.runtime.v1.ReportExecution";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "adhoc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 2, name: "status", kind: "enum", T: proto3.getEnumType(ReportStatus) },
-    { no: 3, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "report_time", kind: "message", T: Timestamp },
-    { no: 5, name: "started_on", kind: "message", T: Timestamp },
-    { no: 6, name: "finished_on", kind: "message", T: Timestamp },
+    { no: 2, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "report_time", kind: "message", T: Timestamp },
+    { no: 4, name: "started_on", kind: "message", T: Timestamp },
+    { no: 5, name: "finished_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportExecution {

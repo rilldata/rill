@@ -4351,8 +4351,6 @@ definitions:
     properties:
       adhoc:
         type: boolean
-      status:
-        $ref: '#/definitions/v1ReportStatus'
       errorMessage:
         type: string
       reportTime:
@@ -4409,18 +4407,6 @@ definitions:
       executionCount:
         type: integer
         format: int64
-  v1ReportStatus:
-    type: string
-    enum:
-      - REPORT_STATUS_UNSPECIFIED
-      - REPORT_STATUS_PENDING
-      - REPORT_STATUS_QUERYING
-      - REPORT_STATUS_EXPORTING
-      - REPORT_STATUS_SENDING
-      - REPORT_STATUS_CANCELLED
-      - REPORT_STATUS_FAILED
-      - REPORT_STATUS_SUCCEEDED
-    default: REPORT_STATUS_UNSPECIFIED
   v1Resource:
     type: object
     properties:

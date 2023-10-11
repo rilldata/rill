@@ -210,12 +210,12 @@ message ReportSpec {
   bool disabled = 3;
   Schedule refresh_schedule = 4;
   uint32 timeout_seconds = 5;
-  string operation_name = 10;
-  google.protobuf.Struct operation_properties = 11;
-  string operation_time_range = 12;
-  uint32 export_limit = 13;
-  ExportFormat export_format = 14;
-  repeated string recipients = 15;
+  string operation_name = 6;
+  google.protobuf.Struct operation_properties = 7;
+  string operation_time_range = 8;
+  uint32 export_limit = 9;
+  ExportFormat export_format = 10;
+  repeated string recipients = 11;
 }
 
 message ReportState {
@@ -227,22 +227,10 @@ message ReportState {
 
 message ReportExecution {
   bool adhoc = 1;
-  ReportStatus status = 2;
-  string error_message = 3;
-  google.protobuf.Timestamp report_time = 4;
-  google.protobuf.Timestamp started_on = 5;
-  google.protobuf.Timestamp finished_on = 6;
-}
-
-enum ReportStatus {
-  REPORT_STATUS_UNSPECIFIED = 0;
-  REPORT_STATUS_PENDING = 1;
-  REPORT_STATUS_QUERYING = 2;
-  REPORT_STATUS_EXPORTING = 3;
-  REPORT_STATUS_SENDING = 4;
-  REPORT_STATUS_CANCELLED = 5;
-  REPORT_STATUS_FAILED = 6;
-  REPORT_STATUS_SUCCEEDED = 7;
+  string error_message = 2;
+  google.protobuf.Timestamp report_time = 3;
+  google.protobuf.Timestamp started_on = 4;
+  google.protobuf.Timestamp finished_on = 5;
 }
 
 message PullTrigger {

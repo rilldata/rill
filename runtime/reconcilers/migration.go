@@ -62,6 +62,11 @@ func (r *MigrationReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 		return runtime.ReconcileResult{Err: errors.New("not a migration")}
 	}
 
+	// Exit early for deletion
+	if self.Meta.DeletedOn != nil {
+		return runtime.ReconcileResult{}
+	}
+
 	// Check refs - stop if any of them are invalid
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
