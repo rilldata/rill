@@ -1,3 +1,4 @@
+import { Throttler } from "@rilldata/web-common/lib/throttler";
 import { pageInFocus } from "@rilldata/web-common/lib/viewport-utils";
 import { ExponentialBackoffTracker } from "@rilldata/web-common/runtime-client/exponential-backoff-tracker";
 import type {
@@ -25,6 +26,8 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
   private prevInstanceId: string;
   private prevHost: string;
+  private prevFocus = true;
+  private outOfFocusThrottler = new Throttler(5000);
 
   public constructor(
     private readonly getUrl: (runtime: Runtime) => string,
@@ -39,19 +42,33 @@ export class WatchRequestClient<Res extends WatchResponse> {
       const runtimeUnchanged =
         runtimeState.instanceId === this.prevInstanceId &&
         runtimeState.host === this.prevHost;
+      // const focusUnchanged = pageInFocus === this.prevFocus;
 
       if (!runtimeState || runtimeUnchanged || !pageInFocus) {
         if (!pageInFocus) {
-          // cancel the watcher if page is not in focus
-          // TODO: throttling?
           this.prevInstanceId = this.prevHost = undefined;
-          this.controller?.abort();
+          this.prevFocus = false;
+          // cancel the watcher if page is not in focus
+          this.outOfFocusThrottler.throttle(() => {
+            this.controller?.abort();
+          });
         }
         return;
       }
+      if (!this.prevFocus) {
+        // Call onReconnect on page focus to make sure we didnt miss anything
+        this.onReconnect();
+      }
       this.prevInstanceId = runtimeState.instanceId;
       this.prevHost = runtimeState.host;
+      this.prevFocus = true;
 
+      if (this.outOfFocusThrottler.throttling()) {
+        // Cancel any callbacks for out of focus
+        this.outOfFocusThrottler.cancel();
+        // The client is already running. Do not cancel
+        return;
+      }
       this.controller?.abort();
       if (!runtimeState?.instanceId) return;
 

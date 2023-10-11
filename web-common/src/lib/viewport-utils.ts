@@ -1,4 +1,4 @@
-import { get, writable } from "svelte/store";
+import { writable } from "svelte/store";
 
 /**
  * Used to notify the viewport listener that focus will be taken off.
@@ -16,12 +16,7 @@ export function giveBackFocus() {
 export const pageInFocus = writable<boolean>(true);
 
 export function addViewportListener() {
-  // TODO: any way to ignore dev tools focusing triggering these?
-  window.addEventListener("blur", () => {
-    if (get(focusNotifier)) return;
-    pageInFocus.set(false);
-  });
-  window.addEventListener("focus", () => {
-    pageInFocus.set(true);
+  document.addEventListener("visibilitychange", () => {
+    pageInFocus.set(!document.hidden);
   });
 }
