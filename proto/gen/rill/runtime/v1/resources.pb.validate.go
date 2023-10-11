@@ -5194,7 +5194,9 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 
 	// no validation rules for Description
 
-	// no validation rules for Format
+	// no validation rules for FormatPreset
+
+	// no validation rules for FormatD3
 
 	// no validation rules for ValidPercentOfTotal
 
