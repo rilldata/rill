@@ -23,7 +23,7 @@ import type { SvelteComponent } from "svelte";
 import { getDimensionColumn } from "../dashboard-utils";
 import type { DimensionTableRow } from "./dimension-table-types";
 import { getFilterForDimension } from "../selectors";
-import { SortDirection, SortType } from "../proto-state/derived-types";
+import { SortType } from "../proto-state/derived-types";
 import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 
 /** Returns an updated filter set for a given dimension on search */
