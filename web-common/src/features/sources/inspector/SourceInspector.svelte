@@ -7,7 +7,6 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
-  import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import {
     formatConnectorType,
     getFileExtension,
@@ -27,6 +26,7 @@
   import { GridCell, LeftRightGrid } from "../../../components/grid";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { resourceIsLoading } from "../../entity-management/resource-selectors";
   import { useIsSourceUnsaved, useSource } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
@@ -110,11 +110,9 @@
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 </script>
 
-<div
-  class="table-profile {isSourceUnsaved && 'grayscale'} transition duration-200"
->
+<div class="{isSourceUnsaved && 'grayscale'} transition duration-200">
   {#if resourceIsLoading($sourceQuery?.data)}
-    <div class="h-10">
+    <div class="mt-6">
       <ReconcilingSpinner />
     </div>
   {:else if source && !$sourceQuery.isError}

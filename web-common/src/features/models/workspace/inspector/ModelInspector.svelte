@@ -19,7 +19,7 @@
 
 {#if !$emptyModel?.data}
   {#if resourceIsLoading($modelQuery?.data)}
-    <div class="h-10">
+    <div class="mt-6">
       <ReconcilingSpinner />
     </div>
   {:else}
