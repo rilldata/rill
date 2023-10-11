@@ -96,6 +96,8 @@ TableCells – the cell contents.
 
   let horizontalScrolling = false;
 
+  let manualDimensionColumnWidth: number | null = null;
+
   $: if (rows && columns) {
     rowVirtualizer = createVirtualizer({
       getScrollElement: () => container,
@@ -117,11 +119,16 @@ TableCells – the cell contents.
       .slice(1)
       .reduce((a, b) => a + b, 0);
 
-    /* Dimension column should expand to cover whole container */
-    estimateColumnSize[0] = Math.max(
-      containerWidth - measureColumnSizeSum - FILTER_COLUMN_WIDTH,
-      estimateColumnSize[0]
-    );
+    // Dimension column should expand to cover whole container
+    // if not manually resized
+    if (manualDimensionColumnWidth === null) {
+      estimateColumnSize[0] = Math.max(
+        containerWidth - measureColumnSizeSum - FILTER_COLUMN_WIDTH,
+        estimateColumnSize[0]
+      );
+    } else {
+      estimateColumnSize[0] = manualDimensionColumnWidth;
+    }
   }
 
   $: columnVirtualizer = createVirtualizer({
@@ -178,6 +185,14 @@ TableCells – the cell contents.
     const columnName = event.detail;
     dimTable.handleMeasureColumnHeaderClick(columnName);
   }
+
+  async function handleResizeDimensionColumn(event) {
+    rowScrollOffset = $rowVirtualizer.scrollOffset;
+    colScrollOffset = $columnVirtualizer.scrollOffset;
+
+    const { size } = event.detail;
+    manualDimensionColumnWidth = Math.max(config.minColumnWidth, size);
+  }
 </script>
 
 <div
@@ -211,6 +226,7 @@ TableCells – the cell contents.
         style:width="{virtualWidth}px"
         style:height="{virtualHeight}px"
       >
+        <!-- measure column headers -->
         <ColumnHeaders
           virtualColumnItems={virtualColumns}
           noPin={true}
@@ -218,7 +234,7 @@ TableCells – the cell contents.
           columns={measureColumns}
           on:click-column={handleColumnHeaderClick}
         />
-
+        <!-- dimension value and gutter column -->
         <div class="flex">
           <!-- Gutter for Include Exlude Filter -->
           <DimensionFilterGutter
@@ -232,6 +248,7 @@ TableCells – the cell contents.
             on:select-item={(event) => onSelectItem(event)}
           />
           <DimensionValueHeader
+            on:resize-column={handleResizeDimensionColumn}
             virtualRowItems={virtualRows}
             totalHeight={virtualHeight}
             width={estimateColumnSize[0]}

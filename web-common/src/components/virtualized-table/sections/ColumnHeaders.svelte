@@ -35,7 +35,7 @@
     {@const props = getColumnHeaderProps(header)}
     <ColumnHeader
       on:resize-column
-      on:reset-column-size
+      on:reset-column-width
       {...props}
       {header}
       {noPin}

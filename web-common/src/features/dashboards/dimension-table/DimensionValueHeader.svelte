@@ -1,12 +1,13 @@
 <script lang="ts">
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
-  import { getContext } from "svelte";
+  import { createEventDispatcher, getContext } from "svelte";
   import Cell from "../../../components/virtualized-table/core/Cell.svelte";
   import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
+  import type { ResizeEvent } from "@rilldata/web-common/components/virtualized-table/drag-table-cell";
 
   const config: VirtualizedTableConfig = getContext("config");
 
@@ -31,6 +32,7 @@
       sorting: { sortByDimensionValue },
     },
   } = stateManagers;
+  const dispatch = createEventDispatcher();
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
@@ -45,6 +47,12 @@
       rowSelected: selectedIndex.findIndex((tgt) => row?.index === tgt) >= 0,
     };
   };
+  const handleResize = (event: ResizeEvent) => {
+    dispatch("resize-column", {
+      size: event.detail.size,
+      name,
+    });
+  };
 </script>
 
 <div
@@ -54,12 +62,13 @@
 >
   <StickyHeader
     header={{ size: width, start: 0 }}
-    enableResize={false}
+    enableResize={true}
     position="top-left"
     borderRight={horizontalScrolling}
     bgClass={$sortedByDimensionValue ? `bg-gray-50` : "bg-white"}
     on:click={sortByDimensionValue}
     on:keydown={sortByDimensionValue}
+    on:resize={handleResize}
   >
     <div class="flex">
       <span class={"px-1 " + $sortedByDimensionValue ? "font-bold" : ""}
