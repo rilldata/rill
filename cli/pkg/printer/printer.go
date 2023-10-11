@@ -13,29 +13,23 @@ import (
 	"github.com/lensesio/tableprinter"
 )
 
-// create printer struct for tableprinter
 type Printer struct {
 	humanOut    io.Writer
 	resourceOut io.Writer
 	format      *Format
 }
 
-// Format defines the option output format of a resource.
 type Format int
 
 const (
-	// Human prints it in human readable format. This can be either a table or
-	// a single line, depending on the resource implementation.
 	Human Format = iota
 	JSON
 	CSV
 )
 
-// NewFormatValue is used to define a flag that can be used to define a custom
-// flag via the flagset.Var() method.
 func NewFormatValue(val Format, p *Format) *Format {
 	*p = val
-	return (*Format)(p)
+	return p
 }
 
 func (f *Format) String() string {
@@ -65,7 +59,7 @@ func (f *Format) Set(s string) error {
 			s, []string{"human", "json", "csv"})
 	}
 
-	*f = Format(v)
+	*f = v
 	return nil
 }
 
@@ -165,17 +159,14 @@ func (p *Printer) PrintJSON(v interface{}) error {
 	return nil
 }
 
-// Printf is a convenience method to Printf to the defined output.
 func (p *Printer) Printf(format string, i ...interface{}) {
 	fmt.Fprintf(p.out(), format, i...)
 }
 
-// Println is a convenience method to Println to the defined output.
 func (p *Printer) Println(i ...interface{}) {
 	fmt.Fprintln(p.out(), i...)
 }
 
-// Print is a convenience method to Print to the defined output.
 func (p *Printer) Print(i ...interface{}) {
 	fmt.Fprint(p.out(), i...)
 }
@@ -199,5 +190,5 @@ func (p *Printer) out() io.Writer {
 		return color.Output
 	}
 
-	return io.Discard // /dev/nullj
+	return io.Discard
 }
