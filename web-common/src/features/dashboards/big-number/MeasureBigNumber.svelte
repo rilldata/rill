@@ -32,11 +32,11 @@
 
   $: description =
     measure?.description || measure?.label || measure?.expression;
-  $: formatPreset = measure?.formatPreset;
+  $: formatPreset =
+    (measure?.formatPreset as FormatPreset) || FormatPreset.HUMANIZE;
 
   $: name = measure?.label || measure?.expression;
 
-  $: formatPresetEnum = (formatPreset as FormatPreset) || FormatPreset.HUMANIZE;
   $: valueIsPresent = value !== undefined && value !== null;
 
   $: isComparisonPositive = Number.isFinite(diff) && (diff as number) >= 0;
@@ -46,7 +46,7 @@
   $: noChange = !diff;
 
   /** when the measure is a percentage, we don't show a percentage change. */
-  $: measureIsPercentage = formatPresetEnum === FormatPreset.PERCENTAGE;
+  $: measureIsPercentage = formatPreset === FormatPreset.PERCENTAGE;
 </script>
 
 <button
@@ -77,15 +77,15 @@
         <Tooltip distance={8} location="bottom" alignment="start">
           <div class="w-max">
             <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-              {#if formatPresetEnum !== FormatPreset.NONE}
-                {humanizeDataType(output, formatPresetEnum)}
+              {#if formatPreset !== FormatPreset.NONE}
+                {humanizeDataType(output, formatPreset)}
               {:else}
                 {output}
               {/if}
             </WithTween>
           </div>
           <TooltipContent slot="tooltip-content">
-            {humanizeDataTypeExpanded(value, formatPresetEnum)}
+            {humanizeDataTypeExpanded(value, formatPreset)}
             <TooltipDescription>
               the aggregate value over the current time period
             </TooltipDescription>
@@ -105,8 +105,8 @@
                     let:output
                   >
                     {@const formattedValue =
-                      formatPresetEnum !== FormatPreset.NONE
-                        ? humanizeDataType(diff, formatPresetEnum)
+                      formatPreset !== FormatPreset.NONE
+                        ? humanizeDataType(diff, formatPreset)
                         : diff}
                     {#if !noChange}
                       {isComparisonPositive ? "+" : ""}{formattedValue}
@@ -146,8 +146,8 @@
               {:else}
                 {TIME_COMPARISON[comparisonOption].shorthand}
                 <span class="font-semibold"
-                  >{formatPresetEnum !== FormatPreset.NONE
-                    ? humanizeDataType(comparisonValue, formatPresetEnum)
+                  >{formatPreset !== FormatPreset.NONE
+                    ? humanizeDataType(comparisonValue, formatPreset)
                     : comparisonValue}</span
                 >{#if !measureIsPercentage}
                   <span class="text-gray-300">,</span>
