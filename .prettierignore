@@ -24,6 +24,7 @@ proto/
 *.txt
 *.db
 *.wal
+*.toml
 *.parquet
 *.parquet.gz
 .travis.yml
