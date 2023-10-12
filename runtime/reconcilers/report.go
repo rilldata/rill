@@ -8,6 +8,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -241,8 +242,37 @@ func (r *ReportReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 // sendReport composes and sends the actual report to the configured recipients.
 // It returns true if an error occurred after some or all emails were sent.
 func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
-	// TODO: Make the magic happen
-	r.C.Logger.Info("Sending report", "report", self.Meta.Name.Name, "time", t)
+	r.C.Logger.Info("Sending report", "report", self.Meta.Name.Name, "report_time", t)
 
-	return false, ctx.Err()
+	for _, recipient := range rep.Spec.Recipients {
+		err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
+			ToEmail:           recipient,
+			ToName:            "",
+			Title:             rep.Spec.Title,
+			ReportTime:        t,
+			DownloadFormat:    formatExportFormat(rep.Spec.ExportFormat),
+			DownloadValidDays: 7,
+			OpenLink:          rep.Spec.EmailOpenUrl,
+			DownloadLink:      "",
+			EditLink:          rep.Spec.EmailEditUrl,
+		})
+		if err != nil {
+			return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
+		}
+	}
+
+	return false, nil
+}
+
+func formatExportFormat(f runtimev1.ExportFormat) string {
+	switch f {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		return "CSV"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+		return "Excel"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		return "Parquet"
+	default:
+		return f.String()
+	}
 }
