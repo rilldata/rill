@@ -3,11 +3,8 @@
   import { page } from "$app/stores";
   import ProjectDashboardsListener from "@rilldata/web-admin/features/projects/ProjectDashboardsListener.svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { useProjectRuntime } from "../../../features/projects/selectors";
   import { viewAsUserStore } from "../../../features/view-as-user/viewAsUserStore";
-
-  const queryClient = useQueryClient();
 
   $: projRuntime = useProjectRuntime(
     $page.params.organization,
