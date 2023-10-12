@@ -13,6 +13,7 @@ admin/
 state/
 static/
 temp/
+dev-project/
 proto/
 
 .env
@@ -27,7 +28,6 @@ proto/
 *.parquet.gz
 .travis.yml
 .DS_Store
-.gitkeep
 buf.lock
 go.mod
 go.sum
@@ -36,13 +36,14 @@ _redirects
 log
 *.log
 .gitignore
+.gitkeep
+.eslintignore
 .prettierignore
 Dockerfile
 Duckdb-Dockerfile
 README.md
 docs
 *.json
-*.yaml
 *.cjs
 _redirects
 Makefile
