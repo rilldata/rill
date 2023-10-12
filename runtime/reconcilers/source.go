@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/exp/slog"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -52,7 +53,7 @@ func (r *SourceReconciler) AssignState(from, to *runtimev1.Resource) error {
 	if a == nil || b == nil {
 		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
 	}
-	b.Spec = a.Spec
+	b.State = a.State
 	return nil
 }
 
@@ -174,6 +175,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	}
 
 	// Execute ingestion
+	r.C.Logger.Info("Ingesting source data", slog.String("name", n.Name), slog.String("connector", connector))
 	ingestErr := r.ingestSource(ctx, src.Spec, stagingTableName)
 	if ingestErr != nil {
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)
@@ -306,7 +308,7 @@ func (r *SourceReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 // ingestSource ingests the source into a table with tableName.
 // It does NOT drop the table if ingestion fails after the table has been created.
 // It will return an error if the sink connector is not an OLAP.
-func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.SourceSpec, tableName string) error {
+func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.SourceSpec, tableName string) (outErr error) {
 	// Get connections and transporter
 	srcConn, release1, err := r.C.AcquireConn(ctx, src.SourceConnector)
 	if err != nil {
@@ -344,19 +346,25 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	// Get repo root
+	repo, release, err := r.C.Runtime.Repo(ctx, r.C.InstanceID)
+	if err != nil {
+		return fmt.Errorf("failed to access repo: %w", err)
+	}
+	repoRoot := repo.Root()
+	release()
+
 	// Enforce storage limits
 	// TODO: This code is pretty ugly. We should push storage limit tracking into the underlying driver and transporter.
 	var ingestionLimit *int64
 	var limitExceeded bool
 	if olap, ok := sinkConn.AsOLAP(r.C.InstanceID); ok {
 		// Get storage limit
-		inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
+		inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 		if err != nil {
 			return err
 		}
 		storageLimit := inst.IngestionLimitBytes
-
-		// Enforce storage limit if it's set
 		if storageLimit > 0 {
 			// Get ingestion limit (storage limit minus current size)
 			bytes, ok := olap.EstimateSize()
@@ -388,11 +396,35 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	}
 
 	// Execute the data transfer
-	opts := drivers.NewTransferOpts()
+	opts := &drivers.TransferOptions{
+		AllowHostAccess: r.C.Runtime.AllowHostAccess(),
+		RepoRoot:        repoRoot,
+		AcquireConnector: func(name string) (drivers.Handle, func(), error) {
+			return r.C.AcquireConn(ctx, name)
+		},
+		Progress: drivers.NoOpProgress{},
+	}
 	if ingestionLimit != nil {
 		opts.LimitInBytes = *ingestionLimit
 	}
-	err = t.Transfer(ctx, srcConfig, sinkConfig, opts, drivers.NoOpProgress{})
+
+	transferStart := time.Now()
+	defer func() {
+		transferLatency := time.Since(transferStart).Milliseconds()
+		commonDims := []attribute.KeyValue{
+			attribute.String("source", srcConn.Driver()),
+			attribute.String("destination", sinkConn.Driver()),
+			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
+			attribute.Bool("failed", outErr != nil),
+			attribute.Bool("limit_exceeded", limitExceeded),
+			attribute.Int64("limit_bytes", opts.LimitInBytes),
+		}
+		r.C.Activity.Emit(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
+
+		// TODO: emit the number of bytes ingested (this might be extracted from a progress)
+	}()
+
+	err = t.Transfer(ctx, srcConfig, sinkConfig, opts)
 	if limitExceeded {
 		return drivers.ErrIngestionLimitExceeded
 	}

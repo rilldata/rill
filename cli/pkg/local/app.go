@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -19,9 +20,9 @@ import (
 	"github.com/rilldata/rill/cli/pkg/web"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -65,8 +66,11 @@ type App struct {
 	activity              activity.Client
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
+	// Setup logger
 	logger, cleanupFn := initLogger(verbose, logFormat)
+	sugarLogger := logger.Sugar()
+
 	// Init Prometheus telemetry
 	shutdown, err := observability.Start(ctx, logger, &observability.Options{
 		MetricsExporter: observability.PrometheusExporter,
@@ -95,7 +99,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 		SystemConnectors:        systemConnectors,
 		SecurityEngineCacheSize: 1000,
 	}
-	rt, err := runtime.New(rtOpts, logger, client)
+	rt, err := runtime.New(ctx, rtOpts, logger, client, email.New(email.NewNoopSender()))
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +115,9 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	}
 
 	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
+	isDefault := false
 	if olapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
+		isDefault = true
 		olapDSN = path.Join(projectPath, olapDSN)
 	}
 
@@ -131,16 +137,22 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	olapCfg := map[string]string{"dsn": olapDSN}
 	if olapDriver == "duckdb" {
 		olapCfg["pool_size"] = "4"
+		if !isDefault {
+			olapCfg["error_on_incompatible_version"] = "true"
+		}
+	}
+
+	// Print start status – need to do it before creating the instance, since doing so immediately starts the controller
+	isInit := IsProjectInit(projectPath)
+	if isInit {
+		sugarLogger.Named("console").Infof("Hydrating project '%s'", projectPath)
 	}
 
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:            DefaultInstanceID,
-		Annotations:   map[string]string{},
 		OLAPConnector: olapDriver,
 		RepoConnector: "repo",
-		EmbedCatalog:  olapDriver == "duckdb",
-		Variables:     parsedVariables,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -153,18 +165,24 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 				Config: olapCfg,
 			},
 		},
+		Variables:                        parsedVariables,
+		Annotations:                      map[string]string{},
+		EmbedCatalog:                     olapDriver == "duckdb",
+		WatchRepo:                        true,
+		ModelMaterializeDelaySeconds:     30,
+		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}
 	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
 		return nil, err
 	}
 
-	// Done
+	// Create app
 	app := &App{
 		Context:               ctx,
 		Runtime:               rt,
 		Instance:              inst,
-		Logger:                logger.Sugar(),
+		Logger:                sugarLogger,
 		BaseLogger:            logger,
 		Version:               ver,
 		Verbose:               verbose,
@@ -173,80 +191,115 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 		loggerCleanUp:         cleanupFn,
 		activity:              client,
 	}
+
+	// Wait for the initial reconcile
+	if isInit {
+		err = app.AwaitInitialReconcile(strict)
+		if err != nil {
+			app.Close()
+			return nil, fmt.Errorf("reconcile project: %w", err)
+		}
+	}
+
 	return app, nil
 }
 
 func (a *App) Close() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	err := a.observabilityShutdown(ctx)
 	if err != nil {
-		fmt.Printf("telemetry shutdown failed: %s\n", err.Error())
+		a.Logger.Named("console").Error("Observability shutdown failed", zap.Error(err))
+	}
+
+	err = a.Runtime.Close()
+	if err != nil {
+		a.Logger.Named("console").Error("Graceful shutdown failed", zap.Error(err))
+	} else {
+		a.Logger.Named("console").Info("Rill shutdown gracefully")
 	}
 
 	a.loggerCleanUp()
-	return a.Runtime.Close()
-}
-
-func (a *App) IsProjectInit() bool {
-	repo, release, err := a.Runtime.Repo(a.Context, a.Instance.ID)
-	if err != nil {
-		panic(err) // checks in New should ensure it never happens
-	}
-	defer release()
-
-	c := rillv1beta.New(repo, a.Instance.ID)
-	return c.IsInit(a.Context)
-}
-
-func (a *App) Reconcile(strict bool) error {
-	a.Logger.Named("console").Infof("Hydrating project '%s'", a.ProjectPath)
-	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, nil, nil, false, false)
-	if err != nil {
-		return err
-	}
-	if a.Context.Err() != nil {
-		a.Logger.Errorf("Hydration canceled")
-	}
-	for _, path := range res.AffectedPaths {
-		a.Logger.Named("console").Infof("Reconciled: %s", path)
-	}
-	for _, merr := range res.Errors {
-		a.Logger.Errorf("%s: %s", merr.FilePath, merr.Message)
-	}
-	if len(res.Errors) == 0 {
-		a.Logger.Named("console").Infof("Hydration completed!")
-	} else if strict {
-		a.Logger.Fatalf("Hydration failed")
-	} else {
-		a.Logger.Named("console").Infof("Hydration failed")
-	}
 	return nil
 }
 
-func (a *App) ReconcileSource(sourcePath string) error {
-	a.Logger.Named("console").Infof("Reconciling source and impacted models in project '%s'", a.ProjectPath)
-	paths := []string{sourcePath}
-	res, err := a.Runtime.Reconcile(a.Context, a.Instance.ID, paths, paths, false, false)
+func (a *App) AwaitInitialReconcile(strict bool) (err error) {
+	defer func() {
+		if a.Context.Err() != nil {
+			a.Logger.Errorf("Hydration canceled")
+			err = nil
+		}
+	}()
+
+	err = a.Runtime.WaitUntilReady(a.Context, a.Instance.ID)
 	if err != nil {
 		return err
 	}
-	if a.Context.Err() != nil {
-		a.Logger.Errorf("Hydration canceled")
-		return nil
+
+	controller, err := a.Runtime.Controller(a.Instance.ID)
+	if err != nil {
+		return err
 	}
-	for _, path := range res.AffectedPaths {
-		a.Logger.Named("console").Infof("Reconciled: %s", path)
+
+	// We need to do some extra work to ensure we don't return until all resources have been reconciled.
+	// We can't call WaitUntilIdle until the parser has initially parsed and created the resources for the project.
+	// We know the global project parser is created immediately, and should only be IDLE initially or if a fatal error occurs with the watcher.
+	// So we poll for it's state to transition to Watching.
+	start := time.Now()
+	for {
+		if a.Context.Err() != nil {
+			return nil
+		}
+
+		if time.Since(start) >= 5*time.Second {
+			// Starting the watcher should take just a few ms. This is just meant to serve as an extra safety net in case something goes wrong.
+			return fmt.Errorf("timed out waiting for project parser to start watching")
+		}
+
+		r, err := controller.Get(a.Context, runtime.GlobalProjectParserName, false)
+		if err != nil {
+			return fmt.Errorf("could not find project parser: %w", err)
+		}
+
+		if r.Meta.ReconcileStatus == runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE && r.Meta.ReconcileError != "" {
+			return fmt.Errorf("parser failed: %s", r.Meta.ReconcileError)
+		}
+
+		if r.GetProjectParser().State.Watching {
+			break
+		}
+
+		time.Sleep(100 * time.Millisecond)
 	}
-	for _, merr := range res.Errors {
-		a.Logger.Errorf("%s: %s", merr.FilePath, merr.Message)
+
+	err = a.Runtime.WaitUntilIdle(a.Context, a.Instance.ID, true)
+	if err != nil {
+		return err
 	}
-	if len(res.Errors) == 0 {
-		a.Logger.Named("console").Infof("Hydration completed!")
+
+	rs, err := controller.List(a.Context, "", false)
+	if err != nil {
+		return err
+	}
+
+	hasError := false
+	for _, r := range rs {
+		if r.Meta.ReconcileError != "" {
+			hasError = true
+			break
+		}
+	}
+
+	if hasError {
+		a.Logger.Named("console").Errorf("Hydration failed")
+		if strict {
+			return fmt.Errorf("strict mode exit")
+		}
 	} else {
-		a.Logger.Named("console").Infof("Hydration failed")
+		a.Logger.Named("console").Infof("Hydration completed!")
 	}
+
 	return nil
 }
 
@@ -319,10 +372,10 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Run the server
 	err = group.Wait()
-	if err != nil {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		return fmt.Errorf("server crashed: %w", err)
 	}
-	a.Logger.Named("console").Info("Rill shutdown gracefully")
+
 	return nil
 }
 
@@ -434,7 +487,8 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 		// Proxy request to rill intake
 		proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", r.Body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadGateway)
+			a.BaseLogger.Info("failed to create telemetry request", zap.Error(err))
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
@@ -446,7 +500,8 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 		// Send proxied request
 		resp, err := http.DefaultClient.Do(proxyReq)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadGateway)
+			a.BaseLogger.Info("failed to send telemetry", zap.Error(err))
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 		defer resp.Body.Close()
@@ -454,6 +509,16 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 		// Done
 		w.WriteHeader(http.StatusOK)
 	})
+}
+
+// IsProjectInit checks if the project is initialized by checking if rill.yaml exists in the project directory.
+// It doesn't use any runtime functions since we need the ability to check this before creating the instance.
+func IsProjectInit(projectPath string) bool {
+	rillYAML := filepath.Join(projectPath, "rill.yaml")
+	if _, err := os.Stat(rillYAML); err != nil {
+		return false
+	}
+	return true
 }
 
 func ParseLogFormat(format string) (LogFormat, bool) {
@@ -504,6 +569,7 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 		encCfg := zap.NewDevelopmentEncoderConfig()
 		encCfg.NameKey = zapcore.OmitKey
 		encCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		encCfg.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02T15:04:05.000")
 		consoleEncoder = zapcore.NewConsoleEncoder(encCfg)
 	}
 

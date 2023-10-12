@@ -27,16 +27,15 @@
   import ContextColumnValue from "./ContextColumnValue.svelte";
 
   export let itemData: LeaderboardItemData;
-  $: label = itemData.label;
+  $: label = itemData.dimensionValue;
   $: measureValue = itemData.value;
   $: selected = itemData.selectedIndex >= 0;
-  $: comparisonValue = itemData.comparisonValue;
+  $: comparisonValue = itemData.prevValue;
 
-  export let showContext: LeaderboardContextColumn;
+  export let contextColumn: LeaderboardContextColumn;
 
   export let atLeastOneActive = false;
   export let isBeingCompared = false;
-  export let formattedValue: string;
   export let filterExcludeMode;
 
   export let formatPreset;
@@ -46,15 +45,11 @@
   /** for summable measures, this is the value we use to calculate the bar % to fill */
   export let referenceValue;
 
-  /** the unfilteredTotal is used to compute the "percent of total" context value*/
-  export let unfilteredTotal: number;
-
   $: formattedValue = humanizeDataType(measureValue, formatPreset);
 
   $: contextColumnFormattedValue = formatContextColumnValue(
     itemData,
-    unfilteredTotal,
-    showContext,
+    contextColumn,
     formatPreset
   );
 
@@ -179,7 +174,7 @@
           </div>
           <ContextColumnValue
             formattedValue={contextColumnFormattedValue}
-            {showContext}
+            {contextColumn}
           />
         </div>
       </div>

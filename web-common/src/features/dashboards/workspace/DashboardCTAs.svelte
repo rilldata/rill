@@ -2,6 +2,8 @@
   import { goto } from "$app/navigation";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
+  import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { Button } from "../../../components/button";
   import Tooltip from "../../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
@@ -13,9 +15,9 @@
   } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
-  import { projectShareStore } from "../dashboard-stores";
   import { useDashboardPolicyCheck } from "../granular-access-policies/useDashboardPolicyCheck";
   import ViewAsButton from "../granular-access-policies/ViewAsButton.svelte";
+  import DeployDashboardCta from "./DeployDashboardCTA.svelte";
 
   export let metricViewName: string;
 
@@ -25,6 +27,11 @@
   );
 
   $: isEditableDashboard = $featureFlags.readOnly === false;
+
+  $: dashboardQuery = useDashboard($runtime.instanceId, metricViewName);
+  $: dashboardIsIdle =
+    $dashboardQuery.data.meta.reconcileStatus ===
+    V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
   function viewMetrics(metricViewName: string) {
     goto(`/dashboard/${metricViewName}/edit`);
@@ -38,9 +45,7 @@
     );
   }
 
-  function deployModal() {
-    projectShareStore.set(true);
-  }
+  let showDeployDashboardModal = false;
 </script>
 
 <PanelCTA side="right">
@@ -49,18 +54,33 @@
   {/if}
   {#if isEditableDashboard}
     <Tooltip distance={8}>
-      <Button on:click={() => viewMetrics(metricViewName)} type="secondary">
+      <Button
+        disabled={!dashboardIsIdle}
+        on:click={() => viewMetrics(metricViewName)}
+        type="secondary"
+      >
         Edit Metrics <MetricsIcon size="16px" />
       </Button>
       <TooltipContent slot="tooltip-content">
-        Edit this dashboard's metrics & settings
+        {#if !dashboardIsIdle}
+          Dependencies are being ingested
+        {:else}
+          Edit this dashboard's metrics & settings
+        {/if}
       </TooltipContent>
     </Tooltip>
     <Tooltip distance={8}>
-      <Button on:click={deployModal} type="primary">Deploy</Button>
+      <Button on:click={() => (showDeployDashboardModal = true)} type="primary">
+        Deploy
+      </Button>
       <TooltipContent slot="tooltip-content">
         Deploy this dashboard to Rill Cloud
       </TooltipContent>
     </Tooltip>
   {/if}
 </PanelCTA>
+
+<DeployDashboardCta
+  on:close={() => (showDeployDashboardModal = false)}
+  open={showDeployDashboardModal}
+/>

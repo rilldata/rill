@@ -1,6 +1,6 @@
 import type { Timestamp } from "@bufbuild/protobuf";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -28,6 +28,8 @@ const LeaderboardContextColumnReverseMap: Record<
     LeaderboardContextColumn.PERCENT,
   [DashboardState_LeaderboardContextColumn.DELTA_PERCENT]:
     LeaderboardContextColumn.DELTA_PERCENT,
+  [DashboardState_LeaderboardContextColumn.DELTA_ABSOLUTE]:
+    LeaderboardContextColumn.DELTA_ABSOLUTE,
   [DashboardState_LeaderboardContextColumn.HIDDEN]:
     LeaderboardContextColumn.HIDDEN,
 };

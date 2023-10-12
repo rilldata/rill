@@ -98,6 +98,34 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - RuntimeService
+  /v1/connectors/olap/table:
+    get:
+      summary: OLAPGetTable returns metadata about a table or view in an OLAP
+      operationId: ConnectorService_OLAPGetTable
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1OLAPGetTableResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: query
+          required: false
+          type: string
+        - name: connector
+          in: query
+          required: false
+          type: string
+        - name: table
+          in: query
+          required: false
+          type: string
+      tags:
+        - ConnectorService
   /v1/connectors/scan:
     get:
       summary: |-
@@ -397,36 +425,6 @@ paths:
             title: Request message for RuntimeService.DeleteInstance
       tags:
         - RuntimeService
-    put:
-      summary: EditInstanceVariables edits the instance variable
-      operationId: RuntimeService_EditInstanceVariables
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1EditInstanceVariablesResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              variables:
-                type: object
-                additionalProperties:
-                  type: string
-            description: Request message for RuntimeService.EditInstanceVariables.
-      tags:
-        - RuntimeService
     patch:
       summary: EditInstance edits an existing instance
       operationId: RuntimeService_EditInstance
@@ -454,54 +452,36 @@ paths:
                 type: string
               repoConnector:
                 type: string
-              embedCatalog:
-                type: boolean
-              ingestionLimitBytes:
-                type: string
-                format: int64
               connectors:
                 type: array
                 items:
                   type: object
                   $ref: '#/definitions/v1Connector'
+              variables:
+                type: object
+                additionalProperties:
+                  type: string
               annotations:
                 type: object
                 additionalProperties:
                   type: string
+              embedCatalog:
+                type: boolean
+              ingestionLimitBytes:
+                type: string
+                format: int64
+              watchRepo:
+                type: boolean
+              stageChanges:
+                type: boolean
+              modelDefaultMaterialize:
+                type: boolean
+              modelMaterializeDelaySeconds:
+                type: integer
+                format: int64
             description: |-
               Request message for RuntimeService.EditInstance.
               See message Instance for field descriptions.
-      tags:
-        - RuntimeService
-  /v1/instances/{instanceId}/annotations:
-    put:
-      summary: EditInstanceAnnotations edits the instance annotations
-      operationId: RuntimeService_EditInstanceAnnotations
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1EditInstanceAnnotationsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              annotations:
-                type: object
-                additionalProperties:
-                  type: string
-            description: Request message for RuntimeService.EditInstanceAnnotations.
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/catalog:
@@ -1011,6 +991,8 @@ paths:
                 $ref: '#/definitions/v1MetricsViewRowsRequest'
               metricsViewTimeSeriesRequest:
                 $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
+              metricsViewComparisonToplistRequest:
+                $ref: '#/definitions/v1MetricsViewComparisonToplistRequest'
             title: Request message for QueryService.Export
       tags:
         - QueryService
@@ -1993,28 +1975,6 @@ paths:
           type: boolean
       tags:
         - RuntimeService
-  /v1/instances/{instanceId}/sync:
-    post:
-      summary: |-
-        TriggerSync syncronizes the instance's catalog with the underlying OLAP's information schema.
-        If the instance has exposed=true, tables found in the information schema will be added to the catalog.
-      operationId: RuntimeService_TriggerSync
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1TriggerSyncResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: instanceId
-          in: path
-          required: true
-          type: string
-      tags:
-        - RuntimeService
   /v1/instances/{instanceId}/trigger:
     post:
       summary: |-
@@ -2429,7 +2389,9 @@ definitions:
         type: string
       description:
         type: string
-      format:
+      formatPreset:
+        type: string
+      formatD3:
         type: string
       validPercentOfTotal:
         type: boolean
@@ -2957,24 +2919,33 @@ definitions:
         type: string
       repoConnector:
         type: string
-      embedCatalog:
-        type: boolean
-      variables:
-        type: object
-        additionalProperties:
-          type: string
-      ingestionLimitBytes:
-        type: string
-        format: int64
-      annotations:
-        type: object
-        additionalProperties:
-          type: string
       connectors:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1Connector'
+      variables:
+        type: object
+        additionalProperties:
+          type: string
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+      embedCatalog:
+        type: boolean
+      ingestionLimitBytes:
+        type: string
+        format: int64
+      watchRepo:
+        type: boolean
+      stageChanges:
+        type: boolean
+      modelDefaultMaterialize:
+        type: boolean
+      modelMaterializeDelaySeconds:
+        type: integer
+        format: int64
     description: |-
       Request message for RuntimeService.CreateInstance.
       See message Instance for field descriptions.
@@ -3029,24 +3000,12 @@ definitions:
   v1DeleteInstanceResponse:
     type: object
     title: Response message for RuntimeService.DeleteInstance
-  v1EditInstanceAnnotationsResponse:
-    type: object
-    properties:
-      instance:
-        $ref: '#/definitions/v1Instance'
-    title: Response message for RuntimeService.EditInstanceAnnotations
   v1EditInstanceResponse:
     type: object
     properties:
       instance:
         $ref: '#/definitions/v1Instance'
     title: Response message for RuntimeService.EditInstance
-  v1EditInstanceVariablesResponse:
-    type: object
-    properties:
-      instance:
-        $ref: '#/definitions/v1Instance'
-    title: Response message for RuntimeService.EditInstanceVariables
   v1Example:
     type: object
     properties:
@@ -3065,7 +3024,6 @@ definitions:
       - EXPORT_FORMAT_XLSX
       - EXPORT_FORMAT_PARQUET
     default: EXPORT_FORMAT_UNSPECIFIED
-    title: ExportFormat is a file format for a data export
   v1ExportResponse:
     type: object
     properties:
@@ -3173,38 +3131,52 @@ definitions:
     properties:
       instanceId:
         type: string
-        title: Identifier (UUID)
       olapConnector:
         type: string
-        title: 'OLAP connector name (typically called : olap )'
       repoConnector:
         type: string
-        description: "Connector name for repo driver(typically called : repo). \nRepo driver is for reading/editing code artifacts. This enables virtualizing a file system in a cloud setting."
-      embedCatalog:
-        type: boolean
-        description: |-
-          If true, the runtime will store the instance's catalog in its OLAP store instead
-          of in the runtime's metadata store. Currently only supported for the duckdb driver.
-      variables:
-        type: object
-        additionalProperties:
-          type: string
-        title: instance specific variables
-      projectVariables:
-        type: object
-        additionalProperties:
-          type: string
-        title: project defaults
-      ingestionLimitBytes:
+      createdOn:
         type: string
-        format: int64
-        title: ingestion limit across all sources, 0 means no limit
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
       connectors:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1Connector'
-        description: bare minimum connectors required by the instance.
+      projectConnectors:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Connector'
+      variables:
+        type: object
+        additionalProperties:
+          type: string
+      projectVariables:
+        type: object
+        additionalProperties:
+          type: string
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+      embedCatalog:
+        type: boolean
+      ingestionLimitBytes:
+        type: string
+        format: int64
+      watchRepo:
+        type: boolean
+      stageChanges:
+        type: boolean
+      modelDefaultMaterialize:
+        type: boolean
+      modelMaterializeDelaySeconds:
+        type: integer
+        format: int64
     description: |-
       Instance represents a single data project, meaning one set of code artifacts,
       one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
@@ -3345,6 +3317,12 @@ definitions:
       security:
         $ref: '#/definitions/MetricsViewSecurity'
         title: Security for the dashboard
+      firstDayOfWeek:
+        type: integer
+        format: int64
+      firstMonthOfYear:
+        type: integer
+        format: int64
     title: Metrics view is the internal representation of a metrics view definition
   v1MetricsViewAggregationDimension:
     type: object
@@ -3627,6 +3605,14 @@ definitions:
       security:
         $ref: '#/definitions/MetricsViewSpecSecurityV2'
         title: Security for the dashboard
+      firstDayOfWeek:
+        type: integer
+        format: int64
+        description: ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
+      firstMonthOfYear:
+        type: integer
+        format: int64
+        description: Month number to use as the base for time aggregations by year. Defaults to 1 (January).
   v1MetricsViewState:
     type: object
     properties:
@@ -3921,6 +3907,13 @@ definitions:
     description: |-
       Response for QueryService.ColumnNumericHistogram, QueryService.ColumnDescriptiveStatistics and QueryService.ColumnCardinality.
       Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
+  v1OLAPGetTableResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
+      view:
+        type: boolean
   v1OLAPListTablesResponse:
     type: object
     properties:
@@ -3948,6 +3941,8 @@ definitions:
         type: string
       startLocation:
         $ref: '#/definitions/runtimev1CharLocation'
+      external:
+        type: boolean
   v1PingResponse:
     type: object
     properties:
@@ -3978,26 +3973,6 @@ definitions:
         $ref: '#/definitions/v1ProjectParserState'
   v1ProjectParserSpec:
     type: object
-    properties:
-      compiler:
-        type: string
-        title: compiler identifies the project parser to use
-      watch:
-        type: boolean
-        title: watch makes the project parser watch for and incrementally parse changed files
-      stageChanges:
-        type: boolean
-        title: stage_changes sets stage_changes on created sources and models
-      sourceStreamIngestion:
-        type: boolean
-        title: stream_source_ingestion
-      modelDefaultMaterialize:
-        type: boolean
-        title: model_default_materialize sets a default for whether or not to materialize a model, if not explicitly set in the model
-      modelMaterializeDelaySeconds:
-        type: integer
-        format: int64
-        title: materialize_model_delay_seconds makes the project parser delay materialization of updated models
   v1ProjectParserState:
     type: object
     properties:
@@ -4008,10 +3983,8 @@ definitions:
           $ref: '#/definitions/v1ParseError'
       currentCommitSha:
         type: string
-      changedPaths:
-        type: array
-        items:
-          type: string
+      watching:
+        type: boolean
   v1PullTrigger:
     type: object
     properties:
@@ -4368,6 +4341,76 @@ definitions:
   v1RenameFileResponse:
     type: object
     title: Response message for RuntimeService.RenameFile
+  v1Report:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ReportSpec'
+      state:
+        $ref: '#/definitions/v1ReportState'
+  v1ReportExecution:
+    type: object
+    properties:
+      adhoc:
+        type: boolean
+      errorMessage:
+        type: string
+      reportTime:
+        type: string
+        format: date-time
+      startedOn:
+        type: string
+        format: date-time
+      finishedOn:
+        type: string
+        format: date-time
+  v1ReportSpec:
+    type: object
+    properties:
+      trigger:
+        type: boolean
+      title:
+        type: string
+      refreshSchedule:
+        $ref: '#/definitions/v1Schedule'
+      timeoutSeconds:
+        type: integer
+        format: int64
+      operationName:
+        type: string
+      operationProperties:
+        type: object
+      operationTimeRange:
+        type: string
+      exportLimit:
+        type: integer
+        format: int64
+      exportFormat:
+        $ref: '#/definitions/v1ExportFormat'
+      recipients:
+        type: array
+        items:
+          type: string
+      emailOpenUrl:
+        type: string
+      emailEditUrl:
+        type: string
+  v1ReportState:
+    type: object
+    properties:
+      nextRunOn:
+        type: string
+        format: date-time
+      currentExecution:
+        $ref: '#/definitions/v1ReportExecution'
+      executionHistory:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ReportExecution'
+      executionCount:
+        type: integer
+        format: int64
   v1Resource:
     type: object
     properties:
@@ -4384,6 +4427,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewV2'
       migration:
         $ref: '#/definitions/v1Migration'
+      report:
+        $ref: '#/definitions/v1Report'
       pullTrigger:
         $ref: '#/definitions/v1PullTrigger'
       refreshTrigger:
@@ -4413,6 +4458,8 @@ definitions:
         type: array
         items:
           type: string
+      hidden:
+        type: boolean
       version:
         type: string
         format: int64
@@ -4520,6 +4567,8 @@ definitions:
       tickerSeconds:
         type: integer
         format: int64
+      timeZone:
+        type: string
   v1Source:
     type: object
     properties:
@@ -4751,22 +4800,6 @@ definitions:
   v1TriggerRefreshResponse:
     type: object
     title: Response message for RuntimeService.TriggerRefresh
-  v1TriggerSyncResponse:
-    type: object
-    properties:
-      objectsCount:
-        type: integer
-        format: int64
-      objectsAddedCount:
-        type: integer
-        format: int64
-      objectsUpdatedCount:
-        type: integer
-        format: int64
-      objectsRemovedCount:
-        type: integer
-        format: int64
-    title: Response message for RuntimeService.TriggerSync
   v1TypeCode:
     type: string
     enum:

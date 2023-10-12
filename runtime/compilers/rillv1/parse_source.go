@@ -11,6 +11,9 @@ import (
 	"github.com/robfig/cron/v3"
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 // sourceYAML is the raw structure of a Source resource defined in YAML (does not include common fields)
@@ -24,17 +27,28 @@ type sourceYAML struct {
 
 // parseSource parses a source definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseSource(ctx context.Context, node *Node) error {
-	// If the source has SQL and hasn't specified a connector, we treat it as a model
-	if node.SQL != "" && node.ConnectorInferred {
-		return p.parseModel(ctx, node)
-	}
-
 	// Parse YAML
 	tmp := &sourceYAML{}
+	if p.RillYAML != nil && !p.RillYAML.Defaults.Sources.IsZero() {
+		if err := p.RillYAML.Defaults.Sources.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
+		}
+	}
 	if node.YAML != nil {
 		if err := node.YAML.Decode(tmp); err != nil {
 			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
 		}
+	}
+
+	// Backward compatibility: "type:" is an alias for "connector:"
+	if tmp.Type != "" {
+		node.Connector = tmp.Type
+		node.ConnectorInferred = false
+	}
+
+	// If the source has SQL and hasn't specified a connector, we treat it as a model
+	if node.SQL != "" && node.ConnectorInferred {
+		return p.parseModel(ctx, node)
 	}
 
 	// Override YAML config with SQL annotations
@@ -66,11 +80,6 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 		return err
 	}
 
-	// Backward compatibility
-	if tmp.Type != "" {
-		node.Connector = tmp.Type
-	}
-
 	// Backward compatibility: when the default connector is "olap", and it's a DuckDB connector, a source with connector "duckdb" should run on it
 	if p.DefaultConnector == "olap" && node.Connector == "duckdb" && slices.Contains(p.DuckDBConnectors, p.DefaultConnector) {
 		node.Connector = "olap"
@@ -86,9 +95,13 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 		return fmt.Errorf("encountered invalid property type: %w", err)
 	}
 
-	// Upsert source (in practice, this will always be an insert)
-	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
-	r := p.upsertResource(ResourceKindSource, node.Name, node.Paths, node.Refs...)
+	// Track source
+	r, err := p.insertResource(ResourceKindSource, node.Name, node.Paths, node.Refs...)
+	if err != nil {
+		return err
+	}
+	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
+
 	r.SourceSpec.Properties = mergeStructPB(r.SourceSpec.Properties, props)
 	r.SourceSpec.SinkConnector = p.DefaultConnector // Sink connector not currently configurable
 	if node.Connector != "" {
@@ -107,12 +120,14 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 // scheduleYAML is the raw structure of a refresh schedule clause defined in YAML.
 // This does not represent a stand-alone YAML file, just a partial used in other structs.
 type scheduleYAML struct {
-	Cron   string `yaml:"cron" mapstructure:"cron"`
-	Ticker string `yaml:"ticker" mapstructure:"ticker"`
+	Cron     string `yaml:"cron" mapstructure:"cron"`
+	Every    string `yaml:"every" mapstructure:"every"`
+	TimeZone string `yaml:"time_zone" mapstructure:"time_zone"`
+	Disable  bool   `yaml:"disable" mapstructure:"disable"`
 }
 
 func parseScheduleYAML(raw *scheduleYAML) (*runtimev1.Schedule, error) {
-	if raw == nil || (raw.Cron == "" && raw.Ticker == "") {
+	if raw == nil || raw.Disable || (raw.Cron == "" && raw.Every == "") {
 		return nil, nil
 	}
 
@@ -125,12 +140,20 @@ func parseScheduleYAML(raw *scheduleYAML) (*runtimev1.Schedule, error) {
 		s.Cron = raw.Cron
 	}
 
-	if raw.Ticker != "" {
-		d, err := parseDuration(raw.Ticker)
+	if raw.Every != "" {
+		d, err := parseDuration(raw.Every)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ticker: %w", err)
 		}
 		s.TickerSeconds = uint32(d.Seconds())
+	}
+
+	if raw.TimeZone != "" {
+		_, err := time.LoadLocation(raw.TimeZone)
+		if err != nil {
+			return nil, fmt.Errorf("invalid time zone: %w", err)
+		}
+		s.TimeZone = raw.TimeZone
 	}
 
 	return s, nil

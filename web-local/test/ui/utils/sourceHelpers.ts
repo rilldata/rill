@@ -30,8 +30,8 @@ export async function uploadFile(
 ) {
   // add table button
   await page.locator("button#add-table").click();
-  // click local file tab
-  await page.getByRole("tab", { name: "Local file" }).click();
+  // click local file button
+  await page.locator("button#local_file").click();
   // wait for file chooser while clicking on upload button
   const [fileChooser] = await Promise.all([
     page.waitForEvent("filechooser"),
@@ -53,15 +53,9 @@ export async function uploadFile(
       // else click on `Replace Existing Source`
       duplicatePromise = clickModalButton(page, "Replace Existing Source");
     }
-    await Promise.all([
-      page.waitForResponse(/put-and-reconcile/),
-      duplicatePromise,
-    ]);
+    await Promise.all([page.waitForResponse(/files\/-\//), duplicatePromise]);
   } else {
-    await Promise.all([
-      page.waitForResponse(/put-and-reconcile/),
-      fileUploadPromise,
-    ]);
+    await Promise.all([page.waitForResponse(/files\/-\//), fileUploadPromise]);
     // if not duplicate wait and make sure `Duplicate source name` modal is not open
     await asyncWait(100);
     await expect(page.getByText("Duplicate source name")).toBeHidden();

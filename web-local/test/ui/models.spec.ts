@@ -5,7 +5,6 @@ import {
   renameEntityUsingMenu,
   updateCodeEditor,
 } from "./utils/commonHelpers";
-import { createAdBidsModel } from "./utils/dataSpecifcHelpers";
 import {
   TestEntityType,
   waitForProfiling,
@@ -47,7 +46,7 @@ test.describe("models", () => {
 
     // Query parse error
     await updateCodeEditor(page, "select from AdBids");
-    await wrapRetryAssertion(() => modelHasError(page, true, "Parser Error"));
+    await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
   });
 
   test("Rename and delete model", async ({ page }) => {
@@ -99,10 +98,5 @@ test.describe("models", () => {
     await gotoEntity(page, "AdBids_model");
     // make sure error has propagated
     await wrapRetryAssertion(() => modelHasError(page, true, "Catalog Error"));
-  });
-
-  test("Embedded source", async ({ page }) => {
-    await page.goto("/");
-    await createAdBidsModel(page);
   });
 });

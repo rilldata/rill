@@ -22,8 +22,11 @@ func (q *ColumnRugHistogram) Key() string {
 	return fmt.Sprintf("ColumnRugHistogram:%s:%s", q.TableName, q.ColumnName)
 }
 
-func (q *ColumnRugHistogram) Deps() []string {
-	return []string{q.TableName}
+func (q *ColumnRugHistogram) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *ColumnRugHistogram) MarshalResult() *runtime.QueryResult {

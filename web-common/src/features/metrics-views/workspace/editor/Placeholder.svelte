@@ -3,27 +3,33 @@
   import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
     generateDashboardYAMLForModel,
     initBlankDashboardYAML,
   } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
-  import { useModelNames } from "@rilldata/web-common/features/models/selectors";
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
-    getRuntimeServiceGetCatalogEntryQueryKey,
-    runtimeServiceGetCatalogEntry,
-    runtimeServicePutFileAndReconcile,
-    V1GetCatalogEntryResponse,
+    connectorServiceOLAPGetTable,
+    getConnectorServiceOLAPGetTableQueryKey,
+    getRuntimeServiceGetResourceQueryKey,
+    runtimeServiceGetResource,
+    runtimeServicePutFile,
+    V1GetResourceResponse,
   } from "@rilldata/web-common/runtime-client";
-  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   export let metricsName: string;
   export let view: EditorView = undefined;
 
-  $: models = useModelNames($runtime.instanceId);
+  $: models = useModelFileNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
 
@@ -32,28 +38,51 @@
 
   // FIXME: shouldn't these be generalized and used everywhere?
   async function onAutogenerateConfigFromModel(modelName: string) {
-    const model = await queryClient.fetchQuery<V1GetCatalogEntryResponse>({
-      queryKey: getRuntimeServiceGetCatalogEntryQueryKey(
-        $runtime?.instanceId,
-        modelName
-      ),
+    const instanceId = $runtime?.instanceId;
+    const model = await queryClient.fetchQuery<V1GetResourceResponse>({
+      queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
+        "name.name": modelName,
+        "name.kind": ResourceKind.Model,
+      }),
       queryFn: () =>
-        runtimeServiceGetCatalogEntry($runtime?.instanceId, modelName),
+        runtimeServiceGetResource(instanceId, {
+          "name.name": modelName,
+          "name.kind": ResourceKind.Model,
+        }),
+    });
+    const schemaResp = await queryClient.fetchQuery({
+      queryKey: getConnectorServiceOLAPGetTableQueryKey({
+        instanceId,
+        table: model.resource.model.state.table,
+        connector: model.resource.model.state.connector,
+      }),
+      queryFn: () =>
+        connectorServiceOLAPGetTable({
+          instanceId,
+          table: model.resource.model.state.table,
+          connector: model.resource.model.state.connector,
+        }),
     });
 
-    const dashboardYAML = generateDashboardYAMLForModel(model?.entry?.model);
+    const dashboardYAML = generateDashboardYAMLForModel(
+      modelName,
+      schemaResp.schema
+    );
 
-    const response = await runtimeServicePutFileAndReconcile({
-      instanceId: $runtime.instanceId,
-      path: getFilePathFromNameAndType(
-        metricsName,
-        EntityType.MetricsDefinition
-      ),
-      blob: dashboardYAML,
-      create: true,
-      createOnly: true,
-      strict: false,
-    });
+    await runtimeServicePutFile(
+      $runtime.instanceId,
+      getFileAPIPathFromNameAndType(metricsName, EntityType.MetricsDefinition),
+      {
+        blob: dashboardYAML,
+        create: true,
+        createOnly: true,
+      }
+    );
+    await waitForResource(
+      queryClient,
+      $runtime.instanceId,
+      getFilePathFromNameAndType(metricsName, EntityType.MetricsDefinition)
+    );
     /**
      * go ahead and optimistically update the editor view.
      */
@@ -68,25 +97,21 @@
       // any reconciliation update.
       annotations: skipDebounceAnnotation.of(true),
     });
-    /** invalidate and show results */
-    invalidateAfterReconcile(queryClient, $runtime.instanceId, response);
   }
 
   // FIXME: shouldn't these be generalized and used everywhere?
   async function onCreateSkeletonMetricsConfig() {
     const yaml = initBlankDashboardYAML(metricsName);
 
-    const response = await runtimeServicePutFileAndReconcile({
-      instanceId: $runtime.instanceId,
-      path: getFilePathFromNameAndType(
-        metricsName,
-        EntityType.MetricsDefinition
-      ),
-      blob: yaml,
-      create: true,
-      createOnly: true,
-      strict: false,
-    });
+    await runtimeServicePutFile(
+      $runtime.instanceId,
+      getFileAPIPathFromNameAndType(metricsName, EntityType.MetricsDefinition),
+      {
+        blob: yaml,
+        create: true,
+        createOnly: true,
+      }
+    );
 
     /** optimistically update the editor. We will dispatch
      * a debounce annotation here to tell the MetricsWorkspace
@@ -100,29 +125,26 @@
       },
       annotations: skipDebounceAnnotation.of(true),
     });
-
-    /** invalidate and show results */
-    invalidateAfterReconcile(queryClient, $runtime.instanceId, response);
   }
 </script>
 
 <div class="whitespace-normal">
   Auto-generate a <WithTogglableFloatingElement
+    distance={8}
     inline
     let:toggleFloatingElement
-    distance={8}
   >
     <button
-      disabled={!$models?.data?.length}
       class={buttonClasses}
+      disabled={!$models?.data?.length}
       on:click={toggleFloatingElement}
       >metrics configuration from an existing model</button
     >,
     <Menu
       dark
-      slot="floating-element"
       on:click-outside={toggleFloatingElement}
       on:escape={toggleFloatingElement}
+      slot="floating-element"
     >
       {#each $models?.data as model}
         <MenuItem
@@ -137,9 +159,9 @@
     </Menu>
   </WithTogglableFloatingElement>
   <button
+    class={buttonClasses}
     on:click={async () => {
       onCreateSkeletonMetricsConfig();
-    }}
-    class={buttonClasses}>start with a skeleton</button
+    }}>start with a skeleton</button
   >, or just start typing.
 </div>

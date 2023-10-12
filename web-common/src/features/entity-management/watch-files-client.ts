@@ -1,3 +1,4 @@
+import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import {
   getRuntimeServiceGetFileQueryKey,
@@ -21,6 +22,8 @@ function handleWatchFileResponse(
   queryClient: QueryClient,
   res: V1WatchFilesResponse
 ) {
+  if (res.path.includes(".db")) return;
+  console.log(`[${res.event}] ${res.path}`);
   // Watch file returns events for all files under the project. Ignore everything except .sql, .yaml & .yml
   if (
     !res.path.endsWith(".sql") &&
@@ -43,6 +46,7 @@ function handleWatchFileResponse(
       queryClient.removeQueries(
         getRuntimeServiceGetFileQueryKey(instanceId, res.path)
       );
+      resourcesStore.deleteFile(res.path);
       break;
   }
   // TODO: should this be throttled?
@@ -51,14 +55,7 @@ function handleWatchFileResponse(
 
 async function invalidateAllFiles(queryClient: QueryClient) {
   const instanceId = get(runtime).instanceId;
-  queryClient.removeQueries({
-    type: "inactive",
-    predicate: (query) =>
-      query.queryHash.includes(`v1/instances/${instanceId}/files`),
-  });
-
-  return queryClient.refetchQueries({
-    type: "active",
+  return queryClient.resetQueries({
     predicate: (query) =>
       query.queryHash.includes(`v1/instances/${instanceId}/files`),
   });

@@ -93,6 +93,31 @@ export async function waitForTopLists(
   );
 }
 
+/**
+ * Waits for a set of top list queries to end.
+ * Optionally takes a filter matcher: {@link metricsViewRequestFilterMatcher}.
+ */
+export async function waitForComparisonTopLists(
+  page: Page,
+  metricsView: string,
+  dimensions: Array<string>,
+  filterMatcher?: RequestMatcher
+) {
+  const topListUrlRegex = new RegExp(
+    `/metrics-views/${metricsView}/compare-toplist`
+  );
+  await Promise.all(
+    dimensions.map((dimension) =>
+      page.waitForResponse(
+        (response) =>
+          topListUrlRegex.test(response.url()) &&
+          response.request().postDataJSON().dimensionName === dimension &&
+          (filterMatcher ? filterMatcher(response) : true)
+      )
+    )
+  );
+}
+
 export type RequestMatcherFilter = { label: string; values: Array<unknown> };
 
 /**

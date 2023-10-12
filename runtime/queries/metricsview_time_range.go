@@ -17,7 +17,7 @@ import (
 
 type MetricsViewTimeRange struct {
 	MetricsViewName    string                               `json:"name"`
-	MetricsView        *runtimev1.MetricsView               `json:"-"`
+	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
 	Result *runtimev1.MetricsViewTimeRangeResponse `json:"_"`
@@ -33,8 +33,10 @@ func (q *MetricsViewTimeRange) Key() string {
 	return fmt.Sprintf("MetricsViewTimeRange:%s", r)
 }
 
-func (q *MetricsViewTimeRange) Deps() []string {
-	return []string{q.MetricsViewName}
+func (q *MetricsViewTimeRange) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindMetricsView, Name: q.MetricsViewName},
+	}
 }
 
 func (q *MetricsViewTimeRange) MarshalResult() *runtime.QueryResult {
@@ -71,9 +73,9 @@ func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime,
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		return q.resolveDuckDB(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Model, policyFilter, priority)
+		return q.resolveDuckDB(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Table, policyFilter, priority)
 	case drivers.DialectDruid:
-		return q.resolveDruid(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Model, policyFilter, priority)
+		return q.resolveDruid(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Table, policyFilter, priority)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}

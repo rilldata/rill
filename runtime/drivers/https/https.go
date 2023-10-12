@@ -20,7 +20,7 @@ func init() {
 }
 
 var spec = drivers.Spec{
-	DisplayName: "http(s)",
+	DisplayName: "https",
 	Description: "Connect to a remote file.",
 	SourceProperties: []drivers.PropertySchema{
 		{
@@ -57,6 +57,10 @@ func (d driver) Spec() drivers.Spec {
 
 func (d driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	return true, nil
+}
+
+func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
+	return nil, nil
 }
 
 type sourceProperties struct {

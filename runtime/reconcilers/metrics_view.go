@@ -43,7 +43,7 @@ func (r *MetricsViewReconciler) AssignState(from, to *runtimev1.Resource) error 
 	if a == nil || b == nil {
 		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
 	}
-	b.Spec = a.Spec
+	b.State = a.State
 	return nil
 }
 
@@ -62,13 +62,18 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{Err: errors.New("not a metrics view")}
 	}
 
+	// Exit early for deletion
+	if self.Meta.DeletedOn != nil {
+		return runtime.ReconcileResult{}
+	}
+
 	// NOTE: Not checking refs here since refs may still be valid even if they have errors (in case of staged changes).
 	// Instead, we just validate against the table name.
 
 	validateErr := r.validate(ctx, mv.Spec)
 
-	if errors.Is(validateErr, ctx.Err()) {
-		return runtime.ReconcileResult{Err: validateErr}
+	if ctx.Err() != nil {
+		return runtime.ReconcileResult{Err: errors.Join(validateErr, ctx.Err())}
 	}
 
 	if validateErr == nil {

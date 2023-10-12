@@ -4,6 +4,7 @@ package rill.runtime.v1;
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
 import "validate/validate.proto";
@@ -209,20 +210,13 @@ message ExportRequest {
     MetricsViewToplistRequest metrics_view_toplist_request = 4;
     MetricsViewRowsRequest metrics_view_rows_request = 5;
     MetricsViewTimeSeriesRequest metrics_view_time_series_request = 6;
+    MetricsViewComparisonToplistRequest metrics_view_comparison_toplist_request = 8;
   }
 }
 
 // Response message for QueryService.Export
 message ExportResponse {
   string download_url_path = 1;
-}
-
-// ExportFormat is a file format for a data export
-enum ExportFormat {
-  EXPORT_FORMAT_UNSPECIFIED = 0;
-  EXPORT_FORMAT_CSV = 1;
-  EXPORT_FORMAT_XLSX = 2;
-  EXPORT_FORMAT_PARQUET = 3;
 }
 
 // **********

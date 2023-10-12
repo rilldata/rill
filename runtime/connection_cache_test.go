@@ -20,7 +20,7 @@ func TestConnectionCache(t *testing.T) {
 	ctx := context.Background()
 	id := "default"
 
-	rt := NewTestRunTimeWithInst(t)
+	rt := newTestRuntimeWithInst(t)
 	c := newConnectionCache(10, zap.NewNop(), rt, activity.NewNoopClient())
 	conn1, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
@@ -65,7 +65,7 @@ func TestConnectionCacheWithAllShared(t *testing.T) {
 	ctx := context.Background()
 	id := "default"
 
-	c := newConnectionCache(1, zap.NewNop(), NewTestRunTimeWithInst(t), activity.NewNoopClient())
+	c := newConnectionCache(1, zap.NewNop(), newTestRuntimeWithInst(t), activity.NewNoopClient())
 	conn1, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, true)
 	require.NoError(t, err)
 	require.NotNil(t, conn1)
@@ -90,7 +90,7 @@ func TestConnectionCacheWithAllShared(t *testing.T) {
 func TestConnectionCacheWithAllOpen(t *testing.T) {
 	ctx := context.Background()
 
-	rt := NewTestRunTimeWithInst(t)
+	rt := newTestRuntimeWithInst(t)
 	c := newConnectionCache(1, zap.NewNop(), rt, activity.NewNoopClient())
 	conn1, r1, err := c.get(ctx, "default", "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
@@ -121,7 +121,7 @@ func TestConnectionCacheWithAllOpen(t *testing.T) {
 func TestConnectionCacheParallel(t *testing.T) {
 	ctx := context.Background()
 
-	rt := NewTestRunTimeWithInst(t)
+	rt := newTestRuntimeWithInst(t)
 	c := newConnectionCache(5, zap.NewNop(), rt, activity.NewNoopClient())
 	defer c.Close()
 
@@ -168,7 +168,7 @@ func TestConnectionCacheParallel(t *testing.T) {
 func TestConnectionCacheMultipleConfigs(t *testing.T) {
 	ctx := context.Background()
 
-	c := newConnectionCache(10, zap.NewNop(), NewTestRunTimeWithInst(t), activity.NewNoopClient())
+	c := newConnectionCache(10, zap.NewNop(), newTestRuntimeWithInst(t), activity.NewNoopClient())
 	defer c.Close()
 	conn1, r1, err := c.get(ctx, "default", "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
 	require.NoError(t, err)
@@ -195,14 +195,17 @@ func TestConnectionCacheMultipleConfigs(t *testing.T) {
 func TestConnectionCacheParallelCalls(t *testing.T) {
 	ctx := context.Background()
 
-	c := newConnectionCache(10, zap.NewNop(), NewTestRunTimeWithInst(t), activity.NewNoopClient())
-	defer c.Close()
-
 	m := &mockDriver{}
 	drivers.Register("mock_driver", m)
 	defer func() {
 		delete(drivers.Drivers, "mock_driver")
 	}()
+
+	rt := newTestRuntimeWithInst(t)
+	defer rt.Close()
+
+	c := newConnectionCache(10, zap.NewNop(), rt, activity.NewNoopClient())
+	defer c.Close()
 
 	var wg sync.WaitGroup
 	wg.Add(10)
@@ -224,15 +227,17 @@ func TestConnectionCacheParallelCalls(t *testing.T) {
 func TestConnectionCacheBlockingCalls(t *testing.T) {
 	ctx := context.Background()
 
-	rt := NewTestRunTimeWithInst(t)
-	c := newConnectionCache(10, zap.NewNop(), rt, activity.NewNoopClient())
-	defer c.Close()
-
 	m := &mockDriver{}
 	drivers.Register("mock_driver", m)
 	defer func() {
 		delete(drivers.Drivers, "mock_driver")
 	}()
+
+	rt := newTestRuntimeWithInst(t)
+	defer rt.Close()
+
+	c := newConnectionCache(10, zap.NewNop(), rt, activity.NewNoopClient())
+	defer c.Close()
 
 	var wg sync.WaitGroup
 	wg.Add(12)
@@ -278,6 +283,10 @@ func (*mockDriver) Drop(config map[string]any, logger *zap.Logger) error {
 // HasAnonymousSourceAccess implements drivers.Driver.
 func (*mockDriver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
 	panic("unimplemented")
+}
+
+func (*mockDriver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
+	return nil, nil
 }
 
 // Open implements drivers.Driver.
@@ -365,8 +374,8 @@ func (*mockHandle) MigrationStatus(ctx context.Context) (current int, desired in
 
 var _ drivers.Handle = &mockHandle{}
 
-func NewTestRunTimeWithInst(t *testing.T) *Runtime {
-	rt := NewTestRunTime(t)
+func newTestRuntimeWithInst(t *testing.T) *Runtime {
+	rt := newTestRuntime(t)
 	createInstance(t, rt, "default")
 	return rt
 }

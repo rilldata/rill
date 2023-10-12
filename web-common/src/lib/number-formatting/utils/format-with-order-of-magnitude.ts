@@ -3,7 +3,20 @@ import { smallestPrecisionMagnitude } from "./smallest-precision-magnitude";
 
 export const orderOfMagnitude = (x) => {
   if (x === 0) return 0;
-  return Math.floor(Math.log10(Math.abs(x)));
+  let mag = Math.floor(Math.log10(Math.abs(x)));
+  // having found the order of magnitude, if we divide it
+  // out of the number, we should get a number between 1 and 10.
+  // However, because of floating point errors, if we get a number
+  // very just less than 10, we may have a floating point error,
+  // in which we want to bump the order of magnitude up by one.
+  //
+  // Ex: 0.0009999999999999 has magnitude -4, but if multiply away
+  // the magnitude, we get:
+  // 0.0009999999999999 * 10**4 = 9.999999999999999
+  // -- just less than 10, so we want to bump the magnitude up to -3
+  // so that we can formar this as e.g. "1.0e-3"
+  if (10 - Math.abs(x) * 10 ** -mag < 1e-8) mag += 1;
+  return mag;
 };
 
 export const orderOfMagnitudeEng = (x) => {

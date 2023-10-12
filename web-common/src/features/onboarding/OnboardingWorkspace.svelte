@@ -1,5 +1,6 @@
 <script lang="ts">
   import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
+  import { IconSpaceFixer } from "../../components/button";
   import Button from "../../components/button/Button.svelte";
   import Add from "../../components/icons/Add.svelte";
   import { WorkspaceContainer } from "../../layout/workspace";
@@ -61,21 +62,18 @@
               <p>{step.description}</p>
             </div>
             {#if step.id === "source"}
-              <Button type="secondary" compact on:click={openAddSourceModal}>
-                <Add className="text-gray-800" />
-                <span class="text-gray-800">Add data</span>
+              <Button type="secondary" on:click={openAddSourceModal}>
+                <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
+                <span>Add data</span>
               </Button>
             {/if}
           </div>
         </li>
       {/each}
     </ol>
-    {#if showAddSourceModal}
-      <AddSourceModal
-        on:close={() => {
-          showAddSourceModal = false;
-        }}
-      />
-    {/if}
+    <AddSourceModal
+      open={showAddSourceModal}
+      on:close={() => (showAddSourceModal = false)}
+    />
   </div>
 </WorkspaceContainer>

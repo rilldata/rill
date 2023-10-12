@@ -241,6 +241,29 @@ func (s *Server) OLAPListTables(ctx context.Context, req *runtimev1.OLAPListTabl
 	}, nil
 }
 
+func (s *Server) OLAPGetTable(ctx context.Context, req *runtimev1.OLAPGetTableRequest) (*runtimev1.OLAPGetTableResponse, error) {
+	conn, release, err := s.runtime.AcquireHandle(ctx, req.InstanceId, req.Connector)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+
+	olap, ok := conn.AsOLAP(req.InstanceId)
+	if !ok {
+		return nil, fmt.Errorf("connector %q is not an OLAP data store", req.Connector)
+	}
+
+	table, err := olap.InformationSchema().Lookup(ctx, req.Table)
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.OLAPGetTableResponse{
+		Schema: table.Schema,
+		View:   table.View,
+	}, nil
+}
+
 func (s *Server) BigQueryListDatasets(ctx context.Context, req *runtimev1.BigQueryListDatasetsRequest) (*runtimev1.BigQueryListDatasetsResponse, error) {
 	bq, release, err := s.getBigQueryConn(ctx, req.Connector, req.InstanceId)
 	if err != nil {

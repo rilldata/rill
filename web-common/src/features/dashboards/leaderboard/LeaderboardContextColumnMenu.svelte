@@ -1,11 +1,9 @@
 <script lang="ts">
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../dashboard-stores";
+  import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import SelectMenu from "@rilldata/web-common/components/menu/compositions/SelectMenu.svelte";
   import type { SelectMenuItem } from "@rilldata/web-common/components/menu/types";
 
@@ -20,16 +18,6 @@
     const value: SelectMenuItem = evt.detail;
     const key = value.key;
     metricsExplorerStore.setContextColumn(metricViewName, key);
-
-    // if (key === LeaderboardContextColumn.HIDDEN) {
-    //   metricsExplorerStore.hideContextColumn(metricViewName);
-    // } else if (key === LeaderboardContextColumn.DELTA_PERCENT) {
-    //   metricsExplorerStore.displayDeltaChange(metricViewName);
-    // } else if (key === LeaderboardContextColumn.PERCENT) {
-    //   metricsExplorerStore.displayPercentOfTotal(metricViewName);
-    // } else if (key === LeaderboardContextColumn.DELTA_ABSOLUTE) {
-    //   metricsExplorerStore.displayDeltaAbsolute(metricViewName);
-    // }
   };
 
   let options: SelectMenuItem[];

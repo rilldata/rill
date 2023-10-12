@@ -1,42 +1,49 @@
 <script lang="ts">
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
+  import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+  import {
+    getAllErrorsForFile,
+    useResourceForFile,
+  } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import HorizontalSplitter from "../../../layout/workspace/HorizontalSplitter.svelte";
   import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-  import {
-    fileArtifactsStore,
-    getFileArtifactReconciliationErrors,
-  } from "../../entity-management/file-artifacts-store";
   import { EntityType } from "../../entity-management/types";
   import SourceEditor from "../editor/SourceEditor.svelte";
   import ErrorPane from "../errors/ErrorPane.svelte";
-  import { useIsSourceUnsaved } from "../selectors";
+  import { useIsSourceUnsaved, useSource } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
+  $: filePath = getFilePathFromNameAndType(sourceName, EntityType.Table);
 
+  const queryClient = useQueryClient();
   const sourceStore = useSourceStore(sourceName);
 
-  $: file = createRuntimeServiceGetFile(
-    $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table),
-    {
-      query: {
-        // this will ensure that any changes done outside our app is pulled in.
-        refetchOnWindowFocus: true,
-      },
-    }
-  );
+  $: file = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
+    query: {
+      // this will ensure that any changes done outside our app is pulled in.
+      refetchOnWindowFocus: true,
+    },
+  });
 
   $: yaml = $file.data?.blob || "";
 
-  $: reconciliationErrors = getFileArtifactReconciliationErrors(
-    $fileArtifactsStore,
-    `${sourceName}.yaml`
+  // Get only reconcile errors here. File parse errors are shown inline
+  $: source = useResourceForFile(queryClient, $runtime.instanceId, filePath);
+  $: reconcileError = $source.data?.meta?.reconcileError;
+
+  $: allErrors = getAllErrorsForFile(
+    queryClient,
+    $runtime.instanceId,
+    filePath
   );
+
+  $: sourceQuery = useSource($runtime.instanceId, sourceName);
 
   // Layout state
   const outputPosition = getContext(
@@ -72,12 +79,15 @@
       class="h-full border border-gray-300 rounded overflow-auto {isSourceUnsaved &&
         'brightness-90'} transition duration-200"
     >
-      {#if !reconciliationErrors || reconciliationErrors.length === 0}
+      {#if !$allErrors?.length}
         {#key sourceName}
-          <ConnectedPreviewTable objectName={sourceName} />
+          <ConnectedPreviewTable
+            objectName={$sourceQuery?.data?.source?.state?.table}
+            loading={resourceIsLoading($sourceQuery?.data)}
+          />
         {/key}
       {:else}
-        <ErrorPane {sourceName} error={reconciliationErrors[0]} />
+        <ErrorPane {sourceName} errorMessage={$allErrors[0].message} />
       {/if}
     </div>
   </div>

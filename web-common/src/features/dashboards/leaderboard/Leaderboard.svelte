@@ -7,7 +7,6 @@
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import {
     getFilterForDimension,
     useMetaDimension,
@@ -16,18 +15,28 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
-    createQueryServiceMetricsViewToplist,
+    createQueryServiceMetricsViewComparisonToplist,
     MetricsViewDimension,
     MetricsViewMeasure,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { SortDirection } from "../proto-state/derived-types";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
-  import { getFilterForComparsion } from "../dimension-table/dimension-table-utils";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
-  import { prepareLeaderboardItemData } from "./leaderboard-utils";
+  import {
+    LeaderboardItemData,
+    getLabeledComparisonFromComparisonRow,
+    prepareLeaderboardItemData,
+  } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
+  import {
+    getDimensionColumn,
+    prepareSortedQueryBody,
+  } from "../dashboard-utils";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -59,7 +68,7 @@
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
   $: displayName = dimension?.label || dimension?.name;
-  $: dimensionColumn = dimension?.column || dimension?.name;
+  $: dimensionColumn = getDimensionColumn(dimension);
 
   $: measureQuery = useMetaMeasure(
     $runtime.instanceId,
@@ -93,171 +102,68 @@
     );
   }
 
-  function toggleSortDirection() {
-    metricsExplorerStore.toggleSortDirection(metricViewName);
+  function toggleSort(evt) {
+    metricsExplorerStore.toggleSort(metricViewName, evt.detail);
   }
 
   $: isBeingCompared =
     $dashboardStore?.selectedComparisonDimension === dimensionName;
 
-  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
-  $: topListQuery = createQueryServiceMetricsViewToplist(
-    $runtime.instanceId,
-    metricViewName,
-    {
-      dimensionName: dimensionName,
-      measureNames: [measure?.name],
-      timeStart: $timeControlsStore.timeStart,
-      timeEnd: $timeControlsStore.timeEnd,
-      filter: filterForDimension,
-      limit: "250",
-      offset: "0",
-      sort: [
-        {
-          name: measure?.name,
-          ascending: sortAscending,
-        },
-      ],
-    },
-    {
-      query: {
-        enabled: $timeControlsStore.ready && !!filterForDimension,
-      },
-    }
-  );
-
-  let values: { value: number; label: string | number }[] = [];
-  let comparisonValues = [];
-
-  /** replace data after fetched. */
-  $: if (!$topListQuery?.isFetching) {
-    values =
-      $topListQuery?.data?.data.map((val) => ({
-        value: val[measure?.name],
-        label: val[dimensionColumn],
-      })) ?? [];
-  }
-
-  let valuesComparedInExcludeMode = [];
-  $: if (isBeingCompared && filterExcludeMode) {
-    let count = 0;
-    valuesComparedInExcludeMode = values
-      .filter((value) => {
-        if (!activeValues.includes(value.label) && count < 3) {
-          count++;
-          return true;
-        }
-        return false;
-      })
-      .map((value) => value.label);
-  } else {
-    valuesComparedInExcludeMode = [];
-  }
-
-  // get all values that are selected but not visible.
-  // we'll put these at the bottom w/ a divider.
-  $: selectedValuesThatAreBelowTheFold = activeValues
-    ?.concat(valuesComparedInExcludeMode)
-    ?.filter((label) => {
-      return (
-        // the value is visible within the fold.
-        !values.slice(0, slice).some((value) => {
-          return value.label === label;
-        })
-      );
-    })
-    .map((label) => {
-      const existingValue = values.find((value) => value.label === label);
-      // return the existing value, or if it does not exist, just return the label.
-      // FIX ME return values for label which are not in the query
-      return existingValue ? { ...existingValue } : { label };
-    })
-    .sort((a, b) => {
-      return b.value - a.value;
-    });
-
   $: contextColumn = $dashboardStore?.leaderboardContextColumn;
-  // Compose the comparison /toplist query
-  $: showTimeComparison =
-    (contextColumn === LeaderboardContextColumn.DELTA_PERCENT ||
-      contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE) &&
-    $timeControlsStore?.showComparison;
 
-  $: showPercentOfTotal =
-    $dashboardStore?.leaderboardContextColumn ===
-    LeaderboardContextColumn.PERCENT;
+  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
+  $: sortType = $dashboardStore.dashboardSortType;
 
-  $: showContext = $dashboardStore?.leaderboardContextColumn;
-
-  // add all sliced and active values to the include filter.
-  $: currentVisibleValues =
-    $topListQuery?.data?.data
-      ?.slice(0, slice)
-      ?.concat(selectedValuesThatAreBelowTheFold)
-      ?.map((v) => v[dimensionColumn]) ?? [];
-  $: updatedFilters = getFilterForComparsion(
-    filterForDimension,
+  $: sortedQueryBody = prepareSortedQueryBody(
     dimensionName,
-    currentVisibleValues
+    [measure?.name],
+    $timeControlsStore,
+    measure?.name,
+    sortType,
+    sortAscending,
+    filterForDimension
   );
-  $: comparisonTopListQuery = createQueryServiceMetricsViewToplist(
+
+  $: sortedQueryEnabled = $timeControlsStore.ready && !!filterForDimension;
+
+  $: sortedQueryOptions = {
+    query: {
+      enabled: sortedQueryEnabled,
+    },
+  };
+
+  $: sortedQuery = createQueryServiceMetricsViewComparisonToplist(
     $runtime.instanceId,
     metricViewName,
-    {
-      dimensionName: dimensionName,
-      measureNames: [measure?.name],
-      timeStart: $timeControlsStore.comparisonTimeStart,
-      timeEnd: $timeControlsStore.comparisonTimeEnd,
-      filter: updatedFilters,
-      limit: currentVisibleValues.length.toString(),
-      offset: "0",
-      sort: [
-        {
-          name: measure?.name,
-          ascending: false,
-        },
-      ],
-    },
-    {
-      query: {
-        enabled: Boolean(showTimeComparison && !!updatedFilters),
-      },
-    }
+    sortedQueryBody,
+    sortedQueryOptions
   );
 
-  $: if (!$comparisonTopListQuery?.isFetching) {
-    comparisonValues =
-      $comparisonTopListQuery?.data?.data?.map((val) => ({
-        value: val[measure?.name],
-        label: val[dimensionColumn],
-      })) ?? [];
+  let aboveTheFold: LeaderboardItemData[] = [];
+  let selectedBelowTheFold: LeaderboardItemData[] = [];
+  let noAvailableValues = true;
+  let showExpandTable = false;
+  $: if (!$sortedQuery?.isFetching) {
+    const leaderboardData = prepareLeaderboardItemData(
+      $sortedQuery?.data?.rows?.map((r) =>
+        getLabeledComparisonFromComparisonRow(r, measure.name)
+      ) ?? [],
+      slice,
+      activeValues,
+      unfilteredTotal,
+      filterExcludeMode
+    );
+
+    aboveTheFold = leaderboardData.aboveTheFold;
+    selectedBelowTheFold = leaderboardData.selectedBelowTheFold;
+    noAvailableValues = leaderboardData.noAvailableValues;
+    showExpandTable = leaderboardData.showExpandTable;
   }
 
   let hovered: boolean;
-
-  $: comparisonMap = new Map(comparisonValues?.map((v) => [v.label, v.value]));
-
-  $: aboveTheFoldItems = prepareLeaderboardItemData(
-    values.slice(0, slice),
-    activeValues,
-    comparisonMap,
-    filterExcludeMode
-  );
-
-  $: defaultComparisonsPresentInAboveFold =
-    aboveTheFoldItems?.filter((item) => item.defaultComparedIndex >= 0)
-      ?.length || 0;
-
-  $: belowTheFoldItems = prepareLeaderboardItemData(
-    selectedValuesThatAreBelowTheFold,
-    activeValues,
-    comparisonMap,
-    filterExcludeMode,
-    defaultComparisonsPresentInAboveFold
-  );
 </script>
 
-{#if topListQuery}
+{#if sortedQuery}
   <div
     style:width="315px"
     on:mouseenter={() => (hovered = true)}
@@ -265,28 +171,28 @@
   >
     <LeaderboardHeader
       {contextColumn}
-      isFetching={$topListQuery.isFetching}
+      isFetching={$sortedQuery.isFetching}
       {displayName}
       on:toggle-dimension-comparison={() =>
         toggleComparisonDimension(dimensionName, isBeingCompared)}
       {isBeingCompared}
       {hovered}
       {sortAscending}
+      {sortType}
       dimensionDescription={dimension?.description}
       on:open-dimension-details={() => selectDimension(dimensionName)}
-      on:toggle-sort-direction={toggleSortDirection}
+      on:toggle-sort={toggleSort}
     />
-    {#if values}
+    {#if aboveTheFold || selectedBelowTheFold}
       <div class="rounded-b border-gray-200 surface text-gray-800">
         <!-- place the leaderboard entries that are above the fold here -->
-        {#each aboveTheFoldItems as itemData (itemData.label)}
+        {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardListItem
             {itemData}
-            {showContext}
+            {contextColumn}
             {atLeastOneActive}
             {isBeingCompared}
             {filterExcludeMode}
-            {unfilteredTotal}
             {isSummableMeasure}
             {referenceValue}
             {formatPreset}
@@ -296,12 +202,12 @@
           />
         {/each}
         <!-- place the selected values that are not above the fold here -->
-        {#if selectedValuesThatAreBelowTheFold?.length}
+        {#if selectedBelowTheFold?.length}
           <hr />
-          {#each belowTheFoldItems as itemData (itemData.label)}
+          {#each selectedBelowTheFold as itemData (itemData.dimensionValue)}
             <LeaderboardListItem
               {itemData}
-              {showContext}
+              {contextColumn}
               {atLeastOneActive}
               {isBeingCompared}
               {filterExcludeMode}
@@ -316,16 +222,16 @@
 
           <hr />
         {/if}
-        {#if $topListQuery?.isError}
+        {#if $sortedQuery?.isError}
           <div class="text-red-500">
-            {$topListQuery?.error}
+            {JSON.stringify($sortedQuery?.error)}
           </div>
-        {:else if values.length === 0}
+        {:else if noAvailableValues}
           <div style:padding-left="30px" class="p-1 ui-copy-disabled">
             no available values
           </div>
         {/if}
-        {#if values.length > slice}
+        {#if showExpandTable}
           <Tooltip location="right">
             <button
               on:click={() => selectDimension(dimensionName)}

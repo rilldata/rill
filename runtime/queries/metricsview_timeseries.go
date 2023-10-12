@@ -29,7 +29,7 @@ type MetricsViewTimeSeries struct {
 	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
 	TimeGranularity    runtimev1.TimeGrain                  `json:"time_granularity,omitempty"`
 	TimeZone           string                               `json:"time_zone,omitempty"`
-	MetricsView        *runtimev1.MetricsView               `json:"-"`
+	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
@@ -45,8 +45,10 @@ func (q *MetricsViewTimeSeries) Key() string {
 	return fmt.Sprintf("MetricsViewTimeSeries:%s", r)
 }
 
-func (q *MetricsViewTimeSeries) Deps() []string {
-	return []string{q.MetricsViewName}
+func (q *MetricsViewTimeSeries) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindMetricsView, Name: q.MetricsViewName},
+	}
 }
 
 func (q *MetricsViewTimeSeries) MarshalResult() *runtime.QueryResult {
@@ -332,7 +334,7 @@ func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsView) stri
 	return filename
 }
 
-func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore, mv *runtimev1.MetricsView, policy *runtime.ResolvedMetricsViewSecurity) (string, string, []any, error) {
+func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, policy *runtime.ResolvedMetricsViewSecurity) (string, string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", "", nil, err
@@ -365,6 +367,17 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 	}
 
 	tsAlias := tempName("_ts_")
+	tsSpecifier := convertToDruidTimeFloorSpecifier(q.TimeGranularity)
+
+	timeClause := fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR))", safeName(mv.TimeDimension), tsSpecifier)
+	if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_WEEK && mv.FirstDayOfWeek > 1 {
+		dayOffset := 8 - mv.FirstDayOfWeek
+		timeClause = fmt.Sprintf("time_shift(time_floor(time_shift(%[1]s, 'P1D', %[3]d), '%[2]s', null, CAST(? AS VARCHAR)), 'P1D', -%[3]d)", safeName(mv.TimeDimension), tsSpecifier, dayOffset)
+	} else if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_YEAR && mv.FirstMonthOfYear > 1 {
+		monthOffset := 13 - mv.FirstMonthOfYear
+		timeClause = fmt.Sprintf("time_shift(time_floor(time_shift(%[1]s, 'P1M', %[3]d), '%[2]s', null, CAST(? AS VARCHAR)), 'P1M', -%[3]d)", safeName(mv.TimeDimension), tsSpecifier, monthOffset)
+	}
+
 	timezone := "UTC"
 	if q.TimeZone != "" {
 		timezone = q.TimeZone
@@ -388,12 +401,11 @@ func (q *MetricsViewTimeSeries) buildDruidSQL(args []any, mv *runtimev1.MetricsV
 	tsSpecifier := convertToDruidTimeFloorSpecifier(q.TimeGranularity)
 
 	sql := fmt.Sprintf(
-		`SELECT time_floor(%s, '%s', null, CAST(? AS VARCHAR)) AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
-		safeName(mv.TimeDimension),
-		tsSpecifier,
+		`SELECT %s AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
+		timeClause,
 		tsAlias,
 		strings.Join(selectCols, ", "),
-		mv.Model,
+		mv.Table,
 		whereClause,
 	)
 

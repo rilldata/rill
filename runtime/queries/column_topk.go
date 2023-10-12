@@ -25,8 +25,11 @@ func (q *ColumnTopK) Key() string {
 	return fmt.Sprintf("ColumnTopK:%s:%s:%s:%d", q.TableName, q.ColumnName, q.Agg, q.K)
 }
 
-func (q *ColumnTopK) Deps() []string {
-	return []string{q.TableName}
+func (q *ColumnTopK) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *ColumnTopK) MarshalResult() *runtime.QueryResult {

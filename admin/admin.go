@@ -2,11 +2,10 @@ package admin
 
 import (
 	"context"
-	"sync"
 
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/provisioner"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
 )
@@ -18,17 +17,14 @@ type Options struct {
 }
 
 type Service struct {
-	DB             database.DB
-	Provisioner    *provisioner.StaticProvisioner
-	Email          *email.Client
-	Used           *usedFlusher
-	Github         Github
-	opts           *Options
-	logger         *zap.Logger
-	issuer         *auth.Issuer
-	closeCtx       context.Context
-	closeCtxCancel context.CancelFunc
-	reconcileWg    sync.WaitGroup
+	DB          database.DB
+	Provisioner *provisioner.StaticProvisioner
+	Email       *email.Client
+	Used        *usedFlusher
+	Github      Github
+	Logger      *zap.Logger
+	opts        *Options
+	issuer      *auth.Issuer
 }
 
 func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github) (*Service, error) {
@@ -63,35 +59,19 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		return nil, err
 	}
 
-	// Create context that we cancel in Close() (for background reconciles)
-	ctx, cancel := context.WithCancel(context.Background())
-
 	return &Service{
-		DB:             db,
-		Provisioner:    prov,
-		Email:          emailClient,
-		Github:         github,
-		Used:           newUsedFlusher(logger, db),
-		opts:           opts,
-		logger:         logger,
-		issuer:         issuer,
-		closeCtx:       ctx,
-		closeCtxCancel: cancel,
+		DB:          db,
+		Provisioner: prov,
+		Email:       emailClient,
+		Github:      github,
+		Used:        newUsedFlusher(logger, db),
+		opts:        opts,
+		Logger:      logger,
+		issuer:      issuer,
 	}, nil
 }
 
 func (s *Service) Close() error {
-	s.closeCtxCancel()
-	s.reconcileWg.Wait()
 	s.Used.Close()
-
 	return s.DB.Close()
-}
-
-// UnsafeWaitForReconciles waits for all background reconciles to finish.
-// It is unsafe because while it is running, no new reconciles should be started.
-// It's a temporary solution until the runtime is able to reconcile asynchronously.
-// Unlike s.Close(), it does not cancel currently running reconciles, it just waits for them to finish.
-func (s *Service) UnsafeWaitForReconciles() {
-	s.reconcileWg.Wait()
 }

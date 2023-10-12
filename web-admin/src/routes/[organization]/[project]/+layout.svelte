@@ -1,8 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import ProjectDashboardsListener from "@rilldata/web-admin/features/projects/ProjectDashboardsListener.svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
-  import { useProjectRuntime } from "../../../components/projects/selectors";
+  import { useProjectRuntime } from "../../../features/projects/selectors";
   import { viewAsUserStore } from "../../../features/view-as-user/viewAsUserStore";
 
   $: projRuntime = useProjectRuntime(
@@ -26,7 +27,9 @@
     instanceId={$projRuntime.data.instanceId}
     jwt={$projRuntime.data?.jwt}
   >
-    <slot />
+    <ProjectDashboardsListener>
+      <slot />
+    </ProjectDashboardsListener>
   </RuntimeProvider>
 {:else}
   <slot />

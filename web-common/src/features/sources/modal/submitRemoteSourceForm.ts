@@ -7,24 +7,16 @@ import {
   BehaviourEventMedium,
 } from "../../../metrics/service/BehaviourEventTypes";
 import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-import { connectorToSourceConnectionType } from "../../../metrics/service/SourceEventTypes";
 import {
-  runtimeServicePutFileAndReconcile,
+  runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
-import { invalidateAfterReconcile } from "../../../runtime-client/invalidation";
 import { runtime } from "../../../runtime-client/runtime-store";
-import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-import { fileArtifactsStore } from "../../entity-management/file-artifacts-store";
+import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitializedV2 } from "../../welcome/is-project-initialized";
-import {
-  compileCreateSourceYAML,
-  emitSourceErrorTelemetry,
-  emitSourceSuccessTelemetry,
-  getSourceError,
-} from "../sourceUtils";
+import { compileCreateSourceYAML } from "../sourceUtils";
 import { fromYupFriendlyKey } from "./yupSchemas";
 
 export interface RemoteSourceFormValues {
@@ -64,6 +56,11 @@ export async function submitRemoteSourceForm(
     Object.entries(values).map(([key, value]) => {
       switch (key) {
         case "project_id":
+        case "account":
+        case "output_location":
+        case "workgroup":
+          return [key, value];
+        case "database_url":
           return [key, value];
         default:
           return [fromYupFriendlyKey(key), value];
@@ -73,38 +70,37 @@ export async function submitRemoteSourceForm(
   const yaml = compileCreateSourceYAML(formValues, connectorName);
 
   // Attempt to create & import the source
-  const resp = await runtimeServicePutFileAndReconcile({
+  await runtimeServicePutFile(
     instanceId,
-    path: getFilePathFromNameAndType(values.sourceName, EntityType.Table),
-    blob: yaml,
-    create: true,
-    createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
-    dry: false,
-    strict: false,
-  });
-  invalidateAfterReconcile(queryClient, instanceId, resp);
-  fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
+    getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
+    {
+      blob: yaml,
+      create: true,
+      createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
+    }
+  );
 
+  // TODO: telemetry
   // Emit telemetry
-  const hasSourceYAMLErrors = resp.errors.length > 0;
-  if (hasSourceYAMLErrors) {
-    // Error
-    const sourceError = getSourceError(resp.errors, values.sourceName);
-    emitSourceErrorTelemetry(
-      MetricsEventSpace.Modal,
-      get(appScreen),
-      sourceError?.message,
-      connectorToSourceConnectionType[connectorName],
-      formValues?.uri || ""
-    );
-  } else {
-    // Success
-    emitSourceSuccessTelemetry(
-      MetricsEventSpace.Modal,
-      get(appScreen),
-      BehaviourEventMedium.Button,
-      connectorToSourceConnectionType[connectorName],
-      formValues?.uri || ""
-    );
-  }
+  // const hasSourceYAMLErrors = resp.errors.length > 0;
+  // if (hasSourceYAMLErrors) {
+  //   // Error
+  //   const sourceError = getSourceError(resp.errors, values.sourceName);
+  //   emitSourceErrorTelemetry(
+  //     MetricsEventSpace.Modal,
+  //     get(appScreen),
+  //     sourceError?.message,
+  //     connectorToSourceConnectionType[connectorName],
+  //     formValues?.uri || ""
+  //   );
+  // } else {
+  //   // Success
+  //   emitSourceSuccessTelemetry(
+  //     MetricsEventSpace.Modal,
+  //     get(appScreen),
+  //     BehaviourEventMedium.Button,
+  //     connectorToSourceConnectionType[connectorName],
+  //     formValues?.uri || ""
+  //   );
+  // }
 }

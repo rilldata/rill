@@ -1,37 +1,44 @@
-import type { V1CatalogEntry } from "@rilldata/web-common/runtime-client";
+import type { Reference } from "@rilldata/web-common/features/models/utils/get-table-references";
+import type { V1Resource } from "@rilldata/web-common/runtime-client";
 
-export function filterEntriesOnReference(modelName, references) {
-  return function (entry: V1CatalogEntry) {
+function resourceHasReference(resource: V1Resource, name: string) {
+  return (
+    resource.meta.refs.findIndex(
+      (resRef) => resRef.name.toLowerCase() === name.toLowerCase()
+    ) !== -1
+  );
+}
+
+function filterEntriesOnReference(
+  modelName: string,
+  references: Array<Reference>
+) {
+  return function (resource: V1Resource) {
     return references?.some((ref) => {
       return (
-        ref.reference === entry.name ||
-        entry?.children?.includes(modelName.toLowerCase())
+        ref.reference === resource.meta.name.name ||
+        resourceHasReference(resource, modelName)
       );
     });
   };
 }
 
-export function combineEntryWithReference(modelName, references) {
-  return function (entry: V1CatalogEntry) {
+function combineEntryWithReference(references: Array<Reference>) {
+  return function (resource: V1Resource) {
     // get the reference that matches this entry
     return [
-      entry,
-      references.find(
-        (ref) =>
-          ref.reference === entry.name ||
-          (entry?.embedded &&
-            entry?.children?.includes(modelName.toLowerCase()))
-      ),
-    ];
+      resource,
+      references.find((ref) => ref.reference === resource.meta.name.name),
+    ] as [V1Resource, Reference];
   };
 }
 
 export function getMatchingReferencesAndEntries(
-  modelName,
-  references,
-  entries: V1CatalogEntry[]
+  modelName: string,
+  references: Array<Reference>,
+  resources: Array<V1Resource>
 ) {
-  return entries
+  return resources
     ?.filter(filterEntriesOnReference(modelName, references))
-    ?.map(combineEntryWithReference(modelName, references));
+    ?.map(combineEntryWithReference(references));
 }

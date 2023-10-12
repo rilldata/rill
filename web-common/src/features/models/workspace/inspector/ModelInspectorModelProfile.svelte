@@ -1,27 +1,25 @@
 <script lang="ts">
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
+  import { useModel } from "@rilldata/web-common/features/models/selectors";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
-  import { createRuntimeServiceGetCatalogEntry } from "@rilldata/web-common/runtime-client";
+  import type { V1ModelV2 } from "@rilldata/web-common/runtime-client";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import References from "./References.svelte";
 
   export let modelName: string;
 
-  $: getModel = createRuntimeServiceGetCatalogEntry(
-    $runtime?.instanceId,
-    modelName
-  );
-  let entry;
+  $: modelQuery = useModel($runtime?.instanceId, modelName);
+  let model: V1ModelV2;
   // refresh entry value only if the data has changed
-  $: entry = $getModel?.data?.entry || entry;
+  $: model = $modelQuery?.data?.model ?? model;
 
   let showColumns = true;
 </script>
 
 <div class="model-profile">
-  {#if entry && entry?.model?.sql?.trim()?.length}
+  {#if model && model?.spec?.sql?.trim()?.length}
     <References {modelName} />
 
     <div class="pb-4 pt-4">
@@ -36,7 +34,7 @@
 
       {#if showColumns}
         <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-          <ColumnProfile objectName={entry?.model?.name} indentLevel={0} />
+          <ColumnProfile objectName={model?.state?.table} indentLevel={0} />
         </div>
       {/if}
     </div>

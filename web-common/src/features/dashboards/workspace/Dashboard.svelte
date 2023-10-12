@@ -1,14 +1,16 @@
 <script lang="ts">
   import { getEltSize } from "@rilldata/web-common/features/dashboards/get-element-size";
-  import { useModelHasTimeSeries } from "@rilldata/web-common/features/dashboards/selectors";
+  import {
+    useDashboard,
+    useModelHasTimeSeries,
+  } from "@rilldata/web-common/features/dashboards/selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
-  import { createRuntimeServiceGetCatalogEntry } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
-  import { useDashboardStore } from "../dashboard-stores";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
   import MockUserHasNoAccess from "../granular-access-policies/MockUserHasNoAccess.svelte";
@@ -53,22 +55,19 @@
   $: isRillDeveloper = $featureFlags.readOnly === false;
 
   // Check if the mock user (if selected) has access to the dashboard
-  $: catalogQuery = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    metricViewName
-  );
+  $: dashboard = useDashboard($runtime.instanceId, metricViewName);
   $: mockUserHasNoAccess =
-    $selectedMockUserStore && $catalogQuery.error?.response?.status === 404;
+    $selectedMockUserStore && $dashboard.error?.response?.status === 404;
 </script>
 
 <section
-  use:listenToNodeResize
   class="flex flex-col gap-y-1 h-full overflow-x-auto overflow-y-hidden"
+  use:listenToNodeResize
 >
   <div
     class="border-b mb-3 w-full flex flex-col"
-    style:padding-left={leftSide}
     id="header"
+    style:padding-left={leftSide}
   >
     {#if isRillDeveloper}
       <!-- FIXME: adding an -mb-3 fixes the spacing issue incurred by changes to the header 

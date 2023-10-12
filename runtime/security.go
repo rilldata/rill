@@ -42,13 +42,13 @@ type ResolvedMetricsViewSecurity struct {
 	Exclude   []string
 }
 
-func computeCacheKey(instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn time.Time, attributes map[string]any) (string, error) {
+func computeCacheKey(instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time, attributes map[string]any) (string, error) {
 	hash := md5.New()
 	_, err := hash.Write([]byte(instanceID))
 	if err != nil {
 		return "", err
 	}
-	_, err = hash.Write([]byte(mv.Name))
+	_, err = hash.Write([]byte(mv.Table))
 	if err != nil {
 		return "", err
 	}
@@ -80,7 +80,7 @@ func computeCacheKey(instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func (p *securityEngine) resolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsView, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
+func (p *securityEngine) resolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
 	if mv.Security == nil {
 		return nil, nil
 	}

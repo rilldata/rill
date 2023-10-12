@@ -1,5 +1,7 @@
 <script lang="ts">
   export let connector: string;
+
+  // TODO: remove embedded support
 </script>
 
 <div

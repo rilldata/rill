@@ -7,7 +7,7 @@
   import { matchSorter } from "match-sorter";
   import { createEventDispatcher } from "svelte";
   import { createAdminServiceSearchProjectUsers, V1User } from "../../client";
-  import { errorStore } from "../../components/errors/error-store";
+  import { errorStore } from "../../features/errors/error-store";
   import { setViewedAsUser } from "./setViewedAsUser";
   import { viewAsUserStore } from "./viewAsUserStore";
 

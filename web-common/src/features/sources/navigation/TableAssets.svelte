@@ -2,12 +2,8 @@
   import { page } from "$app/stores";
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
-  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import {
-    createRuntimeServiceListCatalogEntries,
-    createRuntimeServicePutFileAndReconcile,
-  } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
+  import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { flip } from "svelte/animate";
   import { slide } from "svelte/transition";
   import { appScreen } from "../../../layout/app-store";
@@ -23,17 +19,13 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
   import { EntityType } from "../../entity-management/types";
-  import { useModelNames } from "../../models/selectors";
   import { createModelFromSource } from "../createModel";
   import AddSourceModal from "../modal/AddSourceModal.svelte";
   import SourceMenuItems from "./SourceMenuItems.svelte";
   import SourceTooltip from "./SourceTooltip.svelte";
 
-  $: sourceNames = useSourceNames($runtime.instanceId);
-  $: modelNames = useModelNames($runtime.instanceId);
-  const createModelMutation = createRuntimeServicePutFileAndReconcile();
-
-  const queryClient = useQueryClient();
+  $: sourceNames = useSourceFileNames($runtime.instanceId);
+  $: modelNames = useModelFileNames($runtime.instanceId);
 
   let showTables = true;
 
@@ -52,12 +44,10 @@
 
   const queryHandler = async (tableName: string) => {
     await createModelFromSource(
-      queryClient,
       $runtime.instanceId,
       $modelNames.data,
       tableName,
-      tableName,
-      $createModelMutation
+      tableName
     );
     // TODO: fire telemetry
   };
@@ -70,8 +60,7 @@
     renameTableName = tableName;
   };
 
-  $: catalogQuery = createRuntimeServiceListCatalogEntries($runtime.instanceId);
-  $: hasNoAssets = $catalogQuery?.data?.entries.length === 0;
+  $: hasNoAssets = $sourceNames.data?.length === 0;
 </script>
 
 <NavigationHeader bind:show={showTables} toggleText="sources"
@@ -125,13 +114,10 @@
   </div>
 {/if}
 
-{#if showAddSourceModal}
-  <AddSourceModal
-    on:close={() => {
-      showAddSourceModal = false;
-    }}
-  />
-{/if}
+<AddSourceModal
+  on:close={() => (showAddSourceModal = false)}
+  open={showAddSourceModal}
+/>
 {#if showRenameTableModal}
   <RenameAssetModal
     entityType={EntityType.Table}

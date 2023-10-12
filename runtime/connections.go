@@ -7,7 +7,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/services/catalog"
 )
 
 func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
@@ -33,30 +32,8 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 	return r.connCache.get(ctx, instanceID, driver, cfg, false)
 }
 
-// EvictHandle flushes the db handle for the specific connector from the cache
-func (r *Runtime) EvictHandle(ctx context.Context, instanceID, connector string, drop bool) error {
-	driver, cfg, err := r.connectorConfig(ctx, instanceID, connector)
-	if err != nil {
-		return err
-	}
-	r.connCache.evict(ctx, instanceID, driver, cfg)
-	if drop {
-		return drivers.Drop(driver, cfg, r.logger)
-	}
-	return nil
-}
-
-func (r *Runtime) Registry() drivers.RegistryStore {
-	registry, ok := r.metastore.AsRegistry()
-	if !ok {
-		// Verified as registry in New, so this should never happen
-		panic("metastore is not a registry")
-	}
-	return registry
-}
-
 func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStore, func(), error) {
-	inst, err := r.FindInstance(ctx, instanceID)
+	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -69,15 +46,14 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 	repo, ok := conn.AsRepoStore(instanceID)
 	if !ok {
 		release()
-		// Verified as repo when instance is created, so this should never happen
-		return nil, release, fmt.Errorf("connection for instance '%s' is not a repo", instanceID)
+		return nil, release, fmt.Errorf("connector %q is not a valid project file store", inst.RepoConnector)
 	}
 
 	return repo, release, nil
 }
 
 func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStore, func(), error) {
-	inst, err := r.FindInstance(ctx, instanceID)
+	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -90,15 +66,14 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 	olap, ok := conn.AsOLAP(instanceID)
 	if !ok {
 		release()
-		// Verified as OLAP when instance is created, so this should never happen
-		return nil, nil, fmt.Errorf("connection for instance '%s' is not an olap", instanceID)
+		return nil, nil, fmt.Errorf("connector %q is not a valid OLAP data store", instanceID)
 	}
 
 	return olap, release, nil
 }
 
 func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.CatalogStore, func(), error) {
-	inst, err := r.FindInstance(ctx, instanceID)
+	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -112,8 +87,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 		store, ok := conn.AsCatalogStore(instanceID)
 		if !ok {
 			release()
-			// Verified as CatalogStore when instance is created, so this should never happen
-			return nil, nil, fmt.Errorf("instance cannot embed catalog")
+			return nil, nil, fmt.Errorf("can't embed catalog because it is not supported by the connector %q", inst.OLAPConnector)
 		}
 
 		return store, release, nil
@@ -126,39 +100,8 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 	return store, func() {}, nil
 }
 
-func (r *Runtime) NewCatalogService(ctx context.Context, instanceID string) (*catalog.Service, error) {
-	// get all stores
-	olapStore, releaseOLAP, err := r.OLAP(ctx, instanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	catalogStore, releaseCatalog, err := r.Catalog(ctx, instanceID)
-	if err != nil {
-		releaseOLAP()
-		return nil, err
-	}
-
-	repoStore, releaseRepo, err := r.Repo(ctx, instanceID)
-	if err != nil {
-		releaseOLAP()
-		releaseCatalog()
-		return nil, err
-	}
-
-	registry := r.Registry()
-
-	migrationMetadata := r.migrationMetaCache.get(instanceID)
-	releaseFunc := func() {
-		releaseOLAP()
-		releaseCatalog()
-		releaseRepo()
-	}
-	return catalog.NewService(catalogStore, repoStore, olapStore, registry, instanceID, r.logger, migrationMetadata, releaseFunc), nil
-}
-
 func (r *Runtime) connectorConfig(ctx context.Context, instanceID, name string) (string, map[string]any, error) {
-	inst, err := r.FindInstance(ctx, instanceID)
+	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return "", nil, err
 	}
@@ -218,10 +161,15 @@ func (r *Runtime) connectorConfig(ctx context.Context, instanceID, name string) 
 	// For backwards compatibility, certain root-level variables apply to certain implicit connectors.
 	// NOTE: This switches on connector.Name, not connector.Type, because this only applies to implicit connectors.
 	switch connector.Name {
-	case "s3":
+	case "s3", "athena":
 		setIfNil(cfg, "aws_access_key_id", vars["aws_access_key_id"])
 		setIfNil(cfg, "aws_secret_access_key", vars["aws_secret_access_key"])
 		setIfNil(cfg, "aws_session_token", vars["aws_session_token"])
+	case "azure":
+		setIfNil(cfg, "azure_storage_account", vars["azure_storage_account"])
+		setIfNil(cfg, "azure_storage_key", vars["azure_storage_key"])
+		setIfNil(cfg, "azure_storage_sas_token", vars["azure_storage_sas_token"])
+		setIfNil(cfg, "azure_storage_connection_string", vars["azure_storage_connection_string"])
 	case "gcs":
 		setIfNil(cfg, "google_application_credentials", vars["google_application_credentials"])
 	case "bigquery":
