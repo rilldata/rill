@@ -1521,8 +1521,8 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
 github.com/jung-kurt/gofpdf v1.0.3-0.20190309125859-24315acbbda5/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
-github.com/k-anshul/go-duckdb v0.0.0-20230928050328-7f7a8536c36b h1:+gQzbpPeRejwavJbwo3+uTtP0/dN4wcOLL1LK4Z8ncY=
-github.com/k-anshul/go-duckdb v0.0.0-20230928050328-7f7a8536c36b/go.mod h1:wm91jO2GNKa6iO9NTcjXIRsW+/ykPoJbQcHSXhdAl28=
+github.com/k-anshul/go-duckdb v0.0.0-20231011133423-afd4ada98f86 h1:rM6dHIjKOl0e+FOiaP2ORoIjpx3wR1jWqbkOsExEqEg=
+github.com/k-anshul/go-duckdb v0.0.0-20231011133423-afd4ada98f86/go.mod h1:wm91jO2GNKa6iO9NTcjXIRsW+/ykPoJbQcHSXhdAl28=
 github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230830110740-57fe623cde03 h1:Bx9nbiPCx375f58XQiLf4Rhc4UdxSd93PZRODmc0HvY=
 github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230830110740-57fe623cde03/go.mod h1:sJyijXv7F7/CRsPuWjId7YvBMzDi2H8qokBxqstIY+U=
 github.com/kataras/tablewriter v0.0.0-20180708051242-e063d29b7c23 h1:M8exrBzuhWcU6aoHJlHWPe4qFjVKzkMGRal78f5jRRU=
