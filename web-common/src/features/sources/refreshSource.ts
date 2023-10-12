@@ -43,3 +43,36 @@ export async function refreshSource(
     }
   );
 }
+
+export async function replaceSourceWithUploadedFile(
+  instanceId: string,
+  sourceName: string
+) {
+  const artifactPath = getFileAPIPathFromNameAndType(
+    sourceName,
+    EntityType.Table
+  );
+
+  const files = await openFileUploadDialog(false);
+  if (!files.length) return Promise.reject();
+
+  const filePath = await uploadFile(instanceId, files[0]);
+  if (filePath === null) {
+    return Promise.reject();
+  }
+
+  const yaml = compileCreateSourceYAML(
+    {
+      sourceName,
+      path: filePath,
+    },
+    "local_file"
+  );
+
+  // Create source
+  const resp = await runtimeServicePutFile(instanceId, artifactPath, {
+    blob: yaml,
+  });
+
+  return resp;
+}
