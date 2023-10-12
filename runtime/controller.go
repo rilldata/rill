@@ -1276,6 +1276,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 
 	// Start tracing span
 	tracerAttrs := []attribute.KeyValue{
+		attribute.String("instance_id", c.InstanceID),
 		attribute.String("name", n.Name),
 		attribute.String("kind", unqualifiedKind(n.Kind)),
 		attribute.Bool("deleted", inv.isDelete),
