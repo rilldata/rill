@@ -53,8 +53,8 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher, onMount } from "svelte";
   import { editorTheme } from "../../../components/editor/theme";
-  import { createRuntimeServiceListCatalogEntries } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { useAllSourceColumns } from "../../sources/selectors";
 
   export let content: string;
   export let editorHeight = 0;
@@ -90,36 +90,16 @@
   });
 
   // Autocomplete: source tables
-  $: sourceCatalogsQuery = createRuntimeServiceListCatalogEntries(
-    $runtime.instanceId,
-    {
-      type: "OBJECT_TYPE_SOURCE",
-    }
-  );
-
   let schema: { [table: string]: string[] };
-  $: if ($sourceCatalogsQuery?.data?.entries) {
+  $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
+  $: if ($allSourceColumns?.length) {
     schema = {};
-    for (const sourceTable of $sourceCatalogsQuery.data.entries) {
-      schema[sourceTable.name] =
-        sourceTable.source?.schema?.fields?.map((field) => field.name) ?? [];
+    for (const sourceTable of $allSourceColumns) {
+      const sourceIdentifier = sourceTable?.tableName;
+      schema[sourceIdentifier] =
+        sourceTable.profileColumns?.map((c) => c.name) ?? [];
     }
   }
-
-  // From async reconcile integration...
-  // const queryClient = useQueryClient();
-  // $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
-
-  // let schema: { [table: string]: string[] };
-
-  // $: if ($allSourceColumns?.length) {
-  //   schema = {};
-  //   for (const sourceTable of $allSourceColumns) {
-  //     const sourceIdentifier = sourceTable?.tableName;
-  //     schema[sourceIdentifier] =
-  //       sourceTable.profileColumns?.map((c) => c.name) ?? [];
-  //   }
-  // }
 
   function getTableNameFromFromClause(
     sql: string,
