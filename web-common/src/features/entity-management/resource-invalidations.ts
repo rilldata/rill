@@ -1,4 +1,7 @@
-import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import {
+  resourceHasValidData,
+  ResourceKind,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
 import {
   getRuntimeServiceGetResourceQueryKey,
@@ -79,9 +82,12 @@ async function invalidateResource(
   instanceId: string,
   resource: V1Resource
 ) {
+  refreshResource(queryClient, instanceId, resource);
+
+  if (resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE)
+    return;
   const failed = !!resource.meta.reconcileError;
 
-  refreshResource(queryClient, instanceId, resource);
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:

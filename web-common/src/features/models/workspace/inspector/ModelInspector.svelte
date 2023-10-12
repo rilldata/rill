@@ -1,7 +1,11 @@
 <script lang="ts">
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { useModel, useModelFileIsEmpty } from "../../selectors";
   import ModelInspectorHeader from "./ModelInspectorHeader.svelte";
@@ -9,7 +13,11 @@
 
   export let modelName: string;
 
+  const queryClient = useQueryClient();
+
+  $: path = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelQuery = useModel($runtime?.instanceId, modelName);
+  $: modelHasError = getFileHasErrors(queryClient, $runtime?.instanceId, path);
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -22,7 +30,7 @@
     <div class="mt-6">
       <ReconcilingSpinner />
     </div>
-  {:else}
+  {:else if !$modelHasError}
     <div>
       {#key modelName}
         <div use:listenToNodeResize>

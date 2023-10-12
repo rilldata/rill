@@ -115,3 +115,18 @@ export function resourceIsLoading(resource: V1Resource) {
     resource.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE
   );
 }
+
+export function resourceHasValidData(resource: V1Resource) {
+  switch (resource.meta.name.kind) {
+    case ResourceKind.Source:
+      return !!resource.source?.state?.table;
+
+    case ResourceKind.Model:
+      return !!resource.model?.state?.table;
+
+    case ResourceKind.MetricsView:
+      return !!resource.metricsView.state.validSpec;
+  }
+
+  return true;
+}
