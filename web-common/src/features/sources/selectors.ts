@@ -81,7 +81,7 @@ export function useIsLocalFileConnector(
           const serverYAML = data.blob;
           const yaml = parse(serverYAML);
           // Check that the `type` is `duckdb` and that the `sql` includes 'data/'
-          return yaml?.type === "duckdb" && yaml?.sql?.includes("data/");
+          return yaml?.type === "duckdb" && yaml?.sql?.includes("'data/");
         },
       },
     }
