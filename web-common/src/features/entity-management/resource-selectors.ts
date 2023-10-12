@@ -4,6 +4,7 @@ import {
   createRuntimeServiceListResources,
   V1ListResourcesResponse,
   V1ModelV2,
+  V1ReconcileStatus,
   V1Resource,
   V1SourceV2,
 } from "@rilldata/web-common/runtime-client";
