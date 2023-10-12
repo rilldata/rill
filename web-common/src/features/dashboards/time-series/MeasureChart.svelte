@@ -7,7 +7,6 @@
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
-  import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import type {
     MetricsViewSpecMeasureV2,
     V1TimeGrain,
