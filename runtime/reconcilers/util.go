@@ -47,7 +47,14 @@ func nextRefreshTime(t time.Time, schedule *runtimev1.Schedule) (time.Time, erro
 
 	var t2 time.Time
 	if schedule.Cron != "" {
-		cs, err := cron.ParseStandard(schedule.Cron)
+		crontab := schedule.Cron
+		if schedule.TimeZone != "" {
+			if !strings.HasPrefix(crontab, "TZ=") && !strings.HasPrefix(crontab, "CRON_TZ=") {
+				crontab = fmt.Sprintf("CRON_TZ=%s %s", schedule.TimeZone, crontab)
+			}
+		}
+
+		cs, err := cron.ParseStandard(crontab)
 		if err != nil {
 			return time.Time{}, fmt.Errorf("failed to parse cron schedule: %w", err)
 		}

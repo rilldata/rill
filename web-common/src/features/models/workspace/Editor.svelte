@@ -50,6 +50,7 @@
   } from "@codemirror/view";
   import { Debounce } from "@rilldata/web-common/features/models/utils/Debounce";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher, onMount } from "svelte";
   import { editorTheme } from "../../../components/editor/theme";
   import { createRuntimeServiceListCatalogEntries } from "../../../runtime-client";
@@ -60,6 +61,7 @@
   export let selections: SelectionRange[] = [];
   export let focusOnMount = false;
 
+  const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing

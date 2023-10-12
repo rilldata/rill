@@ -8,7 +8,10 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
+    resourceIsLoading,
+    useAllNames,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -16,7 +19,6 @@
   import {
     createRuntimeServiceGetFile,
     createRuntimeServiceRefreshAndReconcile,
-    V1ReconcileStatus,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
@@ -57,9 +59,7 @@
 
   let source: V1SourceV2;
   $: source = $sourceQuery.data?.source;
-  $: sourceIsReconciling =
-    $sourceQuery.data?.meta?.reconcileStatus !==
-    V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+  $: sourceIsReconciling = resourceIsLoading($sourceQuery.data);
 
   let connector: string;
   $: connector = source?.state?.connector;
@@ -175,7 +175,7 @@
               style:font-size="11px"
               transition:fade|local={{ duration: 200 }}
             >
-              Imported on {formatRefreshedOn(source?.state?.refreshedOn)}
+              Ingested on {formatRefreshedOn(source?.state?.refreshedOn)}
             </div>
           {/if}
         </div>
