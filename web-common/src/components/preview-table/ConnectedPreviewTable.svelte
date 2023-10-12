@@ -17,7 +17,8 @@
     objectName,
     {}
   );
-  $: profileColumns = $profileColumnsQuery?.data?.profileColumns;
+  $: profileColumns =
+    $profileColumnsQuery?.data?.profileColumns ?? profileColumns; // Retain old profileColumns
 
   $: tableQuery = createQueryServiceTableRows(
     $runtime?.instanceId,
@@ -27,7 +28,7 @@
     }
   );
 
-  $: rows = $tableQuery?.data?.data;
+  $: rows = $tableQuery?.data?.data ?? rows; // Retain old rows
 
   /** We will set the overscan amounts to 0 for initial render;
    * in practice, this will shave off around 200ms from the initial render.

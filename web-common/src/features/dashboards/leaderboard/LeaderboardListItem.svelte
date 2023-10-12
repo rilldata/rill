@@ -36,7 +36,6 @@
 
   export let atLeastOneActive = false;
   export let isBeingCompared = false;
-  export let formattedValue: string;
   export let filterExcludeMode;
 
   export let formatPreset;

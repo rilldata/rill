@@ -151,7 +151,7 @@ function shouldSkipResource(
   return false;
 }
 
-function refreshResource(
+export function refreshResource(
   queryClient: QueryClient,
   instanceId: string,
   res: V1Resource
@@ -166,7 +166,6 @@ function refreshResource(
 
 export async function invalidateAllResources(queryClient: QueryClient) {
   return queryClient.resetQueries({
-    type: "inactive",
     predicate: (query) =>
       query.queryHash.includes(`v1/instances/${get(runtime).instanceId}`),
   });
