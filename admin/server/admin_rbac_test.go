@@ -109,6 +109,7 @@ func TestAdmin_RBAC(t *testing.T) {
 	// create a server instance
 	server := Server{
 		admin:         service,
+		opts:          &Options{},
 		authenticator: authenticator,
 		logger:        logger,
 	}
