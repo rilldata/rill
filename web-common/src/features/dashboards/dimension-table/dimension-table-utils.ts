@@ -331,17 +331,20 @@ export function addContextColumnNames(
   const sortByColumnIndex = columnNames.indexOf(name);
   // Add comparison columns if available
   let percentOfTotalSpliceIndex = 1;
+  const isPercent = selectedMeasure?.formatPreset === FormatPreset.PERCENTAGE;
   if (timeComparison) {
     percentOfTotalSpliceIndex = 2;
     columnNames.splice(sortByColumnIndex + 1, 0, `${name}_delta`);
 
     // Only push percentage delta column if selected measure is not a percentage
-    if (selectedMeasure?.formatPreset != FormatPreset.PERCENTAGE) {
+    if (!isPercent) {
       percentOfTotalSpliceIndex = 3;
       columnNames.splice(sortByColumnIndex + 2, 0, `${name}_delta_perc`);
     }
   }
-  if (validPercentOfTotal) {
+  // Only push percentage-of-total if selected measure is
+  // validPercentOfTotal and not a percentage
+  if (validPercentOfTotal && !isPercent) {
     columnNames.splice(
       sortByColumnIndex + percentOfTotalSpliceIndex,
       0,
