@@ -3,7 +3,6 @@ import {
   isoDurationToTimeRange,
 } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { describe, it, expect } from "vitest";
-import { Duration } from "luxon";
 
 describe("isoDurationToTimeRange", () => {
   it("hour range, anchored to hour", () => {
