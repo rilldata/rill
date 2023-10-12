@@ -77,7 +77,6 @@ function assertDuration(
     isoDuration,
     new Date(anchorDate)
   );
-  console.log(startTime.toISOString(), endTime.toISOString());
   expect(startTime.toISOString()).toBe(expectedStart);
   expect(endTime.toISOString()).toBe(expectedEnd);
 }
