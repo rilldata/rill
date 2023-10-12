@@ -1,7 +1,4 @@
-import {
-  resourceHasValidData,
-  ResourceKind,
-} from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
 import {
   getRuntimeServiceGetResourceQueryKey,
