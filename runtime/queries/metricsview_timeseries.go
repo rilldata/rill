@@ -78,13 +78,17 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer release()
 
-	obj, err := rt.GetCatalogEntry(ctx, instanceID, q.MetricsViewName)
+	ctrl, err := rt.Controller(instanceID)
 	if err != nil {
 		return err
 	}
 
-	mv := obj.GetMetricsView()
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: q.MetricsViewName}, false)
+	if err != nil {
+		return err
+	}
 
+	mv := r.GetMetricsView().Spec
 	sql, tsAlias, args, err := q.buildMetricsTimeseriesSQL(olap, mv, q.ResolvedMVSecurity)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
@@ -176,6 +180,165 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 
 	return nil
+}
+
+func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
+	if err != nil {
+		return err
+	}
+
+	ctrl, err := rt.Controller(instanceID)
+	if err != nil {
+		return err
+	}
+
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: q.MetricsViewName}, false)
+	if err != nil {
+		return err
+	}
+
+	mv := r.GetMetricsView().Spec
+
+	if opts.PreWriteHook != nil {
+		err = opts.PreWriteHook(q.generateFilename(mv))
+		if err != nil {
+			return err
+		}
+	}
+
+	tmp := make([]*structpb.Struct, 0, len(q.Result.Data))
+	meta := append([]*runtimev1.MetricsViewColumn{{
+		Name: mv.TimeDimension,
+	}}, q.Result.Meta...)
+	for _, dt := range q.Result.Data {
+		dt.Records.Fields[mv.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Format(time.RFC3339Nano))
+		tmp = append(tmp, dt.Records)
+	}
+
+	switch opts.Format {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
+		return fmt.Errorf("unspecified format")
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		return writeCSV(meta, tmp, w)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+		return writeXLSX(meta, tmp, w)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		return writeParquet(meta, tmp, w)
+	}
+
+	return nil
+}
+
+func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsViewSpec) string {
+	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+		filename += "_filtered"
+	}
+	return filename
+}
+
+func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, policy *runtime.ResolvedMetricsViewSecurity) (string, string, []any, error) {
+	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	selectCols := []string{}
+	for _, m := range ms {
+		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
+		selectCols = append(selectCols, expr)
+	}
+
+	whereClause := "1=1"
+	args := []any{}
+	if q.TimeStart != nil {
+		whereClause += fmt.Sprintf(" AND %s >= ?", safeName(mv.TimeDimension))
+		args = append(args, q.TimeStart.AsTime())
+	}
+	if q.TimeEnd != nil {
+		whereClause += fmt.Sprintf(" AND %s < ?", safeName(mv.TimeDimension))
+		args = append(args, q.TimeEnd.AsTime())
+	}
+
+	if q.Filter != nil {
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, drivers.DialectDruid, policy)
+		if err != nil {
+			return "", "", nil, err
+		}
+		whereClause += " " + clause
+		args = append(args, clauseArgs...)
+	}
+
+	tsAlias := tempName("_ts_")
+	timezone := "UTC"
+	if q.TimeZone != "" {
+		timezone = q.TimeZone
+	}
+
+	var sql string
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		args = append([]any{timezone, timezone}, args...)
+		sql = q.buildDuckDBSQL(args, mv, tsAlias, selectCols, whereClause)
+	case drivers.DialectDruid:
+		args = append([]any{timezone}, args...)
+		sql = q.buildDruidSQL(args, mv, tsAlias, selectCols, whereClause)
+	default:
+		return "", "", nil, fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
+	return sql, tsAlias, args, nil
+}
+
+func (q *MetricsViewTimeSeries) buildDruidSQL(args []any, mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause string) string {
+	tsSpecifier := convertToDruidTimeFloorSpecifier(q.TimeGranularity)
+
+	timeClause := fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR))", safeName(mv.TimeDimension), tsSpecifier)
+	if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_WEEK && mv.FirstDayOfWeek > 1 {
+		dayOffset := 8 - mv.FirstDayOfWeek
+		timeClause = fmt.Sprintf("time_shift(time_floor(time_shift(%[1]s, 'P1D', %[3]d), '%[2]s', null, CAST(? AS VARCHAR)), 'P1D', -%[3]d)", safeName(mv.TimeDimension), tsSpecifier, dayOffset)
+	} else if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_YEAR && mv.FirstMonthOfYear > 1 {
+		monthOffset := 13 - mv.FirstMonthOfYear
+		timeClause = fmt.Sprintf("time_shift(time_floor(time_shift(%[1]s, 'P1M', %[3]d), '%[2]s', null, CAST(? AS VARCHAR)), 'P1M', -%[3]d)", safeName(mv.TimeDimension), tsSpecifier, monthOffset)
+	}
+
+	sql := fmt.Sprintf(
+		`SELECT %s AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
+		timeClause,
+		tsAlias,
+		strings.Join(selectCols, ", "),
+		mv.Table,
+		whereClause,
+	)
+
+	return sql
+}
+
+func (q *MetricsViewTimeSeries) buildDuckDBSQL(args []any, mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause string) string {
+	dateTruncSpecifier := convertToDateTruncSpecifier(q.TimeGranularity)
+
+	shift := "0 DAY"
+	if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_WEEK && mv.FirstDayOfWeek > 1 {
+		offset := 8 - mv.FirstDayOfWeek
+		shift = fmt.Sprintf("%d DAY", offset)
+	} else if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_YEAR && mv.FirstMonthOfYear > 1 {
+		offset := 13 - mv.FirstMonthOfYear
+		shift = fmt.Sprintf("%d MONTH", offset)
+	}
+
+	sql := fmt.Sprintf(
+		`SELECT timezone(?, date_trunc('%[1]s', timezone(?, %[2]s::TIMESTAMPTZ) + INTERVAL %[7]s) - INTERVAL %[7]s) as %[3]s, %[4]s FROM %[5]q WHERE %[6]s GROUP BY 1 ORDER BY 1`,
+		dateTruncSpecifier,             // 1
+		safeName(mv.TimeDimension),     // 2
+		tsAlias,                        // 3
+		strings.Join(selectCols, ", "), // 4
+		mv.Table,                       // 5
+		whereClause,                    // 6
+		shift,                          // 7
+	)
+
+	return sql
 }
 
 func truncateTime(start time.Time, tg runtimev1.TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
@@ -281,148 +444,4 @@ func addTo(start time.Time, tg runtimev1.TimeGrain) time.Time {
 	}
 
 	return start
-}
-
-func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
-	if err != nil {
-		return err
-	}
-
-	obj, err := rt.GetCatalogEntry(ctx, instanceID, q.MetricsViewName)
-	if err != nil {
-		return err
-	}
-
-	mv := obj.GetMetricsView()
-
-	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(q.generateFilename(mv))
-		if err != nil {
-			return err
-		}
-	}
-
-	tmp := make([]*structpb.Struct, 0, len(q.Result.Data))
-	meta := append([]*runtimev1.MetricsViewColumn{{
-		Name: mv.TimeDimension,
-	}}, q.Result.Meta...)
-	for _, dt := range q.Result.Data {
-		dt.Records.Fields[mv.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Format(time.RFC3339Nano))
-		tmp = append(tmp, dt.Records)
-	}
-
-	switch opts.Format {
-	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
-		return fmt.Errorf("unspecified format")
-	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(meta, tmp, w)
-	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(meta, tmp, w)
-	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		return writeParquet(meta, tmp, w)
-	}
-
-	return nil
-}
-
-func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsView) string {
-	filename := strings.ReplaceAll(mv.Model, `"`, `_`)
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
-		filename += "_filtered"
-	}
-	return filename
-}
-
-func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, policy *runtime.ResolvedMetricsViewSecurity) (string, string, []any, error) {
-	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
-	if err != nil {
-		return "", "", nil, err
-	}
-
-	selectCols := []string{}
-	for _, m := range ms {
-		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
-		selectCols = append(selectCols, expr)
-	}
-
-	whereClause := "1=1"
-	args := []any{}
-	if q.TimeStart != nil {
-		whereClause += fmt.Sprintf(" AND %s >= ?", safeName(mv.TimeDimension))
-		args = append(args, q.TimeStart.AsTime())
-	}
-	if q.TimeEnd != nil {
-		whereClause += fmt.Sprintf(" AND %s < ?", safeName(mv.TimeDimension))
-		args = append(args, q.TimeEnd.AsTime())
-	}
-
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, drivers.DialectDruid, policy)
-		if err != nil {
-			return "", "", nil, err
-		}
-		whereClause += " " + clause
-		args = append(args, clauseArgs...)
-	}
-
-	tsAlias := tempName("_ts_")
-	tsSpecifier := convertToDruidTimeFloorSpecifier(q.TimeGranularity)
-
-	timeClause := fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR))", safeName(mv.TimeDimension), tsSpecifier)
-	if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_WEEK && mv.FirstDayOfWeek > 1 {
-		dayOffset := 8 - mv.FirstDayOfWeek
-		timeClause = fmt.Sprintf("time_shift(time_floor(time_shift(%[1]s, 'P1D', %[3]d), '%[2]s', null, CAST(? AS VARCHAR)), 'P1D', -%[3]d)", safeName(mv.TimeDimension), tsSpecifier, dayOffset)
-	} else if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_YEAR && mv.FirstMonthOfYear > 1 {
-		monthOffset := 13 - mv.FirstMonthOfYear
-		timeClause = fmt.Sprintf("time_shift(time_floor(time_shift(%[1]s, 'P1M', %[3]d), '%[2]s', null, CAST(? AS VARCHAR)), 'P1M', -%[3]d)", safeName(mv.TimeDimension), tsSpecifier, monthOffset)
-	}
-
-	timezone := "UTC"
-	if q.TimeZone != "" {
-		timezone = q.TimeZone
-	}
-	args = append([]any{timezone, timezone}, args...)
-
-	var sql string
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB:
-		sql = q.buildDuckDBSQL(args, mv, tsAlias, selectCols, whereClause)
-	case drivers.DialectDruid:
-		sql = q.buildDruidSQL(args, mv, tsAlias, selectCols, whereClause)
-	default:
-		return "", "", nil, fmt.Errorf("not available for dialect '%s'", olap.Dialect())
-	}
-
-	return sql, tsAlias, args, nil
-}
-
-func (q *MetricsViewTimeSeries) buildDruidSQL(args []any, mv *runtimev1.MetricsView, tsAlias string, selectCols []string, whereClause string) string {
-	tsSpecifier := convertToDruidTimeFloorSpecifier(q.TimeGranularity)
-
-	sql := fmt.Sprintf(
-		`SELECT %s AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
-		timeClause,
-		tsAlias,
-		strings.Join(selectCols, ", "),
-		mv.Table,
-		whereClause,
-	)
-
-	return sql
-}
-
-func (q *MetricsViewTimeSeries) buildDuckDBSQL(args []any, mv *runtimev1.MetricsView, tsAlias string, selectCols []string, whereClause string) string {
-	dateTruncSpecifier := convertToDateTruncSpecifier(q.TimeGranularity)
-	sql := fmt.Sprintf(
-		`SELECT timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ))) as %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
-		dateTruncSpecifier,
-		safeName(mv.TimeDimension),
-		tsAlias,
-		strings.Join(selectCols, ", "),
-		mv.Model,
-		whereClause,
-	)
-
-	return sql
 }
