@@ -26,11 +26,13 @@ func (m *mockSender) Send(toEmail, toName, subject, body string) error {
 
 func TestOrganizationInvite(t *testing.T) {
 	mock := &mockSender{}
-	client := New(mock, "https://example.com", "")
+	client := New(mock)
 
 	opts := &OrganizationInvite{
 		ToEmail:       uuid.New().String(),
 		ToName:        uuid.New().String(),
+		AdminURL:      "https://api.example.com",
+		FrontendURL:   "https://ui.example.com",
 		OrgName:       uuid.New().String(),
 		RoleName:      uuid.New().String(),
 		InvitedByName: uuid.New().String(),
