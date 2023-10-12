@@ -143,7 +143,7 @@ func (c *Controller) Run(ctx context.Context) error {
 	if err != nil {
 		c.initErr = err
 		close(c.closed)
-		c.catalog.release()
+		_ = c.catalog.close(ctx)
 		return err
 	}
 
