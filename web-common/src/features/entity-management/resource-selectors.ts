@@ -4,6 +4,7 @@ import {
   createRuntimeServiceListResources,
   V1ListResourcesResponse,
   V1ModelV2,
+  V1ReconcileStatus,
   V1Resource,
   V1SourceV2,
 } from "@rilldata/web-common/runtime-client";
@@ -105,5 +106,12 @@ export function useSchemaForTable(
         enabled: !!tableSpec?.state?.table && !!tableSpec?.state?.connector,
       },
     }
+  );
+}
+
+export function resourceIsLoading(resource: V1Resource) {
+  return (
+    !!resource &&
+    resource.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE
   );
 }

@@ -1,7 +1,7 @@
 <script lang="ts">
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
+  import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { useModel, useModelFileIsEmpty } from "../../selectors";
   import ModelInspectorHeader from "./ModelInspectorHeader.svelte";
@@ -18,8 +18,8 @@
 </script>
 
 {#if !$emptyModel?.data}
-  {#if $modelQuery?.data?.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE}
-    <div class="h-10">
+  {#if resourceIsLoading($modelQuery?.data)}
+    <div class="mt-6">
       <ReconcilingSpinner />
     </div>
   {:else}
