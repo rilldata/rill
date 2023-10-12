@@ -171,7 +171,6 @@
   };
 
   $: hasErrors = getFileHasErrors(queryClient, $runtime.instanceId, filePath);
-  $: console.log($hasErrors, $sourceQuery.data);
 
   function isHeaderWidthSmall(width: number) {
     return width < 800;
