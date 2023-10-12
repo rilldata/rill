@@ -1,6 +1,6 @@
 # `admin/email`
 
-This package contains logic and templates for sending transactional admin emails. 
+This package contains logic and templates for sending transactional emails. 
 
 ## How templating works
 

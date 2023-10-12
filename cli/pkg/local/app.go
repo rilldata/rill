@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -98,7 +99,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		SystemConnectors:        systemConnectors,
 		SecurityEngineCacheSize: 1000,
 	}
-	rt, err := runtime.New(ctx, rtOpts, logger, client)
+	rt, err := runtime.New(ctx, rtOpts, logger, client, email.New(email.NewNoopSender()))
 	if err != nil {
 		return nil, err
 	}

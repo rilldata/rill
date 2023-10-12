@@ -9,11 +9,11 @@ import (
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/admin/server/cookies"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -36,7 +36,7 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	sender, err := email.NewConsoleSender(logger, "rill-test@rilldata.io", "")
 	require.NoError(t, err)
-	emailClient := email.New(sender, "", "")
+	emailClient := email.New(sender)
 
 	github := &mockGithub{}
 
