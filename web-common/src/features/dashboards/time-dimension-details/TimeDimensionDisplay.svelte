@@ -8,8 +8,6 @@
   export let metricViewName;
 
   const timeDimensionDataStore = useTimeDimensionDataStore(getStateManagers());
-  $: console.log($timeDimensionDataStore.timeFormatter);
-
   $: dashboardStore = useDashboardStore(metricViewName);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension;
 </script>

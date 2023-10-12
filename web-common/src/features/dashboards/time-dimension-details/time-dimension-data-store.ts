@@ -59,10 +59,10 @@ function createTimeDimensionAggregation(
   );
 }
 
-function prepareDimensionData(data, measureName, filters) {
+function prepareDimensionData(data, measureName, selectedValues) {
   if (!data) return;
 
-  console.log(filters);
+  console.log(selectedValues);
   const rowCount = data?.length;
   // When using row headers, be careful not to accidentally merge cells
   const rowHeaderData = data?.map((row) => [
@@ -174,6 +174,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
     [ctx.dashboardStore, useTimeControlStore(ctx), useTimeSeriesDataStore(ctx)],
     ([dashboardStore, timeControls, timeSeries]) => {
       const measureName = dashboardStore?.expandedMeasureName;
+      const dimensionName = dashboardStore?.selectedComparisonDimension;
       const timeFormatter = createTimeFormat([
         new Date(timeControls?.adjustedStart),
         new Date(timeControls?.adjustedEnd),
@@ -181,8 +182,20 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
 
       let comparing;
       let data;
-      if (dashboardStore?.selectedComparisonDimension) {
+      if (dimensionName) {
         comparing = "dimension";
+
+        const excludeMode =
+          dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ??
+          false;
+        const selectedValues =
+          (excludeMode
+            ? dashboardStore?.filters.exclude.find(
+                (d) => d.name === dimensionName
+              )?.in
+            : dashboardStore?.filters.include.find(
+                (d) => d.name === dimensionName
+              )?.in) ?? [];
 
         // TODO: Fix types
         const allFetched = timeSeries?.dimensionTableData?.every(
@@ -193,7 +206,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
           data = prepareDimensionData(
             timeSeries?.dimensionTableData,
             measureName,
-            dashboardStore?.filters
+            selectedValues
           );
         }
       } else {
