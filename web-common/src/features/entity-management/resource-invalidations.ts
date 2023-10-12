@@ -79,9 +79,12 @@ async function invalidateResource(
   instanceId: string,
   resource: V1Resource
 ) {
+  refreshResource(queryClient, instanceId, resource);
+
+  if (resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE)
+    return;
   const failed = !!resource.meta.reconcileError;
 
-  refreshResource(queryClient, instanceId, resource);
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:
