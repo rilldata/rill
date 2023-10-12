@@ -1,7 +1,4 @@
-import {
-  getFileAPIPathFromNameAndType,
-  getFilePathFromNameAndType,
-} from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   openFileUploadDialog,
@@ -51,7 +48,10 @@ export async function replaceSourceWithUploadedFile(
   instanceId: string,
   sourceName: string
 ) {
-  const artifactPath = getFilePathFromNameAndType(sourceName, EntityType.Table);
+  const artifactPath = getFileAPIPathFromNameAndType(
+    sourceName,
+    EntityType.Table
+  );
 
   const files = await openFileUploadDialog(false);
   if (!files.length) return Promise.reject();
