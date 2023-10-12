@@ -22,8 +22,11 @@ func (q *TableColumns) Key() string {
 	return fmt.Sprintf("TableColumns:%s", q.TableName)
 }
 
-func (q *TableColumns) Deps() []string {
-	return []string{q.TableName}
+func (q *TableColumns) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *TableColumns) MarshalResult() *runtime.QueryResult {

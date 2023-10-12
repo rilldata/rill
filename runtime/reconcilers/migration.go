@@ -43,7 +43,7 @@ func (r *MigrationReconciler) AssignState(from, to *runtimev1.Resource) error {
 	if a == nil || b == nil {
 		return fmt.Errorf("cannot assign state from %T to %T", from.Resource, to.Resource)
 	}
-	b.Spec = a.Spec
+	b.State = a.State
 	return nil
 }
 
@@ -60,6 +60,11 @@ func (r *MigrationReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	mig := self.GetMigration()
 	if mig == nil {
 		return runtime.ReconcileResult{Err: errors.New("not a migration")}
+	}
+
+	// Exit early for deletion
+	if self.Meta.DeletedOn != nil {
+		return runtime.ReconcileResult{}
 	}
 
 	// Check refs - stop if any of them are invalid
@@ -95,7 +100,7 @@ func (r *MigrationReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 }
 
 func (r *MigrationReconciler) executeMigration(ctx context.Context, self *runtimev1.Resource, version uint32) error {
-	inst, err := r.C.Runtime.FindInstance(ctx, r.C.InstanceID)
+	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
 		return err
 	}

@@ -29,7 +29,7 @@ export async function renameEntityUsingMenu(
   // type new name and submit
   await page.locator(".portal input").fill(toName);
   await Promise.all([
-    page.waitForResponse(/rename-and-reconcile/),
+    page.waitForResponse(/rename/),
     clickModalButton(page, "Change Name"),
   ]);
 }
@@ -43,7 +43,11 @@ export async function deleteEntity(page: Page, name: string) {
   // open context menu and click rename
   await openEntityMenu(page, name);
   await Promise.all([
-    page.waitForResponse(/delete-and-reconcile/),
+    page.waitForResponse(
+      (response) =>
+        response.url().includes(name) &&
+        response.request().method() === "DELETE"
+    ),
     clickMenuButton(page, "Delete"),
   ]);
 }
@@ -57,4 +61,27 @@ export async function updateCodeEditor(page: Page, code: string) {
   }
   await page.keyboard.press("Delete");
   await page.keyboard.insertText(code);
+}
+
+export async function waitForValidResource(
+  page: Page,
+  name: string,
+  kind: string
+) {
+  await page.waitForResponse(async (response) => {
+    if (
+      !response
+        .url()
+        .includes(
+          `/v1/instances/default/resource?name.kind=${kind}&name.name=${name}`
+        )
+    )
+      return false;
+    try {
+      const resp = JSON.parse((await response.body()).toString());
+      return resp.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
+    } catch (err) {
+      return false;
+    }
+  });
 }

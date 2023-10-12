@@ -22,6 +22,11 @@ export function startRuntimeForEachTest() {
     if (!existsSync(TEST_PROJECT_DIRECTORY)) {
       mkdirSync(TEST_PROJECT_DIRECTORY, { recursive: true });
     }
+    // Add `rill.yaml` file to the project repo
+    writeFileSync(
+      `${TEST_PROJECT_DIRECTORY}/rill.yaml`,
+      'compiler: rill-beta\ntitle: "Test Project"'
+    );
 
     const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} --db ${TEST_PROJECT_DIRECTORY}/stage.db?rill_pool_size=4 ${TEST_PROJECT_DIRECTORY}`;
 
@@ -42,12 +47,6 @@ export function startRuntimeForEachTest() {
         return false;
       }
     });
-
-    // Add `rill.yaml` file to the project repo
-    writeFileSync(
-      `${TEST_PROJECT_DIRECTORY}/rill.yaml`,
-      'compiler: rill-beta\ntitle: "Test Project"'
-    );
   });
 
   test.afterEach(async () => {

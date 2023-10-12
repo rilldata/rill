@@ -1,63 +1,25 @@
-import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+import {
+  getFileAPIPathFromNameAndType,
+  getFilePathFromNameAndType,
+} from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   openFileUploadDialog,
   uploadFile,
 } from "@rilldata/web-common/features/sources/modal/file-upload";
 import { compileCreateSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils";
-import { overlay } from "@rilldata/web-common/layout/overlay-store";
 import {
-  runtimeServicePutFileAndReconcile,
-  type V1PutFileAndReconcileResponse,
-  type V1RefreshAndReconcileResponse,
+  runtimeServicePutFile,
+  runtimeServiceTriggerRefresh,
 } from "@rilldata/web-common/runtime-client";
-import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
-import type {
-  CreateBaseMutationResult,
-  QueryClient,
-} from "@tanstack/svelte-query";
-
-export async function refreshAndReconcile(
-  sourceName: string,
-  instanceId: string,
-  refreshSource: CreateBaseMutationResult<V1RefreshAndReconcileResponse>,
-  queryClient: QueryClient,
-  path: string,
-  displayName = undefined
-) {
-  overlay.set({ title: `Importing ${displayName || sourceName}` });
-  const resp = await refreshSource.mutateAsync({
-    data: {
-      instanceId,
-      path,
-    },
-  });
-  invalidateAfterReconcile(queryClient, instanceId, resp);
-  fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-  return resp;
-}
 
 export async function refreshSource(
   connector: string,
   sourceName: string,
-  instanceId: string,
-  refreshSource: CreateBaseMutationResult<V1RefreshAndReconcileResponse>,
-  createSource: CreateBaseMutationResult<V1PutFileAndReconcileResponse>,
-  queryClient: QueryClient,
-  displayName = undefined
+  instanceId: string
 ) {
-  const artifactPath = getFilePathFromNameAndType(sourceName, EntityType.Table);
-
   if (connector !== "local_file") {
-    return refreshAndReconcile(
-      sourceName,
-      instanceId,
-      refreshSource,
-      queryClient,
-      artifactPath,
-      displayName
-    );
+    return runtimeServiceTriggerRefresh(instanceId, sourceName);
   }
 
   // different logic for the file connector
@@ -65,7 +27,6 @@ export async function refreshSource(
   const files = await openFileUploadDialog(false);
   if (!files.length) return Promise.reject();
 
-  overlay.set({ title: `Importing ${sourceName}` });
   const filePath = await uploadFile(instanceId, files[0]);
   if (filePath === null) {
     return Promise.reject();
@@ -77,21 +38,16 @@ export async function refreshSource(
     },
     "local_file"
   );
-  const resp = await createSource.mutateAsync({
-    data: {
-      instanceId,
-      path: artifactPath,
+  return runtimeServicePutFile(
+    instanceId,
+    getFileAPIPathFromNameAndType(sourceName, EntityType.Table),
+    {
       blob: yaml,
-      strict: true,
-    },
-  });
-  invalidateAfterReconcile(queryClient, instanceId, resp);
-  fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-  return resp;
+    }
+  );
 }
 
 export async function replaceSourceWithUploadedFile(
-  queryClient: QueryClient,
   instanceId: string,
   sourceName: string
 ) {
@@ -100,7 +56,6 @@ export async function replaceSourceWithUploadedFile(
   const files = await openFileUploadDialog(false);
   if (!files.length) return Promise.reject();
 
-  overlay.set({ title: `Importing ${sourceName}` });
   const filePath = await uploadFile(instanceId, files[0]);
   if (filePath === null) {
     return Promise.reject();
@@ -115,14 +70,9 @@ export async function replaceSourceWithUploadedFile(
   );
 
   // Create source
-  const resp = await runtimeServicePutFileAndReconcile({
-    instanceId,
-    path: artifactPath,
+  const resp = await runtimeServicePutFile(instanceId, artifactPath, {
     blob: yaml,
-    strict: true,
   });
 
-  invalidateAfterReconcile(queryClient, instanceId, resp);
-  fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
   return resp;
 }

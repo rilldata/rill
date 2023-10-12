@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
@@ -173,17 +173,10 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org")
 	}
 
-	orgNewName := valOrDefault(req.NewName, org.Name)
-
-	if orgNewName != org.Name { // org name changed
-		err := s.admin.UpdateOrgDeploymentAnnotations(ctx, org.ID, orgNewName)
-		if err != nil {
-			return nil, err
-		}
-	}
+	nameChanged := req.NewName != nil && *req.NewName != org.Name
 
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                    orgNewName,
+		Name:                    valOrDefault(req.NewName, org.Name),
 		Description:             valOrDefault(req.Description, org.Description),
 		QuotaProjects:           org.QuotaProjects,
 		QuotaDeployments:        org.QuotaDeployments,
@@ -193,6 +186,13 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if nameChanged {
+		err := s.admin.UpdateOrgDeploymentAnnotations(ctx, org)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &adminv1.UpdateOrganizationResponse{
@@ -345,6 +345,8 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		err = s.admin.Email.SendOrganizationInvite(&email.OrganizationInvite{
 			ToEmail:       req.Email,
 			ToName:        "",
+			AdminURL:      s.opts.ExternalURL,
+			FrontendURL:   s.opts.FrontendURL,
 			OrgName:       org.Name,
 			RoleName:      role.Name,
 			InvitedByName: invitedByName,
@@ -385,6 +387,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 	err = s.admin.Email.SendOrganizationAddition(&email.OrganizationAddition{
 		ToEmail:       req.Email,
 		ToName:        "",
+		FrontendURL:   s.opts.FrontendURL,
 		OrgName:       org.Name,
 		RoleName:      role.Name,
 		InvitedByName: invitedByName,

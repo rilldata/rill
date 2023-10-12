@@ -17,11 +17,8 @@ import (
 // Built-in parser limits
 var (
 	maxFiles    = 10000
-	maxFileSize = 8192 // 8kb
+	maxFileSize = 1 << 17 // 128kb
 )
-
-// ErrInvalidProject indicates a project without a rill.yaml file
-var ErrInvalidProject = errors.New("parser: not a valid project (rill.yaml not found)")
 
 // Resource parsed from code files.
 // One file may output multiple resources and multiple files may contribute config to one resource.
@@ -37,6 +34,7 @@ type Resource struct {
 	ModelSpec       *runtimev1.ModelSpec
 	MetricsViewSpec *runtimev1.MetricsViewSpec
 	MigrationSpec   *runtimev1.MigrationSpec
+	ReportSpec      *runtimev1.ReportSpec
 }
 
 // ResourceName is a unique identifier for a resource
@@ -65,6 +63,7 @@ const (
 	ResourceKindModel
 	ResourceKindMetricsView
 	ResourceKindMigration
+	ResourceKindReport
 )
 
 // ParseResourceKind maps a string to a ResourceKind.
@@ -81,6 +80,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindMetricsView, nil
 	case "migration":
 		return ResourceKindMigration, nil
+	case "report":
+		return ResourceKindReport, nil
 	default:
 		return ResourceKindUnspecified, fmt.Errorf("invalid resource kind %q", kind)
 	}
@@ -98,6 +99,8 @@ func (k ResourceKind) String() string {
 		return "MetricsView"
 	case ResourceKindMigration:
 		return "Migration"
+	case ResourceKindReport:
+		return "Report"
 	default:
 		panic(fmt.Sprintf("unexpected resource kind: %d", k))
 	}
@@ -105,11 +108,12 @@ func (k ResourceKind) String() string {
 
 // Diff shows changes to Parser.Resources following an incremental reparse.
 type Diff struct {
-	Added            []ResourceName
-	Modified         []ResourceName
-	ModifiedRillYAML bool
-	ModifiedDotEnv   bool
-	Deleted          []ResourceName
+	Reloaded       bool
+	Skipped        bool
+	Added          []ResourceName
+	Modified       []ResourceName
+	ModifiedDotEnv bool
+	Deleted        []ResourceName
 }
 
 // Parser parses a Rill project directory into a set of resources.
@@ -133,6 +137,7 @@ type Parser struct {
 	resourcesForUnspecifiedRef map[string][]*Resource // Reverse index of Resource.rawRefs where kind=ResourceKindUnspecified
 	insertedResources          []*Resource
 	updatedResources           []*Resource
+	deletedResources           []*Resource
 }
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
@@ -148,6 +153,10 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 		return nil, err
 	}
 
+	if p.RillYAML == nil {
+		return nil, errors.New("rill.yaml not found")
+	}
+
 	return p.RillYAML, nil
 }
 
@@ -157,23 +166,71 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 // To enable SQL parsing for a connector, pass it in duckDBConnectors. If DuckDB SQL parsing should be used on files where no connector is specified, put the defaultConnector in duckDBConnectors.
 func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, defaultConnector string, duckDBConnectors []string) (*Parser, error) {
 	p := &Parser{
-		Repo:                       repo,
-		InstanceID:                 instanceID,
-		DefaultConnector:           defaultConnector,
-		DuckDBConnectors:           duckDBConnectors,
-		Resources:                  make(map[ResourceName]*Resource),
-		resourcesForPath:           make(map[string][]*Resource),
-		resourcesForUnspecifiedRef: make(map[string][]*Resource),
+		Repo:             repo,
+		InstanceID:       instanceID,
+		DefaultConnector: defaultConnector,
+		DuckDBConnectors: duckDBConnectors,
 	}
 
-	paths, err := p.Repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
-	if err != nil {
-		return nil, fmt.Errorf("could not list project files: %w", err)
-	}
-
-	err = p.parsePaths(ctx, paths)
+	err := p.reload(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	return p, nil
+}
+
+// Reparse re-parses the indicated file paths, updating the Parser's state.
+// If rill.yaml has previously errored, or if rill.yaml is included in paths, it will reload the entire project.
+// If a previous call to Reparse has returned an error, the Parser may not be accessed or called again.
+func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
+	var changedRillYAML bool
+	for _, p := range paths {
+		if pathIsRillYAML(p) {
+			changedRillYAML = true
+			break
+		}
+	}
+
+	if changedRillYAML {
+		err := p.reload(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &Diff{Reloaded: true}, nil
+	}
+
+	// If rill.yaml previously errored, we're not going to reparse anything until it's changed, at which point we'll reload the entire project.
+	if p.RillYAML == nil {
+		return &Diff{Skipped: true}, nil
+	}
+
+	return p.reparseExceptRillYAML(ctx, paths)
+}
+
+// reload resets the parser's state and then parses the entire project.
+func (p *Parser) reload(ctx context.Context) error {
+	// Reset state
+	p.RillYAML = nil
+	p.DotEnv = nil
+	p.Resources = make(map[ResourceName]*Resource)
+	p.Errors = nil
+	p.resourcesForPath = make(map[string][]*Resource)
+	p.resourcesForUnspecifiedRef = make(map[string][]*Resource)
+	p.insertedResources = nil
+	p.updatedResources = nil
+	p.deletedResources = nil
+
+	// Load entire repo
+	paths, err := p.Repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
+	if err != nil {
+		return fmt.Errorf("could not list project files: %w", err)
+	}
+
+	// Parse all files
+	err = p.parsePaths(ctx, paths)
+	if err != nil {
+		return err
 	}
 
 	// Infer unspecified refs for all inserted resources
@@ -181,12 +238,12 @@ func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, defaultConne
 		p.inferUnspecifiedRefs(r)
 	}
 
-	return p, nil
+	return nil
 }
 
-// Reparse re-parses the indicated file paths, updating the Parser's state.
-// If a previous call to Reparse has returned an error, the Parser may not be accessed or called again.
-func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
+// reparseExceptRillYAML re-parses the indicated file paths, updating the Parser's state.
+// It assumes that p.RillYAML is valid and does not need to be reloaded.
+func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Diff, error) {
 	// The logic here is slightly tricky because the relationship between files and resources can vary:
 	//
 	// - Case 1: one file created one resource
@@ -194,7 +251,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	// - Case 3: multiple files contributed to one resource (for example, "model.sql" and "model.yaml")
 	//
 	// The high-level approach is: We'll delete all existing resources *related* to the changed paths and (re)parse them.
-	// Then at the end, we build a diff that treats any resource that was both "deleted" and "added" as an "update".
+	// Then at the end, we build a diff that treats any resource that was both "deleted" and "added" as "modified".
 	// (Renames are not supported in the parser. It needs to be handled by the caller, since parser state alone is insufficient to detect it.)
 	//
 	// Another wrinkle is that we need to re-infer unspecified refs for:
@@ -204,15 +261,19 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	// Reset insertedResources and updatedResources on reparse (used to construct Diff)
 	p.insertedResources = nil
 	p.updatedResources = nil
+	p.deletedResources = nil
 
 	// Phase 1: Clear existing state related to the paths.
 	// Identify all paths directly passed and paths indirectly related through resourcesForPath and Resource.Paths.
 	// And delete all resources and parse errors related to those paths.
-	var parsePaths []string            // Paths we should pass to parsePaths
-	var deletedResources []*Resource   // Resources deleted in Phase 1 (some may be added back in Phase 2)
-	checkPaths := slices.Clone(paths)  // Paths we should visit in the loop
+	var parsePaths []string           // Paths we should pass to parsePaths
+	checkPaths := slices.Clone(paths) // Paths we should visit in the loop
+	for _, perr := range p.Errors {   // Also re-check paths with external parse errors
+		if perr.External {
+			checkPaths = append(checkPaths, perr.FilePath)
+		}
+	}
 	seenPaths := make(map[string]bool) // Paths already visited by the loop
-	modifiedRillYAML := false          // whether rill.yaml file was modified
 	modifiedDotEnv := false            // whether .env file was modified
 	for i := 0; i < len(checkPaths); i++ {
 		// Don't check the same path twice
@@ -225,7 +286,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		// Skip files that aren't SQL or YAML or .env file
 		isSQL := strings.HasSuffix(path, ".sql")
 		isYAML := strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
-		isDotEnv := strings.EqualFold(path, "/.env")
+		isDotEnv := pathIsDotEnv(path)
 		if !isSQL && !isYAML && !isDotEnv {
 			continue
 		}
@@ -238,11 +299,8 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 			return nil, fmt.Errorf("unexpected file stat error: %w", err)
 		}
 
-		// Check if path is rill.yaml or .env and clear it (so we can re-parse it)
-		if path == "/rill.yaml" || path == "/rill.yml" {
-			modifiedRillYAML = true
-			p.RillYAML = nil
-		} else if path == "/.env" {
+		// Check if path is .env and clear it (so we can re-parse it)
+		if isDotEnv {
 			modifiedDotEnv = true
 			p.DotEnv = nil
 		}
@@ -258,10 +316,9 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		}
 
 		// Remove all resources derived from this path, and add any related paths to the check list
-		rs := slices.Clone(p.resourcesForPath[path]) // Use Clone because deleteResource mutates it
+		rs := slices.Clone(p.resourcesForPath[path]) // Use Clone because deleteResource mutates resourcesForPath
 		for _, resource := range rs {
 			p.deleteResource(resource)
-			deletedResources = append(deletedResources, resource)
 
 			// Make sure we-reparse all paths that contributed to the deleted resource.
 			checkPaths = append(checkPaths, resource.Paths...)
@@ -303,7 +360,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		p.inferUnspecifiedRefs(r)
 	}
 	// ... any unchanged resource that may have an unspecified ref to a deleted resource
-	for _, r1 := range deletedResources {
+	for _, r1 := range p.deletedResources {
 		for _, r2 := range p.resourcesForUnspecifiedRef[strings.ToLower(r1.Name.Name)] {
 			n := r2.Name.Normalized()
 			if !inferRefsSeen[n] {
@@ -325,14 +382,13 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 		}
 	}
 
-	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and deletedResources
+	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and p.deletedResources
 	diff := &Diff{
-		ModifiedRillYAML: modifiedRillYAML,
-		ModifiedDotEnv:   modifiedDotEnv,
+		ModifiedDotEnv: modifiedDotEnv,
 	}
 	for _, resource := range p.insertedResources {
 		addedBack := false
-		for _, deleted := range deletedResources {
+		for _, deleted := range p.deletedResources {
 			if resource.Name.Normalized() == deleted.Name.Normalized() {
 				addedBack = true
 				break
@@ -347,7 +403,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	for _, resource := range p.updatedResources {
 		diff.Modified = append(diff.Modified, resource.Name)
 	}
-	for _, deleted := range deletedResources {
+	for _, deleted := range p.deletedResources {
 		if p.Resources[deleted.Name.Normalized()] == nil {
 			diff.Deleted = append(diff.Deleted, deleted.Name)
 		}
@@ -359,31 +415,42 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 // parsePaths is the internal entrypoint for parsing a list of paths.
 // It assumes that the caller has already checked that the paths exist.
 // It also assumes that the caller has already removed any previous resources related to the paths,
-// enabling parsePaths to upsert changes, enabling multiple files to provide data for one resource
-// (like "my-model.sql" and "my-model.yaml").
+// enabling parsePaths to insert changed resources without conflicts.
 func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 	// Check limits
 	if len(paths) > maxFiles {
 		return fmt.Errorf("project exceeds file limit of %d", maxFiles)
 	}
 
-	// Sort paths such that we align files with the same name but different extensions next to each other.
-	// Then iterate over the sorted paths, processing all paths with the same stem at once (stem = path without extension).
-	slices.Sort(paths)
+	// Sort paths such that a) we always parse rill.yaml first (to pick up defaults),
+	// and b) we align files with the same name but different extensions next to each other.
+	slices.SortFunc(paths, func(a, b string) bool {
+		if pathIsRillYAML(a) {
+			return true
+		}
+		if pathIsRillYAML(b) {
+			return false
+		}
+		return a < b
+	})
+
+	// Iterate over the sorted paths, processing all paths with the same stem at once (stem = path without extension).
+	sawRillYAML := false
 	for i := 0; i < len(paths); {
-		// Handle rill.yaml and .env separately (if parsing of rill.yaml fails, we exit early instead of adding a ParseError)
+		// Handle rill.yaml and .env separately
 		path := paths[i]
-		if path == "/rill.yaml" || path == "/rill.yml" {
+		if pathIsRillYAML(path) {
 			err := p.parseRillYAML(ctx, path)
 			if err != nil {
-				return err
+				p.addParseError(path, err, false)
 			}
+			sawRillYAML = true
 			i++
 			continue
-		} else if path == "/.env" {
+		} else if pathIsDotEnv(path) {
 			err := p.parseDotEnv(ctx, path)
 			if err != nil {
-				p.addParseError(path, err)
+				p.addParseError(path, err, false)
 			}
 			i++
 			continue
@@ -406,9 +473,9 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		i = j
 	}
 
-	// If we didn't encounter rill.yaml, that's a breaking error
-	if p.RillYAML == nil {
-		return ErrInvalidProject
+	// If we didn't encounter rill.yaml (in this run or a previous run), that's a breaking error
+	if !sawRillYAML && p.RillYAML == nil {
+		p.addParseError("/rill.yaml", errors.New("rill.yaml not found"), false)
 	}
 
 	// As a special case, we need to check that there aren't any sources and models with the same name.
@@ -419,7 +486,7 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		if r.Name.Kind == ResourceKindSource {
 			n := ResourceName{Kind: ResourceKindModel, Name: r.Name.Name}.Normalized()
 			if _, ok := p.Resources[n]; ok {
-				modelsWithNameErrs[n.Normalized()] = r.Name.Name
+				modelsWithNameErrs[n] = r.Name.Name
 			}
 		} else if r.Name.Kind == ResourceKindModel {
 			n := ResourceName{Kind: ResourceKindSource, Name: r.Name.Name}.Normalized()
@@ -429,7 +496,8 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 		}
 	}
 	for n, s := range modelsWithNameErrs {
-		p.replaceResourceWithError(n, fmt.Errorf("model name collides with source %q", s))
+		// NOTE: Setting external=true because removing the source should restore the model.
+		p.replaceResourceWithError(n, fmt.Errorf("model name collides with source %q", s), true)
 	}
 
 	return nil
@@ -439,6 +507,7 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	// Load YAML and SQL contents
 	var yaml, yamlPath, sql, sqlPath string
+	var found bool
 	for _, path := range paths {
 		// Load contents
 		data, err := p.Repo.Get(ctx, path)
@@ -464,6 +533,7 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 		if strings.HasSuffix(path, ".sql") {
 			sql = data
 			sqlPath = path
+			found = true
 			continue
 		}
 		if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
@@ -477,9 +547,15 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 			}
 			yaml = data
 			yamlPath = path
+			found = true
 			continue
 		}
 		// The unhandled case should never happen, just being defensive
+	}
+
+	// There's a few cases above where we don't find YAML or SQL contents. It's fine to just skip the file in those cases.
+	if !found {
+		return nil
 	}
 
 	// Parse the SQL/YAML file pair to a Node, then parse the Node to p.Resources.
@@ -495,15 +571,15 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 			// If there's an error in either of the YAML or SQL files, we attach a "skipped" error to the other file as well.
 			for _, path := range paths {
 				if path == pathErr.path {
-					p.addParseError(path, err)
+					p.addParseError(path, err, false)
 				} else {
-					p.addParseError(path, fmt.Errorf("skipping file due to error in companion SQL/YAML file"))
+					p.addParseError(path, fmt.Errorf("skipping file due to error in companion SQL/YAML file"), false)
 				}
 			}
 		} else {
 			// Not a path error – we add the error to all paths
 			for _, path := range paths {
-				p.addParseError(path, err)
+				p.addParseError(path, err, false)
 			}
 		}
 	}
@@ -565,89 +641,72 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 	r.Refs = refs
 }
 
-// upsertResource inserts or updates a resource in the parser's internal state.
-// Upserting is required since both a YAML and SQL file may contribute information to the same resource.
-// After calling upsertResource, the caller can modify the returned resource's spec, and should be cautious with overriding values that may have been set from another file.
-func (p *Parser) upsertResource(kind ResourceKind, name string, paths []string, refs ...ResourceName) *Resource {
+// insertResource inserts a resource in the parser's internal state.
+// After calling insertResource, the caller can directly modify the returned resource's spec.
+func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, refs ...ResourceName) (*Resource, error) {
 	// Create the resource if not already present (ensures the spec for its kind is never nil)
 	rn := ResourceName{Kind: kind, Name: name}
-	r, ok := p.Resources[rn.Normalized()]
+	_, ok := p.Resources[rn.Normalized()]
 	if ok {
-		// Track in updatedResources, unless it's in insertedResources
+		return nil, externalError{err: fmt.Errorf("name collision: another resource of kind %q is also named %q", rn.Kind, rn.Name)}
+	}
+
+	// Dedupe refs (it's not guaranteed by the upstream logic).
+	// Doing a simple dedupe because there usually aren't many refs.
+	var dedupedRefs []ResourceName
+	for _, ref := range refs {
 		found := false
-		for _, ir := range p.insertedResources {
-			if ir.Name.Normalized() == rn.Normalized() {
+		for _, existing := range dedupedRefs {
+			if ref.Normalized() == existing.Normalized() {
 				found = true
 				break
 			}
 		}
 		if !found {
-			for _, ur := range p.updatedResources {
-				if ur.Name.Normalized() == rn.Normalized() {
-					found = true
-					break
-				}
-			}
-			if !found {
-				p.updatedResources = append(p.updatedResources, r)
-			}
-		}
-	} else {
-		// Create new resource and track in insertedResources
-		r = &Resource{Name: rn}
-		p.Resources[rn.Normalized()] = r
-		p.insertedResources = append(p.insertedResources, r)
-		switch kind {
-		case ResourceKindSource:
-			r.SourceSpec = &runtimev1.SourceSpec{}
-		case ResourceKindModel:
-			r.ModelSpec = &runtimev1.ModelSpec{}
-		case ResourceKindMetricsView:
-			r.MetricsViewSpec = &runtimev1.MetricsViewSpec{}
-		case ResourceKindMigration:
-			r.MigrationSpec = &runtimev1.MigrationSpec{}
-		default:
-			panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
+			dedupedRefs = append(dedupedRefs, ref)
 		}
 	}
+	refs = dedupedRefs
 
-	// Index paths if not already present
+	// Create new resource
+	r := &Resource{
+		Name:    rn,
+		Paths:   paths,
+		rawRefs: refs,
+	}
+	switch kind {
+	case ResourceKindSource:
+		r.SourceSpec = &runtimev1.SourceSpec{}
+	case ResourceKindModel:
+		r.ModelSpec = &runtimev1.ModelSpec{}
+	case ResourceKindMetricsView:
+		r.MetricsViewSpec = &runtimev1.MetricsViewSpec{}
+	case ResourceKindMigration:
+		r.MigrationSpec = &runtimev1.MigrationSpec{}
+	case ResourceKindReport:
+		r.ReportSpec = &runtimev1.ReportSpec{}
+	default:
+		panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
+	}
+
+	// Track it
+	p.Resources[rn.Normalized()] = r
+	p.insertedResources = append(p.insertedResources, r)
+
+	// Index paths
 	for _, path := range paths {
-		found := false
-		for _, p := range r.Paths {
-			if p == path {
-				found = true
-				break
-			}
-		}
-		if !found {
-			r.Paths = append(r.Paths, path)
-			p.resourcesForPath[path] = append(p.resourcesForPath[path], r)
+		p.resourcesForPath[path] = append(p.resourcesForPath[path], r)
+	}
+
+	// Index unspecified refs in p.resourcesForUnspecifiedRef
+	for _, ref := range refs {
+		if ref.Kind == ResourceKindUnspecified {
+			n := strings.ToLower(ref.Name)
+			p.resourcesForUnspecifiedRef[n] = append(p.resourcesForUnspecifiedRef[n], r)
 		}
 	}
 
-	// Add refs that are not already present
-	for _, refA := range refs {
-		found := false
-		for _, refB := range r.rawRefs {
-			if refA.Normalized() == refB.Normalized() {
-				found = true
-				break
-			}
-		}
-		if !found {
-			// Add to r.rawRefs
-			r.rawRefs = append(r.rawRefs, refA)
-
-			// Index in p.resourcesForUnspecifiedRef
-			if refA.Kind == ResourceKindUnspecified {
-				n := strings.ToLower(refA.Name)
-				p.resourcesForUnspecifiedRef[n] = append(p.resourcesForUnspecifiedRef[n], r)
-			}
-		}
-	}
-
-	return r
+	return r, nil
 }
 
 // deleteResource removes a resource from p.Resources as well as all internal indexes.
@@ -656,17 +715,19 @@ func (p *Parser) deleteResource(r *Resource) {
 	delete(p.Resources, r.Name.Normalized())
 
 	// Remove from p.insertedResources
-	checkUpdatedResources := true
+	foundInInserted := false
 	idx := slices.Index(p.insertedResources, r)
 	if idx >= 0 {
 		p.insertedResources = slices.Delete(p.insertedResources, idx, idx+1)
-		checkUpdatedResources = false
+		foundInInserted = true
 	}
 
 	// Remove from p.updatedResources
-	idx = slices.Index(p.updatedResources, r)
-	if checkUpdatedResources && idx >= 0 {
-		p.updatedResources = slices.Delete(p.updatedResources, idx, idx+1)
+	if !foundInInserted {
+		idx = slices.Index(p.updatedResources, r)
+		if idx >= 0 {
+			p.updatedResources = slices.Delete(p.updatedResources, idx, idx+1)
+		}
 	}
 
 	// Remove from p.resourcesForPath
@@ -700,30 +761,51 @@ func (p *Parser) deleteResource(r *Resource) {
 			p.resourcesForUnspecifiedRef[n] = slices.Delete(rs, idx, idx+1)
 		}
 	}
+
+	// Track in deleted resources (unless it was in insertedResources, in which case it's not a real deletion)
+	if !foundInInserted {
+		p.deletedResources = append(p.deletedResources, r)
+	}
 }
 
 // replaceResourceWithError removes a resource from the parser's internal state and adds a parse error for its paths instead.
-func (p *Parser) replaceResourceWithError(n ResourceName, err error) {
+func (p *Parser) replaceResourceWithError(n ResourceName, err error, external bool) {
 	r := p.Resources[n.Normalized()]
 	p.deleteResource(r)
 	for _, path := range r.Paths {
-		p.addParseError(path, err)
+		p.addParseError(path, err, external)
 	}
 }
 
 // addParseError adds a parse error to the p.Errors
-func (p *Parser) addParseError(path string, err error) {
+func (p *Parser) addParseError(path string, err error, external bool) {
 	var loc *runtimev1.CharLocation
 	var locErr locationError
 	if errors.As(err, &locErr) {
 		loc = locErr.location
 	}
 
+	var extErr externalError
+	if errors.As(err, &extErr) {
+		external = true
+	}
+
 	p.Errors = append(p.Errors, &runtimev1.ParseError{
 		Message:       err.Error(),
 		FilePath:      path,
 		StartLocation: loc,
+		External:      external,
 	})
+}
+
+// pathIsRillYAML returns true if the path is rill.yaml
+func pathIsRillYAML(path string) bool {
+	return path == "/rill.yaml" || path == "/rill.yml"
+}
+
+// pathIsDotEnv returns true if the path is .env
+func pathIsDotEnv(path string) bool {
+	return path == "/.env"
 }
 
 // normalizePath normalizes a user-provided path to the format returned from ListRecursive.
@@ -770,6 +852,20 @@ func (e pathError) Error() string {
 }
 
 func (e pathError) Unwrap() error {
+	return e.err
+}
+
+// externalError wraps an error that should be emitted as a parse error with external=true.
+// This means the error is not with the file itself, but with another file that interferes with it (e.g. name collision).
+type externalError struct {
+	err error
+}
+
+func (e externalError) Error() string {
+	return e.err.Error()
+}
+
+func (e externalError) Unwrap() error {
 	return e.err
 }
 

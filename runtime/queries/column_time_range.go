@@ -27,8 +27,11 @@ func (q *ColumnTimeRange) Key() string {
 	return fmt.Sprintf("ColumnTimeRange:%s:%s", q.TableName, q.ColumnName)
 }
 
-func (q *ColumnTimeRange) Deps() []string {
-	return []string{q.TableName}
+func (q *ColumnTimeRange) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *ColumnTimeRange) MarshalResult() *runtime.QueryResult {

@@ -3,11 +3,9 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
   import { isDuplicateName } from "@rilldata/web-common/features/entity-management/name-utils";
-  import { useAllNames } from "@rilldata/web-common/features/entity-management/selectors";
+  import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { createRuntimeServiceRenameFileAndReconcile } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
   import GoToDashboardButton from "./GoToDashboardButton.svelte";
@@ -16,8 +14,6 @@
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: allNamesQuery = useAllNames(runtimeInstanceId);
-  const queryClient = useQueryClient();
-  const renameMetricsDef = createRuntimeServiceRenameFileAndReconcile();
 
   const onChangeCallback = async (e) => {
     if (!e.target.value.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
@@ -39,14 +35,7 @@
     try {
       const toName = e.target.value;
       const type = EntityType.MetricsDefinition;
-      await renameFileArtifact(
-        queryClient,
-        runtimeInstanceId,
-        metricsDefName,
-        toName,
-        type,
-        $renameMetricsDef
-      );
+      await renameFileArtifact(runtimeInstanceId, metricsDefName, toName, type);
       goto(`/dashboard/${toName}/edit`, { replaceState: true });
     } catch (err) {
       console.error(err.response.data.message);

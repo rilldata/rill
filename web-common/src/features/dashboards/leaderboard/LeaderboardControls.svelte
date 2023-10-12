@@ -3,16 +3,14 @@
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
+  import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
   import { crossfade, fly } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
 
-  import {
-    MetricsExplorerEntity,
-    metricsExplorerStore,
-  } from "../dashboard-stores";
+  import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { useMetaQuery } from "../selectors";
   import LeaderboardContextColumnMenu from "./LeaderboardContextColumnMenu.svelte";
 

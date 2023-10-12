@@ -15644,7 +15644,7 @@ func (m *Deployment) validate(all bool) error {
 
 	// no validation rules for Status
 
-	// no validation rules for Logs
+	// no validation rules for StatusMessage
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

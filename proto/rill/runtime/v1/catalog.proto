@@ -115,4 +115,6 @@ message MetricsView {
   repeated string available_time_zones = 11;
   // Security for the dashboard
   Security security = 12;
+  uint32 first_day_of_week = 13;
+  uint32 first_month_of_year = 14;
 }

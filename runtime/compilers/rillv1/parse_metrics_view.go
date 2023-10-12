@@ -10,6 +10,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"gopkg.in/yaml.v3"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 // metricsViewYAML is the raw structure of a MetricsView resource defined in YAML
@@ -24,6 +27,8 @@ type metricsViewYAML struct {
 	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
 	DefaultTimeRange   string           `yaml:"default_time_range"`
 	AvailableTimeZones []string         `yaml:"available_time_zones"`
+	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
+	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string
@@ -37,7 +42,8 @@ type metricsViewYAML struct {
 		Label               string
 		Expression          string
 		Description         string
-		Format              string `yaml:"format_preset"`
+		FormatPreset        string `yaml:"format_preset"`
+		FormatD3            string `yaml:"format_d3"`
 		Ignore              bool   `yaml:"ignore"`
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
@@ -59,6 +65,11 @@ type metricsViewYAML struct {
 func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &metricsViewYAML{}
+	if p.RillYAML != nil && !p.RillYAML.Defaults.MetricsViews.IsZero() {
+		if err := p.RillYAML.Defaults.MetricsViews.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
+		}
+	}
 	if node.YAMLRaw != "" {
 		// Can't use node.YAML because we need to set KnownFields for metrics views
 		dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
@@ -160,6 +171,10 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		if ok := columns[lower]; ok {
 			return fmt.Errorf("measure name %q coincides with a dimension column name", measure.Name)
 		}
+
+		if measure.FormatPreset != "" && measure.FormatD3 != "" {
+			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)
+		}
 	}
 	if measureCount == 0 {
 		return fmt.Errorf("must define at least one measure")
@@ -249,8 +264,11 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 	node.Refs = append(node.Refs, ResourceName{Name: table})
 
-	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
-	r := p.upsertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
+	if err != nil {
+		return err
+	}
+	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 	spec := r.MetricsViewSpec
 
 	spec.Connector = node.Connector
@@ -261,6 +279,8 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.DefaultTimeRange = tmp.DefaultTimeRange
 	spec.AvailableTimeZones = tmp.AvailableTimeZones
+	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
+	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
 
 	for _, dim := range tmp.Dimensions {
 		if dim.Ignore {
@@ -285,7 +305,8 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			Expression:          measure.Expression,
 			Label:               measure.Label,
 			Description:         measure.Description,
-			Format:              measure.Format,
+			FormatPreset:        measure.FormatPreset,
+			FormatD3:            measure.FormatD3,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
 	}

@@ -40,6 +40,8 @@ func (p *Parser) parseNode(ctx context.Context, node *Node) error {
 		return p.parseMetricsView(ctx, node)
 	case ResourceKindMigration:
 		return p.parseMigration(ctx, node)
+	case ResourceKindReport:
+		return p.parseReport(ctx, node)
 	default:
 		panic(fmt.Errorf("unexpected resource kind: %s", node.Kind.String()))
 	}
@@ -139,7 +141,7 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 
 		res.SQLUsesTemplating = meta.UsesTemplating
 		res.SQLAnnotations = meta.Config
-		res.Refs = append(res.Refs, meta.Refs...) // If needed, deduplication happens in upsertResource
+		res.Refs = append(res.Refs, meta.Refs...) // If needed, deduplication happens in insertResource
 
 		// Additionally parse annotations provided in comments (e.g. "-- @materialize: true")
 		commentAnnotations := sqlparse.ExtractAnnotations(res.SQL)

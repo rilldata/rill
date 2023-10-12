@@ -3,8 +3,8 @@
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { createRuntimeServicePutFileAndReconcile } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
+  import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import NavigationEntry from "../../../layout/navigation/NavigationEntry.svelte";
@@ -12,28 +12,17 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import AddAssetButton from "../../entity-management/AddAssetButton.svelte";
   import { getName } from "../../entity-management/name-utils";
-  import { useSourceNames } from "../../sources/selectors";
   import { createModel } from "../createModel";
-  import { useModelNames } from "../selectors";
   import ModelMenuItems from "./ModelMenuItems.svelte";
   import ModelTooltip from "./ModelTooltip.svelte";
 
-  $: sourceNames = useSourceNames($runtime.instanceId);
-  $: modelNames = useModelNames($runtime.instanceId);
-
-  const queryClient = useQueryClient();
-
-  const createModelMutation = createRuntimeServicePutFileAndReconcile();
+  $: sourceNames = useSourceFileNames($runtime.instanceId);
+  $: modelNames = useModelFileNames($runtime.instanceId);
 
   let showModels = true;
 
   async function handleAddModel() {
-    await createModel(
-      queryClient,
-      $runtime.instanceId,
-      getName("model", $modelNames.data),
-      $createModelMutation
-    );
+    await createModel($runtime.instanceId, getName("model", $modelNames.data));
     // if the models are not visible in the assets list, show them.
     if (!showModels) {
       showModels = true;

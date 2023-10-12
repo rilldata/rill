@@ -1,42 +1,36 @@
 import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
 import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
-import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
-import {
-  V1PutFileAndReconcileResponse,
-  createRuntimeServicePutFileAndReconcile,
-} from "@rilldata/web-common/runtime-client";
-import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
+import { createRuntimeServicePutFile } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
 export function createUpdateMetricsCallback(
-  queryClient: QueryClient,
   metricsDefName: string
 ): (event: CustomEvent) => void {
   const debounce = createDebouncer();
 
-  const reconcile = createRuntimeServicePutFileAndReconcile();
+  const fileSaver = createRuntimeServicePutFile();
 
   async function reconcileNewMetricsContent(blob: string) {
     const instanceId = get(runtime).instanceId;
-    const filePath = getFilePathFromNameAndType(
+    const filePath = getFileAPIPathFromNameAndType(
       metricsDefName,
       EntityType.MetricsDefinition
     );
-    const resp = (await get(reconcile).mutateAsync({
+    await get(fileSaver).mutateAsync({
+      instanceId,
+      path: filePath,
       data: {
-        instanceId: get(runtime).instanceId,
-        path: filePath,
         blob,
         create: false,
       },
-    })) as V1PutFileAndReconcileResponse;
-    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
-    invalidateAfterReconcile(queryClient, instanceId, resp);
+    });
+    // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
+    metricsExplorerStore.remove(metricsDefName);
   }
 
   return function updateMetrics(event) {

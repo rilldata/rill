@@ -3,7 +3,7 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
   import {
     humanizeDataType,
@@ -334,7 +334,7 @@
           ? (bigNum - comparisonValue) / comparisonValue
           : undefined}
       {@const formatPreset =
-        FormatPreset[measure?.format] || FormatPreset.HUMANIZE}
+        FormatPreset[measure?.formatPreset] || FormatPreset.HUMANIZE}
       <!-- FIXME: I can't select a time series by measure id. -->
       <MeasureBigNumber
         value={bigNum}
@@ -345,7 +345,7 @@
         description={measure?.description ||
           measure?.label ||
           measure?.expression}
-        formatPreset={measure?.format}
+        formatPreset={measure?.formatPreset}
         status={$totalsQuery?.isFetching
           ? EntityStatus.Running
           : EntityStatus.Idle}
@@ -381,11 +381,11 @@
                 TIME_GRAIN[interval].formatDate
               );
             }}
-            numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
+            numberKind={nicelyFormattedTypesToNumberKind(measure?.formatPreset)}
             mouseoverFormat={(value) =>
               formatPreset === FormatPreset.NONE
                 ? `${value}`
-                : humanizeDataType(value, measure?.format)}
+                : humanizeDataType(value, measure?.formatPreset)}
           />
         {:else}
           <div>
