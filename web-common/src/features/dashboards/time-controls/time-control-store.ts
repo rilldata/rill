@@ -95,6 +95,7 @@ export function createTimeControlStore(ctx: StateManagers) {
     ([metricsView, timeRangeResponse, metricsExplorer]) => {
       const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
       if (
+        !metricsView.data ||
         !metricsExplorer ||
         !timeRangeResponse ||
         !timeRangeResponse.isSuccess

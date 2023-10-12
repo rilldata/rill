@@ -42,7 +42,6 @@ export class WatchRequestClient<Res extends WatchResponse> {
       const runtimeUnchanged =
         runtimeState.instanceId === this.prevInstanceId &&
         runtimeState.host === this.prevHost;
-      // const focusUnchanged = pageInFocus === this.prevFocus;
 
       if (!runtimeState || runtimeUnchanged || !pageInFocus) {
         if (!pageInFocus) {
@@ -56,6 +55,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
         return;
       }
       if (!this.prevFocus) {
+        console.log("Focus reconnect");
         // Call onReconnect on page focus to make sure we didnt miss anything
         this.onReconnect();
       }
@@ -63,10 +63,10 @@ export class WatchRequestClient<Res extends WatchResponse> {
       this.prevHost = runtimeState.host;
       this.prevFocus = true;
 
-      if (this.outOfFocusThrottler.throttling()) {
+      if (this.outOfFocusThrottler.isThrottling()) {
         // Cancel any callbacks for out of focus
         this.outOfFocusThrottler.cancel();
-        // The client is already running. Do not cancel
+        // The client is already running. Do not cancel the client.
         return;
       }
       this.controller?.abort();

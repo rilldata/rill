@@ -14,7 +14,7 @@ export class Throttler {
     }, this.timeout);
   }
 
-  public throttling() {
+  public isThrottling() {
     return this.timer !== undefined;
   }
 
