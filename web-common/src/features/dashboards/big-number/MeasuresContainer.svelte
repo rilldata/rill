@@ -198,7 +198,7 @@
             description={measure?.description ||
               measure?.label ||
               measure?.expression}
-            formatPreset={measure?.format}
+            formatPreset={measure?.formatPreset}
             withTimeseries={false}
             status={$totalsQuery?.isFetching
               ? EntityStatus.Running

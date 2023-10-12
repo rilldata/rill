@@ -2389,7 +2389,9 @@ definitions:
         type: string
       description:
         type: string
-      format:
+      formatPreset:
+        type: string
+      formatD3:
         type: string
       validPercentOfTotal:
         type: boolean

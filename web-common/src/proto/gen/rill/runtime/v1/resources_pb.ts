@@ -1066,9 +1066,14 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
   description = "";
 
   /**
-   * @generated from field: string format = 5;
+   * @generated from field: string format_preset = 5;
    */
-  format = "";
+  formatPreset = "";
+
+  /**
+   * @generated from field: string format_d3 = 7;
+   */
+  formatD3 = "";
 
   /**
    * @generated from field: bool valid_percent_of_total = 6;
@@ -1087,7 +1092,8 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
     { no: 2, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "format", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "format_preset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "format_d3", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

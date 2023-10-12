@@ -151,12 +151,12 @@ function shouldSkipResource(
   return false;
 }
 
-function refreshResource(
+export function refreshResource(
   queryClient: QueryClient,
   instanceId: string,
   res: V1Resource
 ) {
-  return queryClient.refetchQueries(
+  return queryClient.resetQueries(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.name": res.meta.name.name,
       "name.kind": res.meta.name.kind,
@@ -166,7 +166,6 @@ function refreshResource(
 
 export async function invalidateAllResources(queryClient: QueryClient) {
   return queryClient.resetQueries({
-    type: "inactive",
     predicate: (query) =>
       query.queryHash.includes(`v1/instances/${get(runtime).instanceId}`),
   });
