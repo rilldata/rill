@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"net/url"
 	"os"
 	"time"
 
@@ -11,10 +12,10 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/admin"
-	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -93,6 +94,18 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				os.Exit(1)
 			}
 
+			// Validate frontend and external URLs
+			_, err = url.Parse(conf.FrontendURL)
+			if err != nil {
+				fmt.Printf("error: invalid frontend URL: %s\n", err.Error())
+				os.Exit(1)
+			}
+			_, err = url.Parse(conf.ExternalURL)
+			if err != nil {
+				fmt.Printf("error: invalid external URL: %s\n", err.Error())
+				os.Exit(1)
+			}
+
 			// Init telemetry
 			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
 				MetricsExporter: conf.MetricsExporter,
@@ -137,7 +150,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			if err != nil {
 				logger.Fatal("error creating email sender", zap.Error(err))
 			}
-			emailClient := email.New(sender, conf.FrontendURL, conf.ExternalURL)
+			emailClient := email.New(sender)
 
 			// Init github client
 			gh, err := admin.NewGithub(conf.GithubAppID, conf.GithubAppPrivateKey)
