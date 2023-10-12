@@ -54,17 +54,8 @@ function handleWatchFileResponse(
 }
 
 async function invalidateAllFiles(queryClient: QueryClient) {
-  // TODO: reset project parser errors
-
   const instanceId = get(runtime).instanceId;
-  queryClient.removeQueries({
-    type: "inactive",
-    predicate: (query) =>
-      query.queryHash.includes(`v1/instances/${instanceId}/files`),
-  });
-
-  return queryClient.refetchQueries({
-    type: "active",
+  return queryClient.resetQueries({
     predicate: (query) =>
       query.queryHash.includes(`v1/instances/${instanceId}/files`),
   });
