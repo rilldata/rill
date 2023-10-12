@@ -14,6 +14,7 @@ import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
+  V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
@@ -46,10 +47,12 @@ export function setDefaultTimeRange(
 }
 
 function setDefaultComparisonTimeRange(
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
   fullTimeRange: V1ColumnTimeRangeResponse | undefined
 ) {
+  if (!metricsView.defaultComparison.enabled) return;
+
   const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
   const comparisonOption = DEFAULT_TIME_RANGES[preset]
     ?.defaultComparison as TimeComparisonOption;

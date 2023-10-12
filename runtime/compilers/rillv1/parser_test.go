@@ -816,6 +816,9 @@ dashboards:
     - America/New_York
   security:
     access: true
+  default_comparison:
+    enabled: true
+    time_range: P14D
 `,
 		// Dashboard that inherits defaults
 		`dashboards/d1.yaml`: `
@@ -838,6 +841,10 @@ first_day_of_week: 1
 available_time_zones: []
 security:
   row_filter: true
+default_comparison:
+  enabled: false
+  dimension: a
+  time_range: P7D
 `,
 	})
 
@@ -859,6 +866,10 @@ security:
 				Security: &runtimev1.MetricsViewSpec_SecurityV2{
 					Access: "true",
 				},
+				DefaultComparison: &runtimev1.MetricsViewSpec_DefaultComparison{
+					Enabled:   true,
+					TimeRange: "P14D",
+				},
 			},
 		},
 		// dashboard d2
@@ -878,6 +889,11 @@ security:
 				Security: &runtimev1.MetricsViewSpec_SecurityV2{
 					Access:    "true",
 					RowFilter: "true",
+				},
+				DefaultComparison: &runtimev1.MetricsViewSpec_DefaultComparison{
+					Enabled:   false,
+					Dimension: "a",
+					TimeRange: "P7D",
 				},
 			},
 		},

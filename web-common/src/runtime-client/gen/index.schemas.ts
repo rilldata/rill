@@ -1100,6 +1100,7 @@ export interface V1MetricsViewSpec {
   security?: MetricsViewSpecSecurityV2;
   firstDayOfWeek?: number;
   firstMonthOfYear?: number;
+  defaultComparison?: MetricsViewSpecDefaultComparison;
 }
 
 export interface V1MetricsViewState {
@@ -1833,6 +1834,15 @@ export interface MetricsViewSpecDimensionV2 {
   column?: string;
   label?: string;
   description?: string;
+}
+
+/**
+ * DefaultComparison settings for comparison controls.
+ */
+export interface MetricsViewSpecDefaultComparison {
+  enabled?: boolean;
+  dimension?: string;
+  timeRange?: string;
 }
 
 export interface MetricsViewSecurity {

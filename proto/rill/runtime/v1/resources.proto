@@ -150,6 +150,12 @@ message MetricsViewSpec {
     repeated FieldConditionV2 include = 3;
     repeated FieldConditionV2 exclude = 4;
   }
+  // DefaultComparison settings for comparison controls.
+  message DefaultComparison {
+    bool enabled = 1;
+    string dimension = 2;
+    string time_range = 3;
+  }
   // Connector containing the table
   string connector = 1;
   // Name of the table the metrics view is based on
@@ -174,6 +180,7 @@ message MetricsViewSpec {
   SecurityV2 security = 11;
   uint32 first_day_of_week = 12;
   uint32 first_month_of_year = 13;
+  optional DefaultComparison default_comparison = 14;
 }
 
 message MetricsViewState {

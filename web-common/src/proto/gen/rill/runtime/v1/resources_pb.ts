@@ -930,6 +930,11 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   firstMonthOfYear = 0;
 
+  /**
+   * @generated from field: optional rill.runtime.v1.MetricsViewSpec.DefaultComparison default_comparison = 14;
+   */
+  defaultComparison?: MetricsViewSpec_DefaultComparison;
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -951,6 +956,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 11, name: "security", kind: "message", T: MetricsViewSpec_SecurityV2 },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 14, name: "default_comparison", kind: "message", T: MetricsViewSpec_DefaultComparison, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -1201,6 +1207,57 @@ export class MetricsViewSpec_SecurityV2_FieldConditionV2 extends Message<Metrics
 
   static equals(a: MetricsViewSpec_SecurityV2_FieldConditionV2 | PlainMessage<MetricsViewSpec_SecurityV2_FieldConditionV2> | undefined, b: MetricsViewSpec_SecurityV2_FieldConditionV2 | PlainMessage<MetricsViewSpec_SecurityV2_FieldConditionV2> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_SecurityV2_FieldConditionV2, a, b);
+  }
+}
+
+/**
+ * DefaultComparison settings for comparison controls.
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.DefaultComparison
+ */
+export class MetricsViewSpec_DefaultComparison extends Message<MetricsViewSpec_DefaultComparison> {
+  /**
+   * @generated from field: bool enabled = 1;
+   */
+  enabled = false;
+
+  /**
+   * @generated from field: string dimension = 2;
+   */
+  dimension = "";
+
+  /**
+   * @generated from field: string time_range = 3;
+   */
+  timeRange = "";
+
+  constructor(data?: PartialMessage<MetricsViewSpec_DefaultComparison>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.DefaultComparison";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "enabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_DefaultComparison {
+    return new MetricsViewSpec_DefaultComparison().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_DefaultComparison {
+    return new MetricsViewSpec_DefaultComparison().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_DefaultComparison {
+    return new MetricsViewSpec_DefaultComparison().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_DefaultComparison | PlainMessage<MetricsViewSpec_DefaultComparison> | undefined, b: MetricsViewSpec_DefaultComparison | PlainMessage<MetricsViewSpec_DefaultComparison> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_DefaultComparison, a, b);
   }
 }
 

@@ -2366,6 +2366,16 @@ definitions:
           type: object
           $ref: '#/definitions/SecurityFieldCondition'
     title: Security for the metrics view
+  MetricsViewSpecDefaultComparison:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+      dimension:
+        type: string
+      timeRange:
+        type: string
+    description: DefaultComparison settings for comparison controls.
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -3610,6 +3620,8 @@ definitions:
       firstMonthOfYear:
         type: integer
         format: int64
+      defaultComparison:
+        $ref: '#/definitions/MetricsViewSpecDefaultComparison'
   v1MetricsViewState:
     type: object
     properties:

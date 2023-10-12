@@ -15,17 +15,17 @@ import (
 // metricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type metricsViewYAML struct {
 	commonYAML         `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title              string           `yaml:"title"`
-	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
-	Description        string           `yaml:"description"`
-	Model              string           `yaml:"model"`
-	Table              string           `yaml:"table"`
-	TimeDimension      string           `yaml:"timeseries"`
-	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
-	DefaultTimeRange   string           `yaml:"default_time_range"`
-	AvailableTimeZones []string         `yaml:"available_time_zones"`
-	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
-	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
+	Title              string   `yaml:"title"`
+	DisplayName        string   `yaml:"display_name"` // Backwards compatibility
+	Description        string   `yaml:"description"`
+	Model              string   `yaml:"model"`
+	Table              string   `yaml:"table"`
+	TimeDimension      string   `yaml:"timeseries"`
+	SmallestTimeGrain  string   `yaml:"smallest_time_grain"`
+	DefaultTimeRange   string   `yaml:"default_time_range"`
+	AvailableTimeZones []string `yaml:"available_time_zones"`
+	FirstDayOfWeek     uint32   `yaml:"first_day_of_week"`
+	FirstMonthOfYear   uint32   `yaml:"first_month_of_year"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string
@@ -55,6 +55,11 @@ type metricsViewYAML struct {
 			Condition string `yaml:"if"`
 		}
 	}
+	DefaultComparison *struct {
+		Enabled   bool   `yaml:"enabled"`
+		Dimension string `yaml:"dimension"`
+		TimeRange string `yaml:"time_range"`
+	} `yaml:"default_comparison"`
 }
 
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
@@ -170,6 +175,21 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 	if measureCount == 0 {
 		return fmt.Errorf("must define at least one measure")
+	}
+
+	if tmp.DefaultComparison != nil {
+		if tmp.DefaultComparison.Dimension != "" {
+			if ok := names[tmp.DefaultComparison.Dimension]; !ok {
+				return fmt.Errorf("default time dimension %s doesnt exist", tmp.DefaultComparison.Dimension)
+			}
+		}
+
+		if tmp.DefaultComparison.TimeRange != "" {
+			_, err := duration.ParseISO8601(tmp.DefaultComparison.TimeRange)
+			if err != nil {
+				return fmt.Errorf("default comparison time range is not valid")
+			}
+		}
 	}
 
 	if tmp.Security != nil {
@@ -300,6 +320,18 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			Format:              measure.Format,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
+	}
+
+	if tmp.DefaultComparison != nil {
+		spec.DefaultComparison = &runtimev1.MetricsViewSpec_DefaultComparison{
+			Enabled: tmp.DefaultComparison.Enabled,
+		}
+		if tmp.DefaultComparison.Dimension != "" {
+			spec.DefaultComparison.Dimension = tmp.DefaultComparison.Dimension
+		}
+		if tmp.DefaultComparison.TimeRange != "" {
+			spec.DefaultComparison.TimeRange = tmp.DefaultComparison.TimeRange
+		}
 	}
 
 	if tmp.Security != nil {
