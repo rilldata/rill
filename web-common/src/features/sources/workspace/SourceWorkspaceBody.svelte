@@ -1,7 +1,10 @@
 <script lang="ts">
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import { useResourceForFile } from "@rilldata/web-common/features/entity-management/resources-store";
+  import {
+    getAllErrorsForFile,
+    useResourceForFile,
+  } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
@@ -33,6 +36,12 @@
   // Get only reconcile errors here. File parse errors are shown inline
   $: source = useResourceForFile(queryClient, $runtime.instanceId, filePath);
   $: reconcileError = $source.data?.meta?.reconcileError;
+
+  $: allErrors = getAllErrorsForFile(
+    queryClient,
+    $runtime.instanceId,
+    filePath
+  );
 
   $: sourceQuery = useSource($runtime.instanceId, sourceName);
 
@@ -70,7 +79,7 @@
       class="h-full border border-gray-300 rounded overflow-auto {isSourceUnsaved &&
         'brightness-90'} transition duration-200"
     >
-      {#if !reconcileError}
+      {#if !$allErrors?.length}
         {#key sourceName}
           <ConnectedPreviewTable
             objectName={$sourceQuery?.data?.source?.state?.table}
@@ -78,7 +87,7 @@
           />
         {/key}
       {:else}
-        <ErrorPane {sourceName} errorMessage={reconcileError} />
+        <ErrorPane {sourceName} errorMessage={$allErrors[0].message} />
       {/if}
     </div>
   </div>
