@@ -8,7 +8,10 @@
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-  import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import type {
+    MetricsViewSpecMeasureV2,
+    V1TimeGrain,
+  } from "@rilldata/web-common/runtime-client";
   import { extent } from "d3-array";
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
@@ -30,7 +33,13 @@
   import ChartBody from "./ChartBody.svelte";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
+  import {
+    FormatPreset,
+    humanizeDataType,
+    formatPresetToNumberKind,
+  } from "../humanize-numbers";
 
+  export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
   export let width: number = undefined;
   export let height: number = undefined;
@@ -56,11 +65,13 @@
   export let scrubStart;
   export let scrubEnd;
 
-  export let mouseoverFormat: (d: number | Date | string) => string = (v) =>
-    v.toString();
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
     v.toString();
-  export let numberKind: NumberKind = NumberKind.ANY;
+
+  $: mouseoverFormat = (value) =>
+    humanizeDataType(value, measure?.formatPreset as FormatPreset);
+  $: numberKind = formatPresetToNumberKind(measure?.formatPreset);
+
   export let tweenProps = { duration: 400, easing: cubicOut };
 
   const xScale = getContext(contexts.scale("x")) as ScaleStore;

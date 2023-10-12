@@ -6,10 +6,7 @@ import {
   NumberKind,
   FormatterOptionsNoneStrategy,
 } from "../humanizer-types";
-import {
-  numberPartsToString,
-  numStrToParts,
-} from "../utils/number-parts-utils";
+import { numStrToParts } from "../utils/number-parts-utils";
 
 export class NonFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterOptionsNoneStrategy;

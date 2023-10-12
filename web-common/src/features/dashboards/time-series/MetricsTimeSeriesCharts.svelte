@@ -5,11 +5,7 @@
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
-  import {
-    humanizeDataType,
-    FormatPreset,
-    nicelyFormattedTypesToNumberKind,
-  } from "@rilldata/web-common/features/dashboards/humanize-numbers";
+
   import {
     getFilterForDimension,
     useMetaQuery,
@@ -333,8 +329,6 @@
         comparisonValue && bigNum !== undefined && bigNum !== null
           ? (bigNum - comparisonValue) / comparisonValue
           : undefined}
-      {@const formatPreset =
-        FormatPreset[measure?.formatPreset] || FormatPreset.HUMANIZE}
       <!-- FIXME: I can't select a time series by measure id. -->
       <MeasureBigNumber
         {measure}
@@ -354,6 +348,7 @@
         {:else if formattedData}
           <MeasureChart
             bind:mouseoverValue
+            {measure}
             isScrubbing={$dashboardStore?.selectedScrubRange?.isScrubbing}
             {scrubStart}
             {scrubEnd}
@@ -375,9 +370,6 @@
                 TIME_GRAIN[interval].formatDate
               );
             }}
-            numberKind={nicelyFormattedTypesToNumberKind(measure?.formatPreset)}
-            mouseoverFormat={(value) =>
-              humanizeDataType(value, measure?.formatPreset)}
           />
         {:else}
           <div>

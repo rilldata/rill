@@ -37,9 +37,7 @@ export enum FormatPreset {
 // This really needs to be reviewed by Dhiraj, at which point we
 // can deprecate any left over code that is no longer needed.
 
-export const nicelyFormattedTypesToNumberKind = (
-  type: FormatPreset | string
-) => {
+export const formatPresetToNumberKind = (type: FormatPreset | string) => {
   switch (type) {
     case FormatPreset.CURRENCY:
       return NumberKind.DOLLAR;
@@ -66,7 +64,7 @@ export function humanizeDataType(
   if (value === undefined || value === null) return "";
   if (typeof value !== "number") return value.toString();
 
-  const numberKind = nicelyFormattedTypesToNumberKind(type);
+  const numberKind = formatPresetToNumberKind(type);
 
   let innerOptions: FormatterFactoryOptions = options;
   if (type === FormatPreset.NONE) {
@@ -112,7 +110,7 @@ export function humanizeDimTableValue(value: number, type: FormatPreset) {
   if (type == FormatPreset.NONE) return value;
   if (value === null || value === undefined) return null;
 
-  const numberKind = nicelyFormattedTypesToNumberKind(type);
+  const numberKind = formatPresetToNumberKind(type);
   const innerOptions: FormatterFactoryOptions = {
     strategy: "default",
     numberKind,
