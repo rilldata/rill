@@ -1,20 +1,20 @@
-package org
+package service
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
+	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
-	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/mock"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -22,7 +22,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func TestOrganizationWorkflow(t *testing.T) {
+func TestServiceWorkflow(t *testing.T) {
 	c := qt.New(t)
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
@@ -62,138 +62,126 @@ func TestOrganizationWorkflow(t *testing.T) {
 	time.Sleep(05 * time.Second)
 
 	var buf bytes.Buffer
-	format := printer.JSON
+	format := printer.Human
 	p := printer.NewPrinter(&format)
 	p.SetResourceOutput(&buf)
 	helper := &cmdutil.Helper{
 		Config: &config.Config{
 			AdminURL:          "http://localhost:9090",
 			AdminTokenDefault: adminAuthToken.Token().String(),
+			Org:               "myorg",
 		},
 		Printer: p,
 	}
 
-	// Create organization with name
-	cmd := CreateCmd(helper)
+	// Create Organization
+	cmd := org.CreateCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{"--name", "myorg"})
 	err = cmd.Execute()
 	c.Assert(err, qt.IsNil)
 
-	orgList := []Org{}
-	err = json.Unmarshal([]byte(buf.String()), &orgList)
-	c.Assert(err, qt.IsNil)
-	c.Assert(len(orgList), qt.Equals, 1)
-	c.Assert(orgList[0].Name, qt.Equals, "myorg")
-
-	// Create new organization with name
+	// Create service
+	serviceName := "myservice"
 	buf.Reset()
+	p.SetHumanOutput(&buf)
+	cmd = CreateCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--name", "test"})
+	cmd.SetArgs([]string{serviceName})
 	err = cmd.Execute()
 	c.Assert(err, qt.IsNil)
-	err = json.Unmarshal([]byte(buf.String()), &orgList)
-	c.Assert(err, qt.IsNil)
-	c.Assert(len(orgList), qt.Equals, 1)
-	c.Assert(orgList[0].Name, qt.Equals, "test")
 
-	// List organizations
+	expectedServiceMsg := []string{`Created service "myservice" in org "myorg".`}
+	bufSlice := strings.Split(buf.String(), "\n")
+	// Should we check for Access token as well?
+	c.Assert(bufSlice, qt.HasLen, 2)
+	c.Assert(bufSlice[0], qt.Contains, expectedServiceMsg[0])
+
+	// Create one more service in same org
+	cmd = CreateCmd(helper)
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetArgs([]string{"myservice1"})
+	err = cmd.Execute()
+	c.Assert(err, qt.IsNil)
+
+	// List service in org
 	buf.Reset()
+	format = printer.JSON
+	p = printer.NewPrinter(&format)
+	p.SetResourceOutput(&buf)
+
 	cmd = ListCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{})
 	err = cmd.Execute()
 	c.Assert(err, qt.IsNil)
-
-	err = json.Unmarshal([]byte(buf.String()), &orgList)
+	expectedServices := []string{"myservice", "myservice1"}
+	serviceList := []Service{}
+	err = json.Unmarshal([]byte(buf.String()), &serviceList)
 	c.Assert(err, qt.IsNil)
-	c.Assert(len(orgList), qt.Equals, 2)
-
-	// 1 more way to check org list
-	// eq := !reflect.DeepEqual(expectedOrgs, orgList)
-	// c.Assert(eq, qt.Equals, false)
-	expectedOrgs := []string{"myorg", "test"}
-	for _, org := range orgList {
-		c.Assert(expectedOrgs, qt.Contains, org.Name)
+	c.Assert(serviceList, qt.HasLen, 2)
+	for _, service := range serviceList {
+		c.Assert(expectedServices, qt.Contains, service.Name)
 	}
 
-	// Delete organization
+	// Delete service
 	buf.Reset()
+	p.SetHumanOutput(&buf)
 	cmd = DeleteCmd(helper)
+	cmd.UsageString()
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--org", "myorg", "--force"})
+	cmd.SetArgs([]string{"myservice"})
 	err = cmd.Execute()
 	c.Assert(err, qt.IsNil)
+	expectedMsg := fmt.Sprintf("Deleted service: %q", serviceName)
+	c.Assert(buf.String(), qt.Equals, expectedMsg)
 
-	// List organizations
+	// List service in org after delete
 	buf.Reset()
+	format = printer.JSON
+	p = printer.NewPrinter(&format)
+	p.SetResourceOutput(&buf)
 	cmd = ListCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{})
 	err = cmd.Execute()
 	c.Assert(err, qt.IsNil)
-
-	orgList = []Org{}
-	err = json.Unmarshal([]byte(buf.String()), &orgList)
+	serviceList = []Service{}
+	err = json.Unmarshal([]byte(buf.String()), &serviceList)
 	c.Assert(err, qt.IsNil)
-	c.Assert(len(orgList), qt.Equals, 1)
-	expectedOrgs = []string{"test"}
-	for _, org := range orgList {
-		c.Assert(expectedOrgs, qt.Contains, org.Name)
+	c.Assert(serviceList, qt.HasLen, 1)
+	expectedServices = []string{"myservice1"}
+	for _, service := range serviceList {
+		c.Assert(expectedServices, qt.Contains, service.Name)
 	}
 
-	// rename organization
+	// Rename service
 	buf.Reset()
+	helper.Printer.SetHumanOutput(nil)
+	helper.Printer.SetResourceOutput(&buf)
 	cmd = RenameCmd(helper)
 	cmd.SetOut(&buf)
 	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"--org", "test", "--new-name", "new-test", "--force"})
+	cmd.SetArgs([]string{"myservice1", "--new-name", "myservice2"})
 	err = cmd.Execute()
 	c.Assert(err, qt.IsNil)
-
-	err = json.Unmarshal([]byte(buf.String()), &orgList)
+	expectedServices = []string{"myservice2"}
+	serviceList = []Service{}
+	err = json.Unmarshal([]byte(buf.String()), &serviceList)
 	c.Assert(err, qt.IsNil)
-	c.Assert(len(orgList), qt.Equals, 1)
-	c.Assert(orgList[0].Name, qt.Equals, "new-test")
-
-	// Switch organization
-	buf.Reset()
-	helper.Printer.SetHumanOutput(&buf)
-	cmd = SwitchCmd(helper)
-	cmd.SetOut(&buf)
-	cmd.SetErr(&buf)
-	cmd.SetArgs([]string{"new-test"})
-	err = cmd.Execute()
-	c.Assert(err, qt.IsNil)
-
-	expectedMsg := fmt.Sprintf("Set default organization to %q.\n", "new-test")
-	c.Assert(buf.String(), qt.Contains, expectedMsg)
-	org, err := dotrill.GetDefaultOrg()
-	c.Assert(err, qt.IsNil)
-	c.Assert(org, qt.Equals, "new-test")
-
+	c.Assert(serviceList, qt.HasLen, 1)
+	for _, service := range serviceList {
+		c.Assert(expectedServices, qt.Contains, service.Name)
+	}
 }
 
-type Org struct {
-	Name string `json:"Name"`
-}
-
-// mockGithub provides a mock implementation of admin.Github.
-type mockGithub struct{}
-
-func (m *mockGithub) AppClient() *github.Client {
-	return nil
-}
-
-func (m *mockGithub) InstallationClient(installationID int64) (*github.Client, error) {
-	return nil, nil
-}
-
-func (m *mockGithub) InstallationToken(ctx context.Context, installationID int64) (string, error) {
-	return "", nil
+type Service struct {
+	Name    string `json:"name"`
+	OrgName string `json:"org_name"`
 }

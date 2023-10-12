@@ -22,6 +22,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			defer client.Close()
+
 			res, err := client.ListOrganizations(cmd.Context(), &adminv1.ListOrganizationsRequest{
 				PageSize:  pageSize,
 				PageToken: pageToken,

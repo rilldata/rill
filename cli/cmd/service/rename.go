@@ -2,12 +2,12 @@ package service
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func RenameCmd(cfg *config.Config) *cobra.Command {
+func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 	var newName string
 
 	renameCmd := &cobra.Command{
@@ -15,6 +15,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Rename service",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -35,8 +36,11 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Renamed service")
-			cmdutil.TablePrinter(toRow(res.Service))
+			ch.Printer.Println(printer.BoldGreen("Renamed service"))
+			err = ch.Printer.PrintResource([]*service{toRow(res.Service)})
+			if err != nil {
+				return err
+			}
 
 			return nil
 		},

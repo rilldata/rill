@@ -155,7 +155,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		auth.LoginCmd(cfg),
 		auth.LogoutCmd(cfg),
 		sudo.SudoCmd(cfg),
-		service.ServiceCmd(cfg),
+		service.ServiceCmd(ch),
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
