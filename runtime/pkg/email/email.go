@@ -61,7 +61,7 @@ func (c *Client) SendOrganizationInvite(opts *OrganizationInvite) error {
 	// Create link URL as "{{ admin URL }}/auth/signup?redirect={{ org frontend URL }}"
 	queryParams := url.Values{}
 	queryParams.Add("redirect", mustJoinURLPath(opts.FrontendURL, opts.OrgName))
-	finalURL := mustJoinURLPath(opts.FrontendURL, "/auth/signup") + "?" + queryParams.Encode()
+	finalURL := mustJoinURLPath(opts.AdminURL, "/auth/signup") + "?" + queryParams.Encode()
 
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
@@ -118,7 +118,7 @@ func (c *Client) SendProjectInvite(opts *ProjectInvite) error {
 	// Create link URL as "{{ admin URL }}/auth/signup?redirect={{ project frontend URL }}"
 	queryParams := url.Values{}
 	queryParams.Add("redirect", mustJoinURLPath(opts.FrontendURL, opts.OrgName, opts.ProjectName))
-	finalURL := mustJoinURLPath(opts.FrontendURL, "/auth/signup") + "?" + queryParams.Encode()
+	finalURL := mustJoinURLPath(opts.AdminURL, "/auth/signup") + "?" + queryParams.Encode()
 
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
