@@ -149,7 +149,7 @@ export function humanizeDataTypeExpanded(
 }
 
 /** This function is used primarily in the leaderboard and the detail tables. */
-function humanizeGroupValuesUtil2(values: number[], type: FormatPreset) {
+export function humanizeGroupValuesUtil2(values: number[], type: FormatPreset) {
   if (!values.length) return values;
   if (type == FormatPreset.NONE) return values;
 
@@ -166,6 +166,21 @@ function humanizeGroupValuesUtil2(values: number[], type: FormatPreset) {
     if (v === null) return "∅";
     else return formatter.stringFormat(v);
   });
+}
+
+/** This function is used primarily in the leaderboard and the detail tables. */
+export function humanizeDimTableValue(value: number, type: FormatPreset) {
+  if (type == FormatPreset.NONE) return value;
+  if (value === null || value === undefined) return null;
+
+  const numberKind = nicelyFormattedTypesToNumberKind(type);
+  const innerOptions: FormatterFactoryOptions = {
+    strategy: "default",
+    numberKind,
+  };
+
+  const formatter = humanizedFormatterFactory([value], innerOptions);
+  return formatter.stringFormat(value);
 }
 
 /**

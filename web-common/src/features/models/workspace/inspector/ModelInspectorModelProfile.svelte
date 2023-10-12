@@ -34,10 +34,7 @@
 
       {#if showColumns}
         <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-          <ColumnProfile
-            objectName={$modelQuery.data?.meta?.name?.name}
-            indentLevel={0}
-          />
+          <ColumnProfile objectName={model?.state?.table} indentLevel={0} />
         </div>
       {/if}
     </div>

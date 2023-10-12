@@ -481,12 +481,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -519,6 +513,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -602,6 +602,7 @@ export interface V1Source {
 export interface V1Schedule {
   cron?: string;
   tickerSeconds?: number;
+  timeZone?: string;
 }
 
 export interface V1SourceSpec {
@@ -685,6 +686,43 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
+export type V1ReportSpecOperationProperties = { [key: string]: any };
+
+export interface V1ReportSpec {
+  trigger?: boolean;
+  title?: string;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  operationName?: string;
+  operationProperties?: V1ReportSpecOperationProperties;
+  operationTimeRange?: string;
+  exportLimit?: number;
+  exportFormat?: V1ExportFormat;
+  recipients?: string[];
+  emailOpenUrl?: string;
+  emailEditUrl?: string;
+}
+
+export interface V1ReportExecution {
+  adhoc?: boolean;
+  errorMessage?: string;
+  reportTime?: string;
+  startedOn?: string;
+  finishedOn?: string;
+}
+
+export interface V1Report {
+  spec?: V1ReportSpec;
+  state?: V1ReportState;
+}
+
 export interface V1Resource {
   meta?: V1ResourceMeta;
   projectParser?: V1ProjectParser;
@@ -692,6 +730,7 @@ export interface V1Resource {
   model?: V1ModelV2;
   metricsView?: V1MetricsViewV2;
   migration?: V1Migration;
+  report?: V1Report;
   pullTrigger?: V1PullTrigger;
   refreshTrigger?: V1RefreshTrigger;
   bucketPlanner?: V1BucketPlanner;
@@ -1099,7 +1138,9 @@ export interface V1MetricsViewSpec {
   defaultTimeRange?: string;
   availableTimeZones?: string[];
   security?: MetricsViewSpecSecurityV2;
+  /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
+  /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
   firstMonthOfYear?: number;
 }
 
@@ -1826,7 +1867,8 @@ export interface MetricsViewSpecMeasureV2 {
   expression?: string;
   label?: string;
   description?: string;
-  format?: string;
+  formatPreset?: string;
+  formatD3?: string;
   validPercentOfTotal?: boolean;
 }
 

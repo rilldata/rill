@@ -62,6 +62,11 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 		return runtime.ReconcileResult{Err: errors.New("not a metrics view")}
 	}
 
+	// Exit early for deletion
+	if self.Meta.DeletedOn != nil {
+		return runtime.ReconcileResult{}
+	}
+
 	// NOTE: Not checking refs here since refs may still be valid even if they have errors (in case of staged changes).
 	// Instead, we just validate against the table name.
 

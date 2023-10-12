@@ -101,3 +101,13 @@ func (s *consoleSender) Send(toEmail, toName, subject, body string) error {
 	)
 	return nil
 }
+
+type noopSender struct{}
+
+func NewNoopSender() Sender {
+	return &noopSender{}
+}
+
+func (s *noopSender) Send(toEmail, toName, subject, body string) error {
+	return nil
+}

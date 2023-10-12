@@ -10,6 +10,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"gopkg.in/yaml.v3"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 // metricsViewYAML is the raw structure of a MetricsView resource defined in YAML
@@ -39,7 +42,8 @@ type metricsViewYAML struct {
 		Label               string
 		Expression          string
 		Description         string
-		Format              string `yaml:"format_preset"`
+		FormatPreset        string `yaml:"format_preset"`
+		FormatD3            string `yaml:"format_d3"`
 		Ignore              bool   `yaml:"ignore"`
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
@@ -166,6 +170,10 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 		if ok := columns[lower]; ok {
 			return fmt.Errorf("measure name %q coincides with a dimension column name", measure.Name)
+		}
+
+		if measure.FormatPreset != "" && measure.FormatD3 != "" {
+			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)
 		}
 	}
 	if measureCount == 0 {
@@ -297,7 +305,8 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			Expression:          measure.Expression,
 			Label:               measure.Label,
 			Description:         measure.Description,
-			Format:              measure.Format,
+			FormatPreset:        measure.FormatPreset,
+			FormatD3:            measure.FormatD3,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
 	}

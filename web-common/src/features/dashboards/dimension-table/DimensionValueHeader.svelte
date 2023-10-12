@@ -1,9 +1,10 @@
 <script lang="ts">
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
-  import { getContext } from "svelte";
+  import { createEventDispatcher, getContext } from "svelte";
   import Cell from "../../../components/virtualized-table/core/Cell.svelte";
   import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
+  import type { ResizeEvent } from "@rilldata/web-common/components/virtualized-table/drag-table-cell";
 
   const config: VirtualizedTableConfig = getContext("config");
 
@@ -20,6 +21,8 @@
   export let activeIndex;
   export let excludeMode = false;
 
+  const dispatch = createEventDispatcher();
+
   $: atLeastOneSelected = !!selectedIndex?.length;
 
   const getCellProps = (row) => {
@@ -33,6 +36,12 @@
       rowSelected: selectedIndex.findIndex((tgt) => row?.index === tgt) >= 0,
     };
   };
+  const handleResize = (event: ResizeEvent) => {
+    dispatch("resize-column", {
+      size: event.detail.size,
+      name,
+    });
+  };
 </script>
 
 <div
@@ -42,10 +51,11 @@
 >
   <StickyHeader
     header={{ size: width, start: 0 }}
-    enableResize={false}
+    enableResize={true}
     position="top-left"
     borderRight={horizontalScrolling}
     bgClass="bg-white"
+    on:resize={handleResize}
   >
     <span class="px-1">{column?.label || column?.name}</span>
   </StickyHeader>
