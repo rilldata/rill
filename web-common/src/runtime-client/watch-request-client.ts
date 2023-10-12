@@ -1,15 +1,15 @@
 import { Throttler } from "@rilldata/web-common/lib/throttler";
 import { pageInFocus } from "@rilldata/web-common/lib/viewport-utils";
 import { ExponentialBackoffTracker } from "@rilldata/web-common/runtime-client/exponential-backoff-tracker";
+import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/fetch-streaming-wrapper";
 import type {
   V1WatchFilesResponse,
   V1WatchLogsResponse,
   V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client/index";
-import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/fetch-streaming-wrapper";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, Unsubscriber } from "svelte/store";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { Unsubscriber, derived, get } from "svelte/store";
 
 type WatchResponse =
   | V1WatchFilesResponse

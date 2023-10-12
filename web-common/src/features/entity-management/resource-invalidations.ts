@@ -1,5 +1,6 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
+import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
@@ -7,7 +8,6 @@ import {
   V1Resource,
   V1ResourceEvent,
 } from "@rilldata/web-common/runtime-client";
-import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
   invalidateMetricsViewData,
   invalidateProfilingQueries,

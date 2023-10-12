@@ -1,5 +1,5 @@
-import { V1DeploymentStatus } from "@rilldata/web-admin/client";
 import type { V1GetProjectResponse } from "@rilldata/web-admin/client";
+import { V1DeploymentStatus } from "@rilldata/web-admin/client";
 import {
   PollTimeDuringError,
   PollTimeDuringReconcile,
@@ -10,11 +10,11 @@ import {
   ResourceKind,
   useFilteredResources,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  createRuntimeServiceListResources,
-  V1ReconcileStatus,
-} from "@rilldata/web-common/runtime-client";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
+import {
+  V1ReconcileStatus,
+  createRuntimeServiceListResources,
+} from "@rilldata/web-common/runtime-client";
 import { fetchWrapper } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { invalidateMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation";
 import type { QueryClient } from "@tanstack/svelte-query";
