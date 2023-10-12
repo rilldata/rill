@@ -284,7 +284,7 @@ describe("time-control-store", () => {
     );
 
     unmount();
-  },  { retry: 5 });
+  });
 
   it("Scrubbing to zoom", async () => {
     dashboardFetchMocks.mockTimeRangeSummary(
