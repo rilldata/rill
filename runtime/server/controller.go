@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -13,7 +14,6 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -51,10 +51,22 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	slices.SortFunc(rs, func(a, b *runtimev1.Resource) bool {
+	slices.SortFunc(rs, func(a, b *runtimev1.Resource) int {
 		an := a.Meta.Name
 		bn := b.Meta.Name
-		return an.Kind < bn.Kind || (an.Kind == bn.Kind && an.Name < bn.Name)
+		if an.Kind < bn.Kind {
+			return -1
+		}
+		if an.Kind > bn.Kind {
+			return 1
+		}
+		if an.Name < bn.Name {
+			return -1
+		}
+		if an.Name > bn.Name {
+			return 1
+		}
+		return 0
 	})
 
 	for i := 0; i < len(rs); i++ {

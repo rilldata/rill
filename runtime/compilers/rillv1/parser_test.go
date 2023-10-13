@@ -3,6 +3,8 @@ package rillv1
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 
@@ -11,8 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	_ "github.com/rilldata/rill/runtime/drivers/file"

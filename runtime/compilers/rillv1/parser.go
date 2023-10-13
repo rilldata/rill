@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"golang.org/x/exp/slices"
 )
 
 // Built-in parser limits
@@ -418,14 +418,20 @@ func (p *Parser) parsePaths(ctx context.Context, paths []string) error {
 
 	// Sort paths such that a) we always parse rill.yaml first (to pick up defaults),
 	// and b) we align files with the same name but different extensions next to each other.
-	slices.SortFunc(paths, func(a, b string) bool {
+	slices.SortFunc(paths, func(a, b string) int {
 		if pathIsRillYAML(a) {
-			return true
+			return -1
 		}
 		if pathIsRillYAML(b) {
-			return false
+			return 1
 		}
-		return a < b
+		if pathIsDotEnv(a) {
+			return -1
+		}
+		if pathIsDotEnv(b) {
+			return 1
+		}
+		return strings.Compare(a, b)
 	})
 
 	// Iterate over the sorted paths, processing all paths with the same stem at once (stem = path without extension).
@@ -630,7 +636,15 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 		// Rule 4: Skip it
 	}
 
-	slices.SortFunc(refs, func(a, b ResourceName) bool { return a.Kind < b.Kind || a.Kind == b.Kind && a.Name < b.Name })
+	slices.SortFunc(refs, func(a, b ResourceName) int {
+		if a.Kind < b.Kind {
+			return -1
+		}
+		if a.Kind > b.Kind {
+			return 1
+		}
+		return strings.Compare(a.Name, b.Name)
+	})
 
 	r.Refs = refs
 }

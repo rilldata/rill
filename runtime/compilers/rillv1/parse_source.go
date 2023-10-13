@@ -3,13 +3,13 @@ package rillv1
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/robfig/cron/v3"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
