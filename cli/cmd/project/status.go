@@ -130,7 +130,7 @@ type resourceTableRow struct {
 
 func newResourceTableRow(r *runtimev1.Resource) *resourceTableRow {
 	truncErr := r.Meta.ReconcileError
-	if len(truncErr) > 70 {
+	if len(truncErr) > 80 {
 		truncErr = truncErr[:80] + "..."
 	}
 

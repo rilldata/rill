@@ -201,7 +201,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.DAY,
     start: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         {
           period: Period.DAY,
@@ -210,7 +210,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
     end: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
@@ -225,7 +225,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
     start: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         {
           period: Period.WEEK,
@@ -234,7 +234,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
     end: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
@@ -249,7 +249,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.MONTH,
     start: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         {
           period: Period.MONTH,
@@ -258,7 +258,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
     end: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
@@ -273,7 +273,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.YEAR,
     start: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         {
           period: Period.YEAR,
@@ -282,7 +282,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
     end: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         { duration: "P1D", operationType: TimeOffsetType.ADD },
         {

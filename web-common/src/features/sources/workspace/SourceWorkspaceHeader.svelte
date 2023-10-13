@@ -8,7 +8,10 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import {
+    resourceIsLoading,
+    useAllNames,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
@@ -16,14 +19,16 @@
   import {
     createRuntimeServiceGetFile,
     createRuntimeServiceRefreshAndReconcile,
-    V1ReconcileStatus,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
+  import { WithTogglableFloatingElement } from "../../../components/floating-element";
+  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import EnterIcon from "../../../components/icons/EnterIcon.svelte";
   import UndoIcon from "../../../components/icons/UndoIcon.svelte";
+  import { Menu, MenuItem } from "../../../components/menu";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { behaviourEvent } from "../../../metrics/initMetrics";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
@@ -39,9 +44,16 @@
   } from "../../entity-management/entity-mappers";
   import { isDuplicateName } from "../../entity-management/name-utils";
   import { createModelFromSourceV2 } from "../createModel";
-  import { refreshSource } from "../refreshSource";
+  import {
+    refreshSource,
+    replaceSourceWithUploadedFile,
+  } from "../refreshSource";
   import { saveAndRefresh } from "../saveAndRefresh";
-  import { useIsSourceUnsaved, useSource } from "../selectors";
+  import {
+    useIsLocalFileConnector,
+    useIsSourceUnsaved,
+    useSource,
+  } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
   export let sourceName: string;
@@ -57,9 +69,7 @@
 
   let source: V1SourceV2;
   $: source = $sourceQuery.data?.source;
-  $: sourceIsReconciling =
-    $sourceQuery.data?.meta?.reconcileStatus !==
-    V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+  $: sourceIsReconciling = resourceIsLoading($sourceQuery.data);
 
   let connector: string;
   $: connector = source?.state?.connector;
@@ -116,8 +126,17 @@
     } catch (err) {
       // no-op
     }
-    overlay.set(null);
   };
+
+  $: isLocalFileConnectorQuery = useIsLocalFileConnector(
+    $runtime.instanceId,
+    sourceName
+  );
+  $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
+
+  async function onReplaceSource(sourceName: string) {
+    await replaceSourceWithUploadedFile(runtimeInstanceId, sourceName);
+  }
 
   function formatRefreshedOn(refreshedOn: string) {
     const date = new Date(refreshedOn);
@@ -175,7 +194,7 @@
               style:font-size="11px"
               transition:fade|local={{ duration: 200 }}
             >
-              Imported on {formatRefreshedOn(source?.state?.refreshedOn)}
+              Ingested on {formatRefreshedOn(source?.state?.refreshedOn)}
             </div>
           {/if}
         </div>
@@ -195,30 +214,68 @@
             Revert changes
           </ResponsiveButtonText>
         </Button>
-        <Button
-          disabled={sourceIsReconciling}
-          label={isSourceUnsaved ? "Save and refresh" : "Refresh"}
-          on:click={() =>
-            isSourceUnsaved
-              ? onSaveAndRefreshClick(sourceName)
-              : onRefreshClick(sourceName)}
-          type={isSourceUnsaved ? "primary" : "secondary"}
+        <WithTogglableFloatingElement
+          alignment="end"
+          distance={8}
+          let:toggleFloatingElement
+          location="bottom"
         >
-          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
-            <RefreshIcon size="14px" />
-          </IconSpaceFixer>
-          <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
-            <div class="flex">
-              {#if isSourceUnsaved}<div
-                  class="pr-1"
-                  transition:slideRight={{ duration: 250 }}
-                >
-                  Save and
-                </div>{/if}
-              {#if !isSourceUnsaved}R{:else}r{/if}efresh
-            </div>
-          </ResponsiveButtonText>
-        </Button>
+          <Button
+            disabled={sourceIsReconciling}
+            label={isSourceUnsaved ? "Save and refresh" : "Refresh"}
+            on:click={() =>
+              isSourceUnsaved
+                ? onSaveAndRefreshClick(sourceName)
+                : isLocalFileConnector
+                ? toggleFloatingElement()
+                : onRefreshClick(sourceName)}
+            type={isSourceUnsaved ? "primary" : "secondary"}
+          >
+            <IconSpaceFixer
+              pullLeft
+              pullRight={isHeaderWidthSmall(headerWidth)}
+            >
+              <RefreshIcon size="14px" />
+            </IconSpaceFixer>
+            <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
+              <div class="flex">
+                {#if isSourceUnsaved}<div
+                    class="pr-1"
+                    transition:slideRight={{ duration: 250 }}
+                  >
+                    Save and
+                  </div>{/if}
+                {#if !isSourceUnsaved}R{:else}r{/if}efresh
+              </div>
+            </ResponsiveButtonText>
+            {#if !isSourceUnsaved && isLocalFileConnector}
+              <CaretDownIcon size="14px" />
+            {/if}
+          </Button>
+          <Menu
+            dark
+            on:click-outside={toggleFloatingElement}
+            on:escape={toggleFloatingElement}
+            slot="floating-element"
+          >
+            <MenuItem
+              on:select={() => {
+                toggleFloatingElement();
+                onRefreshClick(sourceName);
+              }}
+            >
+              Refresh source
+            </MenuItem>
+            <MenuItem
+              on:select={() => {
+                toggleFloatingElement();
+                onReplaceSource(sourceName);
+              }}
+            >
+              Replace source with uploaded file
+            </MenuItem>
+          </Menu>
+        </WithTogglableFloatingElement>
         <Button
           disabled={isSourceUnsaved || $hasErrors}
           on:click={handleCreateModelFromSource}

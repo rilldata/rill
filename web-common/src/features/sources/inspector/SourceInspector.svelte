@@ -19,7 +19,6 @@
   import {
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
-    V1ReconcileStatus,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import type { Readable } from "svelte/store";
@@ -27,6 +26,7 @@
   import { GridCell, LeftRightGrid } from "../../../components/grid";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { resourceIsLoading } from "../../entity-management/resource-selectors";
   import { useIsSourceUnsaved, useSource } from "../selectors";
   import { useSourceStore } from "../sources-store";
 
@@ -110,11 +110,9 @@
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 </script>
 
-<div
-  class="table-profile {isSourceUnsaved && 'grayscale'} transition duration-200"
->
-  {#if $sourceQuery?.data?.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE}
-    <div class="h-10">
+<div class="{isSourceUnsaved && 'grayscale'} transition duration-200">
+  {#if resourceIsLoading($sourceQuery?.data)}
+    <div class="mt-6">
       <ReconcilingSpinner />
     </div>
   {:else if source && !$sourceQuery.isError}
@@ -163,7 +161,7 @@
 
       {#if showColumns}
         <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-          <ColumnProfile objectName={sourceName} indentLevel={0} />
+          <ColumnProfile objectName={source?.state?.table} indentLevel={0} />
         </div>
       {/if}
     </div>

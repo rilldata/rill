@@ -184,8 +184,6 @@
     </div>
     {#if $metaQuery.data?.measures}
       {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
-        <!-- FIXME: I can't select the big number by the measure id. -->
-        {@const bigNum = $totalsQuery?.data?.data?.[measure.name]}
         <div
           bind:this={measureNodes[index]}
           style:width="{MEASURE_WIDTH}px"
@@ -193,21 +191,15 @@
           style:margin-top="{MARGIN_TOP}px"
           class="inline-grid"
         >
+          <!-- FIXME: I can't select the big number by the measure id. -->
           <MeasureBigNumber
-            value={bigNum}
-            description={measure?.description ||
-              measure?.label ||
-              measure?.expression}
-            formatPreset={measure?.format}
+            {measure}
+            value={$totalsQuery?.data?.data?.[measure.name]}
             withTimeseries={false}
             status={$totalsQuery?.isFetching
               ? EntityStatus.Running
               : EntityStatus.Idle}
-          >
-            <svelte:fragment slot="name">
-              {measure?.label || measure?.expression}
-            </svelte:fragment>
-          </MeasureBigNumber>
+          />
         </div>
       {/each}
     {/if}

@@ -77,10 +77,15 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 	}
 
 	for _, res := range resources {
-		// Only check sources and models
+		// Check sources and models always; also check reports if OnlyNames is not empty (i.e. explicitly specified).
 		switch res.Meta.Name.Kind {
 		case runtime.ResourceKindSource, runtime.ResourceKindModel:
 			// nothing to do
+		case runtime.ResourceKindReport:
+			if len(trigger.Spec.OnlyNames) == 0 {
+				// skip
+				continue
+			}
 		default:
 			// skip
 			continue
@@ -112,6 +117,9 @@ func (r *RefreshTriggerReconciler) Reconcile(ctx context.Context, n *runtimev1.R
 		case runtime.ResourceKindModel:
 			model := res.GetModel()
 			model.Spec.Trigger = true
+		case runtime.ResourceKindReport:
+			report := res.GetReport()
+			report.Spec.Trigger = true
 		default:
 			updated = false
 		}

@@ -5,7 +5,7 @@
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import type { MetricsViewMeasure } from "@rilldata/web-common/runtime-client";
+  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { crossfade, fly } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
@@ -30,7 +30,7 @@
     );
   }
 
-  function formatForSelector(measure: MetricsViewMeasure) {
+  function formatForSelector(measure: MetricsViewSpecMeasureV2) {
     if (!measure) return undefined;
     return {
       ...measure,
