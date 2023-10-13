@@ -1,6 +1,6 @@
 module github.com/rilldata/rill
 
-go 1.21.3
+go 1.21
 
 require (
 	cloud.google.com/go/storage v1.31.0
