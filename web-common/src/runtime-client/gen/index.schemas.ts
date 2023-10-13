@@ -339,7 +339,6 @@ export type RuntimeServiceEditInstanceBody = {
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
   embedCatalog?: boolean;
-  ingestionLimitBytes?: string;
   watchRepo?: boolean;
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
@@ -1395,7 +1394,6 @@ export interface V1Instance {
   projectVariables?: V1InstanceProjectVariables;
   annotations?: V1InstanceAnnotations;
   embedCatalog?: boolean;
-  ingestionLimitBytes?: string;
   watchRepo?: boolean;
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
@@ -1550,7 +1548,6 @@ export interface V1CreateInstanceRequest {
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
   embedCatalog?: boolean;
-  ingestionLimitBytes?: string;
   watchRepo?: boolean;
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;

@@ -60,7 +60,6 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	olapDriver := opts.ProdOLAPDriver
 	olapConfig := map[string]string{}
 	var embedCatalog bool
-	var ingestionLimit int64
 	switch olapDriver {
 	case "duckdb":
 		if opts.ProdOLAPDSN != "" {
@@ -72,8 +71,8 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 
 		olapConfig["dsn"] = fmt.Sprintf("%s.db?max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.MemoryGB)
 		olapConfig["pool_size"] = strconv.Itoa(alloc.CPU)
+		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
 		embedCatalog = true
-		ingestionLimit = alloc.StorageBytes
 	case "duckdb-ext-storage": // duckdb driver having capability to store table as view
 		if opts.ProdOLAPDSN != "" {
 			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-ext-storage'")
@@ -86,8 +85,8 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		olapConfig["dsn"] = fmt.Sprintf("%s.db?max_memory=%dGB", path.Join(alloc.DataDir, instanceID, "main"), alloc.MemoryGB)
 		olapConfig["pool_size"] = strconv.Itoa(alloc.CPU)
 		olapConfig["external_table_storage"] = strconv.FormatBool(true)
+		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
 		embedCatalog = true
-		ingestionLimit = alloc.StorageBytes
 	case "duckdb-vip":
 		if opts.ProdOLAPDSN != "" {
 			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-vip'")
@@ -100,12 +99,11 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		olapDriver = "duckdb"
 		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID))
 		olapConfig["pool_size"] = "8"
+		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
 		embedCatalog = true
-		ingestionLimit = 0
 	default:
 		olapConfig["dsn"] = opts.ProdOLAPDSN
 		embedCatalog = false
-		ingestionLimit = 0
 	}
 
 	// Open a runtime client
@@ -132,11 +130,10 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 				Config: map[string]string{"dsn": repoDSN},
 			},
 		},
-		Variables:           opts.ProdVariables,
-		Annotations:         opts.Annotations.toMap(),
-		EmbedCatalog:        embedCatalog,
-		IngestionLimitBytes: ingestionLimit,
-		StageChanges:        true,
+		Variables:    opts.ProdVariables,
+		Annotations:  opts.Annotations.toMap(),
+		EmbedCatalog: embedCatalog,
+		StageChanges: true,
 	})
 	if err != nil {
 		return nil, err

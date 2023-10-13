@@ -45,7 +45,6 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			project_variables,
 			annotations,
 			embed_catalog,
-			ingestion_limit_bytes,
 			watch_repo,
 			stage_changes,
 			model_default_materialize,
@@ -76,7 +75,6 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			&projectVariables,
 			&annotations,
 			&i.EmbedCatalog,
-			&i.IngestionLimitBytes,
 			&i.WatchRepo,
 			&i.StageChanges,
 			&i.ModelDefaultMaterialize,
@@ -168,13 +166,12 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			project_variables,
 			annotations,
 			embed_catalog,
-			ingestion_limit_bytes,
 			watch_repo,
 			stage_changes,
 			model_default_materialize,
 			model_materialize_delay_seconds
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		`,
 		inst.ID,
 		inst.OLAPConnector,
@@ -187,7 +184,6 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		projectVariables,
 		annotations,
 		inst.EmbedCatalog,
-		inst.IngestionLimitBytes,
 		inst.WatchRepo,
 		inst.StageChanges,
 		inst.ModelDefaultMaterialize,
@@ -248,11 +244,10 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 			project_variables = $8,
 			annotations = $9,
 			embed_catalog = $10,
-			ingestion_limit_bytes = $11,
-			watch_repo = $12,
-			stage_changes = $13,
-			model_default_materialize = $14,
-			model_materialize_delay_seconds = $15
+			watch_repo = $11,
+			stage_changes = $12,
+			model_default_materialize = $13,
+			model_materialize_delay_seconds = $14
 		WHERE id = $1
 		`,
 		inst.ID,
@@ -265,7 +260,6 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		projectVariables,
 		annotations,
 		inst.EmbedCatalog,
-		inst.IngestionLimitBytes,
 		inst.WatchRepo,
 		inst.StageChanges,
 		inst.ModelDefaultMaterialize,

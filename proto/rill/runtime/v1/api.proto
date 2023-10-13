@@ -259,7 +259,6 @@ message Instance {
   map<string, string> project_variables = 8;
   map<string, string> annotations = 14;
   bool embed_catalog = 6;
-  int64 ingestion_limit_bytes = 9;
   bool watch_repo = 15;
   bool stage_changes = 16;
   bool model_default_materialize = 17;
@@ -310,7 +309,6 @@ message CreateInstanceRequest {
   map<string, string> variables = 7;
   map<string, string> annotations = 9;
   bool embed_catalog = 6;
-  int64 ingestion_limit_bytes = 8;
   bool watch_repo = 11;
   bool stage_changes = 12;
   bool model_default_materialize = 13;
@@ -341,7 +339,6 @@ message EditInstanceRequest {
   map<string, string> variables = 15;
   map<string, string> annotations = 10;
   optional bool embed_catalog = 6;
-  optional int64 ingestion_limit_bytes = 8;
   optional bool watch_repo = 11;
   optional bool stage_changes = 12;
   optional bool model_default_materialize = 13;
