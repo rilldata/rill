@@ -90,6 +90,17 @@ export function humaniseISODuration(isoDuration: string): string {
   return humanISO;
 }
 
+export function getSmallestTimeGrain(isoDuration: string) {
+  const duration = Duration.fromISO(isoDuration);
+  for (const { grain, unit } of PeriodAndUnits) {
+    if (duration[unit]) {
+      return grain;
+    }
+  }
+
+  return undefined;
+}
+
 function getStartTimeTransformations(
   isoDuration: string
 ): Array<RelativeTimeTransformation> {
