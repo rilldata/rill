@@ -1588,6 +1588,8 @@ github.com/mailru/easyjson v0.7.0/go.mod h1:KAzv3t3aY1NaHWoQz1+4F1ccyAH66Jk7yos7
 github.com/mailru/easyjson v0.7.6/go.mod h1:xzfreul335JAWq5oZzymOObrkdz5UnU4kGfJJLY9Nlc=
 github.com/marcboeker/go-duckdb v1.4.1 h1:NJ0kfgtOD8QUADp6Pwe/9f3e4qANet6m/YHXhx+3das=
 github.com/marcboeker/go-duckdb v1.4.1/go.mod h1:wm91jO2GNKa6iO9NTcjXIRsW+/ykPoJbQcHSXhdAl28=
+github.com/marcboeker/go-duckdb v1.5.1 h1:Mh6h0ke9EyM2XA9dWiNOawM+oUFXYOY5o2csJ32uxBw=
+github.com/marcboeker/go-duckdb v1.5.1/go.mod h1:wm91jO2GNKa6iO9NTcjXIRsW+/ykPoJbQcHSXhdAl28=
 github.com/marstr/guid v1.1.0/go.mod h1:74gB1z2wpxxInTG6yaqA7KrtM0NZ+RbrcqDvYHefzho=
 github.com/matryer/is v1.2.0 h1:92UTHpy8CDwaJ08GqLDzhhuixiBUUD1p3AU6PHddz4A=
 github.com/matryer/is v1.2.0/go.mod h1:2fLPjFQM9rhQ15aVEtbuwhJinnOqrmgXPNdZsdwlWXA=
