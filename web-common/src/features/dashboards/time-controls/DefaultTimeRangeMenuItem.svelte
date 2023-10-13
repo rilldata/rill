@@ -6,7 +6,7 @@
   export let isoDuration: string;
 </script>
 
-<MenuItem animateSelect={false} on:select>
+<MenuItem animateSelect={true} on:select>
   <div class="w-full flex flex-row flex-grow items-center">
     <div class:font-bold={selected}>
       Last {humaniseISODuration(isoDuration)}

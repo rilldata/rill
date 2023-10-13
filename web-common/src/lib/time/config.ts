@@ -5,6 +5,7 @@
  */
 
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type { Duration } from "luxon";
 import {
   AvailableTimeGrain,
   Period,
@@ -477,3 +478,38 @@ export const DEFAULT_TIMEZONES = [
   "Asia/Tokyo",
   "Australia/Sydney",
 ];
+
+/**
+ * Mapping of {@link Period} to the unit in {@link Duration}
+ */
+export const PeriodAndUnits: Array<{
+  period: Period;
+  unit: keyof Duration;
+}> = [
+  {
+    period: Period.MINUTE,
+    unit: "minutes",
+  },
+  {
+    period: Period.HOUR,
+    unit: "hours",
+  },
+  {
+    period: Period.DAY,
+    unit: "days",
+  },
+  {
+    period: Period.WEEK,
+    unit: "weeks",
+  },
+  {
+    period: Period.MONTH,
+    unit: "months",
+  },
+  {
+    period: Period.YEAR,
+    unit: "years",
+  },
+];
+export const PeriodToUnitsMap: Partial<Record<Period, keyof Duration>> = {};
+PeriodAndUnits.forEach(({ period, unit }) => (PeriodToUnitsMap[period] = unit));
