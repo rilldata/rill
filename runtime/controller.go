@@ -1274,19 +1274,6 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 		c.Logger.Info("Reconciling resource", logArgs...)
 	}
 
-	// Start tracing span
-	tracerAttrs := []attribute.KeyValue{
-		attribute.String("instance_id", c.InstanceID),
-		attribute.String("name", n.Name),
-		attribute.String("kind", unqualifiedKind(n.Kind)),
-		attribute.Bool("deleted", inv.isDelete),
-	}
-	if inv.isRename {
-		tracerAttrs = append(tracerAttrs, attribute.String("renamed_from", r.Meta.RenamedFrom.Name))
-	}
-	ctx, span := tracer.Start(ctx, "reconcile", trace.WithAttributes(tracerAttrs...))
-	defer span.End()
-
 	// Start reconcile in background
 	ctx = contextWithInvocation(ctx, inv)
 	reconciler := c.reconciler(n.Kind) // fetched outside of goroutine to keep access under mutex
@@ -1308,6 +1295,21 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 			// Send invocation to event loop for post-processing
 			c.completed <- inv
 		}()
+		// Start tracing span
+		tracerAttrs := []attribute.KeyValue{
+			attribute.String("instance_id", c.InstanceID),
+			attribute.String("name", n.Name),
+			attribute.String("kind", unqualifiedKind(n.Kind)),
+		}
+		if inv.isDelete {
+			tracerAttrs = append(tracerAttrs, attribute.Bool("deleted", inv.isDelete))
+		}
+		if inv.isRename {
+			tracerAttrs = append(tracerAttrs, attribute.String("renamed_from", r.Meta.RenamedFrom.Name))
+		}
+		ctx, span := tracer.Start(ctx, "reconcile", trace.WithAttributes(tracerAttrs...))
+		defer span.End()
+
 		// Invoke reconciler
 		inv.result = reconciler.Reconcile(ctx, n)
 	}()
