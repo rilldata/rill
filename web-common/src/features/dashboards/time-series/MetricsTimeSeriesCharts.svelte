@@ -4,6 +4,9 @@
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
+  import { getSmallestTimeGrain } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
 
   import {
@@ -181,11 +184,24 @@
 
   // FIXME: move this logic to a function + write tests.
   $: if ($timeControlsStore.ready) {
+    let adjustInterval = interval;
+    if (
+      $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.DEFAULT
+    ) {
+      const smallestGrain = getSmallestTimeGrain(
+        $metaQuery.data.defaultTimeRange
+      );
+      adjustInterval = isGrainBigger(adjustInterval, smallestGrain)
+        ? smallestGrain
+        : adjustInterval;
+    }
+    console.log(interval, adjustInterval);
+
     const adjustedChartValue = getAdjustedChartTime(
       $timeControlsStore.selectedTimeRange?.start,
       $timeControlsStore.selectedTimeRange?.end,
       $dashboardStore?.selectedTimezone,
-      interval,
+      adjustInterval,
       $timeControlsStore.selectedTimeRange?.name
     );
 

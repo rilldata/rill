@@ -485,30 +485,37 @@ export const DEFAULT_TIMEZONES = [
 export const PeriodAndUnits: Array<{
   period: Period;
   unit: keyof Duration;
+  grain: V1TimeGrain;
 }> = [
   {
     period: Period.MINUTE,
     unit: "minutes",
+    grain: V1TimeGrain.TIME_GRAIN_MINUTE,
   },
   {
     period: Period.HOUR,
     unit: "hours",
+    grain: V1TimeGrain.TIME_GRAIN_HOUR,
   },
   {
     period: Period.DAY,
     unit: "days",
+    grain: V1TimeGrain.TIME_GRAIN_DAY,
   },
   {
     period: Period.WEEK,
     unit: "weeks",
+    grain: V1TimeGrain.TIME_GRAIN_WEEK,
   },
   {
     period: Period.MONTH,
     unit: "months",
+    grain: V1TimeGrain.TIME_GRAIN_MONTH,
   },
   {
     period: Period.YEAR,
     unit: "years",
+    grain: V1TimeGrain.TIME_GRAIN_YEAR,
   },
 ];
 export const PeriodToUnitsMap: Partial<Record<Period, keyof Duration>> = {};
