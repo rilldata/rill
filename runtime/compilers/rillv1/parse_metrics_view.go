@@ -6,13 +6,12 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	// Load IANA time zone data
+	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"gopkg.in/yaml.v3"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
 )
 
 // metricsViewYAML is the raw structure of a MetricsView resource defined in YAML
@@ -188,7 +187,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	if tmp.DefaultComparison != nil {
 		if tmp.DefaultComparison.Dimension != "" {
 			if ok := names[tmp.DefaultComparison.Dimension]; !ok {
-				return fmt.Errorf("default time dimension %s doesnt exist", tmp.DefaultComparison.Dimension)
+				return fmt.Errorf("default comparison dimension %s doesnt exist", tmp.DefaultComparison.Dimension)
 			}
 		}
 

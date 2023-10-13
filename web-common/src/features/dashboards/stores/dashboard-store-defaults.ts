@@ -9,8 +9,11 @@ import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/li
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
 import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
-import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+import {
+  isoDurationToFullTimeRange,
+  isoDurationToTimeRange,
+} from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
@@ -51,28 +54,54 @@ function setDefaultComparisonTimeRange(
   metricsExplorer: MetricsExplorerEntity,
   fullTimeRange: V1ColumnTimeRangeResponse | undefined
 ) {
-  if (!metricsView.defaultComparison.enabled) return;
+  if (!metricsView.defaultComparison?.enabled) return;
 
-  const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
-  const comparisonOption = DEFAULT_TIME_RANGES[preset]
-    ?.defaultComparison as TimeComparisonOption;
-  if (!comparisonOption) return;
+  if (metricsView.defaultComparison.dimension) {
+    // if the default is a dimension the set it and return immediately
+    metricsExplorer.selectedComparisonDimension =
+      metricsView.defaultComparison.dimension;
+    return;
+  }
 
-  const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
-  const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
-  const comparisonRange = getTimeComparisonParametersForComponent(
-    comparisonOption,
-    fullTimeStart,
-    fullTimeEnd,
-    metricsExplorer.selectedTimeRange.start,
-    metricsExplorer.selectedTimeRange.end
-  );
-  if (!comparisonRange.isComparisonRangeAvailable) return;
+  let comparisonOptionName: string;
+  let comparisonStart: Date;
+  let comparisonEnd: Date;
+  if (metricsView.defaultComparison.timeRange) {
+    const timeRange = isoDurationToTimeRange(
+      metricsView.defaultComparison.timeRange,
+      new Date(fullTimeRange.timeRangeSummary.max),
+      get(getLocalUserPreferences()).timeZone
+    );
+    comparisonStart = timeRange.startTime;
+    comparisonEnd = timeRange.endTime;
+    comparisonOptionName = TimeComparisonOption.CONTIGUOUS;
+  } else {
+    // else get the default preset for the time range
+    const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
+    const comparisonOption = DEFAULT_TIME_RANGES[preset]
+      ?.defaultComparison as TimeComparisonOption;
+    if (!comparisonOption) return;
+
+    const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
+    const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
+    const comparisonRange = getTimeComparisonParametersForComponent(
+      comparisonOption,
+      fullTimeStart,
+      fullTimeEnd,
+      metricsExplorer.selectedTimeRange.start,
+      metricsExplorer.selectedTimeRange.end
+    );
+    if (!comparisonRange.isComparisonRangeAvailable) return;
+
+    comparisonOptionName = comparisonOption;
+    comparisonStart = comparisonRange.start;
+    comparisonEnd = comparisonRange.end;
+  }
 
   metricsExplorer.selectedComparisonTimeRange = {
-    name: comparisonOption,
-    start: comparisonRange.start,
-    end: comparisonRange.end,
+    name: comparisonOptionName,
+    start: comparisonStart,
+    end: comparisonEnd,
   };
   metricsExplorer.showTimeComparison = true;
   metricsExplorer.leaderboardContextColumn =
