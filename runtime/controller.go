@@ -15,12 +15,18 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"github.com/rilldata/rill/runtime/pkg/schedule"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slog"
 	"google.golang.org/protobuf/proto"
 )
+
+// tracer to trace background reconile calls
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/controller")
 
 // errCyclicDependency is set as the error on resources that can't be reconciled due to a cyclic dependency
 var errCyclicDependency = errors.New("cannot be reconciled due to cyclic dependency")
@@ -70,6 +76,7 @@ type Controller struct {
 	running     atomic.Bool   // Indicates if the controller is running
 	ready       chan struct{} // Closed when the controller transitions to running
 	closed      chan struct{} // Closed when the controller is closed
+	initErr     error         // error in initialising controller
 	reconcilers map[string]Reconciler
 	catalog     *catalogCache
 	// subscribers tracks subscribers to catalog events.
@@ -127,6 +134,8 @@ func NewController(rt *Runtime, instanceID string, logger *zap.Logger, ac activi
 func (c *Controller) Run(ctx context.Context) error {
 	cc, err := newCatalogCache(ctx, c, c.InstanceID)
 	if err != nil {
+		c.initErr = err
+		close(c.closed)
 		return fmt.Errorf("failed to create catalog cache: %w", err)
 	}
 	c.catalog = cc
@@ -138,6 +147,9 @@ func (c *Controller) Run(ctx context.Context) error {
 	// Check we are still the leader
 	err = c.catalog.checkLeader(ctx)
 	if err != nil {
+		c.initErr = err
+		close(c.closed)
+		_ = c.catalog.close(ctx)
 		return err
 	}
 
@@ -342,6 +354,8 @@ func (c *Controller) Run(ctx context.Context) error {
 // WaitUntilReady returns when the controller is ready to process catalog operations
 func (c *Controller) WaitUntilReady(ctx context.Context) error {
 	select {
+	case <-c.closed: // controller was closed even before it became ready
+		return c.initErr
 	case <-c.ready:
 	case <-ctx.Done():
 	}
@@ -1281,6 +1295,21 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 			// Send invocation to event loop for post-processing
 			c.completed <- inv
 		}()
+		// Start tracing span
+		tracerAttrs := []attribute.KeyValue{
+			attribute.String("instance_id", c.InstanceID),
+			attribute.String("name", n.Name),
+			attribute.String("kind", unqualifiedKind(n.Kind)),
+		}
+		if inv.isDelete {
+			tracerAttrs = append(tracerAttrs, attribute.Bool("deleted", inv.isDelete))
+		}
+		if inv.isRename {
+			tracerAttrs = append(tracerAttrs, attribute.String("renamed_from", r.Meta.RenamedFrom.Name))
+		}
+		ctx, span := tracer.Start(ctx, "reconcile", trace.WithAttributes(tracerAttrs...))
+		defer span.End()
+
 		// Invoke reconciler
 		inv.result = reconciler.Reconcile(ctx, n)
 	}()

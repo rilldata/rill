@@ -904,6 +904,56 @@ default_comparison:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestReport(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`reports/r1.yaml`: `
+kind: report
+title: My Report
+
+refresh:
+  cron: 0 * * * *
+
+operation:
+  name: MetricsViewToplist
+  time_range: P2W
+  properties:
+    metrics_view: mv1
+
+export:
+  format: csv
+  limit: 10000
+
+recipients:
+- jane@example.com
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
+			Paths: []string{"/reports/r1.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				Title: "My Report",
+				RefreshSchedule: &runtimev1.Schedule{
+					Cron: "0 * * * *",
+				},
+				OperationName:       "MetricsViewToplist",
+				OperationProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "mv1"})),
+				OperationTimeRange:  "P2W",
+				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportLimit:         10000,
+				Recipients:          []string{"jane@example.com"},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check resources
 	gotResources := maps.Clone(p.Resources)

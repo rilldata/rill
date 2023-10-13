@@ -1,9 +1,8 @@
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
-import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
-import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   getComparionRangeForScrub,
   getComparisonRange,
@@ -21,19 +20,19 @@ import {
   getAdjustedFetchTime,
 } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   TimeComparisonOption,
   TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
-  createQueryServiceColumnTimeRange,
   V1ColumnTimeRangeResponse,
   V1TimeGrain,
+  createQueryServiceColumnTimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, get } from "svelte/store";
+import { derived } from "svelte/store";
 import type { Readable } from "svelte/store";
 
 export type TimeRangeState = {
@@ -95,7 +94,9 @@ export function createTimeControlStore(ctx: StateManagers) {
     ([metricsView, timeRangeResponse, metricsExplorer]) => {
       const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
       if (
+        !metricsView.data ||
         !metricsExplorer ||
+        !metricsView.data ||
         !timeRangeResponse ||
         !timeRangeResponse.isSuccess
       ) {
@@ -117,7 +118,7 @@ export function createTimeControlStore(ctx: StateManagers) {
         metricsView.data.defaultTimeRange,
         allTimeRange.start,
         allTimeRange.end,
-        get(getLocalUserPreferences()).timeZone
+        metricsExplorer.selectedTimezone
       );
 
       const timeRangeState = calculateTimeRangePartial(

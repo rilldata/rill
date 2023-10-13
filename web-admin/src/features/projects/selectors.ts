@@ -11,9 +11,9 @@ export function getProjectPermissions(orgName: string, projName: string) {
   });
 }
 
-const PollTimeDuringReconcile = 1000;
-const PollTimeDuringError = 5000;
-const PollTimeWhenProjectReady = 60 * 1000;
+export const PollTimeDuringReconcile = 1000;
+export const PollTimeDuringError = 5000;
+export const PollTimeWhenProjectReady = 60 * 1000;
 
 export function useProjectDeploymentStatus(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1DeploymentStatus>(orgName, projName, {

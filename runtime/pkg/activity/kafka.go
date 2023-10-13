@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

@@ -6,7 +6,7 @@ import {
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   MetricsViewDimension,
-  MetricsViewMeasure,
+  MetricsViewSpecMeasureV2,
   RpcStatus,
   V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
@@ -135,7 +135,7 @@ export function createShowHideMeasuresStore(
   metricsViewName: string,
   metaQuery: CreateQueryResult<V1MetricsView, RpcStatus>
 ) {
-  return createShowHideStore<MetricsViewMeasure>(
+  return createShowHideStore<MetricsViewSpecMeasureV2>(
     metricsViewName,
     metaQuery,
     "measures",

@@ -1,6 +1,6 @@
-# `admin/email`
+# `runtime/pkg/email`
 
-This package contains logic and templates for sending transactional admin emails. 
+This package contains logic and templates for sending transactional emails. 
 
 ## How templating works
 
@@ -15,5 +15,5 @@ We currently have just one template:
 ## Adding/updating an MJML template
 
 1. Add or edit the `.mjml` file in `templates` (we recommend using the [MJML online IDE](https://mjml.io/try-it-live/))
-2. Run `./admin/email/templates/generate.sh`
+2. Run `./runtime/pkg/email/templates/generate.sh`
 3. Add a util function in `email.go` for loading and populating the template

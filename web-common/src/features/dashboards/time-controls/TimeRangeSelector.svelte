@@ -194,7 +194,7 @@
             <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
             {#if intermediateSelection === TimeRangePreset.CUSTOM}
               Custom range
-            {:else if intermediateSelection === TimeRangePreset.DEFAULT}
+            {:else if currentSelection === TimeRangePreset.DEFAULT}
               Last {humaniseISODuration($metaQuery.data?.defaultTimeRange)}
             {:else if currentSelection in DEFAULT_TIME_RANGES}
               {DEFAULT_TIME_RANGES[$timeControlsStore?.selectedTimeRange?.name]

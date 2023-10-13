@@ -1,7 +1,10 @@
+import { PeriodAndUnits } from "@rilldata/web-common/lib/time/config";
 import { convertTimeRangePreset } from "@rilldata/web-common/lib/time/ranges/index";
-import { transformDate } from "@rilldata/web-common/lib/time/transforms";
 import {
-  Period,
+  subtractFromPeriod,
+  transformDate,
+} from "@rilldata/web-common/lib/time/transforms";
+import {
   RelativeTimeTransformation,
   TimeOffsetType,
   TimeRange,
@@ -122,38 +125,6 @@ function getEndTimeTransformations(
   ];
 }
 
-const PeriodAndUnits: Array<{
-  period: Period;
-  unit: keyof Duration;
-}> = [
-  {
-    period: Period.MINUTE,
-    unit: "minutes",
-  },
-  {
-    period: Period.HOUR,
-    unit: "hours",
-  },
-  {
-    period: Period.DAY,
-    unit: "days",
-  },
-  {
-    period: Period.WEEK,
-    unit: "weeks",
-  },
-  {
-    period: Period.MONTH,
-    unit: "months",
-  },
-  {
-    period: Period.YEAR,
-    unit: "years",
-  },
-];
-const PeriodToUnitsMap: Partial<Record<Period, keyof Duration>> = {};
-PeriodAndUnits.forEach(({ period, unit }) => (PeriodToUnitsMap[period] = unit));
-
 function getSmallestUnit(duration: Duration) {
   for (const { period, unit } of PeriodAndUnits) {
     if (duration[unit]) {
@@ -162,9 +133,4 @@ function getSmallestUnit(duration: Duration) {
   }
 
   return undefined;
-}
-
-function subtractFromPeriod(duration: Duration, period: Period) {
-  if (!PeriodToUnitsMap[period]) return duration;
-  return duration.minus({ [PeriodToUnitsMap[period]]: 1 });
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -62,7 +63,7 @@ func New(t TestingT) *runtime.Runtime {
 	// logger, err := zap.NewDevelopment()
 	// require.NoError(t, err)
 
-	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient())
+	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient(), email.New(email.NewNoopSender()))
 	require.NoError(t, err)
 	t.Cleanup(func() { rt.Close() })
 

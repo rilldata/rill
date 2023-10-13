@@ -6,6 +6,7 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
 import { TimeGrain } from "./time_grain_pb.js";
+import { ExportFormat } from "./export_format_pb.js";
 
 /**
  * @generated from enum rill.runtime.v1.ReconcileStatus
@@ -85,6 +86,12 @@ export class Resource extends Message<Resource> {
     case: "migration";
   } | {
     /**
+     * @generated from field: rill.runtime.v1.Report report = 10;
+     */
+    value: Report;
+    case: "report";
+  } | {
+    /**
      * @generated from field: rill.runtime.v1.PullTrigger pull_trigger = 6;
      */
     value: PullTrigger;
@@ -117,6 +124,7 @@ export class Resource extends Message<Resource> {
     { no: 4, name: "model", kind: "message", T: ModelV2, oneof: "resource" },
     { no: 5, name: "metrics_view", kind: "message", T: MetricsViewV2, oneof: "resource" },
     { no: 9, name: "migration", kind: "message", T: Migration, oneof: "resource" },
+    { no: 10, name: "report", kind: "message", T: Report, oneof: "resource" },
     { no: 6, name: "pull_trigger", kind: "message", T: PullTrigger, oneof: "resource" },
     { no: 7, name: "refresh_trigger", kind: "message", T: RefreshTrigger, oneof: "resource" },
     { no: 8, name: "bucket_planner", kind: "message", T: BucketPlanner, oneof: "resource" },
@@ -921,11 +929,15 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   security?: MetricsViewSpec_SecurityV2;
 
   /**
+   * ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
+   *
    * @generated from field: uint32 first_day_of_week = 12;
    */
   firstDayOfWeek = 0;
 
   /**
+   * Month number to use as the base for time aggregations by year. Defaults to 1 (January).
+   *
    * @generated from field: uint32 first_month_of_year = 13;
    */
   firstMonthOfYear = 0;
@@ -1060,9 +1072,14 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
   description = "";
 
   /**
-   * @generated from field: string format = 5;
+   * @generated from field: string format_preset = 5;
    */
-  format = "";
+  formatPreset = "";
+
+  /**
+   * @generated from field: string format_d3 = 7;
+   */
+  formatD3 = "";
 
   /**
    * @generated from field: bool valid_percent_of_total = 6;
@@ -1081,7 +1098,8 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
     { no: 2, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "format", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "format_preset", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "format_d3", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "valid_percent_of_total", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -1424,6 +1442,268 @@ export class MigrationState extends Message<MigrationState> {
 
   static equals(a: MigrationState | PlainMessage<MigrationState> | undefined, b: MigrationState | PlainMessage<MigrationState> | undefined): boolean {
     return proto3.util.equals(MigrationState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.Report
+ */
+export class Report extends Message<Report> {
+  /**
+   * @generated from field: rill.runtime.v1.ReportSpec spec = 1;
+   */
+  spec?: ReportSpec;
+
+  /**
+   * @generated from field: rill.runtime.v1.ReportState state = 2;
+   */
+  state?: ReportState;
+
+  constructor(data?: PartialMessage<Report>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Report";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spec", kind: "message", T: ReportSpec },
+    { no: 2, name: "state", kind: "message", T: ReportState },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Report {
+    return new Report().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Report {
+    return new Report().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Report {
+    return new Report().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Report | PlainMessage<Report> | undefined, b: Report | PlainMessage<Report> | undefined): boolean {
+    return proto3.util.equals(Report, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ReportSpec
+ */
+export class ReportSpec extends Message<ReportSpec> {
+  /**
+   * @generated from field: bool trigger = 1;
+   */
+  trigger = false;
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.Schedule refresh_schedule = 3;
+   */
+  refreshSchedule?: Schedule;
+
+  /**
+   * @generated from field: uint32 timeout_seconds = 4;
+   */
+  timeoutSeconds = 0;
+
+  /**
+   * @generated from field: string operation_name = 5;
+   */
+  operationName = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct operation_properties = 6;
+   */
+  operationProperties?: Struct;
+
+  /**
+   * @generated from field: string operation_time_range = 7;
+   */
+  operationTimeRange = "";
+
+  /**
+   * @generated from field: uint32 export_limit = 8;
+   */
+  exportLimit = 0;
+
+  /**
+   * @generated from field: rill.runtime.v1.ExportFormat export_format = 9;
+   */
+  exportFormat = ExportFormat.UNSPECIFIED;
+
+  /**
+   * @generated from field: repeated string recipients = 10;
+   */
+  recipients: string[] = [];
+
+  /**
+   * @generated from field: string email_open_url = 11;
+   */
+  emailOpenUrl = "";
+
+  /**
+   * @generated from field: string email_edit_url = 12;
+   */
+  emailEditUrl = "";
+
+  constructor(data?: PartialMessage<ReportSpec>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ReportSpec";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "refresh_schedule", kind: "message", T: Schedule },
+    { no: 4, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "operation_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "operation_properties", kind: "message", T: Struct },
+    { no: 7, name: "operation_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "export_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 10, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "email_open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "email_edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {
+    return new ReportSpec().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReportSpec {
+    return new ReportSpec().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReportSpec {
+    return new ReportSpec().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReportSpec | PlainMessage<ReportSpec> | undefined, b: ReportSpec | PlainMessage<ReportSpec> | undefined): boolean {
+    return proto3.util.equals(ReportSpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ReportState
+ */
+export class ReportState extends Message<ReportState> {
+  /**
+   * @generated from field: google.protobuf.Timestamp next_run_on = 1;
+   */
+  nextRunOn?: Timestamp;
+
+  /**
+   * @generated from field: rill.runtime.v1.ReportExecution current_execution = 2;
+   */
+  currentExecution?: ReportExecution;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.ReportExecution execution_history = 3;
+   */
+  executionHistory: ReportExecution[] = [];
+
+  /**
+   * @generated from field: uint32 execution_count = 4;
+   */
+  executionCount = 0;
+
+  constructor(data?: PartialMessage<ReportState>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ReportState";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "next_run_on", kind: "message", T: Timestamp },
+    { no: 2, name: "current_execution", kind: "message", T: ReportExecution },
+    { no: 3, name: "execution_history", kind: "message", T: ReportExecution, repeated: true },
+    { no: 4, name: "execution_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportState {
+    return new ReportState().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReportState {
+    return new ReportState().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReportState {
+    return new ReportState().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReportState | PlainMessage<ReportState> | undefined, b: ReportState | PlainMessage<ReportState> | undefined): boolean {
+    return proto3.util.equals(ReportState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ReportExecution
+ */
+export class ReportExecution extends Message<ReportExecution> {
+  /**
+   * @generated from field: bool adhoc = 1;
+   */
+  adhoc = false;
+
+  /**
+   * @generated from field: string error_message = 2;
+   */
+  errorMessage = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp report_time = 3;
+   */
+  reportTime?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp started_on = 4;
+   */
+  startedOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp finished_on = 5;
+   */
+  finishedOn?: Timestamp;
+
+  constructor(data?: PartialMessage<ReportExecution>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ReportExecution";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "adhoc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "report_time", kind: "message", T: Timestamp },
+    { no: 4, name: "started_on", kind: "message", T: Timestamp },
+    { no: 5, name: "finished_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportExecution {
+    return new ReportExecution().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReportExecution {
+    return new ReportExecution().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReportExecution {
+    return new ReportExecution().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReportExecution | PlainMessage<ReportExecution> | undefined, b: ReportExecution | PlainMessage<ReportExecution> | undefined): boolean {
+    return proto3.util.equals(ReportExecution, a, b);
   }
 }
 
@@ -1855,6 +2135,11 @@ export class Schedule extends Message<Schedule> {
    */
   tickerSeconds = 0;
 
+  /**
+   * @generated from field: string time_zone = 3;
+   */
+  timeZone = "";
+
   constructor(data?: PartialMessage<Schedule>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1865,6 +2150,7 @@ export class Schedule extends Message<Schedule> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "cron", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "ticker_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 3, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Schedule {
