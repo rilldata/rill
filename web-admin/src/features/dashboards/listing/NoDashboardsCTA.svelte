@@ -13,7 +13,9 @@
   <div
     class="flex flex-col gap-y-2 justify-center items-center text-center text-sm"
   >
-    <div class="text-gray-600 font-semibold">No dashboards</div>
+    <div class="text-gray-600 font-semibold">
+      You don't have any dashboards yet
+    </div>
     <div>
       <span style="text-gray-500 font-normal"
         >Learn how to deploy a dashboard in our
