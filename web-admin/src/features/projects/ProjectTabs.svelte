@@ -1,0 +1,58 @@
+<script lang="ts">
+  import { afterNavigate, goto } from "$app/navigation";
+  import { page } from "$app/stores";
+  import Tab from "../../components/tabs/Tab.svelte";
+  import TabGroup from "../../components/tabs/TabGroup.svelte";
+  import TabList from "../../components/tabs/TabList.svelte";
+
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
+
+  $: tabs = [
+    {
+      route: `/${organization}/${project}`,
+      label: "Dashboards",
+    },
+    {
+      route: `/${organization}/${project}/-/reports`,
+      label: "Reports",
+    },
+    {
+      route: `/${organization}/${project}/-/logs`,
+      label: "Logs",
+    },
+  ];
+
+  $: currentTabIndex = tabs.findIndex((tab) => {
+    return tab.route === window.location.pathname;
+  });
+
+  function handleTabChange(event: CustomEvent) {
+    // Navigate to the new tab
+    goto(`${tabs[event.detail].route}`);
+  }
+
+  afterNavigate((nav) => {
+    // If changing to a new project, switch to the dashboards tab
+    if (nav.from?.params && nav.to.params.project !== nav.from.params.project) {
+      // We use DOM manipulation here because the library does not support controlled tabs
+      // See: https://github.com/rgossiaux/svelte-headlessui/issues/80
+      const dashboardTab = Array.from(
+        document.querySelectorAll('button[role="tab"]')
+      ).find((el) => el.textContent === "Dashboards") as HTMLButtonElement;
+      dashboardTab.click();
+    }
+  });
+</script>
+
+<div class="pl-[17px] border-b pt-1 pb-[3px]">
+  <TabGroup defaultIndex={currentTabIndex} on:change={handleTabChange}>
+    <TabList>
+      {#each tabs as tab}
+        <Tab>{tab.label}</Tab>
+      {/each}
+    </TabList>
+  </TabGroup>
+</div>
+
+<slot />

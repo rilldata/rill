@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { createAdminServiceGetProject } from "../../client";
   import ProjectDeploymentStatusChip from "./ProjectDeploymentStatusChip.svelte";
 
@@ -9,10 +7,6 @@
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: isProjectDeployed = $proj?.data && $proj.data.prodDeployment;
-
-  function handleViewLogs() {
-    goto(`/${organization}/${project}/-/logs`);
-  }
 </script>
 
 <div class="flex flex-col gap-y-2">
@@ -37,9 +31,7 @@
       </span>
     {/if}
   </div>
-  {#if isProjectDeployed}
-    <div>
-      <Button type="secondary" on:click={handleViewLogs}>View logs</Button>
-    </div>
+  {#if !isProjectDeployed}
+    <div>This project is not deployed.</div>
   {/if}
 </div>

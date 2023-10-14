@@ -22,16 +22,10 @@
 </script>
 
 {#if $proj.isSuccess}
-  <ul class="w-full">
-    {#if !hasReadAccess}
-      <li class="px-12 py-2 font-semibold text-gray-500 border-b">
-        You don't have permission to view project logs
-      </li>
-    {:else if !errors || $errors.length === 0}
-      <li class="px-12 py-2 font-semibold text-gray-500 border-b">
-        No logs present
-      </li>
-    {:else}
+  {#if !$errors || $errors.length === 0}
+    <div class="font-semibold text-gray-500">No logs present</div>
+  {:else}
+    <ul class="w-full border rounded">
       <!-- logs -->
       <li class="px-12 py-2 font-semibold text-gray-800 border-b">
         This project has
@@ -52,6 +46,6 @@
           {/if}
         </li>
       {/each}
-    {/if}
-  </ul>
+    </ul>
+  {/if}
 {/if}

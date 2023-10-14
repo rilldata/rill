@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createAdminServiceListProjectsForOrganization } from "../../client";
-  import DashboardList from "./DashboardList.svelte";
+  import DashboardList from "../dashboards/listing/DashboardList.svelte";
   import ProjectDeploymentStatusChip from "./ProjectDeploymentStatusChip.svelte";
 
   export let organization: string;
