@@ -8,11 +8,13 @@
     V1ExportFormat,
   } from "@rilldata/web-common/runtime-client";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
+  import CreateScheduledReportModal from "../scheduled-reports/CreateScheduledReportModal.svelte";
   import exportToplist from "./export-toplist";
 
   export let metricViewName: string;
 
   let exportMenuOpen = false;
+  let showScheduledReportDialog = false;
 
   const timeControlStore = useTimeControlStore(getStateManagers());
 
@@ -78,5 +80,20 @@
     >
       Export as XLSX
     </MenuItem>
+    <!-- if Cloud -->
+    <MenuItem
+      on:select={() => {
+        toggleFloatingElement();
+        showScheduledReportDialog = true;
+      }}
+    >
+      Export on schedule
+    </MenuItem>
   </Menu>
 </WithTogglableFloatingElement>
+
+<CreateScheduledReportModal
+  open={showScheduledReportDialog}
+  on:close={() => (showScheduledReportDialog = false)}
+  {metricViewName}
+/>
