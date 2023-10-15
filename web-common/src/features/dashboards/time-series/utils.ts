@@ -101,7 +101,7 @@ export function getFilterForComparedDimension(
   dimensionName: string,
   filters: V1MetricsViewFilter,
   topListValues: string[],
-  sliceCount = 3
+  surface
 ) {
   // Check if we have an excluded filter for the dimension
   const excludedFilter = filters.exclude.find((d) => d.name === dimensionName);
@@ -110,11 +110,17 @@ export function getFilterForComparedDimension(
   if (excludedFilter) {
     excludedValues = excludedFilter.in;
   }
+  let includedValues;
 
-  // Remove excluded values from top list
-  const includedValues = topListValues
-    ?.filter((d) => !excludedValues.includes(d))
-    ?.slice(0, sliceCount);
+  if (surface === "table") {
+    // TODO : make this configurable
+    includedValues = topListValues?.slice(0, 250);
+  } else {
+    // Remove excluded values from top list
+    includedValues = topListValues
+      ?.filter((d) => !excludedValues.includes(d))
+      ?.slice(0, 3);
+  }
 
   // Add dimension to filter
   const updatedFilter = {
@@ -123,7 +129,7 @@ export function getFilterForComparedDimension(
       ...filters.include,
       {
         name: dimensionName,
-        in: includedValues,
+        in: [],
       },
     ],
   };

@@ -10,6 +10,11 @@
     value: `<div class="h-4 bg-gray-100 rounded loading-cell" style="width: 100%; min-width: 32px;"/>`,
   };
 
+  const NULL_CELL = {
+    isNull: true,
+    value: `<div class="italic">null</div>`,
+  };
+
   export let getColumnHeaderData: (pos: PivotPos) => any = () => [];
   export let getRowHeaderData: (pos: PivotPos) => any = () => [];
   export let getBodyData: (pos: PivotPos) => any = () => [];
@@ -67,11 +72,13 @@
     });
 
     let data = getBodyData({ x0, x1, y0, y1 });
-    // Replace nulls with loading placeholders
+    // Replace undefined with loading placeholders and nulls with null placeholder
     data.forEach((c, i) => {
       c.forEach((r, j) => {
-        if (!r) {
+        if (r === undefined) {
           data[i][j] = LOADING_CELL;
+        } else if (r === null) {
+          data[i][j] = NULL_CELL;
         }
       });
     });
@@ -126,7 +133,7 @@
       td.style.maxWidth = `${maybeWidth}px`;
     }
 
-    if (value.isLoader) {
+    if (value.isLoader || value.isNull) {
       td.innerHTML = value.value;
     }
 
@@ -255,6 +262,10 @@
   :global(regular-table) {
     padding-left: 0px;
     padding-right: 0px;
+  }
+
+  :global(regular-table tr:hover td) {
+    background-color: rgb(248 250 252);
   }
 
   :global(regular-table table) {

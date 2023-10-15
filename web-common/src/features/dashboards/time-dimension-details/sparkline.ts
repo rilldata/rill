@@ -2,6 +2,17 @@ const svgWidth = 40;
 const svgHeight = 13;
 
 export function createSparkline(dataArr, accessor) {
+  // Check if dataArr is present and has data
+  if (!dataArr || dataArr.length === 0) {
+    // Return SVG with a flat line in the middle of svgHeight
+    return `
+        <svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,${svgHeight / 2} L${svgWidth},${
+      svgHeight / 2
+    }" fill="none" stroke="#9CA3AF" />
+        </svg>
+      `;
+  }
   const data = accessor ? dataArr?.map(accessor) : dataArr;
   const maxY = Math.max(...data);
   const minY = Math.min(...data);

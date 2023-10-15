@@ -45,7 +45,6 @@
   const timeControlsStore = useTimeControlStore(getStateManagers());
   const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
 
-  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
   $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
   $: showComparison = !comparisonDimension && $timeControlsStore.showComparison;
@@ -67,51 +66,8 @@
     }
   }
 
-  $: renderedMeasureNames = renderedMeasures.map((measure) => measure.name);
-
-  // List of measures which will be queried
-  // In case we on expanded view, only query the for that measure
-  $: queriedMeasureNames = expandedMeasureName
-    ? renderedMeasureNames
-    : selectedMeasureNames;
-
-  $: totalsQuery = createQueryServiceMetricsViewTotals(
-    $runtime.instanceId,
-    metricViewName,
-    {
-      measureNames: queriedMeasureNames,
-      timeStart: $timeControlsStore.timeStart,
-      timeEnd: $timeControlsStore.timeEnd,
-      filter: $dashboardStore?.filters,
-    },
-    {
-      query: {
-        enabled:
-          queriedMeasureNames?.length > 0 &&
-          $timeControlsStore.ready &&
-          !!$dashboardStore?.filters,
-      },
-    }
-  );
-
-  $: totalsComparisonQuery = createQueryServiceMetricsViewTotals(
-    instanceId,
-    metricViewName,
-    {
-      measureNames: queriedMeasureNames,
-      timeStart: $timeControlsStore.comparisonTimeStart,
-      timeEnd: $timeControlsStore.comparisonTimeEnd,
-      filter: $dashboardStore?.filters,
-    },
-    {
-      query: {
-        enabled: Boolean(showComparison && !!$dashboardStore?.filters),
-      },
-    }
-  );
-
-  // get the totalsComparisons.
-  $: totalsComparisons = $totalsComparisonQuery?.data?.data;
+  $: totals = $timeSeriesDataStore.total;
+  $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
 
   let scrubStart;
   let scrubEnd;
@@ -215,7 +171,7 @@
     <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
     {#each renderedMeasures as measure (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
-      {@const bigNum = $totalsQuery?.data?.data?.[measure.name]}
+      {@const bigNum = totals?.[measure.name]}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
       {@const comparisonPercChange =
         comparisonValue && bigNum !== undefined && bigNum !== null
@@ -239,7 +195,7 @@
           measure?.label ||
           measure?.expression}
         formatPreset={measure?.format}
-        status={$totalsQuery?.isFetching
+        status={$timeSeriesDataStore?.isFetching
           ? EntityStatus.Running
           : EntityStatus.Idle}
       >

@@ -10,12 +10,19 @@
   const timeDimensionDataStore = useTimeDimensionDataStore(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension;
+
+  $: excludeMode =
+    $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 </script>
 
 <TDDHeader {dimensionName} {metricViewName} />
 
 {#if $timeDimensionDataStore?.data}
   <TddNew
+    {dimensionName}
+    {metricViewName}
+    {excludeMode}
+    comparing={$timeDimensionDataStore.comparing}
     timeFormatter={$timeDimensionDataStore.timeFormatter}
     data={$timeDimensionDataStore.data}
   />

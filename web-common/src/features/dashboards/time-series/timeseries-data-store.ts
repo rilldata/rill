@@ -6,7 +6,10 @@ import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { derived, type Readable } from "svelte/store";
 import {
+  V1MetricsViewAggregationResponse,
+  V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewTimeSeriesResponse,
+  createQueryServiceMetricsViewAggregation,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -20,6 +23,8 @@ export type TimeSeriesDataState = {
 
   // Computed prepared data for charts and table
   timeSeriesData?: unknown[];
+  total: V1MetricsViewAggregationResponseDataItem;
+  comparisonTotal: V1MetricsViewAggregationResponseDataItem;
   dimensionChartData?: unknown;
   dimensionTableData?: unknown;
 };
@@ -67,6 +72,42 @@ function createMetricsViewTimeSeries(
   );
 }
 
+function createTotalsForMeasure(
+  ctx: StateManagers,
+  measures,
+  isComparison = false
+): CreateQueryResult<V1MetricsViewAggregationResponse> {
+  return derived(
+    [
+      ctx.runtime,
+      ctx.metricsViewName,
+      useTimeControlStore(ctx),
+      ctx.dashboardStore,
+    ],
+    ([runtime, metricsViewName, timeControls, dashboard], set) =>
+      createQueryServiceMetricsViewAggregation(
+        runtime.instanceId,
+        metricsViewName,
+        {
+          measures: measures.map((measure) => ({ name: measure })),
+          filter: dashboard?.filters,
+          timeStart: isComparison
+            ? timeControls?.comparisonTimeStart
+            : timeControls.timeStart,
+          timeEnd: isComparison
+            ? timeControls?.comparisonTimeEnd
+            : timeControls.timeEnd,
+        },
+        {
+          query: {
+            enabled: !!timeControls.ready && !!ctx.dashboardStore,
+            queryClient: ctx.queryClient,
+          },
+        }
+      ).subscribe(set)
+  );
+}
+
 export function createTimeSeriesDataStore(ctx: StateManagers) {
   return derived(
     [useMetaQuery(ctx), useTimeControlStore(ctx), ctx.dashboardStore],
@@ -92,12 +133,19 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         measures,
         false
       );
+      const primaryTotals = createTotalsForMeasure(ctx, measures, false);
+
       let comparisonTimeSeries: CreateQueryResult<
         V1MetricsViewTimeSeriesResponse,
         unknown
       >;
+      let comparisonTotals: CreateQueryResult<
+        V1MetricsViewAggregationResponse,
+        unknown
+      >;
       if (showComparison) {
         comparisonTimeSeries = createMetricsViewTimeSeries(ctx, measures, true);
+        comparisonTotals = createTotalsForMeasure(ctx, measures, true);
       }
 
       let dimensionTimeSeriesCharts;
@@ -123,10 +171,19 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         [
           primaryTimeSeries,
           comparisonTimeSeries,
+          primaryTotals,
+          comparisonTotals,
           dimensionTimeSeriesCharts,
           dimensionTimeSeriesTable,
         ],
-        ([primary, comparison, dimensionChart, dimensionTable]) => {
+        ([
+          primary,
+          comparison,
+          primaryTotal,
+          comparisonTotal,
+          dimensionChart,
+          dimensionTable,
+        ]) => {
           let timeSeriesData = primary?.data?.data;
 
           if (!primary.isFetching) {
@@ -138,9 +195,11 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
             );
           }
           return {
-            isFetching: false, // FIXME Handle fetching
+            isFetching: primaryTotal?.isFetching || comparisonTotal?.isFetching, // FIXME Handle fetching
             hasError: false, // FIXME Handle errors
             timeSeriesData,
+            total: primaryTotal?.data?.data[0],
+            comparisonTotal: comparisonTotal?.data?.data[0],
             dimensionChartData: dimensionChart || [],
             dimensionTableData: dimensionTable || [],
           };

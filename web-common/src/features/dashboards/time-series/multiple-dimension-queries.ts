@@ -120,7 +120,7 @@ export function getDimensionValuesForComparison(
               dimensionName,
               dashboardStore?.filters,
               topListValues,
-              surface === "table" ? 250 : 3
+              surface
             );
 
             return {
