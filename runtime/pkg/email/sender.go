@@ -82,11 +82,6 @@ type consoleSender struct {
 }
 
 func NewConsoleSender(logger *zap.Logger, fromEmail, fromName string) (Sender, error) {
-	_, err := mail.ParseAddress(fromEmail)
-	if err != nil {
-		return nil, fmt.Errorf("invalid sender email address %q", fromEmail)
-	}
-
 	return &consoleSender{logger: logger, fromEmail: fromEmail, fromName: fromName}, nil
 }
 

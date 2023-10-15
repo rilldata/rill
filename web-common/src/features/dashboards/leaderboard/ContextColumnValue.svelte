@@ -4,12 +4,9 @@
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
   import { contextColumnWidth } from "./leaderboard-utils";
   import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-  import type { PERC_DIFF } from "@rilldata/web-common/components/data-types/type-utils";
+  import { PERC_DIFF } from "@rilldata/web-common/components/data-types/type-utils";
 
-  export let formattedValue:
-    | string
-    | NumberParts
-    | PERC_DIFF.PREV_VALUE_NO_DATA;
+  export let formattedValue: string | NumberParts | PERC_DIFF;
   export let contextColumn: LeaderboardContextColumn;
 
   let neg: boolean;
@@ -23,12 +20,13 @@
   $: width = contextColumnWidth(contextColumn);
 
   $: if (
-    (contextColumn === LeaderboardContextColumn.DELTA_PERCENT ||
-      contextColumn === LeaderboardContextColumn.PERCENT) &&
-    typeof formattedValue === "string"
+    typeof formattedValue === "string" &&
+    formattedValue !== PERC_DIFF.PREV_VALUE_NO_DATA
   ) {
     console.warn(
-      "PercentageChange component expects a NumberParts object, not a string."
+      `ContextColumnValue component expects a \`NumberParts | PERC_DIFF\`  received ${JSON.stringify(
+        formattedValue
+      )} instead.`
     );
   }
 </script>

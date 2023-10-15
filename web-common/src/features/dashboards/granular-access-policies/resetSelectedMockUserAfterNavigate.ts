@@ -1,6 +1,8 @@
 import { afterNavigate } from "$app/navigation";
+import { selectedMockUserStore } from "@rilldata/web-common/features/dashboards/granular-access-policies/stores";
 import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
 import type { QueryClient } from "@tanstack/svelte-query";
+import { get } from "svelte/store";
 
 /**
  * Remove the selected mock user (if any) when navigating to a dashboard
@@ -13,7 +15,10 @@ import type { QueryClient } from "@tanstack/svelte-query";
  */
 export function resetSelectedMockUserAfterNavigate(queryClient: QueryClient) {
   afterNavigate((nav) => {
-    if (nav.from.params.name !== nav.to.params.name) {
+    if (
+      nav.from.params.name !== nav.to.params.name &&
+      get(selectedMockUserStore) !== null
+    ) {
       updateDevJWT(queryClient, null);
     }
   });

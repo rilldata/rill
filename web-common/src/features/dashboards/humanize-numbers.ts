@@ -29,47 +29,6 @@ export enum FormatPreset {
   INTERVAL = "interval_ms",
 }
 
-interface ColFormatSpec {
-  columnName: string;
-  formatPreset: FormatPreset;
-}
-
-export function humanizeGroupValues(
-  values: Array<Record<string, number | string>>,
-  type: FormatPreset,
-  columnName?: string
-) {
-  const valueKey = columnName ?? "value";
-  let numValues = values.map((v) => v[valueKey]);
-
-  const areAllNumbers = numValues.some((e) => typeof e === "number");
-  if (!areAllNumbers) return values;
-
-  numValues = (numValues as number[]).sort((a, b) => b - a);
-  const formattedValues = humanizeGroupValuesUtil2(numValues as number[], type);
-
-  const formattedValueKey = "__formatted_" + valueKey;
-  const humanizedValues = values.map((v) => {
-    const index = numValues.indexOf(v[valueKey]);
-    return { ...v, [formattedValueKey]: formattedValues[index] };
-  });
-
-  return humanizedValues;
-}
-
-export function humanizeGroupByColumns(
-  values: Array<Record<string, number | string>>,
-  columnFormatSpec: ColFormatSpec[]
-) {
-  return columnFormatSpec.reduce((valuesObj, column) => {
-    return humanizeGroupValues(
-      valuesObj,
-      column.formatPreset || FormatPreset.HUMANIZE,
-      column.columnName
-    );
-  }, values);
-}
-
 // NOTE: the following are adapters that I think fit the API
 // used by the existing humanizer, but I'm not sure of the
 // exact details, nor am I totally confident about the options
@@ -78,9 +37,7 @@ export function humanizeGroupByColumns(
 // This really needs to be reviewed by Dhiraj, at which point we
 // can deprecate any left over code that is no longer needed.
 
-export const nicelyFormattedTypesToNumberKind = (
-  type: FormatPreset | string
-) => {
+export const formatPresetToNumberKind = (type: FormatPreset | string) => {
   switch (type) {
     case FormatPreset.CURRENCY:
       return NumberKind.DOLLAR;
@@ -107,7 +64,7 @@ export function humanizeDataType(
   if (value === undefined || value === null) return "";
   if (typeof value !== "number") return value.toString();
 
-  const numberKind = nicelyFormattedTypesToNumberKind(type);
+  const numberKind = formatPresetToNumberKind(type);
 
   let innerOptions: FormatterFactoryOptions = options;
   if (type === FormatPreset.NONE) {
@@ -149,31 +106,11 @@ export function humanizeDataTypeExpanded(
 }
 
 /** This function is used primarily in the leaderboard and the detail tables. */
-export function humanizeGroupValuesUtil2(values: number[], type: FormatPreset) {
-  if (!values.length) return values;
-  if (type == FormatPreset.NONE) return values;
-
-  const numberKind = nicelyFormattedTypesToNumberKind(type);
-
-  const innerOptions: FormatterFactoryOptions = {
-    strategy: "default",
-    numberKind,
-  };
-
-  const formatter = humanizedFormatterFactory(values, innerOptions);
-
-  return values.map((v) => {
-    if (v === null) return "∅";
-    else return formatter.stringFormat(v);
-  });
-}
-
-/** This function is used primarily in the leaderboard and the detail tables. */
 export function humanizeDimTableValue(value: number, type: FormatPreset) {
   if (type == FormatPreset.NONE) return value;
   if (value === null || value === undefined) return null;
 
-  const numberKind = nicelyFormattedTypesToNumberKind(type);
+  const numberKind = formatPresetToNumberKind(type);
   const innerOptions: FormatterFactoryOptions = {
     strategy: "default",
     numberKind,
