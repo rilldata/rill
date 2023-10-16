@@ -21,20 +21,21 @@
     );
 </script>
 
+<!-- Title -->
+<div
+  class="px-9 pb-2 font-semibold text-gray-500 uppercase text-[10px] leading-none"
+>
+  Logs
+</div>
+<!-- Logs -->
 {#if $proj.isSuccess}
   {#if !$errors || $errors.length === 0}
-    <div class="font-semibold text-gray-500">No logs present</div>
+    <div class="px-9 font-semibold text-gray-500">No logs present</div>
   {:else}
-    <ul class="w-full border rounded">
-      <!-- logs -->
-      <li class="px-12 py-2 font-semibold text-gray-800 border-b">
-        This project has
-        <span class="text-red-600">{$errors.length} </span>
-        {$errors.length === 1 ? "error" : "errors"}
-      </li>
+    <ul>
       {#each $errors as error}
         <li
-          class="flex gap-x-5 justify-between py-1 px-12 border-b border-gray-200 bg-red-50 font-mono"
+          class="flex gap-x-5 justify-between py-1 px-9 border-b border-gray-200 bg-red-50 font-mono"
         >
           <span class="text-red-600 break-all">
             {error.message}
