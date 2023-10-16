@@ -854,6 +854,11 @@ export class MetricsViewComparisonToplistRequest extends Message<MetricsViewComp
    */
   priority = 0;
 
+  /**
+   * @generated from field: bool exact = 13;
+   */
+  exact = false;
+
   constructor(data?: PartialMessage<MetricsViewComparisonToplistRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -874,6 +879,7 @@ export class MetricsViewComparisonToplistRequest extends Message<MetricsViewComp
     { no: 10, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 11, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 12, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 13, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonToplistRequest {
