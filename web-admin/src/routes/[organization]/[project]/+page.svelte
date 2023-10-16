@@ -3,7 +3,6 @@
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
   import { createAdminServiceGetProject } from "../../../client";
   import DashboardList from "../../../features/projects/DashboardList.svelte";
-  import ProjectHero from "../../../features/projects/ProjectHero.svelte";
   import RedeployProjectCta from "../../../features/projects/RedeployProjectCTA.svelte";
 
   $: organization = $page.params.organization;
@@ -21,7 +20,6 @@
   <div
     class="mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-40 flex flex-col gap-y-4"
   >
-    <ProjectHero {organization} {project} />
     {#if isProjectDeployed}
       <span class="text-gray-500 text-base font-normal leading-normal"
         >Check out your dashboards below.</span
