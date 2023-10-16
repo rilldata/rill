@@ -4,6 +4,7 @@
   import Tab from "../../components/tabs/Tab.svelte";
   import TabGroup from "../../components/tabs/TabGroup.svelte";
   import TabList from "../../components/tabs/TabList.svelte";
+  import ProjectDeploymentStatusChip from "./ProjectDeploymentStatusChip.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -49,7 +50,16 @@
   <TabGroup defaultIndex={currentTabIndex} on:change={handleTabChange}>
     <TabList>
       {#each tabs as tab}
-        <Tab>{tab.label}</Tab>
+        <Tab>
+          {tab.label}
+          {#if tab.label === "Logs"}
+            <ProjectDeploymentStatusChip
+              {organization}
+              {project}
+              iconOnly={true}
+            />
+          {/if}
+        </Tab>
       {/each}
     </TabList>
   </TabGroup>
