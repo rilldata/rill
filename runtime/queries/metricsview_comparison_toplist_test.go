@@ -1,4 +1,4 @@
-package queries
+package queries_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -18,7 +19,7 @@ import (
 func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
 		ColumnName: "timestamp",
 	}
@@ -33,7 +34,7 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 	require.NoError(t, err)
 	mv := r.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_1"},
@@ -67,7 +68,7 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 		dims = append(dims, r.DimensionValue.GetStringValue())
 	}
 
-	q = &MetricsViewComparisonToplist{
+	q = &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_1"},
@@ -106,7 +107,7 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 func TestMetricsViewsComparison_dim_order(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
 		ColumnName: "timestamp",
 	}
@@ -121,7 +122,7 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_1"},
@@ -154,7 +155,7 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 func TestMetricsViewsComparison_measure_order(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
 		ColumnName: "timestamp",
 	}
@@ -169,7 +170,7 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_1"},

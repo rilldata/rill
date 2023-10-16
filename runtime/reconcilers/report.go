@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+	"strconv"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/server"
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -246,12 +249,28 @@ func (r *ReportReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
 	r.C.Logger.Info("Sending report", "report", self.Meta.Name.Name, "report_time", t)
 
-	_, err := buildExportRequest(rep, t)
+	qry, err := buildQuery(rep, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to build export request: %w", err)
 	}
 
-	// TODO: Use it!
+	bakedQry, err := server.BakeQuery(qry)
+	if err != nil {
+		return false, fmt.Errorf("failed to bake query of type %T: %w", qry, err)
+	}
+
+	exportURL, err := url.Parse(rep.Spec.EmailExportUrl)
+	if err != nil {
+		return false, fmt.Errorf("failed to parse export URL %q: %w", rep.Spec.EmailExportUrl, err)
+	}
+
+	exportURLQry := exportURL.Query()
+	exportURLQry.Set("format", rep.Spec.ExportFormat.String())
+	exportURLQry.Set("query", bakedQry)
+	if rep.Spec.ExportLimit > 0 {
+		exportURLQry.Set("limit", strconv.Itoa(int(rep.Spec.ExportLimit)))
+	}
+	exportURL.RawQuery = exportURLQry.Encode()
 
 	for _, recipient := range rep.Spec.Recipients {
 		err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
@@ -262,7 +281,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			DownloadFormat:    formatExportFormat(rep.Spec.ExportFormat),
 			DownloadValidDays: 7,
 			OpenLink:          rep.Spec.EmailOpenUrl,
-			DownloadLink:      "",
+			DownloadLink:      exportURL.String(),
 			EditLink:          rep.Spec.EmailEditUrl,
 		})
 		if err != nil {
@@ -273,13 +292,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	return false, nil
 }
 
-func buildExportRequest(rep *runtimev1.Report, t time.Time) (*runtimev1.ExportRequest, error) {
-	req := &runtimev1.ExportRequest{Format: rep.Spec.ExportFormat}
-	if rep.Spec.ExportLimit > 0 {
-		tmp := int64(rep.Spec.ExportLimit)
-		req.Limit = &tmp
-	}
-
+func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 	var start, end *timestamppb.Timestamp
 	if rep.Spec.OperationTimeRange != "" {
 		d, err := duration.ParseISO8601(rep.Spec.OperationTimeRange)
@@ -291,55 +304,56 @@ func buildExportRequest(rep *runtimev1.Report, t time.Time) (*runtimev1.ExportRe
 		end = timestamppb.New(t)
 	}
 
+	qry := &runtimev1.Query{}
 	switch rep.Spec.OperationName {
 	case "MetricsViewAggregation":
-		qry := &runtimev1.MetricsViewAggregationRequest{}
-		req.Request = &runtimev1.ExportRequest_MetricsViewAggregationRequest{MetricsViewAggregationRequest: qry}
+		req := &runtimev1.MetricsViewAggregationRequest{}
+		qry.Query = &runtimev1.Query_MetricsViewAggregationRequest{MetricsViewAggregationRequest: req}
 		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), qry)
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
 		}
-		qry.TimeStart = start
-		qry.TimeEnd = end
+		req.TimeStart = start
+		req.TimeEnd = end
 	case "MetricsViewToplist":
-		qry := &runtimev1.MetricsViewToplistRequest{}
-		req.Request = &runtimev1.ExportRequest_MetricsViewToplistRequest{MetricsViewToplistRequest: qry}
+		req := &runtimev1.MetricsViewToplistRequest{}
+		qry.Query = &runtimev1.Query_MetricsViewToplistRequest{MetricsViewToplistRequest: req}
 		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), qry)
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
 		}
-		qry.TimeStart = start
-		qry.TimeEnd = end
+		req.TimeStart = start
+		req.TimeEnd = end
 	case "MetricsViewRows":
-		qry := &runtimev1.MetricsViewRowsRequest{}
-		req.Request = &runtimev1.ExportRequest_MetricsViewRowsRequest{MetricsViewRowsRequest: qry}
+		req := &runtimev1.MetricsViewRowsRequest{}
+		qry.Query = &runtimev1.Query_MetricsViewRowsRequest{MetricsViewRowsRequest: req}
 		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), qry)
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
 		}
-		qry.TimeStart = start
-		qry.TimeEnd = end
+		req.TimeStart = start
+		req.TimeEnd = end
 	case "MetricsViewTimeSeries":
-		qry := &runtimev1.MetricsViewTimeSeriesRequest{}
-		req.Request = &runtimev1.ExportRequest_MetricsViewTimeSeriesRequest{MetricsViewTimeSeriesRequest: qry}
+		req := &runtimev1.MetricsViewTimeSeriesRequest{}
+		qry.Query = &runtimev1.Query_MetricsViewTimeSeriesRequest{MetricsViewTimeSeriesRequest: req}
 		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), qry)
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
 		}
-		qry.TimeStart = start
-		qry.TimeEnd = end
+		req.TimeStart = start
+		req.TimeEnd = end
 	case "MetricsViewComparisonToplist":
-		qry := &runtimev1.MetricsViewComparisonToplistRequest{}
-		req.Request = &runtimev1.ExportRequest_MetricsViewComparisonToplistRequest{MetricsViewComparisonToplistRequest: qry}
+		req := &runtimev1.MetricsViewComparisonToplistRequest{}
+		qry.Query = &runtimev1.Query_MetricsViewComparisonToplistRequest{MetricsViewComparisonToplistRequest: req}
 		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), qry)
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
 		}
-		qry.BaseTimeRange = &runtimev1.TimeRange{Start: start, End: end}
-		qry.ComparisonTimeRange = nil // TODO: Need ability pass comparison offset somewhere
+		req.BaseTimeRange = &runtimev1.TimeRange{Start: start, End: end}
+		req.ComparisonTimeRange = nil // TODO: Need ability pass comparison offset somewhere
 	}
 
-	return req, nil
+	return qry, nil
 }
 
 func formatExportFormat(f runtimev1.ExportFormat) string {

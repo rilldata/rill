@@ -32,8 +32,9 @@ type reportYAML struct {
 	} `yaml:"export"`
 	Recipients    []string `yaml:"recipients"`
 	EmailTemplate struct {
-		OpenURL string `yaml:"open_url"`
-		EditURL string `yaml:"edit_url"`
+		OpenURL   string `yaml:"open_url"`
+		EditURL   string `yaml:"edit_url"`
+		ExportURL string `yaml:"export_url"`
 	} `yaml:"email_template"`
 }
 
@@ -141,11 +142,12 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 	r.ReportSpec.OperationName = tmp.Operation.Name
 	r.ReportSpec.OperationPropertiesJson = tmp.Operation.PropertiesJSON
 	r.ReportSpec.OperationTimeRange = tmp.Operation.TimeRange
-	r.ReportSpec.ExportLimit = uint32(tmp.Export.Limit)
+	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
 	r.ReportSpec.Recipients = tmp.Recipients
 	r.ReportSpec.EmailOpenUrl = tmp.EmailTemplate.OpenURL
 	r.ReportSpec.EmailEditUrl = tmp.EmailTemplate.EditURL
+	r.ReportSpec.EmailExportUrl = tmp.EmailTemplate.ExportURL
 
 	return nil
 }

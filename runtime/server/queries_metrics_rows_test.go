@@ -1,4 +1,4 @@
-package server
+package server_test
 
 import (
 	"bytes"
@@ -16,6 +16,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 
 	"github.com/xuri/excelize/v2"
@@ -76,12 +77,11 @@ func TestServer_MetricsViewRows_Granularity_Kathmandu(t *testing.T) {
 
 func TestServer_MetricsViewRows_export_xlsx(t *testing.T) {
 	t.Parallel()
-	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+	rt, instanceId := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
 
 	ctx := testCtx()
 	mvName := "ad_bids_metrics"
-	mv, security, err := resolveMVAndSecurity(ctx, server.runtime, instanceId, mvName)
-	require.NoError(t, err)
+	mv, security := resolveMVAndSecurity(t, rt, instanceId, mvName)
 
 	q := &queries.MetricsViewRows{
 		MetricsViewName:    mvName,
@@ -92,7 +92,7 @@ func TestServer_MetricsViewRows_export_xlsx(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err = q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+	err := q.Export(ctx, rt, instanceId, &buf, &runtime.ExportOptions{
 		Format: runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
 	})
 	require.NoError(t, err)
@@ -113,12 +113,11 @@ func getColumnChunk(tbl arrow.Table, col int) arrow.Array {
 
 func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 	t.Parallel()
-	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+	rt, instanceId := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
 
 	ctx := testCtx()
 	mvName := "ad_bids_metrics_parquet"
-	mv, security, err := resolveMVAndSecurity(ctx, server.runtime, instanceId, mvName)
-	require.NoError(t, err)
+	mv, security := resolveMVAndSecurity(t, rt, instanceId, mvName)
 
 	q := &queries.MetricsViewRows{
 		MetricsViewName:    mvName,
@@ -129,7 +128,7 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err = q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+	err := q.Export(ctx, rt, instanceId, &buf, &runtime.ExportOptions{
 		Format: runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET,
 	})
 	require.NoError(t, err)
@@ -311,12 +310,12 @@ func TestServer_MetricsViewRows_parquet_export(t *testing.T) {
 
 func TestServer_MetricsViewRows_export_csv(t *testing.T) {
 	t.Parallel()
-	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+	rt, instanceId := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
 
 	ctx := testCtx()
 	mvName := "ad_bids_metrics"
-	mv, security, err := resolveMVAndSecurity(ctx, server.runtime, instanceId, mvName)
-	require.NoError(t, err)
+	mv, security := resolveMVAndSecurity(t, rt, instanceId, mvName)
+
 	q := &queries.MetricsViewRows{
 		MetricsViewName:    mvName,
 		TimeGranularity:    runtimev1.TimeGrain_TIME_GRAIN_DAY,
@@ -326,7 +325,7 @@ func TestServer_MetricsViewRows_export_csv(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err = q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+	err := q.Export(ctx, rt, instanceId, &buf, &runtime.ExportOptions{
 		Format: runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 	})
 	require.NoError(t, err)

@@ -4335,8 +4335,8 @@ definitions:
       operationTimeRange:
         type: string
       exportLimit:
-        type: integer
-        format: int64
+        type: string
+        format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
       recipients:
@@ -4346,6 +4346,8 @@ definitions:
       emailOpenUrl:
         type: string
       emailEditUrl:
+        type: string
+      emailExportUrl:
         type: string
   v1ReportState:
     type: object

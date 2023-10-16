@@ -708,11 +708,12 @@ export interface V1ReportSpec {
   operationName?: string;
   operationPropertiesJson?: string;
   operationTimeRange?: string;
-  exportLimit?: number;
+  exportLimit?: string;
   exportFormat?: V1ExportFormat;
   recipients?: string[];
   emailOpenUrl?: string;
   emailEditUrl?: string;
+  emailExportUrl?: string;
 }
 
 export interface V1ReportExecution {

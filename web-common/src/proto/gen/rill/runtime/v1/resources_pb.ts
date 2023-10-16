@@ -1471,9 +1471,9 @@ export class ReportSpec extends Message<ReportSpec> {
   operationTimeRange = "";
 
   /**
-   * @generated from field: uint32 export_limit = 8;
+   * @generated from field: uint64 export_limit = 8;
    */
-  exportLimit = 0;
+  exportLimit = protoInt64.zero;
 
   /**
    * @generated from field: rill.runtime.v1.ExportFormat export_format = 9;
@@ -1495,6 +1495,11 @@ export class ReportSpec extends Message<ReportSpec> {
    */
   emailEditUrl = "";
 
+  /**
+   * @generated from field: string email_export_url = 13;
+   */
+  emailExportUrl = "";
+
   constructor(data?: PartialMessage<ReportSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1510,11 +1515,12 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 5, name: "operation_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "operation_properties_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "operation_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "export_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 8, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 9, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 10, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "email_open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "email_edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "email_export_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {

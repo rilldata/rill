@@ -213,11 +213,12 @@ message ReportSpec {
   string operation_name = 5;
   string operation_properties_json = 6;
   string operation_time_range = 7;
-  uint32 export_limit = 8;
+  uint64 export_limit = 8;
   ExportFormat export_format = 9;
   repeated string recipients = 10;
   string email_open_url = 11;
   string email_edit_url = 12;
+  string email_export_url = 13;
 }
 
 message ReportState {

@@ -3419,6 +3419,8 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for EmailEditUrl
 
+	// no validation rules for EmailExportUrl
+
 	if len(errors) > 0 {
 		return ReportSpecMultiError(errors)
 	}
