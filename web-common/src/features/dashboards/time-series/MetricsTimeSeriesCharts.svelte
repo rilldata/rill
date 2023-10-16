@@ -6,6 +6,7 @@
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
 
+  import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import {
     getFilterForDimension,
     useMetaQuery,
@@ -13,10 +14,9 @@
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
     createQueryServiceMetricsViewTimeSeries,
@@ -25,12 +25,12 @@
     V1MetricsViewTimeSeriesResponse,
   } from "@rilldata/web-common/runtime-client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
-  import { getDimensionValueTimeSeries } from "./multiple-dimension-queries";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./MeasureChart.svelte";
   import MeasureZoom from "./MeasureZoom.svelte";
+  import { getDimensionValueTimeSeries } from "./multiple-dimension-queries";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
 
   export let metricViewName;
@@ -287,7 +287,7 @@
 </script>
 
 <TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
-  <div class="bg-white sticky top-0 flex pl-1" style="z-index:100">
+  <div class="bg-white sticky top-0 flex pl-1">
     <SeachableFilterButton
       label="Measures"
       on:deselect-all={setAllMeasuresNotVisible}
@@ -298,10 +298,7 @@
       tooltipText="Choose measures to display"
     />
   </div>
-  <div
-    class="bg-white sticky left-0 top-0 overflow-visible"
-    style="z-index:101"
-  >
+  <div class="bg-white sticky left-0 top-0 overflow-visible">
     <!-- top axis element -->
     <div />
     <MeasureZoom {metricViewName} />
