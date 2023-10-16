@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/url"
 	"strconv"
 	"time"
@@ -264,7 +263,6 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	if err != nil {
 		return false, fmt.Errorf("failed to bake query of type %T: %w", qry, err)
 	}
-	log.Printf("BAKED: %v", bakedQry)
 
 	exportURL, err := url.Parse(rep.Spec.EmailExportUrl)
 	if err != nil {
