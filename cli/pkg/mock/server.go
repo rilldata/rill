@@ -6,9 +6,9 @@ import (
 
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
-	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server"
 	admincli "github.com/rilldata/rill/cli/cmd/admin"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
@@ -21,7 +21,7 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 		return nil, err
 	}
 
-	emailClient := email.New(sender, "", "")
+	emailClient := email.New(sender)
 
 	gh := &mockGithub{}
 	issuer, err := runtimeauth.NewEphemeralIssuer("")
