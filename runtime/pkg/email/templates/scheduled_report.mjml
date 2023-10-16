@@ -21,7 +21,7 @@
         </mj-text>
 
         <mj-text padding-bottom="0px">
-          Your report for <b>{{ .ReportTimeString }}</b> is ready to view. The direct download link will remain valid for {{ .DownloadValidDays }} days.
+          Your report for <b>{{ .ReportTimeString }}</b> is ready to view.
         </mj-text>
 
         <mj-spacer height="20px" />

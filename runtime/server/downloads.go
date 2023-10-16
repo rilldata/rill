@@ -21,6 +21,10 @@ import (
 )
 
 func BakeQuery(qry *runtimev1.Query) (string, error) {
+	if qry == nil {
+		return "", errors.New("cannot bake nil query")
+	}
+
 	data, err := proto.Marshal(qry)
 	if err != nil {
 		return "", err

@@ -29,7 +29,6 @@ type ScheduledReport struct {
 	ToName            string
 	Title             string
 	ReportTime        time.Time
-	ReportTimeString  string // Will be inferred from ReportDate
 	DownloadFormat    string
 	DownloadValidDays int
 	OpenLink          string
@@ -37,16 +36,34 @@ type ScheduledReport struct {
 	EditLink          string
 }
 
+type scheduledReportData struct {
+	Title             string
+	ReportTimeString  string // Will be inferred from ReportDate
+	DownloadFormat    string
+	DownloadValidDays int
+	OpenLink          template.URL
+	DownloadLink      template.URL
+	EditLink          template.URL
+}
+
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
-	// Format report time
-	opts.ReportTimeString = opts.ReportTime.Format(time.RFC1123)
+	// Build template data
+	data := &scheduledReportData{
+		Title:             opts.Title,
+		ReportTimeString:  opts.ReportTime.Format(time.RFC1123),
+		DownloadFormat:    opts.DownloadFormat,
+		DownloadValidDays: opts.DownloadValidDays,
+		OpenLink:          template.URL(opts.OpenLink),
+		DownloadLink:      template.URL(opts.DownloadLink),
+		EditLink:          template.URL(opts.EditLink),
+	}
 
 	// Build subject
-	subject := fmt.Sprintf("%s (%s)", opts.Title, opts.ReportTimeString)
+	subject := fmt.Sprintf("%s (%s)", opts.Title, data.ReportTimeString)
 
 	// Resolve template
 	buf := new(bytes.Buffer)
-	err := c.templates.Lookup("scheduled_report.html").Execute(buf, opts)
+	err := c.templates.Lookup("scheduled_report.html").Execute(buf, data)
 	if err != nil {
 		return fmt.Errorf("email template error: %w", err)
 	}

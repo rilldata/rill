@@ -128,7 +128,7 @@
                     </tr>
                     <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;padding-bottom:0px;word-break:break-word;">
-                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your report for <b>{{ .ReportTimeString }}</b> is ready to view. The direct download link will remain valid for {{ .DownloadValidDays }} days.</div>
+                        <div style="font-family:Helvetica;font-size:16px;line-height:1.25;text-align:left;color:#000000;">Your report for <b>{{ .ReportTimeString }}</b> is ready to view.</div>
                       </td>
                     </tr>
                     <tr>
@@ -155,8 +155,7 @@
                           <tbody>
                             <tr>
                               <td align="center" bgcolor="#EFEFEF" role="presentation" style="border:none;border-radius:3px;cursor:auto;mso-padding-alt:10px 25px;background:#EFEFEF;" valign="middle">
-                                <a href="{{ .DownloadLink }}" style="display:inline-block;background:#EFEFEF;color:#2262DC;font-family:Helvetica;font-size:16px;font-weight:bold;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:3px;" target="_blank"> Download as {{ .DownloadFormat }}
-                                </a>
+                                <a href="{{ .DownloadLink }}" style="display:inline-block;background:#EFEFEF;color:#2262DC;font-family:Helvetica;font-size:16px;font-weight:bold;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:3px;" target="_blank"> Download {{ .DownloadFormat }} file </a>
                               </td>
                             </tr>
                           </tbody>
