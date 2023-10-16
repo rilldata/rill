@@ -14,10 +14,11 @@
       route: `/${organization}/${project}`,
       label: "Dashboards",
     },
-    {
-      route: `/${organization}/${project}/-/reports`,
-      label: "Reports",
-    },
+    // Hide until releasing Scheduled Reports
+    // {
+    //   route: `/${organization}/${project}/-/reports`,
+    //   label: "Reports",
+    // },
     {
       route: `/${organization}/${project}/-/logs`,
       label: "Logs",
