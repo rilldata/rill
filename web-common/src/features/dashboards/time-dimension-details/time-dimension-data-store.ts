@@ -37,6 +37,7 @@ function prepareDimensionData(
   data,
   columnCount: number,
   total: number,
+  unfilteredTotal: number,
   measure: MetricsViewSpecMeasureV2,
   selectedValues: string[]
 ) {
@@ -57,7 +58,14 @@ function prepareDimensionData(
     },
   ];
 
-  if (validPercentOfTotal) totalsRow.push({ value: "" });
+  if (validPercentOfTotal) {
+    const percOfTotal = total / unfilteredTotal;
+    totalsRow.push({
+      value: isNaN(percOfTotal)
+        ? "...%"
+        : humanizeDataType(percOfTotal, FormatPreset.PERCENTAGE),
+    });
+  }
 
   let rowHeaderData = [totalsRow];
 
@@ -71,11 +79,11 @@ function prepareDimensionData(
         },
       ];
       if (validPercentOfTotal) {
-        const percOfTotal = row?.total / total;
+        const percOfTotal = row?.total / unfilteredTotal;
         dataRow.push({
           value: isNaN(percOfTotal)
             ? "...%"
-            : humanizeDataType(row?.total / total, FormatPreset.PERCENTAGE),
+            : humanizeDataType(percOfTotal, FormatPreset.PERCENTAGE),
         });
       }
       return dataRow;
@@ -259,6 +267,8 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
       const interval = timeControls?.selectedTimeRange?.interval;
       const intervalWidth = durationToMillis(TIME_GRAIN[interval]?.duration);
       const total = timeSeries?.total && timeSeries?.total[measureName];
+      const unfilteredTotal =
+        timeSeries?.unfilteredTotal && timeSeries?.unfilteredTotal[measureName];
       const comparisonTotal =
         timeSeries?.comparisonTotal && timeSeries?.comparisonTotal[measureName];
 
@@ -297,6 +307,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
           timeSeries?.dimensionTableData,
           columnCount,
           total,
+          unfilteredTotal,
           measure,
           selectedValues
         );

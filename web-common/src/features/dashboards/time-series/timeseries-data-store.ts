@@ -9,7 +9,6 @@ import {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewTimeSeriesResponse,
-  createQueryServiceMetricsViewAggregation,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -19,6 +18,7 @@ import {
   DimensionDataItem,
   getDimensionValueTimeSeries,
 } from "./multiple-dimension-queries";
+import { createTotalsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/totals-data-store";
 
 export type TimeSeriesDataState = {
   isFetching: boolean;
@@ -27,6 +27,7 @@ export type TimeSeriesDataState = {
   // Computed prepared data for charts and table
   timeSeriesData?: unknown[];
   total: V1MetricsViewAggregationResponseDataItem;
+  unfilteredTotal: V1MetricsViewAggregationResponseDataItem;
   comparisonTotal: V1MetricsViewAggregationResponseDataItem;
   dimensionChartData?: DimensionDataItem[];
   dimensionTableData?: DimensionDataItem[];
@@ -75,42 +76,6 @@ function createMetricsViewTimeSeries(
   );
 }
 
-function createTotalsForMeasure(
-  ctx: StateManagers,
-  measures,
-  isComparison = false
-): CreateQueryResult<V1MetricsViewAggregationResponse> {
-  return derived(
-    [
-      ctx.runtime,
-      ctx.metricsViewName,
-      useTimeControlStore(ctx),
-      ctx.dashboardStore,
-    ],
-    ([runtime, metricsViewName, timeControls, dashboard], set) =>
-      createQueryServiceMetricsViewAggregation(
-        runtime.instanceId,
-        metricsViewName,
-        {
-          measures: measures.map((measure) => ({ name: measure })),
-          filter: dashboard?.filters,
-          timeStart: isComparison
-            ? timeControls?.comparisonTimeStart
-            : timeControls.timeStart,
-          timeEnd: isComparison
-            ? timeControls?.comparisonTimeEnd
-            : timeControls.timeEnd,
-        },
-        {
-          query: {
-            enabled: !!timeControls.ready && !!ctx.dashboardStore,
-            queryClient: ctx.queryClient,
-          },
-        }
-      ).subscribe(set)
-  );
-}
-
 export function createTimeSeriesDataStore(ctx: StateManagers) {
   return derived(
     [useMetaQuery(ctx), useTimeControlStore(ctx), ctx.dashboardStore],
@@ -137,6 +102,13 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         false
       );
       const primaryTotals = createTotalsForMeasure(ctx, measures, false);
+
+      const unfilteredTotals = createTotalsForMeasure(
+        ctx,
+        measures,
+        false,
+        true
+      );
 
       let comparisonTimeSeries: CreateQueryResult<
         V1MetricsViewTimeSeriesResponse,
@@ -175,6 +147,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
           primaryTimeSeries,
           comparisonTimeSeries,
           primaryTotals,
+          unfilteredTotals,
           comparisonTotals,
           dimensionTimeSeriesCharts,
           dimensionTimeSeriesTable,
@@ -183,6 +156,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
           primary,
           comparison,
           primaryTotal,
+          unfilteredTotal,
           comparisonTotal,
           dimensionChart,
           dimensionTable,
@@ -202,6 +176,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
             hasError: false, // FIXME Handle errors
             timeSeriesData,
             total: primaryTotal?.data?.data[0],
+            unfilteredTotal: unfilteredTotal?.data?.data[0],
             comparisonTotal: comparisonTotal?.data?.data[0],
             dimensionChartData: (dimensionChart as DimensionDataItem[]) || [],
             dimensionTableData: (dimensionTable as DimensionDataItem[]) || [],

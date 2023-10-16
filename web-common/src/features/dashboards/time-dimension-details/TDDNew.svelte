@@ -12,15 +12,19 @@
     MeasureArrow,
     PieChart,
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/constants";
+  import { createEventDispatcher } from "svelte";
 
   export let metricViewName: string;
   export let dimensionName: string;
   export let excludeMode: boolean;
+  export let sortDirection: boolean;
   export let comparing;
   export let data;
 
   /** Formatter for the time axis in the table*/
   export let timeFormatter;
+
+  const dispatch = createEventDispatcher();
 
   let pivot;
   let containerWidth;
@@ -40,9 +44,7 @@
   }
 
   const renderCell: PivotRenderCallback = (data) => {
-    // if (data.y === 0) {
-    //   data.element.classList.add("font-semibold");
-    // }
+    data.element.classList.toggle("font-semibold", Boolean(data.y == 0));
     data.element.classList.add("text-right");
   };
 
@@ -52,13 +54,14 @@
   };
 
   // Visible line list
-  const toggleVisible = (n: number) => {
+  const toggleVisible = (n) => {
+    n = parseInt(n);
     if (comparing != "dimension" || n == 0) return;
     const label = data?.rowHeaderData[n][0].value;
     metricsExplorerStore.toggleFilter(metricViewName, dimensionName, label);
   };
 
-  // Any time visible line list changes changes, redraw the table
+  // Any time visible line list changes, redraw the table
   $: {
     data?.selectedValues;
     pivot?.draw();
@@ -111,10 +114,10 @@
     if (x === 0)
       return `<div class="truncate font-medium text-gray-700 text-left">Dimension A</div>`;
     if (x === 1)
-      return `<div class="truncate text-right font-medium text-gray-700">Measure A</div>`;
+      return `<div class="truncate text-right font-medium text-gray-700" sortable="true">Measure A</div>`;
     if (x === 2)
-      return `<div class="flex items-center justify-end text-gray-700">${PieChart} % ${MeasureArrow(
-        "down"
+      return `<div class="flex items-center justify-end text-gray-700" sortable="true">${PieChart} % ${MeasureArrow(
+        sortDirection
       )}</div>`;
   };
 
@@ -128,19 +131,23 @@
     return [250, 120, 70][x];
   };
 
-  const handleMouseDown = (evt, table) => {
+  const handleClickEvent = (evt, table, attribute, callback) => {
     let currentNode = evt.target;
 
-    // console.log(currentNode.getAttribute());
-    let found = currentNode.hasAttribute("__row");
+    let found = currentNode.hasAttribute(attribute);
     while (!found && currentNode !== table) {
       currentNode = currentNode.parentNode;
-      found = currentNode.hasAttribute("__row");
+      found = currentNode.hasAttribute(attribute);
     }
     if (found) {
-      const idx = parseInt(currentNode.getAttribute("__row"));
-      toggleVisible(idx);
+      const attributeValue = currentNode.getAttribute(attribute);
+      callback(attributeValue);
     }
+  };
+
+  const handleMouseDown = (evt, table) => {
+    handleClickEvent(evt, table, "__row", toggleVisible);
+    handleClickEvent(evt, table, "sortable", () => dispatch("toggle-sort"));
   };
 
   // Hack: for some reason, not enough columns are being drawn on first render.
