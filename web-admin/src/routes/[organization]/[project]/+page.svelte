@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
   import { createAdminServiceGetProject } from "../../../client";
-  import DashboardList from "../../../features/projects/DashboardList.svelte";
+  import DashboardList from "../../../features/dashboards/listing/DashboardList.svelte";
   import RedeployProjectCta from "../../../features/projects/RedeployProjectCTA.svelte";
 
   $: organization = $page.params.organization;

@@ -13,7 +13,7 @@
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
-  import { useDashboards } from "../projects/dashboards";
+  import { useDashboards } from "../dashboards/listing/dashboards";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import { isProjectPage } from "./nav-utils";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
