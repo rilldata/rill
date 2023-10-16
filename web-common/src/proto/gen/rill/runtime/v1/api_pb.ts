@@ -1784,6 +1784,11 @@ export class GetLogsRequest extends Message<GetLogsRequest> {
    */
   ascending = false;
 
+  /**
+   * @generated from field: int32 limit = 3;
+   */
+  limit = 0;
+
   constructor(data?: PartialMessage<GetLogsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1794,6 +1799,7 @@ export class GetLogsRequest extends Message<GetLogsRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "ascending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetLogsRequest {
@@ -1864,6 +1870,11 @@ export class WatchLogsRequest extends Message<WatchLogsRequest> {
    */
   replay = false;
 
+  /**
+   * @generated from field: int32 replay_limit = 3;
+   */
+  replayLimit = 0;
+
   constructor(data?: PartialMessage<WatchLogsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1874,6 +1885,7 @@ export class WatchLogsRequest extends Message<WatchLogsRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "replay", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "replay_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchLogsRequest {

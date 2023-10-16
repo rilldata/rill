@@ -4323,6 +4323,8 @@ func (m *GetLogsRequest) validate(all bool) error {
 
 	// no validation rules for Ascending
 
+	// no validation rules for Limit
+
 	if len(errors) > 0 {
 		return GetLogsRequestMultiError(errors)
 	}
@@ -4560,6 +4562,8 @@ func (m *WatchLogsRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for Replay
+
+	// no validation rules for ReplayLimit
 
 	if len(errors) > 0 {
 		return WatchLogsRequestMultiError(errors)

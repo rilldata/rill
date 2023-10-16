@@ -259,10 +259,12 @@ export type RuntimeServiceWatchLogs200 = {
 
 export type RuntimeServiceWatchLogsParams = {
   replay?: boolean;
+  replayLimit?: number;
 };
 
 export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;
+  limit?: number;
 };
 
 export type RuntimeServiceWatchFiles200 = {

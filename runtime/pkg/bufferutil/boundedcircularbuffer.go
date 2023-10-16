@@ -72,17 +72,24 @@ func (cb *BoundedCircularBuffer[T]) Peek() (Item[T], error) {
 	return item, nil
 }
 
-func (cb *BoundedCircularBuffer[T]) Iterate(callback func(item Item[T])) {
-	pos := cb.tail
-	for i := 0; i < cb.count; i++ {
+func (cb *BoundedCircularBuffer[T]) Iterate(callback func(item Item[T]), limit int) {
+	if limit > cb.count || limit == 0 {
+		limit = cb.count
+	}
+	itemsToSkip := cb.count - limit
+	pos := (cb.tail + itemsToSkip) % cb.capacity
+	for i := 0; i < limit; i++ {
 		callback(cb.data[pos])
 		pos = (pos + 1) % cb.capacity
 	}
 }
 
-func (cb *BoundedCircularBuffer[T]) ReverseIterate(callback func(item Item[T])) {
+func (cb *BoundedCircularBuffer[T]) ReverseIterate(callback func(item Item[T]), limit int) {
+	if limit > cb.count || limit == 0 {
+		limit = cb.count
+	}
 	pos := cb.head
-	for i := 0; i < cb.count; i++ {
+	for i := 0; i < limit; i++ {
 		pos = (pos - 1) % cb.capacity
 		if pos < 0 {
 			pos += cb.capacity

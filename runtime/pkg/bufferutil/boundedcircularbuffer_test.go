@@ -13,13 +13,13 @@ func TestBoundedCircularBuffer(t *testing.T) {
 	cb.Iterate(func(item Item[int]) {
 		assert.Equal(t, i, item.Value)
 		i++
-	})
+	}, 0)
 	cb.Push(Item[int]{3, 4})
 	i = 2
 	cb.Iterate(func(item Item[int]) {
 		assert.Equal(t, i, item.Value)
 		i++
-	})
+	}, 0)
 	item, err := cb.Pop()
 	assert.NoError(t, err)
 	assert.Equal(t, 2, item.Value)

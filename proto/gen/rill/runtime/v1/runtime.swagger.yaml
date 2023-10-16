@@ -824,6 +824,11 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: limit
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs/watch:
@@ -854,6 +859,11 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: replayLimit
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:

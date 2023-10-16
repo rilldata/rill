@@ -36,7 +36,7 @@ func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*r
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	return &runtimev1.GetLogsResponse{Logs: ctrl.Logs.GetLogs(req.Ascending)}, nil
+	return &runtimev1.GetLogsResponse{Logs: ctrl.Logs.GetLogs(req.Ascending, int(req.Limit))}, nil
 }
 
 // WatchLogs implements runtimev1.RuntimeServiceServer
@@ -57,7 +57,7 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	if req.Replay {
-		for _, l := range ctrl.Logs.GetLogs(true) {
+		for _, l := range ctrl.Logs.GetLogs(true, int(req.ReplayLimit)) {
 			err := srv.Send(&runtimev1.WatchLogsResponse{Log: l})
 			if err != nil {
 				return status.Error(codes.InvalidArgument, err.Error())

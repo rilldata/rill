@@ -86,7 +86,7 @@ func (b *Buffer) WatchLogs(ctx context.Context, fn LogCallback) error {
 	}
 }
 
-func (b *Buffer) GetLogs(asc bool) []*runtimev1.Log {
+func (b *Buffer) GetLogs(asc bool, limit int) []*runtimev1.Log {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -96,12 +96,12 @@ func (b *Buffer) GetLogs(asc bool) []*runtimev1.Log {
 		b.messages.Iterate(func(item bufferutil.Item[*runtimev1.Log]) {
 			logs[i] = item.Value
 			i++
-		})
+		}, limit)
 	} else {
 		b.messages.ReverseIterate(func(item bufferutil.Item[*runtimev1.Log]) {
 			logs[i] = item.Value
 			i++
-		})
+		}, limit)
 	}
 
 	return logs
