@@ -41,7 +41,9 @@
       // See: https://github.com/rgossiaux/svelte-headlessui/issues/80
       const dashboardTab = Array.from(
         document.querySelectorAll('button[role="tab"]')
-      ).find((el) => el.textContent === "Dashboards") as HTMLButtonElement;
+      ).find(
+        (el) => (el as HTMLElement).innerText === "Dashboards"
+      ) as HTMLButtonElement;
       dashboardTab.click();
     }
   });
