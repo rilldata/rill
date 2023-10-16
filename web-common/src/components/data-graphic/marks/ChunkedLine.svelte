@@ -20,7 +20,6 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import {
     areaFactory,
-    createAdaptiveLineThicknessStore,
     lineFactory,
     pathIsDefined,
   } from "@rilldata/web-common/components/data-graphic/utils";
@@ -89,8 +88,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   /** use this line thickness heuristic to allow some amount of overplotting
    * FIXME: this needs refinement!
    */
-  let lineThickness = createAdaptiveLineThicknessStore(yAccessor);
-  $: lineThickness.setData(data);
+  // let lineThickness = createAdaptiveLineThicknessStore(yAccessor);
+  // $: lineThickness.setData(data);
 </script>
 
 <WithDelayedValue
@@ -128,7 +127,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     >
       <!-- line -->
       <path
-        stroke-width={$lineThickness}
+        stroke-width={1.5}
         stroke={lineColor}
         class={lineClasses}
         d={dt}
