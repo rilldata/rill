@@ -6,6 +6,11 @@
   import FormItemDatePicker from "../../../components/forms/FormItemDatePicker.svelte";
   import FormItemInput from "../../../components/forms/FormItemInput.svelte";
   import FormItemSelect from "../../../components/forms/FormItemSelect.svelte";
+  import FormItemTimePicker from "../../../components/forms/FormItemTimePicker.svelte";
+  import {
+    formatTime,
+    getNextQuarterHour,
+  } from "../../../components/forms/time-utils";
 
   export let open: boolean;
   export let metricViewName: string;
@@ -13,7 +18,8 @@
   const { form, errors, handleSubmit, isSubmitting } = createForm({
     initialValues: {
       reportName: "",
-      firstRunAt: new Date().toISOString().split("T")[0], // Today's date
+      firstRunAtDate: new Date().toISOString().split("T")[0], // Today's date
+      firstRunAtTime: formatTime(getNextQuarterHour()), // Next quarter hour
       frequency: "Daily",
       format: "CSV",
       limit: "",
@@ -42,7 +48,7 @@
     class="flex flex-col gap-y-6"
     slot="body"
   >
-    <span>Email recurring exports to recipients</span>
+    <span>Email recurring exports to recipients.</span>
     <FormItemInput
       bind:value={$form["reportName"]}
       error={$errors["reportName"]}
@@ -51,11 +57,17 @@
       placeholder="My report"
     />
     <!-- error={$errors["firstRunAt"]} -->
-    <FormItemDatePicker
-      bind:value={$form["firstRunAt"]}
-      id="firstRunAt"
-      label="First run at"
-    />
+    <div class="flex items-end gap-x-2 w-full">
+      <FormItemDatePicker
+        bind:value={$form["firstRunAtDate"]}
+        id="firstRunAtDate"
+        label="First run at"
+      />
+      <FormItemTimePicker
+        bind:value={$form["firstRunAtTime"]}
+        id="firstRunAtTime"
+      />
+    </div>
     <FormItemSelect
       bind:value={$form["frequency"]}
       id="frequency"
