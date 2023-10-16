@@ -599,6 +599,7 @@ func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Sta
 	}
 
 	ctx, cancel := context.WithCancel(parentCtx)
+	defer cancel()
 	limitExceeded := atomic.Bool{}
 	// Start background goroutine to check size is not exceeded during query execution
 	go func() {
@@ -619,7 +620,6 @@ func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Sta
 	}()
 
 	err := c.Exec(ctx, stmt)
-	cancel()
 	if limitExceeded.Load() {
 		return drivers.ErrStorageLimitExceeded
 	}
