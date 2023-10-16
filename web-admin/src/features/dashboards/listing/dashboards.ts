@@ -200,3 +200,9 @@ export function listenAndInvalidateDashboards(
     }
   });
 }
+
+export function useDashboardsV2(instanceId: string) {
+  return createRuntimeServiceListResources(instanceId, {
+    kind: ResourceKind.MetricsView,
+  });
+}
