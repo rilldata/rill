@@ -65,6 +65,7 @@
     {#each dimensionData as dimensionValue}
       <ChunkedLine
         area={false}
+        isComparingDimension
         delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
         duration={hasSubrangeSelected || $timeRangeKey !== $previousTimeRangeKey
           ? 0

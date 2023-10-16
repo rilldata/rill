@@ -31,6 +31,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   export let xAccessor: string;
   export let yAccessor: string;
 
+  export let isComparingDimension = false;
   export let area = true;
   /** time in ms to trigger a delay when the underlying data changes */
   export let delay = 0;
@@ -127,7 +128,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     >
       <!-- line -->
       <path
-        stroke-width={1.5}
+        stroke-width={isComparingDimension ? 1.5 : 1}
         stroke={lineColor}
         class={lineClasses}
         d={dt}
