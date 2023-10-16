@@ -33,20 +33,24 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 	require.NoError(t, err)
 	mv := r.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
-		MeasureNames:    []string{"measure_1"},
-		MetricsView:     mv,
-		BaseTimeRange: &runtimev1.TimeRange{
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		MetricsView: mv,
+		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "dom",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
-				Ascending:   true,
+				Name: "dom",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
+				Desc: false,
 			},
 		},
 		Limit: 10,
@@ -67,12 +71,16 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 		dims = append(dims, r.DimensionValue.GetStringValue())
 	}
 
-	q = &MetricsViewComparisonToplist{
+	q = &MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
-		MeasureNames:    []string{"measure_1"},
-		MetricsView:     mv,
-		BaseTimeRange: &runtimev1.TimeRange{
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		MetricsView: mv,
+		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
 		},
@@ -82,9 +90,9 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "dom",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Ascending:   true,
+				Name: "dom",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Desc: false,
 			},
 		},
 		Limit: 10,
@@ -121,12 +129,16 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
-	q := &MetricsViewComparisonToplist{
+	q := &MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
-		MeasureNames:    []string{"measure_1"},
-		MetricsView:     mv.Spec,
-		BaseTimeRange: &runtimev1.TimeRange{
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		MetricsView: mv.Spec,
+		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
 		},
@@ -136,9 +148,9 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "dom",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
-				Ascending:   false,
+				Name: "dom",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
+				Desc: true,
 			},
 		},
 		Limit: 250,
@@ -169,12 +181,16 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
-	q := &MetricsViewComparisonToplist{
+	q := &MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
-		MeasureNames:    []string{"measure_1"},
-		MetricsView:     mv.Spec,
-		BaseTimeRange: &runtimev1.TimeRange{
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		MetricsView: mv.Spec,
+		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
 		},
@@ -184,9 +200,9 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_1",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
-				Ascending:   false,
+				Name: "measure_1",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Desc: true,
 			},
 		},
 		Limit: 250,

@@ -14,7 +14,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
-    createQueryServiceMetricsViewComparisonToplist,
+    createQueryServiceMetricsViewComparison,
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     MetricsViewMeasure,
@@ -151,7 +151,7 @@
     filterSet
   );
 
-  $: sortedQuery = createQueryServiceMetricsViewComparisonToplist(
+  $: sortedQuery = createQueryServiceMetricsViewComparison(
     $runtime.instanceId,
     metricViewName,
     sortedQueryBody,

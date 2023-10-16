@@ -45,7 +45,7 @@ service QueryService {
     };
   }
 
-  rpc MetricsViewComparisonToplist(MetricsViewComparisonToplistRequest) returns (MetricsViewComparisonToplistResponse) {
+  rpc MetricsViewComparison(MetricsViewComparisonRequest) returns (MetricsViewComparisonResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/compare-toplist",
       body: "*"
@@ -210,7 +210,7 @@ message ExportRequest {
     MetricsViewToplistRequest metrics_view_toplist_request = 4;
     MetricsViewRowsRequest metrics_view_rows_request = 5;
     MetricsViewTimeSeriesRequest metrics_view_time_series_request = 6;
-    MetricsViewComparisonToplistRequest metrics_view_comparison_toplist_request = 8;
+    MetricsViewComparisonRequest metrics_view_comparison_request = 8;
   }
 }
 
@@ -287,25 +287,24 @@ message MetricsViewToplistResponse {
   repeated google.protobuf.Struct data = 2;
 }
 
-// Request message for QueryService.MetricsViewComparisonToplist
-message MetricsViewComparisonToplistRequest {
+// Request message for QueryService.MetricsViewComparison
+message MetricsViewComparisonRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
-  string dimension_name = 3 [(validate.rules).string.min_len = 1];
-  repeated string measure_names = 4;
-  repeated InlineMeasure inline_measures = 5;
-  TimeRange base_time_range = 6;
+  MetricsViewAggregationDimension dimension = 3;
+  repeated MetricsViewAggregationMeasure measures = 4;
+  repeated MetricsViewComparisonSort sort = 5;
+  TimeRange time_range = 6;
   TimeRange comparison_time_range = 7;
-  repeated MetricsViewComparisonSort sort = 8;
-  MetricsViewFilter filter = 9;
-  int64 limit = 10 [(validate.rules).int64.gte = 0];
-  int64 offset = 11 [(validate.rules).int64.gte = 0];
-  int32 priority = 12;
+  MetricsViewFilter filter = 8;
+  int64 limit = 9 [(validate.rules).int64.gte = 0];
+  int64 offset = 10 [(validate.rules).int64.gte = 0];
+  int32 priority = 11;
   bool exact = 13;
 }
 
 // Response message for QueryService.MetricsViewComparisonToplist
-message MetricsViewComparisonToplistResponse {
+message MetricsViewComparisonResponse {
   repeated MetricsViewComparisonRow rows = 1;
 }
 
@@ -323,8 +322,8 @@ enum MetricsViewComparisonSortType {
 }
 
 message MetricsViewComparisonSort {
-  string measure_name = 1 [(validate.rules).string.min_len = 1];
-  bool ascending = 2;
+  string name = 1 [(validate.rules).string.min_len = 1];
+  bool desc = 2;
   MetricsViewComparisonSortType type = 3;
 }
 
@@ -723,7 +722,7 @@ message QueryBatchEntry {
   oneof query {
     MetricsViewAggregationRequest metrics_view_aggregation_request = 20;
     MetricsViewToplistRequest metrics_view_toplist_request = 2;
-    MetricsViewComparisonToplistRequest metrics_view_comparison_toplist_request = 3;
+    MetricsViewComparisonRequest metrics_view_comparison_request = 3;
     MetricsViewTimeSeriesRequest metrics_view_time_series_request = 4;
     MetricsViewTotalsRequest metrics_view_totals_request = 5;
     MetricsViewRowsRequest metrics_view_rows_request = 6;
@@ -754,7 +753,7 @@ message QueryBatchResponse {
   oneof result {
     MetricsViewAggregationResponse metrics_view_aggregation_response = 21;
     MetricsViewToplistResponse metrics_view_toplist_response = 3;
-    MetricsViewComparisonToplistResponse metrics_view_comparison_toplist_response = 4;
+    MetricsViewComparisonResponse metrics_view_comparison_response = 4;
     MetricsViewTimeSeriesResponse metrics_view_time_series_response = 5;
     MetricsViewTotalsResponse metrics_view_totals_response = 6;
     MetricsViewRowsResponse metrics_view_rows_response = 7;

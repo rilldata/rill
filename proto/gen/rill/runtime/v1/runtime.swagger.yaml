@@ -991,8 +991,8 @@ paths:
                 $ref: '#/definitions/v1MetricsViewRowsRequest'
               metricsViewTimeSeriesRequest:
                 $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
-              metricsViewComparisonToplistRequest:
-                $ref: '#/definitions/v1MetricsViewComparisonToplistRequest'
+              metricsViewComparisonRequest:
+                $ref: '#/definitions/v1MetricsViewComparisonRequest'
             title: Request message for QueryService.Export
       tags:
         - QueryService
@@ -1060,12 +1060,12 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
     post:
-      operationId: QueryService_MetricsViewComparisonToplist
+      operationId: QueryService_MetricsViewComparison
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1MetricsViewComparisonToplistResponse'
+            $ref: '#/definitions/v1MetricsViewComparisonResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1085,26 +1085,22 @@ paths:
           schema:
             type: object
             properties:
-              dimensionName:
-                type: string
-              measureNames:
-                type: array
-                items:
-                  type: string
-              inlineMeasures:
+              dimension:
+                $ref: '#/definitions/v1MetricsViewAggregationDimension'
+              measures:
                 type: array
                 items:
                   type: object
-                  $ref: '#/definitions/v1InlineMeasure'
-              baseTimeRange:
-                $ref: '#/definitions/v1TimeRange'
-              comparisonTimeRange:
-                $ref: '#/definitions/v1TimeRange'
+                  $ref: '#/definitions/v1MetricsViewAggregationMeasure'
               sort:
                 type: array
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewComparisonSort'
+              timeRange:
+                $ref: '#/definitions/v1TimeRange'
+              comparisonTimeRange:
+                $ref: '#/definitions/v1TimeRange'
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
               limit:
@@ -1118,7 +1114,7 @@ paths:
                 format: int32
               exact:
                 type: boolean
-            title: Request message for QueryService.MetricsViewComparisonToplist
+            title: Request message for QueryService.MetricsViewComparison
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows:
@@ -3410,60 +3406,29 @@ definitions:
       nullable:
         type: boolean
     title: MetricsViewColumn represents a column in a metrics view
-  v1MetricsViewComparisonRow:
-    type: object
-    properties:
-      dimensionValue: {}
-      measureValues:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1MetricsViewComparisonValue'
-  v1MetricsViewComparisonSort:
-    type: object
-    properties:
-      measureName:
-        type: string
-      ascending:
-        type: boolean
-      type:
-        $ref: '#/definitions/v1MetricsViewComparisonSortType'
-  v1MetricsViewComparisonSortType:
-    type: string
-    enum:
-      - METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
-      - METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE
-      - METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE
-      - METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA
-      - METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA
-    default: METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
-  v1MetricsViewComparisonToplistRequest:
+  v1MetricsViewComparisonRequest:
     type: object
     properties:
       instanceId:
         type: string
       metricsViewName:
         type: string
-      dimensionName:
-        type: string
-      measureNames:
-        type: array
-        items:
-          type: string
-      inlineMeasures:
+      dimension:
+        $ref: '#/definitions/v1MetricsViewAggregationDimension'
+      measures:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1InlineMeasure'
-      baseTimeRange:
-        $ref: '#/definitions/v1TimeRange'
-      comparisonTimeRange:
-        $ref: '#/definitions/v1TimeRange'
+          $ref: '#/definitions/v1MetricsViewAggregationMeasure'
       sort:
         type: array
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonSort'
+      timeRange:
+        $ref: '#/definitions/v1TimeRange'
+      comparisonTimeRange:
+        $ref: '#/definitions/v1TimeRange'
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
       limit:
@@ -3477,8 +3442,8 @@ definitions:
         format: int32
       exact:
         type: boolean
-    title: Request message for QueryService.MetricsViewComparisonToplist
-  v1MetricsViewComparisonToplistResponse:
+    title: Request message for QueryService.MetricsViewComparison
+  v1MetricsViewComparisonResponse:
     type: object
     properties:
       rows:
@@ -3487,6 +3452,33 @@ definitions:
           type: object
           $ref: '#/definitions/v1MetricsViewComparisonRow'
     title: Response message for QueryService.MetricsViewComparisonToplist
+  v1MetricsViewComparisonRow:
+    type: object
+    properties:
+      dimensionValue: {}
+      measureValues:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewComparisonValue'
+  v1MetricsViewComparisonSort:
+    type: object
+    properties:
+      name:
+        type: string
+      desc:
+        type: boolean
+      type:
+        $ref: '#/definitions/v1MetricsViewComparisonSortType'
+  v1MetricsViewComparisonSortType:
+    type: string
+    enum:
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA
+    default: METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
   v1MetricsViewComparisonValue:
     type: object
     properties:
@@ -4066,8 +4058,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationRequest'
       metricsViewToplistRequest:
         $ref: '#/definitions/v1MetricsViewToplistRequest'
-      metricsViewComparisonToplistRequest:
-        $ref: '#/definitions/v1MetricsViewComparisonToplistRequest'
+      metricsViewComparisonRequest:
+        $ref: '#/definitions/v1MetricsViewComparisonRequest'
       metricsViewTimeSeriesRequest:
         $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
       metricsViewTotalsRequest:
@@ -4112,8 +4104,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewAggregationResponse'
       metricsViewToplistResponse:
         $ref: '#/definitions/v1MetricsViewToplistResponse'
-      metricsViewComparisonToplistResponse:
-        $ref: '#/definitions/v1MetricsViewComparisonToplistResponse'
+      metricsViewComparisonResponse:
+        $ref: '#/definitions/v1MetricsViewComparisonResponse'
       metricsViewTimeSeriesResponse:
         $ref: '#/definitions/v1MetricsViewTimeSeriesResponse'
       metricsViewTotalsResponse:

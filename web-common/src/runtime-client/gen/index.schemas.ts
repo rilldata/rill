@@ -208,13 +208,12 @@ export type QueryServiceMetricsViewRowsBody = {
   timeZone?: string;
 };
 
-export type QueryServiceMetricsViewComparisonToplistBody = {
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
+export type QueryServiceMetricsViewComparisonBody = {
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
   filter?: V1MetricsViewFilter;
   limit?: string;
   offset?: string;
@@ -241,7 +240,7 @@ export type QueryServiceExportBody = {
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
   metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
-  metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
+  metricsViewComparisonRequest?: V1MetricsViewComparisonRequest;
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
@@ -867,7 +866,7 @@ export interface V1QueryBatchResponse {
   error?: string;
   metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
   metricsViewToplistResponse?: V1MetricsViewToplistResponse;
-  metricsViewComparisonToplistResponse?: V1MetricsViewComparisonToplistResponse;
+  metricsViewComparisonResponse?: V1MetricsViewComparisonResponse;
   metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
   metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
   metricsViewRowsResponse?: V1MetricsViewRowsResponse;
@@ -891,7 +890,7 @@ export interface V1QueryBatchEntry {
   key?: number;
   metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
-  metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
+  metricsViewComparisonRequest?: V1MetricsViewComparisonRequest;
   metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
   metricsViewTotalsRequest?: V1MetricsViewTotalsRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
@@ -1202,10 +1201,6 @@ export interface V1MetricsViewComparisonValue {
   deltaRel?: unknown;
 }
 
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
-}
-
 export type V1MetricsViewComparisonSortType =
   (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
 
@@ -1224,30 +1219,33 @@ export const V1MetricsViewComparisonSortType = {
 } as const;
 
 export interface V1MetricsViewComparisonSort {
-  measureName?: string;
-  ascending?: boolean;
+  name?: string;
+  desc?: boolean;
   type?: V1MetricsViewComparisonSortType;
-}
-
-export interface V1MetricsViewComparisonToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  sort?: V1MetricsViewComparisonSort[];
-  filter?: V1MetricsViewFilter;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
 }
 
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
+}
+
+export interface V1MetricsViewComparisonResponse {
+  rows?: V1MetricsViewComparisonRow[];
+}
+
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
 }
 
 export interface V1MetricsViewColumn {

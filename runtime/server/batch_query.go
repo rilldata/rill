@@ -49,12 +49,12 @@ func (s *Server) forwardQuery(ctx context.Context, query *runtimev1.QueryBatchRe
 			resp.Result = &runtimev1.QueryBatchResponse_MetricsViewToplistResponse{MetricsViewToplistResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_MetricsViewComparisonToplistRequest:
-		var r *runtimev1.MetricsViewComparisonToplistResponse
-		q.MetricsViewComparisonToplistRequest.InstanceId = query.InstanceId
-		r, err = s.MetricsViewComparisonToplist(ctx, q.MetricsViewComparisonToplistRequest)
+	case *runtimev1.QueryBatchEntry_MetricsViewComparisonRequest:
+		var r *runtimev1.MetricsViewComparisonResponse
+		q.MetricsViewComparisonRequest.InstanceId = query.InstanceId
+		r, err = s.MetricsViewComparison(ctx, q.MetricsViewComparisonRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_MetricsViewComparisonToplistResponse{MetricsViewComparisonToplistResponse: r}
+			resp.Result = &runtimev1.QueryBatchResponse_MetricsViewComparisonResponse{MetricsViewComparisonResponse: r}
 		}
 
 	case *runtimev1.QueryBatchEntry_MetricsViewTimeSeriesRequest:

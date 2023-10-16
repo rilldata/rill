@@ -207,8 +207,8 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			MetricsView:        mv,
 			ResolvedMVSecurity: security,
 		}
-	case *runtimev1.ExportRequest_MetricsViewComparisonToplistRequest:
-		r := v.MetricsViewComparisonToplistRequest
+	case *runtimev1.ExportRequest_MetricsViewComparisonRequest:
+		r := v.MetricsViewComparisonRequest
 
 		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs)
 		if err != nil {
@@ -220,23 +220,17 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		if !checkFieldAccess(r.DimensionName, security) {
+		if !checkFieldAccess(r.Dimension.Name, security) {
 			http.Error(w, "action not allowed", http.StatusUnauthorized)
 			return
 		}
 
 		// validate measures access
-		for _, m := range r.MeasureNames {
-			if !checkFieldAccess(m, security) {
+		for _, m := range r.Measures {
+			if !checkFieldAccess(m.Name, security) {
 				http.Error(w, "action not allowed", http.StatusUnauthorized)
 				return
 			}
-		}
-
-		err = validateInlineMeasures(r.InlineMeasures)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
 		}
 
 		limit := r.Limit
@@ -245,12 +239,11 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			limit = *request.Limit
 		}
 
-		q = &queries.MetricsViewComparisonToplist{
+		q = &queries.MetricsViewComparison{
 			MetricsViewName:     r.MetricsViewName,
-			DimensionName:       r.DimensionName,
-			MeasureNames:        r.MeasureNames,
-			InlineMeasures:      r.InlineMeasures,
-			BaseTimeRange:       r.BaseTimeRange,
+			DimensionName:       r.Dimension.Name,
+			Measures:            r.Measures,
+			TimeRange:           r.TimeRange,
 			ComparisonTimeRange: r.ComparisonTimeRange,
 			Limit:               limit,
 			Offset:              r.Offset,
