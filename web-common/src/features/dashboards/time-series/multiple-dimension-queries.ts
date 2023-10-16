@@ -2,6 +2,7 @@ import { Readable, derived, writable } from "svelte/store";
 
 import {
   V1MetricsViewFilter,
+  V1TimeSeriesValue,
   createQueryServiceMetricsViewTimeSeries,
   createQueryServiceMetricsViewToplist,
 } from "@rilldata/web-common/runtime-client";
@@ -15,6 +16,15 @@ import type { StateManagers } from "@rilldata/web-common/features/dashboards/sta
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getFilterForDimension } from "@rilldata/web-common/features/dashboards/selectors";
+
+export interface DimensionDataItem {
+  value: string;
+  total?: number;
+  strokeClass: string;
+  fillClass: string;
+  data: V1TimeSeriesValue[];
+  isFetching: boolean;
+}
 
 /***
  * Returns a list of dimension values which for which to fetch
@@ -87,7 +97,9 @@ export function getDimensionValuesForComparison(
               offset: "0",
               sort: [
                 {
-                  name: dashboardStore.leaderboardMeasureName,
+                  name: isInTimeDimensionView
+                    ? dashboardStore.expandedMeasureName
+                    : dashboardStore.leaderboardMeasureName,
                   ascending:
                     dashboardStore.sortDirection === SortDirection.ASCENDING,
                 },
@@ -143,9 +155,7 @@ export function getDimensionValueTimeSeries(
   ctx: StateManagers,
   measures: string[],
   surface: "chart" | "table"
-) {
-  // if (!values && values.length == 0) return;
-
+): Readable<DimensionDataItem[]> {
   return derived(
     [
       ctx.runtime,
@@ -169,7 +179,7 @@ export function getDimensionValueTimeSeries(
       if (!dimensionName) return;
 
       return derived(
-        dimensionValues?.values.map((value, i) => {
+        dimensionValues?.values?.map((value, i) => {
           const updatedIncludeFilter = dimensionValues?.filter.include.map(
             (filter) => {
               if (filter.name === dimensionName)

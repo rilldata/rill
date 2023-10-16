@@ -20,6 +20,9 @@
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { Chip } from "@rilldata/web-common/components/chip";
   import { disabledChipColors } from "@rilldata/web-common/components/chip/chip-types";
+  import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -27,7 +30,21 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
+  $: metaQuery = useMetaQuery(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
+
+  $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
+  $: allMeasures = $metaQuery?.data?.measures ?? [];
+
+  $: selectableMeasures = allMeasures?.map((m) => ({
+    name: m.name,
+    label: m.label,
+  }));
+  $: selectedItems = allMeasures?.map((m) => m.name === expandedMeasureName);
+
+  $: selectedMeasureLabel =
+    allMeasures?.find((m) => m.name === expandedMeasureName)?.label ??
+    expandedMeasureName;
 
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
@@ -52,6 +69,11 @@
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
   }
+
+  function switchMeasure(event) {
+    cancelDashboardQueries(queryClient, metricViewName);
+    metricsExplorerStore.setExpandedMeasureName(metricViewName, event.detail);
+  }
 </script>
 
 <div
@@ -60,22 +82,28 @@
   <div class="flex gap-x-3 font-bold items-center">
     <ComparisonSelector {metricViewName} chipStyle />
 
-    <Chip extraRounded={false} label="Measure A">
-      <div slot="body" class="flex">Measure A</div>
-    </Chip>
+    <SearchableFilterChip
+      label={selectedMeasureLabel}
+      on:item-clicked={switchMeasure}
+      selectableItems={selectableMeasures}
+      {selectedItems}
+      tooltipText="Choose a measure to display"
+    />
     <span class="font-normal text-gray-400"> | </span>
+
     <Chip {...disabledChipColors} extraPadding={false}>
       <div slot="body" class="flex">Time</div>
     </Chip>
+
     <span class="font-normal text-gray-400"> : </span>
 
     <Chip
       {...disabledChipColors}
       extraPadding={false}
       extraRounded={false}
-      label="Measure A"
+      label={selectedMeasureLabel}
     >
-      <div slot="body" class="flex">Measure A</div>
+      <div slot="body" class="flex">{selectedMeasureLabel}</div>
     </Chip>
   </div>
 

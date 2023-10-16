@@ -94,7 +94,6 @@ This component needs to do the following:
         on:click={() => {
           toggleFloatingElement();
         }}
-        {active}
         {label}
       >
         <div slot="body" class="flex gap-x-2">

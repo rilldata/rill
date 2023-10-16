@@ -22,6 +22,7 @@
   export let comparisonValue: number = undefined;
   export let comparisonPercChange: number = undefined;
   export let showComparison = false;
+  export let isMeasureExpanded = true;
 
   export let status: EntityStatus;
   export let description: string = undefined;
@@ -45,9 +46,9 @@
 
 <button
   on:click={() => dispatch("expand-measure")}
-  class="flex flex-col px-2 py-1 text-left hover:bg-gray-100 {withTimeseries
-    ? 'my-2'
-    : 'justify-between'}"
+  class="big-number flex flex-col px-2 text-left
+  {isMeasureExpanded ? 'pointer-events-none' : 'hover:bg-gray-100'}
+  {withTimeseries ? 'py-3' : 'py-1 justify-between'}"
 >
   <Tooltip distance={16} location="top" alignment="start">
     <h2
@@ -176,3 +177,9 @@
     </slot>
   </div>
 </button>
+
+<style>
+  .big-number:hover + .time-series-body {
+    border-top: 1px solid var(--color-gray-200);
+  }
+</style>

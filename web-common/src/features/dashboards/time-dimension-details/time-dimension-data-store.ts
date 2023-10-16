@@ -16,6 +16,7 @@ import { getTimeWidth } from "@rilldata/web-common/lib/time/transforms";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { durationToMillis } from "@rilldata/web-common/lib/time/grains";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
 export type TimeDimensionDataState = {
   isFetching: boolean;
@@ -36,33 +37,49 @@ function prepareDimensionData(
   data,
   columnCount: number,
   total: number,
-  measureName: string,
-  formatPreset: FormatPreset,
+  measure: MetricsViewSpecMeasureV2,
   selectedValues: string[]
 ) {
   if (!data) return;
 
+  const formatPreset =
+    (measure?.format as FormatPreset) ?? FormatPreset.HUMANIZE;
+  const measureName = measure?.name;
+  const validPercentOfTotal = measure?.validPercentOfTotal;
+
   const rowCount = data?.length + 1;
-  let rowHeaderData = [
-    [
-      { value: "Total" },
-      {
-        value: humanizeDataType(total, formatPreset),
-        spark: createSparkline(totalsData, (v) => v[measureName]),
-      },
-      { value: "" },
-    ],
+
+  const totalsRow = [
+    { value: "Total" },
+    {
+      value: humanizeDataType(total, formatPreset),
+      spark: createSparkline(totalsData, (v) => v[measureName]),
+    },
   ];
 
+  if (validPercentOfTotal) totalsRow.push({ value: "" });
+
+  let rowHeaderData = [totalsRow];
+
   rowHeaderData = rowHeaderData.concat(
-    data?.map((row) => [
-      { value: row?.value },
-      {
-        value: row?.total ? humanizeDataType(row?.total, formatPreset) : null,
-        spark: createSparkline(row?.data, (v) => v[measureName]),
-      },
-      { value: humanizeDataType(row?.total / total, FormatPreset.PERCENTAGE) },
-    ])
+    data?.map((row) => {
+      const dataRow = [
+        { value: row?.value },
+        {
+          value: row?.total ? humanizeDataType(row?.total, formatPreset) : null,
+          spark: createSparkline(row?.data, (v) => v[measureName]),
+        },
+      ];
+      if (validPercentOfTotal) {
+        const percOfTotal = row?.total / total;
+        dataRow.push({
+          value: isNaN(percOfTotal)
+            ? "...%"
+            : humanizeDataType(row?.total / total, FormatPreset.PERCENTAGE),
+        });
+      }
+      return dataRow;
+    })
   );
 
   let columnHeaderData = new Array(columnCount).fill([{ value: null }]);
@@ -118,11 +135,14 @@ function prepareTimeData(
   columnCount,
   total,
   comparisonTotal,
-  measureName,
-  formatPreset,
+  measure: MetricsViewSpecMeasureV2,
   hasTimeComparison
 ) {
   if (!data) return;
+
+  const formatPreset =
+    (measure?.format as FormatPreset) ?? FormatPreset.HUMANIZE;
+  const measureName = measure?.name;
 
   const columnHeaderData = data?.slice(1, -1)?.map((v) => [{ value: v.ts }]);
   let rowHeaderData = [];
@@ -251,10 +271,9 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
           intervalWidth -
         2;
 
-      const formatPreset =
-        (metricsView?.data?.measures?.find(
-          (measure) => measure.name === measureName
-        )?.format as FormatPreset) || FormatPreset.HUMANIZE;
+      const measure = metricsView?.data?.measures?.find(
+        (m) => m.name === measureName
+      );
 
       let comparing;
       let data;
@@ -278,8 +297,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
           timeSeries?.dimensionTableData,
           columnCount,
           total,
-          measureName,
-          formatPreset,
+          measure,
           selectedValues
         );
       } else {
@@ -289,8 +307,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
           columnCount,
           total,
           comparisonTotal,
-          measureName,
-          formatPreset,
+          measure,
           comparing === "time"
         );
       }

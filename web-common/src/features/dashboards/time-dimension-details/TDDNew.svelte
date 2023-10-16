@@ -125,13 +125,15 @@
 
   const handleMouseDown = (evt, table) => {
     let currentNode = evt.target;
-    let found = currentNode.hasAttribute("toggle-visible");
+
+    // console.log(currentNode.getAttribute());
+    let found = currentNode.hasAttribute("__row");
     while (!found && currentNode !== table) {
       currentNode = currentNode.parentNode;
-      found = currentNode.hasAttribute("toggle-visible");
+      found = currentNode.hasAttribute("__row");
     }
     if (found) {
-      const idx = parseInt(currentNode.getAttribute("toggle-visible"));
+      const idx = parseInt(currentNode.getAttribute("__row"));
       toggleVisible(idx);
     }
   };

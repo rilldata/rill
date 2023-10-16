@@ -15,7 +15,10 @@ import {
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import { getDimensionValueTimeSeries } from "./multiple-dimension-queries";
+import {
+  DimensionDataItem,
+  getDimensionValueTimeSeries,
+} from "./multiple-dimension-queries";
 
 export type TimeSeriesDataState = {
   isFetching: boolean;
@@ -25,8 +28,8 @@ export type TimeSeriesDataState = {
   timeSeriesData?: unknown[];
   total: V1MetricsViewAggregationResponseDataItem;
   comparisonTotal: V1MetricsViewAggregationResponseDataItem;
-  dimensionChartData?: unknown;
-  dimensionTableData?: unknown;
+  dimensionChartData?: DimensionDataItem[];
+  dimensionTableData?: DimensionDataItem[];
 };
 
 export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
@@ -200,8 +203,8 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
             timeSeriesData,
             total: primaryTotal?.data?.data[0],
             comparisonTotal: comparisonTotal?.data?.data[0],
-            dimensionChartData: dimensionChart || [],
-            dimensionTableData: dimensionTable || [],
+            dimensionChartData: (dimensionChart as DimensionDataItem[]) || [],
+            dimensionTableData: (dimensionTable as DimensionDataItem[]) || [],
           };
         }
       ).subscribe(set);

@@ -20,7 +20,6 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
-  import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -83,12 +82,19 @@
   // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
 
   let dataCopy;
+  let dimensionDataCopy: unknown = [];
   $: if ($timeSeriesDataStore?.timeSeriesData) {
     dataCopy = $timeSeriesDataStore.timeSeriesData;
   }
   $: formattedData = dataCopy;
 
-  $: dimensionData = $timeSeriesDataStore?.dimensionChartData || [];
+  $: if (
+    $timeSeriesDataStore?.dimensionChartData?.length ||
+    !comparisonDimension
+  ) {
+    dimensionDataCopy = $timeSeriesDataStore.dimensionChartData;
+  }
+  $: dimensionData = dimensionDataCopy;
 
   // FIXME: move this logic to a function + write tests.
   $: if ($timeControlsStore.ready) {
@@ -187,6 +193,7 @@
           );
         }}
         value={bigNum}
+        isMeasureExpanded={!!expandedMeasureName}
         {showComparison}
         comparisonOption={$timeControlsStore?.selectedComparisonTimeRange?.name}
         {comparisonValue}
@@ -203,7 +210,7 @@
           {measure?.label || measure?.expression}
         </svelte:fragment>
       </MeasureBigNumber>
-      <div class="time-series-body" style:height="125px">
+      <div class="time-series-body peer-hover:bg-gray-100" style:height="125px">
         {#if $timeSeriesDataStore?.hasError}
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
@@ -245,3 +252,9 @@
     {/each}
   {/if}
 </TimeSeriesChartContainer>
+
+<style>
+  :global(.big-number:hover + .time-series-body) {
+    background-color: rgb(243 244 246);
+  }
+</style>
