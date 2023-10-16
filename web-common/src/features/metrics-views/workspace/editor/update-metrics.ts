@@ -1,5 +1,6 @@
 import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
 import { setLineStatuses } from "@rilldata/web-common/components/editor/line-status";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
@@ -28,6 +29,8 @@ export function createUpdateMetricsCallback(
         create: false,
       },
     });
+    // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
+    metricsExplorerStore.remove(metricsDefName);
   }
 
   return function updateMetrics(event) {

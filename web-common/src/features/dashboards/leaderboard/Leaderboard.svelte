@@ -17,7 +17,7 @@
   import {
     createQueryServiceMetricsViewComparisonToplist,
     MetricsViewDimension,
-    MetricsViewMeasure,
+    MetricsViewSpecMeasureV2,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { SortDirection } from "../proto-state/derived-types";
@@ -75,7 +75,7 @@
     metricViewName,
     $dashboardStore?.leaderboardMeasureName
   );
-  let measure: MetricsViewMeasure;
+  let measure: MetricsViewSpecMeasureV2;
   $: measure = $measureQuery?.data;
 
   $: filterForDimension = getFilterForDimension(

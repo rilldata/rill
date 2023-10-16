@@ -5,11 +5,7 @@
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
-  import {
-    humanizeDataType,
-    FormatPreset,
-    nicelyFormattedTypesToNumberKind,
-  } from "@rilldata/web-common/features/dashboards/humanize-numbers";
+
   import {
     getFilterForDimension,
     useMetaQuery,
@@ -333,33 +329,26 @@
         comparisonValue && bigNum !== undefined && bigNum !== null
           ? (bigNum - comparisonValue) / comparisonValue
           : undefined}
-      {@const formatPreset =
-        FormatPreset[measure?.formatPreset] || FormatPreset.HUMANIZE}
       <!-- FIXME: I can't select a time series by measure id. -->
       <MeasureBigNumber
+        {measure}
         value={bigNum}
         {showComparison}
         comparisonOption={$timeControlsStore?.selectedComparisonTimeRange?.name}
         {comparisonValue}
         {comparisonPercChange}
-        description={measure?.description ||
-          measure?.label ||
-          measure?.expression}
-        formatPreset={measure?.formatPreset}
         status={$totalsQuery?.isFetching
           ? EntityStatus.Running
           : EntityStatus.Idle}
-      >
-        <svelte:fragment slot="name">
-          {measure?.label || measure?.expression}
-        </svelte:fragment>
-      </MeasureBigNumber>
+      />
+
       <div class="time-series-body" style:height="125px">
         {#if $timeSeriesQuery?.isError}
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
           <MeasureChart
             bind:mouseoverValue
+            {measure}
             isScrubbing={$dashboardStore?.selectedScrubRange?.isScrubbing}
             {scrubStart}
             {scrubEnd}
@@ -381,11 +370,6 @@
                 TIME_GRAIN[interval].formatDate
               );
             }}
-            numberKind={nicelyFormattedTypesToNumberKind(measure?.formatPreset)}
-            mouseoverFormat={(value) =>
-              formatPreset === FormatPreset.NONE
-                ? `${value}`
-                : humanizeDataType(value, measure?.formatPreset)}
           />
         {:else}
           <div>

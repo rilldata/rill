@@ -51,7 +51,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
-	github.com/marcboeker/go-duckdb v1.4.1
+	github.com/marcboeker/go-duckdb v1.5.1
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.15.1
 	github.com/redis/go-redis/v9 v9.0.2
@@ -278,5 +278,3 @@ replace github.com/apache/calcite-avatica-go/v5 v5.2.0 => github.com/rilldata/ca
 replace cloud.google.com/go/bigquery v1.53.0 => github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230830110740-57fe623cde03
 
 exclude modernc.org/sqlite v1.18.1
-
-replace github.com/marcboeker/go-duckdb v1.4.1 => github.com/k-anshul/go-duckdb v0.0.0-20231011133423-afd4ada98f86

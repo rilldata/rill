@@ -42,11 +42,11 @@ _**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measur
   - _**`ignore`**_ — hides the measure _(optional)_ 
   - _**`valid_percent_of_total`**_ — a boolean indicating whether percent-of-total values should be rendered for this measure _(optional)_ 
   - _**`format_preset`**_ — one of a set of values that format dashboard measures. _(optional; default is humanize)_. Possible values include:
-      - _`humanize`_ — round off numbers in an opinionated way to thousands (K), millions (M), billions B), etc
+      - _`humanize`_ — round off numbers in an opinionated way to thousands (K), millions (M), billions (B), etc
       - _`none`_ — raw output
       - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign
       - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
-      - _`comma_separators`_ — output transformed to decimal formal with commas every 3 digits
+      - _`interval_ms`_ — time intervals given in milliseconds are transformed into human readable time units like hours (h), days (d), years (y), etc
 
 _**`security`**_ - define a [security policy](../../develop/security) for the dashboard _(optional)_
   - _**`access`**_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. _(optional)_

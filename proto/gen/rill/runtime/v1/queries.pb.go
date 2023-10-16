@@ -1097,6 +1097,7 @@ type MetricsViewComparisonToplistRequest struct {
 	Limit               int64                        `protobuf:"varint,10,opt,name=limit,proto3" json:"limit,omitempty"`
 	Offset              int64                        `protobuf:"varint,11,opt,name=offset,proto3" json:"offset,omitempty"`
 	Priority            int32                        `protobuf:"varint,12,opt,name=priority,proto3" json:"priority,omitempty"`
+	Exact               bool                         `protobuf:"varint,13,opt,name=exact,proto3" json:"exact,omitempty"`
 }
 
 func (x *MetricsViewComparisonToplistRequest) Reset() {
@@ -1213,6 +1214,13 @@ func (x *MetricsViewComparisonToplistRequest) GetPriority() int32 {
 		return x.Priority
 	}
 	return 0
+}
+
+func (x *MetricsViewComparisonToplistRequest) GetExact() bool {
+	if x != nil {
+		return x.Exact
+	}
+	return false
 }
 
 // Response message for QueryService.MetricsViewComparisonToplist
