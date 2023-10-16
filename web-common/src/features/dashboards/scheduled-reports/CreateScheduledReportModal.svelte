@@ -66,6 +66,7 @@
       <FormItemTimePicker
         bind:value={$form["firstRunAtTime"]}
         id="firstRunAtTime"
+        label=""
       />
     </div>
     <FormItemSelect

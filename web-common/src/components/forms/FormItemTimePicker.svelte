@@ -7,6 +7,8 @@
   import { formatTime, getNextQuarterHour } from "./time-utils";
 
   export let value: string;
+  export let id: string;
+  export let label: string;
 
   const start = getNextQuarterHour();
   const options = Array.from({ length: 24 * 4 }, (_, i) => {
@@ -15,16 +17,19 @@
   });
 </script>
 
-<Menu>
-  <MenuButton
-    className="w-full border px-3 py-1 h-8 flex gap-x-2 justify-between items-center"
-  >
-    {value}
-    <CaretDownIcon />
-  </MenuButton>
-  <MenuItems>
-    {#each options as option}
-      <MenuItem on:click={() => (value = option)}>{option}</MenuItem>
-    {/each}
-  </MenuItems>
-</Menu>
+<div>
+  <label for={id} class="text-gray-600">{label ?? ""}</label>
+  <Menu>
+    <MenuButton
+      className="w-full border px-3 py-1 h-8 flex gap-x-2 justify-between items-center"
+    >
+      {value}
+      <CaretDownIcon />
+    </MenuButton>
+    <MenuItems>
+      {#each options as option}
+        <MenuItem on:click={() => (value = option)}>{option}</MenuItem>
+      {/each}
+    </MenuItems>
+  </Menu>
+</div>
