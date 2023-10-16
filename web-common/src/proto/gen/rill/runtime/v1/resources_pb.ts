@@ -4,9 +4,9 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, Struct, Timestamp, proto3, protoInt64 } from "@bufbuild/protobuf";
-import { ExportFormat } from "./export_format_pb.js";
+import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
 import { TimeGrain } from "./time_grain_pb.js";
+import { ExportFormat } from "./export_format_pb.js";
 
 /**
  * @generated from enum rill.runtime.v1.ReconcileStatus
@@ -1461,9 +1461,9 @@ export class ReportSpec extends Message<ReportSpec> {
   operationName = "";
 
   /**
-   * @generated from field: google.protobuf.Struct operation_properties = 6;
+   * @generated from field: string operation_properties_json = 6;
    */
-  operationProperties?: Struct;
+  operationPropertiesJson = "";
 
   /**
    * @generated from field: string operation_time_range = 7;
@@ -1508,7 +1508,7 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 3, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 4, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "operation_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "operation_properties", kind: "message", T: Struct },
+    { no: 6, name: "operation_properties_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "operation_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "export_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 9, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },

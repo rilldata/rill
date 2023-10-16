@@ -923,12 +923,12 @@ recipients:
 				RefreshSchedule: &runtimev1.Schedule{
 					Cron: "0 * * * *",
 				},
-				OperationName:       "MetricsViewToplist",
-				OperationProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "mv1"})),
-				OperationTimeRange:  "P2W",
-				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
-				ExportLimit:         10000,
-				Recipients:          []string{"jane@example.com"},
+				OperationName:           "MetricsViewToplist",
+				OperationPropertiesJson: `{"metrics_view":"mv1"}`,
+				OperationTimeRange:      "P2W",
+				ExportFormat:            runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportLimit:             10000,
+				Recipients:              []string{"jane@example.com"},
 			},
 		},
 	}

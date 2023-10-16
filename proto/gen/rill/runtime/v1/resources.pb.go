@@ -1640,18 +1640,18 @@ type ReportSpec struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Trigger             bool             `protobuf:"varint,1,opt,name=trigger,proto3" json:"trigger,omitempty"`
-	Title               string           `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	RefreshSchedule     *Schedule        `protobuf:"bytes,3,opt,name=refresh_schedule,json=refreshSchedule,proto3" json:"refresh_schedule,omitempty"`
-	TimeoutSeconds      uint32           `protobuf:"varint,4,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
-	OperationName       string           `protobuf:"bytes,5,opt,name=operation_name,json=operationName,proto3" json:"operation_name,omitempty"`
-	OperationProperties *structpb.Struct `protobuf:"bytes,6,opt,name=operation_properties,json=operationProperties,proto3" json:"operation_properties,omitempty"`
-	OperationTimeRange  string           `protobuf:"bytes,7,opt,name=operation_time_range,json=operationTimeRange,proto3" json:"operation_time_range,omitempty"`
-	ExportLimit         uint32           `protobuf:"varint,8,opt,name=export_limit,json=exportLimit,proto3" json:"export_limit,omitempty"`
-	ExportFormat        ExportFormat     `protobuf:"varint,9,opt,name=export_format,json=exportFormat,proto3,enum=rill.runtime.v1.ExportFormat" json:"export_format,omitempty"`
-	Recipients          []string         `protobuf:"bytes,10,rep,name=recipients,proto3" json:"recipients,omitempty"`
-	EmailOpenUrl        string           `protobuf:"bytes,11,opt,name=email_open_url,json=emailOpenUrl,proto3" json:"email_open_url,omitempty"`
-	EmailEditUrl        string           `protobuf:"bytes,12,opt,name=email_edit_url,json=emailEditUrl,proto3" json:"email_edit_url,omitempty"`
+	Trigger                 bool         `protobuf:"varint,1,opt,name=trigger,proto3" json:"trigger,omitempty"`
+	Title                   string       `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	RefreshSchedule         *Schedule    `protobuf:"bytes,3,opt,name=refresh_schedule,json=refreshSchedule,proto3" json:"refresh_schedule,omitempty"`
+	TimeoutSeconds          uint32       `protobuf:"varint,4,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
+	OperationName           string       `protobuf:"bytes,5,opt,name=operation_name,json=operationName,proto3" json:"operation_name,omitempty"`
+	OperationPropertiesJson string       `protobuf:"bytes,6,opt,name=operation_properties_json,json=operationPropertiesJson,proto3" json:"operation_properties_json,omitempty"`
+	OperationTimeRange      string       `protobuf:"bytes,7,opt,name=operation_time_range,json=operationTimeRange,proto3" json:"operation_time_range,omitempty"`
+	ExportLimit             uint32       `protobuf:"varint,8,opt,name=export_limit,json=exportLimit,proto3" json:"export_limit,omitempty"`
+	ExportFormat            ExportFormat `protobuf:"varint,9,opt,name=export_format,json=exportFormat,proto3,enum=rill.runtime.v1.ExportFormat" json:"export_format,omitempty"`
+	Recipients              []string     `protobuf:"bytes,10,rep,name=recipients,proto3" json:"recipients,omitempty"`
+	EmailOpenUrl            string       `protobuf:"bytes,11,opt,name=email_open_url,json=emailOpenUrl,proto3" json:"email_open_url,omitempty"`
+	EmailEditUrl            string       `protobuf:"bytes,12,opt,name=email_edit_url,json=emailEditUrl,proto3" json:"email_edit_url,omitempty"`
 }
 
 func (x *ReportSpec) Reset() {
@@ -1721,11 +1721,11 @@ func (x *ReportSpec) GetOperationName() string {
 	return ""
 }
 
-func (x *ReportSpec) GetOperationProperties() *structpb.Struct {
+func (x *ReportSpec) GetOperationPropertiesJson() string {
 	if x != nil {
-		return x.OperationProperties
+		return x.OperationPropertiesJson
 	}
-	return nil
+	return ""
 }
 
 func (x *ReportSpec) GetOperationTimeRange() string {
@@ -3382,7 +3382,7 @@ var file_rill_runtime_v1_resources_proto_rawDesc = []byte{
 	0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e,
 	0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d, 0x65, 0x2e, 0x76, 0x31, 0x2e,
 	0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x05, 0x73, 0x74, 0x61,
-	0x74, 0x65, 0x22, 0xa3, 0x04, 0x0a, 0x0a, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x53, 0x70, 0x65,
+	0x74, 0x65, 0x22, 0x93, 0x04, 0x0a, 0x0a, 0x52, 0x65, 0x70, 0x6f, 0x72, 0x74, 0x53, 0x70, 0x65,
 	0x63, 0x12, 0x18, 0x0a, 0x07, 0x74, 0x72, 0x69, 0x67, 0x67, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x08, 0x52, 0x07, 0x74, 0x72, 0x69, 0x67, 0x67, 0x65, 0x72, 0x12, 0x14, 0x0a, 0x05, 0x74,
 	0x69, 0x74, 0x6c, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c,
@@ -3395,12 +3395,11 @@ var file_rill_runtime_v1_resources_proto_rawDesc = []byte{
 	0x52, 0x0e, 0x74, 0x69, 0x6d, 0x65, 0x6f, 0x75, 0x74, 0x53, 0x65, 0x63, 0x6f, 0x6e, 0x64, 0x73,
 	0x12, 0x25, 0x0a, 0x0e, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6e, 0x61,
 	0x6d, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74,
-	0x69, 0x6f, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x4a, 0x0a, 0x14, 0x6f, 0x70, 0x65, 0x72, 0x61,
-	0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x70, 0x72, 0x6f, 0x70, 0x65, 0x72, 0x74, 0x69, 0x65, 0x73, 0x18,
-	0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x13,
-	0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x72, 0x6f, 0x70, 0x65, 0x72, 0x74,
-	0x69, 0x65, 0x73, 0x12, 0x30, 0x0a, 0x14, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x69, 0x6f, 0x6e, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x3a, 0x0a, 0x19, 0x6f, 0x70, 0x65, 0x72, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x70, 0x72, 0x6f, 0x70, 0x65, 0x72, 0x74, 0x69, 0x65, 0x73, 0x5f,
+	0x6a, 0x73, 0x6f, 0x6e, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x17, 0x6f, 0x70, 0x65, 0x72,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x72, 0x6f, 0x70, 0x65, 0x72, 0x74, 0x69, 0x65, 0x73, 0x4a,
+	0x73, 0x6f, 0x6e, 0x12, 0x30, 0x0a, 0x14, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e,
 	0x5f, 0x74, 0x69, 0x6d, 0x65, 0x5f, 0x72, 0x61, 0x6e, 0x67, 0x65, 0x18, 0x07, 0x20, 0x01, 0x28,
 	0x09, 0x52, 0x12, 0x6f, 0x70, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x54, 0x69, 0x6d, 0x65,
 	0x52, 0x61, 0x6e, 0x67, 0x65, 0x12, 0x21, 0x0a, 0x0c, 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x5f,
@@ -3678,32 +3677,31 @@ var file_rill_runtime_v1_resources_proto_depIdxs = []int32{
 	21, // 41: rill.runtime.v1.Report.spec:type_name -> rill.runtime.v1.ReportSpec
 	22, // 42: rill.runtime.v1.Report.state:type_name -> rill.runtime.v1.ReportState
 	34, // 43: rill.runtime.v1.ReportSpec.refresh_schedule:type_name -> rill.runtime.v1.Schedule
-	45, // 44: rill.runtime.v1.ReportSpec.operation_properties:type_name -> google.protobuf.Struct
-	47, // 45: rill.runtime.v1.ReportSpec.export_format:type_name -> rill.runtime.v1.ExportFormat
-	44, // 46: rill.runtime.v1.ReportState.next_run_on:type_name -> google.protobuf.Timestamp
-	23, // 47: rill.runtime.v1.ReportState.current_execution:type_name -> rill.runtime.v1.ReportExecution
-	23, // 48: rill.runtime.v1.ReportState.execution_history:type_name -> rill.runtime.v1.ReportExecution
-	44, // 49: rill.runtime.v1.ReportExecution.report_time:type_name -> google.protobuf.Timestamp
-	44, // 50: rill.runtime.v1.ReportExecution.started_on:type_name -> google.protobuf.Timestamp
-	44, // 51: rill.runtime.v1.ReportExecution.finished_on:type_name -> google.protobuf.Timestamp
-	25, // 52: rill.runtime.v1.PullTrigger.spec:type_name -> rill.runtime.v1.PullTriggerSpec
-	26, // 53: rill.runtime.v1.PullTrigger.state:type_name -> rill.runtime.v1.PullTriggerState
-	28, // 54: rill.runtime.v1.RefreshTrigger.spec:type_name -> rill.runtime.v1.RefreshTriggerSpec
-	29, // 55: rill.runtime.v1.RefreshTrigger.state:type_name -> rill.runtime.v1.RefreshTriggerState
-	4,  // 56: rill.runtime.v1.RefreshTriggerSpec.only_names:type_name -> rill.runtime.v1.ResourceName
-	31, // 57: rill.runtime.v1.BucketPlanner.spec:type_name -> rill.runtime.v1.BucketPlannerSpec
-	32, // 58: rill.runtime.v1.BucketPlanner.state:type_name -> rill.runtime.v1.BucketPlannerState
-	33, // 59: rill.runtime.v1.BucketPlannerSpec.extract_policy:type_name -> rill.runtime.v1.BucketExtractPolicy
-	1,  // 60: rill.runtime.v1.BucketExtractPolicy.rows_strategy:type_name -> rill.runtime.v1.BucketExtractPolicy.Strategy
-	1,  // 61: rill.runtime.v1.BucketExtractPolicy.files_strategy:type_name -> rill.runtime.v1.BucketExtractPolicy.Strategy
-	39, // 62: rill.runtime.v1.ParseError.start_location:type_name -> rill.runtime.v1.CharLocation
-	43, // 63: rill.runtime.v1.MetricsViewSpec.SecurityV2.include:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
-	43, // 64: rill.runtime.v1.MetricsViewSpec.SecurityV2.exclude:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
-	65, // [65:65] is the sub-list for method output_type
-	65, // [65:65] is the sub-list for method input_type
-	65, // [65:65] is the sub-list for extension type_name
-	65, // [65:65] is the sub-list for extension extendee
-	0,  // [0:65] is the sub-list for field type_name
+	47, // 44: rill.runtime.v1.ReportSpec.export_format:type_name -> rill.runtime.v1.ExportFormat
+	44, // 45: rill.runtime.v1.ReportState.next_run_on:type_name -> google.protobuf.Timestamp
+	23, // 46: rill.runtime.v1.ReportState.current_execution:type_name -> rill.runtime.v1.ReportExecution
+	23, // 47: rill.runtime.v1.ReportState.execution_history:type_name -> rill.runtime.v1.ReportExecution
+	44, // 48: rill.runtime.v1.ReportExecution.report_time:type_name -> google.protobuf.Timestamp
+	44, // 49: rill.runtime.v1.ReportExecution.started_on:type_name -> google.protobuf.Timestamp
+	44, // 50: rill.runtime.v1.ReportExecution.finished_on:type_name -> google.protobuf.Timestamp
+	25, // 51: rill.runtime.v1.PullTrigger.spec:type_name -> rill.runtime.v1.PullTriggerSpec
+	26, // 52: rill.runtime.v1.PullTrigger.state:type_name -> rill.runtime.v1.PullTriggerState
+	28, // 53: rill.runtime.v1.RefreshTrigger.spec:type_name -> rill.runtime.v1.RefreshTriggerSpec
+	29, // 54: rill.runtime.v1.RefreshTrigger.state:type_name -> rill.runtime.v1.RefreshTriggerState
+	4,  // 55: rill.runtime.v1.RefreshTriggerSpec.only_names:type_name -> rill.runtime.v1.ResourceName
+	31, // 56: rill.runtime.v1.BucketPlanner.spec:type_name -> rill.runtime.v1.BucketPlannerSpec
+	32, // 57: rill.runtime.v1.BucketPlanner.state:type_name -> rill.runtime.v1.BucketPlannerState
+	33, // 58: rill.runtime.v1.BucketPlannerSpec.extract_policy:type_name -> rill.runtime.v1.BucketExtractPolicy
+	1,  // 59: rill.runtime.v1.BucketExtractPolicy.rows_strategy:type_name -> rill.runtime.v1.BucketExtractPolicy.Strategy
+	1,  // 60: rill.runtime.v1.BucketExtractPolicy.files_strategy:type_name -> rill.runtime.v1.BucketExtractPolicy.Strategy
+	39, // 61: rill.runtime.v1.ParseError.start_location:type_name -> rill.runtime.v1.CharLocation
+	43, // 62: rill.runtime.v1.MetricsViewSpec.SecurityV2.include:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
+	43, // 63: rill.runtime.v1.MetricsViewSpec.SecurityV2.exclude:type_name -> rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
+	64, // [64:64] is the sub-list for method output_type
+	64, // [64:64] is the sub-list for method input_type
+	64, // [64:64] is the sub-list for extension type_name
+	64, // [64:64] is the sub-list for extension extendee
+	0,  // [0:64] is the sub-list for field type_name
 }
 
 func init() { file_rill_runtime_v1_resources_proto_init() }

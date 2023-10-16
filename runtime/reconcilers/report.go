@@ -8,8 +8,10 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"golang.org/x/exp/slices"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -244,6 +246,13 @@ func (r *ReportReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
 	r.C.Logger.Info("Sending report", "report", self.Meta.Name.Name, "report_time", t)
 
+	_, err := buildExportRequest(rep, t)
+	if err != nil {
+		return false, fmt.Errorf("failed to build export request: %w", err)
+	}
+
+	// TODO: Use it!
+
 	for _, recipient := range rep.Spec.Recipients {
 		err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
 			ToEmail:           recipient,
@@ -262,6 +271,75 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 
 	return false, nil
+}
+
+func buildExportRequest(rep *runtimev1.Report, t time.Time) (*runtimev1.ExportRequest, error) {
+	req := &runtimev1.ExportRequest{Format: rep.Spec.ExportFormat}
+	if rep.Spec.ExportLimit > 0 {
+		tmp := int64(rep.Spec.ExportLimit)
+		req.Limit = &tmp
+	}
+
+	var start, end *timestamppb.Timestamp
+	if rep.Spec.OperationTimeRange != "" {
+		d, err := duration.ParseISO8601(rep.Spec.OperationTimeRange)
+		if err != nil {
+			return nil, fmt.Errorf("invalid operation time range %q: %w", rep.Spec.OperationTimeRange, err)
+		}
+
+		start = timestamppb.New(d.Sub(t))
+		end = timestamppb.New(t)
+	}
+
+	switch rep.Spec.OperationName {
+	case "MetricsViewAggregation":
+		qry := &runtimev1.MetricsViewAggregationRequest{}
+		req.Request = &runtimev1.ExportRequest_MetricsViewAggregationRequest{MetricsViewAggregationRequest: qry}
+		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), qry)
+		if err != nil {
+			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
+		}
+		qry.TimeStart = start
+		qry.TimeEnd = end
+	case "MetricsViewToplist":
+		qry := &runtimev1.MetricsViewToplistRequest{}
+		req.Request = &runtimev1.ExportRequest_MetricsViewToplistRequest{MetricsViewToplistRequest: qry}
+		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), qry)
+		if err != nil {
+			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
+		}
+		qry.TimeStart = start
+		qry.TimeEnd = end
+	case "MetricsViewRows":
+		qry := &runtimev1.MetricsViewRowsRequest{}
+		req.Request = &runtimev1.ExportRequest_MetricsViewRowsRequest{MetricsViewRowsRequest: qry}
+		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), qry)
+		if err != nil {
+			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
+		}
+		qry.TimeStart = start
+		qry.TimeEnd = end
+	case "MetricsViewTimeSeries":
+		qry := &runtimev1.MetricsViewTimeSeriesRequest{}
+		req.Request = &runtimev1.ExportRequest_MetricsViewTimeSeriesRequest{MetricsViewTimeSeriesRequest: qry}
+		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), qry)
+		if err != nil {
+			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
+		}
+		qry.TimeStart = start
+		qry.TimeEnd = end
+	case "MetricsViewComparisonToplist":
+		qry := &runtimev1.MetricsViewComparisonToplistRequest{}
+		req.Request = &runtimev1.ExportRequest_MetricsViewComparisonToplistRequest{MetricsViewComparisonToplistRequest: qry}
+		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), qry)
+		if err != nil {
+			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
+		}
+		qry.BaseTimeRange = &runtimev1.TimeRange{Start: start, End: end}
+		qry.ComparisonTimeRange = nil // TODO: Need ability pass comparison offset somewhere
+	}
+
+	return req, nil
 }
 
 func formatExportFormat(f runtimev1.ExportFormat) string {

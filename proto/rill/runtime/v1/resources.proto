@@ -211,7 +211,7 @@ message ReportSpec {
   Schedule refresh_schedule = 3;
   uint32 timeout_seconds = 4;
   string operation_name = 5;
-  google.protobuf.Struct operation_properties = 6;
+  string operation_properties_json = 6;
   string operation_time_range = 7;
   uint32 export_limit = 8;
   ExportFormat export_format = 9;

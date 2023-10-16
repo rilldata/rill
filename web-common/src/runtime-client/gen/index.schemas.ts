@@ -685,6 +685,19 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+}
+
 export interface V1ReportState {
   nextRunOn?: string;
   currentExecution?: V1ReportExecution;
@@ -692,15 +705,13 @@ export interface V1ReportState {
   executionCount?: number;
 }
 
-export type V1ReportSpecOperationProperties = { [key: string]: any };
-
 export interface V1ReportSpec {
   trigger?: boolean;
   title?: string;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
   operationName?: string;
-  operationProperties?: V1ReportSpecOperationProperties;
+  operationPropertiesJson?: string;
   operationTimeRange?: string;
   exportLimit?: number;
   exportFormat?: V1ExportFormat;
@@ -720,19 +731,6 @@ export interface V1ReportExecution {
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
-}
-
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
 }
 
 export interface V1RenameFileResponse {

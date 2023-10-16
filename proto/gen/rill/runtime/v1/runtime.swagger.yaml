@@ -4378,8 +4378,8 @@ definitions:
         format: int64
       operationName:
         type: string
-      operationProperties:
-        type: object
+      operationPropertiesJson:
+        type: string
       operationTimeRange:
         type: string
       exportLimit:

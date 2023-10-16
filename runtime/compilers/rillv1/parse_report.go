@@ -2,6 +2,8 @@ package rillv1
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/mail"
 	"strings"
@@ -9,7 +11,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
-	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
 
@@ -20,9 +21,10 @@ type reportYAML struct {
 	Refresh    *scheduleYAML    `yaml:"refresh"`
 	Timeout    string           `yaml:"timeout"`
 	Operation  struct {
-		Name       string         `yaml:"name"`
-		TimeRange  string         `yaml:"time_range"`
-		Properties map[string]any `yaml:"properties"`
+		Name           string         `yaml:"name"`
+		TimeRange      string         `yaml:"time_range"`
+		Properties     map[string]any `yaml:"properties"`
+		PropertiesJSON string         `yaml:"properties_json"`
 	} `yaml:"operation"`
 	Export struct {
 		Format string `yaml:"format"`
@@ -71,18 +73,34 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 		}
 	}
 
-	// Validate and parse operation params
+	// Operation name
 	if tmp.Operation.Name == "" {
 		return fmt.Errorf(`invalid value %q for property "operation.name"`, tmp.Operation.Name)
 	}
-	operationProps, err := structpb.NewStruct(tmp.Operation.Properties)
-	if err != nil {
-		return fmt.Errorf("failed to serialize properties: %w", err)
+
+	// Operation properties
+	if tmp.Operation.PropertiesJSON != "" {
+		// Validate JSON
+		if !json.Valid([]byte(tmp.Operation.PropertiesJSON)) {
+			return errors.New(`failed to parse "operation.properties_json" as JSON`)
+		}
+	} else {
+		// Fall back to operation.properties if operation.properties_json is not set
+		data, err := json.Marshal(tmp.Operation.Properties)
+		if err != nil {
+			return fmt.Errorf(`failed to serialize "operation.properties" to JSON: %w`, err)
+		}
+		tmp.Operation.PropertiesJSON = string(data)
 	}
+	if tmp.Operation.PropertiesJSON == "" {
+		return errors.New(`missing operation properties (must set either "operation.properties" or "operation.properties_json")`)
+	}
+
+	// Operation time range
 	if tmp.Operation.TimeRange != "" {
 		_, err := duration.ParseISO8601(tmp.Operation.TimeRange)
 		if err != nil {
-			return fmt.Errorf(`invalid "operation.dynamic_time_range": %w`, err)
+			return fmt.Errorf(`invalid "operation.time_range": %w`, err)
 		}
 	}
 
@@ -121,7 +139,7 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 		r.SourceSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
 	r.ReportSpec.OperationName = tmp.Operation.Name
-	r.ReportSpec.OperationProperties = operationProps
+	r.ReportSpec.OperationPropertiesJson = tmp.Operation.PropertiesJSON
 	r.ReportSpec.OperationTimeRange = tmp.Operation.TimeRange
 	r.ReportSpec.ExportLimit = uint32(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
