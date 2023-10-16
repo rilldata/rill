@@ -99,11 +99,12 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		olapDriver = "duckdb"
 		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID))
 		olapConfig["pool_size"] = "8"
-		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
+		olapConfig["storage_limit_bytes"] = "0"
 		embedCatalog = true
 	default:
 		olapConfig["dsn"] = opts.ProdOLAPDSN
 		embedCatalog = false
+		olapConfig["storage_limit_bytes"] = "0"
 	}
 
 	// Open a runtime client
