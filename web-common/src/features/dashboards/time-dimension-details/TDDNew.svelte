@@ -7,11 +7,11 @@
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
-    CheckCirlce,
+    SelectedCheckmark,
     ExcludeIcon,
     MeasureArrow,
     PieChart,
-  } from "@rilldata/web-common/features/dashboards/time-dimension-details/constants";
+  } from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDIcons";
   import { createEventDispatcher } from "svelte";
 
   export let metricViewName: string;
@@ -73,11 +73,17 @@
     if (y === 0) return ``;
     const visibleIdx = data?.selectedValues.indexOf(value.value);
 
+    if (comparing === "time") {
+      if (y == 1) return SelectedCheckmark("fill-blue-500");
+      else if (y == 2) return SelectedCheckmark("fill-gray-300");
+      else return ``;
+    }
+
     if (visibleIdx > -1) {
       if (excludeMode) return ExcludeIcon;
       // Only show colored markers for first 11 selected values
       else
-        return CheckCirlce(
+        return SelectedCheckmark(
           "fill-" +
             (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300")
         );

@@ -13,7 +13,11 @@ import {
 } from "@rilldata/web-common/features/dashboards/humanize-numbers";
 import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
 import { getTimeWidth } from "@rilldata/web-common/lib/time/transforms";
-import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import {
+  DEFAULT_TIME_RANGES,
+  TIME_COMPARISON,
+  TIME_GRAIN,
+} from "@rilldata/web-common/lib/time/config";
 import { durationToMillis } from "@rilldata/web-common/lib/time/grains";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
@@ -140,9 +144,11 @@ function prepareDimensionData(
  */
 function prepareTimeData(
   data,
-  columnCount,
-  total,
-  comparisonTotal,
+  columnCount: number,
+  total: number,
+  comparisonTotal: number,
+  currentLabel: string,
+  comparisonLabel: string,
   measure: MetricsViewSpecMeasureV2,
   hasTimeComparison
 ) {
@@ -174,14 +180,14 @@ function prepareTimeData(
   if (hasTimeComparison) {
     rowHeaderData = rowHeaderData.concat([
       [
-        { value: "Current" },
+        { value: currentLabel },
         {
           value: humanizeDataType(total, formatPreset),
           spark: createSparkline(data, (v) => v[measureName]),
         },
       ],
       [
-        { value: "Previous" },
+        { value: comparisonLabel },
         {
           value: humanizeDataType(comparisonTotal, formatPreset),
           spark: createSparkline(data, (v) => v[`comparison.${measureName}`]),
@@ -313,11 +319,26 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         );
       } else {
         comparing = timeControls.showComparison ? "time" : "none";
+        const currentRange = timeControls?.selectedTimeRange?.name;
+
+        let currentLabel = "Custom Range";
+        if (currentRange in DEFAULT_TIME_RANGES)
+          currentLabel = DEFAULT_TIME_RANGES[currentRange].label;
+
+        const comparisonRange = timeControls?.selectedComparisonTimeRange?.name;
+        let comparisonLabel = "Custom Range";
+
+        if (comparisonRange in TIME_COMPARISON)
+          comparisonLabel = TIME_COMPARISON[comparisonRange].label;
+
+        console.log(timeControls?.selectedTimeRange);
         data = prepareTimeData(
           timeSeries?.timeSeriesData,
           columnCount,
           total,
           comparisonTotal,
+          currentLabel,
+          comparisonLabel,
           measure,
           comparing === "time"
         );
