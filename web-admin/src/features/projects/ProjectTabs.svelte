@@ -4,6 +4,7 @@
   import Tab from "../../components/tabs/Tab.svelte";
   import TabGroup from "../../components/tabs/TabGroup.svelte";
   import TabList from "../../components/tabs/TabList.svelte";
+  import ProjectDeploymentStatusChip from "./ProjectDeploymentStatusChip.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -13,10 +14,11 @@
       route: `/${organization}/${project}`,
       label: "Dashboards",
     },
-    {
-      route: `/${organization}/${project}/-/reports`,
-      label: "Reports",
-    },
+    // Hide until releasing Scheduled Reports
+    // {
+    //   route: `/${organization}/${project}/-/reports`,
+    //   label: "Reports",
+    // },
     {
       route: `/${organization}/${project}/-/logs`,
       label: "Logs",
@@ -39,7 +41,9 @@
       // See: https://github.com/rgossiaux/svelte-headlessui/issues/80
       const dashboardTab = Array.from(
         document.querySelectorAll('button[role="tab"]')
-      ).find((el) => el.textContent === "Dashboards") as HTMLButtonElement;
+      ).find(
+        (el) => (el as HTMLElement).innerText === "Dashboards"
+      ) as HTMLButtonElement;
       dashboardTab.click();
     }
   });
@@ -49,7 +53,16 @@
   <TabGroup defaultIndex={currentTabIndex} on:change={handleTabChange}>
     <TabList>
       {#each tabs as tab}
-        <Tab>{tab.label}</Tab>
+        <Tab>
+          {tab.label}
+          {#if tab.label === "Logs"}
+            <ProjectDeploymentStatusChip
+              {organization}
+              {project}
+              iconOnly={true}
+            />
+          {/if}
+        </Tab>
       {/each}
     </TabList>
   </TabGroup>

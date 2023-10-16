@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { getDashboardsForProject } from "@rilldata/web-admin/features/projects/dashboards";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
   import DashboardIcon from "@rilldata/web-common/components/icons/DashboardIcon.svelte";
   import { Tag } from "@rilldata/web-common/components/tag";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import {
     createAdminServiceGetProject,
     V1DeploymentStatus,
     V1GetProjectResponse,
-  } from "../../client";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  } from "../../../client";
+  import { getDashboardsForProject } from "./dashboards";
 
   export let organization: string;
   export let project: string;

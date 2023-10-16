@@ -219,6 +219,7 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
   limit?: string;
   offset?: string;
   priority?: number;
+  exact?: boolean;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
@@ -1241,6 +1242,7 @@ export interface V1MetricsViewComparisonToplistRequest {
   limit?: string;
   offset?: string;
   priority?: number;
+  exact?: boolean;
 }
 
 export interface V1MetricsViewComparisonRow {

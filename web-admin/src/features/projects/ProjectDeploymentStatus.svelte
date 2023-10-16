@@ -11,7 +11,7 @@
 
 <div class="flex flex-col gap-y-2">
   <div>
-    <span class="uppercase text-gray-500 font-semibold text-[10px] leading-4"
+    <span class="uppercase text-gray-500 font-semibold text-[10px] leading-none"
       >Project status</span
     >
     <div>
