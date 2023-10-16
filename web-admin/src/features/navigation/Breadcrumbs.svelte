@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
   import type {
     V1MetricsViewSpec,
     V1Resource,
@@ -14,6 +13,7 @@
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
+  import { useDashboards } from "../projects/dashboards";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import { isProjectPage } from "./nav-utils";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
