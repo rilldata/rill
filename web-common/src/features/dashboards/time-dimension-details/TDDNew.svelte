@@ -72,7 +72,12 @@
 
     if (visibleIdx > -1) {
       if (excludeMode) return ExcludeIcon;
-      else return CheckCirlce("fill-" + CHECKMARK_COLORS[visibleIdx]);
+      // Only show colored markers for first 11 selected values
+      else
+        return CheckCirlce(
+          "fill-" +
+            (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300")
+        );
     } else if (!data?.selectedValues.length && y < 4) {
       return `<div class="rounded-full bg-${
         CHECKMARK_COLORS[y - 1]

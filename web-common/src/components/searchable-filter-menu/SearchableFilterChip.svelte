@@ -97,7 +97,6 @@ props as needed.
     on:deselect-all
     on:escape={toggleFloatingElement}
     on:item-clicked={(e) => {
-      console.log("item clicked called");
       toggleFloatingElement();
       dispatch("item-clicked", e.detail.name);
     }}
