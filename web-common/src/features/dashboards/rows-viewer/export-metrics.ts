@@ -28,12 +28,14 @@ export default async function exportMetrics({
     instanceId: get(runtime).instanceId,
     data: {
       format,
-      metricsViewRowsRequest: {
-        instanceId: get(runtime).instanceId,
-        metricsViewName: metricViewName,
-        filter: dashboard.filters,
-        timeStart: timeControlState.timeStart,
-        timeEnd: timeControlState.timeEnd,
+      query: {
+        metricsViewRowsRequest: {
+          instanceId: get(runtime).instanceId,
+          metricsViewName: metricViewName,
+          filter: dashboard.filters,
+          timeStart: timeControlState.timeStart,
+          timeEnd: timeControlState.timeEnd,
+        },
       },
     },
   });

@@ -78,7 +78,7 @@ export type QueryServiceQueryBatch200 = {
 };
 
 export type QueryServiceQueryBatchBody = {
-  queries?: V1QueryBatchEntry[];
+  queries?: V1Query[];
 };
 
 export type QueryServiceQueryBody = {
@@ -89,9 +89,6 @@ export type QueryServiceQueryBody = {
   limit?: number;
 };
 
-/**
- * Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
- */
 export type QueryServiceColumnTopKBody = {
   columnName?: string;
   agg?: string;
@@ -219,6 +216,7 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
   limit?: string;
   offset?: string;
   priority?: number;
+  exact?: boolean;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
@@ -236,11 +234,8 @@ export type QueryServiceMetricsViewAggregationBody = {
 export type QueryServiceExportBody = {
   limit?: string;
   format?: V1ExportFormat;
-  metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
-  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
-  metricsViewRowsRequest?: V1MetricsViewRowsRequest;
-  metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
-  metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
+  query?: V1Query;
+  bakedQuery?: string;
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
@@ -769,6 +764,22 @@ export interface V1RefreshTrigger {
   state?: V1RefreshTriggerState;
 }
 
+/**
+ * ReconcileError represents an error encountered while running Reconcile.
+ */
+export interface V1ReconcileError {
+  code?: V1ReconcileErrorCode;
+  message?: string;
+  filePath?: string;
+  /** Property path of the error in the code artifact (if any).
+It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+It only applies to structured code artifacts (i.e. YAML).
+Only applicable if file_path is set. */
+  propertyPath?: string[];
+  startLocation?: V1ReconcileErrorCharLocation;
+  endLocation?: V1ReconcileErrorCharLocation;
+}
+
 export interface V1RefreshAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
@@ -836,32 +847,7 @@ export interface V1ReconcileErrorCharLocation {
   column?: number;
 }
 
-/**
- * ReconcileError represents an error encountered while running Reconcile.
- */
-export interface V1ReconcileError {
-  code?: V1ReconcileErrorCode;
-  message?: string;
-  filePath?: string;
-  /** Property path of the error in the code artifact (if any).
-It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-It only applies to structured code artifacts (i.e. YAML).
-Only applicable if file_path is set. */
-  propertyPath?: string[];
-  startLocation?: V1ReconcileErrorCharLocation;
-  endLocation?: V1ReconcileErrorCharLocation;
-}
-
-export type V1QueryResponseDataItem = { [key: string]: any };
-
-export interface V1QueryResponse {
-  meta?: V1StructType;
-  data?: V1QueryResponseDataItem[];
-}
-
-export interface V1QueryBatchResponse {
-  key?: number;
-  error?: string;
+export interface V1QueryResult {
   metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
   metricsViewToplistResponse?: V1MetricsViewToplistResponse;
   metricsViewComparisonToplistResponse?: V1MetricsViewComparisonToplistResponse;
@@ -883,9 +869,20 @@ export interface V1QueryBatchResponse {
   tableRowsResponse?: V1TableRowsResponse;
 }
 
-export interface V1QueryBatchEntry {
-  /** Since response could out of order `key` is used to co-relate a specific response to request. */
-  key?: number;
+export type V1QueryResponseDataItem = { [key: string]: any };
+
+export interface V1QueryResponse {
+  meta?: V1StructType;
+  data?: V1QueryResponseDataItem[];
+}
+
+export interface V1QueryBatchResponse {
+  index?: number;
+  result?: V1QueryResult;
+  error?: string;
+}
+
+export interface V1Query {
   metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
@@ -1018,10 +1015,6 @@ export interface V1NumericHistogramBins {
   bins?: NumericHistogramBinsBin[];
 }
 
-/**
- * Response for QueryService.ColumnNumericHistogram, QueryService.ColumnDescriptiveStatistics and QueryService.ColumnCardinality.
-Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
- */
 export interface V1NumericSummary {
   numericHistogramBins?: V1NumericHistogramBins;
   numericStatistics?: V1NumericStatistics;
@@ -1239,6 +1232,7 @@ export interface V1MetricsViewComparisonToplistRequest {
   limit?: string;
   offset?: string;
   priority?: number;
+  exact?: boolean;
 }
 
 export interface V1MetricsViewComparisonRow {
@@ -1579,9 +1573,6 @@ export interface V1ColumnTopKResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
 
-/**
- * Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
- */
 export interface V1ColumnTopKRequest {
   instanceId?: string;
   tableName?: string;
@@ -1698,9 +1689,6 @@ export interface V1ColumnCardinalityRequest {
   priority?: number;
 }
 
-/**
- * Response for QueryService.ColumnTopK and QueryService.ColumnCardinality. Message will have either topK or cardinality set.
- */
 export interface V1CategoricalSummary {
   topK?: V1TopK;
   cardinality?: number;

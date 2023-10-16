@@ -30,29 +30,31 @@ export default async function exportToplist({
     instanceId: get(runtime).instanceId,
     data: {
       format,
-      metricsViewComparisonToplistRequest: {
-        instanceId: get(runtime).instanceId,
-        metricsViewName: metricViewName,
-        dimensionName: dashboard.selectedDimensionName,
-        measureNames: dashboard.selectedMeasureNames,
-        baseTimeRange: {
-          start: timeControlState.timeStart,
-          end: timeControlState.timeEnd,
-        },
-        comparisonTimeRange: {
-          start: timeControlState.comparisonTimeStart,
-          end: timeControlState.comparisonTimeEnd,
-        },
-        sort: [
-          {
-            measureName: dashboard.leaderboardMeasureName,
-            ascending: dashboard.sortDirection === SortDirection.ASCENDING,
-            type: getQuerySortType(dashboard.dashboardSortType),
+      query: {
+        metricsViewComparisonToplistRequest: {
+          instanceId: get(runtime).instanceId,
+          metricsViewName: metricViewName,
+          dimensionName: dashboard.selectedDimensionName,
+          measureNames: dashboard.selectedMeasureNames,
+          baseTimeRange: {
+            start: timeControlState.timeStart,
+            end: timeControlState.timeEnd,
           },
-        ],
-        filter: dashboard.filters,
-        limit: undefined, // the backend handles export limits
-        offset: "0",
+          comparisonTimeRange: {
+            start: timeControlState.comparisonTimeStart,
+            end: timeControlState.comparisonTimeEnd,
+          },
+          sort: [
+            {
+              measureName: dashboard.leaderboardMeasureName,
+              ascending: dashboard.sortDirection === SortDirection.ASCENDING,
+              type: getQuerySortType(dashboard.dashboardSortType),
+            },
+          ],
+          filter: dashboard.filters,
+          limit: undefined, // the backend handles export limits
+          offset: "0",
+        },
       },
     },
   });
