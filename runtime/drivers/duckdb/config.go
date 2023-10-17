@@ -18,11 +18,11 @@ type config struct {
 	PoolSize int `mapstructure:"pool_size"`
 	// Slots controls the amount of resources to allocate to the database
 	Slots int `mapstructure:"slots"`
-	// MemoryGBPerSlot is the amount of memory in bytes per slot
+	// MemoryGBPerSlot is memory limit per slot
 	MemoryGBPerSlot int `mapstructure:"memory_per_slot"`
 	// CPUPerSlot is the number of CPU cores per slot
 	CPUPerSlot int `mapstructure:"cpu_per_slot"`
-	// StorageGBPerSlot is the amount of storage in GB per slot
+	// StorageGBPerSlot is storage limit on db files per slot
 	StorageGBPerSlot int `mapstructure:"storage_per_slot"`
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
 	AllowHostAccess bool `mapstructure:"allow_host_access"`
@@ -63,7 +63,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 
 		// cpu limits
 		qry.Add("threads", strconv.Itoa(cfg.Slots*cfg.CPUPerSlot))
-		cfg.PoolSize = cfg.Slots * cfg.CPUPerSlot
+		cfg.PoolSize = cfg.Slots
 
 		// storage limits
 		cfg.StorageLimitBytes = int64(cfg.Slots*cfg.StorageGBPerSlot) * int64(datasize.GB)
