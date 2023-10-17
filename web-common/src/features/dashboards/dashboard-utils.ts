@@ -1,5 +1,5 @@
 import type {
-  QueryServiceMetricsViewComparisonToplistBody,
+  QueryServiceMetricsViewComparisonBody,
   MetricsViewDimension,
   V1MetricsViewFilter,
   MetricsViewSpecMeasureV2,
@@ -51,7 +51,7 @@ export function prepareSortedQueryBody(
     sort: [
       {
         ascending: sortAscending,
-        measureName: sortMeasureName,
+        name: sortMeasureName,
         type: querySortType,
       },
     ],
