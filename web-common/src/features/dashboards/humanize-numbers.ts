@@ -56,17 +56,14 @@ export const formatPresetToNumberKind = (type: FormatPreset | string) => {
   }
 };
 
-export function humanizeDataType(
-  value: unknown,
-  type: FormatPreset,
-  options?: FormatterFactoryOptions
-): string {
+export function humanizeDataType(value: unknown, type: FormatPreset): string {
   if (value === undefined || value === null) return "";
   if (typeof value !== "number") return value.toString();
 
   const numberKind = formatPresetToNumberKind(type);
 
-  let innerOptions: FormatterFactoryOptions = options;
+  let innerOptions: FormatterFactoryOptions;
+
   if (type === FormatPreset.NONE) {
     innerOptions = {
       strategy: "none",
@@ -75,15 +72,9 @@ export function humanizeDataType(
     };
   } else if (type === FormatPreset.INTERVAL) {
     return formatMsInterval(value);
-  } else if (options === undefined) {
-    innerOptions = {
-      strategy: "default",
-      numberKind,
-    };
   } else {
     innerOptions = {
       strategy: "default",
-      ...options,
       numberKind,
     };
   }
