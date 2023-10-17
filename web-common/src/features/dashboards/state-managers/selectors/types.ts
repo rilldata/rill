@@ -7,7 +7,8 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 
 /**
- * Arguments to a selector function.
+ * Arguments to a selector function. By putting these in a tuple,
+ * these become compatible with the svelte derived store function arguments.
  */
 export type SelectorFnArgs = [
   MetricsExplorerEntity,

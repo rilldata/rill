@@ -12,11 +12,10 @@
   import Spinner from "../../entity-management/Spinner.svelte";
   import {
     formatMeasurePercentageDifference,
-    humanizeDataType,
     FormatPreset,
-    humanizeDataTypeExpanded,
   } from "../humanize-numbers";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number;
@@ -29,26 +28,29 @@
 
   $: description =
     measure?.description || measure?.label || measure?.expression;
-  $: formatPreset =
-    (measure?.formatPreset as FormatPreset) || FormatPreset.HUMANIZE;
+
+  $: measureValueFormatter = createMeasureValueFormatter(measure);
+  $: measureValueFormatterUnabridged = createMeasureValueFormatter(
+    measure,
+    true
+  );
 
   $: name = measure?.label || measure?.expression;
 
   $: valueIsPresent = value !== undefined && value !== null;
 
-  $: isComparisonPositive = Number.isFinite(diff) && (diff as number) >= 0;
+  $: isComparisonPositive = diff >= 0;
   const [send, receive] = crossfade({ fallback: fly });
 
-  $: diff = comparisonValue ? value - comparisonValue : false;
-  $: noChange = !diff;
+  $: diff = comparisonValue ? value - comparisonValue : 0;
+  $: noChange = !comparisonValue;
 
-  $: formattedDiff = `${isComparisonPositive ? "+" : ""}${humanizeDataType(
-    diff,
-    formatPreset
+  $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
+    diff
   )}`;
 
   /** when the measure is a percentage, we don't show a percentage change. */
-  $: measureIsPercentage = formatPreset === FormatPreset.PERCENTAGE;
+  $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 </script>
 
 <button
@@ -79,11 +81,11 @@
         <Tooltip distance={8} location="bottom" alignment="start">
           <div class="w-max">
             <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-              {humanizeDataType(output, formatPreset)}
+              {measureValueFormatter(output)}
             </WithTween>
           </div>
           <TooltipContent slot="tooltip-content">
-            {humanizeDataTypeExpanded(value, formatPreset)}
+            {measureValueFormatterUnabridged(value)}
             <TooltipDescription>
               the aggregate value over the current time period
             </TooltipDescription>
@@ -134,7 +136,7 @@
               {:else}
                 {TIME_COMPARISON[comparisonOption].shorthand}
                 <span class="font-semibold">
-                  {humanizeDataType(comparisonValue, formatPreset)}
+                  {measureValueFormatter(comparisonValue)}
                 </span>
                 {#if !measureIsPercentage}
                   <span class="text-gray-300">,</span>
