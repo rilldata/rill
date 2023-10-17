@@ -1,10 +1,11 @@
-package queries
+package queries_test
 
 import (
 	"context"
 	"testing"
 
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +14,7 @@ func BenchmarkColumnTableColumns(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &TableColumns{
+		q := &queries.TableColumns{
 			TableName: "ad_bids",
 		}
 		err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -26,7 +27,7 @@ func BenchmarkColumnTableCardinality(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &TableCardinality{
+		q := &queries.TableCardinality{
 			TableName: "ad_bids",
 		}
 		err := q.Resolve(context.Background(), rt, instanceID, 0)

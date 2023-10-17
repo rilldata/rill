@@ -4323,24 +4323,26 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
-      operationName:
+      queryName:
         type: string
-      operationProperties:
-        type: object
-      operationTimeRange:
+      queryArgsJson:
+        type: string
+      queryTimeRange:
         type: string
       exportLimit:
-        type: integer
-        format: int64
+        type: string
+        format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
-      recipients:
+      emailRecipients:
         type: array
         items:
           type: string
       emailOpenUrl:
         type: string
       emailEditUrl:
+        type: string
+      emailExportUrl:
         type: string
   v1ReportState:
     type: object

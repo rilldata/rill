@@ -1,4 +1,4 @@
-package queries
+package queries_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -15,7 +16,7 @@ import (
 func BenchmarkMetricsViewsComparison_compare(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
 		ColumnName: "timestamp",
 	}
@@ -30,7 +31,7 @@ func BenchmarkMetricsViewsComparison_compare(b *testing.B) {
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -69,7 +70,7 @@ func BenchmarkMetricsViewsComparison_compare(b *testing.B) {
 func BenchmarkMetricsViewsComparison_nocompare_all(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
 		ColumnName: "timestamp",
 	}
@@ -82,7 +83,7 @@ func BenchmarkMetricsViewsComparison_nocompare_all(b *testing.B) {
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -124,7 +125,7 @@ func BenchmarkMetricsViewsComparison_compare_spending(b *testing.B) {
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_state_name",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -164,7 +165,7 @@ func BenchmarkMetricsViewsComparison_compare_spending(b *testing.B) {
 func BenchmarkMetricsViewsComparison_nocompare_all_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "spending",
 		ColumnName: "action_date",
 	}
@@ -176,7 +177,7 @@ func BenchmarkMetricsViewsComparison_nocompare_all_spending(b *testing.B) {
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_state_name",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -212,7 +213,7 @@ func BenchmarkMetricsViewsComparison_nocompare_all_spending(b *testing.B) {
 func BenchmarkMetricsViewsComparison_delta_compare(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
 		ColumnName: "timestamp",
 	}
@@ -226,7 +227,7 @@ func BenchmarkMetricsViewsComparison_delta_compare(b *testing.B) {
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -266,7 +267,7 @@ func BenchmarkMetricsViewsComparison_delta_compare(b *testing.B) {
 func BenchmarkMetricsViewsComparison_delta_nocompare_all(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
 		ColumnName: "timestamp",
 	}
@@ -278,7 +279,7 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all(b *testing.B) {
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -319,7 +320,7 @@ func BenchmarkMetricsViewsComparison_delta_compare_spending(b *testing.B) {
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_state_name",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -359,7 +360,7 @@ func BenchmarkMetricsViewsComparison_delta_compare_spending(b *testing.B) {
 func BenchmarkMetricsViewsComparison_delta_nocompare_all_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "spending",
 		ColumnName: "action_date",
 	}
@@ -371,7 +372,7 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all_spending(b *testing.B) 
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_state_name",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -412,7 +413,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending(b *
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -457,7 +458,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -497,7 +498,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 func BenchmarkMetricsViewsComparison_delta_high_cardinality_nocompare_all_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "spending",
 		ColumnName: "action_date",
 	}
@@ -509,7 +510,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_nocompare_all_spendi
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -550,7 +551,7 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending(b *testin
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -595,7 +596,7 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending_approxima
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -640,7 +641,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -684,7 +685,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -724,7 +725,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 func BenchmarkMetricsViewsComparison_high_cardinality_nocompare_all_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "spending",
 		ColumnName: "action_date",
 	}
@@ -736,7 +737,7 @@ func BenchmarkMetricsViewsComparison_high_cardinality_nocompare_all_spending(b *
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparison{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
