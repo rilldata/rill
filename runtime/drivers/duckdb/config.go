@@ -37,7 +37,7 @@ type config struct {
 
 func newConfig(cfgMap map[string]any) (*config, error) {
 	cfg := &config{
-		PoolSize: 1, // Default value
+		PoolSize: 2, // Default value
 	}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
@@ -80,20 +80,33 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 			threads = 1
 		}
 		qry.Add("threads", strconv.Itoa(threads))
-		if cfg.CPU <= threads {
-			cfg.PoolSize = cfg.CPU
-		} else {
-			cfg.PoolSize = threads
-		}
+		cfg.PoolSize = max(2, min(cfg.CPU, threads))
 	}
 
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
 	uri.RawQuery = qry.Encode()
-	cfg.DSN = uri.String()
+	cfg.DSN, err = url.QueryUnescape(uri.String())
+	if err != nil {
+		return nil, fmt.Errorf("could not unescape dsn: %w", err)
+	}
 	// Check pool size
-	if cfg.PoolSize < 1 {
+	if cfg.PoolSize < 2 {
 		return nil, fmt.Errorf("duckdb pool size must be >= 1")
 	}
 
 	return cfg, nil
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
