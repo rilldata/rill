@@ -18,11 +18,23 @@
   import Spinner from "../../entity-management/Spinner.svelte";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
+  import { getStateManagers } from "../state-managers/state-managers";
+  import { SortType } from "../proto-state/derived-types";
 
   export let metricViewName: string;
   export let dimensionName: string;
   export let isFetching: boolean;
   export let excludeMode = false;
+
+  const stateManagers = getStateManagers();
+  const {
+    selectors: {
+      sorting: { sortedByDimensionValue },
+    },
+    actions: {
+      sorting: { toggleSort },
+    },
+  } = stateManagers;
 
   const queryClient = useQueryClient();
 
@@ -46,6 +58,9 @@
 
   const goBackToLeaderboard = () => {
     metricsExplorerStore.setMetricDimensionName(metricViewName, null);
+    if ($sortedByDimensionValue) {
+      toggleSort(SortType.VALUE);
+    }
   };
   function toggleFilterMode() {
     cancelDashboardQueries(queryClient, metricViewName);

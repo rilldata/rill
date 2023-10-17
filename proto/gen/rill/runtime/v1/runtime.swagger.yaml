@@ -467,9 +467,6 @@ paths:
                   type: string
               embedCatalog:
                 type: boolean
-              ingestionLimitBytes:
-                type: string
-                format: int64
               watchRepo:
                 type: boolean
               stageChanges:
@@ -2902,9 +2899,6 @@ definitions:
           type: string
       embedCatalog:
         type: boolean
-      ingestionLimitBytes:
-        type: string
-        format: int64
       watchRepo:
         type: boolean
       stageChanges:
@@ -3131,9 +3125,6 @@ definitions:
           type: string
       embedCatalog:
         type: boolean
-      ingestionLimitBytes:
-        type: string
-        format: int64
       watchRepo:
         type: boolean
       stageChanges:

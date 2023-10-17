@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
+import { Message, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
 import { PullTriggerSpec, RefreshTriggerSpec, Resource, ResourceName } from "./resources_pb.js";
 import { MetricsView, Model, ObjectType, Source, Table } from "./catalog_pb.js";
 
@@ -249,11 +249,6 @@ export class Instance extends Message<Instance> {
   embedCatalog = false;
 
   /**
-   * @generated from field: int64 ingestion_limit_bytes = 9;
-   */
-  ingestionLimitBytes = protoInt64.zero;
-
-  /**
    * @generated from field: bool watch_repo = 15;
    */
   watchRepo = false;
@@ -292,7 +287,6 @@ export class Instance extends Message<Instance> {
     { no: 8, name: "project_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 9, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 15, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 16, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 17, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -582,11 +576,6 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   embedCatalog = false;
 
   /**
-   * @generated from field: int64 ingestion_limit_bytes = 8;
-   */
-  ingestionLimitBytes = protoInt64.zero;
-
-  /**
    * @generated from field: bool watch_repo = 11;
    */
   watchRepo = false;
@@ -621,7 +610,6 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
     { no: 7, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 9, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 11, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 13, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -805,11 +793,6 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   embedCatalog?: boolean;
 
   /**
-   * @generated from field: optional int64 ingestion_limit_bytes = 8;
-   */
-  ingestionLimitBytes?: bigint;
-
-  /**
    * @generated from field: optional bool watch_repo = 11;
    */
   watchRepo?: boolean;
@@ -844,7 +827,6 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
     { no: 15, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 6, name: "embed_catalog", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 8, name: "ingestion_limit_bytes", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 11, name: "watch_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 12, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 13, name: "model_default_materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
