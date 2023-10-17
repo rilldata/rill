@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"time"
@@ -13,6 +14,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -50,9 +52,17 @@ type Config struct {
 	MetastoreDriver         string                 `default:"sqlite" split_words:"true"`
 	MetastoreURL            string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
+	SessionKeyPairs         []string               `split_words:"true"`
 	AuthEnable              bool                   `default:"false" split_words:"true"`
 	AuthIssuerURL           string                 `default:"" split_words:"true"`
 	AuthAudienceURL         string                 `default:"" split_words:"true"`
+	EmailSMTPHost           string                 `split_words:"true"`
+	EmailSMTPPort           int                    `split_words:"true"`
+	EmailSMTPUsername       string                 `split_words:"true"`
+	EmailSMTPPassword       string                 `split_words:"true"`
+	EmailSenderEmail        string                 `split_words:"true"`
+	EmailSenderName         string                 `split_words:"true"`
+	EmailBCC                string                 `split_words:"true"`
 	DownloadRowLimit        int64                  `default:"10000" split_words:"true"`
 	SafeSourceRefresh       bool                   `default:"false" split_words:"true"`
 	ConnectionCacheSize     int                    `default:"100" split_words:"true"`
@@ -100,6 +110,36 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			if err != nil {
 				fmt.Printf("error: failed to create logger: %s\n", err.Error())
 				os.Exit(1)
+			}
+
+			// Init email client
+			var sender email.Sender
+			if conf.EmailSMTPHost != "" {
+				sender, err = email.NewSMTPSender(&email.SMTPOptions{
+					SMTPHost:     conf.EmailSMTPHost,
+					SMTPPort:     conf.EmailSMTPPort,
+					SMTPUsername: conf.EmailSMTPUsername,
+					SMTPPassword: conf.EmailSMTPPassword,
+					FromEmail:    conf.EmailSenderEmail,
+					FromName:     conf.EmailSenderName,
+					BCC:          conf.EmailBCC,
+				})
+			} else {
+				sender, err = email.NewConsoleSender(logger, conf.EmailSenderEmail, conf.EmailSenderName)
+			}
+			if err != nil {
+				logger.Fatal("error creating email sender", zap.Error(err))
+			}
+			emailClient := email.New(sender)
+
+			// Parse session keys as hex strings
+			keyPairs := make([][]byte, len(conf.SessionKeyPairs))
+			for idx, keyHex := range conf.SessionKeyPairs {
+				key, err := hex.DecodeString(keyHex)
+				if err != nil {
+					logger.Fatal("failed to parse session key from hex string to bytes")
+				}
+				keyPairs[idx] = key
 			}
 
 			// Init telemetry
@@ -162,7 +202,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 					},
 				},
 			}
-			rt, err := runtime.New(ctx, opts, logger, activityClient)
+			rt, err := runtime.New(ctx, opts, logger, activityClient, emailClient)
 			if err != nil {
 				logger.Fatal("error: could not create runtime", zap.Error(err))
 			}
@@ -185,6 +225,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				GRPCPort:         conf.GRPCPort,
 				AllowedOrigins:   conf.AllowedOrigins,
 				ServePrometheus:  conf.MetricsExporter == observability.PrometheusExporter,
+				SessionKeyPairs:  keyPairs,
 				AuthEnable:       conf.AuthEnable,
 				AuthIssuerURL:    conf.AuthIssuerURL,
 				AuthAudienceURL:  conf.AuthAudienceURL,

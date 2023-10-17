@@ -17,7 +17,7 @@
     createQueryServiceMetricsViewComparisonToplist,
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
-    MetricsViewMeasure,
+    MetricsViewSpecMeasureV2,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -76,7 +76,7 @@
   );
 
   $: validPercentOfTotal = (
-    $leaderboardMeasureQuery?.data as MetricsViewMeasure
+    $leaderboardMeasureQuery?.data as MetricsViewSpecMeasureV2
   )?.validPercentOfTotal;
 
   $: excludeMode =

@@ -1,14 +1,14 @@
 import type {
   QueryServiceMetricsViewComparisonToplistBody,
   MetricsViewDimension,
-  MetricsViewMeasure,
   V1MetricsViewFilter,
+  MetricsViewSpecMeasureV2,
 } from "@rilldata/web-common/runtime-client";
 import type { TimeControlState } from "./time-controls/time-control-store";
 import { getQuerySortType } from "./leaderboard/leaderboard-utils";
 import { SortType } from "./proto-state/derived-types";
 
-export function isSummableMeasure(measure: MetricsViewMeasure): boolean {
+export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
   return (
     measure?.expression.toLowerCase()?.includes("count(") ||
     measure?.expression?.toLowerCase()?.includes("sum(")

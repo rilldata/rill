@@ -1,4 +1,4 @@
-package queries
+package queries_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -16,14 +17,14 @@ func nice(start, stop, count float64) []float64 {
 }
 
 func niceAndStepArray(start, stop, count float64) []float64 {
-	x, x1, x2 := NiceAndStep(start, stop, count)
+	x, x1, x2 := queries.NiceAndStep(start, stop, count)
 	return []float64{x, x1, x2}
 }
 
 func TestTimeseries_normaliseTimeRange_Specified1(t *testing.T) {
 	rt, instanceID := instanceWith2RowsModel(t)
 
-	q := &ColumnTimeseries{
+	q := &queries.ColumnTimeseries{
 		TableName:           "test",
 		TimestampColumnName: "time",
 		TimeRange: &runtimev1.TimeSeriesTimeRange{
@@ -32,7 +33,7 @@ func TestTimeseries_normaliseTimeRange_Specified1(t *testing.T) {
 		},
 	}
 
-	r, err := q.resolveNormaliseTimeRange(context.Background(), rt, instanceID, 0)
+	r, err := q.ResolveNormaliseTimeRange(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z").AsTime(), r.Start.AsTime())
 	require.Equal(t, parseTime(t, "2020-01-01T00:00:00.000Z").AsTime(), r.End.AsTime())
@@ -112,64 +113,4 @@ func Equal(t *testing.T, expected []float64, actual []float64) {
 			t.FailNow()
 		}
 	}
-}
-
-func TestTickIncrementNaN_AnyNaN(t *testing.T) {
-	require.True(t, math.IsNaN(tickIncrement(math.NaN(), 1, 1)))
-	require.True(t, math.IsNaN(tickIncrement(0, math.NaN(), 1)))
-	require.True(t, math.IsNaN(tickIncrement(0, 1, math.NaN())))
-	require.True(t, math.IsNaN(tickIncrement(math.NaN(), math.NaN(), 1)))
-	require.True(t, math.IsNaN(tickIncrement(0, math.NaN(), math.NaN())))
-	require.True(t, math.IsNaN(tickIncrement(math.NaN(), 1, math.NaN())))
-	require.True(t, math.IsNaN(tickIncrement(math.NaN(), math.NaN(), math.NaN())))
-}
-
-func TestTickIncrementNaN_StartEqualsStop(t *testing.T) {
-	require.True(t, math.IsNaN(tickIncrement(1, 1, -1)))
-	require.True(t, math.IsNaN(tickIncrement(1, 1, 0)))
-	require.True(t, math.IsNaN(tickIncrement(1, 1, math.NaN())))
-	require.Equal(t, -math.Inf(1), tickIncrement(1, 1, 1))
-	require.Equal(t, -math.Inf(1), tickIncrement(1, 1, 10))
-}
-
-func TestTickIncrementZeroOrInf_CountNotPositive(t *testing.T) {
-	require.Equal(t, math.Inf(1), tickIncrement(0, 1, -1))
-	require.Equal(t, math.Inf(1), tickIncrement(0, 1, 0))
-}
-
-func TestTickIncrementInf_CountInf(t *testing.T) {
-	require.Equal(t, -math.Inf(1), tickIncrement(0, 1, math.Inf(1)))
-}
-
-func TestTickIncrementCountPlus1_StartLessThanStop(t *testing.T) {
-	require.Equal(t, -10.0, tickIncrement(0, 1, 10))
-	require.Equal(t, -10.0, tickIncrement(0, 1, 9))
-	require.Equal(t, -10.0, tickIncrement(0, 1, 8))
-	require.Equal(t, -5.0, tickIncrement(0, 1, 7))
-	require.Equal(t, -5.0, tickIncrement(0, 1, 6))
-	require.Equal(t, -5.0, tickIncrement(0, 1, 5))
-	require.Equal(t, -5.0, tickIncrement(0, 1, 4))
-	require.Equal(t, -2.0, tickIncrement(0, 1, 3))
-	require.Equal(t, -2.0, tickIncrement(0, 1, 2))
-	require.Equal(t, 1.0, tickIncrement(0, 1, 1))
-	require.Equal(t, 1.0, tickIncrement(0, 10, 10))
-	require.Equal(t, 1.0, tickIncrement(0, 10, 9))
-	require.Equal(t, 1.0, tickIncrement(0, 10, 8))
-	require.Equal(t, 2.0, tickIncrement(0, 10, 7))
-	require.Equal(t, 2.0, tickIncrement(0, 10, 6))
-	require.Equal(t, 2.0, tickIncrement(0, 10, 5))
-	require.Equal(t, 2.0, tickIncrement(0, 10, 4))
-	require.Equal(t, 5.0, tickIncrement(0, 10, 3))
-	require.Equal(t, 5.0, tickIncrement(0, 10, 2))
-	require.Equal(t, 10.0, tickIncrement(0, 10, 1))
-	require.Equal(t, 2.0, tickIncrement(-10, 10, 10))
-	require.Equal(t, 2.0, tickIncrement(-10, 10, 9))
-	require.Equal(t, 2.0, tickIncrement(-10, 10, 8))
-	require.Equal(t, 2.0, tickIncrement(-10, 10, 7))
-	require.Equal(t, 5.0, tickIncrement(-10, 10, 6))
-	require.Equal(t, 5.0, tickIncrement(-10, 10, 5))
-	require.Equal(t, 5.0, tickIncrement(-10, 10, 4))
-	require.Equal(t, 5.0, tickIncrement(-10, 10, 3))
-	require.Equal(t, 10.0, tickIncrement(-10, 10, 2))
-	require.Equal(t, 20.0, tickIncrement(-10, 10, 1))
 }

@@ -5,6 +5,7 @@
  */
 
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type { Duration } from "luxon";
 import {
   AvailableTimeGrain,
   Period,
@@ -200,7 +201,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.DAY,
     start: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         {
           period: Period.DAY,
@@ -209,7 +210,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
     end: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
@@ -224,7 +225,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
     start: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         {
           period: Period.WEEK,
@@ -233,7 +234,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
     end: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
@@ -248,7 +249,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.MONTH,
     start: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         {
           period: Period.MONTH,
@@ -257,7 +258,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
     end: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
@@ -272,7 +273,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.YEAR,
     start: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         {
           period: Period.YEAR,
@@ -281,7 +282,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
     end: {
-      reference: ReferencePoint.LATEST_DATA,
+      reference: ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW,
       transformation: [
         { duration: "P1D", operationType: TimeOffsetType.ADD },
         {
@@ -306,11 +307,18 @@ export const CUSTOM = {
   defaultComparison: TimeComparisonOption.CONTIGUOUS,
 };
 
+export const DEFAULT = {
+  label: "Default",
+  rangePreset: RangePresetType.FIXED_RANGE,
+  defaultComparison: TimeComparisonOption.CONTIGUOUS,
+};
+
 export const DEFAULT_TIME_RANGES: Record<string, TimeRangeMeta> = {
   ...LATEST_WINDOW_TIME_RANGES,
   ...PERIOD_TO_DATE_RANGES,
   ALL_TIME,
   CUSTOM,
+  DEFAULT,
 };
 
 // This is a temporary fix for the default time range setting.
@@ -470,3 +478,45 @@ export const DEFAULT_TIMEZONES = [
   "Asia/Tokyo",
   "Australia/Sydney",
 ];
+
+/**
+ * Mapping of {@link Period} to the unit in {@link Duration}
+ */
+export const PeriodAndUnits: Array<{
+  period: Period;
+  unit: keyof Duration;
+  grain: V1TimeGrain;
+}> = [
+  {
+    period: Period.MINUTE,
+    unit: "minutes",
+    grain: V1TimeGrain.TIME_GRAIN_MINUTE,
+  },
+  {
+    period: Period.HOUR,
+    unit: "hours",
+    grain: V1TimeGrain.TIME_GRAIN_HOUR,
+  },
+  {
+    period: Period.DAY,
+    unit: "days",
+    grain: V1TimeGrain.TIME_GRAIN_DAY,
+  },
+  {
+    period: Period.WEEK,
+    unit: "weeks",
+    grain: V1TimeGrain.TIME_GRAIN_WEEK,
+  },
+  {
+    period: Period.MONTH,
+    unit: "months",
+    grain: V1TimeGrain.TIME_GRAIN_MONTH,
+  },
+  {
+    period: Period.YEAR,
+    unit: "years",
+    grain: V1TimeGrain.TIME_GRAIN_YEAR,
+  },
+];
+export const PeriodToUnitsMap: Partial<Record<Period, keyof Duration>> = {};
+PeriodAndUnits.forEach(({ period, unit }) => (PeriodToUnitsMap[period] = unit));

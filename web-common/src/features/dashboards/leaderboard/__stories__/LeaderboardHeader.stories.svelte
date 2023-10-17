@@ -3,16 +3,18 @@
 
   import { action } from "@storybook/addon-actions";
   import LeaderboardHeader from "../LeaderboardHeader.svelte";
+  import { LeaderboardContextColumn } from "../../leaderboard-context-column";
+  import { SortType } from "../../proto-state/derived-types";
 
   const defaultArgs = {
     displayName: "Leaderboard Name",
     dimensionDescription: "dimension description",
     isFetching: false,
     hovered: false,
-    showTimeComparison: false,
-    showPercentOfTotal: false,
-    filterExcludeMode: false,
-    sortDescending: true,
+    contextColumn: LeaderboardContextColumn.HIDDEN,
+    sortAscending: false,
+    sortType: SortType.VALUE,
+    isBeingCompared: false,
   };
 </script>
 
@@ -26,18 +28,31 @@
         type: "boolean",
       },
     },
-
-    filterExcludeMode: {
+    hovered: {
       control: {
         type: "boolean",
       },
     },
-    isSummableMeasure: {
+    contextColumn: {
+      options: Object.values(LeaderboardContextColumn),
+      control: {
+        type: "select",
+        labels: LeaderboardContextColumn,
+      },
+    },
+    sortAscending: {
       control: {
         type: "boolean",
       },
     },
-    sortDescending: {
+    sortType: {
+      options: Object.values(SortType),
+      control: {
+        type: "select",
+        labels: SortType,
+      },
+    },
+    isBeingCompared: {
       control: {
         type: "boolean",
       },

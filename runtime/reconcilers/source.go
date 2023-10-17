@@ -354,47 +354,6 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	repoRoot := repo.Root()
 	release()
 
-	// Enforce storage limits
-	// TODO: This code is pretty ugly. We should push storage limit tracking into the underlying driver and transporter.
-	var ingestionLimit *int64
-	var limitExceeded bool
-	if olap, ok := sinkConn.AsOLAP(r.C.InstanceID); ok {
-		// Get storage limit
-		inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
-		if err != nil {
-			return err
-		}
-		storageLimit := inst.IngestionLimitBytes
-		if storageLimit > 0 {
-			// Get ingestion limit (storage limit minus current size)
-			bytes, ok := olap.EstimateSize()
-			if ok {
-				n := storageLimit - bytes
-				if n <= 0 {
-					return drivers.ErrIngestionLimitExceeded
-				}
-				ingestionLimit = &n
-
-				// Start background goroutine to check size is not exceeded during ingestion
-				go func() {
-					ticker := time.NewTicker(5 * time.Second)
-					defer ticker.Stop()
-					for {
-						select {
-						case <-ctx.Done():
-							return
-						case <-ticker.C:
-							if size, ok := olap.EstimateSize(); ok && size > storageLimit {
-								limitExceeded = true
-								cancel()
-							}
-						}
-					}
-				}()
-			}
-		}
-	}
-
 	// Execute the data transfer
 	opts := &drivers.TransferOptions{
 		AllowHostAccess: r.C.Runtime.AllowHostAccess(),
@@ -403,9 +362,6 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 			return r.C.AcquireConn(ctx, name)
 		},
 		Progress: drivers.NoOpProgress{},
-	}
-	if ingestionLimit != nil {
-		opts.LimitInBytes = *ingestionLimit
 	}
 
 	transferStart := time.Now()
@@ -416,8 +372,6 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 			attribute.String("destination", sinkConn.Driver()),
 			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
 			attribute.Bool("failed", outErr != nil),
-			attribute.Bool("limit_exceeded", limitExceeded),
-			attribute.Int64("limit_bytes", opts.LimitInBytes),
 		}
 		r.C.Activity.Emit(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
 
@@ -425,9 +379,6 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	}()
 
 	err = t.Transfer(ctx, srcConfig, sinkConfig, opts)
-	if limitExceeded {
-		return drivers.ErrIngestionLimitExceeded
-	}
 	return err
 }
 

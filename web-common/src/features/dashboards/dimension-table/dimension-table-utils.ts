@@ -5,7 +5,7 @@ import PercentOfTotal from "./PercentOfTotal.svelte";
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import type {
   MetricsViewDimension,
-  MetricsViewMeasure,
+  MetricsViewSpecMeasureV2,
   V1MetricsViewComparisonRow,
   V1MetricsViewComparisonValue,
   V1MetricsViewFilter,
@@ -91,7 +91,7 @@ export function computePercentOfTotal(
 
 export function getComparisonProperties(
   measureName: string,
-  selectedMeasure: MetricsViewMeasure
+  selectedMeasure: MetricsViewSpecMeasureV2
 ): {
   component: typeof SvelteComponent;
   type: string;
@@ -109,7 +109,7 @@ export function getComparisonProperties(
     return {
       component: DeltaChange,
       type: "RILL_CHANGE",
-      format: selectedMeasure.format,
+      format: selectedMeasure.formatPreset,
       description: "Change over comparison period",
     };
   } else if (measureName.includes("_percent_of_total")) {
@@ -219,7 +219,7 @@ export function estimateColumnSizes(
 
 export function prepareVirtualizedDimTableColumns(
   dash: MetricsExplorerEntity,
-  allMeasures: MetricsViewMeasure[],
+  allMeasures: MetricsViewSpecMeasureV2[],
   referenceValues: { [key: string]: number },
   dimension: MetricsViewDimension,
   timeComparison: boolean,
@@ -290,7 +290,7 @@ export function prepareVirtualizedDimTableColumns(
           description: measure?.description,
           total: referenceValues[measure.name] || 0,
           enableResize: false,
-          format: measure?.format,
+          format: measure?.formatPreset,
           highlight,
           sorted,
         };
@@ -333,7 +333,7 @@ export function addContextColumnNames(
   columnNames: string[],
   timeComparison: boolean,
   validPercentOfTotal: boolean,
-  selectedMeasure: MetricsViewMeasure
+  selectedMeasure: MetricsViewSpecMeasureV2
 ) {
   const name = selectedMeasure?.name;
 
@@ -345,7 +345,7 @@ export function addContextColumnNames(
     columnNames.splice(sortByColumnIndex + 1, 0, `${name}_delta`);
 
     // Only push percentage delta column if selected measure is not a percentage
-    if (selectedMeasure?.format != FormatPreset.PERCENTAGE) {
+    if (selectedMeasure?.formatPreset != FormatPreset.PERCENTAGE) {
       percentOfTotalSpliceIndex = 3;
       columnNames.splice(sortByColumnIndex + 2, 0, `${name}_delta_perc`);
     }
@@ -367,7 +367,7 @@ export function addContextColumnNames(
  */
 export function prepareDimensionTableRows(
   queryRows: V1MetricsViewComparisonRow[],
-  measures: MetricsViewMeasure[],
+  measures: MetricsViewSpecMeasureV2[],
   activeMeasureName: string,
   dimensionColumn: string,
   addDeltas: boolean,
@@ -377,7 +377,7 @@ export function prepareDimensionTableRows(
   if (!queryRows || !queryRows.length) return [];
 
   const formatMap = Object.fromEntries(
-    measures.map((m) => [m.name, m.format as FormatPreset])
+    measures.map((m) => [m.name, m.formatPreset as FormatPreset])
   );
 
   const tableRows: DimensionTableRow[] = queryRows.map((row) => {

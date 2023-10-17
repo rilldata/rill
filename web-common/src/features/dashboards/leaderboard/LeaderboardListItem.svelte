@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  import type { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createEventDispatcher } from "svelte";
   import { fly, slide } from "svelte/transition";
   import BarAndLabel from "../../../components/BarAndLabel.svelte";
@@ -36,7 +36,6 @@
 
   export let atLeastOneActive = false;
   export let isBeingCompared = false;
-  export let formattedValue: string;
   export let filterExcludeMode;
 
   export let formatPreset;

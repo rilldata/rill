@@ -12,6 +12,7 @@
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
+    useIsLocalFileConnector,
     useSource,
     useSourceFileNames,
     useSourceFromYaml,
@@ -25,8 +26,8 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import type { V1SourceV2 } from "@rilldata/web-common/runtime-client";
+  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -35,7 +36,10 @@
   import { EntityType } from "../../entity-management/types";
   import { useCreateDashboardFromSource } from "../createDashboard";
   import { createModelFromSource } from "../createModel";
-  import { refreshSource } from "../refreshSource";
+  import {
+    refreshSource,
+    replaceSourceWithUploadedFile,
+  } from "../refreshSource";
 
   export let sourceName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
@@ -157,6 +161,17 @@
     }
     overlay.set(null);
   };
+
+  $: isLocalFileConnectorQuery = useIsLocalFileConnector(
+    $runtime.instanceId,
+    sourceName
+  );
+  $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
+
+  async function onReplaceSource(sourceName: string) {
+    await replaceSourceWithUploadedFile(runtimeInstanceId, sourceName);
+    overlay.set(null);
+  }
 </script>
 
 <MenuItem icon on:select={() => handleCreateModel()}>
@@ -181,19 +196,19 @@
   </svelte:fragment>
 </MenuItem>
 
-{#if source?.state?.connector === "local_file"}
-  <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
+<MenuItem icon on:select={() => onRefreshSource(sourceName)}>
+  <svelte:fragment slot="icon">
+    <RefreshIcon />
+  </svelte:fragment>
+  Refresh source
+</MenuItem>
+
+{#if isLocalFileConnector}
+  <MenuItem icon on:select={() => onReplaceSource(sourceName)}>
     <svelte:fragment slot="icon">
       <Import />
     </svelte:fragment>
-    Import local file to refresh source
-  </MenuItem>
-{:else}
-  <MenuItem icon on:select={() => onRefreshSource(sourceName)}>
-    <svelte:fragment slot="icon">
-      <RefreshIcon />
-    </svelte:fragment>
-    Refresh source data
+    Replace source with uploaded file
   </MenuItem>
 {/if}
 

@@ -6,6 +6,7 @@
     getFileAPIPathFromNameAndType,
     getFilePathFromNameAndType,
   } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
@@ -13,7 +14,6 @@
     createQueryServiceTableRows,
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
-    V1ReconcileStatus,
   } from "@rilldata/web-common/runtime-client";
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -42,12 +42,6 @@
 
   const limit = 150;
 
-  $: tableQuery = createQueryServiceTableRows(runtimeInstanceId, modelName, {
-    limit,
-  });
-
-  $: runtimeError = ($tableQuery.error as any)?.response.data;
-
   // track innerHeight to calculate the size of the editor element.
   let innerHeight: number;
 
@@ -72,6 +66,16 @@
     modelPath
   );
   $: modelError = $allErrors?.[0]?.message;
+
+  $: tableQuery = createQueryServiceTableRows(
+    runtimeInstanceId,
+    $modelQuery.data?.model?.state?.table,
+    {
+      limit,
+    }
+  );
+
+  $: runtimeError = ($tableQuery.error as any)?.response.data;
 
   const outputLayout = getContext(
     "rill:app:output-layout"
@@ -166,8 +170,7 @@
           {#if !$modelEmpty?.data}
             <ConnectedPreviewTable
               objectName={$modelQuery?.data?.model?.state?.table}
-              loading={$modelQuery?.data?.meta?.reconcileStatus !==
-                V1ReconcileStatus.RECONCILE_STATUS_IDLE}
+              loading={resourceIsLoading($modelQuery?.data)}
               {limit}
             />
           {/if}

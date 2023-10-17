@@ -6,30 +6,67 @@ import (
 	"fmt"
 	"html/template"
 	"net/url"
+	"time"
 )
 
 //go:embed templates/gen/*
 var templatesFS embed.FS
 
 type Client struct {
-	sender      Sender
-	frontendURL string
-	externalURL string
-	templates   *template.Template
+	sender    Sender
+	templates *template.Template
 }
 
-func New(sender Sender, frontendURL, externalURL string) *Client {
-	_, err := url.Parse(frontendURL)
-	if err != nil {
-		panic(fmt.Errorf("invalid frontendURL: %w", err))
+func New(sender Sender) *Client {
+	return &Client{
+		sender:    sender,
+		templates: template.Must(template.New("").ParseFS(templatesFS, "templates/gen/*.html")),
+	}
+}
+
+type ScheduledReport struct {
+	ToEmail        string
+	ToName         string
+	Title          string
+	ReportTime     time.Time
+	DownloadFormat string
+	OpenLink       string
+	DownloadLink   string
+	EditLink       string
+}
+
+type scheduledReportData struct {
+	Title            string
+	ReportTimeString string // Will be inferred from ReportDate
+	DownloadFormat   string
+	OpenLink         template.URL
+	DownloadLink     template.URL
+	EditLink         template.URL
+}
+
+func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
+	// Build template data
+	data := &scheduledReportData{
+		Title:            opts.Title,
+		ReportTimeString: opts.ReportTime.Format(time.RFC1123),
+		DownloadFormat:   opts.DownloadFormat,
+		OpenLink:         template.URL(opts.OpenLink),
+		DownloadLink:     template.URL(opts.DownloadLink),
+		EditLink:         template.URL(opts.EditLink),
 	}
 
-	return &Client{
-		sender:      sender,
-		frontendURL: frontendURL,
-		externalURL: externalURL,
-		templates:   template.Must(template.New("").ParseFS(templatesFS, "templates/gen/*.html")),
+	// Build subject
+	subject := fmt.Sprintf("%s (%s)", opts.Title, data.ReportTimeString)
+
+	// Resolve template
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("scheduled_report.html").Execute(buf, data)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
 	}
+	html := buf.String()
+
+	return c.sender.Send(opts.ToEmail, opts.ToName, subject, html)
 }
 
 type CallToAction struct {
@@ -55,6 +92,8 @@ func (c *Client) SendCallToAction(opts *CallToAction) error {
 type OrganizationInvite struct {
 	ToEmail       string
 	ToName        string
+	AdminURL      string
+	FrontendURL   string
 	OrgName       string
 	RoleName      string
 	InvitedByName string
@@ -67,8 +106,8 @@ func (c *Client) SendOrganizationInvite(opts *OrganizationInvite) error {
 
 	// Create link URL as "{{ admin URL }}/auth/signup?redirect={{ org frontend URL }}"
 	queryParams := url.Values{}
-	queryParams.Add("redirect", mustJoinURLPath(c.frontendURL, opts.OrgName))
-	finalURL := mustJoinURLPath(c.externalURL, "/auth/signup") + "?" + queryParams.Encode()
+	queryParams.Add("redirect", mustJoinURLPath(opts.FrontendURL, opts.OrgName))
+	finalURL := mustJoinURLPath(opts.AdminURL, "/auth/signup") + "?" + queryParams.Encode()
 
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
@@ -84,6 +123,7 @@ func (c *Client) SendOrganizationInvite(opts *OrganizationInvite) error {
 type OrganizationAddition struct {
 	ToEmail       string
 	ToName        string
+	FrontendURL   string
 	OrgName       string
 	RoleName      string
 	InvitedByName string
@@ -101,13 +141,15 @@ func (c *Client) SendOrganizationAddition(opts *OrganizationAddition) error {
 		Title:      fmt.Sprintf("%s has added you to %s", opts.InvitedByName, opts.OrgName),
 		Body:       template.HTML(fmt.Sprintf("%s has added you as a %s for <b>%s</b>. Click the button below to view and collaborate on Rill dashboard projects for %s.", opts.InvitedByName, opts.RoleName, opts.OrgName, opts.OrgName)),
 		ButtonText: "View account",
-		ButtonLink: mustJoinURLPath(c.frontendURL, opts.OrgName),
+		ButtonLink: mustJoinURLPath(opts.FrontendURL, opts.OrgName),
 	})
 }
 
 type ProjectInvite struct {
 	ToEmail       string
 	ToName        string
+	AdminURL      string
+	FrontendURL   string
 	OrgName       string
 	ProjectName   string
 	RoleName      string
@@ -121,8 +163,8 @@ func (c *Client) SendProjectInvite(opts *ProjectInvite) error {
 
 	// Create link URL as "{{ admin URL }}/auth/signup?redirect={{ project frontend URL }}"
 	queryParams := url.Values{}
-	queryParams.Add("redirect", mustJoinURLPath(c.frontendURL, opts.OrgName, opts.ProjectName))
-	finalURL := mustJoinURLPath(c.externalURL, "/auth/signup") + "?" + queryParams.Encode()
+	queryParams.Add("redirect", mustJoinURLPath(opts.FrontendURL, opts.OrgName, opts.ProjectName))
+	finalURL := mustJoinURLPath(opts.AdminURL, "/auth/signup") + "?" + queryParams.Encode()
 
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
@@ -138,6 +180,7 @@ func (c *Client) SendProjectInvite(opts *ProjectInvite) error {
 type ProjectAddition struct {
 	ToEmail       string
 	ToName        string
+	FrontendURL   string
 	OrgName       string
 	ProjectName   string
 	RoleName      string
@@ -156,7 +199,7 @@ func (c *Client) SendProjectAddition(opts *ProjectAddition) error {
 		Title:      fmt.Sprintf("You have been added to the %s/%s project", opts.OrgName, opts.ProjectName),
 		Body:       template.HTML(fmt.Sprintf("%s has invited you to collaborate as a %s for the <b>%s</b> project. Click the button below to accept your invitation. ", opts.InvitedByName, opts.RoleName, opts.ProjectName)),
 		ButtonText: "View account",
-		ButtonLink: mustJoinURLPath(c.frontendURL, opts.OrgName, opts.ProjectName),
+		ButtonLink: mustJoinURLPath(opts.FrontendURL, opts.OrgName, opts.ProjectName),
 	})
 }
 

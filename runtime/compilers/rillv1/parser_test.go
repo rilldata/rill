@@ -888,6 +888,66 @@ security:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestReport(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`reports/r1.yaml`: `
+kind: report
+title: My Report
+
+refresh:
+  cron: 0 * * * *
+  time_zone: America/Los_Angeles
+
+query:
+  name: MetricsViewToplist
+  time_range: P2W
+  args:
+    metrics_view: mv1
+
+export:
+  format: csv
+  limit: 10000
+
+email:
+  recipients:
+    - benjamin@example.com
+  template:
+    open_url: https://example.com/open
+    edit_url: https://example.com/edit
+    export_url: https://example.com/export
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
+			Paths: []string{"/reports/r1.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				Title: "My Report",
+				RefreshSchedule: &runtimev1.Schedule{
+					Cron:     "0 * * * *",
+					TimeZone: "America/Los_Angeles",
+				},
+				QueryName:       "MetricsViewToplist",
+				QueryArgsJson:   `{"metrics_view":"mv1"}`,
+				QueryTimeRange:  "P2W",
+				ExportFormat:    runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportLimit:     10000,
+				EmailRecipients: []string{"jane@example.com"},
+				EmailOpenUrl:    "https://example.com/open",
+				EmailEditUrl:    "https://example.com/edit",
+				EmailExportUrl:  "https://example.com/export",
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check resources
 	gotResources := maps.Clone(p.Resources)

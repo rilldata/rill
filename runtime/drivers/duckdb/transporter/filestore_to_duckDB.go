@@ -46,8 +46,8 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 	}
 
 	size := fileSize(localPaths)
-	if opts.LimitInBytes != 0 && size > opts.LimitInBytes {
-		return drivers.ErrIngestionLimitExceeded
+	if !sizeWithinStorageLimits(t.to, size) {
+		return drivers.ErrStorageLimitExceeded
 	}
 	opts.Progress.Target(size, drivers.ProgressUnitByte)
 

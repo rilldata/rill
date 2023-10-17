@@ -9,9 +9,9 @@ import (
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
@@ -609,6 +609,8 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		err = s.admin.Email.SendProjectInvite(&email.ProjectInvite{
 			ToEmail:       req.Email,
 			ToName:        "",
+			AdminURL:      s.opts.ExternalURL,
+			FrontendURL:   s.opts.FrontendURL,
 			OrgName:       org.Name,
 			ProjectName:   proj.Name,
 			RoleName:      role.Name,
@@ -631,6 +633,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 	err = s.admin.Email.SendProjectAddition(&email.ProjectAddition{
 		ToEmail:       req.Email,
 		ToName:        "",
+		FrontendURL:   s.opts.FrontendURL,
 		OrgName:       org.Name,
 		ProjectName:   proj.Name,
 		RoleName:      role.Name,
