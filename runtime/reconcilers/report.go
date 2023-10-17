@@ -279,15 +279,14 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 	for _, recipient := range rep.Spec.EmailRecipients {
 		err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
-			ToEmail:           recipient,
-			ToName:            "",
-			Title:             rep.Spec.Title,
-			ReportTime:        t,
-			DownloadFormat:    formatExportFormat(rep.Spec.ExportFormat),
-			DownloadValidDays: 7,
-			OpenLink:          rep.Spec.EmailOpenUrl,
-			DownloadLink:      exportURL.String(),
-			EditLink:          rep.Spec.EmailEditUrl,
+			ToEmail:        recipient,
+			ToName:         "",
+			Title:          rep.Spec.Title,
+			ReportTime:     t,
+			DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
+			OpenLink:       rep.Spec.EmailOpenUrl,
+			DownloadLink:   exportURL.String(),
+			EditLink:       rep.Spec.EmailEditUrl,
 		})
 		if err != nil {
 			return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)

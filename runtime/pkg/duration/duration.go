@@ -102,5 +102,5 @@ func (d Duration) Sub(t time.Time) time.Time {
 	t = t.AddDate(-d.Year, -d.Month, -days)
 
 	td := time.Duration(d.Second)*time.Second + time.Duration(d.Minute)*time.Minute + time.Duration(d.Hour)*time.Hour
-	return t.Add(-1 * td)
+	return t.Add(-td)
 }

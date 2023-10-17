@@ -81,7 +81,7 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 		return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
 	}
 
-	// Query properties
+	// Query args
 	if tmp.Query.ArgsJSON != "" {
 		// Validate JSON
 		if !json.Valid([]byte(tmp.Query.ArgsJSON)) {
@@ -96,7 +96,7 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 		tmp.Query.ArgsJSON = string(data)
 	}
 	if tmp.Query.ArgsJSON == "" {
-		return errors.New(`missing query properties (must set either "query.args" or "query.args_json")`)
+		return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
 	}
 
 	// Query time range

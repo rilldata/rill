@@ -25,37 +25,34 @@ func New(sender Sender) *Client {
 }
 
 type ScheduledReport struct {
-	ToEmail           string
-	ToName            string
-	Title             string
-	ReportTime        time.Time
-	DownloadFormat    string
-	DownloadValidDays int
-	OpenLink          string
-	DownloadLink      string
-	EditLink          string
+	ToEmail        string
+	ToName         string
+	Title          string
+	ReportTime     time.Time
+	DownloadFormat string
+	OpenLink       string
+	DownloadLink   string
+	EditLink       string
 }
 
 type scheduledReportData struct {
-	Title             string
-	ReportTimeString  string // Will be inferred from ReportDate
-	DownloadFormat    string
-	DownloadValidDays int
-	OpenLink          template.URL
-	DownloadLink      template.URL
-	EditLink          template.URL
+	Title            string
+	ReportTimeString string // Will be inferred from ReportDate
+	DownloadFormat   string
+	OpenLink         template.URL
+	DownloadLink     template.URL
+	EditLink         template.URL
 }
 
 func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	// Build template data
 	data := &scheduledReportData{
-		Title:             opts.Title,
-		ReportTimeString:  opts.ReportTime.Format(time.RFC1123),
-		DownloadFormat:    opts.DownloadFormat,
-		DownloadValidDays: opts.DownloadValidDays,
-		OpenLink:          template.URL(opts.OpenLink),
-		DownloadLink:      template.URL(opts.DownloadLink),
-		EditLink:          template.URL(opts.EditLink),
+		Title:            opts.Title,
+		ReportTimeString: opts.ReportTime.Format(time.RFC1123),
+		DownloadFormat:   opts.DownloadFormat,
+		OpenLink:         template.URL(opts.OpenLink),
+		DownloadLink:     template.URL(opts.DownloadLink),
+		EditLink:         template.URL(opts.EditLink),
 	}
 
 	// Build subject
