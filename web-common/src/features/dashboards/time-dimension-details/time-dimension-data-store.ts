@@ -278,6 +278,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
       useTimeSeriesDataStore(ctx),
     ],
     ([dashboardStore, metricsView, timeControls, timeSeries]) => {
+      if (!timeControls.ready) return;
       const measureName = dashboardStore?.expandedMeasureName;
       const dimensionName = dashboardStore?.selectedComparisonDimension;
       const timeFormatter = createTimeFormat([
@@ -300,13 +301,6 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         ) /
           intervalWidth -
         2;
-
-      console.log(
-        "columnCount",
-        columnCount,
-        timeControls?.adjustedStart,
-        timeControls?.adjustedEnd
-      );
       const measure = metricsView?.data?.measures?.find(
         (m) => m.name === measureName
       );
