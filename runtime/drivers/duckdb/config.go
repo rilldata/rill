@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -17,12 +18,12 @@ type config struct {
 	PoolSize int `mapstructure:"pool_size"`
 	// Slots controls the amount of resources to allocate to the database
 	Slots int `mapstructure:"slots"`
-	// MemoryBytesPerSlot is the amount of memory in bytes per slot
-	MemoryBytesPerSlot int64 `mapstructure:"memory_per_slot"`
+	// MemoryGBPerSlot is the amount of memory in bytes per slot
+	MemoryGBPerSlot int `mapstructure:"memory_per_slot"`
 	// CPUPerSlot is the number of CPU cores per slot
 	CPUPerSlot int `mapstructure:"cpu_per_slot"`
-	// StorageBytesPerSlot is the amount of storage in GB per slot
-	StorageBytesPerSlot int64 `mapstructure:"storage_per_slot"`
+	// StorageGBPerSlot is the amount of storage in GB per slot
+	StorageGBPerSlot int `mapstructure:"storage_per_slot"`
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
 	AllowHostAccess bool `mapstructure:"allow_host_access"`
 	// ErrorOnIncompatibleVersion controls whether to return error or delete DBFile created with older duckdb version.
@@ -58,14 +59,14 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 
 	if cfg.Slots != 0 {
 		// memory limits
-		qry.Add("max_memory", fmt.Sprintf("%dB", int64(cfg.Slots)*cfg.MemoryBytesPerSlot))
+		qry.Add("max_memory", fmt.Sprintf("%dGB", cfg.Slots*cfg.MemoryGBPerSlot))
 
 		// cpu limits
 		qry.Add("threads", strconv.Itoa(cfg.Slots*cfg.CPUPerSlot))
 		cfg.PoolSize = cfg.Slots * cfg.CPUPerSlot
 
 		// storage limits
-		cfg.StorageLimitBytes = int64(cfg.Slots) * cfg.StorageBytesPerSlot
+		cfg.StorageLimitBytes = int64(cfg.Slots*cfg.StorageGBPerSlot) * int64(datasize.GB)
 
 		// Remove from query string (so not passed into DuckDB config)
 		qry.Del("slots")

@@ -314,14 +314,16 @@ func Test_connection_CreateTableAsSelectStorageLimits(t *testing.T) {
 	temp := t.TempDir()
 	require.NoError(t, os.Mkdir(filepath.Join(temp, "default"), fs.ModePerm))
 	dbPath := filepath.Join(temp, "default", "normal.db")
-	handle, err := Driver{}.Open(map[string]any{"dsn": dbPath, "slots": 1, "cpu_per_slot": 1, "memory_per_slot": 10 * 1024 * 1024, "storage_per_slot": 10 * 1024 * 1024}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dbPath}, false, activity.NewNoopClient(), zap.NewNop())
+	handle.(*connection).config.StorageLimitBytes = 10 * 1024 * 1024
 	require.NoError(t, err)
 	normalConn := handle.(*connection)
 	normalConn.AsOLAP("default")
 	require.NoError(t, normalConn.Migrate(context.Background()))
 
 	dbPath = filepath.Join(temp, "default", "view.db")
-	handle, err = Driver{}.Open(map[string]any{"dsn": dbPath, "external_table_storage": true, "slots": 1, "cpu_per_slot": 1, "memory_per_slot": 10 * 1024 * 1024, "storage_per_slot": 10 * 1024 * 1024}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err = Driver{}.Open(map[string]any{"dsn": dbPath, "external_table_storage": true}, false, activity.NewNoopClient(), zap.NewNop())
+	handle.(*connection).config.StorageLimitBytes = 10 * 1024 * 1024
 	require.NoError(t, err)
 	viewConnection := handle.(*connection)
 	require.NoError(t, viewConnection.Migrate(context.Background()))
@@ -364,7 +366,8 @@ func Test_connection_InsertTableAsSelectLimits(t *testing.T) {
 	temp := t.TempDir()
 
 	dbPath := filepath.Join(temp, "view.db")
-	handle, err := Driver{}.Open(map[string]any{"dsn": dbPath, "external_table_storage": true, "slots": 1, "cpu_per_slot": 1, "memory_per_slot": 10 * 1024 * 1024, "storage_per_slot": 10 * 1024 * 1024}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := Driver{}.Open(map[string]any{"dsn": dbPath, "external_table_storage": true}, false, activity.NewNoopClient(), zap.NewNop())
+	handle.(*connection).config.StorageLimitBytes = 10 * 1024 * 1024
 	require.NoError(t, err)
 	c := handle.(*connection)
 	require.NoError(t, c.Migrate(context.Background()))
