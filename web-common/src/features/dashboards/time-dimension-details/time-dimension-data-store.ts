@@ -22,10 +22,20 @@ import { durationToMillis } from "@rilldata/web-common/lib/time/grains";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
+export interface TableData {
+  rowCount: number;
+  fixedColCount: number;
+  rowHeaderData: Array<Array<{ value: string }>>;
+  columnCount: number;
+  columnHeaderData: Array<Array<{ value: string }>>;
+  body: Array<Array<string | number | null>>;
+  selectedValues: string[];
+}
+
 export type TimeDimensionDataState = {
   isFetching: boolean;
   comparing: "dimension" | "time" | "none";
-  data?: unknown[];
+  data?: TableData;
   timeFormatter: (v: Date) => string;
 };
 
@@ -44,7 +54,7 @@ function prepareDimensionData(
   unfilteredTotal: number,
   measure: MetricsViewSpecMeasureV2,
   selectedValues: string[]
-) {
+): TableData {
   if (!data) return;
 
   const formatPreset =
@@ -154,7 +164,7 @@ function prepareTimeData(
   comparisonLabel: string,
   measure: MetricsViewSpecMeasureV2,
   hasTimeComparison
-) {
+): TableData {
   if (!data) return;
 
   const formatPreset =
@@ -296,7 +306,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
       );
 
       let comparing;
-      let data;
+      let data: TableData;
       if (dimensionName) {
         comparing = "dimension";
 

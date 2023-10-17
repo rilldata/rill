@@ -23,7 +23,7 @@
   export let rowHeaderDepth = 0;
   export let columnHeaderDepth = 0;
   export let onMouseDown: (evt: MouseEvent, table: any) => any = undefined;
-  export let onMouseOver: (evt: MouseEvent, table: any) => any = undefined;
+  export let onMouseHover: (evt: MouseEvent, table: any) => any = undefined;
   export let renderCell: PivotRenderCallback = () => {};
   export let renderColumnHeader: PivotRenderCallback = () => {};
   export let renderRowHeader: PivotRenderCallback = () => {};
@@ -214,8 +214,9 @@
   $: {
     if (table && onMouseDown) {
       const handler = (evt: MouseEvent) => onMouseDown(evt, table);
-      const hoverHandler = (evt: MouseEvent) => onMouseOver(evt, table);
+      const hoverHandler = (evt: MouseEvent) => onMouseHover(evt, table);
       addHandler("mouseover", hoverHandler);
+      addHandler("mouseout", hoverHandler);
       addHandler("mousedown", handler);
     }
   }

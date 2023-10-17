@@ -19,6 +19,7 @@
   export let dimensionName: string;
   export let excludeMode: boolean;
   export let sortDirection: boolean;
+  export let scrubPos;
   export let comparing;
   export let data;
 
@@ -51,17 +52,28 @@
     data.element.classList.toggle("font-semibold", Boolean(data.y == 0));
     data.element.classList.add("text-right");
 
-    if (rowIdxHover !== undefined && colIdxHover !== undefined) {
-      const cellBgColor = getClassForCell(
-        "default",
-        rowIdxHover,
-        colIdxHover,
-        data.y,
-        data.x
-      );
-      data.element.classList.remove("bg-white", "bg-gray-100", "bg-gray-200");
-      data.element.classList.add(cellBgColor);
-    }
+    const isScrubbed =
+      scrubPos?.start !== undefined &&
+      data.x >= scrubPos?.start &&
+      data.x <= scrubPos?.end - 1;
+
+    console.log(rowIdxHover, colIdxHover);
+    const cellBgColor = getClassForCell(
+      isScrubbed ? "scrubbed" : "default",
+      rowIdxHover,
+      colIdxHover,
+      data.y,
+      data.x
+    );
+    data.element.classList.remove(
+      "bg-white",
+      "bg-gray-100",
+      "bg-gray-200",
+      "bg-blue-50",
+      "bg-blue-100",
+      "bg-blue-200"
+    );
+    data.element.classList.add(cellBgColor);
   };
 
   const renderColumnHeader: PivotRenderCallback = (data) => {
@@ -182,9 +194,16 @@
     handleEvent(evt, table, "sortable", () => dispatch("toggle-sort"));
   };
 
-  const handleMouseOver = (evt, table) => {
-    handleEvent(evt, table, "__row", (n) => (rowIdxHover = parseInt(n)));
-    handleEvent(evt, table, "__col", (n) => (colIdxHover = parseInt(n)));
+  const handleMouseHover = (evt, table) => {
+    if (evt.type === "mouseout") {
+      rowIdxHover = undefined;
+      colIdxHover = undefined;
+    } else {
+      handleEvent(evt, table, "__row", (n) => (rowIdxHover = parseInt(n)));
+      handleEvent(evt, table, "__col", (n) => (colIdxHover = parseInt(n)));
+    }
+
+    console.log(rowIdxHover, colIdxHover);
     pivot?.draw();
   };
 
@@ -214,6 +233,6 @@
     {getColumnWidth}
     {getRowHeaderWidth}
     onMouseDown={handleMouseDown}
-    onMouseOver={handleMouseOver}
+    onMouseHover={handleMouseHover}
   />
 </div>

@@ -303,9 +303,16 @@ export function createAdaptiveLineThicknessStore(yAccessor) {
 }
 
 // This is function equivalent of WithBisector
-export function bisectData(value, direction, accessor, data) {
+export function bisectData(
+  value,
+  direction,
+  accessor,
+  data,
+  returnPos = false
+) {
   const bisect = bisector((d) => d[accessor])[direction];
 
+  if (returnPos) return value !== undefined ? bisect(data, value) : undefined;
   return value !== undefined ? data[bisect(data, value)] : undefined;
 }
 
