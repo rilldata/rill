@@ -167,7 +167,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
             timeSeriesData = prepareTimeSeries(
               primary?.data?.data,
               comparison?.data?.data,
-              TIME_GRAIN[interval].duration,
+              TIME_GRAIN[interval]?.duration,
               dashboardStore.selectedTimezone
             );
           }

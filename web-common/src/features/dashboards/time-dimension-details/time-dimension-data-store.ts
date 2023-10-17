@@ -58,7 +58,7 @@ function prepareDimensionData(
   if (!data) return;
 
   const formatPreset =
-    (measure?.format as FormatPreset) ?? FormatPreset.HUMANIZE;
+    (measure?.formatPreset as FormatPreset) ?? FormatPreset.HUMANIZE;
   const measureName = measure?.name;
   const validPercentOfTotal = measure?.validPercentOfTotal;
 
@@ -168,7 +168,7 @@ function prepareTimeData(
   if (!data) return;
 
   const formatPreset =
-    (measure?.format as FormatPreset) ?? FormatPreset.HUMANIZE;
+    (measure?.formatPreset as FormatPreset) ?? FormatPreset.HUMANIZE;
   const measureName = measure?.name;
 
   const columnHeaderData = data?.slice(1, -1)?.map((v) => [{ value: v.ts }]);
@@ -301,6 +301,12 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
           intervalWidth -
         2;
 
+      console.log(
+        "columnCount",
+        columnCount,
+        timeControls?.adjustedStart,
+        timeControls?.adjustedEnd
+      );
       const measure = metricsView?.data?.measures?.find(
         (m) => m.name === measureName
       );

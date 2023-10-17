@@ -224,7 +224,7 @@ export function getDimensionValueTimeSeries(
                 prepData = prepareTimeSeries(
                   timeseries?.data?.data,
                   undefined,
-                  TIME_GRAIN[interval].duration,
+                  TIME_GRAIN[interval]?.duration,
                   zone
                 );
               }

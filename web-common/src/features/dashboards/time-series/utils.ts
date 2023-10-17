@@ -46,7 +46,7 @@ export function prepareTimeSeries(
   timeGrainDuration: string,
   zone: string
 ) {
-  return original.map((originalPt, i) => {
+  return original?.map((originalPt, i) => {
     const comparisonPt = comparison?.[i];
 
     const ts = adjustOffsetForZone(originalPt.ts, zone);
