@@ -34,7 +34,7 @@ func TestServer_QueryBatch_MetricsViewQueries(t *testing.T) {
 				},
 			},
 			{
-				Query: &runtimev1.Query_MetricsViewComparisonToplistRequest{
+				Query: &runtimev1.Query_MetricsViewComparisonRequest{
 					MetricsViewComparisonRequest: &runtimev1.MetricsViewComparisonRequest{
 						MetricsViewName: "ad_bids_metrics",
 						Dimension: &runtimev1.MetricsViewAggregationDimension{
