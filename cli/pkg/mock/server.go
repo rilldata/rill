@@ -3,11 +3,14 @@ package mock
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
+	"time"
 
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/server"
 	admincli "github.com/rilldata/rill/cli/cmd/admin"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -108,4 +111,22 @@ func (m *mockGithub) InstallationClient(installationID int64) (*github.Client, e
 
 func (m *mockGithub) InstallationToken(ctx context.Context, installationID int64) (string, error) {
 	return "", nil
+}
+
+func CheckServerStatus(srv *server.Server) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	resultChan := make(chan error, 1)
+
+	go func() {
+		_, err := srv.Ping(ctx, &adminv1.PingRequest{})
+		resultChan <- err
+	}()
+
+	select {
+	case err := <-resultChan:
+		return err
+	case <-ctx.Done():
+		return fmt.Errorf("server is not responding within the timeout period")
+	}
 }

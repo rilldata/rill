@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
 	qt "github.com/frankban/quicktest"
 	"github.com/rilldata/rill/admin/database"
@@ -59,7 +58,9 @@ func TestServiceWorkflow(t *testing.T) {
 
 	group.Go(func() error { return srv.ServeGRPC(cctx) })
 	group.Go(func() error { return srv.ServeHTTP(cctx) })
-	time.Sleep(15 * time.Second)
+	// time.Sleep(15 * time.Second)
+	err = mock.CheckServerStatus(srv)
+	c.Assert(err, qt.IsNil)
 
 	var buf bytes.Buffer
 	format := printer.Human
