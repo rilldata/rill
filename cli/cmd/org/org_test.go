@@ -59,7 +59,7 @@ func TestOrganizationWorkflow(t *testing.T) {
 
 	group.Go(func() error { return srv.ServeGRPC(cctx) })
 	group.Go(func() error { return srv.ServeHTTP(cctx) })
-	time.Sleep(15 * time.Second)
+	time.Sleep(25 * time.Second)
 
 	var buf bytes.Buffer
 	format := printer.JSON
