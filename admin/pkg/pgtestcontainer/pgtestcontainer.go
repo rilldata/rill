@@ -25,7 +25,6 @@ func New(t *testing.T) Container {
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        "postgres:14",
 			ExposedPorts: []string{"5432/tcp"},
-			SkipReaper:   true,
 			WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(15 * time.Second),
 			Env: map[string]string{
 				"POSTGRES_USER":     "postgres",
