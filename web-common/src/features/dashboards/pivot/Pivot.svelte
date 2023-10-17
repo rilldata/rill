@@ -12,7 +12,7 @@
 
   const NULL_CELL = {
     isNull: true,
-    value: `<div class="italic">null</div>`,
+    value: `<div style="font-size:0.925em" class="opacity-50 italic">no data</div>`,
   };
 
   export let getColumnHeaderData: (pos: PivotPos) => any = () => [];

@@ -77,7 +77,7 @@
 </script>
 
 <div
-  class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3"
+  class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3 h-11"
 >
   <div class="flex gap-x-3 font-bold items-center">
     <ComparisonSelector {metricViewName} chipStyle />
