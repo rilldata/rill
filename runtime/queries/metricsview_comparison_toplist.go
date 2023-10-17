@@ -452,19 +452,26 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 
 	joinType := "FULL"
 	if !q.Exact {
-		approximationLimit := q.Limit
 		deltaComparison := q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA ||
 			q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA
-		if q.Limit < 100 && deltaComparison {
+
+		approximationLimit := q.Limit
+		if q.Limit != 0 && q.Limit < 100 && deltaComparison {
 			approximationLimit = 100
 		}
 
 		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE || deltaComparison {
 			joinType = "LEFT OUTER"
-			baseLimitClause = fmt.Sprintf("ORDER BY %s LIMIT %d", subQueryOrderClause, approximationLimit)
+			baseLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
+			if approximationLimit > 0 {
+				baseLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
+			}
 		} else if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
 			joinType = "RIGHT OUTER"
-			comparisonLimitClause = fmt.Sprintf("ORDER BY %s LIMIT %d", subQueryOrderClause, approximationLimit)
+			comparisonLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
+			if approximationLimit > 0 {
+				comparisonLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
+			}
 		}
 	}
 
