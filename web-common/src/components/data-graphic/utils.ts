@@ -310,6 +310,7 @@ export function bisectData(
   data,
   returnPos = false
 ) {
+  if (!data?.length) return;
   const bisect = bisector((d) => d[accessor])[direction];
 
   if (returnPos) return value !== undefined ? bisect(data, value) : undefined;
