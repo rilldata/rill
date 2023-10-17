@@ -4,7 +4,6 @@
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
   import {
     getFilterForDimension,
@@ -17,10 +16,7 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-  import {
-    getAdjustedChartTime,
-    getAdjustedChartTimeForISODuration,
-  } from "@rilldata/web-common/lib/time/ranges";
+  import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
     createQueryServiceMetricsViewTimeSeries,
     createQueryServiceMetricsViewToplist,
@@ -184,27 +180,14 @@
 
   // FIXME: move this logic to a function + write tests.
   $: if ($timeControlsStore.ready) {
-    let adjustedChartValue: ReturnType<typeof getAdjustedChartTime>;
-    if (
-      $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.DEFAULT
-    ) {
-      // for now, we only support iso ranges in default preset.
-      adjustedChartValue = getAdjustedChartTimeForISODuration(
-        $timeControlsStore.selectedTimeRange?.start,
-        $timeControlsStore.selectedTimeRange?.end,
-        $dashboardStore?.selectedTimezone,
-        interval,
-        $metaQuery.data.defaultTimeRange
-      );
-    } else {
-      adjustedChartValue = getAdjustedChartTime(
-        $timeControlsStore.selectedTimeRange?.start,
-        $timeControlsStore.selectedTimeRange?.end,
-        $dashboardStore?.selectedTimezone,
-        interval,
-        $timeControlsStore.selectedTimeRange?.name
-      );
-    }
+    const adjustedChartValue = getAdjustedChartTime(
+      $timeControlsStore.selectedTimeRange?.start,
+      $timeControlsStore.selectedTimeRange?.end,
+      $dashboardStore?.selectedTimezone,
+      interval,
+      $timeControlsStore.selectedTimeRange?.name,
+      $metaQuery.data.defaultTimeRange
+    );
 
     startValue = adjustedChartValue?.start;
     endValue = adjustedChartValue?.end;

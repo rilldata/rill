@@ -14,7 +14,6 @@ import {
   isGrainBigger,
 } from "../grains";
 import {
-  getAdditionalOffset,
   getDurationMultiple,
   getEndOfPeriod,
   getOffset,
@@ -373,7 +372,8 @@ export function getAdjustedChartTime(
   end: Date,
   zone: string,
   interval: V1TimeGrain,
-  timePreset: TimeRangeType
+  timePreset: TimeRangeType,
+  defaultTimeRange: string
 ) {
   if (!start || !end)
     return {
@@ -392,54 +392,17 @@ export function getAdjustedChartTime(
     start = getStartOfPeriod(start, grainDuration, zone);
     start = getOffset(start, offsetDuration, TimeOffsetType.ADD);
     adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration, zone);
+  } else if (timePreset === TimeRangePreset.DEFAULT) {
+    // For default presets the iso range can be mixed. There the offset added will be the smallest unit in the range.
+    // But for the graph we need the offset based on selected grain.
+    const smallestTimeGrain = getSmallestTimeGrain(defaultTimeRange);
+    // Only add this if the selected grain is greater than the smallest unit in the iso range
+    if (isGrainBigger(interval, smallestTimeGrain)) {
+      adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration, zone);
+    }
   }
 
   adjustedEnd = getOffset(adjustedEnd, offsetDuration, TimeOffsetType.SUBTRACT);
-
-  return {
-    /**
-     * Values in the charts are displayed in the local time zone.
-     * To get the correct values, we need to remove the local time zone offset
-     * and add the offset of the selected time zone.
-     */
-    start: addZoneOffset(removeLocalTimezoneOffset(start), zone),
-    end: addZoneOffset(removeLocalTimezoneOffset(adjustedEnd), zone),
-  };
-}
-
-/**
- * This deals with adjusting the chart time when the iso duration is mixed.
- * Since the API start/end will be offset based on smallest unit,
- * we need to offset based on selected grain here.
- * If the smallest unit is greater than the grain then we use {@getAdjustedChartTime}
- * Else we add 0.55*Selected Grain
- */
-export function getAdjustedChartTimeForISODuration(
-  start: Date,
-  end: Date,
-  zone: string,
-  interval: V1TimeGrain,
-  isoDuration: string
-) {
-  const smallestGrain = getSmallestTimeGrain(isoDuration);
-  // If the smallest time grain in the iso duration is greater than the selected interval then just use getAdjustedChartTime
-  if (isGrainBigger(smallestGrain, interval))
-    return getAdjustedChartTime(
-      start,
-      end,
-      zone,
-      interval,
-      TimeRangePreset.DEFAULT
-    );
-
-  const offsetDuration = getAdditionalOffset(
-    isoDuration,
-    TIME_GRAIN[interval],
-    1
-  );
-  const adjustedEnd = offsetDuration
-    ? getOffset(new Date(end), offsetDuration, TimeOffsetType.ADD)
-    : new Date(end);
 
   return {
     /**

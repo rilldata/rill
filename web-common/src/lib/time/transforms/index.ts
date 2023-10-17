@@ -8,19 +8,14 @@
  * We are opting to define transformations in a way that can be serialized
  * in a configuration file.
  */
-import {
-  PeriodAndUnits,
-  PeriodToUnitsMap,
-} from "@rilldata/web-common/lib/time/config";
-import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { PeriodToUnitsMap } from "@rilldata/web-common/lib/time/config";
 import {
   ReferencePoint,
   RelativePointInTime,
   RelativeTimeTransformation,
-  TimeGrain,
   TimeTruncationType,
 } from "../types";
-import { DateTime, Duration, DurationLike } from "luxon";
+import { DateTime, Duration } from "luxon";
 import { Period, TimeOffsetType, TimeUnit } from "../types";
 
 /** Returns the current time */
@@ -156,37 +151,4 @@ export function getDurationMultiple(duration: string, multiple: number) {
 export function subtractFromPeriod(duration: Duration, period: Period) {
   if (!PeriodToUnitsMap[period]) return duration;
   return duration.minus({ [PeriodToUnitsMap[period]]: 1 });
-}
-
-export function getAdditionalOffset(
-  isoDuration: string,
-  smallestGrain: TimeGrain,
-  multiple: number
-) {
-  isoDuration = Duration.fromISO(isoDuration).shiftToAll().toISO(); // normalise the range
-
-  const smallerDuration = stripLargerUnits(isoDuration, smallestGrain.grain);
-  const largerDuration = Duration.fromISO(smallestGrain.duration);
-  const offset =
-    largerDuration.as("milliseconds") * multiple -
-    smallerDuration.as("milliseconds");
-  if (offset < 0) return "";
-
-  return Duration.fromMillis(offset)
-    .shiftTo("days", "hours", "minutes", "seconds")
-    .toISO();
-}
-
-function stripLargerUnits(isoDuration: string, smallestGrain: V1TimeGrain) {
-  const duration = Duration.fromISO(isoDuration);
-  const newDurationLike: DurationLike = {};
-
-  for (const { grain, unit } of PeriodAndUnits) {
-    if (grain === smallestGrain) {
-      break;
-    }
-    newDurationLike[unit] = duration[unit];
-  }
-
-  return Duration.fromDurationLike(newDurationLike);
 }
