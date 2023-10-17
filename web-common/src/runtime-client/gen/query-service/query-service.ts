@@ -579,75 +579,99 @@ export const queryServiceMetricsViewComparison = (
   });
 };
 
-export const getQueryServiceMetricsViewComparisonMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
-    TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: QueryServiceMetricsViewComparisonBody;
-    },
-    TContext
-  >;
-}): CreateMutationOptions<
+export const getQueryServiceMetricsViewComparisonQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewComparisonBody: QueryServiceMetricsViewComparisonBody
+) =>
+  [
+    `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/compare-toplist`,
+    queryServiceMetricsViewComparisonBody,
+  ] as const;
+
+export const getQueryServiceMetricsViewComparisonQueryOptions = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewComparisonBody: QueryServiceMetricsViewComparisonBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
   Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
   TError,
-  {
-    instanceId: string;
-    metricsViewName: string;
-    data: QueryServiceMetricsViewComparisonBody;
-  },
-  TContext
-> => {
-  const { mutation: mutationOptions } = options ?? {};
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
 
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: QueryServiceMetricsViewComparisonBody;
-    }
-  > = (props) => {
-    const { instanceId, metricsViewName, data } = props ?? {};
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewComparisonQueryKey(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewComparisonBody
+    );
 
-    return queryServiceMetricsViewComparison(instanceId, metricsViewName, data);
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>
+  > = () =>
+    queryServiceMetricsViewComparison(
+      instanceId,
+      metricsViewName,
+      queryServiceMetricsViewComparisonBody
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
   };
-
-  return { mutationFn, ...mutationOptions };
 };
 
-export type QueryServiceMetricsViewComparisonMutationResult = NonNullable<
+export type QueryServiceMetricsViewComparisonQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>
 >;
-export type QueryServiceMetricsViewComparisonMutationBody =
-  QueryServiceMetricsViewComparisonBody;
-export type QueryServiceMetricsViewComparisonMutationError = RpcStatus;
+export type QueryServiceMetricsViewComparisonQueryError = RpcStatus;
 
 export const createQueryServiceMetricsViewComparison = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
-    TError,
-    {
-      instanceId: string;
-      metricsViewName: string;
-      data: QueryServiceMetricsViewComparisonBody;
-    },
-    TContext
-  >;
-}) => {
-  const mutationOptions =
-    getQueryServiceMetricsViewComparisonMutationOptions(options);
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
+  TError = RpcStatus
+>(
+  instanceId: string,
+  metricsViewName: string,
+  queryServiceMetricsViewComparisonBody: QueryServiceMetricsViewComparisonBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getQueryServiceMetricsViewComparisonQueryOptions(
+    instanceId,
+    metricsViewName,
+    queryServiceMetricsViewComparisonBody,
+    options
+  );
 
-  return createMutation(mutationOptions);
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
 };
+
 /**
  * @summary MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
  */
