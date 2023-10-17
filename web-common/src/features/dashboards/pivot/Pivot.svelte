@@ -269,11 +269,6 @@
     padding-right: 0px;
     cursor: pointer;
   }
-
-  /* :global(regular-table tr:hover td) {
-    background-color: rgb(243 244 246);
-  } */
-
   :global(regular-table table) {
     color: rgb(55 65 81);
     table-layout: fixed;

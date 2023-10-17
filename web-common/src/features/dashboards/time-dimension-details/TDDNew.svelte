@@ -57,7 +57,6 @@
       data.x >= scrubPos?.start &&
       data.x <= scrubPos?.end - 1;
 
-    console.log(rowIdxHover, colIdxHover);
     const cellBgColor = getClassForCell(
       isScrubbed ? "scrubbed" : "default",
       rowIdxHover,
@@ -66,12 +65,12 @@
       data.x
     );
     data.element.classList.remove(
-      "bg-white",
-      "bg-gray-100",
-      "bg-gray-200",
-      "bg-blue-50",
-      "bg-blue-100",
-      "bg-blue-200"
+      "!bg-white",
+      "!bg-gray-100",
+      "!bg-gray-200",
+      "!bg-blue-50",
+      "!bg-blue-100",
+      "!bg-blue-200"
     );
     data.element.classList.add(cellBgColor);
   };
@@ -203,7 +202,6 @@
       handleEvent(evt, table, "__col", (n) => (colIdxHover = parseInt(n)));
     }
 
-    console.log(rowIdxHover, colIdxHover);
     pivot?.draw();
   };
 
