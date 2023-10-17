@@ -25,7 +25,6 @@
     metricsExplorerStore,
     useDashboardStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import {
     LeaderboardItemData,
@@ -47,10 +46,11 @@
   export let referenceValue: number;
   export let unfilteredTotal: number;
 
-  export let formatPreset: FormatPreset;
   export let isSummableMeasure = false;
 
   let slice = 7;
+
+  const stateManagers = getStateManagers();
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
@@ -89,7 +89,7 @@
       ?.in ?? [];
   $: atLeastOneActive = !!activeValues?.length;
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const timeControlsStore = useTimeControlStore(stateManagers);
 
   function selectDimension(dimensionName) {
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
@@ -195,7 +195,6 @@
             {filterExcludeMode}
             {isSummableMeasure}
             {referenceValue}
-            {formatPreset}
             on:click
             on:keydown
             on:select-item
@@ -213,7 +212,6 @@
               {filterExcludeMode}
               {isSummableMeasure}
               {referenceValue}
-              {formatPreset}
               on:click
               on:keydown
               on:select-item

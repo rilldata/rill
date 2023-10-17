@@ -25,6 +25,7 @@
     formatContextColumnValue,
   } from "./leaderboard-utils";
   import ContextColumnValue from "./ContextColumnValue.svelte";
+  import { getStateManagers } from "../state-managers/state-managers";
 
   export let itemData: LeaderboardItemData;
   $: label = itemData.dimensionValue;
@@ -38,24 +39,28 @@
   export let isBeingCompared = false;
   export let filterExcludeMode;
 
-  export let formatPreset;
+  const stateManagers = getStateManagers();
+  const { activeMeasureFormatPreset } = stateManagers.selectors.numberFormat;
 
   /** if this value is a summable measure, we'll show the bar. Otherwise, don't. */
   export let isSummableMeasure;
   /** for summable measures, this is the value we use to calculate the bar % to fill */
   export let referenceValue;
 
-  $: formattedValue = humanizeDataType(measureValue, formatPreset);
+  $: formattedValue = humanizeDataType(
+    measureValue,
+    $activeMeasureFormatPreset
+  );
 
   $: contextColumnFormattedValue = formatContextColumnValue(
     itemData,
     contextColumn,
-    formatPreset
+    $activeMeasureFormatPreset
   );
 
   $: previousValueString =
     comparisonValue !== undefined && comparisonValue !== null
-      ? humanizeDataType(comparisonValue, formatPreset)
+      ? humanizeDataType(comparisonValue, $activeMeasureFormatPreset)
       : undefined;
   $: showPreviousTimeValue = hovered && previousValueString !== undefined;
   // Super important special case: if there is not at least one "active" (selected) value,

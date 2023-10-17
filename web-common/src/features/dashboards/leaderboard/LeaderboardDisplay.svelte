@@ -16,7 +16,6 @@
     metricsExplorerStore,
     useDashboardStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { FormatPreset } from "../humanize-numbers";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
   import { isSummableMeasure } from "../dashboard-utils";
@@ -61,9 +60,6 @@
       },
     }
   );
-
-  $: formatPreset =
-    (activeMeasure?.formatPreset as FormatPreset) ?? FormatPreset.HUMANIZE;
 
   let referenceValue: number;
   $: if (activeMeasure?.name && $totalsQuery?.data?.data) {
@@ -152,7 +148,6 @@
       <VirtualizedGrid {columns} height="100%" items={dimensionsShown} let:item>
         <!-- the single virtual element -->
         <Leaderboard
-          {formatPreset}
           isSummableMeasure={isSummableMeasure(activeMeasure)}
           {metricViewName}
           dimensionName={item.name}

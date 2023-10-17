@@ -1,11 +1,24 @@
 import type { Readable } from "svelte/store";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
+import type {
+  RpcStatus,
+  V1MetricsViewSpec,
+} from "@rilldata/web-common/runtime-client";
+
+/**
+ * Arguments to a selector function.
+ */
+export type SelectorFnArgs = [
+  MetricsExplorerEntity,
+  QueryObserverResult<V1MetricsViewSpec, RpcStatus>
+];
 
 /**
  * A SelectorFn is a pure function that takes dashboard data
  * (a MetricsExplorerEntity) and returns some derived value from it.
  */
-export type SelectorFn<T> = (dashboard: MetricsExplorerEntity) => T;
+export type SelectorFn<T> = (args: SelectorFnArgs) => T;
 
 /**
  * A SelectorFnsObj object is a collection of pure SelectorFn functions.
