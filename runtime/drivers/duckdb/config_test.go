@@ -57,4 +57,16 @@ func TestConfig(t *testing.T) {
 	cfg, err = newConfig(map[string]any{"dsn": "duck.db?rill_pool_size=10"})
 	require.NoError(t, err)
 	require.Equal(t, "duck.db", cfg.DBFilePath)
+
+	cfg, err = newConfig(map[string]any{"dsn": "duck.db", "slots": 1, "memory_limit_gb": "4", "cpu": "2"})
+	require.NoError(t, err)
+	require.Equal(t, "duck.db", cfg.DBFilePath)
+	require.Equal(t, "duck.db?max_memory=4GB&threads=1", cfg.DSN)
+	require.Equal(t, 1, cfg.PoolSize)
+
+	cfg, err = newConfig(map[string]any{"dsn": "duck.db?max_memory=2GB&rill_pool_size=4"})
+	require.NoError(t, err)
+	require.Equal(t, "duck.db", cfg.DBFilePath)
+	require.Equal(t, "duck.db?max_memory=2GB", cfg.DSN)
+	require.Equal(t, 4, cfg.PoolSize)
 }

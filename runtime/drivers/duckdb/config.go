@@ -9,6 +9,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+const cpuThreadRatio float64 = 0.5
+
 // config represents the DuckDB driver config
 type config struct {
 	// DSN is the connection string
@@ -21,6 +23,10 @@ type config struct {
 	ErrorOnIncompatibleVersion bool `mapstructure:"error_on_incompatible_version"`
 	// ExtTableStorage controls if every table is stored in a different db file
 	ExtTableStorage bool `mapstructure:"external_table_storage"`
+	// MemoryLimitGB is memory limit
+	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
+	// CPU is the limit on cpu
+	CPU int `mapstructure:"cpu"`
 	// StorageLimitBytes is the maximum size of all database files
 	StorageLimitBytes int64 `mapstructure:"storage_limit_bytes"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
@@ -64,12 +70,26 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 
 		// Remove from query string (so not passed into DuckDB config)
 		qry.Del("rill_pool_size")
-
-		// Rebuild DuckDB DSN (which should be "path?key=val&...")
-		uri.RawQuery = qry.Encode()
-		cfg.DSN = uri.String()
+	}
+	if cfg.MemoryLimitGB > 0 {
+		qry.Add("max_memory", fmt.Sprintf("%dGB", cfg.MemoryLimitGB))
+	}
+	if cfg.CPU > 0 {
+		threads := int(cpuThreadRatio * float64(cfg.CPU))
+		if threads <= 0 {
+			threads = 1
+		}
+		qry.Add("threads", strconv.Itoa(threads))
+		if cfg.CPU <= threads {
+			cfg.PoolSize = cfg.CPU
+		} else {
+			cfg.PoolSize = threads
+		}
 	}
 
+	// Rebuild DuckDB DSN (which should be "path?key=val&...")
+	uri.RawQuery = qry.Encode()
+	cfg.DSN = uri.String()
 	// Check pool size
 	if cfg.PoolSize < 1 {
 		return nil, fmt.Errorf("duckdb pool size must be >= 1")
