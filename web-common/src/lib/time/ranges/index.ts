@@ -5,6 +5,7 @@
  * - there's some legacy stuff that needs to get deprecated out of this.
  * - we need tests for this.
  */
+import { getSmallestTimeGrain } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DEFAULT_TIME_RANGES, TIME_GRAIN } from "../config";
 import {
@@ -13,6 +14,7 @@ import {
   isGrainBigger,
 } from "../grains";
 import {
+  getAdditionalOffset,
   getDurationMultiple,
   getEndOfPeriod,
   getOffset,
@@ -393,6 +395,51 @@ export function getAdjustedChartTime(
   }
 
   adjustedEnd = getOffset(adjustedEnd, offsetDuration, TimeOffsetType.SUBTRACT);
+
+  return {
+    /**
+     * Values in the charts are displayed in the local time zone.
+     * To get the correct values, we need to remove the local time zone offset
+     * and add the offset of the selected time zone.
+     */
+    start: addZoneOffset(removeLocalTimezoneOffset(start), zone),
+    end: addZoneOffset(removeLocalTimezoneOffset(adjustedEnd), zone),
+  };
+}
+
+/**
+ * This deals with adjusting the chart time when the iso duration is mixed.
+ * Since the API start/end will be offset based on smallest unit,
+ * we need to offset based on selected grain here.
+ * If the smallest unit is greater than the grain then we use {@getAdjustedChartTime}
+ * Else we add 0.55*Selected Grain
+ */
+export function getAdjustedChartTimeForISODuration(
+  start: Date,
+  end: Date,
+  zone: string,
+  interval: V1TimeGrain,
+  isoDuration: string
+) {
+  const smallestGrain = getSmallestTimeGrain(isoDuration);
+  // If the smallest time grain in the iso duration is greater than the selected interval then just use getAdjustedChartTime
+  if (isGrainBigger(smallestGrain, interval))
+    return getAdjustedChartTime(
+      start,
+      end,
+      zone,
+      interval,
+      TimeRangePreset.DEFAULT
+    );
+
+  const offsetDuration = getAdditionalOffset(
+    isoDuration,
+    TIME_GRAIN[interval],
+    1
+  );
+  const adjustedEnd = offsetDuration
+    ? getOffset(new Date(end), offsetDuration, TimeOffsetType.ADD)
+    : new Date(end);
 
   return {
     /**

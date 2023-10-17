@@ -4,11 +4,8 @@
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { isGrainBigger } from "@rilldata/web-common/lib/time/grains";
-  import { getSmallestTimeGrain } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
-
   import {
     getFilterForDimension,
     useMetaQuery,
@@ -20,7 +17,10 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-  import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
+  import {
+    getAdjustedChartTime,
+    getAdjustedChartTimeForISODuration,
+  } from "@rilldata/web-common/lib/time/ranges";
   import {
     createQueryServiceMetricsViewTimeSeries,
     createQueryServiceMetricsViewToplist,
@@ -184,26 +184,27 @@
 
   // FIXME: move this logic to a function + write tests.
   $: if ($timeControlsStore.ready) {
-    let adjustInterval = interval;
+    let adjustedChartValue: ReturnType<typeof getAdjustedChartTime>;
     if (
       $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.DEFAULT
     ) {
-      const smallestGrain = getSmallestTimeGrain(
+      // for now, we only support iso ranges in default preset.
+      adjustedChartValue = getAdjustedChartTimeForISODuration(
+        $timeControlsStore.selectedTimeRange?.start,
+        $timeControlsStore.selectedTimeRange?.end,
+        $dashboardStore?.selectedTimezone,
+        interval,
         $metaQuery.data.defaultTimeRange
       );
-      adjustInterval = isGrainBigger(adjustInterval, smallestGrain)
-        ? smallestGrain
-        : adjustInterval;
+    } else {
+      adjustedChartValue = getAdjustedChartTime(
+        $timeControlsStore.selectedTimeRange?.start,
+        $timeControlsStore.selectedTimeRange?.end,
+        $dashboardStore?.selectedTimezone,
+        interval,
+        $timeControlsStore.selectedTimeRange?.name
+      );
     }
-    console.log(interval, adjustInterval);
-
-    const adjustedChartValue = getAdjustedChartTime(
-      $timeControlsStore.selectedTimeRange?.start,
-      $timeControlsStore.selectedTimeRange?.end,
-      $dashboardStore?.selectedTimezone,
-      adjustInterval,
-      $timeControlsStore.selectedTimeRange?.name
-    );
 
     startValue = adjustedChartValue?.start;
     endValue = adjustedChartValue?.end;
