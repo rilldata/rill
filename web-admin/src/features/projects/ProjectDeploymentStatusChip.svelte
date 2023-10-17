@@ -36,10 +36,7 @@
 
   let deploymentStatusFromDashboards: CreateQueryResult<V1DeploymentStatus>;
   $: if ($proj?.data)
-    deploymentStatusFromDashboards = useDashboardsStatus(
-      instanceId,
-      $proj?.data
-    );
+    deploymentStatusFromDashboards = useDashboardsStatus(instanceId);
 
   const queryClient = useQueryClient();
 
