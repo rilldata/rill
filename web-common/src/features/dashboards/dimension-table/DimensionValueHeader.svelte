@@ -70,12 +70,12 @@
     on:keydown={sortByDimensionValue}
     on:resize={handleResize}
   >
-    <div class="flex">
+    <div class="flex items-center">
       <span class={"px-1 " + $sortedByDimensionValue ? "font-bold" : ""}
         >{column?.label || column?.name}</span
       >
       {#if $sortedByDimensionValue}
-        <div class="mt-0.5 ui-copy-icon">
+        <div class="ui-copy-icon">
           {#if $sortedAscending}
             <div in:fly={{ duration: 200, y: -8 }} style:opacity={1}>
               <ArrowDown size="12px" />
