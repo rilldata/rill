@@ -42,12 +42,6 @@
 
   const limit = 150;
 
-  $: tableQuery = createQueryServiceTableRows(runtimeInstanceId, modelName, {
-    limit,
-  });
-
-  $: runtimeError = ($tableQuery.error as any)?.response.data;
-
   // track innerHeight to calculate the size of the editor element.
   let innerHeight: number;
 
@@ -72,6 +66,16 @@
     modelPath
   );
   $: modelError = $allErrors?.[0]?.message;
+
+  $: tableQuery = createQueryServiceTableRows(
+    runtimeInstanceId,
+    $modelQuery.data?.model?.state?.table,
+    {
+      limit,
+    }
+  );
+
+  $: runtimeError = ($tableQuery.error as any)?.response.data;
 
   const outputLayout = getContext(
     "rill:app:output-layout"
