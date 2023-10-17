@@ -7,7 +7,7 @@
 
   const LOADING_CELL = {
     isLoader: true,
-    value: `<div class="h-4 bg-gray-100 rounded loading-cell" style="width: 100%; min-width: 32px;"/>`,
+    value: `<div class="h-4 bg-gray-50 rounded loading-cell" style="width: 100%; min-width: 32px;"/>`,
   };
 
   const NULL_CELL = {
