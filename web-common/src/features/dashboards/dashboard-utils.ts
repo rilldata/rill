@@ -1,19 +1,10 @@
-import type {
-  QueryServiceMetricsViewComparisonBody,
-  MetricsViewDimension,
-  V1MetricsViewFilter,
-  MetricsViewSpecMeasureV2,
-  V1MetricsViewAggregationMeasure,
-} from "@rilldata/web-common/runtime-client";
+import type { QueryServiceMetricsViewComparisonBody, MetricsViewDimension, V1MetricsViewFilter, MetricsViewSpecMeasureV2, V1MetricsViewAggregationMeasure } from "@rilldata/web-common/runtime-client";
 import type { TimeControlState } from "./time-controls/time-control-store";
 import { getQuerySortType } from "./leaderboard/leaderboard-utils";
 import type { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 
 export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
-  return (
-    measure?.expression.toLowerCase()?.includes("count(") ||
-    measure?.expression?.toLowerCase()?.includes("sum(")
-  );
+  return measure?.expression.toLowerCase()?.includes("count(") || measure?.expression?.toLowerCase()?.includes("sum(");
 }
 
 /**
@@ -39,12 +30,15 @@ export function prepareSortedQueryBody(
   const querySortType = getQuerySortType(sortType);
 
   return {
-    dimension: { 
+    dimension: {
       name: dimensionName,
     },
-    measures: measureNames.map((n) => (<V1MetricsViewAggregationMeasure>{
-      name: n,
-    })),
+    measures: measureNames.map(
+      (n) =>
+        <V1MetricsViewAggregationMeasure>{
+          name: n,
+        }
+    ),
     timeRange: {
       start: timeControls.timeStart,
       end: timeControls.timeEnd,
