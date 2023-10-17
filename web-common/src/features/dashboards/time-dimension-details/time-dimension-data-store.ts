@@ -335,7 +335,6 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         if (comparisonRange in TIME_COMPARISON)
           comparisonLabel = TIME_COMPARISON[comparisonRange].label;
 
-        console.log(timeControls?.selectedTimeRange);
         data = prepareTimeData(
           timeSeries?.timeSeriesData,
           columnCount,
@@ -348,7 +347,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         );
       }
 
-      return { comparing, data, timeFormatter };
+      return { isFetching: false, comparing, data, timeFormatter };
     }
   ) as TimeSeriesDataStore;
 }
