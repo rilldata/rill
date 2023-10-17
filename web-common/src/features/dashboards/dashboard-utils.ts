@@ -3,6 +3,7 @@ import type {
   MetricsViewDimension,
   V1MetricsViewFilter,
   MetricsViewSpecMeasureV2,
+  V1MetricsViewAggregationMeasure,
 } from "@rilldata/web-common/runtime-client";
 import type { TimeControlState } from "./time-controls/time-control-store";
 import { getQuerySortType } from "./leaderboard/leaderboard-utils";
@@ -34,13 +35,17 @@ export function prepareSortedQueryBody(
   sortType: DashboardState_LeaderboardSortType,
   sortAscending: boolean,
   filterForDimension: V1MetricsViewFilter
-): QueryServiceMetricsViewComparisonToplistBody {
+): QueryServiceMetricsViewComparisonBody {
   const querySortType = getQuerySortType(sortType);
 
   return {
-    dimensionName,
-    measureNames,
-    baseTimeRange: {
+    dimension: { 
+      name: dimensionName,
+    },
+    measures: measureNames.map((n) => (<V1MetricsViewAggregationMeasure>{
+      name: n,
+    })),
+    timeRange: {
       start: timeControls.timeStart,
       end: timeControls.timeEnd,
     },
@@ -50,7 +55,7 @@ export function prepareSortedQueryBody(
     },
     sort: [
       {
-        ascending: sortAscending,
+        desc: !sortAscending,
         name: sortMeasureName,
         type: querySortType,
       },
