@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -60,13 +61,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		if an.Kind > bn.Kind {
 			return 1
 		}
-		if an.Name < bn.Name {
-			return -1
-		}
-		if an.Name > bn.Name {
-			return 1
-		}
-		return 0
+		return strings.Compare(an.Name, bn.Name)
 	})
 
 	for i := 0; i < len(rs); i++ {

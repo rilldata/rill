@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -74,13 +75,7 @@ func TestWatch(t *testing.T) {
 	}
 	// less := func(a, b drivers.WatchEvent) bool { return a.Path < b.Path }
 	less := func(a, b drivers.WatchEvent) int {
-		if a.Path < b.Path {
-			return -1
-		} else if a.Path > b.Path {
-			return 1
-		} else {
-			return 0
-		}
+		return strings.Compare(a.Path, b.Path)
 	}
 
 	slices.SortFunc(batch1, less)

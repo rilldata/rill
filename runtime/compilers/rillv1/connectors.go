@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
@@ -35,13 +36,7 @@ func (p *Parser) AnalyzeConnectors(ctx context.Context) ([]*Connector, error) {
 
 	// Sort output to ensure deterministic ordering
 	slices.SortFunc(res, func(a, b *Connector) int {
-		if a.Name < b.Name {
-			return -1
-		} else if a.Name > b.Name {
-			return 1
-		} else {
-			return 0
-		}
+		return strings.Compare(a.Name, b.Name)
 	})
 
 	return res, nil
