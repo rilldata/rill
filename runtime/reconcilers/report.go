@@ -78,7 +78,7 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// NOTE: refs not supported for reports.
 	// Not supporting them simplifies report spec generation, improves performance (there may be many reports),
-	// and it's anyway acceptable (maybe even expected) that a report fails with an execution error if the underlying operation errors.
+	// and it's anyway acceptable (maybe even expected) that a report fails with an execution error if the underlying query errors.
 
 	// If CurrentExecution is not nil, a catastrophic failure occurred during the last execution.
 	// Clean up to ensure CurrentExecution is nil.
@@ -277,7 +277,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	exportURL.RawQuery = exportURLQry.Encode()
 
-	for _, recipient := range rep.Spec.Recipients {
+	for _, recipient := range rep.Spec.EmailRecipients {
 		err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
 			ToEmail:           recipient,
 			ToName:            "",
@@ -299,10 +299,10 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 
 func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 	var start, end *timestamppb.Timestamp
-	if rep.Spec.OperationTimeRange != "" {
-		d, err := duration.ParseISO8601(rep.Spec.OperationTimeRange)
+	if rep.Spec.QueryTimeRange != "" {
+		d, err := duration.ParseISO8601(rep.Spec.QueryTimeRange)
 		if err != nil {
-			return nil, fmt.Errorf("invalid operation time range %q: %w", rep.Spec.OperationTimeRange, err)
+			return nil, fmt.Errorf("invalid query time range %q: %w", rep.Spec.QueryTimeRange, err)
 		}
 
 		start = timestamppb.New(d.Sub(t))
@@ -310,54 +310,54 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 	}
 
 	qry := &runtimev1.Query{}
-	switch rep.Spec.OperationName {
+	switch rep.Spec.QueryName {
 	case "MetricsViewAggregation":
 		req := &runtimev1.MetricsViewAggregationRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewAggregationRequest{MetricsViewAggregationRequest: req}
-		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), req)
+		err := protojson.Unmarshal([]byte(rep.Spec.QueryArgsJson), req)
 		if err != nil {
-			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
+			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
 		req.TimeStart = start
 		req.TimeEnd = end
 	case "MetricsViewToplist":
 		req := &runtimev1.MetricsViewToplistRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewToplistRequest{MetricsViewToplistRequest: req}
-		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), req)
+		err := protojson.Unmarshal([]byte(rep.Spec.QueryArgsJson), req)
 		if err != nil {
-			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
+			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
 		req.TimeStart = start
 		req.TimeEnd = end
 	case "MetricsViewRows":
 		req := &runtimev1.MetricsViewRowsRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewRowsRequest{MetricsViewRowsRequest: req}
-		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), req)
+		err := protojson.Unmarshal([]byte(rep.Spec.QueryArgsJson), req)
 		if err != nil {
-			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
+			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
 		req.TimeStart = start
 		req.TimeEnd = end
 	case "MetricsViewTimeSeries":
 		req := &runtimev1.MetricsViewTimeSeriesRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewTimeSeriesRequest{MetricsViewTimeSeriesRequest: req}
-		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), req)
+		err := protojson.Unmarshal([]byte(rep.Spec.QueryArgsJson), req)
 		if err != nil {
-			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
+			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
 		req.TimeStart = start
 		req.TimeEnd = end
 	case "MetricsViewComparisonToplist":
 		req := &runtimev1.MetricsViewComparisonToplistRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewComparisonToplistRequest{MetricsViewComparisonToplistRequest: req}
-		err := protojson.Unmarshal([]byte(rep.Spec.OperationPropertiesJson), req)
+		err := protojson.Unmarshal([]byte(rep.Spec.QueryArgsJson), req)
 		if err != nil {
-			return nil, fmt.Errorf("invalid properties for operation %q: %w", rep.Spec.OperationName, err)
+			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
 		req.BaseTimeRange = &runtimev1.TimeRange{Start: start, End: end}
 		req.ComparisonTimeRange = nil // TODO: Need ability pass comparison offset somewhere
 	default:
-		return nil, fmt.Errorf("operation %q not supported for reports", rep.Spec.OperationName)
+		return nil, fmt.Errorf("query %q not supported for reports", rep.Spec.QueryName)
 	}
 
 	return qry, nil

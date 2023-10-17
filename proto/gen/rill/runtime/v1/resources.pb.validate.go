@@ -3405,11 +3405,11 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for TimeoutSeconds
 
-	// no validation rules for OperationName
+	// no validation rules for QueryName
 
-	// no validation rules for OperationPropertiesJson
+	// no validation rules for QueryArgsJson
 
-	// no validation rules for OperationTimeRange
+	// no validation rules for QueryTimeRange
 
 	// no validation rules for ExportLimit
 

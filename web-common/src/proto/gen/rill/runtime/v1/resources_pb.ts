@@ -1456,19 +1456,19 @@ export class ReportSpec extends Message<ReportSpec> {
   timeoutSeconds = 0;
 
   /**
-   * @generated from field: string operation_name = 5;
+   * @generated from field: string query_name = 5;
    */
-  operationName = "";
+  queryName = "";
 
   /**
-   * @generated from field: string operation_properties_json = 6;
+   * @generated from field: string query_args_json = 6;
    */
-  operationPropertiesJson = "";
+  queryArgsJson = "";
 
   /**
-   * @generated from field: string operation_time_range = 7;
+   * @generated from field: string query_time_range = 7;
    */
-  operationTimeRange = "";
+  queryTimeRange = "";
 
   /**
    * @generated from field: uint64 export_limit = 8;
@@ -1481,9 +1481,9 @@ export class ReportSpec extends Message<ReportSpec> {
   exportFormat = ExportFormat.UNSPECIFIED;
 
   /**
-   * @generated from field: repeated string recipients = 10;
+   * @generated from field: repeated string email_recipients = 10;
    */
-  recipients: string[] = [];
+  emailRecipients: string[] = [];
 
   /**
    * @generated from field: string email_open_url = 11;
@@ -1512,12 +1512,12 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 4, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 5, name: "operation_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "operation_properties_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "operation_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "query_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 9, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
-    { no: 10, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "email_open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "email_edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "email_export_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },

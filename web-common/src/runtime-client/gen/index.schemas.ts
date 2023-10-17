@@ -705,12 +705,12 @@ export interface V1ReportSpec {
   title?: string;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
-  operationName?: string;
-  operationPropertiesJson?: string;
-  operationTimeRange?: string;
+  queryName?: string;
+  queryArgsJson?: string;
+  queryTimeRange?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
-  recipients?: string[];
+  emailRecipients?: string[];
   emailOpenUrl?: string;
   emailEditUrl?: string;
   emailExportUrl?: string;

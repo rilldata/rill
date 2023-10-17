@@ -4328,18 +4328,18 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
-      operationName:
+      queryName:
         type: string
-      operationPropertiesJson:
+      queryArgsJson:
         type: string
-      operationTimeRange:
+      queryTimeRange:
         type: string
       exportLimit:
         type: string
         format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
-      recipients:
+      emailRecipients:
         type: array
         items:
           type: string
