@@ -15,10 +15,11 @@ func (s *Server) QueryBatch(req *runtimev1.QueryBatchRequest, srv runtimev1.Quer
 
 	g, ctx := errgroup.WithContext(srv.Context())
 
-	for _, query := range req.Queries {
-		query := query // create a closed var for goroutine
+	for idx, qry := range req.Queries {
+		idx := idx
+		qry := qry
 		g.Go(func() error {
-			resp := s.forwardQuery(ctx, req, query)
+			resp := s.forwardQuery(ctx, req.InstanceId, idx, qry)
 			return srv.Send(resp)
 		})
 	}
@@ -26,169 +27,166 @@ func (s *Server) QueryBatch(req *runtimev1.QueryBatchRequest, srv runtimev1.Quer
 	return g.Wait()
 }
 
-func (s *Server) forwardQuery(ctx context.Context, query *runtimev1.QueryBatchRequest, queryEntry *runtimev1.QueryBatchEntry) *runtimev1.QueryBatchResponse {
-	resp := &runtimev1.QueryBatchResponse{
-		Key: queryEntry.Key,
-	}
-
+func (s *Server) forwardQuery(ctx context.Context, instID string, idx int, qry *runtimev1.Query) *runtimev1.QueryBatchResponse {
 	var err error
-	switch q := queryEntry.Query.(type) {
-	case *runtimev1.QueryBatchEntry_MetricsViewAggregationRequest:
+	res := &runtimev1.QueryResult{}
+	switch q := qry.Query.(type) {
+	case *runtimev1.Query_MetricsViewAggregationRequest:
 		var r *runtimev1.MetricsViewAggregationResponse
-		q.MetricsViewAggregationRequest.InstanceId = query.InstanceId
+		q.MetricsViewAggregationRequest.InstanceId = instID
 		r, err = s.MetricsViewAggregation(ctx, q.MetricsViewAggregationRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_MetricsViewAggregationResponse{MetricsViewAggregationResponse: r}
+			res.Result = &runtimev1.QueryResult_MetricsViewAggregationResponse{MetricsViewAggregationResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_MetricsViewToplistRequest:
+	case *runtimev1.Query_MetricsViewToplistRequest:
 		var r *runtimev1.MetricsViewToplistResponse
-		q.MetricsViewToplistRequest.InstanceId = query.InstanceId
+		q.MetricsViewToplistRequest.InstanceId = instID
 		r, err = s.MetricsViewToplist(ctx, q.MetricsViewToplistRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_MetricsViewToplistResponse{MetricsViewToplistResponse: r}
+			res.Result = &runtimev1.QueryResult_MetricsViewToplistResponse{MetricsViewToplistResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_MetricsViewComparisonToplistRequest:
+	case *runtimev1.Query_MetricsViewComparisonToplistRequest:
 		var r *runtimev1.MetricsViewComparisonToplistResponse
-		q.MetricsViewComparisonToplistRequest.InstanceId = query.InstanceId
+		q.MetricsViewComparisonToplistRequest.InstanceId = instID
 		r, err = s.MetricsViewComparisonToplist(ctx, q.MetricsViewComparisonToplistRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_MetricsViewComparisonToplistResponse{MetricsViewComparisonToplistResponse: r}
+			res.Result = &runtimev1.QueryResult_MetricsViewComparisonToplistResponse{MetricsViewComparisonToplistResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_MetricsViewTimeSeriesRequest:
+	case *runtimev1.Query_MetricsViewTimeSeriesRequest:
 		var r *runtimev1.MetricsViewTimeSeriesResponse
-		q.MetricsViewTimeSeriesRequest.InstanceId = query.InstanceId
+		q.MetricsViewTimeSeriesRequest.InstanceId = instID
 		r, err = s.MetricsViewTimeSeries(ctx, q.MetricsViewTimeSeriesRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_MetricsViewTimeSeriesResponse{MetricsViewTimeSeriesResponse: r}
+			res.Result = &runtimev1.QueryResult_MetricsViewTimeSeriesResponse{MetricsViewTimeSeriesResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_MetricsViewTotalsRequest:
+	case *runtimev1.Query_MetricsViewTotalsRequest:
 		var r *runtimev1.MetricsViewTotalsResponse
-		q.MetricsViewTotalsRequest.InstanceId = query.InstanceId
+		q.MetricsViewTotalsRequest.InstanceId = instID
 		r, err = s.MetricsViewTotals(ctx, q.MetricsViewTotalsRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_MetricsViewTotalsResponse{MetricsViewTotalsResponse: r}
+			res.Result = &runtimev1.QueryResult_MetricsViewTotalsResponse{MetricsViewTotalsResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_MetricsViewRowsRequest:
+	case *runtimev1.Query_MetricsViewRowsRequest:
 		var r *runtimev1.MetricsViewRowsResponse
-		q.MetricsViewRowsRequest.InstanceId = query.InstanceId
+		q.MetricsViewRowsRequest.InstanceId = instID
 		r, err = s.MetricsViewRows(ctx, q.MetricsViewRowsRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_MetricsViewRowsResponse{MetricsViewRowsResponse: r}
+			res.Result = &runtimev1.QueryResult_MetricsViewRowsResponse{MetricsViewRowsResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_ColumnRollupIntervalRequest:
+	case *runtimev1.Query_ColumnRollupIntervalRequest:
 		var r *runtimev1.ColumnRollupIntervalResponse
-		q.ColumnRollupIntervalRequest.InstanceId = query.InstanceId
+		q.ColumnRollupIntervalRequest.InstanceId = instID
 		r, err = s.ColumnRollupInterval(ctx, q.ColumnRollupIntervalRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_ColumnRollupIntervalResponse{ColumnRollupIntervalResponse: r}
+			res.Result = &runtimev1.QueryResult_ColumnRollupIntervalResponse{ColumnRollupIntervalResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_ColumnTopKRequest:
+	case *runtimev1.Query_ColumnTopKRequest:
 		var r *runtimev1.ColumnTopKResponse
-		q.ColumnTopKRequest.InstanceId = query.InstanceId
+		q.ColumnTopKRequest.InstanceId = instID
 		r, err = s.ColumnTopK(ctx, q.ColumnTopKRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_ColumnTopKResponse{ColumnTopKResponse: r}
+			res.Result = &runtimev1.QueryResult_ColumnTopKResponse{ColumnTopKResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_ColumnNullCountRequest:
+	case *runtimev1.Query_ColumnNullCountRequest:
 		var r *runtimev1.ColumnNullCountResponse
-		q.ColumnNullCountRequest.InstanceId = query.InstanceId
+		q.ColumnNullCountRequest.InstanceId = instID
 		r, err = s.ColumnNullCount(ctx, q.ColumnNullCountRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_ColumnNullCountResponse{ColumnNullCountResponse: r}
+			res.Result = &runtimev1.QueryResult_ColumnNullCountResponse{ColumnNullCountResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_ColumnDescriptiveStatisticsRequest:
+	case *runtimev1.Query_ColumnDescriptiveStatisticsRequest:
 		var r *runtimev1.ColumnDescriptiveStatisticsResponse
-		q.ColumnDescriptiveStatisticsRequest.InstanceId = query.InstanceId
+		q.ColumnDescriptiveStatisticsRequest.InstanceId = instID
 		r, err = s.ColumnDescriptiveStatistics(ctx, q.ColumnDescriptiveStatisticsRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_ColumnDescriptiveStatisticsResponse{ColumnDescriptiveStatisticsResponse: r}
+			res.Result = &runtimev1.QueryResult_ColumnDescriptiveStatisticsResponse{ColumnDescriptiveStatisticsResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_ColumnTimeGrainRequest:
+	case *runtimev1.Query_ColumnTimeGrainRequest:
 		var r *runtimev1.ColumnTimeGrainResponse
-		q.ColumnTimeGrainRequest.InstanceId = query.InstanceId
+		q.ColumnTimeGrainRequest.InstanceId = instID
 		r, err = s.ColumnTimeGrain(ctx, q.ColumnTimeGrainRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_ColumnTimeGrainResponse{ColumnTimeGrainResponse: r}
+			res.Result = &runtimev1.QueryResult_ColumnTimeGrainResponse{ColumnTimeGrainResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_ColumnNumericHistogramRequest:
+	case *runtimev1.Query_ColumnNumericHistogramRequest:
 		var r *runtimev1.ColumnNumericHistogramResponse
-		q.ColumnNumericHistogramRequest.InstanceId = query.InstanceId
+		q.ColumnNumericHistogramRequest.InstanceId = instID
 		r, err = s.ColumnNumericHistogram(ctx, q.ColumnNumericHistogramRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_ColumnNumericHistogramResponse{ColumnNumericHistogramResponse: r}
+			res.Result = &runtimev1.QueryResult_ColumnNumericHistogramResponse{ColumnNumericHistogramResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_ColumnRugHistogramRequest:
+	case *runtimev1.Query_ColumnRugHistogramRequest:
 		var r *runtimev1.ColumnRugHistogramResponse
-		q.ColumnRugHistogramRequest.InstanceId = query.InstanceId
+		q.ColumnRugHistogramRequest.InstanceId = instID
 		r, err = s.ColumnRugHistogram(ctx, q.ColumnRugHistogramRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_ColumnRugHistogramResponse{ColumnRugHistogramResponse: r}
+			res.Result = &runtimev1.QueryResult_ColumnRugHistogramResponse{ColumnRugHistogramResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_ColumnTimeRangeRequest:
+	case *runtimev1.Query_ColumnTimeRangeRequest:
 		var r *runtimev1.ColumnTimeRangeResponse
-		q.ColumnTimeRangeRequest.InstanceId = query.InstanceId
+		q.ColumnTimeRangeRequest.InstanceId = instID
 		r, err = s.ColumnTimeRange(ctx, q.ColumnTimeRangeRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_ColumnTimeRangeResponse{ColumnTimeRangeResponse: r}
+			res.Result = &runtimev1.QueryResult_ColumnTimeRangeResponse{ColumnTimeRangeResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_ColumnCardinalityRequest:
+	case *runtimev1.Query_ColumnCardinalityRequest:
 		var r *runtimev1.ColumnCardinalityResponse
-		q.ColumnCardinalityRequest.InstanceId = query.InstanceId
+		q.ColumnCardinalityRequest.InstanceId = instID
 		r, err = s.ColumnCardinality(ctx, q.ColumnCardinalityRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_ColumnCardinalityResponse{ColumnCardinalityResponse: r}
+			res.Result = &runtimev1.QueryResult_ColumnCardinalityResponse{ColumnCardinalityResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_ColumnTimeSeriesRequest:
+	case *runtimev1.Query_ColumnTimeSeriesRequest:
 		var r *runtimev1.ColumnTimeSeriesResponse
-		q.ColumnTimeSeriesRequest.InstanceId = query.InstanceId
+		q.ColumnTimeSeriesRequest.InstanceId = instID
 		r, err = s.ColumnTimeSeries(ctx, q.ColumnTimeSeriesRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_ColumnTimeSeriesResponse{ColumnTimeSeriesResponse: r}
+			res.Result = &runtimev1.QueryResult_ColumnTimeSeriesResponse{ColumnTimeSeriesResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_TableCardinalityRequest:
+	case *runtimev1.Query_TableCardinalityRequest:
 		var r *runtimev1.TableCardinalityResponse
-		q.TableCardinalityRequest.InstanceId = query.InstanceId
+		q.TableCardinalityRequest.InstanceId = instID
 		r, err = s.TableCardinality(ctx, q.TableCardinalityRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_TableCardinalityResponse{TableCardinalityResponse: r}
+			res.Result = &runtimev1.QueryResult_TableCardinalityResponse{TableCardinalityResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_TableColumnsRequest:
+	case *runtimev1.Query_TableColumnsRequest:
 		var r *runtimev1.TableColumnsResponse
-		q.TableColumnsRequest.InstanceId = query.InstanceId
+		q.TableColumnsRequest.InstanceId = instID
 		r, err = s.TableColumns(ctx, q.TableColumnsRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_TableColumnsResponse{TableColumnsResponse: r}
+			res.Result = &runtimev1.QueryResult_TableColumnsResponse{TableColumnsResponse: r}
 		}
 
-	case *runtimev1.QueryBatchEntry_TableRowsRequest:
+	case *runtimev1.Query_TableRowsRequest:
 		var r *runtimev1.TableRowsResponse
-		q.TableRowsRequest.InstanceId = query.InstanceId
+		q.TableRowsRequest.InstanceId = instID
 		r, err = s.TableRows(ctx, q.TableRowsRequest)
 		if err == nil {
-			resp.Result = &runtimev1.QueryBatchResponse_TableRowsResponse{TableRowsResponse: r}
+			res.Result = &runtimev1.QueryResult_TableRowsResponse{TableRowsResponse: r}
 		}
 	}
 
 	if err != nil {
-		resp.Error = err.Error()
+		return &runtimev1.QueryBatchResponse{Index: uint32(idx), Error: err.Error()}
 	}
 
-	return resp
+	return &runtimev1.QueryBatchResponse{Index: uint32(idx), Result: res}
 }
