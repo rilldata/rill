@@ -106,7 +106,7 @@ function prepareDimensionData(
     })
   );
 
-  let columnHeaderData = new Array(columnCount).fill([{ value: null }]);
+  let columnHeaderData = new Array(columnCount || 1).fill([{ value: null }]);
 
   if (data?.[0]?.data) {
     columnHeaderData = data?.[0]?.data
@@ -124,7 +124,7 @@ function prepareDimensionData(
 
   body = body?.concat(
     data?.map((v) => {
-      if (v.isFetching) return new Array(columnCount).fill(undefined);
+      if (v.isFetching) return new Array(columnCount || 1).fill(undefined);
       return v?.data
         ?.slice(1, -1)
         ?.map((v) =>
@@ -278,7 +278,13 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
       useTimeSeriesDataStore(ctx),
     ],
     ([dashboardStore, metricsView, timeControls, timeSeries]) => {
-      if (!timeControls.ready) return;
+      if (
+        !timeControls.ready ||
+        timeControls?.isFetching ||
+        timeSeries?.isFetching
+      )
+        return;
+
       const measureName = dashboardStore?.expandedMeasureName;
       const dimensionName = dashboardStore?.selectedComparisonDimension;
       const timeFormatter = createTimeFormat([

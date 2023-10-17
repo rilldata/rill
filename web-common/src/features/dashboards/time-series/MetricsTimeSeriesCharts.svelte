@@ -7,7 +7,6 @@
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { FormatPreset } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -155,7 +154,7 @@
     <!-- top axis element -->
     <div />
     <MeasureZoom {metricViewName} />
-    {#if $dashboardStore?.selectedTimeRange}
+    {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
       <SimpleDataGraphic
         height={26}
         overflowHidden={false}
@@ -228,7 +227,7 @@
             }}
           />
         {:else}
-          <div>
+          <div class="flex items-center justify-center w-24">
             <Spinner status={EntityStatus.Running} />
           </div>
         {/if}
