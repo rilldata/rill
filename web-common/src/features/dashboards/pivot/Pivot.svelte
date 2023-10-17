@@ -23,6 +23,7 @@
   export let rowHeaderDepth = 0;
   export let columnHeaderDepth = 0;
   export let onMouseDown: (evt: MouseEvent, table: any) => any = undefined;
+  export let onMouseOver: (evt: MouseEvent, table: any) => any = undefined;
   export let renderCell: PivotRenderCallback = () => {};
   export let renderColumnHeader: PivotRenderCallback = () => {};
   export let renderRowHeader: PivotRenderCallback = () => {};
@@ -96,9 +97,10 @@
 
   function style_row_th(th: HTMLElement) {
     const meta = table.getMeta(th);
+    const numFixedCols = meta.row_header.length;
     const x = meta.row_header_x;
     const y = meta.y;
-    th.setAttribute("__col", String(x));
+    th.setAttribute("__col", String(x - numFixedCols));
     th.setAttribute("__row", String(y));
 
     const maybeWidth = getRowHeaderWidth(x);
@@ -212,6 +214,8 @@
   $: {
     if (table && onMouseDown) {
       const handler = (evt: MouseEvent) => onMouseDown(evt, table);
+      const hoverHandler = (evt: MouseEvent) => onMouseOver(evt, table);
+      addHandler("mouseover", hoverHandler);
       addHandler("mousedown", handler);
     }
   }
@@ -265,9 +269,9 @@
     cursor: pointer;
   }
 
-  :global(regular-table tr:hover td) {
-    background-color: rgb(248 250 252);
-  }
+  /* :global(regular-table tr:hover td) {
+    background-color: rgb(243 244 246);
+  } */
 
   :global(regular-table table) {
     color: rgb(55 65 81);

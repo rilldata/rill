@@ -12,6 +12,7 @@
     MeasureArrow,
     PieChart,
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDIcons";
+  import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
   import { createEventDispatcher } from "svelte";
 
   export let metricViewName: string;
@@ -28,6 +29,9 @@
 
   let pivot;
   let containerWidth;
+
+  let rowIdxHover: number;
+  let colIdxHover: number;
 
   function getBodyData(pos: PivotPos) {
     return data?.body
@@ -46,6 +50,18 @@
   const renderCell: PivotRenderCallback = (data) => {
     data.element.classList.toggle("font-semibold", Boolean(data.y == 0));
     data.element.classList.add("text-right");
+
+    if (rowIdxHover !== undefined && colIdxHover !== undefined) {
+      const cellBgColor = getClassForCell(
+        "default",
+        rowIdxHover,
+        colIdxHover,
+        data.y,
+        data.x
+      );
+      data.element.classList.remove("bg-white", "bg-gray-100", "bg-gray-200");
+      data.element.classList.add(cellBgColor);
+    }
   };
 
   const renderColumnHeader: PivotRenderCallback = (data) => {
@@ -97,14 +113,24 @@
   };
 
   const renderRowHeader: PivotRenderCallback = ({ value, x, y, element }) => {
-    element.classList.toggle("bg-slate-50", x > 0);
+    const cellBgColor = getClassForCell(
+      "fixed",
+      rowIdxHover,
+      colIdxHover,
+      y,
+      x - data?.fixedColCount
+    );
+    if (x > 0) {
+      element.classList.remove("bg-slate-50", "bg-slate-100", "bg-slate-200");
+      element.classList.add(cellBgColor);
+    }
     if (x === 0) {
       element.classList.add("pl-0");
       const marker = getMarker(value, y);
       const justifyTotal = y === 0 ? "justify-end" : "";
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
       return `<div class="flex items-center w-full h-full overflow-hidden pr-2 gap-1 ${justifyTotal}">
-        <div class="w-5 shrink-0 hover:bg-gray-100 h-full flex items-center justify-center" toggle-visible="${y}">${marker}</div>
+        <div class="w-5 shrink-0 h-full flex items-center justify-center" toggle-visible="${y}">${marker}</div>
         <div class="truncate text-xs ${fontWeight} text-gray-700">${value.value}</div></div>`;
     } else if (x === 1)
       return `<div class="text-xs font-semibold text-right text-gray-700 flex items-center justify-end gap-2" >${value.value}
@@ -137,7 +163,7 @@
     return [250, 120, 70][x];
   };
 
-  const handleClickEvent = (evt, table, attribute, callback) => {
+  const handleEvent = (evt, table, attribute, callback) => {
     let currentNode = evt.target;
 
     let found = currentNode.hasAttribute(attribute);
@@ -152,8 +178,14 @@
   };
 
   const handleMouseDown = (evt, table) => {
-    handleClickEvent(evt, table, "__row", toggleVisible);
-    handleClickEvent(evt, table, "sortable", () => dispatch("toggle-sort"));
+    handleEvent(evt, table, "__row", toggleVisible);
+    handleEvent(evt, table, "sortable", () => dispatch("toggle-sort"));
+  };
+
+  const handleMouseOver = (evt, table) => {
+    handleEvent(evt, table, "__row", (n) => (rowIdxHover = parseInt(n)));
+    handleEvent(evt, table, "__col", (n) => (colIdxHover = parseInt(n)));
+    pivot?.draw();
   };
 
   // Hack: for some reason, not enough columns are being drawn on first render.
@@ -182,5 +214,6 @@
     {getColumnWidth}
     {getRowHeaderWidth}
     onMouseDown={handleMouseDown}
+    onMouseOver={handleMouseOver}
   />
 </div>

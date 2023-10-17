@@ -62,7 +62,9 @@ function prepareDimensionData(
     },
   ];
 
+  let fixedColCount = 2;
   if (validPercentOfTotal) {
+    fixedColCount = 3;
     const percOfTotal = total / unfilteredTotal;
     totalsRow.push({
       value: isNaN(percOfTotal)
@@ -129,6 +131,7 @@ function prepareDimensionData(
 
   return {
     rowCount,
+    fixedColCount,
     rowHeaderData,
     columnCount,
     columnHeaderData,
@@ -247,6 +250,7 @@ function prepareTimeData(
 
   return {
     rowCount,
+    fixedColCount: 2,
     rowHeaderData,
     columnCount,
     columnHeaderData,

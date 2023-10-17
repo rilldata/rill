@@ -39,7 +39,7 @@
     on:click
     class="
     grid gap-x-2 items-center pl-2 pr-{extraPadding ? '4' : '2'}
-      py-1 rounded-{extraRounded ? '2xl' : 'sm'} cursor-pointer
+      py-1 {extraRounded ? 'rounded-2xl' : 'rounded-sm'} cursor-pointer
     {textClass}
     {bgBaseClass} 
     {outlineClass} 
