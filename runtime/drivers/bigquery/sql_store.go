@@ -178,7 +178,7 @@ func (f *fileIterator) Next() ([]string, error) {
 			fileInfo, err := os.Stat(fw.Name())
 			if err == nil { // ignore error
 				if fileInfo.Size() > f.limitInBytes {
-					return nil, drivers.ErrIngestionLimitExceeded
+					return nil, drivers.ErrStorageLimitExceeded
 				}
 			}
 
