@@ -21,14 +21,15 @@ const Prefix = "rill"
 type Type string
 
 const (
-	TypeUser    Type = "usr"
-	TypeService Type = "svc"
+	TypeUser       Type = "usr"
+	TypeService    Type = "svc"
+	TypeDeployment Type = "dpl"
 )
 
 // Validate checks that the type is a known enum value.
 func (t Type) Validate() bool {
 	switch t {
-	case TypeUser, TypeService:
+	case TypeUser, TypeService, TypeDeployment:
 		return true
 	default:
 		return false
