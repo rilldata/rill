@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/c2h5oh/datasize"
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
@@ -87,14 +86,14 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 			name:    "all applicable ",
 			spec:    spec,
 			opts:    &ProvisionOptions{OLAPDriver: "duckdb", Slots: 1, Region: "us-east-1"},
-			want:    &Allocation{CPU: 1, MemoryGB: 2, StorageBytes: int64(40) * int64(datasize.GB)},
+			want:    &Allocation{Slots: 1},
 			wantErr: false,
 		},
 		{
 			name:    "one applicable ",
 			spec:    spec,
 			opts:    &ProvisionOptions{OLAPDriver: "duckdb", Slots: 4, Region: "us-east-1"},
-			want:    &Allocation{CPU: 4, MemoryGB: 8, StorageBytes: int64(160) * int64(datasize.GB), Host: "host_1"},
+			want:    &Allocation{Slots: 4, Host: "host_1"},
 			wantErr: false,
 		},
 		{
@@ -120,7 +119,7 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 				},
 			},
 			opts:    &ProvisionOptions{OLAPDriver: "duckdb", Slots: 1, Region: "us-east-2"},
-			want:    &Allocation{CPU: 1, MemoryGB: 2, StorageBytes: int64(40) * int64(datasize.GB), Host: "host_2"},
+			want:    &Allocation{Slots: 1, Host: "host_2"},
 			wantErr: false,
 		},
 	}
@@ -155,5 +154,5 @@ func compareAllocation(got, want *Allocation) bool {
 		return false
 	}
 
-	return got.CPU == want.CPU && got.MemoryGB == want.MemoryGB && got.StorageBytes == want.StorageBytes
+	return got.Slots == want.Slots
 }

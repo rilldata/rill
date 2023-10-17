@@ -69,9 +69,8 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb'")
 		}
 
-		olapConfig["dsn"] = fmt.Sprintf("%s.db?max_memory=%dGB", path.Join(alloc.DataDir, instanceID), alloc.MemoryGB)
-		olapConfig["pool_size"] = strconv.Itoa(alloc.CPU)
-		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
+		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID))
+		olapConfig["slots"] = strconv.Itoa(opts.ProdSlots)
 		embedCatalog = true
 	case "duckdb-ext-storage": // duckdb driver having capability to store table as view
 		if opts.ProdOLAPDSN != "" {
@@ -82,24 +81,9 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		}
 
 		olapDriver = "duckdb"
-		olapConfig["dsn"] = fmt.Sprintf("%s.db?max_memory=%dGB", path.Join(alloc.DataDir, instanceID, "main"), alloc.MemoryGB)
-		olapConfig["pool_size"] = strconv.Itoa(alloc.CPU)
+		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID, "main"))
 		olapConfig["external_table_storage"] = strconv.FormatBool(true)
-		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
-		embedCatalog = true
-	case "duckdb-vip":
-		if opts.ProdOLAPDSN != "" {
-			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-vip'")
-		}
-		if opts.ProdSlots == 0 {
-			return nil, fmt.Errorf("slot count can't be 0 for driver 'duckdb-vip'")
-		}
-
-		// NOTE: Rewriting to a "duckdb" driver without CPU, memory, or storage limits
-		olapDriver = "duckdb"
-		olapConfig["dsn"] = fmt.Sprintf("%s.db", path.Join(alloc.DataDir, instanceID))
-		olapConfig["pool_size"] = "8"
-		olapConfig["storage_limit_bytes"] = "0"
+		olapConfig["slots"] = strconv.Itoa(opts.ProdSlots)
 		embedCatalog = true
 	default:
 		olapConfig["dsn"] = opts.ProdOLAPDSN

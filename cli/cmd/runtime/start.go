@@ -81,6 +81,9 @@ type Config struct {
 	ActivitySinkKafkaBrokers string `default:"" split_words:"true"`
 	// Kafka topic of an activity client's sink
 	ActivitySinkKafkaTopic string `default:"" split_words:"true"`
+	MemoryBytesPerSlot     int64  `default:"2" split_words:"true"`
+	CPUPerSlot             int    `default:"1" split_words:"true"`
+	StorageBytesPerSlot    int64  `default:"40" split_words:"true"`
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
@@ -181,6 +184,9 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				QueryCacheSizeBytes:     conf.QueryCacheSizeBytes,
 				SecurityEngineCacheSize: conf.SecurityEngineCacheSize,
 				AllowHostAccess:         conf.AllowHostAccess,
+				MemoryBytesPerSlot:      conf.MemoryBytesPerSlot,
+				CPUPerSlot:              conf.CPUPerSlot,
+				StorageBytesPerSlot:     conf.StorageBytesPerSlot,
 				SafeSourceRefresh:       conf.SafeSourceRefresh,
 				SystemConnectors: []*runtimev1.Connector{
 					{

@@ -6,17 +6,14 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/admin/database"
 )
 
 type Allocation struct {
-	Host         string
-	Audience     string
-	DataDir      string
-	CPU          int
-	MemoryGB     int
-	StorageBytes int64
+	Host     string
+	Audience string
+	DataDir  string
+	Slots    int
 }
 
 type ProvisionOptions struct {
@@ -86,11 +83,9 @@ func (p *StaticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 	// nolint:gosec // We don't need cryptographically secure random numbers
 	target := targets[rand.Intn(len(targets))]
 	return &Allocation{
-		Host:         target.Host,
-		Audience:     target.Audience,
-		DataDir:      target.DataDir,
-		CPU:          1 * opts.Slots,
-		MemoryGB:     2 * opts.Slots,
-		StorageBytes: int64(opts.Slots) * 40 * int64(datasize.GB),
+		Host:     target.Host,
+		Audience: target.Audience,
+		DataDir:  target.DataDir,
+		Slots:    opts.Slots,
 	}, nil
 }

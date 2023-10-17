@@ -22,6 +22,9 @@ type Options struct {
 	SecurityEngineCacheSize int
 	AllowHostAccess         bool
 	SafeSourceRefresh       bool
+	MemoryBytesPerSlot      int64
+	CPUPerSlot              int
+	StorageBytesPerSlot     int64
 }
 
 type Runtime struct {

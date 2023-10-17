@@ -195,6 +195,12 @@ func (r *Runtime) connectorConfig(ctx context.Context, instanceID, name string) 
 		}
 	}
 
+	if connector.Type == "duckdb" {
+		setIfNil(cfg, "memory_per_slot", r.opts.MemoryBytesPerSlot)
+		setIfNil(cfg, "cpu_per_slot", r.opts.CPUPerSlot)
+		setIfNil(cfg, "storage_per_slot", r.opts.StorageBytesPerSlot)
+	}
+
 	return connector.Type, cfg, nil
 }
 
