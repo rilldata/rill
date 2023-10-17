@@ -23,9 +23,9 @@ type config struct {
 	ErrorOnIncompatibleVersion bool `mapstructure:"error_on_incompatible_version"`
 	// ExtTableStorage controls if every table is stored in a different db file
 	ExtTableStorage bool `mapstructure:"external_table_storage"`
-	// MemoryLimitGB is memory limit
+	// MemoryLimitGB is duckdb max_memory config
 	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
-	// CPU is the limit on cpu
+	// CPU is the limit on cpu which determines number of threads based on cpuThreadRatio constant
 	CPU int `mapstructure:"cpu"`
 	// StorageLimitBytes is the maximum size of all database files
 	StorageLimitBytes int64 `mapstructure:"storage_limit_bytes"`

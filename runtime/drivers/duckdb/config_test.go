@@ -58,7 +58,7 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "duck.db", cfg.DBFilePath)
 
-	cfg, err = newConfig(map[string]any{"dsn": "duck.db", "slots": 1, "memory_limit_gb": "4", "cpu": "2"})
+	cfg, err = newConfig(map[string]any{"dsn": "duck.db", "memory_limit_gb": "4", "cpu": "2"})
 	require.NoError(t, err)
 	require.Equal(t, "duck.db", cfg.DBFilePath)
 	require.Equal(t, "duck.db?max_memory=4GB&threads=1", cfg.DSN)
