@@ -274,12 +274,6 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			}
 		}
 
-		limit := r.Limit
-		// if request limit is set and is less than query limit use it
-		if request.Limit != nil && *request.Limit < limit {
-			limit = *request.Limit
-		}
-
 		q = &queries.MetricsViewComparison{
 			MetricsViewName:     r.MetricsViewName,
 			DimensionName:       r.Dimension.Name,
