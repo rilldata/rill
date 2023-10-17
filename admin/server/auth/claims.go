@@ -16,9 +16,10 @@ import (
 type OwnerType string
 
 const (
-	OwnerTypeAnon    OwnerType = "anon"
-	OwnerTypeUser    OwnerType = "user"
-	OwnerTypeService OwnerType = "service"
+	OwnerTypeAnon       OwnerType = "anon"
+	OwnerTypeUser       OwnerType = "user"
+	OwnerTypeService    OwnerType = "service"
+	OwnerTypeDeployment OwnerType = "deployment"
 )
 
 // Claims resolves permissions for a requester.
@@ -105,6 +106,8 @@ func (c *authTokenClaims) OwnerType() OwnerType {
 		return OwnerTypeUser
 	case authtoken.TypeService:
 		return OwnerTypeService
+	case authtoken.TypeDeployment:
+		return OwnerTypeDeployment
 	default:
 		panic(fmt.Errorf("unexpected token type %q", t))
 	}
@@ -124,6 +127,9 @@ func (c *authTokenClaims) Superuser(ctx context.Context) bool {
 		// continue
 	case authtoken.TypeService:
 		// services can't be superusers
+		return false
+	case authtoken.TypeDeployment:
+		// deployments can't be superusers
 		return false
 	default:
 		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
@@ -174,6 +180,8 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, project
 		perm, err = c.admin.ProjectPermissionsForUser(ctx, projectID, c.token.OwnerID(), orgPerms)
 	case authtoken.TypeService:
 		perm, err = c.admin.ProjectPermissionsForService(ctx, projectID, c.token.OwnerID(), orgPerms)
+	case authtoken.TypeDeployment:
+		perm, err = c.admin.ProjectPermissionsForDeployment(ctx, projectID, c.token.OwnerID(), orgPerms)
 	default:
 		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)
 	}
@@ -202,6 +210,8 @@ func (c *authTokenClaims) organizationPermissionsUnsafe(ctx context.Context, org
 		perm, err = c.admin.OrganizationPermissionsForUser(ctx, orgID, c.token.OwnerID())
 	case authtoken.TypeService:
 		perm, err = c.admin.OrganizationPermissionsForService(ctx, orgID, c.token.OwnerID())
+	case authtoken.TypeDeployment:
+		perm, err = c.admin.OrganizationPermissionsForDeployment(ctx, orgID, c.token.OwnerID())
 	default:
 		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)
 	}

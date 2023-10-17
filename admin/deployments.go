@@ -115,6 +115,28 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	}
 	defer rt.Close()
 
+	// Create the deployment
+	depl, err := s.DB.InsertDeployment(ctx, &database.InsertDeploymentOptions{
+		ProjectID:         opts.ProjectID,
+		Branch:            opts.ProdBranch,
+		Slots:             opts.ProdSlots,
+		RuntimeHost:       alloc.Host,
+		RuntimeInstanceID: instanceID,
+		RuntimeAudience:   alloc.Audience,
+		Status:            database.DeploymentStatusPending,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Create an access token the deployment can use to authenticate with the admin server.
+	dat, err := s.IssueDeploymentAuthToken(ctx, depl.ID, nil)
+	if err != nil {
+		err2 := s.DB.DeleteDeployment(ctx, depl.ID)
+		return nil, multierr.Combine(err, err2)
+	}
+	adminAuthToken := dat.Token().String()
+
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:    instanceID,
@@ -131,6 +153,11 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 				Type:   repoDriver,
 				Config: map[string]string{"dsn": repoDSN},
 			},
+			{
+				Name:   "admin",
+				Type:   "admin",
+				Config: map[string]string{"access_token": adminAuthToken},
+			},
 		},
 		Variables:           opts.ProdVariables,
 		Annotations:         opts.Annotations.toMap(),
@@ -139,25 +166,15 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		StageChanges:        true,
 	})
 	if err != nil {
-		return nil, err
+		err2 := s.DB.DeleteDeployment(ctx, depl.ID)
+		return nil, multierr.Combine(err, err2)
 	}
 
-	// Create the deployment
-	depl, err := s.DB.InsertDeployment(ctx, &database.InsertDeploymentOptions{
-		ProjectID:         opts.ProjectID,
-		Branch:            opts.ProdBranch,
-		Slots:             opts.ProdSlots,
-		RuntimeHost:       alloc.Host,
-		RuntimeInstanceID: instanceID,
-		RuntimeAudience:   alloc.Audience,
-		Status:            database.DeploymentStatusOK,
-	})
+	// Mark deployment ready
+	depl, err = s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusOK, "")
 	if err != nil {
-		_, err2 := rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
-			InstanceId: instanceID,
-			DropDb:     strings.Contains(olapDriver, "duckdb"), // Only drop DB if it's DuckDB
-		})
-		return nil, multierr.Combine(err, err2)
+		// NOTE: Unlikely case – we'll leave it pending in this case, the user can reset.
+		return nil, err
 	}
 
 	return depl, nil
