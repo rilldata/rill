@@ -22,13 +22,13 @@ import { createTotalsForMeasure } from "@rilldata/web-common/features/dashboards
 
 export type TimeSeriesDataState = {
   isFetching: boolean;
-  isError: boolean;
+  isError?: boolean;
 
   // Computed prepared data for charts and table
   timeSeriesData?: unknown[];
-  total: V1MetricsViewAggregationResponseDataItem;
-  unfilteredTotal: V1MetricsViewAggregationResponseDataItem;
-  comparisonTotal: V1MetricsViewAggregationResponseDataItem;
+  total?: V1MetricsViewAggregationResponseDataItem;
+  unfilteredTotal?: V1MetricsViewAggregationResponseDataItem;
+  comparisonTotal?: V1MetricsViewAggregationResponseDataItem;
   dimensionChartData?: DimensionDataItem[];
   dimensionTableData?: DimensionDataItem[];
 };
@@ -163,6 +163,12 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         ]) => {
           let timeSeriesData = primary?.data?.data;
 
+          if (!primary?.data || !primaryTotal?.data || !unfilteredTotal?.data) {
+            return {
+              isFetching: metricsView.isFetching,
+            };
+          }
+
           if (!primary.isFetching) {
             timeSeriesData = prepareTimeSeries(
               primary?.data?.data,
@@ -172,7 +178,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
             );
           }
           return {
-            isFetching: primaryTotal?.isFetching || comparisonTotal?.isFetching, // FIXME Handle fetching
+            isFetching: primaryTotal?.isFetching || metricsView?.isFetching,
             isError: false, // FIXME Handle errors
             timeSeriesData,
             total: primaryTotal?.data?.data[0],

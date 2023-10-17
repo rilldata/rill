@@ -13,6 +13,8 @@
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
   export let metricViewName;
 
@@ -73,4 +75,6 @@
     timeFormatter={$timeDimensionDataStore.timeFormatter}
     data={$timeDimensionDataStore.data}
   />
+{:else}
+  <Spinner size="18px" status={EntityStatus.Running} />
 {/if}
