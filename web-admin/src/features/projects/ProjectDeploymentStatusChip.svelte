@@ -17,7 +17,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
-  import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import type { SvelteComponent } from "svelte";
 
   export let organization: string;
@@ -34,12 +34,7 @@
 
   $: instanceId = $proj?.data?.prodDeployment?.runtimeInstanceId;
 
-  let deploymentStatusFromDashboards: CreateQueryResult<V1DeploymentStatus>;
-  $: if ($proj?.data)
-    deploymentStatusFromDashboards = useDashboardsStatus(
-      instanceId,
-      $proj?.data
-    );
+  $: deploymentStatusFromDashboards = useDashboardsStatus(instanceId);
 
   const queryClient = useQueryClient();
 

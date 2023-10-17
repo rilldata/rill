@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	QueryService_Query_FullMethodName                        = "/rill.runtime.v1.QueryService/Query"
+	QueryService_QueryBatch_FullMethodName                   = "/rill.runtime.v1.QueryService/QueryBatch"
 	QueryService_Export_FullMethodName                       = "/rill.runtime.v1.QueryService/Export"
 	QueryService_MetricsViewAggregation_FullMethodName       = "/rill.runtime.v1.QueryService/MetricsViewAggregation"
 	QueryService_MetricsViewToplist_FullMethodName           = "/rill.runtime.v1.QueryService/MetricsViewToplist"
@@ -41,7 +42,6 @@ const (
 	QueryService_TableCardinality_FullMethodName             = "/rill.runtime.v1.QueryService/TableCardinality"
 	QueryService_TableColumns_FullMethodName                 = "/rill.runtime.v1.QueryService/TableColumns"
 	QueryService_TableRows_FullMethodName                    = "/rill.runtime.v1.QueryService/TableRows"
-	QueryService_QueryBatch_FullMethodName                   = "/rill.runtime.v1.QueryService/QueryBatch"
 )
 
 // QueryServiceClient is the client API for QueryService service.
@@ -50,6 +50,8 @@ const (
 type QueryServiceClient interface {
 	// Query runs a SQL query against the instance's OLAP datastore.
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
+	// Batch request with different queries
+	QueryBatch(ctx context.Context, in *QueryBatchRequest, opts ...grpc.CallOption) (QueryService_QueryBatchClient, error)
 	// Export builds a URL to download the results of a query as a file.
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
 	// MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
@@ -95,8 +97,6 @@ type QueryServiceClient interface {
 	TableColumns(ctx context.Context, in *TableColumnsRequest, opts ...grpc.CallOption) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(ctx context.Context, in *TableRowsRequest, opts ...grpc.CallOption) (*TableRowsResponse, error)
-	// Batch request with different queries
-	QueryBatch(ctx context.Context, in *QueryBatchRequest, opts ...grpc.CallOption) (QueryService_QueryBatchClient, error)
 }
 
 type queryServiceClient struct {
@@ -114,6 +114,38 @@ func (c *queryServiceClient) Query(ctx context.Context, in *QueryRequest, opts .
 		return nil, err
 	}
 	return out, nil
+}
+
+func (c *queryServiceClient) QueryBatch(ctx context.Context, in *QueryBatchRequest, opts ...grpc.CallOption) (QueryService_QueryBatchClient, error) {
+	stream, err := c.cc.NewStream(ctx, &QueryService_ServiceDesc.Streams[0], QueryService_QueryBatch_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &queryServiceQueryBatchClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type QueryService_QueryBatchClient interface {
+	Recv() (*QueryBatchResponse, error)
+	grpc.ClientStream
+}
+
+type queryServiceQueryBatchClient struct {
+	grpc.ClientStream
+}
+
+func (x *queryServiceQueryBatchClient) Recv() (*QueryBatchResponse, error) {
+	m := new(QueryBatchResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *queryServiceClient) Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error) {
@@ -305,44 +337,14 @@ func (c *queryServiceClient) TableRows(ctx context.Context, in *TableRowsRequest
 	return out, nil
 }
 
-func (c *queryServiceClient) QueryBatch(ctx context.Context, in *QueryBatchRequest, opts ...grpc.CallOption) (QueryService_QueryBatchClient, error) {
-	stream, err := c.cc.NewStream(ctx, &QueryService_ServiceDesc.Streams[0], QueryService_QueryBatch_FullMethodName, opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &queryServiceQueryBatchClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type QueryService_QueryBatchClient interface {
-	Recv() (*QueryBatchResponse, error)
-	grpc.ClientStream
-}
-
-type queryServiceQueryBatchClient struct {
-	grpc.ClientStream
-}
-
-func (x *queryServiceQueryBatchClient) Recv() (*QueryBatchResponse, error) {
-	m := new(QueryBatchResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 // QueryServiceServer is the server API for QueryService service.
 // All implementations must embed UnimplementedQueryServiceServer
 // for forward compatibility
 type QueryServiceServer interface {
 	// Query runs a SQL query against the instance's OLAP datastore.
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
+	// Batch request with different queries
+	QueryBatch(*QueryBatchRequest, QueryService_QueryBatchServer) error
 	// Export builds a URL to download the results of a query as a file.
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
 	// MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
@@ -388,8 +390,6 @@ type QueryServiceServer interface {
 	TableColumns(context.Context, *TableColumnsRequest) (*TableColumnsResponse, error)
 	// TableRows returns table rows
 	TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error)
-	// Batch request with different queries
-	QueryBatch(*QueryBatchRequest, QueryService_QueryBatchServer) error
 	mustEmbedUnimplementedQueryServiceServer()
 }
 
@@ -399,6 +399,9 @@ type UnimplementedQueryServiceServer struct {
 
 func (UnimplementedQueryServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
+}
+func (UnimplementedQueryServiceServer) QueryBatch(*QueryBatchRequest, QueryService_QueryBatchServer) error {
+	return status.Errorf(codes.Unimplemented, "method QueryBatch not implemented")
 }
 func (UnimplementedQueryServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Export not implemented")
@@ -463,9 +466,6 @@ func (UnimplementedQueryServiceServer) TableColumns(context.Context, *TableColum
 func (UnimplementedQueryServiceServer) TableRows(context.Context, *TableRowsRequest) (*TableRowsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TableRows not implemented")
 }
-func (UnimplementedQueryServiceServer) QueryBatch(*QueryBatchRequest, QueryService_QueryBatchServer) error {
-	return status.Errorf(codes.Unimplemented, "method QueryBatch not implemented")
-}
 func (UnimplementedQueryServiceServer) mustEmbedUnimplementedQueryServiceServer() {}
 
 // UnsafeQueryServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -495,6 +495,27 @@ func _QueryService_Query_Handler(srv interface{}, ctx context.Context, dec func(
 		return srv.(QueryServiceServer).Query(ctx, req.(*QueryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _QueryService_QueryBatch_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(QueryBatchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(QueryServiceServer).QueryBatch(m, &queryServiceQueryBatchServer{stream})
+}
+
+type QueryService_QueryBatchServer interface {
+	Send(*QueryBatchResponse) error
+	grpc.ServerStream
+}
+
+type queryServiceQueryBatchServer struct {
+	grpc.ServerStream
+}
+
+func (x *queryServiceQueryBatchServer) Send(m *QueryBatchResponse) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _QueryService_Export_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -873,27 +894,6 @@ func _QueryService_TableRows_Handler(srv interface{}, ctx context.Context, dec f
 		return srv.(QueryServiceServer).TableRows(ctx, req.(*TableRowsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
-}
-
-func _QueryService_QueryBatch_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(QueryBatchRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(QueryServiceServer).QueryBatch(m, &queryServiceQueryBatchServer{stream})
-}
-
-type QueryService_QueryBatchServer interface {
-	Send(*QueryBatchResponse) error
-	grpc.ServerStream
-}
-
-type queryServiceQueryBatchServer struct {
-	grpc.ServerStream
-}
-
-func (x *queryServiceQueryBatchServer) Send(m *QueryBatchResponse) error {
-	return x.ServerStream.SendMsg(m)
 }
 
 // QueryService_ServiceDesc is the grpc.ServiceDesc for QueryService service.

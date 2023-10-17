@@ -3,9 +3,6 @@
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
-
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import {
     getFilterForDimension,
@@ -13,6 +10,7 @@
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
@@ -32,6 +30,7 @@
   import MeasureZoom from "./MeasureZoom.svelte";
   import { getDimensionValueTimeSeries } from "./multiple-dimension-queries";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
+  import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -186,7 +185,8 @@
       $timeControlsStore.selectedTimeRange?.end,
       $dashboardStore?.selectedTimezone,
       interval,
-      $timeControlsStore.selectedTimeRange?.name
+      $timeControlsStore.selectedTimeRange?.name,
+      $metaQuery.data.defaultTimeRange
     );
 
     startValue = adjustedChartValue?.start;

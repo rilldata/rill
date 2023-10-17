@@ -21,6 +21,8 @@ type config struct {
 	ErrorOnIncompatibleVersion bool `mapstructure:"error_on_incompatible_version"`
 	// ExtTableStorage controls if every table is stored in a different db file
 	ExtTableStorage bool `mapstructure:"external_table_storage"`
+	// StorageLimitBytes is the maximum size of all database files
+	StorageLimitBytes int64 `mapstructure:"storage_limit_bytes"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
 	DBFilePath string `mapstructure:"-"`
 	// ExtStoragePath is the path where the database files are stored in case external_table_storage is true. It is inferred from the DSN (can't be provided by user).

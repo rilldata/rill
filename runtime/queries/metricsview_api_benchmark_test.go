@@ -1,4 +1,4 @@
-package queries
+package queries_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +17,7 @@ func BenchmarkMetricsViewsTotals(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &MetricsViewTotals{
+		q := &queries.MetricsViewTotals{
 			MetricsViewName: "ad_bids_metrics",
 			MeasureNames:    []string{"measure_1"},
 			MetricsView:     mv,
@@ -32,7 +33,7 @@ func BenchmarkMetricsViewsToplist(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &MetricsViewToplist{
+		q := &queries.MetricsViewToplist{
 			MetricsViewName: "ad_bids_metrics",
 			DimensionName:   "dom",
 			MeasureNames:    []string{"measure_1"},
@@ -54,7 +55,7 @@ func BenchmarkMetricsViewsTimeSeries(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &MetricsViewTimeSeries{
+		q := &queries.MetricsViewTimeSeries{
 			MetricsViewName: "ad_bids_metrics",
 			TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 			MeasureNames:    []string{"measure_1"},
@@ -71,7 +72,7 @@ func BenchmarkMetricsViewsTimeSeries_TimeZone(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &MetricsViewTimeSeries{
+		q := &queries.MetricsViewTimeSeries{
 			MetricsViewName: "ad_bids_metrics",
 			TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 			MeasureNames:    []string{"measure_1"},
@@ -88,7 +89,7 @@ func BenchmarkMetricsViewsTimeSeries_TimeZone_Hour(b *testing.B) {
 	rt, instanceID, mv := prepareEnvironment(b)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &MetricsViewTimeSeries{
+		q := &queries.MetricsViewTimeSeries{
 			MetricsViewName: "ad_bids_metrics",
 			TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 			MeasureNames:    []string{"measure_1"},

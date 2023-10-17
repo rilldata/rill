@@ -97,6 +97,43 @@ func (s *Service) IssueServiceAuthToken(ctx context.Context, serviceID string, t
 	return &serviceAuthToken{model: sat, token: tkn}, nil
 }
 
+// deploymentAuthToken implements AuthToken for tokens belonging to a deployment.
+type deploymentAuthToken struct {
+	model *database.DeploymentAuthToken
+	token *authtoken.Token
+}
+
+func (t *deploymentAuthToken) Token() *authtoken.Token {
+	return t.token
+}
+
+func (t *deploymentAuthToken) OwnerID() string {
+	return t.model.DeploymentID
+}
+
+// IssueDeploymentAuthToken generates and persists a new auth token for a deployment.
+func (s *Service) IssueDeploymentAuthToken(ctx context.Context, deploymentID string, ttl *time.Duration) (AuthToken, error) {
+	tkn := authtoken.NewRandom(authtoken.TypeDeployment)
+
+	var expiresOn *time.Time
+	if ttl != nil {
+		t := time.Now().Add(*ttl)
+		expiresOn = &t
+	}
+
+	dat, err := s.DB.InsertDeploymentAuthToken(ctx, &database.InsertDeploymentAuthTokenOptions{
+		ID:           tkn.ID.String(),
+		SecretHash:   tkn.SecretHash(),
+		DeploymentID: deploymentID,
+		ExpiresOn:    expiresOn,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &deploymentAuthToken{model: dat, token: tkn}, nil
+}
+
 // ValidateAuthToken validates an auth token against persistent storage.
 func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToken, error) {
 	parsed, err := authtoken.FromString(token)
@@ -141,6 +178,24 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 		s.Used.Service(sat.ServiceID)
 
 		return &serviceAuthToken{model: sat, token: parsed}, nil
+	case authtoken.TypeDeployment:
+		dat, err := s.DB.FindDeploymentAuthToken(ctx, parsed.ID.String())
+		if err != nil {
+			return nil, err
+		}
+
+		if dat.ExpiresOn != nil && dat.ExpiresOn.Before(time.Now()) {
+			return nil, fmt.Errorf("auth token is expired")
+		}
+
+		if !bytes.Equal(dat.SecretHash, parsed.SecretHash()) {
+			return nil, fmt.Errorf("invalid auth token")
+		}
+
+		s.Used.DeploymentToken(dat.ID)
+		s.Used.Deployment(dat.DeploymentID)
+
+		return &deploymentAuthToken{model: dat, token: parsed}, nil
 	default:
 		return nil, fmt.Errorf("unknown auth token type %q", parsed.Type)
 	}
@@ -157,6 +212,8 @@ func (s *Service) RevokeAuthToken(ctx context.Context, token string) error {
 		return s.DB.DeleteUserAuthToken(ctx, parsed.ID.String())
 	case authtoken.TypeService:
 		return s.DB.DeleteServiceAuthToken(ctx, parsed.ID.String())
+	case authtoken.TypeDeployment:
+		return fmt.Errorf("deployment auth tokens cannot be revoked")
 	default:
 		return fmt.Errorf("unknown auth token type %q", parsed.Type)
 	}

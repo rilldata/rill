@@ -74,7 +74,6 @@ func New(t TestingT) *runtime.Runtime {
 type InstanceOptions struct {
 	Files                        map[string]string
 	Variables                    map[string]string
-	IngestionLimitBytes          int64
 	WatchRepo                    bool
 	StageChanges                 bool
 	ModelDefaultMaterialize      bool
@@ -104,7 +103,6 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		},
 		Variables:                    opts.Variables,
 		EmbedCatalog:                 true,
-		IngestionLimitBytes:          opts.IngestionLimitBytes,
 		WatchRepo:                    opts.WatchRepo,
 		StageChanges:                 opts.StageChanges,
 		ModelDefaultMaterialize:      opts.ModelDefaultMaterialize,
