@@ -90,7 +90,12 @@ func (b *Buffer) GetLogs(asc bool, limit int) []*runtimev1.Log {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
-	logs := make([]*runtimev1.Log, b.messages.Count())
+	if limit < 0 {
+		limit = b.messages.Count()
+	}
+	limit = min(limit, b.messages.Count())
+
+	logs := make([]*runtimev1.Log, limit)
 	i := 0
 	if asc {
 		b.messages.Iterate(func(item bufferutil.Item[*runtimev1.Log]) {
@@ -105,6 +110,13 @@ func (b *Buffer) GetLogs(asc bool, limit int) []*runtimev1.Log {
 	}
 
 	return logs
+}
+
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
 }
 
 func slogLevelToPBLevel(level slog.Level) runtimev1.LogLevel {

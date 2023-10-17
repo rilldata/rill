@@ -4323,7 +4323,16 @@ func (m *GetLogsRequest) validate(all bool) error {
 
 	// no validation rules for Ascending
 
-	// no validation rules for Limit
+	if m.GetLimit() < -1 {
+		err := GetLogsRequestValidationError{
+			field:  "Limit",
+			reason: "value must be greater than or equal to -1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return GetLogsRequestMultiError(errors)
@@ -4563,7 +4572,16 @@ func (m *WatchLogsRequest) validate(all bool) error {
 
 	// no validation rules for Replay
 
-	// no validation rules for ReplayLimit
+	if m.GetReplayLimit() < -1 {
+		err := WatchLogsRequestValidationError{
+			field:  "ReplayLimit",
+			reason: "value must be greater than or equal to -1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return WatchLogsRequestMultiError(errors)

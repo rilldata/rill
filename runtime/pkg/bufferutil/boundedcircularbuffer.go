@@ -72,10 +72,10 @@ func (cb *BoundedCircularBuffer[T]) Peek() (Item[T], error) {
 	return item, nil
 }
 
+// Iterate iterates over the buffer from oldest to newest. The callback function will be called for each item in the
+// buffer. The limit parameter specifies the maximum number of items to iterate over. No validation on limit is done.
+// Caller is responsible for ensuring limit is a valid value.
 func (cb *BoundedCircularBuffer[T]) Iterate(callback func(item Item[T]), limit int) {
-	if limit > cb.count || limit == 0 {
-		limit = cb.count
-	}
 	itemsToSkip := cb.count - limit
 	pos := (cb.tail + itemsToSkip) % cb.capacity
 	for i := 0; i < limit; i++ {
@@ -84,10 +84,10 @@ func (cb *BoundedCircularBuffer[T]) Iterate(callback func(item Item[T]), limit i
 	}
 }
 
+// ReverseIterate iterates over the buffer from newest to oldest. The callback function will be called for each item in
+// the buffer. The limit parameter specifies the maximum number of items to iterate over. No validation on limit is done.
+// Caller is responsible for ensuring limit is a valid value.
 func (cb *BoundedCircularBuffer[T]) ReverseIterate(callback func(item Item[T]), limit int) {
-	if limit > cb.count || limit == 0 {
-		limit = cb.count
-	}
 	pos := cb.head
 	for i := 0; i < limit; i++ {
 		pos = (pos - 1) % cb.capacity
