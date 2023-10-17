@@ -15,12 +15,18 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"github.com/rilldata/rill/runtime/pkg/schedule"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/exp/zapslog"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slog"
 	"google.golang.org/protobuf/proto"
 )
+
+// tracer to trace background reconile calls
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/controller")
 
 // errCyclicDependency is set as the error on resources that can't be reconciled due to a cyclic dependency
 var errCyclicDependency = errors.New("cannot be reconciled due to cyclic dependency")
@@ -1289,6 +1295,21 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 			// Send invocation to event loop for post-processing
 			c.completed <- inv
 		}()
+		// Start tracing span
+		tracerAttrs := []attribute.KeyValue{
+			attribute.String("instance_id", c.InstanceID),
+			attribute.String("name", n.Name),
+			attribute.String("kind", unqualifiedKind(n.Kind)),
+		}
+		if inv.isDelete {
+			tracerAttrs = append(tracerAttrs, attribute.Bool("deleted", inv.isDelete))
+		}
+		if inv.isRename {
+			tracerAttrs = append(tracerAttrs, attribute.String("renamed_from", r.Meta.RenamedFrom.Name))
+		}
+		ctx, span := tracer.Start(ctx, "reconcile", trace.WithAttributes(tracerAttrs...))
+		defer span.End()
+
 		// Invoke reconciler
 		inv.result = reconciler.Reconcile(ctx, n)
 	}()

@@ -8,6 +8,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
 
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
@@ -16,7 +17,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import CreateDashboardButton from "./CreateDashboardButton.svelte";
 
-  export let availableDashboards;
+  export let availableDashboards: Array<V1Resource>;
   export let modelName: string;
   export let suppressTooltips = false;
   export let modelHasError = false;
@@ -94,7 +95,7 @@
   <Tooltip distance={8} alignment="end">
     <Button
       on:click={() => {
-        goto(`/dashboard/${availableDashboards[0].name}`);
+        goto(`/dashboard/${availableDashboards[0].meta.name.name}`);
       }}
     >
       <IconSpaceFixer pullLeft pullRight={collapse}>

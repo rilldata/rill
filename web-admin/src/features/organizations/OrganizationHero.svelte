@@ -15,7 +15,7 @@
       </div>
     </svelte:fragment>
   </OrganizationAccessControls>
-  <span class="text-gray-500 text-base font-normal leading-normal"
-    >Check out your dashboards below.</span
-  >
+  <span class="text-gray-500 text-base font-normal leading-normal">
+    Check out your projects below.
+  </span>
 </div>

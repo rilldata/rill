@@ -102,7 +102,7 @@
       $fileArtifactsStore.entities,
       dashboardName
     );
-    const sourceModelName = dashboardData.jsonRepresentation.model;
+    const sourceModelName = dashboardData.jsonRepresentation?.model;
 
     const previousActiveEntity = $appScreen?.type;
     goto(`/model/${sourceModelName}`);

@@ -13,6 +13,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -485,7 +486,7 @@ func newTestRuntime(t *testing.T) *Runtime {
 		AllowHostAccess:         true,
 		SystemConnectors:        globalConnectors,
 	}
-	rt, err := New(context.Background(), opts, zap.NewNop(), activity.NewNoopClient())
+	rt, err := New(context.Background(), opts, zap.NewNop(), activity.NewNoopClient(), email.New(email.NewNoopSender()))
 	t.Cleanup(func() {
 		rt.Close()
 	})

@@ -11,6 +11,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/robfig/cron/v3"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 // sourceYAML is the raw structure of a Source resource defined in YAML (does not include common fields)
@@ -117,12 +120,14 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 // scheduleYAML is the raw structure of a refresh schedule clause defined in YAML.
 // This does not represent a stand-alone YAML file, just a partial used in other structs.
 type scheduleYAML struct {
-	Cron  string `yaml:"cron" mapstructure:"cron"`
-	Every string `yaml:"every" mapstructure:"every"`
+	Cron     string `yaml:"cron" mapstructure:"cron"`
+	Every    string `yaml:"every" mapstructure:"every"`
+	TimeZone string `yaml:"time_zone" mapstructure:"time_zone"`
+	Disable  bool   `yaml:"disable" mapstructure:"disable"`
 }
 
 func parseScheduleYAML(raw *scheduleYAML) (*runtimev1.Schedule, error) {
-	if raw == nil || (raw.Cron == "" && raw.Every == "") {
+	if raw == nil || raw.Disable || (raw.Cron == "" && raw.Every == "") {
 		return nil, nil
 	}
 
@@ -141,6 +146,14 @@ func parseScheduleYAML(raw *scheduleYAML) (*runtimev1.Schedule, error) {
 			return nil, fmt.Errorf("invalid ticker: %w", err)
 		}
 		s.TickerSeconds = uint32(d.Seconds())
+	}
+
+	if raw.TimeZone != "" {
+		_, err := time.LoadLocation(raw.TimeZone)
+		if err != nil {
+			return nil, fmt.Errorf("invalid time zone: %w", err)
+		}
+		s.TimeZone = raw.TimeZone
 	}
 
 	return s, nil

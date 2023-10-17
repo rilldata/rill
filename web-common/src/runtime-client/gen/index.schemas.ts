@@ -78,7 +78,7 @@ export type QueryServiceQueryBatch200 = {
 };
 
 export type QueryServiceQueryBatchBody = {
-  queries?: V1QueryBatchEntry[];
+  queries?: V1Query[];
 };
 
 export type QueryServiceQueryBody = {
@@ -89,24 +89,11 @@ export type QueryServiceQueryBody = {
   limit?: number;
 };
 
-/**
- * Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
- */
 export type QueryServiceColumnTopKBody = {
   columnName?: string;
   agg?: string;
   k?: number;
   priority?: number;
-};
-
-export type QueryServiceColumnTimeSeriesBody = {
-  measures?: ColumnTimeSeriesRequestBasicMeasure[];
-  timestampColumnName?: string;
-  timeRange?: V1TimeSeriesTimeRange;
-  pixels?: number;
-  sampleSize?: number;
-  priority?: number;
-  timeZone?: string;
 };
 
 export type QueryServiceColumnTimeRangeParams = {
@@ -219,6 +206,7 @@ export type QueryServiceMetricsViewComparisonToplistBody = {
   limit?: string;
   offset?: string;
   priority?: number;
+  exact?: boolean;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
@@ -236,11 +224,8 @@ export type QueryServiceMetricsViewAggregationBody = {
 export type QueryServiceExportBody = {
   limit?: string;
   format?: V1ExportFormat;
-  metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
-  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
-  metricsViewRowsRequest?: V1MetricsViewRowsRequest;
-  metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
-  metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
+  query?: V1Query;
+  bakedQuery?: string;
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
@@ -480,12 +465,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -518,6 +497,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
 
@@ -581,12 +566,23 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
+export type V1SourceSpecProperties = { [key: string]: any };
+
+export interface V1SourceSpec {
+  sourceConnector?: string;
+  sinkConnector?: string;
+  properties?: V1SourceSpecProperties;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  stageChanges?: boolean;
+  streamIngestion?: boolean;
+  trigger?: boolean;
+}
+
 export interface V1SourceV2 {
   spec?: V1SourceSpec;
   state?: V1SourceState;
 }
-
-export type V1SourceSpecProperties = { [key: string]: any };
 
 export type V1SourceProperties = { [key: string]: any };
 
@@ -601,17 +597,7 @@ export interface V1Source {
 export interface V1Schedule {
   cron?: string;
   tickerSeconds?: number;
-}
-
-export interface V1SourceSpec {
-  sourceConnector?: string;
-  sinkConnector?: string;
-  properties?: V1SourceSpecProperties;
-  refreshSchedule?: V1Schedule;
-  timeoutSeconds?: number;
-  stageChanges?: boolean;
-  streamIngestion?: boolean;
-  trigger?: boolean;
+  timeZone?: string;
 }
 
 export interface V1ScannedConnector {
@@ -684,6 +670,43 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export type V1ReportSpecOperationProperties = { [key: string]: any };
+
+export interface V1ReportSpec {
+  trigger?: boolean;
+  title?: string;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  operationName?: string;
+  operationProperties?: V1ReportSpecOperationProperties;
+  operationTimeRange?: string;
+  exportLimit?: number;
+  exportFormat?: V1ExportFormat;
+  recipients?: string[];
+  emailOpenUrl?: string;
+  emailEditUrl?: string;
+}
+
+export interface V1ReportExecution {
+  adhoc?: boolean;
+  errorMessage?: string;
+  reportTime?: string;
+  startedOn?: string;
+  finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
+export interface V1Report {
+  spec?: V1ReportSpec;
+  state?: V1ReportState;
+}
+
 export interface V1Resource {
   meta?: V1ResourceMeta;
   projectParser?: V1ProjectParser;
@@ -691,6 +714,7 @@ export interface V1Resource {
   model?: V1ModelV2;
   metricsView?: V1MetricsViewV2;
   migration?: V1Migration;
+  report?: V1Report;
   pullTrigger?: V1PullTrigger;
   refreshTrigger?: V1RefreshTrigger;
   bucketPlanner?: V1BucketPlanner;
@@ -730,6 +754,22 @@ export interface V1RefreshTriggerSpec {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
+}
+
+/**
+ * ReconcileError represents an error encountered while running Reconcile.
+ */
+export interface V1ReconcileError {
+  code?: V1ReconcileErrorCode;
+  message?: string;
+  filePath?: string;
+  /** Property path of the error in the code artifact (if any).
+It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+It only applies to structured code artifacts (i.e. YAML).
+Only applicable if file_path is set. */
+  propertyPath?: string[];
+  startLocation?: V1ReconcileErrorCharLocation;
+  endLocation?: V1ReconcileErrorCharLocation;
 }
 
 export interface V1RefreshAndReconcileResponse {
@@ -799,32 +839,7 @@ export interface V1ReconcileErrorCharLocation {
   column?: number;
 }
 
-/**
- * ReconcileError represents an error encountered while running Reconcile.
- */
-export interface V1ReconcileError {
-  code?: V1ReconcileErrorCode;
-  message?: string;
-  filePath?: string;
-  /** Property path of the error in the code artifact (if any).
-It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-It only applies to structured code artifacts (i.e. YAML).
-Only applicable if file_path is set. */
-  propertyPath?: string[];
-  startLocation?: V1ReconcileErrorCharLocation;
-  endLocation?: V1ReconcileErrorCharLocation;
-}
-
-export type V1QueryResponseDataItem = { [key: string]: any };
-
-export interface V1QueryResponse {
-  meta?: V1StructType;
-  data?: V1QueryResponseDataItem[];
-}
-
-export interface V1QueryBatchResponse {
-  key?: number;
-  error?: string;
+export interface V1QueryResult {
   metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
   metricsViewToplistResponse?: V1MetricsViewToplistResponse;
   metricsViewComparisonToplistResponse?: V1MetricsViewComparisonToplistResponse;
@@ -846,9 +861,20 @@ export interface V1QueryBatchResponse {
   tableRowsResponse?: V1TableRowsResponse;
 }
 
-export interface V1QueryBatchEntry {
-  /** Since response could out of order `key` is used to co-relate a specific response to request. */
-  key?: number;
+export type V1QueryResponseDataItem = { [key: string]: any };
+
+export interface V1QueryResponse {
+  meta?: V1StructType;
+  data?: V1QueryResponseDataItem[];
+}
+
+export interface V1QueryBatchResponse {
+  index?: number;
+  result?: V1QueryResult;
+  error?: string;
+}
+
+export interface V1Query {
   metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
   metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
@@ -981,10 +1007,6 @@ export interface V1NumericHistogramBins {
   bins?: NumericHistogramBinsBin[];
 }
 
-/**
- * Response for QueryService.ColumnNumericHistogram, QueryService.ColumnDescriptiveStatistics and QueryService.ColumnCardinality.
-Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
- */
 export interface V1NumericSummary {
   numericHistogramBins?: V1NumericHistogramBins;
   numericStatistics?: V1NumericStatistics;
@@ -1098,7 +1120,9 @@ export interface V1MetricsViewSpec {
   defaultTimeRange?: string;
   availableTimeZones?: string[];
   security?: MetricsViewSpecSecurityV2;
+  /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
+  /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
   firstMonthOfYear?: number;
 }
 
@@ -1200,6 +1224,7 @@ export interface V1MetricsViewComparisonToplistRequest {
   limit?: string;
   offset?: string;
   priority?: number;
+  exact?: boolean;
 }
 
 export interface V1MetricsViewComparisonRow {
@@ -1540,9 +1565,6 @@ export interface V1ColumnTopKResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
 
-/**
- * Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
- */
 export interface V1ColumnTopKRequest {
   instanceId?: string;
   tableName?: string;
@@ -1659,9 +1681,6 @@ export interface V1ColumnCardinalityRequest {
   priority?: number;
 }
 
-/**
- * Response for QueryService.ColumnTopK and QueryService.ColumnCardinality. Message will have either topK or cardinality set.
- */
 export interface V1CategoricalSummary {
   topK?: V1TopK;
   cardinality?: number;
@@ -1893,6 +1912,16 @@ export interface ColumnTimeSeriesRequestBasicMeasure {
   expression?: string;
   sqlName?: string;
 }
+
+export type QueryServiceColumnTimeSeriesBody = {
+  measures?: ColumnTimeSeriesRequestBasicMeasure[];
+  timestampColumnName?: string;
+  timeRange?: V1TimeSeriesTimeRange;
+  pixels?: number;
+  sampleSize?: number;
+  priority?: number;
+  timeZone?: string;
+};
 
 export type BucketExtractPolicyStrategy =
   (typeof BucketExtractPolicyStrategy)[keyof typeof BucketExtractPolicyStrategy];

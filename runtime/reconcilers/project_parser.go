@@ -526,6 +526,10 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 		if existing == nil || !equalMigrationSpec(existing.GetMigration().Spec, def.MigrationSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Migration{Migration: &runtimev1.Migration{Spec: def.MigrationSpec}}}
 		}
+	case compilerv1.ResourceKindReport:
+		if existing == nil || !equalReportSpec(existing.GetReport().Spec, def.ReportSpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Report{Report: &runtimev1.Report{Spec: def.ReportSpec}}}
+		}
 	default:
 		panic(fmt.Errorf("unknown resource kind %q", def.Name.Kind))
 	}
@@ -657,6 +661,8 @@ func resourceNameFromCompiler(name compilerv1.ResourceName) *runtimev1.ResourceN
 		return &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name.Name}
 	case compilerv1.ResourceKindMigration:
 		return &runtimev1.ResourceName{Kind: runtime.ResourceKindMigration, Name: name.Name}
+	case compilerv1.ResourceKindReport:
+		return &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: name.Name}
 	default:
 		panic(fmt.Errorf("unknown resource kind %q", name.Kind))
 	}
@@ -672,6 +678,8 @@ func resourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceNam
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindMetricsView, Name: name.Name}
 	case runtime.ResourceKindMigration:
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindMigration, Name: name.Name}
+	case runtime.ResourceKindReport:
+		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindReport, Name: name.Name}
 	default:
 		panic(fmt.Errorf("unknown resource kind %q", name.Kind))
 	}
@@ -706,5 +714,9 @@ func equalMetricsViewSpec(a, b *runtimev1.MetricsViewSpec) bool {
 }
 
 func equalMigrationSpec(a, b *runtimev1.MigrationSpec) bool {
+	return proto.Equal(a, b)
+}
+
+func equalReportSpec(a, b *runtimev1.ReportSpec) bool {
 	return proto.Equal(a, b)
 }

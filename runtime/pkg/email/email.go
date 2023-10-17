@@ -12,23 +12,14 @@ import (
 var templatesFS embed.FS
 
 type Client struct {
-	sender      Sender
-	frontendURL string
-	externalURL string
-	templates   *template.Template
+	sender    Sender
+	templates *template.Template
 }
 
-func New(sender Sender, frontendURL, externalURL string) *Client {
-	_, err := url.Parse(frontendURL)
-	if err != nil {
-		panic(fmt.Errorf("invalid frontendURL: %w", err))
-	}
-
+func New(sender Sender) *Client {
 	return &Client{
-		sender:      sender,
-		frontendURL: frontendURL,
-		externalURL: externalURL,
-		templates:   template.Must(template.New("").ParseFS(templatesFS, "templates/gen/*.html")),
+		sender:    sender,
+		templates: template.Must(template.New("").ParseFS(templatesFS, "templates/gen/*.html")),
 	}
 }
 
@@ -55,6 +46,8 @@ func (c *Client) SendCallToAction(opts *CallToAction) error {
 type OrganizationInvite struct {
 	ToEmail       string
 	ToName        string
+	AdminURL      string
+	FrontendURL   string
 	OrgName       string
 	RoleName      string
 	InvitedByName string
@@ -67,8 +60,8 @@ func (c *Client) SendOrganizationInvite(opts *OrganizationInvite) error {
 
 	// Create link URL as "{{ admin URL }}/auth/signup?redirect={{ org frontend URL }}"
 	queryParams := url.Values{}
-	queryParams.Add("redirect", mustJoinURLPath(c.frontendURL, opts.OrgName))
-	finalURL := mustJoinURLPath(c.externalURL, "/auth/signup") + "?" + queryParams.Encode()
+	queryParams.Add("redirect", mustJoinURLPath(opts.FrontendURL, opts.OrgName))
+	finalURL := mustJoinURLPath(opts.AdminURL, "/auth/signup") + "?" + queryParams.Encode()
 
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
@@ -84,6 +77,7 @@ func (c *Client) SendOrganizationInvite(opts *OrganizationInvite) error {
 type OrganizationAddition struct {
 	ToEmail       string
 	ToName        string
+	FrontendURL   string
 	OrgName       string
 	RoleName      string
 	InvitedByName string
@@ -101,13 +95,15 @@ func (c *Client) SendOrganizationAddition(opts *OrganizationAddition) error {
 		Title:      fmt.Sprintf("%s has added you to %s", opts.InvitedByName, opts.OrgName),
 		Body:       template.HTML(fmt.Sprintf("%s has added you as a %s for <b>%s</b>. Click the button below to view and collaborate on Rill dashboard projects for %s.", opts.InvitedByName, opts.RoleName, opts.OrgName, opts.OrgName)),
 		ButtonText: "View account",
-		ButtonLink: mustJoinURLPath(c.frontendURL, opts.OrgName),
+		ButtonLink: mustJoinURLPath(opts.FrontendURL, opts.OrgName),
 	})
 }
 
 type ProjectInvite struct {
 	ToEmail       string
 	ToName        string
+	AdminURL      string
+	FrontendURL   string
 	OrgName       string
 	ProjectName   string
 	RoleName      string
@@ -121,8 +117,8 @@ func (c *Client) SendProjectInvite(opts *ProjectInvite) error {
 
 	// Create link URL as "{{ admin URL }}/auth/signup?redirect={{ project frontend URL }}"
 	queryParams := url.Values{}
-	queryParams.Add("redirect", mustJoinURLPath(c.frontendURL, opts.OrgName, opts.ProjectName))
-	finalURL := mustJoinURLPath(c.externalURL, "/auth/signup") + "?" + queryParams.Encode()
+	queryParams.Add("redirect", mustJoinURLPath(opts.FrontendURL, opts.OrgName, opts.ProjectName))
+	finalURL := mustJoinURLPath(opts.AdminURL, "/auth/signup") + "?" + queryParams.Encode()
 
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
@@ -138,6 +134,7 @@ func (c *Client) SendProjectInvite(opts *ProjectInvite) error {
 type ProjectAddition struct {
 	ToEmail       string
 	ToName        string
+	FrontendURL   string
 	OrgName       string
 	ProjectName   string
 	RoleName      string
@@ -156,7 +153,7 @@ func (c *Client) SendProjectAddition(opts *ProjectAddition) error {
 		Title:      fmt.Sprintf("You have been added to the %s/%s project", opts.OrgName, opts.ProjectName),
 		Body:       template.HTML(fmt.Sprintf("%s has invited you to collaborate as a %s for the <b>%s</b> project. Click the button below to accept your invitation. ", opts.InvitedByName, opts.RoleName, opts.ProjectName)),
 		ButtonText: "View account",
-		ButtonLink: mustJoinURLPath(c.frontendURL, opts.OrgName, opts.ProjectName),
+		ButtonLink: mustJoinURLPath(opts.FrontendURL, opts.OrgName, opts.ProjectName),
 	})
 }
 

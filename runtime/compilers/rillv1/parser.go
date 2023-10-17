@@ -34,6 +34,7 @@ type Resource struct {
 	ModelSpec       *runtimev1.ModelSpec
 	MetricsViewSpec *runtimev1.MetricsViewSpec
 	MigrationSpec   *runtimev1.MigrationSpec
+	ReportSpec      *runtimev1.ReportSpec
 }
 
 // ResourceName is a unique identifier for a resource
@@ -62,6 +63,7 @@ const (
 	ResourceKindModel
 	ResourceKindMetricsView
 	ResourceKindMigration
+	ResourceKindReport
 )
 
 // ParseResourceKind maps a string to a ResourceKind.
@@ -78,6 +80,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindMetricsView, nil
 	case "migration":
 		return ResourceKindMigration, nil
+	case "report":
+		return ResourceKindReport, nil
 	default:
 		return ResourceKindUnspecified, fmt.Errorf("invalid resource kind %q", kind)
 	}
@@ -95,6 +99,8 @@ func (k ResourceKind) String() string {
 		return "MetricsView"
 	case ResourceKindMigration:
 		return "Migration"
+	case ResourceKindReport:
+		return "Report"
 	default:
 		panic(fmt.Sprintf("unexpected resource kind: %d", k))
 	}
@@ -691,6 +697,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.MetricsViewSpec = &runtimev1.MetricsViewSpec{}
 	case ResourceKindMigration:
 		r.MigrationSpec = &runtimev1.MigrationSpec{}
+	case ResourceKindReport:
+		r.ReportSpec = &runtimev1.ReportSpec{}
 	default:
 		panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
 	}
