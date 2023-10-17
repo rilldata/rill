@@ -278,21 +278,6 @@ export function formatContextColumnValue(
       throw new Error("Invalid context column, all cases must be handled");
   }
 }
-export const contextColumnWidth = (
-  contextType: LeaderboardContextColumn
-): string => {
-  switch (contextType) {
-    case LeaderboardContextColumn.DELTA_ABSOLUTE:
-    case LeaderboardContextColumn.DELTA_PERCENT:
-      return "56px";
-    case LeaderboardContextColumn.PERCENT:
-      return "44px";
-    case LeaderboardContextColumn.HIDDEN:
-      return "0px";
-    default:
-      throw new Error("Invalid context column, all cases must be handled");
-  }
-};
 
 export function getQuerySortType(sortType: SortType) {
   return (

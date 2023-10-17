@@ -9,6 +9,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { activeMeasure } from "./core-selectors";
 import { formattingSelectors } from "./data-formatting";
+import { contextColSelectors } from "./context-column";
 
 export type StateManagerReadables = ReturnType<
   typeof createStateManagerReadables
@@ -30,8 +31,20 @@ export const createStateManagerReadables = (
       metricsSpecQueryResultStore
     ),
 
+    /**
+     * Readables related to number formatting for the dashboard.
+     */
     numberFormat: createReadablesFromSelectors(
       formattingSelectors,
+      dashboardStore,
+      metricsSpecQueryResultStore
+    ),
+
+    /**
+     * Readables related to the dashboard context column.
+     */
+    contextColumn: createReadablesFromSelectors(
+      contextColSelectors,
       dashboardStore,
       metricsSpecQueryResultStore
     ),

@@ -12,17 +12,29 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import { createEventDispatcher } from "svelte";
   import { LeaderboardContextColumn } from "../leaderboard-context-column";
-  import { contextColumnWidth } from "./leaderboard-utils";
   import { SortType } from "../proto-state/derived-types";
+  import { getStateManagers } from "../state-managers/state-managers";
 
   export let displayName: string;
   export let isFetching: boolean;
   export let dimensionDescription: string;
   export let hovered: boolean;
   export let contextColumn: LeaderboardContextColumn;
-  export let sortAscending: boolean;
   export let sortType: SortType;
   export let isBeingCompared: boolean;
+
+  const {
+    selectors: {
+      contextColumn: {
+        widthPx,
+        isDeltaAbsolute,
+        isDeltaPercent,
+        isPercentOfTotal,
+        isHidden,
+      },
+      sorting: { sortedAscending },
+    },
+  } = getStateManagers();
 
   const dispatch = createEventDispatcher();
   $: contextColumnSortType = {
@@ -31,7 +43,7 @@
     [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
   }[contextColumn];
 
-  $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
+  $: arrowTransform = $sortedAscending ? "scale(1 -1)" : "scale(1 1)";
 </script>
 
 <div class="flex flex-row items-center">
@@ -113,18 +125,18 @@
         {/if}
       </button>
 
-      {#if contextColumn !== LeaderboardContextColumn.HIDDEN}
+      {#if !$isHidden}
         <button
           on:click={() => dispatch("toggle-sort", contextColumnSortType)}
           class="shrink flex flex-row items-center justify-end"
           aria-label="Toggle sort leaderboards by context column"
-          style:width={contextColumnWidth(contextColumn)}
+          style:width={$widthPx}
         >
-          {#if contextColumn === LeaderboardContextColumn.DELTA_PERCENT}
+          {#if $isDeltaPercent}
             <Delta /> %
-          {:else if contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE}
+          {:else if $isDeltaAbsolute}
             <Delta />
-          {:else if contextColumn === LeaderboardContextColumn.PERCENT}
+          {:else if $isPercentOfTotal}
             <PieChart /> %
           {/if}{#if sortType !== SortType.VALUE}
             <ArrowDown transform={arrowTransform} />

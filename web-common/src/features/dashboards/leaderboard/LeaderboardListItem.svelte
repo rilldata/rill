@@ -18,7 +18,6 @@
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
 
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
-  import { humanizeDataType } from "../humanize-numbers";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import {
     LeaderboardItemData,
@@ -40,17 +39,15 @@
   export let filterExcludeMode;
 
   const stateManagers = getStateManagers();
-  const { activeMeasureFormatPreset } = stateManagers.selectors.numberFormat;
+  const { activeMeasureFormatPreset, activeMeasureFormatter } =
+    stateManagers.selectors.numberFormat;
 
   /** if this value is a summable measure, we'll show the bar. Otherwise, don't. */
   export let isSummableMeasure;
   /** for summable measures, this is the value we use to calculate the bar % to fill */
   export let referenceValue;
 
-  $: formattedValue = humanizeDataType(
-    measureValue,
-    $activeMeasureFormatPreset
-  );
+  $: formattedValue = $activeMeasureFormatter(measureValue);
 
   $: contextColumnFormattedValue = formatContextColumnValue(
     itemData,
@@ -60,7 +57,7 @@
 
   $: previousValueString =
     comparisonValue !== undefined && comparisonValue !== null
-      ? humanizeDataType(comparisonValue, $activeMeasureFormatPreset)
+      ? $activeMeasureFormatter(comparisonValue)
       : undefined;
   $: showPreviousTimeValue = hovered && previousValueString !== undefined;
   // Super important special case: if there is not at least one "active" (selected) value,
