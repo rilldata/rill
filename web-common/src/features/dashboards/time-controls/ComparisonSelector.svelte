@@ -1,7 +1,7 @@
 <!-- @component 
 This component needs to do the following:
 1. display the set of available comparisons in the menu.
-2. read the existing active comparison from somewhere.
+2. read the existing active comparison
 3. update comparisons on user interactions
 -->
 <script lang="ts">
