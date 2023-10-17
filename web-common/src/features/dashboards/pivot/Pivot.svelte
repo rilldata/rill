@@ -281,6 +281,10 @@
       "kern";
   }
 
+  :global(regular-table thead tr) {
+    border-bottom: 2px solid #ddd;
+  }
+
   :global(regular-table *) {
     box-sizing: border-box;
   }

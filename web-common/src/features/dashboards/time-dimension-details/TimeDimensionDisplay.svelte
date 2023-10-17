@@ -12,12 +12,23 @@
     SortType,
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 
   export let metricViewName;
 
   const timeDimensionDataStore = useTimeDimensionDataStore(getStateManagers());
+  $: metaQuery = useMetaQuery(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension;
+
+  $: dimensionLabel =
+    $metaQuery?.data?.dimensions?.find((d) => d.name === dimensionName).label ||
+    "";
+
+  $: measureLabel =
+    $metaQuery?.data?.measures?.find(
+      (m) => m.name === $dashboardStore?.expandedMeasureName
+    ).label || "";
 
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
@@ -37,8 +48,6 @@
     $timeDimensionDataStore?.data?.columnHeaderData?.flat(),
     true
   );
-
-  $: console.log(startScrubPos, endScrubPos);
 </script>
 
 <TDDHeader {dimensionName} {metricViewName} />
@@ -50,6 +59,8 @@
     {dimensionName}
     {metricViewName}
     {excludeMode}
+    {dimensionLabel}
+    {measureLabel}
     scrubPos={{ start: startScrubPos, end: endScrubPos }}
     sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
     comparing={$timeDimensionDataStore.comparing}

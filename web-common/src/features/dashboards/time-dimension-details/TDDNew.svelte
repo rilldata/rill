@@ -17,6 +17,8 @@
 
   export let metricViewName: string;
   export let dimensionName: string;
+  export let dimensionLabel: string;
+  export let measureLabel: string;
   export let excludeMode: boolean;
   export let sortDirection: boolean;
   export let scrubPos;
@@ -155,9 +157,9 @@
   const renderRowCorner: PivotRenderCallback = ({ value, x, y, element }) => {
     element.classList.add("bg-white", "z-10");
     if (x === 0)
-      return `<div class="truncate font-medium text-gray-700 text-left">Dimension A</div>`;
+      return `<div class="truncate font-medium text-gray-700 text-left">${dimensionLabel}</div>`;
     if (x === 1)
-      return `<div class="truncate text-right font-medium text-gray-700" sortable="true">Measure A</div>`;
+      return `<div class="truncate text-right font-medium text-gray-700" sortable="true">${measureLabel}</div>`;
     if (x === 2)
       return `<div class="flex items-center justify-end text-gray-700" sortable="true">${PieChart} % ${MeasureArrow(
         sortDirection
@@ -170,8 +172,8 @@
 
   const getRowHeaderWidth = (x: number) => {
     // const dimensionColWidth =
-    //   containerWidth - data?.columnCount * getColumnWidth(x) - 120 - 50 - 20;
-    return [250, 120, 70][x];
+    //   containerWidth - data?.columnCount * getColumnWidth(x) - 130 - 50 - 20;
+    return [250, 130, 70][x];
   };
 
   const handleEvent = (evt, table, attribute, callback) => {
