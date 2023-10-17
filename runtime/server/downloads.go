@@ -20,6 +20,33 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+func BakeQuery(qry *runtimev1.Query) (string, error) {
+	if qry == nil {
+		return "", errors.New("cannot bake nil query")
+	}
+
+	data, err := proto.Marshal(qry)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.URLEncoding.EncodeToString(data), nil
+}
+
+func UnbakeQuery(bakedQry string) (*runtimev1.Query, error) {
+	data, err := base64.URLEncoding.DecodeString(bakedQry)
+	if err != nil {
+		return nil, err
+	}
+
+	qry := &runtimev1.Query{}
+	if err := proto.Unmarshal(data, qry); err != nil {
+		return nil, err
+	}
+
+	return qry, nil
+}
+
 func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*runtimev1.ExportResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
@@ -29,6 +56,16 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 		if req.Limit > *s.opts.DownloadRowLimit {
 			return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to %d", *s.opts.DownloadRowLimit)
 		}
+	}
+
+	if req.BakedQuery != "" {
+		qry, err := UnbakeQuery(req.BakedQuery)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to parse baked query: %s", err.Error())
+		}
+
+		req.Query = qry
+		req.BakedQuery = ""
 	}
 
 	tkn, err := s.generateDownloadToken(req, auth.GetClaims(ctx).Attributes())

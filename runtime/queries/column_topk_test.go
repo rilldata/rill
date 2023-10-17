@@ -1,9 +1,10 @@
-package queries
+package queries_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -22,7 +23,7 @@ func TestColumnTopK(t *testing.T) {
 		SELECT 12 AS col, 1 AS val, TIMESTAMP '2022-11-03 00:00:00' AS times, DATE '2011-06-30' AS dates
 	`)
 
-	q := &ColumnTopK{
+	q := &queries.ColumnTopK{
 		TableName:  "test",
 		ColumnName: "col",
 		Agg:        "count(*)",
@@ -41,7 +42,7 @@ func TestColumnTopK(t *testing.T) {
 	require.Equal(t, structpb.NewNullValue(), q.Result.Entries[3].Value)
 	require.Equal(t, 1, int(q.Result.Entries[3].Count))
 
-	q = &ColumnTopK{
+	q = &queries.ColumnTopK{
 		TableName:  "test",
 		ColumnName: "col",
 		Agg:        "sum(val)",
@@ -60,7 +61,7 @@ func TestColumnTopK(t *testing.T) {
 	require.Equal(t, structpb.NewNullValue(), q.Result.Entries[3].Value)
 	require.Equal(t, 1, int(q.Result.Entries[3].Count))
 
-	q = &ColumnTopK{
+	q = &queries.ColumnTopK{
 		TableName:  "test",
 		ColumnName: "col",
 		Agg:        "count(*)",
@@ -76,7 +77,7 @@ func TestColumnTopK(t *testing.T) {
 
 func TestColumnTopKList(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `SELECT [10, 20] AS col, 1 AS val`)
-	q := &ColumnTopK{
+	q := &queries.ColumnTopK{
 		TableName:  "test",
 		ColumnName: "col",
 		Agg:        "count(*)",
@@ -93,7 +94,7 @@ func TestColumnTopKList(t *testing.T) {
 
 func TestColumnTopKStruct(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `SELECT {'x': 10, 'y': null} AS col, 1 AS val`)
-	q := &ColumnTopK{
+	q := &queries.ColumnTopK{
 		TableName:  "test",
 		ColumnName: "col",
 		Agg:        "count(*)",
@@ -110,7 +111,7 @@ func TestColumnTopKStruct(t *testing.T) {
 
 func TestColumnTopKJSON(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `SELECT '[10]'::JSON AS col, 1 AS val`)
-	q := &ColumnTopK{
+	q := &queries.ColumnTopK{
 		TableName:  "test",
 		ColumnName: "col",
 		Agg:        "count(*)",
@@ -128,7 +129,7 @@ func BenchmarkColumnTopK(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &ColumnTopK{
+		q := &queries.ColumnTopK{
 			TableName:  "ad_bids",
 			ColumnName: "domain",
 			Agg:        "sum(bid_price)",

@@ -3,12 +3,13 @@ package queries
 import (
 	"bufio"
 	"fmt"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/structpb"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func Benchmark_writeCSV(b *testing.B) {
