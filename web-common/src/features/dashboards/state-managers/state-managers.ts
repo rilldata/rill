@@ -15,27 +15,7 @@ import {
   createStateManagerReadables,
 } from "./selectors";
 import { createStateManagerActions, type StateManagerActions } from "./actions";
-
-/**
- * A DashboardMutatorCallback is a function that mutates
- * a MetricsExplorerEntity, i.e., the data single dashboard.
- * This will often be a closure over other parameters
- * that are relevant to the mutation.
- */
-export type DashboardMutatorCallback = (
-  metricsExplorer: MetricsExplorerEntity
-) => void;
-
-/**
- * DashboardCallbackExecutor is a function that takes a
- * DashboardMutatorCallback and executes it. The
- * DashboardCallbackExecutor is a closure containing a reference
- * to the live dashboard, and therefore calling this function
- * on a DashboardMutatorCallback will actually update the dashboard.
- */
-export type DashboardCallbackExecutor = (
-  callback: DashboardMutatorCallback
-) => void;
+import type { DashboardCallbackExecutor } from "./actions/types";
 
 export type StateManagers = {
   runtime: Writable<Runtime>;

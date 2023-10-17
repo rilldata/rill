@@ -1,6 +1,7 @@
 import { sortingSelectors } from "./sorting";
 import { derived, type Readable } from "svelte/store";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { ReadablesObj, SelectorFnsObj } from "./types";
 
 export type StateManagerReadables = ReturnType<
   typeof createStateManagerReadables
@@ -16,28 +17,6 @@ export const createStateManagerReadables = (
     sorting: createReadablesFromSelectors(sortingSelectors, dashboardStore),
   };
 };
-
-/**
- * A SelectorFn is a pure function that takes dashboard data
- * (a MetricsExplorerEntity) and returns some derived value from it.
- */
-type SelectorFn<T> = (dashboard: MetricsExplorerEntity) => T;
-
-/**
- * A SelectorFnsObj object is a collection of pure SelectorFn functions.
- */
-type SelectorFnsObj = {
-  [key: string]: SelectorFn<unknown>;
-};
-
-/**
- * A ReadablesObj object is a collection readables that are connected
- * to the live dashboard store and can be
- * used to select data from the dashboard.
- */
-type ReadablesObj<T extends SelectorFnsObj> = Expand<{
-  [P in keyof T]: Readable<ReturnType<T[P]>>;
-}>;
 
 function createReadablesFromSelectors<T extends SelectorFnsObj>(
   selectors: T,

@@ -1,9 +1,14 @@
 import { sortActions } from "./sorting";
-import type { DashboardCallbackExecutor } from "../state-managers";
 import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 import { setLeaderboardMeasureName } from "./core-actions";
 import { dimTableActions } from "./dimension-table";
+import type {
+  DashboardCallbackExecutor,
+  DashboardMutatorFn,
+  DashboardMutatorFns,
+  DashboardUpdaters,
+} from "./types";
 
 export type StateManagerActions = ReturnType<typeof createStateManagerActions>;
 
@@ -32,22 +37,6 @@ export const createStateManagerActions = (
   };
 };
 
-// Note: the types below are helper types to simplify the type inference
-// used in the creation of StateManagerActions, so that we can have nice
-// autocomplete and type checking in the IDE, while still keeping the
-// code that is used to define actions organized and readable.
-
-/**
- * A DashboardMutatorFn is a function mutates the data
- * model of a single dashboard.
- * It takes a reference to a dashboard as its first parameter,
- * and may take any number of additional parameters relevant to the mutation.
- */
-type DashboardMutatorFn<T extends unknown[]> = (
-  dash: MetricsExplorerEntity,
-  ...params: T
-) => void;
-
 /**
  * `dashboardMutatorToUpdater` take a DashboardCallbackExecutor
  * and returns a DashboardMutatorFn that directly updates the dashboard
@@ -63,25 +52,6 @@ function dashboardMutatorToUpdater<T extends unknown[]>(
   };
 }
 
-type DashboardMutatorFns = {
-  [key: string]: DashboardMutatorFn<unknown[]>;
-};
-
-/**
- * A helper type that drops the first element from a tuple.
- */
-type DropFirst<T extends unknown[]> = T extends [unknown, ...infer U]
-  ? U
-  : never;
-
-/**
- * A DashboardUpdaters object is a collection of functions that
- * directly update the live dashboard.
- */
-type DashboardUpdaters2<T extends DashboardMutatorFns> = Expand<{
-  [P in keyof T]: (...params: DropFirst<Parameters<T[P]>>) => void;
-}>;
-
 /**
  * Takes an object containing `DashboardMutatorFn`s,
  * and returns an object of functions that directly update the dashboard.
@@ -89,11 +59,11 @@ type DashboardUpdaters2<T extends DashboardMutatorFns> = Expand<{
 function createDashboardUpdaters<T extends DashboardMutatorFns>(
   updateDashboard: DashboardCallbackExecutor,
   mutators: T
-): DashboardUpdaters2<T> {
+): DashboardUpdaters<T> {
   return Object.fromEntries(
     Object.entries(mutators).map(([key, mutator]) => [
       key,
       dashboardMutatorToUpdater(updateDashboard, mutator),
     ])
-  ) as DashboardUpdaters2<T>;
+  ) as DashboardUpdaters<T>;
 }
