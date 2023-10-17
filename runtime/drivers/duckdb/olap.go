@@ -192,8 +192,9 @@ func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, 
 	c.logger.Info("add table column", zap.String("tableName", tableName), zap.String("columnName", columnName), zap.String("typ", typ))
 	if !c.config.ExtTableStorage {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeSQLName(tableName), safeSQLName(columnName), typ),
-			Priority: 1,
+			Query:       fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeSQLName(tableName), safeSQLName(columnName), typ),
+			Priority:    1,
+			LongRunning: true,
 		})
 	}
 
@@ -221,8 +222,9 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 	c.logger.Info("alter table column", zap.String("tableName", tableName), zap.String("columnName", columnName), zap.String("newType", newType))
 	if !c.config.ExtTableStorage {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("ALTER TABLE %s ALTER %s TYPE %s", safeSQLName(tableName), safeSQLName(columnName), newType),
-			Priority: 1,
+			Query:       fmt.Sprintf("ALTER TABLE %s ALTER %s TYPE %s", safeSQLName(tableName), safeSQLName(columnName), newType),
+			Priority:    1,
+			LongRunning: true,
 		})
 	}
 
@@ -251,9 +253,8 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	c.logger.Info("create table", zap.String("name", name), zap.Bool("view", view))
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s)", safeSQLName(name), sql),
-			Priority:    1,
-			LongRunning: true,
+			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s)", safeSQLName(name), sql),
+			Priority: 1,
 		})
 	}
 	if !c.config.ExtTableStorage {
@@ -320,9 +321,8 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 	c.logger.Info("drop table", zap.String("name", name), zap.Bool("view", view))
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name)),
-			Priority:    100,
-			LongRunning: true,
+			Query:    fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name)),
+			Priority: 100,
 		})
 	}
 	if !c.config.ExtTableStorage {
@@ -510,11 +510,12 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(oldName), safeSQLName(newName)),
 			Priority:    100,
-			LongRunning: true,
+			LongRunning: !view,
 		})
 	}
 
-	return c.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
+	longRunning := !(view && existing.View)
+	return c.WithConnection(ctx, 100, longRunning, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
 		// The newName may currently be occupied by a name of another type than oldName.
 		var existingTyp string
 		if existing.View {

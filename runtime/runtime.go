@@ -9,6 +9,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
@@ -24,6 +25,7 @@ type Options struct {
 }
 
 type Runtime struct {
+	Email          *email.Client
 	opts           *Options
 	logger         *zap.Logger
 	activity       activity.Client
@@ -34,8 +36,13 @@ type Runtime struct {
 	securityEngine *securityEngine
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, ac activity.Client) (*Runtime, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, ac activity.Client, emailClient *email.Client) (*Runtime, error) {
+	if emailClient == nil {
+		emailClient = email.New(email.NewNoopSender())
+	}
+
 	rt := &Runtime{
+		Email:          emailClient,
 		opts:           opts,
 		logger:         logger,
 		activity:       ac,

@@ -22,7 +22,7 @@ import { createTotalsForMeasure } from "@rilldata/web-common/features/dashboards
 
 export type TimeSeriesDataState = {
   isFetching: boolean;
-  hasError: boolean;
+  isError: boolean;
 
   // Computed prepared data for charts and table
   timeSeriesData?: unknown[];
@@ -173,7 +173,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
           }
           return {
             isFetching: primaryTotal?.isFetching || comparisonTotal?.isFetching, // FIXME Handle fetching
-            hasError: false, // FIXME Handle errors
+            isError: false, // FIXME Handle errors
             timeSeriesData,
             total: primaryTotal?.data?.data[0],
             unfilteredTotal: unfilteredTotal?.data?.data[0],

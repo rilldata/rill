@@ -1,8 +1,9 @@
-package server
+package server_test
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )

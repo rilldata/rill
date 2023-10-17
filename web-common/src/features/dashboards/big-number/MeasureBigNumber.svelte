@@ -17,21 +17,27 @@
     FormatPreset,
     humanizeDataTypeExpanded,
   } from "../humanize-numbers";
+  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+
+  export let measure: MetricsViewSpecMeasureV2;
   export let value: number;
   export let comparisonOption: TimeComparisonOption = undefined;
   export let comparisonValue: number = undefined;
   export let comparisonPercChange: number = undefined;
   export let showComparison = false;
-  export let isMeasureExpanded = true;
-
   export let status: EntityStatus;
-  export let description: string = undefined;
   export let withTimeseries = true;
-  export let formatPreset: string; // workaround, since unable to cast `string` to `FormatPreset` within MetricsTimeSeriesCharts.svelte's `#each` block
+  export let isMeasureExpanded = false;
 
   const dispatch = createEventDispatcher();
 
-  $: formatPresetEnum = (formatPreset as FormatPreset) || FormatPreset.HUMANIZE;
+  $: description =
+    measure?.description || measure?.label || measure?.expression;
+  $: formatPreset =
+    (measure?.formatPreset as FormatPreset) || FormatPreset.HUMANIZE;
+
+  $: name = measure?.label || measure?.expression;
+
   $: valueIsPresent = value !== undefined && value !== null;
 
   $: isComparisonPositive = Number.isFinite(diff) && (diff as number) >= 0;
@@ -40,8 +46,13 @@
   $: diff = comparisonValue ? value - comparisonValue : false;
   $: noChange = !diff;
 
+  $: formattedDiff = `${isComparisonPositive ? "+" : ""}${humanizeDataType(
+    diff,
+    formatPreset
+  )}`;
+
   /** when the measure is a percentage, we don't show a percentage change. */
-  $: measureIsPercentage = formatPresetEnum === FormatPreset.PERCENTAGE;
+  $: measureIsPercentage = formatPreset === FormatPreset.PERCENTAGE;
 </script>
 
 <button
@@ -55,7 +66,7 @@
       class="break-words line-clamp-2"
       style:font-size={withTimeseries ? "" : "0.8rem"}
     >
-      <slot name="name" />
+      {name}
     </h2>
     <TooltipContent slot="tooltip-content" maxWidth="280px">
       <TooltipDescription>
@@ -68,113 +79,94 @@
     style:font-size={withTimeseries ? "1.6rem" : "1.8rem"}
     style:font-weight="light"
   >
-    <!-- the default slot will be a tweened number that uses the formatter. One can optionally
-    override this by filling the slot in the consuming component. -->
-    <slot name="value">
-      <div>
-        {#if valueIsPresent && status === EntityStatus.Idle}
+    <div>
+      {#if valueIsPresent && status === EntityStatus.Idle}
+        <Tooltip distance={8} location="bottom" alignment="start">
+          <div class="w-max">
+            <WithTween {value} tweenProps={{ duration: 500 }} let:output>
+              {humanizeDataType(output, formatPreset)}
+            </WithTween>
+          </div>
+          <TooltipContent slot="tooltip-content">
+            {humanizeDataTypeExpanded(value, formatPreset)}
+            <TooltipDescription>
+              the aggregate value over the current time period
+            </TooltipDescription>
+          </TooltipContent>
+        </Tooltip>
+        {#if showComparison}
           <Tooltip distance={8} location="bottom" alignment="start">
-            <div class="w-max">
-              <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-                {#if formatPresetEnum !== FormatPreset.NONE}
-                  {humanizeDataType(output, formatPresetEnum)}
-                {:else}
-                  {output}
-                {/if}
-              </WithTween>
-            </div>
-            <TooltipContent slot="tooltip-content">
-              {humanizeDataTypeExpanded(value, formatPresetEnum)}
-              <TooltipDescription>
-                the aggregate value over the current time period
-              </TooltipDescription>
-            </TooltipContent>
-          </Tooltip>
-          {#if showComparison}
-            <Tooltip distance={8} location="bottom" alignment="start">
-              <div class="flex items-baseline gap-x-3">
-                {#if comparisonValue != null}
-                  <div
-                    class="w-max text-sm ui-copy-inactive"
-                    class:font-semibold={isComparisonPositive}
-                  >
-                    <WithTween
-                      value={comparisonValue}
-                      tweenProps={{ duration: 500 }}
-                      let:output
-                    >
-                      {@const formattedValue =
-                        formatPresetEnum !== FormatPreset.NONE
-                          ? humanizeDataType(diff, formatPresetEnum)
-                          : diff}
-                      {#if !noChange}
-                        {isComparisonPositive ? "+" : ""}{formattedValue}
-                      {:else}
-                        <span
-                          class="ui-copy-disabled-faint italic"
-                          style:font-size=".9em">no change</span
-                        >
-                      {/if}
-                    </WithTween>
-                  </div>
-                {/if}
-                {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
-                  <div
-                    class="w-max text-sm
-              {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
-                  >
-                    <WithTween
-                      value={comparisonPercChange}
-                      tweenProps={{ duration: 500 }}
-                      let:output
-                    >
-                      <PercentageChange
-                        tabularNumber={false}
-                        value={formatMeasurePercentageDifference(output)}
-                      />
-                    </WithTween>
-                  </div>
-                {/if}
-              </div>
-              <TooltipContent slot="tooltip-content" maxWidth="300px">
-                {@const tooltipPercentage =
-                  formatMeasurePercentageDifference(comparisonPercChange)}
-
-                {#if noChange}
-                  no change over {TIME_COMPARISON[comparisonOption].shorthand}
-                {:else}
-                  {TIME_COMPARISON[comparisonOption].shorthand}
-                  <span class="font-semibold"
-                    >{formatPresetEnum !== FormatPreset.NONE
-                      ? humanizeDataType(comparisonValue, formatPresetEnum)
-                      : comparisonValue}</span
-                  >{#if !measureIsPercentage}
-                    <span class="text-gray-300">,</span>
+            <div class="flex items-baseline gap-x-3">
+              {#if comparisonValue != null}
+                <div
+                  class="w-max text-sm ui-copy-inactive"
+                  class:font-semibold={isComparisonPositive}
+                >
+                  {#if !noChange}
+                    {formattedDiff}
+                  {:else}
                     <span
-                      >{tooltipPercentage.int}% {isComparisonPositive
-                        ? "increase"
-                        : "decrease"}</span
+                      class="ui-copy-disabled-faint italic"
+                      style:font-size=".9em">no change</span
                     >
                   {/if}
+                </div>
+              {/if}
+              {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
+                <div
+                  class="w-max text-sm
+              {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
+                >
+                  <WithTween
+                    value={comparisonPercChange}
+                    tweenProps={{ duration: 500 }}
+                    let:output
+                  >
+                    <PercentageChange
+                      tabularNumber={false}
+                      value={formatMeasurePercentageDifference(output)}
+                    />
+                  </WithTween>
+                </div>
+              {/if}
+            </div>
+            <TooltipContent slot="tooltip-content" maxWidth="300px">
+              {@const tooltipPercentage =
+                formatMeasurePercentageDifference(comparisonPercChange)}
+
+              {#if noChange}
+                no change over {TIME_COMPARISON[comparisonOption].shorthand}
+              {:else}
+                {TIME_COMPARISON[comparisonOption].shorthand}
+                <span class="font-semibold">
+                  {humanizeDataType(comparisonValue, formatPreset)}
+                </span>
+                {#if !measureIsPercentage}
+                  <span class="text-gray-300">,</span>
+                  <span
+                    >{tooltipPercentage.int}% {isComparisonPositive
+                      ? "increase"
+                      : "decrease"}</span
+                  >
                 {/if}
-              </TooltipContent>
-            </Tooltip>
-          {/if}
-        {:else if status === EntityStatus.Error}
-          <CrossIcon />
-        {:else if status === EntityStatus.Running}
-          <div
-            class="{withTimeseries ? '' : 'bottom-0'} absolute p-2"
-            in:receive|local={{ key: "spinner" }}
-            out:send|local={{ key: "spinner" }}
-          >
-            <Spinner status={EntityStatus.Running} />
-          </div>
-        {:else if !valueIsPresent}
-          <span class="ui-copy-disabled-faint italic text-sm">no data</span>
+              {/if}
+            </TooltipContent>
+          </Tooltip>
         {/if}
-      </div>
-    </slot>
+      {:else if status === EntityStatus.Error}
+        <CrossIcon />
+      {:else if status === EntityStatus.Running}
+        <div
+          class="{withTimeseries ? '' : 'bottom-0'} absolute p-2"
+          in:receive|local={{ key: "spinner" }}
+          out:send|local={{ key: "spinner" }}
+        >
+          <Spinner status={EntityStatus.Running} />
+        </div>
+      {:else if !valueIsPresent}
+        <span class="ui-copy-disabled-faint italic text-sm">no data</span>
+      {/if}
+    </div>
   </div>
 </button>
 

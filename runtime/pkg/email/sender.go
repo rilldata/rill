@@ -82,11 +82,6 @@ type consoleSender struct {
 }
 
 func NewConsoleSender(logger *zap.Logger, fromEmail, fromName string) (Sender, error) {
-	_, err := mail.ParseAddress(fromEmail)
-	if err != nil {
-		return nil, fmt.Errorf("invalid sender email address %q", fromEmail)
-	}
-
 	return &consoleSender{logger: logger, fromEmail: fromEmail, fromName: fromName}, nil
 }
 
@@ -99,5 +94,15 @@ func (s *consoleSender) Send(toEmail, toName, subject, body string) error {
 		zap.String("subject", subject),
 		zap.String("body", body),
 	)
+	return nil
+}
+
+type noopSender struct{}
+
+func NewNoopSender() Sender {
+	return &noopSender{}
+}
+
+func (s *noopSender) Send(toEmail, toName, subject, body string) error {
 	return nil
 }

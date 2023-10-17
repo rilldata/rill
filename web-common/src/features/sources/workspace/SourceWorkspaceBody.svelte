@@ -1,14 +1,15 @@
 <script lang="ts">
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
-  import { useResourceForFile } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+  import {
+    getAllErrorsForFile,
+    useResourceForFile,
+  } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import HorizontalSplitter from "../../../layout/workspace/HorizontalSplitter.svelte";
-  import {
-    createRuntimeServiceGetFile,
-    V1ReconcileStatus,
-  } from "../../../runtime-client";
+  import { createRuntimeServiceGetFile } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
   import { EntityType } from "../../entity-management/types";
@@ -35,6 +36,12 @@
   // Get only reconcile errors here. File parse errors are shown inline
   $: source = useResourceForFile(queryClient, $runtime.instanceId, filePath);
   $: reconcileError = $source.data?.meta?.reconcileError;
+
+  $: allErrors = getAllErrorsForFile(
+    queryClient,
+    $runtime.instanceId,
+    filePath
+  );
 
   $: sourceQuery = useSource($runtime.instanceId, sourceName);
 
@@ -72,16 +79,15 @@
       class="h-full border border-gray-300 rounded overflow-auto {isSourceUnsaved &&
         'brightness-90'} transition duration-200"
     >
-      {#if !reconcileError}
+      {#if !$allErrors?.length}
         {#key sourceName}
           <ConnectedPreviewTable
             objectName={$sourceQuery?.data?.source?.state?.table}
-            loading={$sourceQuery?.data?.meta?.reconcileStatus !==
-              V1ReconcileStatus.RECONCILE_STATUS_IDLE}
+            loading={resourceIsLoading($sourceQuery?.data)}
           />
         {/key}
       {:else}
-        <ErrorPane {sourceName} errorMessage={reconcileError} />
+        <ErrorPane {sourceName} errorMessage={$allErrors[0].message} />
       {/if}
     </div>
   </div>

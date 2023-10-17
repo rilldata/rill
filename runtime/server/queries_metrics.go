@@ -220,6 +220,7 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		Filter:              req.Filter,
 		MetricsView:         mv,
 		ResolvedMVSecurity:  security,
+		Exact:               req.Exact,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

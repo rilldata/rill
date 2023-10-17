@@ -1,5 +1,6 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
+import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
@@ -7,7 +8,6 @@ import {
   V1Resource,
   V1ResourceEvent,
 } from "@rilldata/web-common/runtime-client";
-import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
   invalidateMetricsViewData,
   invalidateProfilingQueries,
@@ -79,9 +79,12 @@ async function invalidateResource(
   instanceId: string,
   resource: V1Resource
 ) {
+  refreshResource(queryClient, instanceId, resource);
+
+  if (resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE)
+    return;
   const failed = !!resource.meta.reconcileError;
 
-  refreshResource(queryClient, instanceId, resource);
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:
@@ -151,7 +154,7 @@ function shouldSkipResource(
   return false;
 }
 
-function refreshResource(
+export function refreshResource(
   queryClient: QueryClient,
   instanceId: string,
   res: V1Resource
@@ -166,7 +169,6 @@ function refreshResource(
 
 export async function invalidateAllResources(queryClient: QueryClient) {
   return queryClient.resetQueries({
-    type: "inactive",
     predicate: (query) =>
       query.queryHash.includes(`v1/instances/${get(runtime).instanceId}`),
   });

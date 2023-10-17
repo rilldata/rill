@@ -7,11 +7,7 @@
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import {
-    humanizeDataType,
-    FormatPreset,
-    nicelyFormattedTypesToNumberKind,
-  } from "@rilldata/web-common/features/dashboards/humanize-numbers";
+  import { FormatPreset } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -183,39 +179,32 @@
         comparisonValue && bigNum !== undefined && bigNum !== null
           ? (bigNum - comparisonValue) / comparisonValue
           : undefined}
-      {@const formatPreset =
-        FormatPreset[measure?.format] || FormatPreset.HUMANIZE}
       <MeasureBigNumber
-        on:expand-measure={() => {
-          metricsExplorerStore.setExpandedMeasureName(
-            metricViewName,
-            measure.name
-          );
-        }}
+        {measure}
         value={bigNum}
         isMeasureExpanded={!!expandedMeasureName}
         {showComparison}
         comparisonOption={$timeControlsStore?.selectedComparisonTimeRange?.name}
         {comparisonValue}
         {comparisonPercChange}
-        description={measure?.description ||
-          measure?.label ||
-          measure?.expression}
-        formatPreset={measure?.format}
         status={$timeSeriesDataStore?.isFetching
           ? EntityStatus.Running
           : EntityStatus.Idle}
-      >
-        <svelte:fragment slot="name">
-          {measure?.label || measure?.expression}
-        </svelte:fragment>
-      </MeasureBigNumber>
+        on:expand-measure={() => {
+          metricsExplorerStore.setExpandedMeasureName(
+            metricViewName,
+            measure.name
+          );
+        }}
+      />
+
       <div class="time-series-body peer-hover:bg-gray-100" style:height="125px">
-        {#if $timeSeriesDataStore?.hasError}
+        {#if $timeSeriesDataStore?.isError}
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
           <MeasureChart
             bind:mouseoverValue
+            {measure}
             isScrubbing={$dashboardStore?.selectedScrubRange?.isScrubbing}
             {scrubStart}
             {scrubEnd}
@@ -237,11 +226,6 @@
                 TIME_GRAIN[interval].formatDate
               );
             }}
-            numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
-            mouseoverFormat={(value) =>
-              formatPreset === FormatPreset.NONE
-                ? `${value}`
-                : humanizeDataType(value, measure?.format)}
           />
         {:else}
           <div>

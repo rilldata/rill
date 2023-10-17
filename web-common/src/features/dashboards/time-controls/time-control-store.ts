@@ -1,6 +1,6 @@
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
-import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import {
@@ -16,25 +16,27 @@ import {
   getDefaultTimeGrain,
 } from "@rilldata/web-common/lib/time/grains";
 import {
+  ISODurationToTimePreset,
   convertTimeRangePreset,
   getAdjustedFetchTime,
-  ISODurationToTimePreset,
 } from "@rilldata/web-common/lib/time/ranges";
+import type {
+  DashboardTimeControls,
+  TimeRangeType,
+} from "@rilldata/web-common/lib/time/types";
 import {
   TimeComparisonOption,
   TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import type { TimeRangeType } from "@rilldata/web-common/lib/time/types";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
-  createQueryServiceColumnTimeRange,
   V1ColumnTimeRangeResponse,
   V1TimeGrain,
+  createQueryServiceColumnTimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
 import type { Readable } from "svelte/store";
+import { derived } from "svelte/store";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -95,7 +97,9 @@ export function createTimeControlStore(ctx: StateManagers) {
     ([metricsView, timeRangeResponse, metricsExplorer]) => {
       const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
       if (
+        !metricsView.data ||
         !metricsExplorer ||
+        !metricsView.data ||
         !timeRangeResponse ||
         !timeRangeResponse.isSuccess
       ) {

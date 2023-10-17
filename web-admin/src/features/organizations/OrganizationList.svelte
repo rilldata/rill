@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createAdminServiceListOrganizations } from "../../client";
-  import ProjectList from "../projects/ProjectList.svelte";
+  import ProjectCards from "../projects/ProjectCards.svelte";
 
   const orgs = createAdminServiceListOrganizations();
 </script>
@@ -15,7 +15,7 @@
           >{org.name}</a
         >
         <div class="py-2 px-1.5">
-          <ProjectList organization={org.name} />
+          <ProjectCards organization={org.name} />
         </div>
       </li>
     {/each}

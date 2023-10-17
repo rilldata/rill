@@ -16,7 +16,7 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import {
   MetricsViewDimension,
-  MetricsViewMeasure,
+  MetricsViewSpecMeasureV2,
   RpcStatus,
   V1MetricsViewFilter,
   V1MetricsViewSpec,
@@ -234,7 +234,7 @@ export function createAdBidsMirrorInStore(metrics: V1MetricsViewSpec) {
 export function createMetricsMetaQueryMock(
   shouldInit = true
 ): CreateQueryResult<V1MetricsViewSpec, RpcStatus> & {
-  setMeasures: (measures: Array<MetricsViewMeasure>) => void;
+  setMeasures: (measures: Array<MetricsViewSpecMeasureV2>) => void;
   setDimensions: (dimensions: Array<MetricsViewDimension>) => void;
 } {
   const { update, subscribe } = writable<

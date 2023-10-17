@@ -21,15 +21,21 @@
   $: dashboardStore = useDashboardStore(metricViewName);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension;
 
-  $: dimensionLabel =
-    $metaQuery?.data?.dimensions?.find((d) => d.name === dimensionName).label ||
-    "";
-
   $: measureLabel =
     $metaQuery?.data?.measures?.find(
       (m) => m.name === $dashboardStore?.expandedMeasureName
     ).label || "";
 
+  let dimensionLabel = "";
+  $: if ($timeDimensionDataStore?.comparing === "dimension") {
+    dimensionLabel = $metaQuery?.data?.dimensions?.find(
+      (d) => d.name === dimensionName
+    ).label;
+  } else if ($timeDimensionDataStore?.comparing === "time") {
+    dimensionLabel = "Time";
+  } else {
+    dimensionLabel = "No Comparison";
+  }
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
