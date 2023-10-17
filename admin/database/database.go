@@ -136,7 +136,7 @@ type DB interface {
 	FindDeploymentAuthToken(ctx context.Context, id string) (*DeploymentAuthToken, error)
 	InsertDeploymentAuthToken(ctx context.Context, opts *InsertDeploymentAuthTokenOptions) (*DeploymentAuthToken, error)
 	UpdateDeploymentAuthTokenUsedOn(ctx context.Context, ids []string) error
-	DeleteExpiredDeploymentAuthToken(ctx context.Context, retention time.Duration) error
+	DeleteExpiredDeploymentAuthTokens(ctx context.Context, retention time.Duration) error
 
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)

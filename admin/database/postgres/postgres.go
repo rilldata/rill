@@ -861,7 +861,7 @@ func (c *connection) UpdateDeploymentAuthTokenUsedOn(ctx context.Context, ids []
 	return nil
 }
 
-func (c *connection) DeleteExpiredDeploymentAuthToken(ctx context.Context, retention time.Duration) error {
+func (c *connection) DeleteExpiredDeploymentAuthTokens(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM deployment_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
 	return parseErr("deployment auth token", err)
 }

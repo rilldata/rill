@@ -3,7 +3,7 @@ CREATE TABLE deployment_auth_tokens (
 	secret_hash BYTEA NOT NULL,
 	deployment_id UUID NOT NULL REFERENCES deployments (id) ON DELETE CASCADE,
 	created_on TIMESTAMPTZ DEFAULT now() NOT NULL,
-    used_on TIMESTAMPTZ DEFAULT now() NOT NULL,
+	used_on TIMESTAMPTZ DEFAULT now() NOT NULL,
 	expires_on TIMESTAMPTZ
 );
 
