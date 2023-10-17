@@ -1,4 +1,4 @@
-package server
+package server_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/queries"
+	"github.com/rilldata/rill/runtime/server"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -554,7 +555,7 @@ func TestServer_GetCardinalityOfColumn(t *testing.T) {
 	require.Equal(t, 3.0, res.CategoricalSummary.GetCardinality())
 }
 
-func getColumnTestServer(t *testing.T) (*Server, string) {
+func getColumnTestServer(t *testing.T) (*server.Server, string) {
 	sql := `
 		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
 		UNION ALL
@@ -570,17 +571,17 @@ func getColumnTestServer(t *testing.T) (*Server, string) {
 	return getColumnTestServerWithModel(t, sql, 5)
 }
 
-func getColumnTestServerWithEmptyModel(t *testing.T) (*Server, string) {
+func getColumnTestServerWithEmptyModel(t *testing.T) (*server.Server, string) {
 	sql := `
 		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates where 1<>1
 	`
 	return getColumnTestServerWithModel(t, sql, 0)
 }
 
-func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*Server, string) {
+func getColumnTestServerWithModel(t *testing.T, sql string, expectation int) (*server.Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", sql)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	olap, release, err := rt.OLAP(testCtx(), instanceID)

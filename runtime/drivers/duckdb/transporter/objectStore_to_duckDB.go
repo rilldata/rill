@@ -48,9 +48,9 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 	}
 	defer iterator.Close()
 
-	size, _ := iterator.Size(drivers.ProgressUnitByte)
-	if opts.LimitInBytes != 0 && size > opts.LimitInBytes {
-		return drivers.ErrIngestionLimitExceeded
+	size, ok := iterator.Size(drivers.ProgressUnitByte)
+	if ok && !sizeWithinStorageLimits(t.to, size) {
+		return drivers.ErrStorageLimitExceeded
 	}
 
 	// if sql is specified use ast rewrite to fill in the downloaded files

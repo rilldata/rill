@@ -133,6 +133,7 @@ export const TimeRangePreset: { [K in TimeRangeType]: K } = {
   QUARTER_TO_DATE: "QUARTER_TO_DATE",
   YEAR_TO_DATE: "YEAR_TO_DATE",
   CUSTOM: "CUSTOM",
+  DEFAULT: "DEFAULT",
 };
 
 export interface TimeRange {

@@ -43,9 +43,6 @@ type Instance struct {
 	// EmbedCatalog tells the runtime to store the instance's catalog in its OLAP store instead
 	// of in the runtime's metadata store. Currently only supported for the duckdb driver.
 	EmbedCatalog bool `db:"embed_catalog"`
-	// IngestionLimitBytes is total data allowed to ingest across all sources
-	// 0 means there is no limit
-	IngestionLimitBytes int64 `db:"ingestion_limit_bytes"`
 	// WatchRepo indicates whether to watch the repo for file changes and reconcile them automatically.
 	WatchRepo bool `db:"watch_repo"`
 	// StageChanges indicates whether to stage source and model changes before applying them.

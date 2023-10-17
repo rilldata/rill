@@ -4,6 +4,9 @@
   import { createEventDispatcher, getContext } from "svelte";
   import Cell from "../../../components/virtualized-table/core/Cell.svelte";
   import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import { fly } from "svelte/transition";
+  import { getStateManagers } from "../state-managers/state-managers";
   import type { ResizeEvent } from "@rilldata/web-common/components/virtualized-table/drag-table-cell";
 
   const config: VirtualizedTableConfig = getContext("config");
@@ -21,6 +24,14 @@
   export let activeIndex;
   export let excludeMode = false;
 
+  const {
+    actions: {
+      sorting: { sortByDimensionValue },
+    },
+    selectors: {
+      sorting: { sortedByDimensionValue, sortedAscending },
+    },
+  } = getStateManagers();
   const dispatch = createEventDispatcher();
 
   $: atLeastOneSelected = !!selectedIndex?.length;
@@ -54,10 +65,29 @@
     enableResize={true}
     position="top-left"
     borderRight={horizontalScrolling}
-    bgClass="bg-white"
+    bgClass={$sortedByDimensionValue ? `bg-gray-50` : "bg-white"}
+    on:click={sortByDimensionValue}
+    on:keydown={sortByDimensionValue}
     on:resize={handleResize}
   >
-    <span class="px-1">{column?.label || column?.name}</span>
+    <div class="flex items-center">
+      <span class={"px-1 " + $sortedByDimensionValue ? "font-bold" : ""}
+        >{column?.label || column?.name}</span
+      >
+      {#if $sortedByDimensionValue}
+        <div class="ui-copy-icon">
+          {#if $sortedAscending}
+            <div in:fly={{ duration: 200, y: -8 }} style:opacity={1}>
+              <ArrowDown size="12px" />
+            </div>
+          {:else}
+            <div in:fly={{ duration: 200, y: 8 }} style:opacity={1}>
+              <ArrowDown transform="scale(1 -1)" size="12px" />
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
   </StickyHeader>
   {#each virtualRowItems as row (`row-${row.key}`)}
     {@const rowActive = activeIndex === row?.index}
@@ -66,7 +96,7 @@
       position="left"
       header={{ size: width, start: row.start }}
       borderRight={horizontalScrolling}
-      bgClass="bg-white"
+      bgClass={$sortedByDimensionValue ? `bg-gray-50` : "bg-white"}
     >
       <Cell
         positionStatic
@@ -76,6 +106,7 @@
         {excludeMode}
         {rowActive}
         {...getCellProps(row)}
+        colSelected={$sortedByDimensionValue}
         on:inspect
         on:select-item
         label="Filter dimension value"

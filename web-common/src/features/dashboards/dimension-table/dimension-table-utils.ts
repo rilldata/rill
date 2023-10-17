@@ -23,7 +23,8 @@ import type { SvelteComponent } from "svelte";
 import { getDimensionColumn } from "../dashboard-utils";
 import type { DimensionTableRow } from "./dimension-table-types";
 import { getFilterForDimension } from "../selectors";
-import { SortDirection, SortType } from "../proto-state/derived-types";
+import { SortType } from "../proto-state/derived-types";
+import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -217,42 +218,50 @@ export function estimateColumnSizes(
 }
 
 export function prepareVirtualizedDimTableColumns(
+  dash: MetricsExplorerEntity,
   allMeasures: MetricsViewSpecMeasureV2[],
-  leaderboardMeasureName: string,
   referenceValues: { [key: string]: number },
   dimension: MetricsViewDimension,
-
-  inputColumnNames: string[],
   timeComparison: boolean,
-  validPercentOfTotal: boolean,
-  sortType: SortType,
-  sortDirection: SortDirection
+  validPercentOfTotal: boolean
 ): VirtualizedTableColumns[] {
+  const sortType = dash.dashboardSortType;
+  const sortDirection = dash.sortDirection;
+
   const measureNames = allMeasures.map((m) => m.name);
+  const leaderboardMeasureName = dash.leaderboardMeasureName;
   const selectedMeasure = allMeasures.find(
     (m) => m.name === leaderboardMeasureName
   );
   const dimensionColumn = getDimensionColumn(dimension);
 
   // copy column names so we don't mutate the original
-  const columnNames = [...inputColumnNames];
+  const columnNames = [...dash.visibleMeasureKeys];
 
-  addContextColumnNames(
-    columnNames,
-    timeComparison,
-    validPercentOfTotal,
-    selectedMeasure
-  );
+  // don't add context columns if sorting by dimension
+  if (sortType !== SortType.DIMENSION) {
+    addContextColumnNames(
+      columnNames,
+      timeComparison,
+      validPercentOfTotal,
+      selectedMeasure
+    );
+  }
   // Make dimension the first column
   columnNames.unshift(dimensionColumn);
 
   return columnNames
     .map((name) => {
-      const highlight =
-        name === selectedMeasure.name ||
-        name.endsWith("_delta") ||
-        name.endsWith("_delta_perc") ||
-        name.endsWith("_percent_of_total");
+      let highlight = false;
+      if (sortType === SortType.DIMENSION) {
+        highlight = name === dimensionColumn;
+      } else {
+        highlight =
+          name === selectedMeasure.name ||
+          name.endsWith("_delta") ||
+          name.endsWith("_delta_perc") ||
+          name.endsWith("_percent_of_total");
+      }
 
       let sorted = undefined;
       if (name.endsWith("_delta") && sortType === SortType.DELTA_ABSOLUTE) {

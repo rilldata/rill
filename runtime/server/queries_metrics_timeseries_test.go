@@ -1,4 +1,4 @@
-package server
+package server_test
 
 import (
 	"bytes"
@@ -9,6 +9,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
+	"github.com/rilldata/rill/runtime/server/auth"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -622,12 +624,11 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 
 func TestServer_MetricsViewTimeseries_export_xlsx(t *testing.T) {
 	t.Parallel()
-	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+	rt, instanceId := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
 
 	ctx := testCtx()
 	mvName := "ad_bids_metrics"
-	mv, security, err := resolveMVAndSecurity(ctx, server.runtime, instanceId, mvName)
-	require.NoError(t, err)
+	mv, security := resolveMVAndSecurity(t, rt, instanceId, mvName)
 
 	q := &queries.MetricsViewTimeSeries{
 		MetricsViewName:    "ad_bids_metrics",
@@ -639,7 +640,7 @@ func TestServer_MetricsViewTimeseries_export_xlsx(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err = q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+	err := q.Export(ctx, rt, instanceId, &buf, &runtime.ExportOptions{
 		Format: runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
 	})
 	require.NoError(t, err)
@@ -656,12 +657,11 @@ func TestServer_MetricsViewTimeseries_export_xlsx(t *testing.T) {
 
 func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 	t.Parallel()
-	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+	rt, instanceId := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
 
 	ctx := testCtx()
 	mvName := "ad_bids_metrics"
-	mv, security, err := resolveMVAndSecurity(ctx, server.runtime, instanceId, mvName)
-	require.NoError(t, err)
+	mv, security := resolveMVAndSecurity(t, rt, instanceId, mvName)
 
 	q := &queries.MetricsViewTimeSeries{
 		MetricsViewName:    "ad_bids_metrics",
@@ -673,10 +673,30 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 
 	var buf bytes.Buffer
 
-	err = q.Export(ctx, server.runtime, instanceId, &buf, &runtime.ExportOptions{
+	err := q.Export(ctx, rt, instanceId, &buf, &runtime.ExportOptions{
 		Format: runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 	})
 	require.NoError(t, err)
 
 	require.Equal(t, 3, strings.Count(string(buf.Bytes()), "\n"))
+}
+
+func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity) {
+	ctx := testCtx()
+
+	ctrl, err := rt.Controller(instanceID)
+	require.NoError(t, err)
+
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricsViewName}, false)
+	require.NoError(t, err)
+
+	mvRes := res.GetMetricsView()
+	mv := mvRes.State.ValidSpec
+	lastUpdatedOn := res.Meta.StateUpdatedOn.AsTime()
+	require.NoError(t, err)
+
+	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdatedOn)
+	require.NoError(t, err)
+
+	return mv, resolvedSecurity
 }
