@@ -6,7 +6,7 @@
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
   import OrganizationHero from "../../features/organizations/OrganizationHero.svelte";
-  import ProjectList from "../../features/projects/ProjectList.svelte";
+  import ProjectCards from "../../features/projects/ProjectCards.svelte";
 
   $: orgName = $page.params.organization;
 
@@ -36,7 +36,7 @@
         >
       {:else}
         <div class="py-2 px-1.5">
-          <ProjectList organization={$page.params.organization} />
+          <ProjectCards organization={$page.params.organization} />
         </div>
       {/if}
     </section>
