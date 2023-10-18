@@ -88,7 +88,6 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		olapConfig["memory_limit_gb"] = strconv.Itoa(alloc.MemoryGB)
 		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
 		olapConfig["external_table_storage"] = strconv.FormatBool(true)
-		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
 		embedCatalog = true
 	default:
 		olapConfig["dsn"] = opts.ProdOLAPDSN
