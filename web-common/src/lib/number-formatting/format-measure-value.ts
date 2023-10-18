@@ -11,10 +11,11 @@ import {
 } from "./strategies/intervals";
 import { humanizedFormatterFactory } from "./humanizer";
 
-function humanizeDataType(value: unknown, type: FormatPreset): string {
-  if (value === undefined || value === null) return "";
-  if (typeof value !== "number") return value.toString();
-
+/**
+ * This function is intended to provides a compact,
+ * potentially lossy, humanized string representation of a number.
+ */
+function humanizeDataType(value: number, type: FormatPreset): string {
   const numberKind = formatPresetToNumberKind(type);
 
   let innerOptions: FormatterFactoryOptions;
@@ -41,16 +42,21 @@ function humanizeDataType(value: unknown, type: FormatPreset): string {
  * humanized string representation of a number in cases
  * where a raw number will be meaningless to the user.
  */
-function humanizeDataTypeUnabridged(
-  value: unknown,
-  type: FormatPreset
-): string {
+function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
   if (type === FormatPreset.INTERVAL) {
     return formatMsToDuckDbIntervalString(value as number);
   }
   return value.toString();
 }
 
+/**
+ * This higher-order function takes a measure spec and returns
+ * a function appropriate for formatting values from that measure.
+ *
+ * As of October 2023, all measure values supplied to the client
+ * are in the form of a number, so this formatting function will only
+ * accept numeric inputs.
+ */
 export const createMeasureValueFormatter = (
   measureSpec: MetricsViewSpecMeasureV2,
   useUnabridged = false
@@ -59,11 +65,10 @@ export const createMeasureValueFormatter = (
     ? humanizeDataTypeUnabridged
     : humanizeDataType;
 
-  // Humanize by default if measureSpec is not provided.
+  // Return and empty string if measureSpec is not provided.
   // This may e.g. be the case during the initial render of a dashboard,
   // when a measureSpec has not yet loaded from a metadata query.
-  if (measureSpec === undefined)
-    return (value: number) => humanizer(value, FormatPreset.HUMANIZE);
+  if (measureSpec === undefined) return (_value: number) => "";
 
   // Use the d3 formatter if it is provided and valid
   // (d3 throws an error if the format is invalid).
