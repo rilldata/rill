@@ -309,3 +309,76 @@ func Test_connection_RenameToExistingTableOld(t *testing.T) {
 	require.Equal(t, 2, num)
 	require.NoError(t, res.Close())
 }
+
+func Test_connection_CreateTableAsSelectStorageLimits(t *testing.T) {
+	temp := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(temp, "default"), fs.ModePerm))
+	dbPath := filepath.Join(temp, "default", "normal.db")
+	handle, err := Driver{}.Open(map[string]any{"dsn": dbPath, "storage_limit_bytes": 1024 * 1024}, false, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	normalConn := handle.(*connection)
+	normalConn.AsOLAP("default")
+	require.NoError(t, normalConn.Migrate(context.Background()))
+
+	dbPath = filepath.Join(temp, "default", "view.db")
+	handle, err = Driver{}.Open(map[string]any{"dsn": dbPath, "external_table_storage": true, "storage_limit_bytes": 1024 * 1024}, false, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	viewConnection := handle.(*connection)
+	require.NoError(t, viewConnection.Migrate(context.Background()))
+	viewConnection.AsOLAP("default")
+
+	tests := []struct {
+		testName    string
+		name        string
+		view        bool
+		tableAsView bool
+		c           *connection
+	}{
+		{
+			testName: "select from table",
+			name:     "my-table",
+			c:        normalConn,
+		},
+		{
+			testName:    "select from table with external_table_storage",
+			name:        "my-table",
+			c:           viewConnection,
+			tableAsView: true,
+		},
+	}
+	ctx := context.Background()
+	sql := "SELECT * from read_parquet('../../../web-local/test/data/AdBids.parquet')"
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			err := tt.c.CreateTableAsSelect(ctx, tt.name, tt.view, sql)
+			if err != nil { // ingestion mostly completes in less than 5 seconds before the limit is checked
+				require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
+			}
+
+			err = tt.c.CreateTableAsSelect(ctx, tt.name, tt.view, sql)
+			require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
+		})
+	}
+}
+
+func Test_connection_InsertTableAsSelectLimits(t *testing.T) {
+	temp := t.TempDir()
+
+	dbPath := filepath.Join(temp, "view.db")
+	handle, err := Driver{}.Open(map[string]any{"dsn": dbPath, "external_table_storage": true, "storage_limit_bytes": 10 * 1024 * 1024}, false, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	c := handle.(*connection)
+	require.NoError(t, c.Migrate(context.Background()))
+	c.AsOLAP("default")
+
+	err = c.CreateTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/test/data/AdBids.parquet')")
+	require.NoError(t, err)
+
+	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/test/data/AdBids.parquet')")
+	if err != nil {
+		require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
+	}
+
+	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/test/data/AdBids.parquet')")
+	require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
+}

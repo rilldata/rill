@@ -14,7 +14,6 @@ type Transporter interface {
 type TransferOptions struct {
 	AllowHostAccess  bool
 	RepoRoot         string
-	LimitInBytes     int64
 	Progress         Progress
 	AcquireConnector func(string) (Handle, func(), error)
 }

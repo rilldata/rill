@@ -108,7 +108,8 @@
       $timeControlsStore.selectedTimeRange?.end,
       $dashboardStore?.selectedTimezone,
       interval,
-      $timeControlsStore.selectedTimeRange?.name
+      $timeControlsStore.selectedTimeRange?.name,
+      $metaQuery.data.defaultTimeRange
     );
 
     startValue = adjustedChartValue?.start;

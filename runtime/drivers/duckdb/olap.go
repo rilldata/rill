@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -175,7 +176,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 }
 
 func (c *connection) EstimateSize() (int64, bool) {
-	var paths []string
 	path := c.config.DBFilePath
 	if path == "" {
 		return 0, true
@@ -183,7 +183,23 @@ func (c *connection) EstimateSize() (int64, bool) {
 
 	// Add .wal file path (e.g final size will be sum of *.db and *.db.wal)
 	dbWalPath := fmt.Sprintf("%s.wal", path)
-	paths = append(paths, path, dbWalPath)
+	paths := []string{path, dbWalPath}
+	if c.config.ExtTableStorage {
+		entries, err := os.ReadDir(c.config.ExtStoragePath)
+		if err == nil { // ignore error
+			for _, entry := range entries {
+				if !entry.IsDir() {
+					continue
+				}
+				path := filepath.Join(c.config.ExtStoragePath, entry.Name())
+				version, exist, err := c.tableVersion(entry.Name())
+				if err != nil || !exist {
+					continue
+				}
+				paths = append(paths, filepath.Join(path, fmt.Sprintf("%s.db", version)), filepath.Join(path, fmt.Sprintf("%s.db.wal", version)))
+			}
+		}
+	}
 	return fileSize(paths), true
 }
 
@@ -258,26 +274,29 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		})
 	}
 	if !c.config.ExtTableStorage {
-		return c.Exec(ctx, &drivers.Statement{
+		return c.execWithLimits(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s)", safeSQLName(name), sql),
 			Priority:    1,
 			LongRunning: true,
 		})
 	}
-	// create a new db file in /<instanceid>/<name> directory
-	sourceDir := filepath.Join(c.config.ExtStoragePath, name)
-	if err := os.Mkdir(sourceDir, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
-		return fmt.Errorf("create: unable to create dir %q: %w", sourceDir, err)
-	}
-
-	// check if some older version existed previously to detach it later
-	oldVersion, oldVersionExists, _ := c.tableVersion(name)
-
-	newVersion := fmt.Sprint(time.Now().UnixMilli())
-	dbFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
-	db := dbName(name, newVersion)
 
 	return c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+		// NOTE: Running mkdir while holding the connection to avoid directory getting cleaned up when concurrent calls to RenameTable cause reopenDB to be called.
+
+		// create a new db file in /<instanceid>/<name> directory
+		sourceDir := filepath.Join(c.config.ExtStoragePath, name)
+		if err := os.Mkdir(sourceDir, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+			return fmt.Errorf("create: unable to create dir %q: %w", sourceDir, err)
+		}
+
+		// check if some older version existed previously to detach it later
+		oldVersion, oldVersionExists, _ := c.tableVersion(name)
+
+		newVersion := fmt.Sprint(time.Now().UnixMilli())
+		dbFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
+		db := dbName(name, newVersion)
+
 		// attach new db
 		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(dbFile), safeSQLName(db))})
 		if err != nil {
@@ -285,7 +304,8 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 			return fmt.Errorf("create: attach %q db failed: %w", dbFile, err)
 		}
 
-		if err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE %s.default AS (%s)", safeSQLName(db), sql)}); err != nil {
+		// Enforce storage limits
+		if err := c.execWithLimits(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE %s.default AS (%s)", safeSQLName(db), sql)}); err != nil {
 			c.detachAndRemoveFile(ensuredCtx, db, dbFile)
 			return fmt.Errorf("create: create %q.default table failed: %w", db, err)
 		}
@@ -374,12 +394,14 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byNam
 	}
 
 	if !c.config.ExtTableStorage {
-		return c.Exec(ctx, &drivers.Statement{
+		// Enforce storage limits
+		return c.execWithLimits(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s (%s)", safeSQLName(name), insertByNameClause, sql),
 			Priority:    1,
 			LongRunning: true,
 		})
 	}
+
 	version, exist, err := c.tableVersion(name)
 	if err != nil {
 		return err
@@ -387,7 +409,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byNam
 	if !exist {
 		return fmt.Errorf("InsertTableAsSelect: table %q does not exist", name)
 	}
-	return c.Exec(ctx, &drivers.Statement{
+	return c.execWithLimits(ctx, &drivers.Statement{
 		Query:       fmt.Sprintf("INSERT INTO %s.default %s (%s)", safeSQLName(dbName(name, version)), insertByNameClause, sql),
 		Priority:    1,
 		LongRunning: true,
@@ -562,6 +584,48 @@ func (c *connection) updateVersion(name, version string) error {
 	defer file.Close()
 
 	_, err = file.WriteString(version)
+	return err
+}
+
+func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Statement) error {
+	storageLimit := c.config.StorageLimitBytes
+	if storageLimit <= 0 { // no limit
+		return c.Exec(parentCtx, stmt)
+	}
+
+	// check current size
+	currentSize, _ := c.EstimateSize()
+	storageLimit -= currentSize
+	// current size already exceeds limit
+	if storageLimit <= 0 {
+		return drivers.ErrStorageLimitExceeded
+	}
+
+	ctx, cancel := context.WithCancel(parentCtx)
+	defer cancel()
+	limitExceeded := atomic.Bool{}
+	// Start background goroutine to check size is not exceeded during query execution
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if size, ok := c.EstimateSize(); ok && size > storageLimit {
+					limitExceeded.Store(true)
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+
+	err := c.Exec(ctx, stmt)
+	if limitExceeded.Load() {
+		return drivers.ErrStorageLimitExceeded
+	}
 	return err
 }
 

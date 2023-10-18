@@ -827,6 +827,45 @@ func (c *connection) DeleteExpiredServiceAuthTokens(ctx context.Context, retenti
 	return parseErr("service auth token", err)
 }
 
+func (c *connection) FindDeploymentAuthToken(ctx context.Context, id string) (*database.DeploymentAuthToken, error) {
+	res := &database.DeploymentAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.* FROM deployment_auth_tokens t WHERE t.id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment auth token", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertDeploymentAuthToken(ctx context.Context, opts *database.InsertDeploymentAuthTokenOptions) (*database.DeploymentAuthToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.DeploymentAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO deployment_auth_tokens (id, secret_hash, deployment_id, expires_on)
+		VALUES ($1, $2, $3, $4) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.DeploymentID, opts.ExpiresOn,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment auth token", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateDeploymentAuthTokenUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE deployment_auth_tokens SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("deployment auth token", err)
+	}
+	return nil
+}
+
+func (c *connection) DeleteExpiredDeploymentAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM deployment_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("deployment auth token", err)
+}
+
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
 	authCode := &database.DeviceAuthCode{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE device_code = $1", deviceCode).StructScan(authCode)
