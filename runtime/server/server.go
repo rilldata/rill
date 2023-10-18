@@ -19,6 +19,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	"github.com/rilldata/rill/runtime/pkg/securetoken"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
 	"go.uber.org/zap"
@@ -36,6 +37,7 @@ type Options struct {
 	GRPCPort         int
 	AllowedOrigins   []string
 	ServePrometheus  bool
+	SessionKeyPairs  [][]byte
 	AuthEnable       bool
 	AuthIssuerURL    string
 	AuthAudienceURL  string
@@ -46,12 +48,12 @@ type Server struct {
 	runtimev1.UnsafeRuntimeServiceServer
 	runtimev1.UnsafeQueryServiceServer
 	runtimev1.UnsafeConnectorServiceServer
-	runtime *runtime.Runtime
-	opts    *Options
-	logger  *zap.Logger
-	aud     *auth.Audience
-	limiter ratelimit.Limiter
-	// activity is used for usage tracking
+	runtime  *runtime.Runtime
+	opts     *Options
+	logger   *zap.Logger
+	aud      *auth.Audience
+	codec    *securetoken.Codec
+	limiter  ratelimit.Limiter
 	activity activity.Client
 }
 
@@ -64,10 +66,20 @@ var (
 // NewServer creates a new runtime server.
 // The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
 func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient activity.Client) (*Server, error) {
+	// The runtime doesn't actually set cookies, but we use securecookie to encode/decode ephemeral tokens.
+	// If no session key pairs are provided, we generate a random one for the duration of the process.
+	var codec *securetoken.Codec
+	if len(opts.SessionKeyPairs) == 0 {
+		codec = securetoken.NewRandom()
+	} else {
+		codec = securetoken.NewCodec(opts.SessionKeyPairs)
+	}
+
 	srv := &Server{
-		opts:     opts,
 		runtime:  rt,
+		opts:     opts,
 		logger:   logger,
+		codec:    codec,
 		limiter:  limiter,
 		activity: activityClient,
 	}

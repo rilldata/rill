@@ -3405,38 +3405,11 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for TimeoutSeconds
 
-	// no validation rules for OperationName
+	// no validation rules for QueryName
 
-	if all {
-		switch v := interface{}(m.GetOperationProperties()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ReportSpecValidationError{
-					field:  "OperationProperties",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ReportSpecValidationError{
-					field:  "OperationProperties",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetOperationProperties()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ReportSpecValidationError{
-				field:  "OperationProperties",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+	// no validation rules for QueryArgsJson
 
-	// no validation rules for OperationTimeRange
+	// no validation rules for QueryTimeRange
 
 	// no validation rules for ExportLimit
 
@@ -3445,6 +3418,8 @@ func (m *ReportSpec) validate(all bool) error {
 	// no validation rules for EmailOpenUrl
 
 	// no validation rules for EmailEditUrl
+
+	// no validation rules for EmailExportUrl
 
 	if len(errors) > 0 {
 		return ReportSpecMultiError(errors)

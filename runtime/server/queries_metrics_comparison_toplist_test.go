@@ -1,4 +1,4 @@
-package server
+package server_test
 
 import (
 	"context"
@@ -7,15 +7,16 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	"github.com/rilldata/rill/runtime/server"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func getMetricsTestServer(t *testing.T, projectName string) (*Server, string) {
+func getMetricsTestServer(t *testing.T, projectName string) (*server.Server, string) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, projectName)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -79,6 +80,7 @@ func TestServer_MetricsViewComparisonToplist(t *testing.T) {
 				Ascending:   true,
 			},
 		},
+		Exact: true,
 	})
 
 	rows := tr.Rows
@@ -130,6 +132,7 @@ func TestServer_MetricsViewComparisonToplist_inline_measures(t *testing.T) {
 				Ascending:   true,
 			},
 		},
+		Exact: true,
 	})
 
 	rows := tr.Rows
@@ -174,6 +177,7 @@ func TestServer_MetricsViewComparisonToplist_nulls(t *testing.T) {
 				Ascending:   true,
 			},
 		},
+		Exact: true,
 	})
 
 	rows := tr.Rows
@@ -234,6 +238,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base(t *testing.T) {
 				Ascending:   false,
 			},
 		},
+		Exact: true,
 	})
 
 	rows := tr.Rows
@@ -285,6 +290,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_comparison(t *testing.T) {
 				Ascending:   false,
 			},
 		},
+		Exact: true,
 	})
 
 	rows := tr.Rows
@@ -337,6 +343,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_abs_delta(t *testing.T) {
 				Ascending:   false,
 			},
 		},
+		Exact: true,
 	})
 
 	rows := tr.Rows
@@ -388,6 +395,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_rel_delta(t *testing.T) {
 				Ascending:   false,
 			},
 		},
+		Exact: true,
 	})
 
 	rows := tr.Rows
@@ -431,6 +439,7 @@ func TestServer_MetricsViewComparisonToplist_sort_error(t *testing.T) {
 				Ascending:   false,
 			},
 		},
+		Exact: true,
 	})
 	require.Error(t, err)
 }
@@ -468,6 +477,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T)
 			},
 		},
 		Limit: 1,
+		Exact: true,
 	})
 
 	rows := tr.Rows
@@ -506,6 +516,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_limit_1(t *testing.T) 
 			},
 		},
 		Limit: 1,
+		Exact: true,
 	})
 
 	rows := tr.Rows
@@ -551,6 +562,7 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_filter(t *testing.T) {
 				},
 			},
 		},
+		Exact: true,
 	})
 
 	rows := tr.Rows
@@ -605,6 +617,7 @@ func TestServer_MetricsViewComparisonToplist_2_measures(t *testing.T) {
 				Ascending:   false,
 			},
 		},
+		Exact: true,
 	})
 
 	rows := tr.Rows
@@ -670,6 +683,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison(t *testing.T) {
 				Ascending:   false,
 			},
 		},
+		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tr.Rows))
@@ -698,6 +712,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_quotes(t *testing.T) 
 				MeasureName: "measure_0",
 			},
 		},
+		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Rows))
@@ -717,6 +732,12 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_numeric_dim(t *testin
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "numeric_dim",
 		MeasureNames:    []string{"measure_0"},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				MeasureName: "measure_0",
+			},
+		},
+		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -741,6 +762,7 @@ func Ignore_TestServer_MetricsViewComparisonToplist_no_comparison_HugeInt(t *tes
 				MeasureName: "measure_2",
 			},
 		},
+		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tr.Rows))
@@ -770,6 +792,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_asc(t *testing.T) {
 				Ascending:   true,
 			},
 		},
+		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tr.Rows))
@@ -799,6 +822,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_nulls_last(t *testing
 				Ascending:   true,
 			},
 		},
+		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tr.Rows))
@@ -823,6 +847,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_nulls_last(t *testing
 				Ascending:   false,
 			},
 		},
+		Exact: true,
 	})
 
 	require.NoError(t, err)
@@ -854,6 +879,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_asc_limit(t *testing.
 			},
 		},
 		Limit: 1,
+		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Rows))
@@ -882,6 +908,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_2measures(t *testing.
 				Ascending:   true,
 			},
 		},
+		Exact: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tr.Rows))
@@ -921,6 +948,7 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_complete_source_sanit
 				},
 			},
 		},
+		Exact: true,
 	})
 	require.NoError(t, err)
 	require.True(t, len(tr.Rows) > 1)

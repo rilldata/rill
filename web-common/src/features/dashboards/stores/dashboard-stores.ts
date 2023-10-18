@@ -550,7 +550,7 @@ function setDisplayComparison(
   }
 }
 
-function sortTypeForContextColumnType(
+export function sortTypeForContextColumnType(
   contextCol: LeaderboardContextColumn
 ): SortType {
   const sortType = {
