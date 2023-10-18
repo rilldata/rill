@@ -85,13 +85,20 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
 	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
-	cfg.DSN = uri.Path + "?" + qry.Encode()
+	cfg.DSN = generateDSN(uri.Path, qry.Encode())
 	// Check pool size
 	if cfg.PoolSize < 2 {
 		return nil, fmt.Errorf("duckdb pool size must be >= 1")
 	}
 
 	return cfg, nil
+}
+
+func generateDSN(path, encodedQuery string) string {
+	if len(encodedQuery) == 0 {
+		return path
+	}
+	return path + "?" + encodedQuery
 }
 
 func max(a, b int) int {
