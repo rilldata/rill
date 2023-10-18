@@ -37,6 +37,7 @@
     humanizeDataType,
     formatPresetToNumberKind,
   } from "../humanize-numbers";
+  import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
@@ -79,6 +80,10 @@
   let cursorClass;
   let preventScrubReset;
 
+  $: console.log($tableInteractionStore);
+
+  $: hoveredTime = mouseoverValue?.x || $tableInteractionStore.time;
+
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
   $: scrubStartCords = $xScale(scrubStart);
@@ -120,9 +125,9 @@
   }
 
   /** if we have dimension data, factor that into the extents */
-
   let isFetchingDimensions = false;
 
+  // Move to utils
   $: if (isComparingDimension) {
     let dimExtents = dimensionData.map((d) =>
       extent(d?.data || [], (datum) => datum[yAccessor])
@@ -231,7 +236,7 @@
       <ChartBody
         {data}
         {dimensionData}
-        isHovering={mouseoverValue?.x}
+        isHovering={hoveredTime}
         {scrubEnd}
         {scrubStart}
         {showComparison}
@@ -249,10 +254,10 @@
         y2={yScale(0)}
       />
     </Body>
-    {#if !isScrubbing && mouseoverValue?.x && !isFetchingDimensions}
+    {#if !isScrubbing && hoveredTime && !isFetchingDimensions}
       <WithRoundToTimegrain
         strategy={TimeRoundingStrategy.PREVIOUS}
-        value={mouseoverValue.x}
+        value={hoveredTime}
         {timeGrain}
         let:roundedValue
       >

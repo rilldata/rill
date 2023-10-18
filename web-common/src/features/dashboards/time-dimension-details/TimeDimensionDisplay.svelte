@@ -6,7 +6,10 @@
   import TDDHeader from "./TDDHeader.svelte";
   import TddNew from "./TDDNew.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeDimensionDataStore } from "./time-dimension-data-store";
+  import {
+    tableInteractionStore,
+    useTimeDimensionDataStore,
+  } from "./time-dimension-data-store";
   import {
     SortDirection,
     SortType,
@@ -26,6 +29,7 @@
   $: dashboardStore = useDashboardStore(metricViewName);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension;
 
+  // Get labels for table headers
   $: measureLabel =
     $metaQuery?.data?.measures?.find(
       (m) => m.name === $dashboardStore?.expandedMeasureName
@@ -41,9 +45,18 @@
   } else {
     dimensionLabel = "No Comparison";
   }
+
+  // Create a copy of the data to avoid flashing of table in transient states
+  let timeDimensionDataCopy;
+  $: if ($timeDimensionDataStore?.data) {
+    timeDimensionDataCopy = $timeDimensionDataStore.data;
+  }
+  $: formattedData = timeDimensionDataCopy;
+
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
+  // Transform the scrub dates into table position
   $: columnHeaders = $timeDimensionDataStore?.data?.columnHeaderData?.flat();
   $: startScrubPos = bisectData(
     $dashboardStore?.selectedScrubRange?.start,
@@ -61,12 +74,7 @@
     true
   );
 
-  let timeDimensionDataCopy;
-  $: if ($timeDimensionDataStore?.data) {
-    timeDimensionDataCopy = $timeDimensionDataStore.data;
-  }
-  $: formattedData = timeDimensionDataCopy;
-
+  // Create a time formatter for the column headers
   $: timeFormatter =
     columnHeaders?.length &&
     createTimeFormat(
@@ -79,6 +87,14 @@
 
   function highlightCell(e) {
     const { x, y } = e.detail;
+
+    const dimensionValue = formattedData?.rowHeaderData[y]?.[0]?.value;
+    const time = columnHeaders[x]?.value && new Date(columnHeaders[x]?.value);
+
+    tableInteractionStore.set({
+      dimensionValue,
+      time,
+    });
   }
 </script>
 

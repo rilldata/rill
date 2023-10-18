@@ -1,4 +1,4 @@
-import { derived, type Readable } from "svelte/store";
+import { derived, writable, type Readable } from "svelte/store";
 import {
   StateManagers,
   memoizeMetricsStore,
@@ -19,16 +19,7 @@ import {
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-
-export interface TableData {
-  rowCount: number;
-  fixedColCount: number;
-  rowHeaderData: Array<Array<{ value: string }>>;
-  columnCount: number;
-  columnHeaderData: Array<Array<{ value: string }>>;
-  body: Array<Array<string | number | null>>;
-  selectedValues: string[];
-}
+import type { HighlightedCell, TableData } from "./types";
 
 export type TimeDimensionDataState = {
   isFetching: boolean;
@@ -357,3 +348,11 @@ export const useTimeDimensionDataStore =
   memoizeMetricsStore<TimeSeriesDataStore>((ctx: StateManagers) =>
     createTimeDimensionDataStore(ctx)
   );
+
+/**
+ * Store for handling interactions between chart and table
+ */
+export const tableInteractionStore = writable<HighlightedCell>({
+  dimensionValue: undefined,
+  time: undefined,
+});
