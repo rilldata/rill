@@ -1,10 +1,7 @@
-import {
-  FormatPreset,
-  humanizeDataType,
-  humanizeDataTypeExpanded,
-} from "@rilldata/web-common/features/dashboards/humanize-numbers";
+import { FormatPreset } from "@rilldata/web-common/features/dashboards/humanize-numbers";
 import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 import { format as d3format } from "d3-format";
+import { humanizeDataType, humanizeDataTypeExpanded } from "./humanizer";
 
 export const createMeasureValueFormatter = (
   measureSpec: MetricsViewSpecMeasureV2,
