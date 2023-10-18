@@ -41,7 +41,10 @@ function humanizeDataType(value: unknown, type: FormatPreset): string {
  * humanized string representation of a number in cases
  * where a raw number will be meaningless to the user.
  */
-function humanizeDataTypeExpanded(value: unknown, type: FormatPreset): string {
+function humanizeDataTypeUnabridged(
+  value: unknown,
+  type: FormatPreset
+): string {
   if (type === FormatPreset.INTERVAL) {
     return formatMsToDuckDbIntervalString(value as number);
   }
@@ -52,7 +55,9 @@ export const createMeasureValueFormatter = (
   measureSpec: MetricsViewSpecMeasureV2,
   useUnabridged = false
 ): ((value: number) => string) => {
-  const humanizer = useUnabridged ? humanizeDataTypeExpanded : humanizeDataType;
+  const humanizer = useUnabridged
+    ? humanizeDataTypeUnabridged
+    : humanizeDataType;
 
   // Humanize by default if measureSpec is not provided.
   // This may e.g. be the case during the initial render of a dashboard,
