@@ -464,7 +464,7 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		if err != nil && !errors.Is(err, fs.ErrExist) {
 			return err
 		}
-		
+
 		// drop old view
 		err = c.Exec(currentCtx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(oldName))})
 		if err != nil {
