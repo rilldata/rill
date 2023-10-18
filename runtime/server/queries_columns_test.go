@@ -555,6 +555,31 @@ func TestServer_GetCardinalityOfColumn(t *testing.T) {
 	require.Equal(t, 3.0, res.CategoricalSummary.GetCardinality())
 }
 
+func TestServer_HistogramQueryBinderErrors(t *testing.T) {
+	srv, instanceID := getMetricsTestServer(t, "ad_bids")
+
+	_, err := srv.ColumnNumericHistogram(
+		testCtx(),
+		&runtimev1.ColumnNumericHistogramRequest{
+			InstanceId:      instanceID,
+			TableName:       "ad_bids_errored",
+			ColumnName:      "bid_price",
+			HistogramMethod: runtimev1.HistogramMethod_HISTOGRAM_METHOD_FD,
+		},
+	)
+	require.NoError(t, err)
+
+	_, err = srv.ColumnRugHistogram(
+		testCtx(),
+		&runtimev1.ColumnRugHistogramRequest{
+			InstanceId: instanceID,
+			TableName:  "ad_bids_errored",
+			ColumnName: "bid_price",
+		},
+	)
+	require.NoError(t, err)
+}
+
 func getColumnTestServer(t *testing.T) (*server.Server, string) {
 	sql := `
 		SELECT 'abc' AS col, 1 AS val, TIMESTAMP '2022-11-01 00:00:00' AS times, DATE '2007-04-01' AS dates
