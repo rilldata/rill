@@ -156,6 +156,11 @@ func BoldGreen(msg interface{}) string {
 	return color.New(color.FgGreen).Add(color.Bold).Sprint(msg)
 }
 
+// BoldYellow returns a string formatted with yellow and bold.
+func BoldYellow(msg interface{}) string {
+	return color.New(color.FgYellow).Add(color.Bold).Sprint(msg)
+}
+
 func (p *Printer) out() io.Writer {
 	if p.humanOut != nil {
 		return p.humanOut

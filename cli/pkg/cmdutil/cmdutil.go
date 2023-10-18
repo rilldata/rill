@@ -221,22 +221,32 @@ func PrintUsers(users []*adminv1.User) {
 	TablePrinter(toUsersTable(users))
 }
 
-func PrintMembers(members []*adminv1.Member) {
+func PrintMembers(p *printer.Printer, members []*adminv1.Member) error {
 	if len(members) == 0 {
-		PrintlnWarn("No members found")
-		return
+		p.Println(printer.BoldYellow("No members found"))
+		return nil
 	}
 
-	TablePrinter(toMemberTable(members))
+	err := p.PrintResource(toMemberTable(members))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func PrintInvites(invites []*adminv1.UserInvite) {
+func PrintInvites(p *printer.Printer, invites []*adminv1.UserInvite) error {
 	if len(invites) == 0 {
-		return
+		return nil
 	}
 
-	PrintlnSuccess("Pending user invites")
-	TablePrinter(toInvitesTable(invites))
+	p.Println(printer.BoldGreen("Pending user invites"))
+	err := p.PrintResource(toInvitesTable(invites))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func toUsersTable(users []*adminv1.User) []*user {

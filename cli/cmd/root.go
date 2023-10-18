@@ -150,7 +150,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		org.OrgCmd(ch),
 		project.ProjectCmd(cfg),
 		deploy.DeployCmd(cfg),
-		user.UserCmd(cfg),
+		user.UserCmd(ch),
 		env.EnvCmd(cfg),
 		auth.LoginCmd(cfg),
 		auth.LogoutCmd(cfg),

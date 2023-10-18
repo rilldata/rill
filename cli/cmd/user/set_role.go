@@ -5,15 +5,16 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func SetRoleCmd(cfg *config.Config) *cobra.Command {
+func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var email string
 	var role string
+	cfg := ch.Config
 
 	setRoleCmd := &cobra.Command{
 		Use:   "set-role",
@@ -38,7 +39,7 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				cmdutil.PrintlnSuccess(fmt.Sprintf("Updated role of user %q to %q in the project \"%s/%s\"", email, role, cfg.Org, projectName))
+				ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("Updated role of user %q to %q in the project \"%s/%s\"", email, role, cfg.Org, projectName)))
 			} else {
 				_, err = client.SetOrganizationMemberRole(cmd.Context(), &adminv1.SetOrganizationMemberRoleRequest{
 					Organization: cfg.Org,
@@ -48,7 +49,7 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				cmdutil.PrintlnSuccess(fmt.Sprintf("Updated role of user %q to %q in the organization %q", email, role, cfg.Org))
+				ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("Updated role of user %q to %q in the organization %q", email, role, cfg.Org)))
 			}
 
 			return nil
