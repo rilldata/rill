@@ -14,5 +14,6 @@ func RuntimeCmd(cfg *config.Config) *cobra.Command {
 	}
 	runtimeCmd.AddCommand(StartCmd(cfg))
 	runtimeCmd.AddCommand(PingCmd(cfg))
+	runtimeCmd.AddCommand(InstallDuckDBExtensionsCmd(cfg))
 	return runtimeCmd
 }

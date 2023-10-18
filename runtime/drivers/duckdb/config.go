@@ -9,6 +9,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+const cpuThreadRatio float64 = 0.5
+
 // config represents the DuckDB driver config
 type config struct {
 	// DSN is the connection string
@@ -21,6 +23,12 @@ type config struct {
 	ErrorOnIncompatibleVersion bool `mapstructure:"error_on_incompatible_version"`
 	// ExtTableStorage controls if every table is stored in a different db file
 	ExtTableStorage bool `mapstructure:"external_table_storage"`
+	// MemoryLimitGB is duckdb max_memory config
+	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
+	// CPU is the limit on cpu which determines number of threads based on cpuThreadRatio constant
+	CPU int `mapstructure:"cpu"`
+	// DisableThreadLimit disables any thread limit on duckdb
+	DisableThreadLimit bool `mapstructure:"disable_thread_limit"`
 	// StorageLimitBytes is the maximum size of all database files
 	StorageLimitBytes int64 `mapstructure:"storage_limit_bytes"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
@@ -31,7 +39,8 @@ type config struct {
 
 func newConfig(cfgMap map[string]any) (*config, error) {
 	cfg := &config{
-		PoolSize: 1, // Default value
+		PoolSize:           2, // Default value
+		DisableThreadLimit: false,
 	}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
@@ -64,16 +73,49 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 
 		// Remove from query string (so not passed into DuckDB config)
 		qry.Del("rill_pool_size")
-
-		// Rebuild DuckDB DSN (which should be "path?key=val&...")
-		uri.RawQuery = qry.Encode()
-		cfg.DSN = uri.String()
+	}
+	if cfg.MemoryLimitGB > 0 {
+		qry.Add("max_memory", fmt.Sprintf("%dGB", cfg.MemoryLimitGB))
+	}
+	if cfg.CPU > 0 {
+		threads := int(cpuThreadRatio * float64(cfg.CPU))
+		if threads <= 0 {
+			threads = 1
+		}
+		if !cfg.DisableThreadLimit {
+			qry.Add("threads", strconv.Itoa(threads))
+		}
+		cfg.PoolSize = max(2, min(cfg.CPU, threads))
 	}
 
+	// Rebuild DuckDB DSN (which should be "path?key=val&...")
+	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
+	cfg.DSN = generateDSN(uri.Path, qry.Encode())
 	// Check pool size
-	if cfg.PoolSize < 1 {
+	if cfg.PoolSize < 2 {
 		return nil, fmt.Errorf("duckdb pool size must be >= 1")
 	}
 
 	return cfg, nil
+}
+
+func generateDSN(path, encodedQuery string) string {
+	if encodedQuery == "" {
+		return path
+	}
+	return path + "?" + encodedQuery
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

@@ -280,20 +280,23 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 			LongRunning: true,
 		})
 	}
-	// create a new db file in /<instanceid>/<name> directory
-	sourceDir := filepath.Join(c.config.ExtStoragePath, name)
-	if err := os.Mkdir(sourceDir, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
-		return fmt.Errorf("create: unable to create dir %q: %w", sourceDir, err)
-	}
-
-	// check if some older version existed previously to detach it later
-	oldVersion, oldVersionExists, _ := c.tableVersion(name)
-
-	newVersion := fmt.Sprint(time.Now().UnixMilli())
-	dbFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
-	db := dbName(name, newVersion)
 
 	return c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+		// NOTE: Running mkdir while holding the connection to avoid directory getting cleaned up when concurrent calls to RenameTable cause reopenDB to be called.
+
+		// create a new db file in /<instanceid>/<name> directory
+		sourceDir := filepath.Join(c.config.ExtStoragePath, name)
+		if err := os.Mkdir(sourceDir, fs.ModePerm); err != nil && !errors.Is(err, fs.ErrExist) {
+			return fmt.Errorf("create: unable to create dir %q: %w", sourceDir, err)
+		}
+
+		// check if some older version existed previously to detach it later
+		oldVersion, oldVersionExists, _ := c.tableVersion(name)
+
+		newVersion := fmt.Sprint(time.Now().UnixMilli())
+		dbFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
+		db := dbName(name, newVersion)
+
 		// attach new db
 		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(dbFile), safeSQLName(db))})
 		if err != nil {
@@ -454,13 +457,14 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 	}
 
 	newSrcDir := filepath.Join(c.config.ExtStoragePath, newName)
-	err = os.Mkdir(newSrcDir, fs.ModePerm)
-	if err != nil && !errors.Is(err, fs.ErrExist) {
-		return err
-	}
 	oldSrcDir := filepath.Join(c.config.ExtStoragePath, oldName)
 
 	return c.WithConnection(ctx, 100, true, false, func(currentCtx, ctx context.Context, conn *dbsql.Conn) error {
+		err = os.Mkdir(newSrcDir, fs.ModePerm)
+		if err != nil && !errors.Is(err, fs.ErrExist) {
+			return err
+		}
+
 		// drop old view
 		err = c.Exec(currentCtx, &drivers.Statement{Query: fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(oldName))})
 		if err != nil {
