@@ -64,7 +64,6 @@ export const createStateManagerReadables = (
 function createReadablesFromSelectors<T extends SelectorFnsObj>(
   selectors: T,
   dashboardStore: Readable<MetricsExplorerEntity>,
-
   metricsSpecQueryResultStore: Readable<
     QueryObserverResult<V1MetricsViewSpec, RpcStatus>
   >
@@ -72,7 +71,19 @@ function createReadablesFromSelectors<T extends SelectorFnsObj>(
   return Object.fromEntries(
     Object.entries(selectors).map(([key, selectorFn]) => [
       key,
-      derived([dashboardStore, metricsSpecQueryResultStore], selectorFn),
+      derived(
+        // Note: creating a svelte derived store from multiple stores
+        // requires supplying a tuple of stores, and the objects contained
+        // in the readable in the tuple are passed into the update fn.
+        // To simplify the selector function, we pack this into a single
+        // selectorFnArgs object.
+        [dashboardStore, metricsSpecQueryResultStore],
+        ([dashboard, metricsSpecQueryResult]) =>
+          selectorFn({
+            dashboard,
+            metricsSpecQueryResult,
+          })
+      ),
     ])
   ) as ReadablesObj<T>;
 }

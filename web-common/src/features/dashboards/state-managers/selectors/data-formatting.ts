@@ -7,23 +7,15 @@ export const formattingSelectors = {
   /**
    * the currently active measure's format preset.
    */
-  activeMeasureFormatPreset: ([
-    dashboard,
-    metricsSpecQueryResult,
-  ]: SelectorFnArgs): FormatPreset =>
-    (activeMeasure([dashboard, metricsSpecQueryResult])
-      ?.formatPreset as FormatPreset) ?? FormatPreset.HUMANIZE,
+  activeMeasureFormatPreset: (args: SelectorFnArgs): FormatPreset =>
+    (activeMeasure(args)?.formatPreset as FormatPreset) ??
+    FormatPreset.HUMANIZE,
 
   /**
    * A readable containing a function that formats values
    * according to the active measure's format specification,
    * whether it's a d3 format string or a format preset.
    */
-  activeMeasureFormatter: ([
-    dashboard,
-    metricsSpecQueryResult,
-  ]: SelectorFnArgs) =>
-    createMeasureValueFormatter(
-      activeMeasure([dashboard, metricsSpecQueryResult])
-    ),
+  activeMeasureFormatter: (args: SelectorFnArgs) =>
+    createMeasureValueFormatter(activeMeasure(args)),
 };

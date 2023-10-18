@@ -10,10 +10,10 @@ import type {
  * Arguments to a selector function. By putting these in a tuple,
  * these become compatible with the svelte derived store function arguments.
  */
-export type SelectorFnArgs = [
-  MetricsExplorerEntity,
-  QueryObserverResult<V1MetricsViewSpec, RpcStatus>
-];
+export type SelectorFnArgs = {
+  dashboard: MetricsExplorerEntity;
+  metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, RpcStatus>;
+};
 
 /**
  * A SelectorFn is a pure function that takes dashboard data

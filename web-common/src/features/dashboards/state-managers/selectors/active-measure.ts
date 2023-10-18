@@ -2,10 +2,10 @@ import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-clie
 import type { SelectorFnArgs } from "./types";
 import { isSummableMeasure } from "../../dashboard-utils";
 
-export const activeMeasure = ([
+export const activeMeasure = ({
   dashboard,
   metricsSpecQueryResult,
-]: SelectorFnArgs): MetricsViewSpecMeasureV2 | undefined => {
+}: SelectorFnArgs): MetricsViewSpecMeasureV2 | undefined => {
   const measures = metricsSpecQueryResult.data?.measures;
   if (!measures) {
     return undefined;
@@ -18,10 +18,13 @@ export const activeMeasure = ([
 };
 
 export const activeMeasureSelectors = {
+  /**
+   * Gets the active measure for the dashboard.
+   */
   activeMeasure,
   /**
    * is the currently active measure a summable measure?
    */
-  isSummableMeasure: ([dashboard, metricsSpecQueryResult]: SelectorFnArgs) =>
-    isSummableMeasure(activeMeasure([dashboard, metricsSpecQueryResult])),
+  isSummableMeasure: (args: SelectorFnArgs) =>
+    isSummableMeasure(activeMeasure(args)),
 };

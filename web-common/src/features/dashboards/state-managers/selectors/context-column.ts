@@ -19,40 +19,40 @@ export const contextColSelectors = {
   /**
    * Gets the active context column type for the dashboard.
    */
-  contextColumn: ([dashboard, _]: SelectorFnArgs) =>
+  contextColumn: ({ dashboard }: SelectorFnArgs) =>
     dashboard.leaderboardContextColumn,
 
   /**
    * Is the context column hidden in the leaderboards?
    */
-  isHidden: ([dashboard, _]: SelectorFnArgs) =>
+  isHidden: ({ dashboard }: SelectorFnArgs) =>
     dashboard.leaderboardContextColumn === LeaderboardContextColumn.HIDDEN,
 
   /**
    * Is the Percentage change context column currently active in the leaderboards?
    */
-  isDeltaPercent: ([dashboard, _]: SelectorFnArgs) =>
+  isDeltaPercent: ({ dashboard }: SelectorFnArgs) =>
     dashboard.leaderboardContextColumn ===
     LeaderboardContextColumn.DELTA_PERCENT,
 
   /**
    * Is the absolute change context column currently active in the leaderboards?
    */
-  isDeltaAbsolute: ([dashboard, _]: SelectorFnArgs) =>
+  isDeltaAbsolute: ({ dashboard }: SelectorFnArgs) =>
     dashboard.leaderboardContextColumn ===
     LeaderboardContextColumn.DELTA_ABSOLUTE,
 
   /**
    * Is the percent-of-total context column currently active in the leaderboards?
    */
-  isPercentOfTotal: ([dashboard, _]: SelectorFnArgs) =>
+  isPercentOfTotal: ({ dashboard }: SelectorFnArgs) =>
     dashboard.leaderboardContextColumn === LeaderboardContextColumn.PERCENT,
 
   /**
    * `true` if the context column is either percent or delta percent,
    * `false` otherwise.
    */
-  isAPercentColumn: ([dashboard, _]: SelectorFnArgs) =>
+  isAPercentColumn: ({ dashboard }: SelectorFnArgs) =>
     dashboard.leaderboardContextColumn ===
       LeaderboardContextColumn.DELTA_PERCENT ||
     dashboard.leaderboardContextColumn === LeaderboardContextColumn.PERCENT,
@@ -61,6 +61,6 @@ export const contextColSelectors = {
    * returns a css style string specifying the width of the context
    * column in the leaderboards.
    */
-  widthPx: ([dashboard, _]: SelectorFnArgs) =>
+  widthPx: ({ dashboard }: SelectorFnArgs) =>
     contextColumnWidth(dashboard.leaderboardContextColumn),
 };
