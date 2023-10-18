@@ -12,7 +12,6 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
-	"github.com/lensesio/tableprinter"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/printer"
@@ -80,12 +79,6 @@ func Spinner(prefix string) *spinner.Spinner {
 	}
 
 	return sp
-}
-
-func TablePrinter(v interface{}) {
-	var b strings.Builder
-	tableprinter.Print(&b, v)
-	fmt.Fprint(os.Stdout, b.String())
 }
 
 // Create admin client

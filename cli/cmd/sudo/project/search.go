@@ -38,7 +38,11 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			cmdutil.TablePrinter(res.Names)
+			err = ch.Printer.PrintResource(res.Names)
+			if err != nil {
+				return err
+			}
+
 			if res.NextPageToken != "" {
 				cmd.Println()
 				cmd.Printf("Next page token: %s\n", res.NextPageToken)
