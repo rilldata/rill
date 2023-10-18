@@ -114,7 +114,7 @@ describe("time-control-store", () => {
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
       AD_BIDS_INIT_WITH_TIME
     );
-    await waitForUpdate(timeControlsStore, "2022-03-30T01:00:00.000Z");
+    await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
       name: TimeRangePreset.LAST_24_HOURS,
@@ -449,8 +449,22 @@ async function waitForUpdate(
   timeControlsStore: TimeControlStore,
   startTime: string
 ) {
-  return waitUntil(
+  await waitUntil(
     () => get(timeControlsStore).timeStart === startTime,
+    1000,
+    20
+  );
+  expect(get(timeControlsStore).timeStart).toBe(startTime);
+}
+
+async function waitForDefaultUpdate(
+  timeControlsStore: TimeControlStore,
+  startTime: string
+) {
+  return waitUntil(
+    () =>
+      get(timeControlsStore).defaultTimeRange?.start?.toISOString() ===
+      startTime,
     1000,
     20
   );

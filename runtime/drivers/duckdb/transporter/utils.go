@@ -10,6 +10,7 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 // rawConn is similar to *sql.Conn.Raw, but additionally unwraps otelsql (which we use for instrumentation).
@@ -268,4 +269,17 @@ func safeName(name string) string {
 		return name
 	}
 	return quoteName(escapeDoubleQuotes(name))
+}
+
+func sizeWithinStorageLimits(olap drivers.OLAPStore, size int64) bool {
+	limit, ok := olap.(drivers.Handle).Config()["storage_limit_bytes"].(int64)
+	if !ok || limit <= 0 { // no limit
+		return true
+	}
+
+	dbSizeInBytes, ok := olap.EstimateSize()
+	if ok && dbSizeInBytes+size > limit {
+		return false
+	}
+	return true
 }

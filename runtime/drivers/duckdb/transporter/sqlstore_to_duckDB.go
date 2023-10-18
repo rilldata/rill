@@ -54,8 +54,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 		defer rowIter.Close()
 		return s.transferFromRowIterator(ctx, rowIter, sinkCfg.Table, opts.Progress)
 	}
-
-	limitInBytes := opts.LimitInBytes
+	limitInBytes, _ := s.to.(drivers.Handle).Config()["storage_limit_bytes"].(int64)
 	if limitInBytes == 0 {
 		limitInBytes = math.MaxInt64
 	}

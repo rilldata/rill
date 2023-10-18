@@ -2,6 +2,8 @@ package rillv1
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/mail"
 	"strings"
@@ -9,7 +11,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
-	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
 
@@ -19,20 +20,24 @@ type reportYAML struct {
 	Title      string           `yaml:"title"`
 	Refresh    *scheduleYAML    `yaml:"refresh"`
 	Timeout    string           `yaml:"timeout"`
-	Operation  struct {
-		Name       string         `yaml:"name"`
-		TimeRange  string         `yaml:"time_range"`
-		Properties map[string]any `yaml:"properties"`
-	} `yaml:"operation"`
+	Query      struct {
+		Name      string         `yaml:"name"`
+		TimeRange string         `yaml:"time_range"`
+		Args      map[string]any `yaml:"args"`
+		ArgsJSON  string         `yaml:"args_json"`
+	} `yaml:"query"`
 	Export struct {
 		Format string `yaml:"format"`
 		Limit  uint   `yaml:"limit"`
 	} `yaml:"export"`
-	Recipients    []string `yaml:"recipients"`
-	EmailTemplate struct {
-		OpenURL string `yaml:"open_url"`
-		EditURL string `yaml:"edit_url"`
-	} `yaml:"email_template"`
+	Email struct {
+		Recipients []string `yaml:"recipients"`
+		Template   struct {
+			OpenURL   string `yaml:"open_url"`
+			EditURL   string `yaml:"edit_url"`
+			ExportURL string `yaml:"export_url"`
+		} `yaml:"template"`
+	} `yaml:"email"`
 }
 
 // parseReport parses a report definition and adds the resulting resource to p.Resources.
@@ -71,18 +76,34 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 		}
 	}
 
-	// Validate and parse operation params
-	if tmp.Operation.Name == "" {
-		return fmt.Errorf(`invalid value %q for property "operation.name"`, tmp.Operation.Name)
+	// Query name
+	if tmp.Query.Name == "" {
+		return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
 	}
-	operationProps, err := structpb.NewStruct(tmp.Operation.Properties)
-	if err != nil {
-		return fmt.Errorf("failed to serialize properties: %w", err)
-	}
-	if tmp.Operation.TimeRange != "" {
-		_, err := duration.ParseISO8601(tmp.Operation.TimeRange)
+
+	// Query args
+	if tmp.Query.ArgsJSON != "" {
+		// Validate JSON
+		if !json.Valid([]byte(tmp.Query.ArgsJSON)) {
+			return errors.New(`failed to parse "query.args_json" as JSON`)
+		}
+	} else {
+		// Fall back to query.args if query.args_json is not set
+		data, err := json.Marshal(tmp.Query.Args)
 		if err != nil {
-			return fmt.Errorf(`invalid "operation.dynamic_time_range": %w`, err)
+			return fmt.Errorf(`failed to serialize "query.args" to JSON: %w`, err)
+		}
+		tmp.Query.ArgsJSON = string(data)
+	}
+	if tmp.Query.ArgsJSON == "" {
+		return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
+	}
+
+	// Query time range
+	if tmp.Query.TimeRange != "" {
+		_, err := duration.ParseISO8601(tmp.Query.TimeRange)
+		if err != nil {
+			return fmt.Errorf(`invalid "query.time_range": %w`, err)
 		}
 	}
 
@@ -96,10 +117,10 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 	}
 
 	// Validate recipients
-	if len(tmp.Recipients) == 0 {
+	if len(tmp.Email.Recipients) == 0 {
 		return fmt.Errorf(`missing required property "recipients"`)
 	}
-	for _, email := range tmp.Recipients {
+	for _, email := range tmp.Email.Recipients {
 		_, err := mail.ParseAddress(email)
 		if err != nil {
 			return fmt.Errorf("invalid recipient email address %q", email)
@@ -120,14 +141,15 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 	if timeout != 0 {
 		r.SourceSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
-	r.ReportSpec.OperationName = tmp.Operation.Name
-	r.ReportSpec.OperationProperties = operationProps
-	r.ReportSpec.OperationTimeRange = tmp.Operation.TimeRange
-	r.ReportSpec.ExportLimit = uint32(tmp.Export.Limit)
+	r.ReportSpec.QueryName = tmp.Query.Name
+	r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
+	r.ReportSpec.QueryTimeRange = tmp.Query.TimeRange
+	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
-	r.ReportSpec.Recipients = tmp.Recipients
-	r.ReportSpec.EmailOpenUrl = tmp.EmailTemplate.OpenURL
-	r.ReportSpec.EmailEditUrl = tmp.EmailTemplate.EditURL
+	r.ReportSpec.EmailRecipients = tmp.Email.Recipients
+	r.ReportSpec.EmailOpenUrl = tmp.Email.Template.OpenURL
+	r.ReportSpec.EmailEditUrl = tmp.Email.Template.EditURL
+	r.ReportSpec.EmailExportUrl = tmp.Email.Template.ExportURL
 
 	return nil
 }

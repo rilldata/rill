@@ -46,6 +46,12 @@ func (s *Service) OrganizationPermissionsForService(ctx context.Context, orgID, 
 	return &adminv1.OrganizationPermissions{}, nil
 }
 
+// OrganizationPermissionsForDeployment resolves organization permissions for a deployment.
+// A deployment does not get any permissions on the org it belongs to. It only has permissions on the project it belongs to.
+func (s *Service) OrganizationPermissionsForDeployment(ctx context.Context, orgID, deploymentID string) (*adminv1.OrganizationPermissions, error) {
+	return &adminv1.OrganizationPermissions{}, nil
+}
+
 // ProjectPermissionsForUser resolves project permissions for a user.
 func (s *Service) ProjectPermissionsForUser(ctx context.Context, projectID, userID string, orgPerms *adminv1.OrganizationPermissions) (*adminv1.ProjectPermissions, error) {
 	// ManageProjects permission on the org gives full access to all projects in the org (only org admins have this)
@@ -92,6 +98,33 @@ func (s *Service) ProjectPermissionsForService(ctx context.Context, projectID, s
 			ManageDev:            true,
 			ReadProjectMembers:   true,
 			ManageProjectMembers: true,
+		}, nil
+	}
+
+	return &adminv1.ProjectPermissions{}, nil
+}
+
+// ProjectPermissionsForDeployment resolves project permissions for a deployment.
+// A deployment currently gets full read and no write permissions on the project it belongs to.
+func (s *Service) ProjectPermissionsForDeployment(ctx context.Context, projectID, deploymentID string, orgPerms *adminv1.OrganizationPermissions) (*adminv1.ProjectPermissions, error) {
+	depl, err := s.DB.FindDeployment(ctx, deploymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Deployments get full read and no write permissions on the project they belong to
+	if projectID == depl.ProjectID {
+		return &adminv1.ProjectPermissions{
+			ReadProject:          true,
+			ManageProject:        false,
+			ReadProd:             true,
+			ReadProdStatus:       true,
+			ManageProd:           false,
+			ReadDev:              true,
+			ReadDevStatus:        true,
+			ManageDev:            false,
+			ReadProjectMembers:   true,
+			ManageProjectMembers: false,
 		}, nil
 	}
 

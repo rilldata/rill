@@ -10,6 +10,12 @@ import {
   useDashboardStore,
 } from "web-common/src/features/dashboards/stores/dashboard-stores";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import {
+  StateManagerReadables,
+  createStateManagerReadables,
+} from "./selectors";
+import { createStateManagerActions, type StateManagerActions } from "./actions";
+import type { DashboardCallbackExecutor } from "./actions/types";
 
 export type StateManagers = {
   runtime: Writable<Runtime>;
@@ -18,9 +24,15 @@ export type StateManagers = {
   dashboardStore: Readable<MetricsExplorerEntity>;
   queryClient: QueryClient;
   setMetricsViewName: (s: string) => void;
-  updateDashboard: (
-    callback: (metricsExplorer: MetricsExplorerEntity) => void
-  ) => void;
+  updateDashboard: DashboardCallbackExecutor;
+  /**
+   * A collection of Readables that can be used to select data from the dashboard.
+   */
+  selectors: StateManagerReadables;
+  /**
+   * A collection of functions that update the dashboard data model.
+   */
+  actions: StateManagerActions;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
@@ -63,6 +75,8 @@ export function createStateManagers({
       metricsViewNameStore.set(name);
     },
     updateDashboard,
+    selectors: createStateManagerReadables(dashboardStore),
+    actions: createStateManagerActions(updateDashboard),
   };
 }
 

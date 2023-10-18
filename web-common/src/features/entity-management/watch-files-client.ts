@@ -23,7 +23,6 @@ function handleWatchFileResponse(
   res: V1WatchFilesResponse
 ) {
   if (res.path.includes(".db")) return;
-  console.log(`[${res.event}] ${res.path}`);
   // Watch file returns events for all files under the project. Ignore everything except .sql, .yaml & .yml
   if (
     !res.path.endsWith(".sql") &&
