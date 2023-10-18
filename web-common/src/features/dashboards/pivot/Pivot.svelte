@@ -282,7 +282,7 @@
   }
 
   :global(regular-table thead tr) {
-    border-bottom: 2px solid #ddd;
+    border-bottom: 2px solid rgb(229 231 235);
   }
 
   :global(regular-table *) {

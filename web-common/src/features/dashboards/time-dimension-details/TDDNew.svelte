@@ -54,6 +54,10 @@
     data.element.classList.toggle("font-semibold", Boolean(data.y == 0));
     data.element.classList.add("text-right");
 
+    if (comparing === "time" && data.y === 2) {
+      data.element.classList.add("border-b", "border-gray-200");
+    }
+
     const isScrubbed =
       scrubPos?.start !== undefined &&
       data.x >= scrubPos?.start &&
@@ -131,6 +135,10 @@
   };
 
   const renderRowHeader: PivotRenderCallback = ({ value, x, y, element }) => {
+    if (comparing === "time" && y === 2) {
+      element.classList.add("border-b", "border-gray-200");
+    }
+
     const cellBgColor = getClassForCell(
       "fixed",
       rowIdxHover,
