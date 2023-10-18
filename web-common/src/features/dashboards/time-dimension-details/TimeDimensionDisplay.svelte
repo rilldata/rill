@@ -57,7 +57,7 @@
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
   // Transform the scrub dates into table position
-  $: columnHeaders = $timeDimensionDataStore?.data?.columnHeaderData?.flat();
+  $: columnHeaders = formattedData?.columnHeaderData?.flat();
   $: startScrubPos = bisectData(
     $dashboardStore?.selectedScrubRange?.start,
     "center",
@@ -89,7 +89,8 @@
     const { x, y } = e.detail;
 
     const dimensionValue = formattedData?.rowHeaderData[y]?.[0]?.value;
-    const time = columnHeaders[x]?.value && new Date(columnHeaders[x]?.value);
+    const time =
+      x && columnHeaders[x]?.value && new Date(columnHeaders[x]?.value);
 
     tableInteractionStore.set({
       dimensionValue,

@@ -53,7 +53,7 @@
 
   export let showComparison = false;
   export let data;
-  export let dimensionData;
+  export let dimensionData = [];
   export let xAccessor = "ts";
   export let labelAccessor = "label";
   export let yAccessor = "value";
@@ -79,8 +79,6 @@
   let scrub;
   let cursorClass;
   let preventScrubReset;
-
-  $: console.log($tableInteractionStore);
 
   $: hoveredTime = mouseoverValue?.x || $tableInteractionStore.time;
 
@@ -237,6 +235,7 @@
         {data}
         {dimensionData}
         isHovering={hoveredTime}
+        dimensionValue={$tableInteractionStore?.dimensionValue}
         {scrubEnd}
         {scrubStart}
         {showComparison}
@@ -299,6 +298,7 @@
                   {xAccessor}
                   {yAccessor}
                   {dimensionData}
+                  dimensionValue={$tableInteractionStore?.dimensionValue}
                   {mouseoverFormat}
                 />
               {:else}
