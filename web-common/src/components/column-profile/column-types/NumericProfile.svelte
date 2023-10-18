@@ -57,16 +57,16 @@
     active
   );
   let fdHistogram;
-  // $: if (isFloat(type)) {
-  //   fdHistogram = getNumericHistogram(
-  //     $runtime?.instanceId,
-  //     objectName,
-  //     columnName,
-  //     QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
-  //     enableProfiling,
-  //     active
-  //   );
-  // }
+  $: if (isFloat(type)) {
+    fdHistogram = getNumericHistogram(
+      $runtime?.instanceId,
+      objectName,
+      columnName,
+      QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
+      enableProfiling,
+      active
+    );
+  }
 
   /**
    * We have two choices of histogram method: diagnostic and freedman-diaconis.
@@ -74,13 +74,12 @@
    * the most viable of diagnostic and freedman-diaconis. We'll remove
    * this once we've refactored floating-point columns toward a KDE plot.
    */
-  // $: histogramData = isFloat(type)
-  //   ? chooseBetweenDiagnosticAndStatistical(
-  //       $diagnosticHistogram?.data,
-  //       $fdHistogram?.data
-  //     )
-  //   : $diagnosticHistogram?.data;
-  $: histogramData = $diagnosticHistogram?.data;
+  $: histogramData = isFloat(type)
+    ? chooseBetweenDiagnosticAndStatistical(
+        $diagnosticHistogram?.data,
+        $fdHistogram?.data
+      )
+    : $diagnosticHistogram?.data;
 
   $: rug = createQueryServiceColumnRugHistogram(
     $runtime?.instanceId,
@@ -126,10 +125,9 @@
     httpRequestQueue.prioritiseColumn(objectName, columnName, active);
   }
 
-  // $: fetchingSummaries = FLOATS.has(type)
-  //   ? isFetching($nulls, $diagnosticHistogram, $fdHistogram)
-  //   : isFetching($nulls, $diagnosticHistogram);
-  $: fetchingSummaries = isFetching($nulls, $diagnosticHistogram);
+  $: fetchingSummaries = FLOATS.has(type)
+    ? isFetching($nulls, $diagnosticHistogram, $fdHistogram)
+    : isFetching($nulls, $diagnosticHistogram);
 
   /** if we have a singleton where all summary information is the same, let's construct a single bin. */
   $: if (
