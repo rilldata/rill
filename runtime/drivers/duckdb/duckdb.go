@@ -482,7 +482,6 @@ func (c *connection) reopenDB() error {
 			continue
 		}
 		if !exist {
-			_ = os.RemoveAll(path)
 			continue
 		}
 

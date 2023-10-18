@@ -205,7 +205,7 @@ func (c *connection) EstimateSize() (int64, bool) {
 
 // AddTableColumn implements drivers.OLAPStore.
 func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, typ string) error {
-	c.logger.Info("add table column", zap.String("tableName", tableName), zap.String("columnName", columnName), zap.String("typ", typ))
+	c.logger.Info("add table column", zap.String("tableName", tableName), zap.String("columnName", columnName), zap.String("typ", typ), observability.ZapCtx(ctx))
 	if !c.config.ExtTableStorage {
 		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", safeSQLName(tableName), safeSQLName(columnName), typ),
@@ -235,7 +235,7 @@ func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, 
 
 // AlterTableColumn implements drivers.OLAPStore.
 func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName, newType string) error {
-	c.logger.Info("alter table column", zap.String("tableName", tableName), zap.String("columnName", columnName), zap.String("newType", newType))
+	c.logger.Info("alter table column", zap.String("tableName", tableName), zap.String("columnName", columnName), zap.String("newType", newType), observability.ZapCtx(ctx))
 	if !c.config.ExtTableStorage {
 		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("ALTER TABLE %s ALTER %s TYPE %s", safeSQLName(tableName), safeSQLName(columnName), newType),
@@ -266,7 +266,7 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
-	c.logger.Info("create table", zap.String("name", name), zap.Bool("view", view))
+	c.logger.Info("create table", zap.String("name", name), zap.Bool("view", view), observability.ZapCtx(ctx))
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s)", safeSQLName(name), sql),
@@ -335,7 +335,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 
 // DropTable implements drivers.OLAPStore.
 func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
-	c.logger.Info("drop table", zap.String("name", name), zap.Bool("view", view))
+	c.logger.Info("drop table", zap.String("name", name), zap.Bool("view", view), observability.ZapCtx(ctx))
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name)),
@@ -382,7 +382,7 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 
 // InsertTableAsSelect implements drivers.OLAPStore.
 func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error {
-	c.logger.Info("insert into table", zap.String("name", name), zap.Bool("byName", byName))
+	c.logger.Info("insert into table", zap.String("name", name), zap.Bool("byName", byName), observability.ZapCtx(ctx))
 	var insertByNameClause string
 	if byName {
 		insertByNameClause = "BY NAME"
@@ -425,7 +425,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byNam
 // `DETACH foo__1`
 // `rm foo/1.db`
 func (c *connection) RenameTable(ctx context.Context, oldName, newName string, view bool) error {
-	c.logger.Info("rename table", zap.String("from", oldName), zap.String("to", newName), zap.Bool("view", view))
+	c.logger.Info("rename table", zap.String("from", oldName), zap.String("to", newName), zap.Bool("view", view), observability.ZapCtx(ctx))
 	if strings.EqualFold(oldName, newName) {
 		return fmt.Errorf("rename: old and new name are same case insensitive strings")
 	}
