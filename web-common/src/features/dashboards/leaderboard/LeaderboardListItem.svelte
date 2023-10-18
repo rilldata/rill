@@ -19,10 +19,7 @@
 
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
-  import {
-    LeaderboardItemData,
-    formatContextColumnValue,
-  } from "./leaderboard-utils";
+  import type { LeaderboardItemData } from "./leaderboard-utils";
   import ContextColumnValue from "./ContextColumnValue.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
 
@@ -48,12 +45,6 @@
   export let referenceValue;
 
   $: formattedValue = $activeMeasureFormatter(measureValue);
-
-  $: contextColumnFormattedValue = formatContextColumnValue(
-    itemData,
-    contextColumn,
-    $activeMeasureFormatPreset
-  );
 
   $: previousValueString =
     comparisonValue !== undefined && comparisonValue !== null
@@ -174,10 +165,7 @@
               value={formattedValue || measureValue}
             />
           </div>
-          <ContextColumnValue
-            formattedValue={contextColumnFormattedValue}
-            {contextColumn}
-          />
+          <ContextColumnValue {itemData} />
         </div>
       </div>
     </BarAndLabel>

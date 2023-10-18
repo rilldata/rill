@@ -14,9 +14,6 @@ import {
 } from "@rilldata/web-common/lib/number-formatting/strategies/intervals";
 import { PerRangeFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/per-range";
 
-const shortHandSymbols = ["Q", "T", "B", "M", "k", "none"] as const;
-export type ShortHandSymbols = (typeof shortHandSymbols)[number];
-
 /**
  * This enum represents all of the valid strings that can be
  * used in the `format_preset` field of a measure definition.
@@ -119,7 +116,7 @@ export function humanizeDimTableValue(value: number, type: FormatPreset) {
  * values and values of arbitrarily large magnitudes must be
  * supported.
  */
-export function formatMeasurePercentageDifference(value): NumberParts {
+export function formatMeasurePercentageDifference(value: number): NumberParts {
   if (value === 0) {
     return { percent: "%", int: "0", dot: "", frac: "", suffix: "" };
   } else if (value < 0.005 && value > 0) {
@@ -175,7 +172,7 @@ export function formatMeasurePercentageDifference(value): NumberParts {
  * output, since formatting of proper fractions may make
  * assumptions that are violated by improper fractions.
  */
-export function formatProperFractionAsPercent(value): NumberParts {
+export function formatProperFractionAsPercent(value: number): NumberParts {
   if (value < 0 || value > 1) {
     console.warn(
       `formatProperFractionAsPercent received invalid input: ${value}. Value must be between 0 and 1.`

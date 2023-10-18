@@ -3,16 +3,8 @@ import {
   type V1MetricsViewComparisonRow,
   type V1MetricsViewComparisonValue,
 } from "@rilldata/web-common/runtime-client";
-import { PERC_DIFF } from "../../../components/data-types/type-utils";
-import {
-  FormatPreset,
-  formatMeasurePercentageDifference,
-  formatProperFractionAsPercent,
-  humanizeDataType,
-} from "../humanize-numbers";
-import { LeaderboardContextColumn } from "../leaderboard-context-column";
+
 import { SortType } from "../proto-state/derived-types";
-import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
 /**
  * A `V1MetricsViewComparisonRow` basically represents a row of data
@@ -251,32 +243,6 @@ export function getComparisonDefaultSelection(
     .filter((value) => !selectedValues.includes(value.dimensionValue))
     .map((value) => value.dimensionValue)
     .slice(0, 3);
-}
-
-/**
- * Returns the formatted value for the context column
- * accounting for the context column type.
- */
-export function formatContextColumnValue(
-  itemData: LeaderboardItemData,
-  contextType: LeaderboardContextColumn,
-  formatPreset: FormatPreset
-): string | NumberParts | PERC_DIFF.PREV_VALUE_NO_DATA {
-  switch (contextType) {
-    case LeaderboardContextColumn.DELTA_ABSOLUTE: {
-      return humanizeDataType(itemData.deltaAbs, formatPreset);
-    }
-    case LeaderboardContextColumn.DELTA_PERCENT:
-      if (itemData.deltaRel === null || itemData.deltaRel === undefined)
-        return PERC_DIFF.PREV_VALUE_NO_DATA;
-      return formatMeasurePercentageDifference(itemData.deltaRel);
-    case LeaderboardContextColumn.PERCENT:
-      return formatProperFractionAsPercent(itemData.pctOfTotal);
-    case LeaderboardContextColumn.HIDDEN:
-      return "";
-    default:
-      throw new Error("Invalid context column, all cases must be handled");
-  }
 }
 
 export function getQuerySortType(sortType: SortType) {

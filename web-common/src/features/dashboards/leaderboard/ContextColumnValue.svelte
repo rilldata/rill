@@ -1,50 +1,50 @@
 <script lang="ts">
-  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
-  import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-  import { PERC_DIFF } from "@rilldata/web-common/components/data-types/type-utils";
   import { getStateManagers } from "../state-managers/state-managers";
+  import type { LeaderboardItemData } from "./leaderboard-utils";
+  import {
+    formatMeasurePercentageDifference,
+    formatProperFractionAsPercent,
+  } from "../humanize-numbers";
 
-  export let formattedValue: string | NumberParts | PERC_DIFF;
-  // export let contextColumn: LeaderboardContextColumn;
+  export let itemData: LeaderboardItemData;
 
-  const stateManagers = getStateManagers();
-  const { isAPercentColumn, isDeltaAbsolute, widthPx } =
-    stateManagers.selectors.contextColumn;
+  const {
+    selectors: {
+      contextColumn: {
+        widthPx,
+        isDeltaAbsolute,
+        isDeltaPercent,
+        isPercentOfTotal,
+        isHidden,
+      },
+      numberFormat: { activeMeasureFormatter },
+    },
+  } = getStateManagers();
 
-  let neg: boolean;
-  let noData: boolean;
-  let customStyle: string;
-  $: if (typeof formattedValue === "string") {
-    neg = formattedValue[0] === "-";
-    noData = formattedValue === "" || !formattedValue;
-    customStyle = neg ? "text-red-500" : noData ? "opacity-50 italic" : "";
-  }
-  $: width = $widthPx;
-
-  $: if (
-    typeof formattedValue === "string" &&
-    formattedValue !== PERC_DIFF.PREV_VALUE_NO_DATA
-  ) {
-    console.warn(
-      `ContextColumnValue component expects a \`NumberParts | PERC_DIFF\`  received ${JSON.stringify(
-        formattedValue
-      )} instead.`
-    );
-  }
+  $: negativeChange = itemData.deltaRel !== null && itemData.deltaAbs < 0;
+  $: noChangeData = itemData.deltaRel === null;
 </script>
 
-{#if $isAPercentColumn}
-  <div style:width>
-    <PercentageChange value={formattedValue} />
-  </div>
-{:else if $isDeltaAbsolute}
-  <div style:width>
-    {#if noData}
+{#if !$isHidden}
+  <div style:width={$widthPx}>
+    {#if $isPercentOfTotal}
+      <PercentageChange
+        value={formatProperFractionAsPercent(itemData.pctOfTotal)}
+      />
+    {:else if noChangeData}
       <span class="opacity-50 italic" style:font-size=".925em">no data</span>
-    {:else}
-      <FormattedDataType type="INTEGER" value={formattedValue} {customStyle} />
+    {:else if $isDeltaPercent}
+      <PercentageChange
+        value={formatMeasurePercentageDifference(itemData.deltaRel)}
+      />
+    {:else if $isDeltaAbsolute}
+      <FormattedDataType
+        type="INTEGER"
+        value={$activeMeasureFormatter(itemData.deltaAbs)}
+        customStyle={negativeChange ? "text-red-500" : ""}
+      />
     {/if}
   </div>
 {/if}
