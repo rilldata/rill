@@ -57,7 +57,7 @@
 
 <button
   on:click={() => dispatch("expand-measure")}
-  class="big-number flex flex-col px-2 text-left
+  class="big-number flex flex-col px-2 text-left rounded
   {isMeasureExpanded ? 'pointer-events-none' : 'hover:bg-gray-100'}
   {withTimeseries ? 'py-3' : 'py-1 justify-between'}"
 >

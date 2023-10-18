@@ -198,7 +198,10 @@
         }}
       />
 
-      <div class="time-series-body peer-hover:bg-gray-100" style:height="125px">
+      <div
+        class="time-series-body rounded peer-hover:bg-gray-100"
+        style:height="125px"
+      >
         {#if $timeSeriesDataStore?.isError}
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
