@@ -12,7 +12,6 @@ import {
   FormatPreset,
   humanizeDataType,
 } from "@rilldata/web-common/features/dashboards/humanize-numbers";
-import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
 import {
   DEFAULT_TIME_RANGES,
   TIME_COMPARISON,
@@ -35,7 +34,6 @@ export type TimeDimensionDataState = {
   isFetching: boolean;
   comparing: "dimension" | "time" | "none";
   data?: TableData;
-  timeFormatter: (v: Date) => string;
 };
 
 export type TimeSeriesDataStore = Readable<TimeDimensionDataState>;
@@ -291,10 +289,6 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
 
       const measureName = dashboardStore?.expandedMeasureName;
       const dimensionName = dashboardStore?.selectedComparisonDimension;
-      const timeFormatter = createTimeFormat([
-        new Date(timeControls?.adjustedStart),
-        new Date(timeControls?.adjustedEnd),
-      ])[0];
       const total = timeSeries?.total && timeSeries?.total[measureName];
       const unfilteredTotal =
         timeSeries?.unfilteredTotal && timeSeries?.unfilteredTotal[measureName];
@@ -359,7 +353,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         );
       }
 
-      return { isFetching: false, comparing, data, timeFormatter };
+      return { isFetching: false, comparing, data };
     }
   ) as TimeSeriesDataStore;
 }

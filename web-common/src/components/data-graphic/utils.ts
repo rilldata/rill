@@ -318,28 +318,32 @@ export function bisectData(
 }
 
 /** For a scale domain returns a formatter for axis label and super label */
-export function createTimeFormat(scaleDomain) {
+export function createTimeFormat(scaleDomain, numberOfValues) {
   const diff = Math.abs(scaleDomain[1] - scaleDomain[0]) / 1000;
+  const gap = diff / (numberOfValues - 1); // time gap between two consecutive values
 
-  const millisecondDiff = diff < 1;
-  const secondDiff = diff < 60;
-  const twoDayDiff = diff / (60 * 60) < 48;
-  const threeDaysDiff = diff / (60 * 60) < 24 * 3;
-  const fourDaysDiff = diff / (60 * 60) < 24 * 4;
-  const manyDaysDiff = diff / (60 * 60 * 24) < 60;
-  const manyMonthsDiff = diff / (60 * 60 * 24) < 3 * 365;
-
-  if (millisecondDiff) {
+  // If the gap is less than a second, format in milliseconds
+  if (gap < 1) {
     return [timeFormat("%M:%S.%L"), timeFormat("%H %d %b %Y")];
-  } else if (secondDiff) {
+  }
+  // If the gap is less than a minute, format in seconds
+  else if (gap < 60) {
     return [timeFormat("%M:%S"), timeFormat("%H %d %b %Y")];
-  } else if (twoDayDiff || threeDaysDiff) {
+  }
+  // If the gap is less than 24 hours, format in hours and minutes
+  else if (gap < 60 * 60 * 24) {
     return [timeFormat("%H:%M"), timeFormat("%d %b %Y")];
-  } else if (fourDaysDiff || manyDaysDiff) {
+  }
+  // If the gap is less than 30 days, format in days
+  else if (gap < 60 * 60 * 24 * 30) {
     return [timeFormat("%b %d"), timeFormat("%Y")];
-  } else if (manyMonthsDiff) {
+  }
+  // If the gap is less than a year, format in months
+  else if (gap < 60 * 60 * 24 * 365) {
     return [timeFormat("%b"), timeFormat("%Y")];
-  } else {
+  }
+  // Else format in years
+  else {
     return [timeFormat("%Y"), undefined];
   }
 }

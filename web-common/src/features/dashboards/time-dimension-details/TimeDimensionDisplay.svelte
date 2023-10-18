@@ -11,7 +11,10 @@
     SortDirection,
     SortType,
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-  import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
+  import {
+    bisectData,
+    createTimeFormat,
+  } from "@rilldata/web-common/components/data-graphic/utils";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -41,11 +44,12 @@
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
+  $: columnHeaders = $timeDimensionDataStore?.data?.columnHeaderData?.flat();
   $: startScrubPos = bisectData(
     $dashboardStore?.selectedScrubRange?.start,
     "center",
     "value",
-    $timeDimensionDataStore?.data?.columnHeaderData?.flat(),
+    columnHeaders,
     true
   );
 
@@ -53,7 +57,7 @@
     $dashboardStore?.selectedScrubRange?.end,
     "center",
     "value",
-    $timeDimensionDataStore?.data?.columnHeaderData?.flat(),
+    columnHeaders,
     true
   );
 
@@ -62,6 +66,16 @@
     timeDimensionDataCopy = $timeDimensionDataStore.data;
   }
   $: formattedData = timeDimensionDataCopy;
+
+  $: timeFormatter =
+    columnHeaders?.length &&
+    createTimeFormat(
+      [
+        new Date(columnHeaders[0]?.value),
+        new Date(columnHeaders[columnHeaders?.length - 1]?.value),
+      ],
+      columnHeaders?.length
+    )[0];
 
   function highlightCell(e) {
     const { x, y } = e.detail;
@@ -87,7 +101,7 @@
     scrubPos={{ start: startScrubPos, end: endScrubPos }}
     sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
     comparing={$timeDimensionDataStore?.comparing}
-    timeFormatter={$timeDimensionDataStore.timeFormatter}
+    {timeFormatter}
     data={formattedData}
     on:toggle-sort={() =>
       metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE)}

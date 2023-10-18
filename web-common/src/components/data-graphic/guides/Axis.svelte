@@ -137,12 +137,27 @@ This component will draw an axis on the specified side.
     }
   }
 
+  let axisLength;
+  let ticks = [];
+  $: if ($plotConfig) {
+    if (xOrY === "x") axisLength = $plotConfig.graphicWidth;
+    else axisLength = $plotConfig.graphicHeight;
+
+    ticks = getTicks(
+      xOrY,
+      scale,
+      axisLength,
+      $plotConfig[`${xOrY}Type`] === "date"
+    );
+  }
+
   let formatterFunction;
   let superLabelFormatter;
 
   $: if ($plotConfig[`${xOrY}Type`] === "date") {
     [formatterFunction, superLabelFormatter] = createTimeFormat(
-      $mainScale.domain()
+      $mainScale.domain(),
+      ticks?.length
     );
   } else {
     superlabel = false;
@@ -160,20 +175,6 @@ This component will draw an axis on the specified side.
       numberKind === "INTERVAL"
         ? formatMsInterval(x)
         : formatter.stringFormat(x);
-  }
-
-  let axisLength;
-  let ticks = [];
-  $: if ($plotConfig) {
-    if (xOrY === "x") axisLength = $plotConfig.graphicWidth;
-    else axisLength = $plotConfig.graphicHeight;
-
-    ticks = getTicks(
-      xOrY,
-      scale,
-      axisLength,
-      $plotConfig[`${xOrY}Type`] === "date"
-    );
   }
 </script>
 
