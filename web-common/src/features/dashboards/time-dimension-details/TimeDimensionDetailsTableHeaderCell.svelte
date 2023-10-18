@@ -43,7 +43,7 @@
     <!-- Placeholder for table padding to fit the overflowing checkboxes from dimension cells. This will hide column labels that horizontally scroll to the left -->
     <div
       style={`left: -${FILTER_OVERFLOW_WIDTH}px; width: ${FILTER_OVERFLOW_WIDTH}px;`}
-      class="absolute top-0 h-full bg-white z-10 flex items-center justify-center bg-white border-b"
+      class="absolute top-0 h-full z-10 flex items-center justify-center bg-white border-b"
     />
   {/if}
 </div>
