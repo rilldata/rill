@@ -92,6 +92,7 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 	if err != nil {
 		return nil, err
 	}
+	logger.Info("opening duckdb handle", zap.String("dsn", cfg.DSN))
 
 	// We've seen the DuckDB .wal and .tmp files grow to 100s of GBs in some cases.
 	// This prevents recovery after restarts since DuckDB hangs while trying to reprocess the files.
