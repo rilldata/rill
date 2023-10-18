@@ -58,7 +58,6 @@ func TestOrganizationWorkflow(t *testing.T) {
 
 	group.Go(func() error { return srv.ServeGRPC(cctx) })
 	group.Go(func() error { return srv.ServeHTTP(cctx) })
-	// time.Sleep(05 * time.Second)
 	err = mock.CheckServerStatus(srv)
 	c.Assert(err, qt.IsNil)
 

@@ -58,7 +58,6 @@ func TestUserWorkflow(t *testing.T) {
 
 	group.Go(func() error { return srv.ServeGRPC(cctx) })
 	group.Go(func() error { return srv.ServeHTTP(cctx) })
-	// time.Sleep(15 * time.Second)
 	err = mock.CheckServerStatus(srv)
 	c.Assert(err, qt.IsNil)
 

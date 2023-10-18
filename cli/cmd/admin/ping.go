@@ -31,7 +31,7 @@ func PingCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.Print(fmt.Sprintf("Pong: %s", pong.Time.AsTime().String()))
+			ch.Printer.Print(fmt.Sprintf("Pong: %s\n", pong.Time.AsTime().String()))
 			return nil
 		},
 	}
