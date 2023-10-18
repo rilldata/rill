@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Pivot from "./Pivot.svelte";
+  import Pivot from "./PivotOld.svelte";
   import TimeDimensionDetailsTableCell from "./TimeDimensionDetailsTableCell.svelte";
   import TimeDimensionDetailsTableHeaderCell from "./TimeDimensionDetailsTableHeaderCell.svelte";
   import { createTimeDimensionDetailsStore } from "./time-dimension-details-store";

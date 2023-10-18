@@ -62,6 +62,10 @@
     timeDimensionDataCopy = $timeDimensionDataStore.data;
   }
   $: formattedData = timeDimensionDataCopy;
+
+  function highlightCell(e) {
+    const { x, y } = e.detail;
+  }
 </script>
 
 <TDDHeader
@@ -75,8 +79,6 @@
 
 {#if formattedData}
   <TddNew
-    on:toggle-sort={() =>
-      metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE)}
     {dimensionName}
     {metricViewName}
     {excludeMode}
@@ -87,6 +89,9 @@
     comparing={$timeDimensionDataStore?.comparing}
     timeFormatter={$timeDimensionDataStore.timeFormatter}
     data={formattedData}
+    on:toggle-sort={() =>
+      metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE)}
+    on:highlight={highlightCell}
   />
 {:else}
   <Spinner size="18px" status={EntityStatus.Running} />

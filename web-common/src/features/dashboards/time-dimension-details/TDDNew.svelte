@@ -209,6 +209,7 @@
       handleEvent(evt, table, "__col", (n) => (colIdxHover = parseInt(n)));
     }
 
+    dispatch("highlight", { x: colIdxHover, y: rowIdxHover });
     pivot?.draw();
   };
 

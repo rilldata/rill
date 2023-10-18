@@ -272,7 +272,7 @@
   :global(regular-table table) {
     color: rgb(55 65 81);
     table-layout: fixed;
-    border-collapse: collapse;
+    border-collapse: separate;
     font-family: Inter;
     font-feature-settings: "case" 0, "cpsp" 0, "dlig" 0, "frac" 0, "dnom" 0,
       "numr" 0, "salt" 0, "subs" 0, "sups" 0, "tnum", "zero" 0, "ss01", "ss02" 0,

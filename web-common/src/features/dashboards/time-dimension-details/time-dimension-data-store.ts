@@ -13,13 +13,10 @@ import {
   humanizeDataType,
 } from "@rilldata/web-common/features/dashboards/humanize-numbers";
 import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
-import { getTimeWidth } from "@rilldata/web-common/lib/time/transforms";
 import {
   DEFAULT_TIME_RANGES,
   TIME_COMPARISON,
-  TIME_GRAIN,
 } from "@rilldata/web-common/lib/time/config";
-import { durationToMillis } from "@rilldata/web-common/lib/time/grains";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
