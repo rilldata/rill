@@ -116,9 +116,8 @@
     <div class="shrink flex flex-row items-center gap-x-4">
       <button
         on:click={() => dispatch("toggle-sort", SortType.VALUE)}
-        class="shrink flex flex-row items-center justify-end"
+        class="shrink flex flex-row items-center justify-end min-w-[40px]"
         aria-label="Toggle sort leaderboards by value"
-        style="min-width: 40px;"
       >
         #{#if $sortType === SortType.VALUE}
           <ArrowDown transform={arrowTransform} />
