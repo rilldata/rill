@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createEventDispatcher } from "svelte";
   import { fly, slide } from "svelte/transition";
   import BarAndLabel from "../../../components/BarAndLabel.svelte";
@@ -29,15 +28,11 @@
   $: selected = itemData.selectedIndex >= 0;
   $: comparisonValue = itemData.prevValue;
 
-  export let contextColumn: LeaderboardContextColumn;
-
   export let atLeastOneActive = false;
   export let isBeingCompared = false;
   export let filterExcludeMode;
 
-  const stateManagers = getStateManagers();
-  const { activeMeasureFormatPreset, activeMeasureFormatter } =
-    stateManagers.selectors.numberFormat;
+  const { activeMeasureFormatter } = getStateManagers().selectors.numberFormat;
 
   /** if this value is a summable measure, we'll show the bar. Otherwise, don't. */
   export let isSummableMeasure;
