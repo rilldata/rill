@@ -16,7 +16,5 @@
     'block text-right'}"
   {dark}
 >
-  <slot name="value">
-    {!isNegative ? "+" : ""}{value}
-  </slot>
+  {!isNegative ? "+" : ""}{value}
 </Base>
