@@ -3,9 +3,10 @@ import {
   StateManagers,
   memoizeMetricsStore,
 } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
-import { createSparkline } from "./sparkline";
+import { createSparkline } from "@rilldata/web-common/components/data-graphic/marks/sparkline";
 import { transposeArray } from "./util";
 import {
   FormatPreset,
@@ -20,7 +21,6 @@ import {
 } from "@rilldata/web-common/lib/time/config";
 import { durationToMillis } from "@rilldata/web-common/lib/time/grains";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
-import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
 export interface TableData {
   rowCount: number;
@@ -29,7 +29,7 @@ export interface TableData {
   columnCount: number;
   columnHeaderData: Array<Array<{ value: string }>>;
   body: Array<Array<string | number | null>>;
-  selectedValues: string[];
+  selectedValues: Array<{ value: string; fill: string }>;
 }
 
 export type TimeDimensionDataState = {
@@ -84,6 +84,8 @@ function prepareDimensionData(
   }
 
   let rowHeaderData = [totalsRow];
+
+  console.log(data);
 
   rowHeaderData = rowHeaderData.concat(
     data?.map((row) => {

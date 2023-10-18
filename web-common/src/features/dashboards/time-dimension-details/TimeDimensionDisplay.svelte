@@ -56,6 +56,12 @@
     $timeDimensionDataStore?.data?.columnHeaderData?.flat(),
     true
   );
+
+  let timeDimensionDataCopy;
+  $: if ($timeDimensionDataStore?.data) {
+    timeDimensionDataCopy = $timeDimensionDataStore.data;
+  }
+  $: formattedData = timeDimensionDataCopy;
 </script>
 
 <TDDHeader
@@ -67,7 +73,7 @@
   }}
 />
 
-{#if $timeDimensionDataStore?.data}
+{#if formattedData}
   <TddNew
     on:toggle-sort={() =>
       metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE)}
@@ -80,7 +86,7 @@
     sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
     comparing={$timeDimensionDataStore?.comparing}
     timeFormatter={$timeDimensionDataStore.timeFormatter}
-    data={$timeDimensionDataStore.data}
+    data={formattedData}
   />
 {:else}
   <Spinner size="18px" status={EntityStatus.Running} />

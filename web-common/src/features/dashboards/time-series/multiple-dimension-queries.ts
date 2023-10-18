@@ -239,7 +239,9 @@ export function getDimensionValueTimeSeries(
                 value,
                 total,
                 strokeClass: "stroke-" + LINE_COLORS[i],
-                fillClass: "fill-" + CHECKMARK_COLORS[i],
+                fillClass: CHECKMARK_COLORS[i]
+                  ? "fill-" + CHECKMARK_COLORS[i]
+                  : "",
                 data: prepData,
                 isFetching: timeseries.isFetching,
               };
