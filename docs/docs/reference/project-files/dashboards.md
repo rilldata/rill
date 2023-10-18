@@ -41,12 +41,13 @@ _**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measur
   - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_ 
   - _**`ignore`**_ — hides the measure _(optional)_ 
   - _**`valid_percent_of_total`**_ — a boolean indicating whether percent-of-total values should be rendered for this measure _(optional)_ 
-  - _**`format_preset` or `format_d3`**_ — controls the formatting of this measure in the dashboard. If `format_d3` is used, a [valid d3-format string](https://d3js.org/d3-format) must be provided (if an invalid format string is supplied, measures will be formatted with the `humanize` format preset). If `format_preset` is used, measures will be formatted according to option specified below. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
-      - _`humanize`_ — round off numbers in an opinionated way to thousands (K), millions (M), billions (B), etc
-      - _`none`_ — raw output
-      - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign
-      - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
-      - _`interval_ms`_ — time intervals given in milliseconds are transformed into human readable time units like hours (h), days (d), years (y), etc
+  - _**`format_d3`**_ — controls the formatting of this measure in the dashboard using a [d3-format string](https://d3js.org/d3-format). If an invalid format string is supplied, measures will be formatted with `format_preset: humanize` (described below). Measures cannot have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
+  - _**`format_preset`**_ — controls the formatting of this measure in the dashboard according to option specified below. Measures cannot have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
+    - _`humanize`_ — round off numbers in an opinionated way to thousands (K), millions (M), billions (B), etc
+    - _`none`_ — raw output
+    - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign
+    - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
+    - _`interval_ms`_ — time intervals given in milliseconds are transformed into human readable time units like hours (h), days (d), years (y), etc
 
 _**`security`**_ - define a [security policy](../../develop/security) for the dashboard _(optional)_
   - _**`access`**_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. _(optional)_
