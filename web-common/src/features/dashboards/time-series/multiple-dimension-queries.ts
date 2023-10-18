@@ -15,7 +15,6 @@ import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { getFilterForDimension } from "@rilldata/web-common/features/dashboards/selectors";
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 
 export interface DimensionDataItem {
@@ -37,6 +36,7 @@ export interface DimensionDataItem {
  *
  * For Time Dimension Detail Page -
  * Fetch all the top n values for the dimension
+ * and further filter using search text if present
  */
 
 export function getDimensionValuesForComparison(

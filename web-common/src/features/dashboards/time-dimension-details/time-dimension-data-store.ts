@@ -21,6 +21,8 @@ import {
 } from "@rilldata/web-common/lib/time/config";
 import { durationToMillis } from "@rilldata/web-common/lib/time/grains";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 
 export interface TableData {
   rowCount: number;
@@ -29,7 +31,7 @@ export interface TableData {
   columnCount: number;
   columnHeaderData: Array<Array<{ value: string }>>;
   body: Array<Array<string | number | null>>;
-  selectedValues: Array<{ value: string; fill: string }>;
+  selectedValues: string[];
 }
 
 export type TimeDimensionDataState = {
@@ -48,12 +50,13 @@ export type TimeSeriesDataStore = Readable<TimeDimensionDataState>;
  */
 function prepareDimensionData(
   totalsData,
-  data,
-  columnCount: number,
+  data: DimensionDataItem[],
+  // columnCount: number,
   total: number,
   unfilteredTotal: number,
   measure: MetricsViewSpecMeasureV2,
-  selectedValues: string[]
+  selectedValues: string[],
+  isAllTime: boolean
 ): TableData {
   if (!data) return;
 
@@ -62,6 +65,13 @@ function prepareDimensionData(
   const measureName = measure?.name;
   const validPercentOfTotal = measure?.validPercentOfTotal;
 
+  const columnHeaderData = (
+    isAllTime ? totalsData?.slice(1) : totalsData?.slice(1, -1)
+  )?.map((v) => [{ value: v.ts }]);
+
+  const columnCount = columnHeaderData?.length;
+
+  // Add totals row to count
   const rowCount = data?.length + 1;
 
   const totalsRow = [
@@ -85,8 +95,6 @@ function prepareDimensionData(
 
   let rowHeaderData = [totalsRow];
 
-  console.log(data);
-
   rowHeaderData = rowHeaderData.concat(
     data?.map((row) => {
       const dataRow = [
@@ -108,30 +116,26 @@ function prepareDimensionData(
     })
   );
 
-  let columnHeaderData = new Array(columnCount || 1).fill([{ value: null }]);
+  // let columnHeaderData = new Array(columnCount).fill([{ value: null }]);
 
-  if (data?.[0]?.data) {
-    columnHeaderData = data?.[0]?.data
-      ?.slice(1, -1)
-      .map((v) => [{ value: v.ts }]);
-  }
+  // if (data?.[0]?.data) {
+  //   columnHeaderData = (
+  //     isAllTime ? data?.[0]?.data?.slice(1) : data?.[0]?.data?.slice(1, -1)
+  //   )?.map((v) => [{ value: v.ts }]);
+  // }
 
   let body = [
-    totalsData
-      ?.slice(1, -1)
-      ?.map((v) =>
-        v[measureName] ? humanizeDataType(v[measureName], formatPreset) : null
-      ) || [],
+    (isAllTime ? totalsData?.slice(1) : totalsData?.slice(1, -1))?.map((v) =>
+      v[measureName] ? humanizeDataType(v[measureName], formatPreset) : null
+    ) || [],
   ];
 
   body = body?.concat(
     data?.map((v) => {
-      if (v.isFetching) return new Array(columnCount || 1).fill(undefined);
-      return v?.data
-        ?.slice(1, -1)
-        ?.map((v) =>
-          v[measureName] ? humanizeDataType(v[measureName], formatPreset) : null
-        );
+      if (v.isFetching) return new Array(columnCount).fill(undefined);
+      return (isAllTime ? v?.data?.slice(1) : v?.data?.slice(1, -1))?.map((v) =>
+        v[measureName] ? humanizeDataType(v[measureName], formatPreset) : null
+      );
     })
   );
   /* 
@@ -159,13 +163,13 @@ function prepareDimensionData(
  */
 function prepareTimeData(
   data,
-  columnCount: number,
   total: number,
   comparisonTotal: number,
   currentLabel: string,
   comparisonLabel: string,
   measure: MetricsViewSpecMeasureV2,
-  hasTimeComparison
+  hasTimeComparison,
+  isAllTime: boolean
 ): TableData {
   if (!data) return;
 
@@ -173,7 +177,12 @@ function prepareTimeData(
     (measure?.formatPreset as FormatPreset) ?? FormatPreset.HUMANIZE;
   const measureName = measure?.name;
 
-  const columnHeaderData = data?.slice(1, -1)?.map((v) => [{ value: v.ts }]);
+  const columnHeaderData = (
+    isAllTime ? data?.slice(1) : data?.slice(1, -1)
+  )?.map((v) => [{ value: v.ts }]);
+
+  const columnCount = columnHeaderData?.length;
+
   let rowHeaderData = [];
   rowHeaderData.push([
     { value: "Total" },
@@ -185,11 +194,9 @@ function prepareTimeData(
 
   const body = [];
   body.push(
-    data
-      ?.slice(1, -1)
-      ?.map((v) =>
-        v[measureName] ? humanizeDataType(v[measureName], formatPreset) : null
-      )
+    (isAllTime ? data?.slice(1) : data?.slice(1, -1))?.map((v) =>
+      v[measureName] ? humanizeDataType(v[measureName], formatPreset) : null
+    )
   );
 
   if (hasTimeComparison) {
@@ -214,11 +221,9 @@ function prepareTimeData(
 
     // Push current range
     body.push(
-      data
-        ?.slice(1, -1)
-        ?.map((v) =>
-          v[measureName] ? humanizeDataType(v[measureName], formatPreset) : null
-        )
+      (isAllTime ? data?.slice(1) : data?.slice(1, -1))?.map((v) =>
+        v[measureName] ? humanizeDataType(v[measureName], formatPreset) : null
+      )
     );
 
     body.push(
@@ -293,22 +298,14 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         new Date(timeControls?.adjustedStart),
         new Date(timeControls?.adjustedEnd),
       ])[0];
-      const interval = timeControls?.selectedTimeRange?.interval;
-      const intervalWidth = durationToMillis(TIME_GRAIN[interval]?.duration);
       const total = timeSeries?.total && timeSeries?.total[measureName];
       const unfilteredTotal =
         timeSeries?.unfilteredTotal && timeSeries?.unfilteredTotal[measureName];
       const comparisonTotal =
         timeSeries?.comparisonTotal && timeSeries?.comparisonTotal[measureName];
+      const isAllTime =
+        timeControls?.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
 
-      // Compute columnCount
-      const columnCount =
-        getTimeWidth(
-          new Date(timeControls?.adjustedStart),
-          new Date(timeControls?.adjustedEnd)
-        ) /
-          intervalWidth -
-        2;
       const measure = metricsView?.data?.measures?.find(
         (m) => m.name === measureName
       );
@@ -333,11 +330,11 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         data = prepareDimensionData(
           timeSeries?.timeSeriesData,
           timeSeries?.dimensionTableData,
-          columnCount,
           total,
           unfilteredTotal,
           measure,
-          selectedValues
+          selectedValues,
+          isAllTime
         );
       } else {
         comparing = timeControls.showComparison ? "time" : "none";
@@ -355,13 +352,13 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
 
         data = prepareTimeData(
           timeSeries?.timeSeriesData,
-          columnCount,
           total,
           comparisonTotal,
           currentLabel,
           comparisonLabel,
           measure,
-          comparing === "time"
+          comparing === "time",
+          isAllTime
         );
       }
 

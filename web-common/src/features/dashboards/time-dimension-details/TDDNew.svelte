@@ -96,10 +96,12 @@
     pivot?.draw();
   }
 
+  let noSelectionMarkerCount = 0;
   const getMarker = (value, y) => {
-    // TODO: Use the colors returned by multiple-dim-query to set the marker color
-
-    if (y === 0) return ``;
+    if (y === 0) {
+      noSelectionMarkerCount = 0;
+      return ``;
+    }
     const visibleIdx = data?.selectedValues.indexOf(value.value);
 
     if (comparing === "time") {
@@ -116,10 +118,13 @@
           "fill-" +
             (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300")
         );
-    } else if (!data?.selectedValues.length && y < 4) {
-      return `<div class="rounded-full bg-${
-        CHECKMARK_COLORS[y - 1]
-      }" style="width: 13px; height: 13px;"></div>`;
+    } else if (noSelectionMarkerCount < 3) {
+      if (excludeMode || !data?.selectedValues.length) {
+        noSelectionMarkerCount += 1;
+        return `<div class="rounded-full bg-${
+          CHECKMARK_COLORS[noSelectionMarkerCount - 1]
+        }" style="width: 13px; height: 13px;"></div>`;
+      }
     }
 
     return ``;
