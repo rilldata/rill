@@ -7,9 +7,9 @@ import type {
   RpcStatus,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
-import { activeMeasure } from "./core-selectors";
 import { formattingSelectors } from "./data-formatting";
 import { contextColSelectors } from "./context-column";
+import { activeMeasureSelectors } from "./active-measure";
 
 export type StateManagerReadables = ReturnType<
   typeof createStateManagerReadables
@@ -49,15 +49,14 @@ export const createStateManagerReadables = (
       metricsSpecQueryResultStore
     ),
 
-    // Note: for now, some core selectors are kept in the root of the
-    // selectors object. Can revisit that later if we want to move them.
-
     /**
-     * The active measure for the dashboard.
+     * Readables related to the primary active measure in the
+     * leaderboard.
      */
-    activeMeasure: derived(
-      [dashboardStore, metricsSpecQueryResultStore],
-      activeMeasure
+    activeMeasure: createReadablesFromSelectors(
+      activeMeasureSelectors,
+      dashboardStore,
+      metricsSpecQueryResultStore
     ),
   };
 };

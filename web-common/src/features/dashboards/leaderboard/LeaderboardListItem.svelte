@@ -32,10 +32,11 @@
   export let isBeingCompared = false;
   export let filterExcludeMode;
 
-  const { activeMeasureFormatter } = getStateManagers().selectors.numberFormat;
+  const {
+    numberFormat: { activeMeasureFormatter },
+    activeMeasure: { isSummableMeasure },
+  } = getStateManagers().selectors;
 
-  /** if this value is a summable measure, we'll show the bar. Otherwise, don't. */
-  export let isSummableMeasure;
   /** for summable measures, this is the value we use to calculate the bar % to fill */
   export let referenceValue;
 
@@ -55,7 +56,7 @@
 
   let renderedBarValue = 0; // should be between 0 and 1.
   $: {
-    renderedBarValue = isSummableMeasure
+    renderedBarValue = $isSummableMeasure
       ? referenceValue
         ? measureValue / referenceValue
         : 0

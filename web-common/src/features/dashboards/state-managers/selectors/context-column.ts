@@ -21,15 +21,30 @@ export const contextColSelectors = {
    */
   contextColumn: ([dashboard, _]: SelectorFnArgs) =>
     dashboard.leaderboardContextColumn,
+
+  /**
+   * Is the context column hidden in the leaderboards?
+   */
   isHidden: ([dashboard, _]: SelectorFnArgs) =>
     dashboard.leaderboardContextColumn === LeaderboardContextColumn.HIDDEN,
 
+  /**
+   * Is the Percentage change context column currently active in the leaderboards?
+   */
   isDeltaPercent: ([dashboard, _]: SelectorFnArgs) =>
     dashboard.leaderboardContextColumn ===
     LeaderboardContextColumn.DELTA_PERCENT,
+
+  /**
+   * Is the absolute change context column currently active in the leaderboards?
+   */
   isDeltaAbsolute: ([dashboard, _]: SelectorFnArgs) =>
     dashboard.leaderboardContextColumn ===
     LeaderboardContextColumn.DELTA_ABSOLUTE,
+
+  /**
+   * Is the percent-of-total context column currently active in the leaderboards?
+   */
   isPercentOfTotal: ([dashboard, _]: SelectorFnArgs) =>
     dashboard.leaderboardContextColumn === LeaderboardContextColumn.PERCENT,
 

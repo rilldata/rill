@@ -18,7 +18,6 @@
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
-  import { isSummableMeasure } from "../dashboard-utils";
 
   export let metricViewName: string;
 
@@ -148,7 +147,6 @@
       <VirtualizedGrid {columns} height="100%" items={dimensionsShown} let:item>
         <!-- the single virtual element -->
         <Leaderboard
-          isSummableMeasure={isSummableMeasure(activeMeasure)}
           {metricViewName}
           dimensionName={item.name}
           on:expand={() => {

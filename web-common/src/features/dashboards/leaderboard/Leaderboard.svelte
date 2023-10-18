@@ -46,8 +46,6 @@
   export let referenceValue: number;
   export let unfilteredTotal: number;
 
-  export let isSummableMeasure = false;
-
   let slice = 7;
 
   const stateManagers = getStateManagers();
@@ -170,15 +168,12 @@
     on:mouseleave={() => (hovered = false)}
   >
     <LeaderboardHeader
-      {contextColumn}
       isFetching={$sortedQuery.isFetching}
       {displayName}
       on:toggle-dimension-comparison={() =>
         toggleComparisonDimension(dimensionName, isBeingCompared)}
       {isBeingCompared}
       {hovered}
-      {sortAscending}
-      {sortType}
       dimensionDescription={dimension?.description}
       on:open-dimension-details={() => selectDimension(dimensionName)}
       on:toggle-sort={toggleSort}
@@ -189,11 +184,9 @@
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardListItem
             {itemData}
-            {contextColumn}
             {atLeastOneActive}
             {isBeingCompared}
             {filterExcludeMode}
-            {isSummableMeasure}
             {referenceValue}
             on:click
             on:keydown
@@ -206,11 +199,9 @@
           {#each selectedBelowTheFold as itemData (itemData.dimensionValue)}
             <LeaderboardListItem
               {itemData}
-              {contextColumn}
               {atLeastOneActive}
               {isBeingCompared}
               {filterExcludeMode}
-              {isSummableMeasure}
               {referenceValue}
               on:click
               on:keydown

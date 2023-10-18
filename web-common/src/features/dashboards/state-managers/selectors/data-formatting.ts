@@ -1,7 +1,7 @@
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { FormatPreset } from "../../humanize-numbers";
-import { activeMeasure } from "./core-selectors";
 import type { SelectorFnArgs } from "./types";
+import { activeMeasure } from "./active-measure";
 
 export const formattingSelectors = {
   /**

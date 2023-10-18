@@ -19,20 +19,21 @@
   export let isFetching: boolean;
   export let dimensionDescription: string;
   export let hovered: boolean;
-  export let contextColumn: LeaderboardContextColumn;
-  export let sortType: SortType;
+  // export let contextColumn: LeaderboardContextColumn;
+  // export let sortType: SortType;
   export let isBeingCompared: boolean;
 
   const {
     selectors: {
       contextColumn: {
+        contextColumn,
         widthPx,
         isDeltaAbsolute,
         isDeltaPercent,
         isPercentOfTotal,
         isHidden,
       },
-      sorting: { sortedAscending },
+      sorting: { sortedAscending, sortType },
     },
   } = getStateManagers();
 
@@ -41,7 +42,7 @@
     [LeaderboardContextColumn.DELTA_PERCENT]: SortType.DELTA_PERCENT,
     [LeaderboardContextColumn.DELTA_ABSOLUTE]: SortType.DELTA_ABSOLUTE,
     [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
-  }[contextColumn];
+  }[$contextColumn];
 
   $: arrowTransform = $sortedAscending ? "scale(1 -1)" : "scale(1 1)";
 </script>
@@ -119,8 +120,9 @@
         on:click={() => dispatch("toggle-sort", SortType.VALUE)}
         class="shrink flex flex-row items-center justify-end"
         aria-label="Toggle sort leaderboards by value"
+        style="min-width: 40px;"
       >
-        #{#if sortType === SortType.VALUE}
+        #{#if $sortType === SortType.VALUE}
           <ArrowDown transform={arrowTransform} />
         {/if}
       </button>
@@ -138,7 +140,7 @@
             <Delta />
           {:else if $isPercentOfTotal}
             <PieChart /> %
-          {/if}{#if sortType !== SortType.VALUE}
+          {/if}{#if $sortType !== SortType.VALUE}
             <ArrowDown transform={arrowTransform} />
           {/if}
         </button>
