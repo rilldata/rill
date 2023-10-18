@@ -96,6 +96,16 @@ export type QueryServiceColumnTopKBody = {
   priority?: number;
 };
 
+export type QueryServiceColumnTimeSeriesBody = {
+  measures?: ColumnTimeSeriesRequestBasicMeasure[];
+  timestampColumnName?: string;
+  timeRange?: V1TimeSeriesTimeRange;
+  pixels?: number;
+  sampleSize?: number;
+  priority?: number;
+  timeZone?: string;
+};
+
 export type QueryServiceColumnTimeRangeParams = {
   columnName?: string;
   priority?: number;
@@ -324,7 +334,6 @@ export type RuntimeServiceEditInstanceBody = {
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
   embedCatalog?: boolean;
-  ingestionLimitBytes?: string;
   watchRepo?: boolean;
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
@@ -566,23 +575,12 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export type V1SourceSpecProperties = { [key: string]: any };
-
-export interface V1SourceSpec {
-  sourceConnector?: string;
-  sinkConnector?: string;
-  properties?: V1SourceSpecProperties;
-  refreshSchedule?: V1Schedule;
-  timeoutSeconds?: number;
-  stageChanges?: boolean;
-  streamIngestion?: boolean;
-  trigger?: boolean;
-}
-
 export interface V1SourceV2 {
   spec?: V1SourceSpec;
   state?: V1SourceState;
 }
+
+export type V1SourceSpecProperties = { [key: string]: any };
 
 export type V1SourceProperties = { [key: string]: any };
 
@@ -598,6 +596,17 @@ export interface V1Schedule {
   cron?: string;
   tickerSeconds?: number;
   timeZone?: string;
+}
+
+export interface V1SourceSpec {
+  sourceConnector?: string;
+  sinkConnector?: string;
+  properties?: V1SourceSpecProperties;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  stageChanges?: boolean;
+  streamIngestion?: boolean;
+  trigger?: boolean;
 }
 
 export interface V1ScannedConnector {
@@ -670,43 +679,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export type V1ReportSpecOperationProperties = { [key: string]: any };
-
-export interface V1ReportSpec {
-  trigger?: boolean;
-  title?: string;
-  refreshSchedule?: V1Schedule;
-  timeoutSeconds?: number;
-  operationName?: string;
-  operationProperties?: V1ReportSpecOperationProperties;
-  operationTimeRange?: string;
-  exportLimit?: number;
-  exportFormat?: V1ExportFormat;
-  recipients?: string[];
-  emailOpenUrl?: string;
-  emailEditUrl?: string;
-}
-
-export interface V1ReportExecution {
-  adhoc?: boolean;
-  errorMessage?: string;
-  reportTime?: string;
-  startedOn?: string;
-  finishedOn?: string;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
-export interface V1Report {
-  spec?: V1ReportSpec;
-  state?: V1ReportState;
-}
-
 export interface V1Resource {
   meta?: V1ResourceMeta;
   projectParser?: V1ProjectParser;
@@ -718,6 +690,42 @@ export interface V1Resource {
   pullTrigger?: V1PullTrigger;
   refreshTrigger?: V1RefreshTrigger;
   bucketPlanner?: V1BucketPlanner;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
+export interface V1ReportSpec {
+  trigger?: boolean;
+  title?: string;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  queryName?: string;
+  queryArgsJson?: string;
+  queryTimeRange?: string;
+  exportLimit?: string;
+  exportFormat?: V1ExportFormat;
+  emailRecipients?: string[];
+  emailOpenUrl?: string;
+  emailEditUrl?: string;
+  emailExportUrl?: string;
+}
+
+export interface V1ReportExecution {
+  adhoc?: boolean;
+  errorMessage?: string;
+  reportTime?: string;
+  startedOn?: string;
+  finishedOn?: string;
+}
+
+export interface V1Report {
+  spec?: V1ReportSpec;
+  state?: V1ReportState;
 }
 
 export interface V1RenameFileResponse {
@@ -1379,7 +1387,6 @@ export interface V1Instance {
   projectVariables?: V1InstanceProjectVariables;
   annotations?: V1InstanceAnnotations;
   embedCatalog?: boolean;
-  ingestionLimitBytes?: string;
   watchRepo?: boolean;
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
@@ -1534,7 +1541,6 @@ export interface V1CreateInstanceRequest {
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
   embedCatalog?: boolean;
-  ingestionLimitBytes?: string;
   watchRepo?: boolean;
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
@@ -1912,16 +1918,6 @@ export interface ColumnTimeSeriesRequestBasicMeasure {
   expression?: string;
   sqlName?: string;
 }
-
-export type QueryServiceColumnTimeSeriesBody = {
-  measures?: ColumnTimeSeriesRequestBasicMeasure[];
-  timestampColumnName?: string;
-  timeRange?: V1TimeSeriesTimeRange;
-  pixels?: number;
-  sampleSize?: number;
-  priority?: number;
-  timeZone?: string;
-};
 
 export type BucketExtractPolicyStrategy =
   (typeof BucketExtractPolicyStrategy)[keyof typeof BucketExtractPolicyStrategy];

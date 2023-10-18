@@ -5,7 +5,6 @@
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
-
   import {
     getFilterForDimension,
     useMetaQuery,
@@ -186,7 +185,8 @@
       $timeControlsStore.selectedTimeRange?.end,
       $dashboardStore?.selectedTimezone,
       interval,
-      $timeControlsStore.selectedTimeRange?.name
+      $timeControlsStore.selectedTimeRange?.name,
+      $metaQuery.data.defaultTimeRange
     );
 
     startValue = adjustedChartValue?.start;

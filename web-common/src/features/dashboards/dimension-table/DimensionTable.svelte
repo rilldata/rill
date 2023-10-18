@@ -18,16 +18,25 @@ TableCells – the cell contents.
   } from "./dimension-table-utils";
   import type { DimensionTableRow } from "./dimension-table-types";
 
+  import { getStateManagers } from "../state-managers/state-managers";
+
   const dispatch = createEventDispatcher();
 
   export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
   export let selectedValues: Array<unknown> = [];
 
-  export let sortByColumn: string;
   export let dimensionName: string;
   export let excludeMode = false;
   export let isBeingCompared = false;
+  export let isFetching: boolean;
+
+  const {
+    actions: { dimTable },
+    selectors: {
+      sorting: { sortMeasure },
+    },
+  } = getStateManagers();
 
   /** the overscan values tell us how much to render off-screen. These may be set by the consumer
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
@@ -169,7 +178,8 @@ TableCells – the cell contents.
 
   async function handleColumnHeaderClick(event) {
     colScrollOffset = $columnVirtualizer.scrollOffset;
-    dispatch("sort", event.detail);
+    const columnName = event.detail;
+    dimTable.handleMeasureColumnHeaderClick(columnName);
   }
 
   async function handleResizeDimensionColumn(event) {
@@ -216,7 +226,7 @@ TableCells – the cell contents.
         <ColumnHeaders
           virtualColumnItems={virtualColumns}
           noPin={true}
-          selectedColumn={sortByColumn}
+          selectedColumn={$sortMeasure}
           columns={measureColumns}
           on:click-column={handleColumnHeaderClick}
         />
@@ -245,6 +255,7 @@ TableCells – the cell contents.
             {excludeMode}
             {scrolling}
             {horizontalScrolling}
+            on:dimension-sort
             on:select-item={(event) => onSelectItem(event)}
             on:inspect={setActiveIndex}
           />
@@ -264,6 +275,10 @@ TableCells – the cell contents.
             on:inspect={setActiveIndex}
             cellLabel="Filter dimension value"
           />
+        {:else if isFetching}
+          <div class="flex text-gray-500 justify-center mt-[30vh]">
+            Loading...
+          </div>
         {:else}
           <div class="flex text-gray-500 justify-center mt-[30vh]">
             No results to show

@@ -14,5 +14,6 @@ func RuntimeCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 	runtimeCmd.AddCommand(StartCmd(ch))
 	runtimeCmd.AddCommand(PingCmd(ch))
+	runtimeCmd.AddCommand(InstallDuckDBExtensionsCmd(ch))
 	return runtimeCmd
 }

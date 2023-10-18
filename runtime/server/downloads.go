@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,13 +11,39 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/pkg/symmetriccrypto"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
+
+func BakeQuery(qry *runtimev1.Query) (string, error) {
+	if qry == nil {
+		return "", errors.New("cannot bake nil query")
+	}
+
+	data, err := proto.Marshal(qry)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.URLEncoding.EncodeToString(data), nil
+}
+
+func UnbakeQuery(bakedQry string) (*runtimev1.Query, error) {
+	data, err := base64.URLEncoding.DecodeString(bakedQry)
+	if err != nil {
+		return nil, err
+	}
+
+	qry := &runtimev1.Query{}
+	if err := proto.Unmarshal(data, qry); err != nil {
+		return nil, err
+	}
+
+	return qry, nil
+}
 
 func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*runtimev1.ExportResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
@@ -29,6 +54,16 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 		if req.Limit > *s.opts.DownloadRowLimit {
 			return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to %d", *s.opts.DownloadRowLimit)
 		}
+	}
+
+	if req.BakedQuery != "" {
+		qry, err := UnbakeQuery(req.BakedQuery)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to parse baked query: %s", err.Error())
+		}
+
+		req.Query = qry
+		req.BakedQuery = ""
 	}
 
 	tkn, err := s.generateDownloadToken(req, auth.GetClaims(ctx).Attributes())
@@ -308,10 +343,6 @@ func (s *Server) resolveExportLimit(base, override int64) int64 {
 // downloadTokenTTL determines how long a download token is valid.
 const downloadTokenTTL = 1 * time.Hour
 
-// downloadTokenEncoder is an in-memory symmetric cryptography encoder for download tokens.
-// TODO: Replace it with a stable environment-configured key. And multiple key versions for key rotation.
-var downloadTokenEncoder = symmetriccrypto.Must(symmetriccrypto.NewEphemeralEncoder(32))
-
 // downloadTokenJSON is the non-encrypted JSON representation of a download token.
 type downloadTokenJSON struct {
 	Request    []byte         `json:"req"`
@@ -332,33 +363,18 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, attrs map[s
 		ExpiresOn:  time.Now().Add(downloadTokenTTL),
 	}
 
-	data, err := json.Marshal(tknJSON)
+	res, err := s.codec.Encode(tknJSON)
 	if err != nil {
 		return "", err
 	}
 
-	res, err := downloadTokenEncoder.Encrypt(data)
-	if err != nil {
-		return "", err
-	}
-
-	return base64.URLEncoding.EncodeToString(res), nil
+	return res, nil
 }
 
 // parseDownloadToken decrypts and parses a download token and returns the request and attributes.
 func (s *Server) parseDownloadToken(tkn string) (*runtimev1.ExportRequest, map[string]any, error) {
-	data, err := base64.URLEncoding.DecodeString(tkn)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	decrypted, err := downloadTokenEncoder.Decrypt(data)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	tknJSON := downloadTokenJSON{}
-	err = json.Unmarshal(decrypted, &tknJSON)
+	err := s.codec.Decode(tkn, &tknJSON)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"time"
@@ -51,6 +52,7 @@ type Config struct {
 	MetastoreDriver         string                 `default:"sqlite" split_words:"true"`
 	MetastoreURL            string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
+	SessionKeyPairs         []string               `split_words:"true"`
 	AuthEnable              bool                   `default:"false" split_words:"true"`
 	AuthIssuerURL           string                 `default:"" split_words:"true"`
 	AuthAudienceURL         string                 `default:"" split_words:"true"`
@@ -130,6 +132,16 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				logger.Fatal("error creating email sender", zap.Error(err))
 			}
 			emailClient := email.New(sender)
+
+			// Parse session keys as hex strings
+			keyPairs := make([][]byte, len(conf.SessionKeyPairs))
+			for idx, keyHex := range conf.SessionKeyPairs {
+				key, err := hex.DecodeString(keyHex)
+				if err != nil {
+					logger.Fatal("failed to parse session key from hex string to bytes")
+				}
+				keyPairs[idx] = key
+			}
 
 			// Init telemetry
 			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
@@ -214,6 +226,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				GRPCPort:         conf.GRPCPort,
 				AllowedOrigins:   conf.AllowedOrigins,
 				ServePrometheus:  conf.MetricsExporter == observability.PrometheusExporter,
+				SessionKeyPairs:  keyPairs,
 				AuthEnable:       conf.AuthEnable,
 				AuthIssuerURL:    conf.AuthIssuerURL,
 				AuthAudienceURL:  conf.AuthAudienceURL,

@@ -1,4 +1,4 @@
-package queries
+package queries_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
@@ -14,7 +15,7 @@ func BenchmarkColumnNullCount(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &ColumnNullCount{
+		q := &queries.ColumnNullCount{
 			TableName:  "ad_bids",
 			ColumnName: "publisher",
 		}
@@ -28,7 +29,7 @@ func BenchmarkColumnDescriptiveStatistics(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &ColumnDescriptiveStatistics{
+		q := &queries.ColumnDescriptiveStatistics{
 			TableName:  "ad_bids",
 			ColumnName: "bid_price",
 		}
@@ -42,7 +43,7 @@ func BenchmarkColumnTimeGrain(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &ColumnTimeGrain{
+		q := &queries.ColumnTimeGrain{
 			TableName:  "ad_bids",
 			ColumnName: "timestamp",
 		}
@@ -56,7 +57,7 @@ func BenchmarkColumnNumericHistogram(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &ColumnNumericHistogram{
+		q := &queries.ColumnNumericHistogram{
 			TableName:  "ad_bids",
 			ColumnName: "bid_price",
 		}
@@ -70,7 +71,7 @@ func BenchmarkColumnRugHistogram(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &ColumnRugHistogram{
+		q := &queries.ColumnRugHistogram{
 			TableName:  "ad_bids",
 			ColumnName: "bid_price",
 		}
@@ -84,7 +85,7 @@ func BenchmarkColumnTimeRange(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &ColumnTimeRange{
+		q := &queries.ColumnTimeRange{
 			TableName:  "ad_bids",
 			ColumnName: "timestamp",
 		}
@@ -98,7 +99,7 @@ func BenchmarkColumnCardinality(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &ColumnCardinality{
+		q := &queries.ColumnCardinality{
 			TableName:  "ad_bids",
 			ColumnName: "publisher",
 		}
@@ -112,7 +113,7 @@ func BenchmarkColumnTimeseries(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &ColumnTimeseries{
+		q := &queries.ColumnTimeseries{
 			TableName:           "ad_bids",
 			TimestampColumnName: "timestamp",
 			Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
@@ -136,7 +137,7 @@ func BenchmarkColumnTimeseriesSpark(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		q := &ColumnTimeseries{
+		q := &queries.ColumnTimeseries{
 			TableName:           "ad_bids",
 			TimestampColumnName: "timestamp",
 			Measures: []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
