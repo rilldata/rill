@@ -161,6 +161,21 @@ func BoldYellow(msg interface{}) string {
 	return color.New(color.FgYellow).Add(color.Bold).Sprint(msg)
 }
 
+// BoldRed returns a string formatted with red and bold.
+func BoldRed(msg interface{}) string {
+	return color.New(color.FgRed).Add(color.Bold).Sprint(msg)
+}
+
+// BoldWhite returns a string formatted with white and bold.
+func BoldWhite(msg interface{}) string {
+	return color.New(color.FgWhite).Add(color.Bold).Sprint(msg)
+}
+
+// Bold returns a string formatted with bold.
+func Bold(msg interface{}) string {
+	return color.New(color.Bold).Sprint(msg)
+}
+
 func (p *Printer) out() io.Writer {
 	if p.humanOut != nil {
 		return p.humanOut

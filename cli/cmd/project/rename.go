@@ -5,12 +5,12 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func RenameCmd(cfg *config.Config) *cobra.Command {
+func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, newName string
 
 	renameCmd := &cobra.Command{
@@ -19,6 +19,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 		Short: "Rename project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			cfg := ch.Config
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -26,7 +27,7 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			fmt.Println("Warn: Renaming an project would invalidate dashboard URLs")
+			ch.Printer.Println("Warn: Renaming an project would invalidate dashboard URLs")
 
 			if !cmd.Flags().Changed("project") && cfg.Interactive {
 				projectNames, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
@@ -58,9 +59,12 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Renamed project")
-			cmdutil.PrintlnSuccess(fmt.Sprintf("New web url is: %s\n", updatedProj.Project.FrontendUrl))
-			cmdutil.TablePrinter(toRow(updatedProj.Project))
+			ch.Printer.Println(printer.BoldGreen("Renamed project"))
+			ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("New web url is: %s\n", updatedProj.Project.FrontendUrl)))
+			err = ch.Printer.PrintResource(toRow(updatedProj.Project))
+			if err != nil {
+				return err
+			}
 
 			return nil
 		},

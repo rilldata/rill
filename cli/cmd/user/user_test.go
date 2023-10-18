@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
@@ -109,8 +110,9 @@ func TestUserWorkflow(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	fmt.Println("buf.String(): ", buf.String())
+	invites := strings.Split(buf.String(), "\n\n")[1]
 	inviteList := []Invites{}
-	err = json.Unmarshal([]byte(buf.String()), &inviteList)
+	err = json.Unmarshal([]byte(invites), &inviteList)
 	c.Assert(err, qt.IsNil)
 	expectedInviteList := []Invites{
 		{

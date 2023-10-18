@@ -6,28 +6,27 @@ import (
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func ProjectCmd(cfg *config.Config) *cobra.Command {
+func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	projectCmd := &cobra.Command{
 		Use:               "project",
 		Short:             "Manage projects",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch.Config), cmdutil.CheckOrganization(ch.Config)),
 	}
 
-	projectCmd.PersistentFlags().StringVar(&cfg.Org, "org", cfg.Org, "Organization Name")
-	projectCmd.AddCommand(ShowCmd(cfg))
-	projectCmd.AddCommand(StatusCmd(cfg))
-	projectCmd.AddCommand(EditCmd(cfg))
-	projectCmd.AddCommand(DeleteCmd(cfg))
-	projectCmd.AddCommand(ListCmd(cfg))
-	projectCmd.AddCommand(ReconcileCmd(cfg))
-	projectCmd.AddCommand(JwtCmd(cfg))
-	projectCmd.AddCommand(RenameCmd(cfg))
+	projectCmd.PersistentFlags().StringVar(&ch.Config.Org, "org", ch.Config.Org, "Organization Name")
+	projectCmd.AddCommand(ShowCmd(ch))
+	projectCmd.AddCommand(StatusCmd(ch))
+	projectCmd.AddCommand(EditCmd(ch))
+	projectCmd.AddCommand(DeleteCmd(ch))
+	projectCmd.AddCommand(ListCmd(ch))
+	projectCmd.AddCommand(ReconcileCmd(ch))
+	projectCmd.AddCommand(JwtCmd(ch))
+	projectCmd.AddCommand(RenameCmd(ch))
 	return projectCmd
 }
 

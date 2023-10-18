@@ -4,16 +4,17 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func EditCmd(cfg *config.Config) *cobra.Command {
+func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, description, prodBranch, path, region string
 	var public bool
 	var slots int
 	var prodTTL int64
+	cfg := ch.Config
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<project-name>]",
@@ -107,8 +108,11 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Updated project")
-			cmdutil.TablePrinter(toRow(updatedProj.Project))
+			ch.Printer.Println(printer.BoldGreen("Updated project"))
+			err = ch.Printer.PrintResource(toRow(updatedProj.Project))
+			if err != nil {
+				return err
+			}
 			return nil
 		},
 	}

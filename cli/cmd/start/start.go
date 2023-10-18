@@ -8,16 +8,16 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/spf13/cobra"
 )
 
 // StartCmd represents the start command
-func StartCmd(cfg *config.Config) *cobra.Command {
+func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var olapDriver string
 	var olapDSN string
 	var httpPort int
@@ -36,6 +36,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 		Short: "Build project and start web app",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			var projectPath string
 			if len(args) > 0 {
 				projectPath = args[0]
@@ -76,7 +77,7 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 				msg := fmt.Sprintf("Rill will create project files in %q. Do you want to continue?", displayPath)
 				confirm := cmdutil.ConfirmPrompt(msg, "", defval)
 				if !confirm {
-					cmdutil.PrintlnWarn("Aborted")
+					ch.Printer.Println(printer.BoldYellow("Aborted"))
 					return nil
 				}
 			}

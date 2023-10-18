@@ -5,40 +5,40 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 // LoginCmd is the command for logging into a Rill account.
-func LoginCmd(cfg *config.Config) *cobra.Command {
+func LoginCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Authenticate with the Rill API",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			ctx := cmd.Context()
 
 			// updating this as its not required to logout first and login again
 			if cfg.AdminTokenDefault != "" {
-				err := Logout(ctx, cfg)
+				err := Logout(ctx, ch)
 				if err != nil {
 					return err
 				}
 			}
 
 			// Login user
-			err := Login(ctx, cfg, "")
+			err := Login(ctx, ch, "")
 			if err != nil {
 				return err
 			}
 
 			// Set default org after login
-			err = SelectOrgFlow(ctx, cfg)
+			err = SelectOrgFlow(ctx, ch)
 			if err != nil {
 				return err
 			}
@@ -50,10 +50,11 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 	return cmd
 }
 
-func Login(ctx context.Context, cfg *config.Config, redirectURL string) error {
+func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	// In production, the REST and gRPC endpoints are the same, but in development, they're served on different ports.
 	// We plan to move to connect.build for gRPC, which will allow us to serve both on the same port in development as well.
 	// Until we make that change, this is a convenient hack for local development (assumes gRPC on port 9090 and REST on port 8080).
+	cfg := ch.Config
 	authURL := cfg.AdminURL
 	if strings.Contains(authURL, "http://localhost:9090") {
 		authURL = "http://localhost:8080"
@@ -69,12 +70,10 @@ func Login(ctx context.Context, cfg *config.Config, redirectURL string) error {
 		return err
 	}
 
-	bold := color.New(color.Bold)
-	bold.Printf("\nConfirmation Code: ")
-	boldGreen := color.New(color.FgGreen).Add(color.Bold)
-	boldGreen.Fprintln(color.Output, deviceVerification.UserCode)
+	ch.Printer.Print(printer.Bold("\nConfirmation Code: "))
+	ch.Printer.Println(printer.BoldGreen(deviceVerification.UserCode))
 
-	bold.Printf("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL)
+	ch.Printer.Print(printer.Bold(fmt.Sprintf("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL)))
 
 	_ = browser.Open(deviceVerification.VerificationCompleteURL)
 
@@ -89,11 +88,12 @@ func Login(ctx context.Context, cfg *config.Config, redirectURL string) error {
 	}
 	// set the default token to the one we just got
 	cfg.AdminTokenDefault = res1.AccessToken
-	bold.Print("Successfully logged in. Welcome to Rill!\n")
+	ch.Printer.Print(printer.Bold("Successfully logged in. Welcome to Rill!\n"))
 	return nil
 }
 
-func SelectOrgFlow(ctx context.Context, cfg *config.Config) error {
+func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper) error {
+	cfg := ch.Config
 	client, err := cmdutil.Client(cfg)
 	if err != nil {
 		return err
@@ -106,7 +106,7 @@ func SelectOrgFlow(ctx context.Context, cfg *config.Config) error {
 	}
 
 	if len(res.Organizations) == 0 {
-		cmdutil.PrintlnWarn("You are not part of an org. Run `rill org create` or `rill deploy` to create one.")
+		ch.Printer.Println(printer.BoldYellow("You are not part of an org. Run `rill org create` or `rill deploy` to create one."))
 		return nil
 	}
 
@@ -127,6 +127,6 @@ func SelectOrgFlow(ctx context.Context, cfg *config.Config) error {
 
 	cfg.Org = defaultOrg
 
-	fmt.Printf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg)
+	ch.Printer.Print(fmt.Sprintf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg))
 	return nil
 }

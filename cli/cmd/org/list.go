@@ -32,7 +32,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(res.Organizations) == 0 {
-				cmdutil.PrintlnWarn("No orgs found")
+				ch.Printer.Println(printer.BoldYellow("No orgs found"))
 				return nil
 			}
 

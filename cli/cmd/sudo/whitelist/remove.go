@@ -4,18 +4,19 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func RemoveCmd(cfg *config.Config) *cobra.Command {
+func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 	removeCmd := &cobra.Command{
 		Use:   "remove <org> <domain>",
 		Args:  cobra.ExactArgs(2),
 		Short: "Remove whitelist for an org and domain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			cfg := ch.Config
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -34,7 +35,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess(fmt.Sprintf("Removed whitelist for org %q and domain %q", org, domain))
+			ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("Removed whitelist for org %q and domain %q", org, domain)))
 
 			return nil
 		},

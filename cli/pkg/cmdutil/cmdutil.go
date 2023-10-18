@@ -88,11 +88,6 @@ func TablePrinter(v interface{}) {
 	fmt.Fprint(os.Stdout, b.String())
 }
 
-func PrintlnSuccess(str string) {
-	boldGreen := color.New(color.FgGreen).Add(color.Bold)
-	boldGreen.Fprintln(color.Output, str)
-}
-
 // Create admin client
 func Client(cfg *config.Config) (*client.Client, error) {
 	cliVersion := cfg.Version.Number
@@ -212,13 +207,18 @@ func PrintlnWarn(str string) {
 	boldYellow.Fprintln(color.Output, str)
 }
 
-func PrintUsers(users []*adminv1.User) {
+func PrintUsers(p *printer.Printer, users []*adminv1.User) error {
 	if len(users) == 0 {
-		PrintlnWarn("No users found")
-		return
+		p.Println(printer.BoldYellow("No users found"))
+		return nil
 	}
 
-	TablePrinter(toUsersTable(users))
+	err := p.PrintResource(toUsersTable(users))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return nil
 }
 
 func PrintMembers(p *printer.Printer, members []*adminv1.Member) error {

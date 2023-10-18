@@ -11,11 +11,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 )
 
-func GenerateCmd(rootCmd *cobra.Command, cfg *config.Config) *cobra.Command {
+func GenerateCmd(rootCmd *cobra.Command, ch *cmdutil.Helper) *cobra.Command {
+	cfg := ch.Config
+
 	docsCmd := &cobra.Command{
 		Use:    "generate",
 		Short:  "Generate CLI documentation",

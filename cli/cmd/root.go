@@ -134,27 +134,27 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	}
 
 	// Add sub-commands
-	rootCmd.AddCommand(start.StartCmd(cfg))
-	rootCmd.AddCommand(admin.AdminCmd(cfg))
-	rootCmd.AddCommand(runtime.RuntimeCmd(cfg))
-	rootCmd.AddCommand(docs.DocsCmd(cfg, rootCmd))
+	rootCmd.AddCommand(start.StartCmd(ch))
+	rootCmd.AddCommand(admin.AdminCmd(ch))
+	rootCmd.AddCommand(runtime.RuntimeCmd(ch))
+	rootCmd.AddCommand(docs.DocsCmd(ch, rootCmd))
 	rootCmd.AddCommand(completionCmd)
-	rootCmd.AddCommand(verifyInstallCmd(cfg))
+	rootCmd.AddCommand(verifyInstallCmd(ch))
 	rootCmd.AddCommand(versioncmd.VersionCmd())
-	rootCmd.AddCommand(upgrade.UpgradeCmd(cfg))
-	rootCmd.AddCommand(whoami.WhoamiCmd(cfg))
+	rootCmd.AddCommand(upgrade.UpgradeCmd(ch))
+	rootCmd.AddCommand(whoami.WhoamiCmd(ch))
 
 	// Add sub-commands for admin
 	// (This allows us to add persistent flags that apply only to the admin-related commands.)
 	adminCmds := []*cobra.Command{
 		org.OrgCmd(ch),
-		project.ProjectCmd(cfg),
-		deploy.DeployCmd(cfg),
+		project.ProjectCmd(ch),
+		deploy.DeployCmd(ch),
 		user.UserCmd(ch),
-		env.EnvCmd(cfg),
-		auth.LoginCmd(cfg),
-		auth.LogoutCmd(cfg),
-		sudo.SudoCmd(cfg),
+		env.EnvCmd(ch),
+		auth.LoginCmd(ch),
+		auth.LogoutCmd(ch),
+		sudo.SudoCmd(ch),
 		service.ServiceCmd(ch),
 	}
 	for _, cmd := range adminCmds {

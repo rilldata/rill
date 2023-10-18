@@ -21,7 +21,7 @@ func ServiceCmd(ch *cmdutil.Helper) *cobra.Command {
 	serviceCmd.AddCommand(CreateCmd(ch))
 	serviceCmd.AddCommand(RenameCmd(ch))
 	serviceCmd.AddCommand(DeleteCmd(ch))
-	serviceCmd.AddCommand(token.TokenCmd(cfg))
+	serviceCmd.AddCommand(token.TokenCmd(ch))
 
 	return serviceCmd
 }

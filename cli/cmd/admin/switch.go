@@ -7,6 +7,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/spf13/cobra"
 )
 
@@ -16,13 +17,14 @@ const (
 	devAdminURL     = "http://localhost:9090"
 )
 
-func SwitchCmd(cfg *config.Config) *cobra.Command {
+func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 	var env string
 	switchCmd := &cobra.Command{
 		Use:   "switch {stage|prod|dev}",
 		Short: "switch",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			if len(args) > 0 {
 				env = args[0]
 			}
@@ -61,8 +63,8 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 
 			cfg.AdminURL = url
 
-			cmdutil.PrintlnSuccess(fmt.Sprintf("Set default env to %q, url is %q", env, url))
-			err = auth.SelectOrgFlow(cmd.Context(), cfg)
+			ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("Set default env to %q, url is %q", env, url)))
+			err = auth.SelectOrgFlow(cmd.Context(), ch)
 			if err != nil {
 				return err
 			}
