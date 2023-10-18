@@ -4,7 +4,7 @@
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import TDDHeader from "./TDDHeader.svelte";
-  import TddNew from "./TDDNew.svelte";
+  import TDDTable from "./TDDTable.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     tableInteractionStore,
@@ -109,7 +109,7 @@
 />
 
 {#if formattedData}
-  <TddNew
+  <TDDTable
     {dimensionName}
     {metricViewName}
     {excludeMode}

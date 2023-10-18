@@ -5,7 +5,7 @@
   import type { SvelteComponent } from "svelte";
   import { useTDDContext } from "./context";
   import { toggleFilter } from "./time-dimension-details-store";
-  import { getCellComponent } from "./cell-renderings";
+  import { getCellComponent } from "../tdd-virtualized-inactive/cell-renderings";
 
   export let rowIdx: number;
   export let colIdx: number;

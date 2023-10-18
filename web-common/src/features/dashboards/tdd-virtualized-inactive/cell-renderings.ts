@@ -1,6 +1,6 @@
 import type { SvelteComponent } from "svelte";
-import DimensionCell from "./DimensionCell.svelte";
-import FormattedNumberCell from "./FormattedNumberCell.svelte";
+import DimensionCell from "../tdd-virtualized-inactive/DimensionCell.svelte";
+import FormattedNumberCell from "../tdd-virtualized-inactive/FormattedNumberCell.svelte";
 
 export type CellRendering = {
   cellComponent: typeof SvelteComponent;
