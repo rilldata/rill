@@ -5,7 +5,7 @@ import { activeMeasure } from "./active-measure";
 
 export const formattingSelectors = {
   /**
-   * Gets the sort type for the dash (value, percent, delta, etc.)
+   * the currently active measure's format preset.
    */
   activeMeasureFormatPreset: ([
     dashboard,
@@ -14,6 +14,11 @@ export const formattingSelectors = {
     (activeMeasure([dashboard, metricsSpecQueryResult])
       ?.formatPreset as FormatPreset) ?? FormatPreset.HUMANIZE,
 
+  /**
+   * A readable containing a function that formats values
+   * according to the active measure's format specification,
+   * whether it's a d3 format string or a format preset.
+   */
   activeMeasureFormatter: ([
     dashboard,
     metricsSpecQueryResult,

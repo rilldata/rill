@@ -19,8 +19,6 @@
   export let isFetching: boolean;
   export let dimensionDescription: string;
   export let hovered: boolean;
-  // export let contextColumn: LeaderboardContextColumn;
-  // export let sortType: SortType;
   export let isBeingCompared: boolean;
 
   const {
