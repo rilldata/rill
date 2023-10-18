@@ -29,7 +29,6 @@ export type StateManagers = {
   runtime: Writable<Runtime>;
   metricsViewName: Writable<string>;
   metricsStore: Readable<MetricsExplorerStoreType>;
-  metricsSpecStore: Readable<QueryObserverResult<V1MetricsViewSpec, RpcStatus>>;
   dashboardStore: Readable<MetricsExplorerEntity>;
   queryClient: QueryClient;
   setMetricsViewName: (s: string) => void;
@@ -90,13 +89,16 @@ export function createStateManagers({
     runtime: runtime,
     metricsViewName: metricsViewNameStore,
     metricsStore: metricsExplorerStore,
-    metricsSpecStore,
+
     queryClient,
     dashboardStore,
     setMetricsViewName: (name) => {
       metricsViewNameStore.set(name);
     },
     updateDashboard,
+    /**
+     * A collection of Readables that can be used to select data from the dashboard.
+     */
     selectors: createStateManagerReadables(dashboardStore, metricsSpecStore),
     /**
      * A collection of functions that update the dashboard data model.

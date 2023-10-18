@@ -73,8 +73,7 @@ function createReadablesFromSelectors<T extends SelectorFnsObj>(
       key,
       derived(
         // Note: creating a svelte derived store from multiple stores
-        // requires supplying a tuple of stores, and the objects contained
-        // in the readable in the tuple are passed into the update fn.
+        // requires supplying a tuple of stores.
         // To simplify the selector function, we pack this into a single
         // selectorFnArgs object.
         [dashboardStore, metricsSpecQueryResultStore],

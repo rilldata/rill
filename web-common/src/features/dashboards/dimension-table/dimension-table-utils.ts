@@ -379,10 +379,6 @@ export function prepareDimensionTableRows(
 ): DimensionTableRow[] {
   if (!queryRows || !queryRows.length) return [];
 
-  // const formatMap = Object.fromEntries(
-  //   measures.map((m) => [m.name, m.formatPreset as FormatPreset])
-  // );
-
   const formattersForMeasures = Object.fromEntries(
     measures.map((m) => [m.name, createMeasureValueFormatter(m)])
   );
