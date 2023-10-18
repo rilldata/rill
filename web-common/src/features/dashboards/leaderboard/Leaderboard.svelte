@@ -32,10 +32,7 @@
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
-  import {
-    getDimensionColumn,
-    prepareSortedQueryBody,
-  } from "../dashboard-utils";
+  import { prepareSortedQueryBody } from "../dashboard-utils";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -66,7 +63,6 @@
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
   $: displayName = dimension?.label || dimension?.name;
-  $: dimensionColumn = getDimensionColumn(dimension);
 
   $: measureQuery = useMetaMeasure(
     $runtime.instanceId,
@@ -106,8 +102,6 @@
 
   $: isBeingCompared =
     $dashboardStore?.selectedComparisonDimension === dimensionName;
-
-  $: contextColumn = $dashboardStore?.leaderboardContextColumn;
 
   $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
   $: sortType = $dashboardStore.dashboardSortType;

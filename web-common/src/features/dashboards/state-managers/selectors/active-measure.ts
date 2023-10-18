@@ -19,6 +19,9 @@ export const activeMeasure = ([
 
 export const activeMeasureSelectors = {
   activeMeasure,
+  /**
+   * is the currently active measure a summable measure?
+   */
   isSummableMeasure: ([dashboard, metricsSpecQueryResult]: SelectorFnArgs) =>
     isSummableMeasure(activeMeasure([dashboard, metricsSpecQueryResult])),
 };
