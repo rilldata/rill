@@ -26,6 +26,7 @@
 
   export let metricViewName: string;
   export let dimensionName: string;
+  export let comparing;
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -107,54 +108,56 @@
     </Chip>
   </div>
 
-  <div
-    class="flex items-center mr-4"
-    style:cursor="pointer"
-    style:grid-column-gap=".4rem"
-  >
-    <Tooltip distance={16} location="left">
-      <div class="mr-3 ui-copy-icon" style:grid-column-gap=".4rem">
-        <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
-          Exclude
-        </Switch>
-      </div>
-      <TooltipContent slot="tooltip-content">
-        <TooltipTitle>
-          <svelte:fragment slot="name">
-            Output {filterKey}s selected values
-          </svelte:fragment>
-        </TooltipTitle>
-        <TooltipShortcutContainer>
-          <div>Toggle to {otherFilterKey} values</div>
-          <Shortcut>Click</Shortcut>
-        </TooltipShortcutContainer>
-      </TooltipContent>
-    </Tooltip>
+  {#if comparing === "dimension"}
+    <div
+      class="flex items-center mr-4"
+      style:cursor="pointer"
+      style:grid-column-gap=".4rem"
+    >
+      <Tooltip distance={16} location="left">
+        <div class="mr-3 ui-copy-icon" style:grid-column-gap=".4rem">
+          <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
+            Exclude
+          </Switch>
+        </div>
+        <TooltipContent slot="tooltip-content">
+          <TooltipTitle>
+            <svelte:fragment slot="name">
+              Output {filterKey}s selected values
+            </svelte:fragment>
+          </TooltipTitle>
+          <TooltipShortcutContainer>
+            <div>Toggle to {otherFilterKey} values</div>
+            <Shortcut>Click</Shortcut>
+          </TooltipShortcutContainer>
+        </TooltipContent>
+      </Tooltip>
 
-    {#if !searchToggle}
-      <button
-        class="flex items-center ui-copy-icon"
-        in:fly={{ x: 10, duration: 300 }}
-        style:grid-column-gap=".2rem"
-        on:click={() => (searchToggle = !searchToggle)}
-      >
-        <SearchIcon size="16px" />
-        <span> Search </span>
-      </button>
-    {:else}
-      <div
-        transition:slideRight|local={{ leftOffset: 8 }}
-        class="flex items-center"
-      >
-        <Search bind:value={searchText} on:input={onSearch} />
+      {#if !searchToggle}
         <button
-          class="ui-copy-icon"
-          style:cursor="pointer"
-          on:click={() => closeSearchBar()}
+          class="flex items-center ui-copy-icon"
+          in:fly={{ x: 10, duration: 300 }}
+          style:grid-column-gap=".2rem"
+          on:click={() => (searchToggle = !searchToggle)}
         >
-          <Close />
+          <SearchIcon size="16px" />
+          <span> Search </span>
         </button>
-      </div>
-    {/if}
-  </div>
+      {:else}
+        <div
+          transition:slideRight|local={{ leftOffset: 8 }}
+          class="flex items-center"
+        >
+          <Search bind:value={searchText} on:input={onSearch} />
+          <button
+            class="ui-copy-icon"
+            style:cursor="pointer"
+            on:click={() => closeSearchBar()}
+          >
+            <Close />
+          </button>
+        </div>
+      {/if}
+    </div>
+  {/if}
 </div>

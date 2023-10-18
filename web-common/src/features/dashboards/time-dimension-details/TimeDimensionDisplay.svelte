@@ -61,6 +61,7 @@
 <TDDHeader
   {dimensionName}
   {metricViewName}
+  comparing={$timeDimensionDataStore?.comparing}
   on:search={(e) => {
     metricsExplorerStore.setSearchText(metricViewName, e.detail);
   }}
@@ -77,7 +78,7 @@
     {measureLabel}
     scrubPos={{ start: startScrubPos, end: endScrubPos }}
     sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
-    comparing={$timeDimensionDataStore.comparing}
+    comparing={$timeDimensionDataStore?.comparing}
     timeFormatter={$timeDimensionDataStore.timeFormatter}
     data={$timeDimensionDataStore.data}
   />
