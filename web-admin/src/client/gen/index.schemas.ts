@@ -32,6 +32,16 @@ export type AdminServiceSearchProjectNamesParams = {
   pageToken?: string;
 };
 
+export type AdminServicePullVirtualRepoParams = {
+  branch?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceGetRepoMetaParams = {
+  branch?: string;
+};
+
 export type AdminServiceUpdateServiceBody = {
   newName?: string;
 };
@@ -157,6 +167,13 @@ export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
 export interface V1WhitelistedDomain {
   domain?: string;
   role?: string;
+}
+
+export interface V1VirtualFile {
+  path?: string;
+  data?: string;
+  deleted?: boolean;
+  updatedOn?: string;
 }
 
 export interface V1UserQuotas {
@@ -330,6 +347,11 @@ export interface V1RemoveBookmarkResponse {
   [key: string]: any;
 }
 
+export interface V1PullVirtualRepoResponse {
+  files?: V1VirtualFile[];
+  nextPageToken?: string;
+}
+
 export interface V1ProjectPermissions {
   readProject?: boolean;
   manageProject?: boolean;
@@ -474,6 +496,12 @@ export interface V1IssueRepresentativeAuthTokenRequest {
 
 export interface V1GetUserResponse {
   user?: V1User;
+}
+
+export interface V1GetRepoMetaResponse {
+  gitUrl?: string;
+  gitUrlExpiresOn?: string;
+  gitSubpath?: string;
 }
 
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };

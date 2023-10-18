@@ -185,6 +185,10 @@ type DB interface {
 	DeleteBookmark(ctx context.Context, bookmarkID string) error
 
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
+
+	FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
+	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
+	DeleteVirtualFile(ctx context.Context, projectID, branch, path string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -663,4 +667,20 @@ type InsertBookmarkOptions struct {
 	DashboardName string `json:"dashboard_name"`
 	ProjectID     string `json:"project_id"`
 	UserID        string `json:"user_id"`
+}
+
+// VirtualFile represents an ad-hoc file for a project (not managed in Git)
+type VirtualFile struct {
+	Path      string    `db:"path"`
+	Data      []byte    `db:"data"`
+	Deleted   bool      `db:"deleted"`
+	UpdatedOn time.Time `db:"updated_on"`
+}
+
+// InsertVirtualFileOptions defines options for inserting a VirtualFile
+type InsertVirtualFileOptions struct {
+	ProjectID string
+	Branch    string
+	Path      string
+	Data      []byte
 }

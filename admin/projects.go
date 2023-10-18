@@ -17,7 +17,7 @@ import (
 
 // CreateProject creates a new project and provisions and reconciles a prod deployment for it.
 func (s *Service) CreateProject(ctx context.Context, org *database.Organization, userID string, opts *database.InsertProjectOptions) (*database.Project, error) {
-	// Check Github info is set (presently required to make a deployment)
+	// Check Github info is set (presently required for deployments)
 	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == "" {
 		return nil, fmt.Errorf("cannot create project without github info")
 	}
@@ -65,17 +65,14 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Provision prod deployment.
 	// Start using original context again since transaction in txCtx is done.
 	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
-		ProjectID:            proj.ID,
-		Region:               proj.Region,
-		GithubURL:            proj.GithubURL,
-		GithubInstallationID: proj.GithubInstallationID,
-		Subpath:              proj.Subpath,
-		ProdBranch:           proj.ProdBranch,
-		ProdVariables:        proj.ProdVariables,
-		ProdOLAPDriver:       proj.ProdOLAPDriver,
-		ProdOLAPDSN:          proj.ProdOLAPDSN,
-		ProdSlots:            proj.ProdSlots,
-		Annotations:          newDeploymentAnnotations(org, proj),
+		ProjectID:      proj.ID,
+		Region:         proj.Region,
+		ProdBranch:     proj.ProdBranch,
+		ProdVariables:  proj.ProdVariables,
+		ProdOLAPDriver: proj.ProdOLAPDriver,
+		ProdOLAPDSN:    proj.ProdOLAPDSN,
+		ProdSlots:      proj.ProdSlots,
+		Annotations:    newDeploymentAnnotations(org, proj),
 	})
 	if err != nil {
 		err2 := s.DB.DeleteProject(ctx, proj.ID)
@@ -182,12 +179,9 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	// It needs to be refactored when implementing preview deploys.
 	for _, d := range ds {
 		err := s.updateDeployment(ctx, d, &updateDeploymentOptions{
-			GithubURL:            opts.GithubURL,
-			GithubInstallationID: opts.GithubInstallationID,
-			Subpath:              proj.Subpath,
-			Branch:               opts.ProdBranch,
-			Variables:            opts.ProdVariables,
-			Annotations:          annotations,
+			Branch:      opts.ProdBranch,
+			Variables:   opts.ProdVariables,
+			Annotations: annotations,
 		})
 		if err != nil {
 			// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)
@@ -218,12 +212,9 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 
 			for _, d := range ds {
 				err := s.updateDeployment(ctx, d, &updateDeploymentOptions{
-					GithubURL:            proj.GithubURL,
-					GithubInstallationID: proj.GithubInstallationID,
-					Subpath:              proj.Subpath,
-					Branch:               proj.ProdBranch,
-					Variables:            proj.ProdVariables,
-					Annotations:          newDeploymentAnnotations(org, proj),
+					Branch:      proj.ProdBranch,
+					Variables:   proj.ProdVariables,
+					Annotations: newDeploymentAnnotations(org, proj),
 				})
 				if err != nil {
 					return err
@@ -250,17 +241,14 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 
 	// Provision new deployment
 	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
-		ProjectID:            proj.ID,
-		Region:               proj.Region,
-		GithubURL:            proj.GithubURL,
-		GithubInstallationID: proj.GithubInstallationID,
-		Subpath:              proj.Subpath,
-		ProdBranch:           proj.ProdBranch,
-		ProdVariables:        proj.ProdVariables,
-		ProdOLAPDriver:       proj.ProdOLAPDriver,
-		ProdOLAPDSN:          proj.ProdOLAPDSN,
-		ProdSlots:            proj.ProdSlots,
-		Annotations:          newDeploymentAnnotations(org, proj),
+		ProjectID:      proj.ID,
+		Region:         proj.Region,
+		ProdBranch:     proj.ProdBranch,
+		ProdVariables:  proj.ProdVariables,
+		ProdOLAPDriver: proj.ProdOLAPDriver,
+		ProdOLAPDSN:    proj.ProdOLAPDSN,
+		ProdSlots:      proj.ProdSlots,
+		Annotations:    newDeploymentAnnotations(org, proj),
 	})
 	if err != nil {
 		return nil, err

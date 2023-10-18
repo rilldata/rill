@@ -1263,6 +1263,18 @@ func (c *connection) DeleteBookmark(ctx context.Context, bookmarkID string) erro
 	return checkDeleteRow("bookmarks", res, err)
 }
 
+func (c *connection) FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*database.VirtualFile, error) {
+	panic("not implemented")
+}
+
+func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.InsertVirtualFileOptions) error {
+	panic("not implemented")
+}
+
+func (c *connection) DeleteVirtualFile(ctx context.Context, projectID, branch, path string) error {
+	panic("not implemented")
+}
+
 func checkUpdateRow(target string, res sql.Result, err error) error {
 	if err != nil {
 		return parseErr(target, err)
@@ -1345,6 +1357,8 @@ func parseErr(target string, err error) error {
 			return newAlreadyExistsErr("domain has already been added for the org")
 		case "service_name_idx":
 			return newAlreadyExistsErr("a service with that name already exists in the org")
+		case "virtual_files_pkey":
+			return newAlreadyExistsErr("a virtual file already exists at that path")
 		default:
 			if target == "" {
 				return database.ErrNotUnique
