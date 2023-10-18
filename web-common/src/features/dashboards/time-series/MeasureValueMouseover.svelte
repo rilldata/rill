@@ -24,15 +24,10 @@
 
   $: comparisonIsPositive = diff >= 0;
 
-  $: isDiffValid = !isNaN(
-    formatMeasurePercentageDifference((y - comparisonY) / comparisonY)?.int
-  );
+  $: isDiffValid = !isNaN(diff);
 
   $: diffLabel =
-    isDiffValid &&
-    numberPartsToString(
-      formatMeasurePercentageDifference((y - comparisonY) / comparisonY)
-    );
+    isDiffValid && numberPartsToString(formatMeasurePercentageDifference(diff));
 
   let lastAvailableCurrentY = 0;
   let lastAvailableComparisonY;

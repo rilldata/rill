@@ -2,9 +2,7 @@
 // Current dash persion has `prefix` key in JSON to add currecny etc.
 // We can provide a dropdown option in the table?? or regex??
 
-import { humanizedFormatterFactory } from "@rilldata/web-common/lib/number-formatting/humanizer";
 import {
-  FormatterFactoryOptions,
   NumberKind,
   NumberParts,
 } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
@@ -48,21 +46,6 @@ export const formatPresetToNumberKind = (type: FormatPreset | string) => {
       return NumberKind.ANY;
   }
 };
-
-/** This function is used primarily in the leaderboard and the detail tables. */
-export function humanizeDimTableValue(value: number, type: FormatPreset) {
-  if (type == FormatPreset.NONE) return value;
-  if (value === null || value === undefined) return null;
-
-  const numberKind = formatPresetToNumberKind(type);
-  const innerOptions: FormatterFactoryOptions = {
-    strategy: "default",
-    numberKind,
-  };
-
-  const formatter = humanizedFormatterFactory([value], innerOptions);
-  return formatter.stringFormat(value);
-}
 
 /**
  * Formatter for the comparison percentage differences.

@@ -1,26 +1,13 @@
-import {
-  Formatter,
-  FormatterFactory,
-  FormatterFactoryOptions,
-  NumberKind,
-} from "./humanizer-types";
+import { Formatter, FormatterFactory, NumberKind } from "./humanizer-types";
 import { IntTimesPowerOfTenFormatter } from "./strategies/IntTimesPowerOfTen";
 import { NonFormatter } from "./strategies/none";
-import {
-  IntervalFormatter,
-  formatMsInterval,
-  formatMsToDuckDbIntervalString,
-} from "./strategies/intervals";
+import { IntervalFormatter } from "./strategies/intervals";
 import { PerRangeFormatter } from "./strategies/per-range";
 import {
   defaultDollarOptions,
   defaultGenericNumOptions,
   defaultPercentOptions,
 } from "./strategies/per-range-default-options";
-import {
-  FormatPreset,
-  formatPresetToNumberKind,
-} from "@rilldata/web-common/features/dashboards/humanize-numbers";
 
 /**
  * This FormatterFactory is intended to be the user-facing
@@ -79,43 +66,3 @@ export const humanizedFormatterFactory: FormatterFactory = (
 
   return formatter;
 };
-
-export function humanizeDataType(value: unknown, type: FormatPreset): string {
-  if (value === undefined || value === null) return "";
-  if (typeof value !== "number") return value.toString();
-
-  const numberKind = formatPresetToNumberKind(type);
-
-  let innerOptions: FormatterFactoryOptions;
-
-  if (type === FormatPreset.NONE) {
-    innerOptions = {
-      strategy: "none",
-      numberKind,
-      padWithInsignificantZeros: false,
-    };
-  } else if (type === FormatPreset.INTERVAL) {
-    return formatMsInterval(value);
-  } else {
-    innerOptions = {
-      strategy: "default",
-      numberKind,
-    };
-  }
-  return humanizedFormatterFactory([value], innerOptions).stringFormat(value);
-}
-
-/**
- * This function is intended to provide a lossless
- * humanized string representation of a number in cases
- * where a raw number will be meaningless to the user.
- */
-export function humanizeDataTypeExpanded(
-  value: unknown,
-  type: FormatPreset
-): string {
-  if (type === FormatPreset.INTERVAL) {
-    return formatMsToDuckDbIntervalString(value as number);
-  }
-  return value.toString();
-}

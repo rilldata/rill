@@ -14,7 +14,6 @@ import type {
 import {
   FormatPreset,
   formatMeasurePercentageDifference,
-  humanizeDimTableValue,
 } from "../humanize-numbers";
 import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
 import type { VirtualizedTableConfig } from "@rilldata/web-common/components/virtualized-table/types";
@@ -25,6 +24,7 @@ import type { DimensionTableRow } from "./dimension-table-types";
 import { getFilterForDimension } from "../selectors";
 import { SortType } from "../proto-state/derived-types";
 import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
+import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -379,8 +379,12 @@ export function prepareDimensionTableRows(
 ): DimensionTableRow[] {
   if (!queryRows || !queryRows.length) return [];
 
-  const formatMap = Object.fromEntries(
-    measures.map((m) => [m.name, m.formatPreset as FormatPreset])
+  // const formatMap = Object.fromEntries(
+  //   measures.map((m) => [m.name, m.formatPreset as FormatPreset])
+  // );
+
+  const formattersForMeasures = Object.fromEntries(
+    measures.map((m) => [m.name, createMeasureValueFormatter(m)])
   );
 
   const tableRows: DimensionTableRow[] = queryRows.map((row) => {
@@ -392,7 +396,7 @@ export function prepareDimensionTableRows(
     const formattedVals: [string, string | number][] = row.measureValues.map(
       (m) => [
         "__formatted_" + m.measureName,
-        humanizeDimTableValue(m.baseValue as number, formatMap[m.measureName]),
+        formattersForMeasures[m.measureName](m.baseValue as number),
       ]
     );
 
@@ -407,12 +411,11 @@ export function prepareDimensionTableRows(
         (m) => m.measureName === activeMeasureName
       ) as V1MetricsViewComparisonValue;
 
-      rowOut[`${activeMeasureName}_delta`] = humanizeDimTableValue(
-        activeMeasure.deltaAbs as number,
-        formatMap[activeMeasureName]
-      );
-      rowOut[`${activeMeasureName}_delta_perc`] =
-        formatMeasurePercentageDifference(activeMeasure.deltaRel as number);
+      (rowOut[`${activeMeasureName}_delta`] = formattersForMeasures[
+        activeMeasureName
+      ](activeMeasure.deltaAbs as number)),
+        (rowOut[`${activeMeasureName}_delta_perc`] =
+          formatMeasurePercentageDifference(activeMeasure.deltaRel as number));
     }
 
     if (addPercentOfTotal) {
