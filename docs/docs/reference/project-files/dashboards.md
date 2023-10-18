@@ -41,7 +41,7 @@ _**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measur
   - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_ 
   - _**`ignore`**_ — hides the measure _(optional)_ 
   - _**`valid_percent_of_total`**_ — a boolean indicating whether percent-of-total values should be rendered for this measure _(optional)_ 
-  - _**`format_preset`**_ — one of a set of values that format dashboard measures. _(optional; default is humanize)_. Possible values include:
+  - _**`format_preset` or `format_d3`**_ — controls the formatting of this measure in the dashboard. If `format_d3` is used, a [valid d3-format string](https://d3js.org/d3-format) must be provided (if an invalid format string is supplied, measures will be formatted with the `humanize` format preset). If `format_preset` is used, measures will be formatted according to option specified below. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
       - _`humanize`_ — round off numbers in an opinionated way to thousands (K), millions (M), billions (B), etc
       - _`none`_ — raw output
       - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign
