@@ -70,6 +70,9 @@ export interface MetricsExplorerEntity {
   // user selected timezone
   selectedTimezone?: string;
 
+  // search text state for dimension tables
+  dimensionSearchText?: string;
+
   // flag to show/hide time comparison based on user preference.
   // This controls whether a time comparison is shown in e.g.
   // the line charts and bignums.

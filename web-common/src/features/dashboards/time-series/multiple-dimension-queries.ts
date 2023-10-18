@@ -16,6 +16,7 @@ import type { StateManagers } from "@rilldata/web-common/features/dashboards/sta
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getFilterForDimension } from "@rilldata/web-common/features/dashboards/selectors";
+import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 
 export interface DimensionDataItem {
   value: string;
@@ -89,8 +90,9 @@ export function getDimensionValuesForComparison(
               measureNames: measures,
               timeStart: timeControls.timeStart,
               timeEnd: timeControls.timeEnd,
-              filter: getFilterForDimension(
+              filter: getDimensionFilterWithSearch(
                 dashboardStore?.filters,
+                dashboardStore?.dimensionSearchText,
                 dimensionName
               ),
               limit: "250",

@@ -316,6 +316,12 @@ const metricViewReducers = {
     });
   },
 
+  setSearchText(name: string, searchText: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.dimensionSearchText = searchText;
+    });
+  },
+
   displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       setDisplayComparison(metricsExplorer, showTimeComparison);

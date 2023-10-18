@@ -58,7 +58,13 @@
   );
 </script>
 
-<TDDHeader {dimensionName} {metricViewName} />
+<TDDHeader
+  {dimensionName}
+  {metricViewName}
+  on:search={(e) => {
+    metricsExplorerStore.setSearchText(metricViewName, e.detail);
+  }}
+/>
 
 {#if $timeDimensionDataStore?.data}
   <TddNew
