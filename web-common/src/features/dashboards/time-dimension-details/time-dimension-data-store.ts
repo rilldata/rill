@@ -111,14 +111,6 @@ function prepareDimensionData(
     })
   );
 
-  // let columnHeaderData = new Array(columnCount).fill([{ value: null }]);
-
-  // if (data?.[0]?.data) {
-  //   columnHeaderData = (
-  //     isAllTime ? data?.[0]?.data?.slice(1) : data?.[0]?.data?.slice(1, -1)
-  //   )?.map((v) => [{ value: v.ts }]);
-  // }
-
   let body = [
     (isAllTime ? totalsData?.slice(1) : totalsData?.slice(1, -1))?.map((v) =>
       v[measureName] ? humanizeDataType(v[measureName], formatPreset) : null
