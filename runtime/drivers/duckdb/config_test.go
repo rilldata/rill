@@ -1,9 +1,16 @@
 package duckdb
 
 import (
+	"context"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/rilldata/rill/runtime/drivers"
+	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestConfig(t *testing.T) {
@@ -69,4 +76,26 @@ func TestConfig(t *testing.T) {
 	require.Equal(t, "duck.db", cfg.DBFilePath)
 	require.Equal(t, "duck.db?max_memory=2GB", cfg.DSN)
 	require.Equal(t, 4, cfg.PoolSize)
+}
+
+func Test_specialCharInPath(t *testing.T) {
+	tempDir := t.TempDir()
+	path := filepath.Join(tempDir, "let's t@st \"weird\" dirs")
+	err := os.Mkdir(path, fs.ModePerm)
+	require.NoError(t, err)
+
+	dbFile := filepath.Join(path, "st@g3's.db")
+	conn, err := Driver{}.Open(map[string]any{"dsn": dbFile, "memory_limit_gb": "4", "cpu": "2"}, false, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	config := conn.(*connection).config
+	require.Equal(t, filepath.Join(path, "st@g3's.db?max_memory=4GB&threads=1"), config.DSN)
+	require.Equal(t, 2, config.PoolSize)
+
+	olap, ok := conn.AsOLAP("")
+	require.True(t, ok)
+
+	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT 1"})
+	require.NoError(t, err)
+	require.NoError(t, res.Close())
+	require.NoError(t, conn.Close())
 }

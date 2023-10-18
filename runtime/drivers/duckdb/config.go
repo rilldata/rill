@@ -84,11 +84,8 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	}
 
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
-	uri.RawQuery = qry.Encode()
-	cfg.DSN, err = url.QueryUnescape(uri.String())
-	if err != nil {
-		return nil, fmt.Errorf("could not unescape dsn: %w", err)
-	}
+	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
+	cfg.DSN = uri.Path + "?" + qry.Encode()
 	// Check pool size
 	if cfg.PoolSize < 2 {
 		return nil, fmt.Errorf("duckdb pool size must be >= 1")
