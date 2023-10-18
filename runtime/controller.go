@@ -81,6 +81,7 @@ type Controller struct {
 	catalog     *catalogCache
 	// subscribers tracks subscribers to catalog events.
 	subscribers      map[int]SubscribeCallback
+	subscribersMu    sync.Mutex
 	nextSubscriberID int
 	// idleWaits tracks goroutines waiting for the controller to become idle.
 	idleWaits      map[int]idleWait
@@ -251,14 +252,14 @@ func (c *Controller) Run(ctx context.Context) error {
 			c.catalog.resetEvents()
 			c.mu.Unlock()
 
-			// Need a read lock to prevent c.subscribers from being modified while we're iterating over it.
-			c.mu.RLock()
+			// Just need subscribersMu to prevent c.subscribers from being modified while we're iterating over it.
+			c.subscribersMu.Lock()
 			for _, fn := range c.subscribers {
 				for _, e := range events {
 					fn(e.event, e.name, e.resource)
 				}
 			}
-			c.mu.RUnlock()
+			c.subscribersMu.Unlock()
 		case <-ctx.Done(): // We've been asked to stop
 			stop = true
 			break
@@ -427,22 +428,22 @@ type SubscribeCallback func(e runtimev1.ResourceEvent, n *runtimev1.ResourceName
 
 // Subscribe registers a callback that will receive resource update events.
 // The same callback function will not be invoked concurrently.
-// The callback function is invoked under a lock and must not call the controller.
+// The callback function is invoked from the event loop, so it should avoid waiting for any action from the controller.
 func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
 
-	c.mu.Lock()
+	c.subscribersMu.Lock()
 	id := c.nextSubscriberID
 	c.nextSubscriberID++
 	c.subscribers[id] = fn
-	c.mu.Unlock()
+	c.subscribersMu.Unlock()
 
 	defer func() {
-		c.mu.Lock()
+		c.subscribersMu.Lock()
 		delete(c.subscribers, id)
-		c.mu.Unlock()
+		c.subscribersMu.Unlock()
 	}()
 
 	for {
