@@ -95,7 +95,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 }
 
 func generateDSN(path, encodedQuery string) string {
-	if len(encodedQuery) == 0 {
+	if encodedQuery == "" {
 		return path
 	}
 	return path + "?" + encodedQuery
