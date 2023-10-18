@@ -10,8 +10,7 @@ RUN groupadd -g 1000 rill \
     && useradd -m -u 1000 -s /bin/sh -g rill rill
 USER rill
 
-COPY scripts/extensions.sh .
-RUN ./extensions.sh
+RUN rill runtime install-duckdb-extensions
 
 ENTRYPOINT ["rill"]
 CMD ["start"]
