@@ -10,12 +10,11 @@
   import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
-  import {
-    formatMeasurePercentageDifference,
-    FormatPreset,
-  } from "../humanize-numbers";
+
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number;
@@ -39,11 +38,14 @@
 
   $: valueIsPresent = value !== undefined && value !== null;
 
-  $: isComparisonPositive = diff >= 0;
   const [send, receive] = crossfade({ fallback: fly });
 
-  $: diff = comparisonValue ? value - comparisonValue : 0;
+  $: diff =
+    valueIsPresent && comparisonValue !== undefined
+      ? value - comparisonValue
+      : 0;
   $: noChange = !comparisonValue;
+  $: isComparisonPositive = diff >= 0;
 
   $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
     diff

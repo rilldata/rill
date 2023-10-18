@@ -1,10 +1,10 @@
+import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+import { format as d3format } from "d3-format";
 import {
   FormatPreset,
   formatPresetToNumberKind,
-} from "@rilldata/web-common/features/dashboards/humanize-numbers";
-import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
-import { format as d3format } from "d3-format";
-import type { FormatterFactoryOptions } from "./humanizer-types";
+  type FormatterFactoryOptions,
+} from "./humanizer-types";
 import {
   formatMsInterval,
   formatMsToDuckDbIntervalString,

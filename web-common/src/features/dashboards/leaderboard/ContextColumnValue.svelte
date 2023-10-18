@@ -3,10 +3,8 @@
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
   import { getStateManagers } from "../state-managers/state-managers";
   import type { LeaderboardItemData } from "./leaderboard-utils";
-  import {
-    formatMeasurePercentageDifference,
-    formatProperFractionAsPercent,
-  } from "../humanize-numbers";
+  import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
+  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 
   export let itemData: LeaderboardItemData;
 

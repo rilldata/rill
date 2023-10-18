@@ -5,9 +5,9 @@
 
   import LeaderboardListItem from "../LeaderboardListItem.svelte";
 
-  import { FormatPreset } from "../../humanize-numbers";
   import type { LeaderboardItemData } from "../leaderboard-utils";
   import { LeaderboardContextColumn } from "../../leaderboard-context-column";
+  import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
   const atLeastOneActive = true;
   const filterExcludeMode = true;

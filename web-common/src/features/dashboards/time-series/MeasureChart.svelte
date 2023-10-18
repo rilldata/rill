@@ -32,8 +32,8 @@
   import ChartBody from "./ChartBody.svelte";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
-  import { formatPresetToNumberKind } from "../humanize-numbers";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
@@ -65,7 +65,7 @@
     v.toString();
 
   $: mouseoverFormat = createMeasureValueFormatter(measure);
-  $: numberKind = formatPresetToNumberKind(measure?.formatPreset);
+  $: numberKind = numberKindForMeasure(measure);
 
   export let tweenProps = { duration: 400, easing: cubicOut };
 

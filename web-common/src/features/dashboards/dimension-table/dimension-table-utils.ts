@@ -11,10 +11,7 @@ import type {
   V1MetricsViewFilter,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
-import {
-  FormatPreset,
-  formatMeasurePercentageDifference,
-} from "../humanize-numbers";
+
 import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
 import type { VirtualizedTableConfig } from "@rilldata/web-common/components/virtualized-table/types";
 
@@ -25,6 +22,8 @@ import { getFilterForDimension } from "../selectors";
 import { SortType } from "../proto-state/derived-types";
 import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
