@@ -257,6 +257,9 @@ func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver
 	}
 
 	handle, err := drivers.Open(driver, config, shared, activityClient, logger)
+	if err == nil && ctx.Err() != nil {
+		err = fmt.Errorf("timed out while opening driver %q", driver)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -265,7 +268,7 @@ func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver
 	if err != nil {
 		handle.Close()
 		if errors.Is(err, ctx.Err()) {
-			return nil, fmt.Errorf("migration for driver %q timed out: %w", driver, err)
+			err = fmt.Errorf("timed out while migrating driver %q: %w", driver, err)
 		}
 		return nil, err
 	}
