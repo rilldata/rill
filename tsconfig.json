@@ -25,6 +25,7 @@
     "baseUrl": ".",
     "allowJs": true,
     "checkJs": true,
+    "strictNullChecks": true,
     "paths": {
       "@rilldata/web-admin/*": ["web-admin/src/*"],
       "@rilldata/web-auth/*": ["web-auth/src/*"],
