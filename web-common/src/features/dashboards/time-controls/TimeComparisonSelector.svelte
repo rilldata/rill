@@ -13,12 +13,17 @@ This component needs to do the following:
   } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import DefaultTimeRangeMenuItem from "@rilldata/web-common/features/dashboards/time-controls/DefaultTimeRangeMenuItem.svelte";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
   import {
     NO_COMPARISON_LABEL,
     TIME_COMPARISON,
   } from "@rilldata/web-common/lib/time/config";
+  import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
@@ -42,6 +47,20 @@ This component needs to do the following:
   export let comparisonOptions: TimeComparisonOption[];
 
   $: comparisonOption = selectedComparison?.name;
+
+  const ctx = getStateManagers();
+  const timeControlsStore = useTimeControlStore(ctx);
+  const metaQuery = useMetaQuery(ctx);
+
+  $: showDefaultItem = !(
+    $metaQuery.data?.defaultComparison?.timeRange in TimeComparisonOption
+  );
+  let defaultLabel: string;
+  $: if (showDefaultItem && $metaQuery.data?.defaultComparison?.timeRange) {
+    defaultLabel = `previous ${humaniseISODuration(
+      $metaQuery.data?.defaultComparison?.timeRange
+    ).toLowerCase()}`;
+  }
 
   /** compile the comparison options */
   let options: {
@@ -92,6 +111,14 @@ This component needs to do the following:
     });
   };
 
+  const onDefaultRangeSelect = () => {
+    dispatch("select-comparison", {
+      name: $timeControlsStore.defaultComparisonTimeRange.name,
+      start: $timeControlsStore.defaultComparisonTimeRange.start,
+      end: $timeControlsStore.defaultComparisonTimeRange.end,
+    });
+  };
+
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
 
@@ -109,7 +136,9 @@ This component needs to do the following:
   }
 
   $: label = showComparison
-    ? TIME_COMPARISON[comparisonOption]?.label
+    ? comparisonOption === TimeComparisonOption.DEFAULT
+      ? defaultLabel
+      : TIME_COMPARISON[comparisonOption]?.label
     : NO_COMPARISON_LABEL;
 
   $: intermediateSelection = showComparison
@@ -133,8 +162,8 @@ This component needs to do the following:
       <div class="flex items-center gap-x-3">
         <span class="ui-copy-icon"><ClockCircle size="16px" /></span>
         <span
-          style:transform="translateY(-1px)"
-          class="font-normal justify-center">{label}</span
+          class="font-normal justify-center"
+          style:transform="translateY(-1px)">{label}</span
         >
       </div>
     </SelectorButton>
@@ -148,6 +177,27 @@ This component needs to do the following:
     on:escape={toggleFloatingElement}
     slot="floating-element"
   >
+    {#if showDefaultItem && $timeControlsStore.defaultComparisonTimeRange?.name}
+      <MenuItem
+        animateSelect={true}
+        on:before-select={() => {
+          intermediateSelection = TimeComparisonOption.DEFAULT;
+        }}
+        on:select={() => {
+          onDefaultRangeSelect();
+          toggleFloatingElement();
+        }}
+      >
+        <div class="w-full flex flex-row flex-grow items-center">
+          <div
+            class:font-bold={intermediateSelection ===
+              TimeComparisonOption.DEFAULT}
+          >
+            {defaultLabel}
+          </div>
+        </div>
+      </MenuItem>
+    {/if}
     {#each options as option}
       {@const preset = TIME_COMPARISON[option.name]}
       <MenuItem

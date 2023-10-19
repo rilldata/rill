@@ -59,7 +59,9 @@ export type TimeControlState = {
   // Computed properties from all time range query
   minTimeGrain?: V1TimeGrain;
   allTimeRange?: TimeRange;
+  // Computed properties from dashboard config
   defaultTimeRange?: TimeRange;
+  defaultComparisonTimeRange?: DashboardTimeControls;
 
   ready?: boolean;
 } & TimeRangeState &
@@ -120,6 +122,28 @@ export function createTimeControlStore(ctx: StateManagers) {
         allTimeRange.end,
         metricsExplorer.selectedTimezone
       );
+      let defaultComparisonTimeRange: DashboardTimeControls;
+      if (metricsView.data?.defaultComparison?.timeRange) {
+        const comparisonOption =
+          TimeComparisonOption[
+            metricsView.data?.defaultComparison?.timeRange
+          ] ?? TimeComparisonOption.DEFAULT;
+        const comparisonRange = getTimeComparisonParametersForComponent(
+          comparisonOption,
+          allTimeRange.start,
+          allTimeRange.end,
+          metricsExplorer.selectedTimeRange.start,
+          metricsExplorer.selectedTimeRange.end,
+          metricsView.data.defaultComparison.timeRange
+        );
+        if (comparisonRange.isComparisonRangeAvailable) {
+          defaultComparisonTimeRange = {
+            name: comparisonOption,
+            start: comparisonRange.start,
+            end: comparisonRange.end,
+          };
+        }
+      }
 
       const timeRangeState = calculateTimeRangePartial(
         metricsExplorer,
@@ -144,6 +168,7 @@ export function createTimeControlStore(ctx: StateManagers) {
         minTimeGrain,
         allTimeRange,
         defaultTimeRange,
+        defaultComparisonTimeRange,
         ready: true,
 
         ...timeRangeState,
@@ -366,7 +391,10 @@ function getComparisonTimeRange(
         name: comparisonOption,
       };
     }
-  } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
+  } else if (
+    comparisonTimeRange.name === TimeComparisonOption.CUSTOM ||
+    comparisonTimeRange.name === TimeComparisonOption.DEFAULT
+  ) {
     selectedComparisonTimeRange = comparisonTimeRange;
   } else if (!metricsExplorer.showTimeComparison) {
     return undefined;

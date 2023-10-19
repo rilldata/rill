@@ -63,45 +63,41 @@ function setDefaultComparisonTimeRange(
     return;
   }
 
-  let comparisonOptionName: string;
-  let comparisonStart: Date;
-  let comparisonEnd: Date;
+  let comparisonOption: TimeComparisonOption;
+
   if (metricsView.defaultComparison.timeRange) {
-    const timeRange = isoDurationToTimeRange(
-      metricsView.defaultComparison.timeRange,
-      new Date(fullTimeRange.timeRangeSummary.max),
-      get(getLocalUserPreferences()).timeZone
-    );
-    comparisonStart = timeRange.startTime;
-    comparisonEnd = timeRange.endTime;
-    comparisonOptionName = TimeComparisonOption.CONTIGUOUS;
+    if (metricsView.defaultComparison.timeRange in TimeComparisonOption) {
+      // if the default is one of the presets just select that
+      comparisonOption =
+        TimeComparisonOption[metricsView.defaultComparison.timeRange];
+    } else {
+      // else set it to default
+      comparisonOption = TimeComparisonOption.DEFAULT;
+    }
   } else {
     // else get the default preset for the time range
     const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
-    const comparisonOption = DEFAULT_TIME_RANGES[preset]
+    comparisonOption = DEFAULT_TIME_RANGES[preset]
       ?.defaultComparison as TimeComparisonOption;
     if (!comparisonOption) return;
-
-    const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
-    const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
-    const comparisonRange = getTimeComparisonParametersForComponent(
-      comparisonOption,
-      fullTimeStart,
-      fullTimeEnd,
-      metricsExplorer.selectedTimeRange.start,
-      metricsExplorer.selectedTimeRange.end
-    );
-    if (!comparisonRange.isComparisonRangeAvailable) return;
-
-    comparisonOptionName = comparisonOption;
-    comparisonStart = comparisonRange.start;
-    comparisonEnd = comparisonRange.end;
   }
 
+  const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
+  const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
+  const comparisonRange = getTimeComparisonParametersForComponent(
+    comparisonOption,
+    fullTimeStart,
+    fullTimeEnd,
+    metricsExplorer.selectedTimeRange.start,
+    metricsExplorer.selectedTimeRange.end,
+    metricsView.defaultComparison.timeRange
+  );
+  if (!comparisonRange.isComparisonRangeAvailable) return;
+
   metricsExplorer.selectedComparisonTimeRange = {
-    name: comparisonOptionName,
-    start: comparisonStart,
-    end: comparisonEnd,
+    name: comparisonOption,
+    start: comparisonRange.start,
+    end: comparisonRange.end,
   };
   metricsExplorer.showTimeComparison = true;
   metricsExplorer.leaderboardContextColumn =

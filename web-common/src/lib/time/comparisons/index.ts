@@ -48,6 +48,21 @@ export function getComparisonRange(
   };
 }
 
+export function getComparisonRangeForISODuration(
+  start: Date,
+  end: Date,
+  isoDuration: string
+) {
+  const transform = {
+    operationType: TimeOffsetType.SUBTRACT,
+    duration: isoDuration,
+  };
+  return {
+    start: transformDate(start, [transform]),
+    end: transformDate(end, [transform]),
+  };
+}
+
 /**
  * get the comparison range for a scrub such that
  * it aligns with the scrub start and end.
@@ -122,7 +137,8 @@ function isLastPeriodDuplicate(start: Date, end: Date) {
   const comparisonOptions = [...Object.values(TimeComparisonOption)].filter(
     (option) =>
       option !== TimeComparisonOption.CUSTOM &&
-      option !== TimeComparisonOption.CONTIGUOUS
+      option !== TimeComparisonOption.CONTIGUOUS &&
+      option !== TimeComparisonOption.DEFAULT
   );
 
   return comparisonOptions.some((option) => {
@@ -157,7 +173,10 @@ export function getAvailableComparisonsForTimeRange(
   acceptedComparisons: TimeComparisonOption[] = []
 ) {
   let comparisons = comparisonOptions.filter((comparison) => {
-    if (comparison === TimeComparisonOption.CUSTOM) {
+    if (
+      comparison === TimeComparisonOption.CUSTOM ||
+      comparison === TimeComparisonOption.DEFAULT
+    ) {
       return false;
     }
 
@@ -186,10 +205,11 @@ export function getAvailableComparisonsForTimeRange(
 /** A convenience function that gets comparison range and states whether it is within bounds. */
 export function getTimeComparisonParametersForComponent(
   comparisonOption: TimeComparisonOption,
-  boundStart,
-  boundEnd,
-  currentStart,
-  currentEnd
+  boundStart: Date,
+  boundEnd: Date,
+  currentStart: Date,
+  currentEnd: Date,
+  defaultISODuration?: string
 ) {
   if (boundStart === undefined || currentStart === undefined) {
     return {
@@ -199,23 +219,30 @@ export function getTimeComparisonParametersForComponent(
     };
   }
 
-  const { start, end } = getComparisonRange(
-    currentStart,
-    currentEnd,
-    comparisonOption
-  );
+  let range: ReturnType<typeof getComparisonRange>;
 
-  const isComparisonRangeAvailable = isComparisonInsideBounds(
-    boundStart,
-    boundEnd,
-    start,
-    end,
-    comparisonOption
-  );
+  if (comparisonOption === TimeComparisonOption.DEFAULT) {
+    if (!defaultISODuration) {
+      return {
+        start: undefined,
+        end: undefined,
+        isComparisonRangeAvailable: false,
+      };
+    }
+    range = getComparisonRangeForISODuration(
+      currentStart,
+      currentEnd,
+      defaultISODuration
+    );
+  } else {
+    range = getComparisonRange(currentStart, currentEnd, comparisonOption);
+  }
+
+  const isComparisonRangeAvailable =
+    range.start >= boundStart && range.end <= boundEnd;
 
   return {
-    start,
-    end,
+    ...range,
     isComparisonRangeAvailable,
   };
 }

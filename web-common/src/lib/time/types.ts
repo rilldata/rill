@@ -180,6 +180,7 @@ export type AvailableTimeGrain = Exclude<
 export enum TimeComparisonOption {
   CONTIGUOUS = "CONTIGUOUS",
   CUSTOM = "CUSTOM_COMPARISON_RANGE",
+  DEFAULT = "DEFAULT",
   DAY = "P1D",
   WEEK = "P1W",
   MONTH = "P1M",
