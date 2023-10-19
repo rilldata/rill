@@ -119,13 +119,10 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
-	ctrl, err := rt.Controller(inst.ID)
+	ctrl, err := rt.Controller(context.Background(), inst.ID)
 	require.NoError(t, err)
 
 	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
-	require.NoError(t, err)
-
-	err = ctrl.WaitUntilReady(context.Background())
 	require.NoError(t, err)
 
 	err = ctrl.WaitUntilIdle(context.Background(), opts.WatchRepo)
@@ -184,13 +181,10 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
-	ctrl, err := rt.Controller(inst.ID)
+	ctrl, err := rt.Controller(context.Background(), inst.ID)
 	require.NoError(t, err)
 
 	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
-	require.NoError(t, err)
-
-	err = ctrl.WaitUntilReady(context.Background())
 	require.NoError(t, err)
 
 	err = ctrl.WaitUntilIdle(context.Background(), false)
