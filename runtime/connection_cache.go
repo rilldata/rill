@@ -264,6 +264,9 @@ func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver
 	err = handle.Migrate(ctx)
 	if err != nil {
 		handle.Close()
+		if errors.Is(err, ctx.Err()) {
+			return nil, fmt.Errorf("migration for driver %q timed out: %w", driver, err)
+		}
 		return nil, err
 	}
 	return handle, nil
