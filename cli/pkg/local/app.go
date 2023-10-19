@@ -232,12 +232,7 @@ func (a *App) AwaitInitialReconcile(strict bool) (err error) {
 		}
 	}()
 
-	err = a.Runtime.WaitUntilReady(a.Context, a.Instance.ID)
-	if err != nil {
-		return err
-	}
-
-	controller, err := a.Runtime.Controller(a.Instance.ID)
+	controller, err := a.Runtime.Controller(a.Context, a.Instance.ID)
 	if err != nil {
 		return err
 	}

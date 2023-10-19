@@ -19,7 +19,7 @@ import (
 
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
 
-const migrateTimeout = 30 * time.Second
+const migrateTimeout = 2 * time.Minute
 
 // connectionCache is a thread-safe cache for open connections.
 // Connections should preferably be opened only via the connection cache.
@@ -257,6 +257,9 @@ func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver
 	}
 
 	handle, err := drivers.Open(driver, config, shared, activityClient, logger)
+	if err == nil && ctx.Err() != nil {
+		err = fmt.Errorf("timed out while opening driver %q", driver)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -264,6 +267,9 @@ func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver
 	err = handle.Migrate(ctx)
 	if err != nil {
 		handle.Close()
+		if errors.Is(err, ctx.Err()) {
+			err = fmt.Errorf("timed out while migrating driver %q: %w", driver, err)
+		}
 		return nil, err
 	}
 	return handle, nil
