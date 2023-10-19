@@ -31,8 +31,8 @@ var tracer = otel.Tracer("github.com/rilldata/rill/runtime/controller")
 // errCyclicDependency is set as the error on resources that can't be reconciled due to a cyclic dependency
 var errCyclicDependency = errors.New("cannot be reconciled due to cyclic dependency")
 
-// errControllerNotRunning is returned from controller functions that require the controller to be running
-var errControllerNotRunning = errors.New("controller is not running")
+// errControllerClosed is returned from controller functions that require the controller to be running
+var errControllerClosed = errors.New("controller is closed")
 
 // Reconciler implements reconciliation logic for all resources of a specific kind.
 // Reconcilers are managed and invoked by a Controller.
@@ -73,15 +73,13 @@ type Controller struct {
 	Logger      *slog.Logger
 	Activity    activity.Client
 	mu          sync.RWMutex
-	running     atomic.Bool   // Indicates if the controller is running
-	ready       chan struct{} // Closed when the controller transitions to running
-	closed      chan struct{} // Closed when the controller is closed
-	initErr     error         // error in initialising controller
 	reconcilers map[string]Reconciler
 	catalog     *catalogCache
+	// Status indicators
+	closed   atomic.Bool   // Indicates if the controller is running
+	closedCh chan struct{} // Closed when the controller is closed
 	// subscribers tracks subscribers to catalog events.
 	subscribers      map[int]SubscribeCallback
-	subscribersMu    sync.Mutex
 	nextSubscriberID int
 	// idleWaits tracks goroutines waiting for the controller to become idle.
 	idleWaits      map[int]idleWait
@@ -100,13 +98,12 @@ type Controller struct {
 }
 
 // NewController creates a new Controller
-func NewController(rt *Runtime, instanceID string, logger *zap.Logger, ac activity.Client) (*Controller, error) {
+func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *zap.Logger, ac activity.Client) (*Controller, error) {
 	c := &Controller{
 		Runtime:        rt,
 		InstanceID:     instanceID,
 		Activity:       ac,
-		ready:          make(chan struct{}),
-		closed:         make(chan struct{}),
+		closedCh:       make(chan struct{}),
 		reconcilers:    make(map[string]Reconciler),
 		subscribers:    make(map[int]SubscribeCallback),
 		idleWaits:      make(map[int]idleWait),
@@ -125,35 +122,21 @@ func NewController(rt *Runtime, instanceID string, logger *zap.Logger, ac activi
 	}
 	c.Logger = slog.New(zapslog.HandlerOptions{LoggerName: "console"}.New(logger.Core()))
 
+	cc, err := newCatalogCache(ctx, c, c.InstanceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create catalog cache: %w", err)
+	}
+	c.catalog = cc
+
 	return c, nil
 }
 
-// Run starts and runs the controller's event loop. It returns when ctx is cancelled or an unrecoverable error occurs.
+// Run starts and runs the controller's event loop.
+// It returns when ctx is cancelled or an unrecoverable error occurs. Before returning, it closes the controller, so it must only be called once.
 // The event loop schedules/invokes resource reconciliation and periodically flushes catalog changes to persistent storage.
 // The implementation centers around these internal functions: enqueue, processQueue (uses markPending, trySchedule, invoke), and processCompletedInvocation.
 // See their docstrings for further details.
 func (c *Controller) Run(ctx context.Context) error {
-	cc, err := newCatalogCache(ctx, c, c.InstanceID)
-	if err != nil {
-		c.initErr = err
-		close(c.closed)
-		return fmt.Errorf("failed to create catalog cache: %w", err)
-	}
-	c.catalog = cc
-
-	if c.running.Swap(true) {
-		panic("controller is already running")
-	}
-
-	// Check we are still the leader
-	err = c.catalog.checkLeader(ctx)
-	if err != nil {
-		c.initErr = err
-		close(c.closed)
-		_ = c.catalog.close(ctx)
-		return err
-	}
-
 	// Initially enqueue all resources
 	c.mu.Lock()
 	for _, rs := range c.catalog.resources {
@@ -195,9 +178,6 @@ func (c *Controller) Run(ctx context.Context) error {
 		timelineTimer.Reset(d)
 	}
 
-	// Open for business
-	close(c.ready)
-
 	// Run event loop
 	var stop bool
 	var loopErr error
@@ -216,7 +196,7 @@ func (c *Controller) Run(ctx context.Context) error {
 			c.mu.Unlock()
 		case inv := <-c.completed: // A reconciler invocation has completed
 			c.mu.Lock()
-			err = c.processCompletedInvocation(inv)
+			err := c.processCompletedInvocation(inv)
 			if err != nil {
 				loopErr = err
 				stop = true
@@ -239,7 +219,7 @@ func (c *Controller) Run(ctx context.Context) error {
 			c.mu.Unlock()
 		case <-flushTicker.C: // It's time to flush the catalog to persistent storage
 			c.mu.RLock()
-			err = c.catalog.flush(ctx)
+			err := c.catalog.flush(ctx)
 			c.mu.RUnlock()
 			if err != nil {
 				loopErr = err
@@ -252,14 +232,14 @@ func (c *Controller) Run(ctx context.Context) error {
 			c.catalog.resetEvents()
 			c.mu.Unlock()
 
-			// Just need subscribersMu to prevent c.subscribers from being modified while we're iterating over it.
-			c.subscribersMu.Lock()
+			// Need a read lock to prevent c.subscribers from being modified while we're iterating over it.
+			c.mu.RLock()
 			for _, fn := range c.subscribers {
 				for _, e := range events {
 					fn(e.event, e.name, e.resource)
 				}
 			}
-			c.subscribersMu.Unlock()
+			c.mu.RUnlock()
 		case <-ctx.Done(): // We've been asked to stop
 			stop = true
 			break
@@ -296,13 +276,13 @@ func (c *Controller) Run(ctx context.Context) error {
 		select {
 		case inv := <-c.completed:
 			c.mu.Lock()
-			err = c.processCompletedInvocation(inv)
+			err := c.processCompletedInvocation(inv)
 			if err != nil {
 				c.Logger.Warn("failed to process completed invocation during shutdown", slog.Any("error", err))
 			}
 			c.mu.Unlock()
 		case <-ctx.Done():
-			err = fmt.Errorf("timed out waiting for reconcile to finish for resources: %v", maps.Keys(c.invocations))
+			err := fmt.Errorf("timed out waiting for reconcile to finish for resources: %v", maps.Keys(c.invocations))
 			closeErr = errors.Join(closeErr, err)
 			stop = true // can't use break inside a select
 		}
@@ -323,8 +303,8 @@ func (c *Controller) Run(ctx context.Context) error {
 	c.mu.Unlock()
 
 	// Mark closed (no more catalog writes after this)
-	c.running.Store(false)
-	close(c.closed)
+	c.closed.Store(true)
+	close(c.closedCh)
 
 	// Ensure anything waiting for WaitUntilIdle is notified (not calling checkIdleWaits because the queue may not be empty when closing)
 	c.mu.Lock()
@@ -339,7 +319,7 @@ func (c *Controller) Run(ctx context.Context) error {
 
 	// Close catalog cache (will call flush)
 	c.mu.Lock()
-	err = c.catalog.close(ctx)
+	err := c.catalog.close(ctx)
 	if err != nil {
 		err = fmt.Errorf("failed to close catalog: %w", err)
 		closeErr = errors.Join(closeErr, err)
@@ -350,17 +330,6 @@ func (c *Controller) Run(ctx context.Context) error {
 		c.Logger.Error("controller closed with error", slog.Any("error", closeErr))
 	}
 	return closeErr
-}
-
-// WaitUntilReady returns when the controller is ready to process catalog operations
-func (c *Controller) WaitUntilReady(ctx context.Context) error {
-	select {
-	case <-c.closed: // controller was closed even before it became ready
-		return c.initErr
-	case <-c.ready:
-	case <-ctx.Done():
-	}
-	return ctx.Err()
 }
 
 // WaitUntilIdle returns when the controller is idle (i.e. no reconcilers are pending or running).
@@ -428,27 +397,27 @@ type SubscribeCallback func(e runtimev1.ResourceEvent, n *runtimev1.ResourceName
 
 // Subscribe registers a callback that will receive resource update events.
 // The same callback function will not be invoked concurrently.
-// The callback function is invoked from the event loop, so it should avoid waiting for any action from the controller.
+// The callback function is invoked under a lock and must not call the controller.
 func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error {
 	if err := c.checkRunning(); err != nil {
 		return err
 	}
 
-	c.subscribersMu.Lock()
+	c.mu.Lock()
 	id := c.nextSubscriberID
 	c.nextSubscriberID++
 	c.subscribers[id] = fn
-	c.subscribersMu.Unlock()
+	c.mu.Unlock()
 
 	defer func() {
-		c.subscribersMu.Lock()
+		c.mu.Lock()
 		delete(c.subscribers, id)
-		c.subscribersMu.Unlock()
+		c.mu.Unlock()
 	}()
 
 	for {
 		select {
-		case <-c.closed:
+		case <-c.closedCh:
 			return fmt.Errorf("controller closed")
 		case <-ctx.Done():
 			return ctx.Err()
@@ -827,8 +796,8 @@ func (c *Controller) reconciler(resourceKind string) Reconciler {
 
 // checkRunning panics if called when the Controller is not running.
 func (c *Controller) checkRunning() error {
-	if !c.running.Load() {
-		return errControllerNotRunning
+	if c.closed.Load() {
+		return errControllerClosed
 	}
 	return nil
 }

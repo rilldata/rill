@@ -41,7 +41,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return nil, ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -87,7 +87,7 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 		return ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ss.Context(), req.InstanceId)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -151,7 +151,7 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 		return nil, ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -186,7 +186,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 		return nil, ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

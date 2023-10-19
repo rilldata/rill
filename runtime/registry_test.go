@@ -292,7 +292,8 @@ func TestRuntime_EditInstance(t *testing.T) {
 				},
 			}
 			require.NoError(t, rt.CreateInstance(context.Background(), inst))
-			rt.WaitUntilReady(ctx, inst.ID)
+			_, err := rt.Controller(ctx, inst.ID)
+			require.NoError(t, err)
 
 			// Acquire OLAP (to make sure it's opened)
 			firstOlap, release, err := rt.OLAP(ctx, inst.ID)
@@ -311,7 +312,8 @@ func TestRuntime_EditInstance(t *testing.T) {
 
 			// Wait for controller restart
 			time.Sleep(500 * time.Millisecond)
-			rt.WaitUntilReady(ctx, inst.ID)
+			_, err = rt.Controller(ctx, inst.ID)
+			require.NoError(t, err)
 
 			// Verify db instances are correctly updated
 			newInst, err := rt.Instance(ctx, inst.ID)
@@ -374,7 +376,8 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 				},
 			}
 			require.NoError(t, rt.CreateInstance(context.Background(), inst))
-			rt.WaitUntilReady(ctx, inst.ID)
+			_, err := rt.Controller(ctx, inst.ID)
+			require.NoError(t, err)
 
 			// Acquire OLAP
 			olap, release, err := rt.OLAP(ctx, inst.ID)
