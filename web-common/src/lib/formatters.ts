@@ -200,7 +200,7 @@ export function formatDataType(value: unknown, type: string) {
 export function formatDataTypeAsDuckDbQueryString(
   value: unknown,
   type: string
-) {
+): string {
   if (value === undefined) return "";
   if (
     INTEGERS.has(type) ||
@@ -208,7 +208,7 @@ export function formatDataTypeAsDuckDbQueryString(
     CATEGORICALS.has(type) ||
     FLOATS.has(type)
   ) {
-    return value;
+    return value.toString();
   } else if (DATES.has(type)) {
     // NOTE: `DATE` must come before `TIMESTAMP` in this list
     // because `DATE` is a subset of `TIMESTAMP`.
