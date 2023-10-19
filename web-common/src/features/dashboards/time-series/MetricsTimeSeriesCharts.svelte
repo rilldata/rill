@@ -16,6 +16,7 @@
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import type { DimensionDataItem } from "./multiple-dimension-queries";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./MeasureChart.svelte";
@@ -80,7 +81,7 @@
   // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
 
   let dataCopy;
-  let dimensionDataCopy: unknown = [];
+  let dimensionDataCopy: DimensionDataItem[] = [];
   $: if ($timeSeriesDataStore?.timeSeriesData) {
     dataCopy = $timeSeriesDataStore.timeSeriesData;
   }

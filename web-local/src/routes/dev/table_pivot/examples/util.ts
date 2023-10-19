@@ -1,5 +1,5 @@
 import type { PivotPos } from "@rilldata/web-common/features/dashboards/pivot/types";
-import { getBlock } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
+import { getBlock } from "@rilldata/web-common/features/dashboards/tdd-virtualized-inactive/util";
 
 export function range(x0: number, x1: number, f: (x: number) => any) {
   return Array.from(Array(x1 - x0).keys()).map((x) => f(x + x0));
@@ -25,7 +25,7 @@ export function createRowDataGetter(cache) {
       blocks.push(block);
     }
 
-    let data = new Array(pos.y1 - pos.y0).fill(null);
+    const data = new Array(pos.y1 - pos.y0).fill(null);
 
     blocks.forEach((b) => {
       const cachedBlock = cache.find(["example-pivot-row-header", b[0], b[1]])

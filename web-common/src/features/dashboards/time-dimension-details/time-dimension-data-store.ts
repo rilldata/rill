@@ -358,4 +358,4 @@ export const tableInteractionStore = writable<HighlightedCell>({
   time: undefined,
 });
 
-export const chartInteractionColumn = writable<Date>(undefined);
+export const chartInteractionColumn = writable<number>(undefined);
