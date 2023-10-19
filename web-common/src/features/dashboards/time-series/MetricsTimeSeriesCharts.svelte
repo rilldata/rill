@@ -107,6 +107,24 @@
       $dashboardStore?.selectedTimezone
     );
 
+    const slicedData =
+      $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
+        ? formattedData.slice(1)
+        : formattedData.slice(1, -1);
+    chartInteractionColumn.update((state) => ({
+      ...state,
+      scrubStart: bisectData(
+        scrubStart,
+        "center",
+        "ts_position",
+        slicedData,
+        true
+      ),
+      scrubEnd: bisectData(scrubEnd, "center", "ts_position", slicedData, true),
+    }));
+
+    console.log("called");
+
     const adjustedChartValue = getAdjustedChartTime(
       $timeControlsStore.selectedTimeRange?.start,
       $timeControlsStore.selectedTimeRange?.end,
@@ -126,7 +144,10 @@
     $timeControlsStore.selectedTimeRange
   ) {
     if (!mouseoverValue?.x) {
-      chartInteractionColumn.set(undefined);
+      chartInteractionColumn.update((state) => ({
+        ...state,
+        hover: undefined,
+      }));
     } else {
       const columnNum = bisectData(
         mouseoverValue.x,
@@ -138,8 +159,11 @@
         true
       );
 
-      if ($chartInteractionColumn !== columnNum)
-        chartInteractionColumn.set(columnNum);
+      if ($chartInteractionColumn?.hover !== columnNum)
+        chartInteractionColumn.update((state) => ({
+          ...state,
+          hover: columnNum,
+        }));
     }
   }
 

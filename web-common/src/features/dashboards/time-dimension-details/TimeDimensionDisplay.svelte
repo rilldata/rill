@@ -15,10 +15,7 @@
     SortDirection,
     SortType,
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-  import {
-    bisectData,
-    createTimeFormat,
-  } from "@rilldata/web-common/components/data-graphic/utils";
+  import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -57,23 +54,7 @@
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
-  // Transform the scrub dates into table position
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
-  $: startScrubPos = bisectData(
-    $dashboardStore?.selectedScrubRange?.start,
-    "center",
-    "value",
-    columnHeaders,
-    true
-  );
-
-  $: endScrubPos = bisectData(
-    $dashboardStore?.selectedScrubRange?.end,
-    "center",
-    "value",
-    columnHeaders,
-    true
-  );
 
   // Create a time formatter for the column headers
   $: timeFormatter =
@@ -115,12 +96,15 @@
     {excludeMode}
     {dimensionLabel}
     {measureLabel}
-    scrubPos={{ start: startScrubPos, end: endScrubPos }}
+    scrubPos={{
+      start: $chartInteractionColumn?.scrubStart,
+      end: $chartInteractionColumn?.scrubEnd,
+    }}
     sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
     comparing={$timeDimensionDataStore?.comparing}
     {timeFormatter}
     data={formattedData}
-    highlightedCol={$chartInteractionColumn}
+    highlightedCol={$chartInteractionColumn?.hover}
     on:toggle-sort={() =>
       metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE)}
     on:highlight={highlightCell}

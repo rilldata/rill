@@ -19,7 +19,11 @@ import {
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-import type { HighlightedCell, TableData } from "./types";
+import type {
+  ChartInteractionColumns,
+  HighlightedCell,
+  TableData,
+} from "./types";
 
 export type TimeDimensionDataState = {
   isFetching: boolean;
@@ -358,4 +362,8 @@ export const tableInteractionStore = writable<HighlightedCell>({
   time: undefined,
 });
 
-export const chartInteractionColumn = writable<number>(undefined);
+export const chartInteractionColumn = writable<ChartInteractionColumns>({
+  hover: undefined,
+  scrubStart: undefined,
+  scrubEnd: undefined,
+});

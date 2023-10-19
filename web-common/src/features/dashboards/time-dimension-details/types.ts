@@ -12,3 +12,9 @@ export interface HighlightedCell {
   dimensionValue: string;
   time: Date;
 }
+
+export interface ChartInteractionColumns {
+  hover: number;
+  scrubStart: number;
+  scrubEnd: number;
+}

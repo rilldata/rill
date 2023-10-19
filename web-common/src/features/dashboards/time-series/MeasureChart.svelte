@@ -37,10 +37,7 @@
     humanizeDataType,
     formatPresetToNumberKind,
   } from "../humanize-numbers";
-  import {
-    chartInteractionColumn,
-    tableInteractionStore,
-  } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+  import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 
   export let measure: MetricsViewSpecMeasureV2;
@@ -163,7 +160,6 @@
   $: internalXMax = xMax || xExtentMax;
 
   function inBounds(min, max, value) {
-    chartInteractionColumn.set(value);
     return value >= min && value <= max;
   }
 
