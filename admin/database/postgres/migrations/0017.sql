@@ -4,7 +4,7 @@ CREATE TABLE virtual_files (
     path TEXT NOT NULL,
     data BYTEA NOT NULL,
     deleted BOOLEAN NOT NULL,
-	created_on TIMESTAMPTZ DEFAULT now() NOT NULL,
+    created_on TIMESTAMPTZ DEFAULT now() NOT NULL,
     updated_on TIMESTAMPTZ DEFAULT now() NOT NULL,
     PRIMARY KEY (project_id, branch, path)
 );
