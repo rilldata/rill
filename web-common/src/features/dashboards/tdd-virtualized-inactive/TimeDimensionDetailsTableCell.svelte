@@ -103,14 +103,14 @@
     if (isTableFiltered && !isCellInFilter) _class += ` ui-copy-disabled-faint`;
   }
 
-  const handleMouseEnter = () => {
-    $store.highlightedRow = rowIdx;
-    $store.highlightedCol = colIdx;
-  };
-  const handleMouseLeave = () => {
-    $store.highlightedCol = null;
-    $store.highlightedRow = null;
-  };
+  // const handleMouseEnter = () => {
+  //   $store.highlightedRow = rowIdx;
+  //   $store.highlightedCol = colIdx;
+  // };
+  // const handleMouseLeave = () => {
+  //   $store.highlightedCol = null;
+  //   $store.highlightedRow = null;
+  // };
 
   // TODO: with real data, this should be dependent on selected metric
   const format = "0.2f";

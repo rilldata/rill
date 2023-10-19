@@ -169,19 +169,19 @@
       return `<div class="text-xs font-normal text-right text-gray-700" >${value.value}</div>`;
   };
 
-  const renderRowCorner: PivotRenderCallback = ({ value, x, y, element }) => {
-    element.classList.add("bg-white", "z-10");
-    if (x === 0)
+  const renderRowCorner: PivotRenderCallback = (data) => {
+    data.element.classList.add("bg-white", "z-10");
+    if (data.x === 0)
       return `<div class="truncate font-medium text-gray-700 text-left">${dimensionLabel}</div>`;
-    if (x === 1)
+    if (data.x === 1)
       return `<div class="truncate text-right font-medium text-gray-700" sortable="true">${measureLabel}</div>`;
-    if (x === 2)
+    if (data.x === 2)
       return `<div class="flex items-center justify-end text-gray-700" sortable="true">${PieChart} % ${MeasureArrow(
         sortDirection
       )}</div>`;
   };
 
-  const getColumnWidth = (x: number) => {
+  const getColumnWidth = () => {
     return 75;
   };
 

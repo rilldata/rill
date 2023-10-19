@@ -24,13 +24,13 @@
   export let columnHeaderDepth = 0;
   export let onMouseDown: (evt: MouseEvent, table: any) => any = undefined;
   export let onMouseHover: (evt: MouseEvent, table: any) => any = undefined;
-  export let renderCell: PivotRenderCallback = () => {};
-  export let renderColumnHeader: PivotRenderCallback = () => {};
-  export let renderRowHeader: PivotRenderCallback = () => {};
-  export let renderRowCorner: PivotRenderCallback = () => {};
+  export let renderCell: PivotRenderCallback = () => undefined;
+  export let renderColumnHeader: PivotRenderCallback = () => undefined;
+  export let renderRowHeader: PivotRenderCallback = () => undefined;
+  export let renderRowCorner: PivotRenderCallback = () => undefined;
   export let rowHeight = 24;
-  export let getColumnWidth: (x: number) => number | void = () => {};
-  export let getRowHeaderWidth: (x: number) => number | void = () => {};
+  export let getColumnWidth: (x: number) => number | void = () => undefined;
+  export let getRowHeaderWidth: (x: number) => number | void = () => undefined;
 
   const dispatch = createEventDispatcher();
 

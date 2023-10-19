@@ -41,7 +41,6 @@
     chartInteractionColumn,
     tableInteractionStore,
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
-  import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
