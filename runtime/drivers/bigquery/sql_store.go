@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -43,41 +44,93 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		return nil, err
 	}
 
-	client, err := bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
-	if err != nil {
-		if strings.Contains(err.Error(), "unable to detect projectID") {
-			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
-		}
-		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
-	}
-
-	if err := client.EnableStorageReadClient(ctx, opts...); err != nil {
-		client.Close()
-		return nil, err
-	}
-
 	now := time.Now()
-	q := client.Query(srcProps.SQL)
-	it, err := q.Read(ctx)
-	if err != nil && !strings.Contains(err.Error(), "Syntax error") {
-		// close the read storage API client
-		client.Close()
-		c.logger.Info("query failed, retrying without storage api", zap.Error(err))
-		// the query results are always cached in a temporary table that storage api can use
-		// there are some exceptions when results aren't cached
-		// so we also try without storage api
-		client, err = bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
+
+	var client *bigquery.Client
+	var it *bigquery.RowIterator
+	bqClientFn := func(projectID string) (*bigquery.Client, error) {
+		client, err := bigquery.NewClient(ctx, projectID, opts...)
 		if err != nil {
+			if strings.Contains(err.Error(), "unable to detect projectID") {
+				return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
+			}
 			return nil, fmt.Errorf("failed to create bigquery client: %w", err)
+		}
+		return client, nil
+	}
+
+	r := regexp.MustCompile("(?i)^\\s*SELECT\\s+\\*\\s+FROM\\s+(`?[a-zA-Z0-9_.-]+`?)\\s*$")
+	match := r.FindStringSubmatch(srcProps.SQL)
+	if match != nil {
+		// "SELECT * FROM `project_id.dataset.table`" statement so storage api might be used
+		// project_id, dataset, backticks are optional
+		fullTableName := match[1]
+		fullTableName = strings.Trim(fullTableName, "`")
+
+		var projectID, dataset, tableID string
+
+		parts := strings.Split(fullTableName, ".")
+		switch len(parts) {
+		case 1:
+			tableID = parts[0]
+		case 2:
+			dataset, tableID = parts[0], parts[1]
+		case 3:
+			projectID, dataset, tableID = parts[0], parts[1], parts[2]
+		default:
+			return nil, fmt.Errorf("invalid table format, `project_id.dataset.table` is expected")
+		}
+
+		// Override projectID if a user-defined is set
+		if srcProps.ProjectID != "" && srcProps.ProjectID != bigquery.DetectProjectID {
+			projectID = srcProps.ProjectID
+		}
+
+		client, err = bqClientFn(projectID)
+		if err != nil {
+			return nil, err
+		}
+
+		if err = client.EnableStorageReadClient(ctx, opts...); err != nil {
+			client.Close()
+			return nil, err
+		}
+
+		it = client.Dataset(dataset).Table(tableID).Read(ctx)
+	} else {
+		client, err = bqClientFn(srcProps.ProjectID)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := client.EnableStorageReadClient(ctx, opts...); err != nil {
+			client.Close()
+			return nil, err
 		}
 
 		q := client.Query(srcProps.SQL)
 		it, err = q.Read(ctx)
+		if err != nil && !strings.Contains(err.Error(), "Syntax error") {
+			// close the read storage API client
+			client.Close()
+			c.logger.Info("query failed, retrying without storage api", zap.Error(err))
+			// the query results are always cached in a temporary table that storage api can use
+			// there are some exceptions when results aren't cached
+			// so we also try without storage api
+			client, err = bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create bigquery client: %w", err)
+			}
+
+			q := client.Query(srcProps.SQL)
+			it, err = q.Read(ctx)
+		}
+		if err != nil {
+			client.Close()
+			return nil, err
+		}
 	}
-	if err != nil {
-		client.Close()
-		return nil, err
-	}
+
 	c.logger.Info("query took", zap.Duration("duration", time.Since(now)), observability.ZapCtx(ctx))
 
 	p.Target(int64(it.TotalRows), drivers.ProgressUnitRecord)
