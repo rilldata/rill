@@ -123,8 +123,6 @@
       scrubEnd: bisectData(scrubEnd, "center", "ts_position", slicedData, true),
     }));
 
-    console.log("called");
-
     const adjustedChartValue = getAdjustedChartTime(
       $timeControlsStore.selectedTimeRange?.start,
       $timeControlsStore.selectedTimeRange?.end,
