@@ -4,7 +4,7 @@
   import { fetchData, TCellData } from "./mock-data";
   import type { SvelteComponent } from "svelte";
   import { useTDDContext } from "./context";
-  import { toggleFilter } from "./time-dimension-details-store";
+  // import { toggleFilter } from "./time-dimension-details-store";
   import { getCellComponent } from "../tdd-virtualized-inactive/cell-renderings";
 
   export let rowIdx: number;
@@ -111,6 +111,12 @@
   //   $store.highlightedCol = null;
   //   $store.highlightedRow = null;
   // };
+  // const handleClick = () => {
+  //   store.update((state) => {
+  //     toggleFilter(state, rowDimension);
+  //     return state;
+  //   });
+  // };
 
   // TODO: with real data, this should be dependent on selected metric
   const format = "0.2f";
@@ -122,12 +128,6 @@
       format
     ));
   }
-  const handleClick = () => {
-    store.update((state) => {
-      toggleFilter(state, rowDimension);
-      return state;
-    });
-  };
 </script>
 
 <!-- 
