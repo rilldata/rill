@@ -3,7 +3,6 @@ package duckdbsql
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 )
 
 type AST struct {
@@ -33,7 +32,7 @@ type fromNode struct {
 }
 
 func Parse(sql string) (*AST, error) {
-	if strings.Contains(strings.ToLower(sql), "pivot") || strings.Contains(strings.ToLower(sql), "unpivot") {
+	if PivotRegex.MatchString(sql) {
 		// Parse PIVOT and UNPIVOT statements using regex. This is needed since duckdb doesn't support them just yet.
 		return parsePivotLikeStatements(sql)
 	}

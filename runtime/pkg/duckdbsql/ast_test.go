@@ -203,11 +203,23 @@ with pivot_alias as (
 	on city
 	using count(*)
 	group by country
+), select_stmt as (
+  select * from Users
+		where user_id is not null
+), another_stmt as (
+  select a,b,c from
+    pivot_alias_2 join
+    unpivot_alias_2
 )
 select * from pivot_alias join unpivot_alias`,
 			[]*TableRef{
 				{Name: "AdBids"},
 				{Name: "AdImpressions"},
+				{Name: "Users"},
+				{Name: "pivot_alias_2"},
+				{Name: "unpivot_alias_2"},
+				{Name: "pivot_alias"},
+				{Name: "unpivot_alias"},
 			},
 		},
 	}
