@@ -144,6 +144,72 @@ select * from read_json(
 			// other table functions are ignored right now
 			[]*TableRef{},
 		},
+		{
+			"simple pivot statement",
+			`PIVOT AdBids ON publisher USING count(*) GROUP BY domain`,
+			[]*TableRef{
+				{Name: "AdBids"},
+			},
+		},
+		{
+			"nested pivot statement",
+			`
+pivot
+	(select * from AdBids where publisher is not null)
+on publisher
+using count(*)
+group by domain`,
+			[]*TableRef{
+				{Name: "AdBids"},
+			},
+		},
+		{
+			"simple unpivot statement",
+			`
+	unpivot
+		AdBids
+	on publisher
+	using count(*)
+	group by domain
+`,
+			[]*TableRef{
+				{Name: "AdBids"},
+			},
+		},
+		{
+			"nested unpivot statement",
+			`
+unpivot
+	(select * from AdBids where publisher is not null)
+on publisher
+using count(*)
+group by domain`,
+			[]*TableRef{
+				{Name: "AdBids"},
+			},
+		},
+		{
+			"mixed pivot like statements",
+			`
+with pivot_alias as (
+	pivot
+		(select * from AdBids where publisher is not null)
+	on publisher
+	using count(*)
+	group by domain
+), unpivot_alias as (
+	unpivot
+		(select * from AdImpressions where city is not null)
+	on city
+	using count(*)
+	group by country
+)
+select * from pivot_alias join unpivot_alias`,
+			[]*TableRef{
+				{Name: "AdBids"},
+				{Name: "AdImpressions"},
+			},
+		},
 	}
 
 	for _, tt := range sqlVariations {

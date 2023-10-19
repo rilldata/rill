@@ -1,6 +1,9 @@
 package duckdbsql
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"strings"
+)
 
 type AST struct {
 	sql       string
@@ -29,6 +32,11 @@ type fromNode struct {
 }
 
 func Parse(sql string) (*AST, error) {
+	if strings.Contains(strings.ToLower(sql), "pivot") || strings.Contains(strings.ToLower(sql), "unpivot") {
+		// Parse PIVOT and UNPIVOT statements using regex. This is needed since duckdb doesn't support them just yet.
+		return parsePivotLikeStatements(sql)
+	}
+
 	sqlAst, err := queryString("select json_serialize_sql(?::VARCHAR)", sql)
 	if err != nil {
 		return nil, err
