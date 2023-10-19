@@ -211,16 +211,22 @@
   };
 
   const handleMouseHover = (evt, table) => {
+    let newRowIdxHover;
+    let newColIdxHover;
     if (evt.type === "mouseout") {
-      rowIdxHover = undefined;
-      colIdxHover = undefined;
+      newRowIdxHover = undefined;
+      newColIdxHover = undefined;
     } else {
-      handleEvent(evt, table, "__row", (n) => (rowIdxHover = parseInt(n)));
-      handleEvent(evt, table, "__col", (n) => (colIdxHover = parseInt(n)));
+      handleEvent(evt, table, "__row", (n) => (newRowIdxHover = parseInt(n)));
+      handleEvent(evt, table, "__col", (n) => (newColIdxHover = parseInt(n)));
     }
 
-    dispatch("highlight", { x: colIdxHover, y: rowIdxHover });
-    pivot?.draw();
+    if (newRowIdxHover !== rowIdxHover && newColIdxHover !== colIdxHover) {
+      rowIdxHover = newRowIdxHover;
+      colIdxHover = newColIdxHover;
+      dispatch("highlight", { x: colIdxHover, y: rowIdxHover });
+      pivot?.draw();
+    }
   };
 
   // Hack: for some reason, not enough columns are being drawn on first render.

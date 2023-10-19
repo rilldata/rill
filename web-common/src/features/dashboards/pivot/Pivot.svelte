@@ -206,7 +206,7 @@
     table.addEventListener(type, handler);
     const prevHandler = handlerCache.get(type);
     if (prevHandler) {
-      table.removeEventListener("mousedown", prevHandler);
+      table.removeEventListener(type, prevHandler);
     }
     handlerCache.set(type, handler);
   }
