@@ -77,11 +77,18 @@
     dimensionName
   );
 
-  let activeValues: Array<unknown>;
-  $: activeValues =
-    $dashboardStore?.filters[filterKey]?.find((d) => d.name === dimension?.name)
-      ?.in ?? [];
-  $: atLeastOneActive = !!activeValues?.length;
+  // FIXME: it is possible for this way of accessing the filters
+  // to return the same value twice, which would seem to indicate
+  // a bug in the way we're setting the filters / active values.
+  // Need to investigate further to determine whether this is a
+  // problem with the runtime or the client, but for now wrapping
+  // it in a set dedupes the values.
+  $: activeValues = new Set(
+    ($dashboardStore?.filters[filterKey]?.find(
+      (d) => d.name === dimension?.name
+    )?.in as (number | string)[]) ?? []
+  );
+  $: atLeastOneActive = activeValues?.size > 0;
 
   const timeControlsStore = useTimeControlStore(stateManagers);
 
@@ -141,7 +148,7 @@
         getLabeledComparisonFromComparisonRow(r, measure.name)
       ) ?? [],
       slice,
-      activeValues,
+      [...activeValues],
       unfilteredTotal,
       filterExcludeMode
     );

@@ -138,8 +138,8 @@ export function prepareLeaderboardItemData(
   // selected values that _are_ in the API results.
   //
   // We also need to retain the original selection indices
-  let selectedButNotInAPIResults: [string | number, number][] =
-    selectedValues.map((v, i) => [v, i]);
+  const selectedButNotInAPIResults = new Map<string | number, number>();
+  selectedValues.map((v, i) => selectedButNotInAPIResults.set(v, i));
 
   values.forEach((v, i) => {
     const selectedIndex = selectedValues.findIndex(
@@ -147,16 +147,11 @@ export function prepareLeaderboardItemData(
     );
     // if we have found this selected value in the API results,
     // remove it from the selectedButNotInAPIResults array
-    if (selectedIndex > -1)
-      selectedButNotInAPIResults = selectedButNotInAPIResults.filter(
-        (value) => value[0] !== v.dimensionValue
-      );
+    if (selectedIndex > -1) selectedButNotInAPIResults.delete(v.dimensionValue);
 
     const defaultComparedIndex = comparisonDefaultSelection.findIndex(
       (value) => value === v.dimensionValue
     );
-    // if we have found this selected value in the API results,
-    // remove it from the selectedButNotInAPIResults array
 
     const cleanValue = cleanUpComparisonValue(
       v,
@@ -182,7 +177,7 @@ export function prepareLeaderboardItemData(
   // that pushes it out of the top N. In that case, we will follow
   // the previous strategy, and just push a dummy value with only
   // the dimension value and nulls for all measure values.
-  selectedButNotInAPIResults.forEach(([dimensionValue, selectedIndex]) => {
+  for (const [dimensionValue, selectedIndex] of selectedButNotInAPIResults) {
     const defaultComparedIndex = comparisonDefaultSelection.findIndex(
       (value) => value === dimensionValue
     );
@@ -197,7 +192,7 @@ export function prepareLeaderboardItemData(
       deltaRel: null,
       deltaAbs: null,
     });
-  });
+  }
 
   const noAvailableValues = values.length === 0;
   const showExpandTable = values.length > numberAboveTheFold;
