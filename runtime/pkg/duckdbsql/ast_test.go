@@ -357,6 +357,26 @@ select col1 from tbl2 union all select col1 from tbl3 union all select col1 from
 `,
 			`WITH tbl2 AS (SELECT col1 FROM AdBids_May), tbl3 AS (SELECT col1 FROM AdBids_June)((SELECT col1 FROM tbl2) UNION ALL (SELECT col1 FROM tbl3)) UNION ALL (SELECT col1 FROM AdBids_July)`,
 		},
+		{
+			"replace with pivot statement",
+			`
+pivot
+	(select * from read_csv( 'AdBids.csv', delim='|', columns={'timestamp':'TIMESTAMP'}) where publisher is not null)
+on publisher in ("Facebook", "Google", "Microsoft")
+using count(*)
+group by domain
+`,
+			"SELECT * FROM (SELECT * FROM AdBids WHERE (publisher IS NOT NULL)) PIVOT (count_star() FOR (publisher) IN ('Facebook', 'Google', 'Microsoft') GROUP BY domain)",
+		},
+		{
+			"replace with unpivot statement",
+			`
+unpivot
+	(select * from read_csv( 'AdBids.csv', delim='|', columns={'timestamp':'TIMESTAMP'}) where publisher is not null)
+on publisher
+`,
+			`SELECT * FROM (SELECT * FROM AdBids WHERE (publisher IS NOT NULL)) UNPIVOT ("value" FOR "name" IN ('publisher'))`,
+		},
 	}
 
 	for _, tt := range sqlVariations {
