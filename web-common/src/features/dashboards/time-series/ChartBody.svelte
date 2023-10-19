@@ -5,6 +5,7 @@
     ClippedChunkedLine,
   } from "@rilldata/web-common/components/data-graphic/marks";
   import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
+  import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 
   export let xMin: Date = undefined;
   export let xMax: Date = undefined;
@@ -13,7 +14,7 @@
   export let dimensionValue: string;
   export let isHovering: boolean;
   export let data;
-  export let dimensionData;
+  export let dimensionData: DimensionDataItem[] = [];
   export let xAccessor: string;
   export let yAccessor: string;
   export let scrubStart;
