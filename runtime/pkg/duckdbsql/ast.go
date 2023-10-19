@@ -32,11 +32,6 @@ type fromNode struct {
 }
 
 func Parse(sql string) (*AST, error) {
-	if PivotRegex.MatchString(sql) {
-		// Parse PIVOT and UNPIVOT statements using regex. This is needed since duckdb doesn't support them just yet.
-		return parsePivotLikeStatements(sql)
-	}
-
 	sqlAst, err := queryString("select json_serialize_sql(?::VARCHAR)", sql)
 	if err != nil {
 		return nil, err

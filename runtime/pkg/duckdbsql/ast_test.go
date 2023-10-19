@@ -146,7 +146,7 @@ select * from read_json(
 		},
 		{
 			"simple pivot statement",
-			`PIVOT AdBids ON publisher USING count(*) GROUP BY domain`,
+			`PIVOT AdBids ON publisher IN ("Facebook", "Google", "Microsoft") USING count(*) GROUP BY domain`,
 			[]*TableRef{
 				{Name: "AdBids"},
 			},
@@ -156,7 +156,7 @@ select * from read_json(
 			`
 pivot
 	(select * from AdBids where publisher is not null)
-on publisher
+on publisher in ("Facebook", "Google", "Microsoft")
 using count(*)
 group by domain`,
 			[]*TableRef{
@@ -169,8 +169,6 @@ group by domain`,
 	unpivot
 		AdBids
 	on publisher
-	using count(*)
-	group by domain
 `,
 			[]*TableRef{
 				{Name: "AdBids"},
@@ -181,9 +179,7 @@ group by domain`,
 			`
 unpivot
 	(select * from AdBids where publisher is not null)
-on publisher
-using count(*)
-group by domain`,
+on publisher`,
 			[]*TableRef{
 				{Name: "AdBids"},
 			},
@@ -194,32 +190,24 @@ group by domain`,
 with pivot_alias as (
 	pivot
 		(select * from AdBids where publisher is not null)
-	on publisher
+	on publisher in ("Facebook", "Google", "Microsoft")
 	using count(*)
 	group by domain
 ), unpivot_alias as (
 	unpivot
 		(select * from AdImpressions where city is not null)
 	on city
-	using count(*)
-	group by country
 ), select_stmt as (
   select * from Users
 		where user_id is not null
-), another_stmt as (
-  select a,b,c from
-    pivot_alias_2 join
-    unpivot_alias_2
 )
-select * from pivot_alias join unpivot_alias`,
+select * from pivot_alias join unpivot_alias on pivot_alias.id=unpivot_alias.id`,
 			[]*TableRef{
-				{Name: "AdBids"},
-				{Name: "AdImpressions"},
 				{Name: "Users"},
-				{Name: "pivot_alias_2"},
-				{Name: "unpivot_alias_2"},
-				{Name: "pivot_alias"},
-				{Name: "unpivot_alias"},
+				{Name: "AdImpressions"},
+				{Name: "AdBids"},
+				{Name: "pivot_alias", LocalAlias: true},
+				{Name: "unpivot_alias", LocalAlias: true},
 			},
 		},
 	}
