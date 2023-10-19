@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
@@ -11,27 +12,31 @@
     formatTime,
     getNextQuarterHour,
   } from "../../../components/forms/time-utils";
+  import RecipientsFormElement from "./RecipientsFormElement.svelte";
 
-  export let open: boolean;
   export let metricViewName: string;
+  export let open: boolean;
+
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
 
   const { form, errors, handleSubmit, isSubmitting } = createForm({
     initialValues: {
       reportName: "",
       firstRunAtDate: new Date().toISOString().split("T")[0], // Today's date
       firstRunAtTime: formatTime(getNextQuarterHour()), // Next quarter hour
+      firstRunAtTimezone: "UTC",
       frequency: "Daily",
-      format: "CSV",
       limit: "",
-      recipients: "",
+      recipients: [],
     },
     validationSchema: yup.object({
       reportName: yup.string().required("Required"),
-      firstRunAt: yup.string().required("Required"),
+      firstRunAtDate: yup.string().required("Required"),
+      firstRunAtTime: yup.string().required("Required"),
+      firstRunAtTimezone: yup.string().required("Required"),
       frequency: yup.string().required("Required"),
-      format: yup.string().required("Required"),
-      // limit: yup.string().required("Required"),
-      // recipients: yup.string().required("Required"),
+      recipients: yup.string().required("Required"),
     }),
     onSubmit: async (values) => {
       console.log(`Submit form for ${metricViewName}`, values);
@@ -68,36 +73,35 @@
         id="firstRunAtTime"
         label=""
       />
+      <FormItemSelect
+        bind:value={$form["firstRunAtTimezone"]}
+        id="firstRunAtTimezone"
+        label=""
+        options={["UTC"]}
+      />
     </div>
     <FormItemSelect
       bind:value={$form["frequency"]}
       id="frequency"
       label="Frequency"
-      options={["Daily", "Weekly", "Monthly"]}
-    />
-    <FormItemSelect
-      bind:value={$form["format"]}
-      id="format"
-      label="Format"
-      options={["CSV", "XLSX"]}
+      options={["Daily", "Weekdays", "Weekly", "Monthly"]}
     />
     <FormItemInput
       bind:value={$form["limit"]}
       error={$errors["limit"]}
       id="limit"
-      label="Limit"
+      label="Row limit"
       placeholder="1000 (rows)"
+      optional
     />
-    <FormItemInput
-      bind:value={$form["recipients"]}
-      error={$errors["recipients"]}
-      id="recipients"
-      label="Recipients"
-      placeholder="Emails separated by commas"
+    <RecipientsFormElement
+      bind:recipients={$form["recipients"]}
+      {organization}
+      {project}
     />
   </form>
   <svelte:fragment slot="footer">
-    <div class="flex gap-x-2 mt-6">
+    <div class="flex gap-x-2">
       <div class="grow" />
       <Button type="secondary" on:click={close}>Cancel</Button>
       <Button
