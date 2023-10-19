@@ -70,7 +70,6 @@
   }
 
   $: dashboard = useDashboard(instanceId, dashboardName);
-  $: isDashboardOK = $dashboard.isSuccess;
   $: isDashboardNotFound =
     $dashboard.isError &&
     ($dashboard.error as QueryError)?.response?.status === 404;
@@ -95,7 +94,7 @@
 
 {#if isProjectPending && isDashboardNotFound}
   <ProjectBuilding organization={orgName} project={projectName} />
-{:else if isDashboardOK}
+{:else if $dashboard.isSuccess}
   {#if isDashboardErrored}
     <ProjectErrored organization={orgName} project={projectName} />
   {:else}
