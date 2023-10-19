@@ -229,6 +229,13 @@
     }
   };
 
+  function resetHighlight() {
+    rowIdxHover = undefined;
+    colIdxHover = undefined;
+    dispatch("highlight", { x: colIdxHover, y: rowIdxHover });
+    pivot?.draw();
+  }
+
   // Hack: for some reason, not enough columns are being drawn on first render.
   // Force a second initial render to workaround it.
   $: {
@@ -238,7 +245,11 @@
   }
 </script>
 
-<div bind:clientWidth={containerWidth} class="h-full w-full relative mb-2">
+<div
+  on:mouseleave={resetHighlight}
+  bind:clientWidth={containerWidth}
+  class="h-full w-full relative mb-2"
+>
   <Pivot
     bind:this={pivot}
     {getRowHeaderData}

@@ -109,8 +109,8 @@
 
     const slicedData =
       $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
-        ? formattedData.slice(1)
-        : formattedData.slice(1, -1);
+        ? formattedData?.slice(1)
+        : formattedData?.slice(1, -1);
     chartInteractionColumn.update((state) => ({
       ...state,
       scrubStart: bisectData(
@@ -152,8 +152,8 @@
         "center",
         "ts_position",
         $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
-          ? formattedData.slice(1)
-          : formattedData.slice(1, -1),
+          ? formattedData?.slice(1)
+          : formattedData?.slice(1, -1),
         true
       );
 
