@@ -11,6 +11,7 @@
   export let value: string;
   export let placeholder = "";
   export let hint = "";
+  export let optional = false;
   export let claimFocusOnMount = false;
 
   let inputElement;
@@ -22,12 +23,9 @@
   }
 </script>
 
-<!-- horizontal: -->
-<!-- <div class="flex gap-x-2"> -->
-<!-- <label for={id} class="text-gray-800 text-sm">{label}:</label> -->
-<div>
-  <div class="flex items-center pl-1 pb-1 gap-x-1">
-    <label for={id} class="text-gray-600">{label}</label>
+<div class="flex flex-col gap-y-2">
+  <div class="flex items-center gap-x-1">
+    <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
     {#if hint}
       <Tooltip location="right" alignment="middle" distance={8}>
         <div class="text-gray-500" style="transform:translateY(-.5px)">
@@ -37,6 +35,9 @@
           {@html hint}
         </TooltipContent>
       </Tooltip>
+    {/if}
+    {#if optional}
+      <span class="text-gray-500 text-sm">(optional)</span>
     {/if}
   </div>
   <input
@@ -49,13 +50,11 @@
     type="text"
     {placeholder}
     autocomplete="off"
-    class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs"
+    class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {error &&
+      'border-red-500'}"
   />
   {#if error}
-    <div
-      in:slide|local={{ duration: 200 }}
-      class="pl-1 text-red-500 text-xs pt-1"
-    >
+    <div in:slide|local={{ duration: 200 }} class="text-red-500 text-sm py-px">
       {error}
     </div>
   {/if}

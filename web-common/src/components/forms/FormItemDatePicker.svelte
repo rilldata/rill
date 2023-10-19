@@ -4,8 +4,8 @@
   export let label: string;
 </script>
 
-<div>
-  <label for={id} class="text-gray-600">{label}</label>
+<div class="flex flex-col gap-y-2">
+  <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
   <!-- Get calendar day -->
   <input
     type="date"
