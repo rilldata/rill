@@ -329,13 +329,13 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 
 			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instance.ID, r.logger, r.activity)
 			if err == nil {
+				r.ensureProjectParser(iwc.ctx, iwc.instance.ID, ctrl)
+
 				r.mu.Lock()
 				iwc.controller = ctrl
 				iwc.ready = true
 				close(iwc.readyCh)
 				r.mu.Unlock()
-
-				r.ensureProjectParser(iwc.ctx, iwc.instance.ID, ctrl)
 
 				err = ctrl.Run(iwc.ctx)
 			}
@@ -346,8 +346,8 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			attrs := []zapcore.Field{zap.String("instance_id", iwc.instance.ID), zap.Error(err), zap.Bool("reopen", iwc.reopen), zap.Bool("called_run", iwc.ready)}
 			r.mu.Unlock()
 
-			if errors.Is(err, context.Canceled) {
-				r.logger.Info("controller stopped", attrs...)
+			if errors.Is(err, iwc.ctx.Err()) {
+				r.logger.Warn("controller stopped", attrs...)
 			} else {
 				r.logger.Error("controller failed", attrs...)
 			}

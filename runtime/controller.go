@@ -247,6 +247,7 @@ func (c *Controller) Run(ctx context.Context) error {
 	}
 
 	// Cleanup time
+	loopCtxErr := ctx.Err()
 	var closeErr error
 	if loopErr != nil {
 		closeErr = fmt.Errorf("controller event loop failed: %w", loopErr)
@@ -329,6 +330,7 @@ func (c *Controller) Run(ctx context.Context) error {
 	if closeErr != nil {
 		c.Logger.Error("controller closed with error", slog.Any("error", closeErr))
 	}
+	closeErr = errors.Join(loopCtxErr, closeErr)
 	return closeErr
 }
 
