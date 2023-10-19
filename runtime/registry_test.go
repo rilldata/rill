@@ -21,7 +21,6 @@ import (
 func TestRuntime_EditInstance(t *testing.T) {
 	repodsn := t.TempDir()
 	newRepodsn := t.TempDir()
-	rt := newTestRuntime(t)
 	tests := []struct {
 		name      string
 		inst      *drivers.Instance
@@ -271,6 +270,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			rt := newTestRuntime(t)
 			ctx := context.Background()
 
 			// Create instance

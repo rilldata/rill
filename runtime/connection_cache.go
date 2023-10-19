@@ -19,7 +19,7 @@ import (
 
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
 
-const migrateTimeout = 30 * time.Second
+const migrateTimeout = 2 * time.Minute
 
 // connectionCache is a thread-safe cache for open connections.
 // Connections should preferably be opened only via the connection cache.
