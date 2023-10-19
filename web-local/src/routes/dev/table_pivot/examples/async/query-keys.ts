@@ -2,7 +2,7 @@ import type { PivotPos } from "@rilldata/web-common/features/dashboards/pivot/ty
 import {
   get2DBlocks,
   getBlocks,
-} from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
+} from "@rilldata/web-common/features/dashboards/tdd-virtualized-inactive/util";
 
 const ROW_BLOCK_SIZE = 50;
 const COL_BLOCK_SIZE = 50;
