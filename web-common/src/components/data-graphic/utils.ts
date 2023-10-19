@@ -320,6 +320,7 @@ export function bisectData(
 /** For a scale domain returns a formatter for axis label and super label */
 export function createTimeFormat(scaleDomain, numberOfValues) {
   const diff = Math.abs(scaleDomain[1] - scaleDomain[0]) / 1000;
+  if (!diff) return [timeFormat("%d %b"), timeFormat("%Y")];
   const gap = diff / (numberOfValues - 1); // time gap between two consecutive values
 
   // If the gap is less than a second, format in milliseconds
