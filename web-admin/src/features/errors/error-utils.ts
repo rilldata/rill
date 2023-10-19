@@ -57,10 +57,18 @@ export function globalErrorCallback(error: AxiosError): void {
 function createErrorStoreStateFromAxiosError(
   error: AxiosError
 ): ErrorStoreState {
-  const status = error.response?.status;
-  const msg = (error.response.data as RpcStatus).message;
+  // Handle network errors
+  if (error.message === "Network Error") {
+    return {
+      statusCode: null,
+      header: "Network Error",
+      body: "It seems we're having trouble reaching our servers. Check your connection or try again later.",
+    };
+  }
 
-  // Specifically handle some errors
+  // Handle some application errors
+  const status = error.response?.status;
+  const msg = (error?.response?.data as RpcStatus | undefined)?.message;
   if (status === 403) {
     return {
       statusCode: error.response.status,
