@@ -105,7 +105,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 }
 
 // registryCache caches all the runtime's instances and manages the life-cycle of their controllers.
-// It ensures that a controller is started for every instance, and that a controller is completely stoppedCh before getting restarted when edited.
+// It ensures that a controller is started for every instance, and that a controller is completely stopped before getting restarted when edited.
 type registryCache struct {
 	logger        *zap.Logger
 	activity      activity.Client
@@ -346,7 +346,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			attrs := []zapcore.Field{zap.String("instance_id", iwc.instance.ID), zap.Error(err), zap.Bool("reopen", iwc.reopen), zap.Bool("called_run", iwc.ready)}
 			r.mu.Unlock()
 
-			if r.baseCtx.Err() != nil {
+			if errors.Is(err, context.Canceled) {
 				r.logger.Info("controller stopped", attrs...)
 			} else {
 				r.logger.Error("controller failed", attrs...)

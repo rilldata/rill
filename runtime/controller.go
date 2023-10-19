@@ -418,7 +418,7 @@ func (c *Controller) Subscribe(ctx context.Context, fn SubscribeCallback) error 
 	for {
 		select {
 		case <-c.closedCh:
-			return fmt.Errorf("controller closed")
+			return errControllerClosed
 		case <-ctx.Done():
 			return ctx.Err()
 		}
