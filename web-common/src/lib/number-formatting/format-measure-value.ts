@@ -82,9 +82,9 @@ export const createMeasureValueFormatter = (
   }
 
   // finally, use the formatPreset.
-  return (value: number) =>
-    humanizer(
-      value,
-      (measureSpec.formatPreset as FormatPreset) ?? FormatPreset.HUMANIZE
-    );
+  const formatPreset =
+    measureSpec.formatPreset && measureSpec.formatPreset !== ""
+      ? (measureSpec.formatPreset as FormatPreset)
+      : FormatPreset.HUMANIZE;
+  return (value: number) => humanizer(value, formatPreset);
 };
