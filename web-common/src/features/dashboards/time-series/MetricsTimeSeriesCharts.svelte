@@ -23,6 +23,9 @@
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
   import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+  import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+  import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
+  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -114,6 +117,29 @@
 
     startValue = adjustedChartValue?.start;
     endValue = adjustedChartValue?.end;
+  }
+
+  $: if (
+    expandedMeasureName &&
+    formattedData &&
+    $timeControlsStore.selectedTimeRange
+  ) {
+    if (!mouseoverValue?.x) {
+      chartInteractionColumn.set(undefined);
+    } else {
+      const columnNum = bisectData(
+        mouseoverValue.x,
+        "center",
+        "ts_position",
+        $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
+          ? formattedData.slice(1)
+          : formattedData.slice(1, -1),
+        true
+      );
+
+      if ($chartInteractionColumn !== columnNum)
+        chartInteractionColumn.set(columnNum);
+    }
   }
 
   const toggleMeasureVisibility = (e) => {

@@ -21,6 +21,7 @@
   export let measureLabel: string;
   export let excludeMode: boolean;
   export let sortDirection: boolean;
+  export let highlightedCol: number;
   export let scrubPos;
   export let comparing;
   export let data;
@@ -66,7 +67,7 @@
     const cellBgColor = getClassForCell(
       isScrubbed ? "scrubbed" : "default",
       rowIdxHover,
-      colIdxHover,
+      colIdxHover || highlightedCol,
       data.y,
       data.x
     );
@@ -96,6 +97,7 @@
 
   // Any time visible line list changes, redraw the table
   $: {
+    highlightedCol;
     data?.selectedValues;
     pivot?.draw();
   }
@@ -142,7 +144,7 @@
     const cellBgColor = getClassForCell(
       "fixed",
       rowIdxHover,
-      colIdxHover,
+      colIdxHover || highlightedCol,
       y,
       x - data?.fixedColCount
     );

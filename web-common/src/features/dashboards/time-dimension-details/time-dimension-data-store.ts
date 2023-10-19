@@ -350,9 +350,12 @@ export const useTimeDimensionDataStore =
   );
 
 /**
- * Store for handling interactions between chart and table
+ * Stores for handling interactions between chart and table
+ * Two separate stores created to avoid looped updates and renders
  */
 export const tableInteractionStore = writable<HighlightedCell>({
   dimensionValue: undefined,
   time: undefined,
 });
+
+export const chartInteractionColumn = writable<Date>(undefined);

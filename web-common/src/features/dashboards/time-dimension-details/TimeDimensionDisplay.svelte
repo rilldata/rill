@@ -7,6 +7,7 @@
   import TDDTable from "./TDDTable.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
+    chartInteractionColumn,
     tableInteractionStore,
     useTimeDimensionDataStore,
   } from "./time-dimension-data-store";
@@ -89,8 +90,7 @@
     const { x, y } = e.detail;
 
     const dimensionValue = formattedData?.rowHeaderData[y]?.[0]?.value;
-    const time =
-      x && columnHeaders[x]?.value && new Date(columnHeaders[x]?.value);
+    const time = columnHeaders?.[x]?.value && new Date(columnHeaders[x]?.value);
 
     tableInteractionStore.set({
       dimensionValue,
@@ -120,6 +120,7 @@
     comparing={$timeDimensionDataStore?.comparing}
     {timeFormatter}
     data={formattedData}
+    highlightedCol={$chartInteractionColumn}
     on:toggle-sort={() =>
       metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE)}
     on:highlight={highlightCell}
