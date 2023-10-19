@@ -7,7 +7,7 @@ import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-clie
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { createSparkline } from "@rilldata/web-common/components/data-graphic/marks/sparkline";
-import { transposeArray } from "./util";
+import { safeFormatter, transposeArray } from "./util";
 import {
   DEFAULT_TIME_RANGES,
   TIME_COMPARISON,
@@ -32,20 +32,6 @@ export type TimeDimensionDataState = {
 };
 
 export type TimeSeriesDataStore = Readable<TimeDimensionDataState>;
-
-/**
- * This formatter is less strict and
- * returns undefined if the input is undefined
- * */
-function safeFormatter(formatter) {
-  return (value) => {
-    if (value === undefined) {
-      return undefined;
-    } else {
-      return formatter(value);
-    }
-  };
-}
 
 /***
  * Add totals row from time series data
