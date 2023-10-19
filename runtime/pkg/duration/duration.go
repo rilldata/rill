@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 // Duration represents an ISO8601 duration with Rill-specific extensions.
@@ -76,4 +77,30 @@ func ParseISO8601(from string) (Duration, error) {
 	}
 
 	return d, nil
+}
+
+// Add adds the duration to a timestamp
+func (d Duration) Add(t time.Time) time.Time {
+	if d.Inf {
+		return time.Time{}
+	}
+
+	days := 7*d.Week + d.Day
+	t = t.AddDate(d.Year, d.Month, days)
+
+	td := time.Duration(d.Second)*time.Second + time.Duration(d.Minute)*time.Minute + time.Duration(d.Hour)*time.Hour
+	return t.Add(td)
+}
+
+// Sub subtracts the duration from a timestamp
+func (d Duration) Sub(t time.Time) time.Time {
+	if d.Inf {
+		return time.Time{}
+	}
+
+	days := 7*d.Week + d.Day
+	t = t.AddDate(-d.Year, -d.Month, -days)
+
+	td := time.Duration(d.Second)*time.Second + time.Duration(d.Minute)*time.Minute + time.Duration(d.Hour)*time.Hour
+	return t.Add(-td)
 }

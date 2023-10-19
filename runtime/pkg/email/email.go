@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/url"
+	"time"
 )
 
 //go:embed templates/gen/*
@@ -21,6 +22,51 @@ func New(sender Sender) *Client {
 		sender:    sender,
 		templates: template.Must(template.New("").ParseFS(templatesFS, "templates/gen/*.html")),
 	}
+}
+
+type ScheduledReport struct {
+	ToEmail        string
+	ToName         string
+	Title          string
+	ReportTime     time.Time
+	DownloadFormat string
+	OpenLink       string
+	DownloadLink   string
+	EditLink       string
+}
+
+type scheduledReportData struct {
+	Title            string
+	ReportTimeString string // Will be inferred from ReportDate
+	DownloadFormat   string
+	OpenLink         template.URL
+	DownloadLink     template.URL
+	EditLink         template.URL
+}
+
+func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
+	// Build template data
+	data := &scheduledReportData{
+		Title:            opts.Title,
+		ReportTimeString: opts.ReportTime.Format(time.RFC1123),
+		DownloadFormat:   opts.DownloadFormat,
+		OpenLink:         template.URL(opts.OpenLink),
+		DownloadLink:     template.URL(opts.DownloadLink),
+		EditLink:         template.URL(opts.EditLink),
+	}
+
+	// Build subject
+	subject := fmt.Sprintf("%s (%s)", opts.Title, data.ReportTimeString)
+
+	// Resolve template
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("scheduled_report.html").Execute(buf, data)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+
+	return c.sender.Send(opts.ToEmail, opts.ToName, subject, html)
 }
 
 type CallToAction struct {

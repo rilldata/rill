@@ -14,10 +14,9 @@ import (
 func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	ctx := context.Background()
 	inst := &drivers.Instance{
-		OLAPConnector:       "duckdb",
-		RepoConnector:       "repo",
-		EmbedCatalog:        true,
-		IngestionLimitBytes: 102345,
+		OLAPConnector: "duckdb",
+		RepoConnector: "repo",
+		EmbedCatalog:  true,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -47,7 +46,6 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	require.Equal(t, inst.OLAPConnector, res.OLAPConnector)
 	require.Equal(t, inst.RepoConnector, res.RepoConnector)
 	require.Equal(t, inst.EmbedCatalog, res.EmbedCatalog)
-	require.Equal(t, inst.IngestionLimitBytes, res.IngestionLimitBytes)
 	require.ElementsMatch(t, inst.Connectors, res.Connectors)
 
 	err = reg.CreateInstance(ctx, &drivers.Instance{OLAPConnector: "druid"})

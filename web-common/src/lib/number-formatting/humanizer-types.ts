@@ -1,4 +1,99 @@
-export type NumberFormatter = (x: number) => RichFormatNumber;
+import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+
+/**
+ * This enum represents all of the valid strings that can be
+ * used in the `format_preset` field of a measure definition.
+ */
+export enum FormatPreset {
+  HUMANIZE = "humanize",
+  NONE = "none",
+  CURRENCY = "currency_usd",
+  PERCENTAGE = "percentage",
+  INTERVAL = "interval_ms",
+}
+
+/**
+ * This enum represents the semantic kind of the number being
+ * handled (which is not the same thing as how the number is
+ * formatted, though it can inform formatting).
+ */
+export enum NumberKind {
+  /**
+   * A real number with units of US Dollars. Note that this
+   * does not imply any restriction on the range of the number;
+   * ANY positive or negative real number of ANY SIZE can have
+   * this units.
+   */
+  DOLLAR = "DOLLAR",
+
+  /**
+   * A real number with units of "%". Note that this
+   * does not imply any restriction on the range of the number;
+   * ANY positive or negative real number of ANY SIZE can have
+   * these units.
+   * Additionally, `PERCENT` NumberKind assumes numbers have not
+   * already been multiplied by 100; this will need to be applied
+   * for formatting.
+   */
+  PERCENT = "PERCENT",
+
+  /**
+   * A real number that represents a time interval with
+   * millisecond units.
+   * This is a special case that is handled
+   * by a custom formatter.
+   */
+  INTERVAL = "INTERVAL",
+
+  /**
+   * A generic real number that can be formatted in any way.
+   */
+  ANY = "ANY",
+}
+
+/**
+ * This function converts a FormatPreset to a NumberKind.
+ */
+export const formatPresetToNumberKind = (type: FormatPreset) => {
+  switch (type) {
+    case FormatPreset.CURRENCY:
+      return NumberKind.DOLLAR;
+
+    case FormatPreset.PERCENTAGE:
+      return NumberKind.PERCENT;
+
+    case FormatPreset.INTERVAL:
+      return NumberKind.INTERVAL;
+
+    case FormatPreset.NONE:
+    case FormatPreset.HUMANIZE:
+      return NumberKind.ANY;
+    default:
+      throw new Error(
+        `All FormatPreset variants must be explicity handled in formatPresetToNumberKind, got ${
+          type === "" ? "empty string" : type
+        }`
+      );
+  }
+};
+
+/**
+ * Gets the NumberKind for a measure, based on its formatPreset.
+ *
+ * This wrapper around formatPresetToNumberKind allows that innner
+ * function to maintain a more strict type signature.
+ */
+export const numberKindForMeasure = (measure: MetricsViewSpecMeasureV2) => {
+  if (
+    !measure ||
+    measure.formatPreset === undefined ||
+    measure.formatPreset === ""
+  ) {
+    // If no preset is specified, default to ANY
+    return NumberKind.ANY;
+  }
+  return formatPresetToNumberKind(measure.formatPreset as FormatPreset);
+};
 
 export type NumberParts = {
   neg?: "-";
@@ -10,41 +105,6 @@ export type NumberParts = {
   percent?: "%";
   approxZero?: boolean;
 };
-
-export type NumericRange = {
-  min: number;
-  max: number;
-};
-
-// FIXME: we can add these types back in if we want to implement
-// alignment. If we decide that we don't want to pursue that,
-// we can remove this commented code
-// export type PxWidthLookupFn = (str: string | undefined) => number;
-// export type FormatterWidths = {
-//   left: number;
-//   dot: number;
-//   frac: number;
-//   suffix: number;
-// };
-
-export type RichFormatNumber = {
-  number: number;
-  splitStr: NumberParts;
-};
-
-/**
- * This enum represents the semantic kind of the number being
- * handled (which is not the same thing as how the number is
- * formatted, though it can inform formatting).
- */
-export enum NumberKind {
-  DOLLAR = "DOLLAR",
-  // NOTE: PERCENT formatter assumes numbers have not
-  // already been multiplied by 100
-  PERCENT = "PERCENT",
-  INTERVAL = "INTERVAL",
-  ANY = "ANY",
-}
 
 /**
  * This is a no-op strategy that

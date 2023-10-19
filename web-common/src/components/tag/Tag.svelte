@@ -12,7 +12,7 @@
 </script>
 
 <div
-  class="px-2 h-[21px] border rounded-[20px] items-center inline-flex shrink-0 {getColorClass(
+  class="px-2 h-[21px] border rounded-[20px] items-center justify-center inline-flex shrink-0 {getColorClass(
     color
   )}"
 >

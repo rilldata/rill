@@ -220,6 +220,7 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		Filter:              req.Filter,
 		MetricsView:         mv,
 		ResolvedMVSecurity:  security,
+		Exact:               req.Exact,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -472,7 +473,7 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 
 // returns the metrics view and the time the catalog was last updated
 func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsViewSpec, time.Time, error) {
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
 		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
 	}

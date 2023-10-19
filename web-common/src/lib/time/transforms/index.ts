@@ -8,13 +8,13 @@
  * We are opting to define transformations in a way that can be serialized
  * in a configuration file.
  */
+import { PeriodToUnitsMap } from "@rilldata/web-common/lib/time/config";
 import {
   ReferencePoint,
   RelativePointInTime,
   RelativeTimeTransformation,
   TimeTruncationType,
 } from "../types";
-
 import { DateTime, Duration } from "luxon";
 import { Period, TimeOffsetType, TimeUnit } from "../types";
 
@@ -146,4 +146,9 @@ export function getDurationMultiple(duration: string, multiple: number) {
   return Duration.fromMillis(newDuration)
     .shiftTo("days", "hours", "minutes", "seconds")
     .toISO();
+}
+
+export function subtractFromPeriod(duration: Duration, period: Period) {
+  if (!PeriodToUnitsMap[period]) return duration;
+  return duration.minus({ [PeriodToUnitsMap[period]]: 1 });
 }

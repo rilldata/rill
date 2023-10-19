@@ -37,7 +37,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	group, ctx := errgroup.WithContext(ctx)
 	group.Go(func() error { return w.schedule(ctx, "check_slots", w.checkSlots, 15*time.Minute) })
 	group.Go(func() error {
-		return w.schedule(ctx, "delete_expired_tokens", w.deleteExpiredUserAuthTokens, 6*time.Hour)
+		return w.schedule(ctx, "delete_expired_tokens", w.deleteExpiredAuthTokens, 6*time.Hour)
 	})
 	group.Go(func() error {
 		return w.schedule(ctx, "delete_expired_device_auth_codes", w.deleteExpiredDeviceAuthCodes, 6*time.Hour)
