@@ -188,7 +188,8 @@ type DB interface {
 
 	FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
-	DeleteVirtualFile(ctx context.Context, projectID, branch, path string) error
+	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
+	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -681,6 +682,6 @@ type VirtualFile struct {
 type InsertVirtualFileOptions struct {
 	ProjectID string
 	Branch    string
-	Path      string
-	Data      []byte
+	Path      string `validate:"required"`
+	Data      []byte `validate:"max=8192"` // 8kb
 }
