@@ -13,11 +13,13 @@
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    <h1
-      class="text-8xl font-extrabold bg-gradient-to-b from-[#CBD5E1] to-[#E2E8F0] text-transparent bg-clip-text"
-    >
-      {statusCode}
-    </h1>
+    {#if statusCode}
+      <h1
+        class="text-8xl font-extrabold bg-gradient-to-b from-[#CBD5E1] to-[#E2E8F0] text-transparent bg-clip-text"
+      >
+        {statusCode}
+      </h1>
+    {/if}
     <h2 class="text-lg font-semibold">{header}</h2>
     <CtaMessage>
       {body}

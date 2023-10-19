@@ -684,7 +684,7 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity) {
 	ctx := testCtx()
 
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(ctx, instanceID)
 	require.NoError(t, err)
 
 	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricsViewName}, false)

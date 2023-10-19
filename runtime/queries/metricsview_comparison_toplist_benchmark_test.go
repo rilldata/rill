@@ -25,7 +25,7 @@ func BenchmarkMetricsViewsComparison_compare(b *testing.B) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -73,7 +73,7 @@ func BenchmarkMetricsViewsComparison_nocompare_all(b *testing.B) {
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(b, err)
 
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -111,7 +111,7 @@ func BenchmarkMetricsViewsComparison_nocompare_all(b *testing.B) {
 func BenchmarkMetricsViewsComparison_compare_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
 
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -159,7 +159,7 @@ func BenchmarkMetricsViewsComparison_nocompare_all_spending(b *testing.B) {
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(b, err)
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -205,7 +205,7 @@ func BenchmarkMetricsViewsComparison_delta_compare(b *testing.B) {
 	require.NoError(b, err)
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -253,7 +253,7 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all(b *testing.B) {
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(b, err)
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -290,7 +290,7 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all(b *testing.B) {
 
 func BenchmarkMetricsViewsComparison_delta_compare_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -338,7 +338,7 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all_spending(b *testing.B) 
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(b, err)
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -375,7 +375,7 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all_spending(b *testing.B) 
 
 func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -416,7 +416,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending(b *
 
 func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_approximate(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -464,7 +464,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_nocompare_all_spendi
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(b, err)
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -501,7 +501,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_nocompare_all_spendi
 
 func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -542,7 +542,7 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending(b *testin
 
 func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending_approximate_limit_250(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -583,7 +583,7 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending_approxima
 
 func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_approximate_limit_500(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -623,7 +623,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 }
 func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_approximate_limit_1250(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
@@ -671,7 +671,7 @@ func BenchmarkMetricsViewsComparison_high_cardinality_nocompare_all_spending(b *
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(b, err)
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)

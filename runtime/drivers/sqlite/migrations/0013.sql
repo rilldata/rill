@@ -1,0 +1,2 @@
+DROP INDEX controller_version_instance_id_idx;
+CREATE UNIQUE INDEX controller_version_instance_id_idx ON controller_version (instance_id);
