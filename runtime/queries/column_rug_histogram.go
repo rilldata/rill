@@ -61,39 +61,42 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
+	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.TableName, priority)
+	if err != nil {
+		return err
+	}
+	if !min.Valid || !max.Valid || !rng.Valid {
+		return nil
+	}
+
 	sanitizedColumnName := safeName(q.ColumnName)
 	outlierPseudoBucketSize := 500
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 
-	rugSQL := fmt.Sprintf(`WITH data_table AS (
+	rugSQL := fmt.Sprintf(
+		`
+  WITH data_table AS (
 		SELECT %[1]s as %[2]s
 		FROM %[3]s
 		WHERE %[2]s IS NOT NULL
-	  ), S AS (
-		SELECT
-		  min(%[2]s) as minVal,
-		  max(%[2]s) as maxVal,
-		  (max(%[2]s) - min(%[2]s)) as range
-		  FROM data_table
-	  ), values AS (
+  ), values AS (
 		SELECT %[2]s as value from data_table
 		WHERE %[2]s IS NOT NULL
-	  ), 
-	  buckets AS (
+  ), buckets AS (
 		SELECT
 		  range as bucket,
-		  (range) * (select range FROM S) / %[4]v + (select minVal from S) as low,
-		  (range + 1) * (select range FROM S) / %[4]v + (select minVal from S) as high
+		  (range) * (%[7]v) / %[4]v + (%[5]v) as low,
+		  (range + 1) * (%[7]v) / %[4]v + (%[5]v) as high
 		FROM range(0, %[4]v, 1)
-	  ),
-	  -- bin the values
-	  binned_data AS (
+	),
+	-- bin the values
+	binned_data AS (
 		SELECT 
-		  FLOOR((value - (select minVal from S)) / (select range from S) * %[4]v) as bucket
+		  FLOOR((value - (%[5]v)) / (%[7]v) * %[4]v) as bucket
 		from values
-	  ),
-	  -- join the bucket set with the binned values to generate the histogram
-	  histogram_stage AS (
+	),
+	-- join the bucket set with the binned values to generate the histogram
+	histogram_stage AS (
 	  SELECT
 		  buckets.bucket,
 		  low,
@@ -103,28 +106,37 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		LEFT JOIN binned_data ON binned_data.bucket = buckets.bucket
 		GROUP BY buckets.bucket, low, high
 		ORDER BY buckets.bucket
-	  ),
-	  -- calculate the right edge, sine in histogram_stage we don't look at the values that
-	  -- might be the largest.
-	  right_edge AS (
-		SELECT count(*) as c from values WHERE value = (select maxVal from S)
-	  ), histrogram_with_edge AS (
+	),
+	-- calculate the right edge, sine in histogram_stage we don't look at the values that
+	-- might be the largest.
+	right_edge AS (
+		SELECT count(*) as c from values WHERE value = (%[6]v)
+	), histrogram_with_edge AS (
 	  SELECT
-		bucket,
-		low,
-		high,
-		-- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
-		CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
+			bucket,
+			low,
+			high,
+			-- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
+			CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
 		FROM histogram_stage
-	  )
-	  SELECT
+	)
+	SELECT
 		bucket,
 		low,
 		high,
 		CASE WHEN count>0 THEN true ELSE false END AS present,
 		count
 	  FROM histrogram_with_edge
-	  WHERE present=true`, selectColumn, sanitizedColumnName, safeName(q.TableName), outlierPseudoBucketSize)
+	  WHERE present=true
+`,
+		selectColumn,
+		sanitizedColumnName,
+		safeName(q.TableName),
+		outlierPseudoBucketSize,
+		min.Float64,
+		max.Float64,
+		rng.Float64,
+	)
 
 	outlierResults, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            rugSQL,

@@ -144,6 +144,72 @@ select * from read_json(
 			// other table functions are ignored right now
 			[]*TableRef{},
 		},
+		{
+			"simple pivot statement",
+			`PIVOT AdBids ON publisher IN ("Facebook", "Google", "Microsoft") USING count(*) GROUP BY domain`,
+			[]*TableRef{
+				{Name: "AdBids"},
+			},
+		},
+		{
+			"nested pivot statement",
+			`
+pivot
+	(select * from AdBids where publisher is not null)
+on publisher in ("Facebook", "Google", "Microsoft")
+using count(*)
+group by domain`,
+			[]*TableRef{
+				{Name: "AdBids"},
+			},
+		},
+		{
+			"simple unpivot statement",
+			`
+	unpivot
+		AdBids
+	on publisher
+`,
+			[]*TableRef{
+				{Name: "AdBids"},
+			},
+		},
+		{
+			"nested unpivot statement",
+			`
+unpivot
+	(select * from AdBids where publisher is not null)
+on publisher`,
+			[]*TableRef{
+				{Name: "AdBids"},
+			},
+		},
+		{
+			"mixed pivot like statements",
+			`
+with pivot_alias as (
+	pivot
+		(select * from AdBids where publisher is not null)
+	on publisher in ("Facebook", "Google", "Microsoft")
+	using count(*)
+	group by domain
+), unpivot_alias as (
+	unpivot
+		(select * from AdImpressions where city is not null)
+	on city
+), select_stmt as (
+  select * from Users
+		where user_id is not null
+)
+select * from pivot_alias join unpivot_alias on pivot_alias.id=unpivot_alias.id`,
+			[]*TableRef{
+				{Name: "Users"},
+				{Name: "AdImpressions"},
+				{Name: "AdBids"},
+				{Name: "pivot_alias", LocalAlias: true},
+				{Name: "unpivot_alias", LocalAlias: true},
+			},
+		},
 	}
 
 	for _, tt := range sqlVariations {
@@ -290,6 +356,26 @@ with
 select col1 from tbl2 union all select col1 from tbl3 union all select col1 from read_csv( 'AdBids_July.csv', delim='|', columns={'timestamp':'TIMESTAMP'})
 `,
 			`WITH tbl2 AS (SELECT col1 FROM AdBids_May), tbl3 AS (SELECT col1 FROM AdBids_June)((SELECT col1 FROM tbl2) UNION ALL (SELECT col1 FROM tbl3)) UNION ALL (SELECT col1 FROM AdBids_July)`,
+		},
+		{
+			"replace with pivot statement",
+			`
+pivot
+	(select * from read_csv( 'AdBids.csv', delim='|', columns={'timestamp':'TIMESTAMP'}) where publisher is not null)
+on publisher in ("Facebook", "Google", "Microsoft")
+using count(*)
+group by domain
+`,
+			"SELECT * FROM (SELECT * FROM AdBids WHERE (publisher IS NOT NULL)) PIVOT (count_star() FOR (publisher) IN ('Facebook', 'Google', 'Microsoft') GROUP BY domain)",
+		},
+		{
+			"replace with unpivot statement",
+			`
+unpivot
+	(select * from read_csv( 'AdBids.csv', delim='|', columns={'timestamp':'TIMESTAMP'}) where publisher is not null)
+on publisher
+`,
+			`SELECT * FROM (SELECT * FROM AdBids WHERE (publisher IS NOT NULL)) UNPIVOT ("value" FOR "name" IN ('publisher'))`,
 		},
 	}
 
