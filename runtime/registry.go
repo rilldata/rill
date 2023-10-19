@@ -226,7 +226,7 @@ func (r *registryCache) getController(ctx context.Context, instanceID string) (*
 		iwc, ok = r.instances[instanceID]
 	}
 
-	defer r.mu.Unlock()
+	defer r.mu.RUnlock()
 
 	if !ok {
 		return nil, drivers.ErrNotFound
