@@ -74,7 +74,7 @@
   $: isDashboardNotFound =
     $dashboard.isError &&
     ($dashboard.error as QueryError)?.response?.status === 404;
-  $: isDashboardErrored = !$dashboard.data?.metricsView?.state?.validSpec;
+  $: isDashboardErrored = !!$dashboard.data?.meta?.reconcileError;
 
   // If no dashboard is found, show a 404 page
   $: if (isProjectBuilt && isDashboardNotFound) {
@@ -97,7 +97,6 @@
   <ProjectBuilding organization={orgName} project={projectName} />
 {:else if isDashboardOK}
   {#if isDashboardErrored}
-    <!-- TODO: we should show the reconcile error -->
     <ProjectErrored organization={orgName} project={projectName} />
   {:else}
     <StateManagersProvider metricsViewName={dashboardName}>
