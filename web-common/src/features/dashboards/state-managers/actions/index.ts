@@ -30,9 +30,6 @@ export const createStateManagerActions = (
     dimTable: createDashboardUpdaters(updateDashboard, dimTableActions),
     // Note: for now, some core actions are kept in the root of the
     // actions object. Can revisit that later if we want to move them.
-    /**
-     * sets the main measure name for the dashboard.
-     */
     setLeaderboardMeasureName: dashboardMutatorToUpdater(
       updateDashboard,
       setLeaderboardMeasureName
