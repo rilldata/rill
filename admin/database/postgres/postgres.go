@@ -1265,7 +1265,11 @@ func (c *connection) DeleteBookmark(ctx context.Context, bookmarkID string) erro
 
 func (c *connection) FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*database.VirtualFile, error) {
 	var res []*database.VirtualFile
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT path, data, deleted, updated_on FROM virtual_files WHERE project_id=$1 AND branch=$2 AND (updated_on>$3 OR updated_on=$3 AND afterPath>$4)", projectID, branch, afterUpdatedOn, afterPath)
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT path, data, deleted, updated_on
+		FROM virtual_files
+		WHERE project_id=$1 AND branch=$2 AND (updated_on>$3 OR updated_on=$3 AND afterPath>$4)
+	`, projectID, branch, afterUpdatedOn, afterPath)
 	if err != nil {
 		return nil, parseErr("virtual files", err)
 	}
