@@ -134,6 +134,9 @@ func (a *AST) traverseFromTable(parent astNode, childKey string) {
 
 	case "TABLE_FUNCTION":
 		a.traverseTableFunction(parent, childKey)
+
+	case "PIVOT":
+		a.traverseFromTable(node, astKeySource)
 	}
 }
 

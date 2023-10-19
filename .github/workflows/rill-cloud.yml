@@ -49,6 +49,11 @@ jobs:
           docker push gcr.io/rilldata/rill-headless:${GITHUB_SHA}
           docker push gcr.io/rilldata/rill-headless
 
+          if [ ${RELEASE} == "true" ]; then
+            docker tag gcr.io/rilldata/rill-headless:${GITHUB_SHA} gcr.io/rilldata/rill-headless:${GITHUB_REF_NAME}
+            docker push gcr.io/rilldata/rill-headless:${GITHUB_REF_NAME}
+          fi
+
       - name: Trigger Rill Cloud deployment
         run: |-
           set -e

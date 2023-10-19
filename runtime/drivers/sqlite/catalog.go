@@ -124,7 +124,7 @@ func (c *catalogStore) DeleteResource(ctx context.Context, v int64, k, n string)
 		return err
 	}
 
-	_, err = c.db.ExecContext(ctx, "DELETE FROM catalogv2 WHERE kind=? AND lower(name)=lower(?)", k, n)
+	_, err = c.db.ExecContext(ctx, "DELETE FROM catalogv2 WHERE instance_id=? AND kind=? AND lower(name)=lower(?)", c.instanceID, k, n)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (c *catalogStore) DeleteResource(ctx context.Context, v int64, k, n string)
 }
 
 func (c *catalogStore) DeleteResources(ctx context.Context) error {
-	_, err := c.db.ExecContext(ctx, "DELETE FROM catalogv2")
+	_, err := c.db.ExecContext(ctx, "DELETE FROM catalogv2 WHERE instance_id=?", c.instanceID)
 	if err != nil {
 		return err
 	}
