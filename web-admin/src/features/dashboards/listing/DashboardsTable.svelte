@@ -7,6 +7,7 @@
   import type { ColumnDef } from "@tanstack/table-core/src/types";
   import Table from "../../../components/table/Table.svelte";
   import { useDashboardsV2 } from "./dashboards";
+  import DashboardsError from "./DashboardsError.svelte";
   import DashboardsTableHeader from "./DashboardsTableHeader.svelte";
   import DashboardsTableInfoCell from "./DashboardsTableInfoCell.svelte";
   import NoDashboardsCTA from "./NoDashboardsCTA.svelte";
@@ -42,7 +43,7 @@
     <Spinner status={EntityStatus.Running} size="24px" />
   </div>
 {:else if $dashboards.isError}
-  <p class="m-auto mt-20">Error loading dashboards</p>
+  <DashboardsError />
 {:else if $dashboards.isSuccess}
   {#if $dashboards.data.resources.length === 0}
     <NoDashboardsCTA />
