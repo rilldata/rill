@@ -27,6 +27,7 @@
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -111,17 +112,24 @@
       $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
         ? formattedData?.slice(1)
         : formattedData?.slice(1, -1);
-    chartInteractionColumn.update((state) => ({
-      ...state,
-      scrubStart: bisectData(
-        scrubStart,
+    chartInteractionColumn.update((state) => {
+      const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
+
+      const startPos = bisectData(
+        start,
         "center",
         "ts_position",
         slicedData,
         true
-      ),
-      scrubEnd: bisectData(scrubEnd, "center", "ts_position", slicedData, true),
-    }));
+      );
+      const endPos = bisectData(end, "center", "ts_position", slicedData, true);
+
+      return {
+        ...state,
+        scrubStart: startPos,
+        scrubEnd: endPos,
+      };
+    });
 
     const adjustedChartValue = getAdjustedChartTime(
       $timeControlsStore.selectedTimeRange?.start,
