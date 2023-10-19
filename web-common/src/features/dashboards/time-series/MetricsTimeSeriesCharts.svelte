@@ -50,6 +50,7 @@
   $: interval =
     $timeControlsStore.selectedTimeRange?.interval ??
     $timeControlsStore.minTimeGrain;
+  $: isScrubbing = $dashboardStore?.selectedScrubRange?.isScrubbing;
 
   // List of measures which will be shown on the dashboard
   let renderedMeasures = [];
@@ -125,7 +126,7 @@
       const endPos = bisectData(end, "center", "ts_position", slicedData, true);
 
       return {
-        ...state,
+        hover: isScrubbing ? undefined : state.hover,
         scrubStart: startPos,
         scrubEnd: endPos,
       };
@@ -147,7 +148,8 @@
   $: if (
     expandedMeasureName &&
     formattedData &&
-    $timeControlsStore.selectedTimeRange
+    $timeControlsStore.selectedTimeRange &&
+    !isScrubbing
   ) {
     if (!mouseoverValue?.x) {
       chartInteractionColumn.update((state) => ({
@@ -265,7 +267,7 @@
           <MeasureChart
             bind:mouseoverValue
             {measure}
-            isScrubbing={$dashboardStore?.selectedScrubRange?.isScrubbing}
+            {isScrubbing}
             {scrubStart}
             {scrubEnd}
             {metricViewName}
