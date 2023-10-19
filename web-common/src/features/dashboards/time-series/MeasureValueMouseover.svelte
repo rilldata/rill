@@ -2,9 +2,8 @@
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
-
+  import { formatMeasurePercentageDifference } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { fade } from "svelte/transition";
   export let point;
@@ -25,10 +24,15 @@
 
   $: comparisonIsPositive = diff >= 0;
 
-  $: isDiffValid = !isNaN(diff);
+  $: isDiffValid = !isNaN(
+    formatMeasurePercentageDifference((y - comparisonY) / comparisonY)?.int
+  );
 
   $: diffLabel =
-    isDiffValid && numberPartsToString(formatMeasurePercentageDifference(diff));
+    isDiffValid &&
+    numberPartsToString(
+      formatMeasurePercentageDifference((y - comparisonY) / comparisonY)
+    );
 
   let lastAvailableCurrentY = 0;
   let lastAvailableComparisonY;

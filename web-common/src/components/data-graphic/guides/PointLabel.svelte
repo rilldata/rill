@@ -4,8 +4,8 @@
     WithGraphicContexts,
     WithTween,
   } from "@rilldata/web-common/components/data-graphic/functional-components";
+  import { formatMeasurePercentageDifference } from "@rilldata/web-common/features/dashboards/humanize-numbers";
   import { justEnoughPrecision } from "@rilldata/web-common/lib/formatters";
-  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { cubicOut } from "svelte/easing";
   import { fade } from "svelte/transition";
   export let point;

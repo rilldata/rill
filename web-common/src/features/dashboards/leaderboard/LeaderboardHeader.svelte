@@ -12,37 +12,26 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import { createEventDispatcher } from "svelte";
   import { LeaderboardContextColumn } from "../leaderboard-context-column";
+  import { contextColumnWidth } from "./leaderboard-utils";
   import { SortType } from "../proto-state/derived-types";
-  import { getStateManagers } from "../state-managers/state-managers";
 
   export let displayName: string;
   export let isFetching: boolean;
   export let dimensionDescription: string;
   export let hovered: boolean;
+  export let contextColumn: LeaderboardContextColumn;
+  export let sortAscending: boolean;
+  export let sortType: SortType;
   export let isBeingCompared: boolean;
-
-  const {
-    selectors: {
-      contextColumn: {
-        contextColumn,
-        widthPx,
-        isDeltaAbsolute,
-        isDeltaPercent,
-        isPercentOfTotal,
-        isHidden,
-      },
-      sorting: { sortedAscending, sortType },
-    },
-  } = getStateManagers();
 
   const dispatch = createEventDispatcher();
   $: contextColumnSortType = {
     [LeaderboardContextColumn.DELTA_PERCENT]: SortType.DELTA_PERCENT,
     [LeaderboardContextColumn.DELTA_ABSOLUTE]: SortType.DELTA_ABSOLUTE,
     [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
-  }[$contextColumn];
+  }[contextColumn];
 
-  $: arrowTransform = $sortedAscending ? "scale(1 -1)" : "scale(1 1)";
+  $: arrowTransform = sortAscending ? "scale(1 -1)" : "scale(1 1)";
 </script>
 
 <div class="flex flex-row items-center">
@@ -116,28 +105,28 @@
     <div class="shrink flex flex-row items-center gap-x-4">
       <button
         on:click={() => dispatch("toggle-sort", SortType.VALUE)}
-        class="shrink flex flex-row items-center justify-end min-w-[40px]"
+        class="shrink flex flex-row items-center justify-end"
         aria-label="Toggle sort leaderboards by value"
       >
-        #{#if $sortType === SortType.VALUE}
+        #{#if sortType === SortType.VALUE}
           <ArrowDown transform={arrowTransform} />
         {/if}
       </button>
 
-      {#if !$isHidden}
+      {#if contextColumn !== LeaderboardContextColumn.HIDDEN}
         <button
           on:click={() => dispatch("toggle-sort", contextColumnSortType)}
           class="shrink flex flex-row items-center justify-end"
           aria-label="Toggle sort leaderboards by context column"
-          style:width={$widthPx}
+          style:width={contextColumnWidth(contextColumn)}
         >
-          {#if $isDeltaPercent}
+          {#if contextColumn === LeaderboardContextColumn.DELTA_PERCENT}
             <Delta /> %
-          {:else if $isDeltaAbsolute}
+          {:else if contextColumn === LeaderboardContextColumn.DELTA_ABSOLUTE}
             <Delta />
-          {:else if $isPercentOfTotal}
+          {:else if contextColumn === LeaderboardContextColumn.PERCENT}
             <PieChart /> %
-          {/if}{#if $sortType !== SortType.VALUE}
+          {/if}{#if sortType !== SortType.VALUE}
             <ArrowDown transform={arrowTransform} />
           {/if}
         </button>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createEventDispatcher } from "svelte";
   import { fly, slide } from "svelte/transition";
   import BarAndLabel from "../../../components/BarAndLabel.svelte";
@@ -17,10 +18,13 @@
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
 
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
+  import { humanizeDataType } from "../humanize-numbers";
   import LongBarZigZag from "./LongBarZigZag.svelte";
-  import type { LeaderboardItemData } from "./leaderboard-utils";
+  import {
+    LeaderboardItemData,
+    formatContextColumnValue,
+  } from "./leaderboard-utils";
   import ContextColumnValue from "./ContextColumnValue.svelte";
-  import { getStateManagers } from "../state-managers/state-managers";
 
   export let itemData: LeaderboardItemData;
   $: label = itemData.dimensionValue;
@@ -28,23 +32,30 @@
   $: selected = itemData.selectedIndex >= 0;
   $: comparisonValue = itemData.prevValue;
 
+  export let contextColumn: LeaderboardContextColumn;
+
   export let atLeastOneActive = false;
   export let isBeingCompared = false;
   export let filterExcludeMode;
 
-  const {
-    numberFormat: { activeMeasureFormatter },
-    activeMeasure: { isSummableMeasure },
-  } = getStateManagers().selectors;
+  export let formatPreset;
 
+  /** if this value is a summable measure, we'll show the bar. Otherwise, don't. */
+  export let isSummableMeasure;
   /** for summable measures, this is the value we use to calculate the bar % to fill */
   export let referenceValue;
 
-  $: formattedValue = $activeMeasureFormatter(measureValue);
+  $: formattedValue = humanizeDataType(measureValue, formatPreset);
+
+  $: contextColumnFormattedValue = formatContextColumnValue(
+    itemData,
+    contextColumn,
+    formatPreset
+  );
 
   $: previousValueString =
     comparisonValue !== undefined && comparisonValue !== null
-      ? $activeMeasureFormatter(comparisonValue)
+      ? humanizeDataType(comparisonValue, formatPreset)
       : undefined;
   $: showPreviousTimeValue = hovered && previousValueString !== undefined;
   // Super important special case: if there is not at least one "active" (selected) value,
@@ -56,7 +67,7 @@
 
   let renderedBarValue = 0; // should be between 0 and 1.
   $: {
-    renderedBarValue = $isSummableMeasure
+    renderedBarValue = isSummableMeasure
       ? referenceValue
         ? measureValue / referenceValue
         : 0
@@ -161,7 +172,10 @@
               value={formattedValue || measureValue}
             />
           </div>
-          <ContextColumnValue {itemData} />
+          <ContextColumnValue
+            formattedValue={contextColumnFormattedValue}
+            {contextColumn}
+          />
         </div>
       </div>
     </BarAndLabel>
