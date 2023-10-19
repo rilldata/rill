@@ -337,6 +337,8 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 				close(iwc.readyCh)
 				r.mu.Unlock()
 
+				r.logger.Info("controller ready", zap.String("instance_id", iwc.instance.ID))
+
 				err = ctrl.Run(iwc.ctx)
 			}
 
