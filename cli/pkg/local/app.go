@@ -165,11 +165,11 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 				Config: olapCfg,
 			},
 		},
-		Variables:                        parsedVariables,
-		Annotations:                      map[string]string{},
-		EmbedCatalog:                     olapDriver == "duckdb",
-		WatchRepo:                        true,
-		ModelMaterializeDelaySeconds:     30,
+		Variables:    parsedVariables,
+		Annotations:  map[string]string{},
+		EmbedCatalog: olapDriver == "duckdb",
+		WatchRepo:    true,
+		// ModelMaterializeDelaySeconds:     30, // TODO: Enable when we support skipping it for the initial load
 		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}
 	err = rt.CreateInstance(ctx, inst)
