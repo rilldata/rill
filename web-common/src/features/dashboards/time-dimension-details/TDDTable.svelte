@@ -55,8 +55,12 @@
     data.element.classList.toggle("font-semibold", Boolean(data.y == 0));
     data.element.classList.add("text-right");
 
-    if (comparing === "time" && data.y === 2) {
-      data.element.classList.add("border-b", "border-gray-200");
+    if (data.y === 2) {
+      if (comparing === "time")
+        data.element.classList.add("border-b", "border-gray-200");
+      else {
+        data.element.classList.remove("border-b", "border-gray-200");
+      }
     }
 
     const isScrubbed =
@@ -137,8 +141,12 @@
   };
 
   const renderRowHeader: PivotRenderCallback = ({ value, x, y, element }) => {
-    if (comparing === "time" && y === 2) {
-      element.classList.add("border-b", "border-gray-200");
+    if (y === 2) {
+      if (comparing === "time") {
+        element.classList.add("border-b", "border-gray-200");
+      } else {
+        element.classList.remove("border-b", "border-gray-200");
+      }
     }
 
     const cellBgColor = getClassForCell(
