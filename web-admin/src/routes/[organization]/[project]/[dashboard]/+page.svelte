@@ -73,7 +73,10 @@
   $: isDashboardNotFound =
     $dashboard.isError &&
     ($dashboard.error as QueryError)?.response?.status === 404;
-  $: isDashboardErrored = !!$dashboard.data?.meta?.reconcileError;
+  // We check for metricsView.state.validSpec instead of meta.reconcileError. validSpec persists
+  // from previous valid dashboards, allowing display even when the current dashboard spec is invalid
+  // and a meta.reconcileError exists.
+  $: isDashboardErrored = !$dashboard.data?.metricsView?.state?.validSpec;
 
   // If no dashboard is found, show a 404 page
   $: if (isProjectBuilt && isDashboardNotFound) {
