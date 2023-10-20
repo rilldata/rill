@@ -26,6 +26,8 @@
     {/if}
   </div>
   <div class="pl-[22px] flex gap-x-1 text-gray-500 text-xs font-normal">
+    <span class="shrink-0">{name}</span>
+    <span>•</span>
     <span class="shrink-0">Last refreshed {timeAgo(lastRefreshed)}</span>
     {#if description}
       <span>•</span>
