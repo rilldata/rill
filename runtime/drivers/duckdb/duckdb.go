@@ -214,7 +214,7 @@ func (d Driver) Spec() drivers.Spec {
 }
 
 func (d Driver) HasAnonymousSourceAccess(ctx context.Context, src map[string]any, logger *zap.Logger) (bool, error) {
-	return true, nil
+	return false, nil
 }
 
 func (d Driver) TertiarySourceConnectors(ctx context.Context, src map[string]any, logger *zap.Logger) ([]string, error) {
