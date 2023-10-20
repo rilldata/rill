@@ -61,6 +61,7 @@
 {#if pointSet.length}
   <WithGraphicContexts let:xScale let:yScale>
     <MultiMetricMouseoverLabel
+      isDimension={true}
       attachPointToLabel
       direction="right"
       flipAtEdge="body"

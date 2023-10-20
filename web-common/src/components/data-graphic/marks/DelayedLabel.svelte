@@ -3,8 +3,9 @@
   import { onMount, onDestroy } from "svelte";
   import { writable } from "svelte/store";
 
-  export let label;
   export let value;
+  export let duration = 300;
+  export let isDimension = false;
 
   let valueStore = writable(value);
   let previousValue = previousValueStore(valueStore);
@@ -18,20 +19,21 @@
 
   function startTimeout() {
     clearTimeout(timeoutId);
+    // Reset label visibility when value changes or timeout is reset
+    showLabel = false;
 
-    // Set timeout to show label after 2 seconds
+    // Set timeout to show label after duration
     timeoutId = setTimeout(() => {
       showLabel = true;
-    }, 600);
+    }, duration);
   }
 
   // reset timeout when value changes
-  $: if (value !== $previousValue) startTimeout();
+  $: if (isDimension && value !== $previousValue) startTimeout();
 
   onDestroy(() => {
     clearTimeout(timeoutId);
-    showLabel = false;
   });
 </script>
 
-{showLabel ? label : ""}
+<slot visibility={showLabel ? "visible" : "hidden"} />
