@@ -40,7 +40,9 @@
   /** for summable measures, this is the value we use to calculate the bar % to fill */
   export let referenceValue;
 
-  $: formattedValue = $activeMeasureFormatter(measureValue);
+  $: formattedValue = measureValue
+    ? $activeMeasureFormatter(measureValue)
+    : null;
 
   $: previousValueString =
     comparisonValue !== undefined && comparisonValue !== null
@@ -58,7 +60,7 @@
   $: {
     renderedBarValue = $isSummableMeasure
       ? referenceValue
-        ? measureValue / referenceValue
+        ? (measureValue || 0) / referenceValue
         : 0
       : 0;
     // if this somehow creates an NaN, let's set it to 0.

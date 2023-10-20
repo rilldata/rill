@@ -21,7 +21,7 @@
     },
   } = getStateManagers();
 
-  $: negativeChange = itemData.deltaRel !== null && itemData.deltaAbs < 0;
+  $: negativeChange = itemData.deltaAbs !== null && itemData.deltaAbs < 0;
   $: noChangeData = itemData.deltaRel === null;
 </script>
 
@@ -29,18 +29,24 @@
   <div style:width={$widthPx}>
     {#if $isPercentOfTotal}
       <PercentageChange
-        value={formatProperFractionAsPercent(itemData.pctOfTotal)}
+        value={itemData.pctOfTotal
+          ? formatProperFractionAsPercent(itemData.pctOfTotal)
+          : null}
       />
     {:else if noChangeData}
       <span class="opacity-50 italic" style:font-size=".925em">no data</span>
     {:else if $isDeltaPercent}
       <PercentageChange
-        value={formatMeasurePercentageDifference(itemData.deltaRel)}
+        value={itemData.deltaRel
+          ? formatMeasurePercentageDifference(itemData.deltaRel)
+          : null}
       />
     {:else if $isDeltaAbsolute}
       <FormattedDataType
         type="INTEGER"
-        value={$activeMeasureFormatter(itemData.deltaAbs)}
+        value={itemData.deltaAbs
+          ? $activeMeasureFormatter(itemData.deltaAbs)
+          : null}
         customStyle={negativeChange ? "text-red-500" : ""}
       />
     {/if}

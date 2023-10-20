@@ -62,7 +62,7 @@
   );
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
-  $: displayName = dimension?.label || dimension?.name;
+  $: displayName = dimension?.label || dimension?.name || dimensionName;
 
   $: measureQuery = useMetaMeasure(
     $runtime.instanceId,
@@ -175,7 +175,7 @@
         toggleComparisonDimension(dimensionName, isBeingCompared)}
       {isBeingCompared}
       {hovered}
-      dimensionDescription={dimension?.description}
+      dimensionDescription={dimension?.description || ""}
       on:open-dimension-details={() => selectDimension(dimensionName)}
       on:toggle-sort={toggleSort}
     />
