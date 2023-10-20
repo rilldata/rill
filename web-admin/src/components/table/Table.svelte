@@ -62,7 +62,7 @@
   $: data && rerender();
 </script>
 
-<div class="flex flex-col gap-y-4 items-center">
+<div class="flex flex-col gap-y-4 items-start w-full">
   <table class="w-full max-w-[800px]">
     <slot name="header" />
     <tbody>
