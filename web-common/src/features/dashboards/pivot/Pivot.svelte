@@ -267,7 +267,6 @@
   :global(regular-table) {
     padding-left: 0px;
     padding-right: 0px;
-    cursor: pointer;
   }
   :global(regular-table table) {
     color: rgb(55 65 81);

@@ -248,7 +248,8 @@
 <div
   on:mouseleave={resetHighlight}
   bind:clientWidth={containerWidth}
-  class="h-full w-full relative mb-2"
+  class="h-full w-full relative mb-2 {comparing === 'dimension' &&
+    'cursor-pointer'}"
 >
   <Pivot
     bind:this={pivot}
@@ -269,3 +270,9 @@
     onMouseHover={handleMouseHover}
   />
 </div>
+
+<style>
+  :global(regular-table table tbody tr:first-child) {
+    cursor: default;
+  }
+</style>
