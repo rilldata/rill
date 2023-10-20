@@ -139,8 +139,8 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	// Check if the table still exists (might have been corrupted/lost somehow)
 	tableExists := false
 	if src.State.Table != "" {
-		t, ok := olapTableInfo(ctx, r.C, src.State.Connector, src.State.Table)
-		tableExists = ok && !t.View
+		_, ok := olapTableInfo(ctx, r.C, src.State.Connector, src.State.Table)
+		tableExists = ok // NOTE: Not checking if it's a view because some backends will represent sources as views (like DuckDB with external table storage enabled)
 	}
 
 	// Decide if we should trigger a refresh
