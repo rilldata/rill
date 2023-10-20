@@ -10,11 +10,13 @@
   import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
   import { crossfade, fly } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
-
+  import {
+    formatMeasurePercentageDifference,
+    humanizeDataType,
+    FormatPreset,
+    humanizeDataTypeExpanded,
+  } from "../humanize-numbers";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
-  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number;
@@ -27,32 +29,26 @@
 
   $: description =
     measure?.description || measure?.label || measure?.expression;
-
-  $: measureValueFormatter = createMeasureValueFormatter(measure);
-  $: measureValueFormatterUnabridged = createMeasureValueFormatter(
-    measure,
-    true
-  );
+  $: formatPreset =
+    (measure?.formatPreset as FormatPreset) || FormatPreset.HUMANIZE;
 
   $: name = measure?.label || measure?.expression;
 
   $: valueIsPresent = value !== undefined && value !== null;
 
+  $: isComparisonPositive = Number.isFinite(diff) && (diff as number) >= 0;
   const [send, receive] = crossfade({ fallback: fly });
 
-  $: diff =
-    valueIsPresent && comparisonValue !== undefined
-      ? value - comparisonValue
-      : 0;
-  $: noChange = !comparisonValue;
-  $: isComparisonPositive = diff >= 0;
+  $: diff = comparisonValue ? value - comparisonValue : false;
+  $: noChange = !diff;
 
-  $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
-    diff
+  $: formattedDiff = `${isComparisonPositive ? "+" : ""}${humanizeDataType(
+    diff,
+    formatPreset
   )}`;
 
   /** when the measure is a percentage, we don't show a percentage change. */
-  $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
+  $: measureIsPercentage = formatPreset === FormatPreset.PERCENTAGE;
 </script>
 
 <button
@@ -83,11 +79,11 @@
         <Tooltip distance={8} location="bottom" alignment="start">
           <div class="w-max">
             <WithTween {value} tweenProps={{ duration: 500 }} let:output>
-              {measureValueFormatter(output)}
+              {humanizeDataType(output, formatPreset)}
             </WithTween>
           </div>
           <TooltipContent slot="tooltip-content">
-            {measureValueFormatterUnabridged(value)}
+            {humanizeDataTypeExpanded(value, formatPreset)}
             <TooltipDescription>
               the aggregate value over the current time period
             </TooltipDescription>
@@ -138,7 +134,7 @@
               {:else}
                 {TIME_COMPARISON[comparisonOption].shorthand}
                 <span class="font-semibold">
-                  {measureValueFormatter(comparisonValue)}
+                  {humanizeDataType(comparisonValue, formatPreset)}
                 </span>
                 {#if !measureIsPercentage}
                   <span class="text-gray-300">,</span>
