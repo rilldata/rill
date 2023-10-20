@@ -1,19 +1,10 @@
-export class Heap<Item, Key = string> {
+export class Heap<Item extends { index?: number }, Key = string> {
   private readonly array: Array<Item> = [];
   private valueToIdxMap: Map<Key, number> = new Map();
 
-  /**
-   * @constructor
-   * @param {Function} compareFunction Return value > 0 to have a above b in the heap.
-   * @param {Function} keyGetter Returns the key to use in the map. Defaults to using the element as key.
-   */
   constructor(
-    private readonly compareFunction = function (a, b) {
-      return a - b;
-    },
-    private readonly keyGetter = function (a): Key {
-      return a;
-    }
+    private readonly compareFunction: (a: Item, b: Item) => number,
+    private readonly keyGetter: (a: Item) => Key
   ) {}
 
   public empty() {
@@ -30,7 +21,7 @@ export class Heap<Item, Key = string> {
   }
 
   public push(value: Item) {
-    this.valueToIdxMap.set(this.keyGetter(value), this.array.length);
+    this.setIndex(value, this.array.length);
     this.array.push(value);
     this.moveUp(this.array.length - 1);
   }
@@ -41,7 +32,7 @@ export class Heap<Item, Key = string> {
       this.valueToIdxMap.delete(this.keyGetter(value));
       if (this.array.length > 1) {
         this.array[0] = this.array.pop();
-        this.valueToIdxMap.set(this.keyGetter(this.array[0]), 0);
+        this.setIndex(this.array[0], 0);
         this.moveDown(0);
       } else {
         this.array.pop();
@@ -52,22 +43,24 @@ export class Heap<Item, Key = string> {
 
   public delete(value: Item, key?: Key) {
     key ??= this.keyGetter(value);
-    const idx = this.valueToIdxMap.get(key);
-    if (idx >= 0) {
-      this.valueToIdxMap.delete(key);
-      if (idx < this.array.length - 1) {
-        this.array[idx] = this.array.pop();
-        this.valueToIdxMap.set(this.keyGetter(this.array[idx]), idx);
-        this.moveDown(idx);
-      } else {
-        this.array.pop();
-      }
+    const idx = value.index ?? this.valueToIdxMap.get(key);
+    if (idx === undefined || idx < 0) return;
+
+    this.valueToIdxMap.delete(key);
+    delete value.index;
+    if (idx < this.array.length - 1) {
+      this.array[idx] = this.array.pop();
+      this.array[idx].index = idx;
+      this.setIndex(this.array[idx], idx);
+      this.moveDown(idx);
+    } else {
+      this.array.pop();
     }
   }
 
   // doesnt work on literals
   public updateItem(value: Item) {
-    const idx = this.valueToIdxMap.get(this.keyGetter(value));
+    const idx = value.index ?? this.valueToIdxMap.get(this.keyGetter(value));
     if (!this.moveUp(idx)) {
       this.moveDown(idx);
     }
@@ -104,7 +97,7 @@ export class Heap<Item, Key = string> {
         childIdx++;
       }
 
-      if (this.compareFunction(this.array[childIdx], this.array[idx]) > 0) {
+      if (this.compareFunction(this.array[childIdx], this.array[idx]) >= 0) {
         this.swap(idx, childIdx);
         idx = childIdx;
         movedDown = true;
@@ -119,7 +112,12 @@ export class Heap<Item, Key = string> {
     const val0 = this.array[idx0];
     this.array[idx0] = this.array[idx1];
     this.array[idx1] = val0;
-    this.valueToIdxMap.set(this.keyGetter(this.array[idx0]), idx0);
-    this.valueToIdxMap.set(this.keyGetter(this.array[idx1]), idx1);
+    this.setIndex(this.array[idx0], idx0);
+    this.setIndex(this.array[idx1], idx1);
+  }
+
+  private setIndex(item: Item, index: number) {
+    this.valueToIdxMap.set(this.keyGetter(item), index);
+    item.index = index;
   }
 }

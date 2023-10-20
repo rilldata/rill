@@ -10,6 +10,8 @@ export interface RequestQueueEntry {
 
   resolve?: (data: any) => void;
   reject?: (err: any) => void;
+
+  index?: number;
 }
 
 export interface RequestQueueNameEntry {
@@ -17,6 +19,8 @@ export interface RequestQueueNameEntry {
   weight: number;
   columnMap: Map<string, Array<RequestQueueEntry>>;
   queryHeap: Heap<RequestQueueEntry>;
+
+  index?: number;
 }
 
 export type RequestQueueHeapItem = RequestQueueNameEntry | RequestQueueEntry;
