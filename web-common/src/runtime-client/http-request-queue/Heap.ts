@@ -97,7 +97,7 @@ export class Heap<Item extends { index?: number }, Key = string> {
         childIdx++;
       }
 
-      if (this.compareFunction(this.array[childIdx], this.array[idx]) >= 0) {
+      if (this.compareFunction(this.array[childIdx], this.array[idx]) > 0) {
         this.swap(idx, childIdx);
         idx = childIdx;
         movedDown = true;
