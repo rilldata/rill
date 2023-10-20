@@ -57,7 +57,8 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return an.Kind < bn.Kind || (an.Kind == bn.Kind && an.Name < bn.Name)
 	})
 
-	for i := 0; i < len(rs); i++ {
+	i := 0
+	for i < len(rs) {
 		r := rs[i]
 		r, access, err := s.applySecurityPolicy(ctx, req.InstanceId, r)
 		if err != nil {
@@ -71,6 +72,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 			continue
 		}
 		rs[i] = r
+		i++
 	}
 
 	return &runtimev1.ListResourcesResponse{Resources: rs}, nil
