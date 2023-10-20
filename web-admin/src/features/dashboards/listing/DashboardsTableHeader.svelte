@@ -24,15 +24,15 @@
   $: numDashboards = $table.getRowModel().rows.length;
 
   // Sort
-  function sortAlphabetically() {
+  function sortByTitle() {
     get(table).setSorting([{ id: "monocolumn", desc: false }]);
   }
 
-  function sortBySlug() {
+  function sortByName() {
     get(table).setSorting([{ id: "name", desc: false }]);
   }
 
-  function sortByMostRecentlyRefreshed() {
+  function sortByLastRefreshTime() {
     get(table).setSorting([{ id: "lastRefreshed", desc: true }]);
   }
 
@@ -76,9 +76,9 @@
           on:click-outside={closeSortMenu}
           on:escape={closeSortMenu}
         >
-          <MenuItem on:select={sortAlphabetically}>Alphabetical</MenuItem>
-          <MenuItem on:select={sortBySlug}>URL slug</MenuItem>
-          <MenuItem on:select={sortByMostRecentlyRefreshed}
+          <MenuItem on:select={sortByTitle}>Alphabetical by title</MenuItem>
+          <MenuItem on:select={sortByName}>Alphabetical by URL</MenuItem>
+          <MenuItem on:select={sortByLastRefreshTime}
             >Most recently refreshed</MenuItem
           >
         </Menu>
