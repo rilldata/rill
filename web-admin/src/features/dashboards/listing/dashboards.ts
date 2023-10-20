@@ -57,7 +57,24 @@ export function useDashboards(instanceId: string) {
 }
 
 export function useDashboardsV2(instanceId: string) {
-  return createRuntimeServiceListResources(instanceId, {
-    kind: ResourceKind.MetricsView,
+  return createRuntimeServiceListResources(instanceId, undefined, {
+    query: {
+      select: (data) => {
+        const dashboards = data.resources.filter((res) => res.metricsView);
+        return dashboards.map((db) => {
+          // Extract table name from dashboard metadata
+          const refName = db.meta.refs[0];
+          const refTable = data.resources.find(
+            (r) => r.meta?.name?.name === refName?.name
+          );
+
+          // Add the "refreshedOn" attribute
+          const refreshedOn =
+            refTable?.model?.state.refreshedOn ||
+            refTable?.source?.state.refreshedOn;
+          return { resource: db, refreshedOn };
+        });
+      },
+    },
   });
 }

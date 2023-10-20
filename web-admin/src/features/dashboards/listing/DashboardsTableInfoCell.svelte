@@ -7,9 +7,12 @@
   export let project: string;
   export let name: string;
   export let title: string;
-  export let lastRefreshed: number;
+  export let lastRefreshed: string;
   export let description: string;
   export let error: string;
+
+  $: lastRefreshedDate = new Date(lastRefreshed);
+  $: isValidLastRefreshedDate = !isNaN(lastRefreshedDate.getTime());
 </script>
 
 <div class="flex flex-col gap-y-0.5">
@@ -27,8 +30,10 @@
   </div>
   <div class="pl-[22px] flex gap-x-1 text-gray-500 text-xs font-normal">
     <span class="shrink-0">{name}</span>
-    <span>•</span>
-    <span class="shrink-0">Last refreshed {timeAgo(lastRefreshed)}</span>
+    {#if isValidLastRefreshedDate}
+      <span>•</span>
+      <span class="shrink-0">Last refreshed {timeAgo(lastRefreshedDate)}</span>
+    {/if}
     {#if description}
       <span>•</span>
       <span class="line-clamp-1">{description}</span>
