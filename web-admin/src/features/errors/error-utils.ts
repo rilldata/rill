@@ -89,7 +89,7 @@ function createErrorStoreStateFromAxiosError(
     };
   }
 
-  // Fallback for all other errors
+  // Fallback for all other errors (including 5xx errors)
   return {
     statusCode: error.response?.status,
     header: "Sorry, unexpected error!",
