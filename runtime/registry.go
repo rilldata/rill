@@ -10,6 +10,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -31,6 +33,8 @@ func (r *Runtime) Instance(ctx context.Context, instanceID string) (*drivers.Ins
 // If the controller is currently initializing, the call will wait until the controller is ready.
 // If the controller has closed with a fatal error, that error will be returned here until it's restarted.
 func (r *Runtime) Controller(ctx context.Context, instanceID string) (*Controller, error) {
+	ctx, span := tracer.Start(ctx, "Runtime.Controller", trace.WithAttributes(attribute.String("instance_id", instanceID)))
+	defer span.End()
 	return r.registryCache.getController(ctx, instanceID)
 }
 

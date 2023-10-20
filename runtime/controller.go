@@ -15,7 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"github.com/rilldata/rill/runtime/pkg/schedule"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -24,9 +23,6 @@ import (
 	"golang.org/x/exp/slog"
 	"google.golang.org/protobuf/proto"
 )
-
-// tracer to trace background reconile calls
-var tracer = otel.Tracer("github.com/rilldata/rill/runtime/controller")
 
 // errCyclicDependency is set as the error on resources that can't be reconciled due to a cyclic dependency
 var errCyclicDependency = errors.New("cannot be reconciled due to cyclic dependency")
@@ -364,6 +360,8 @@ func (c *Controller) WaitUntilIdle(ctx context.Context, ignoreHidden bool) error
 // Get returns a resource by name.
 // Soft-deleted resources (i.e. resources where DeletedOn != nil) are not returned.
 func (c *Controller) Get(ctx context.Context, name *runtimev1.ResourceName, clone bool) (*runtimev1.Resource, error) {
+	ctx, span := tracer.Start(ctx, "Controller.Get", trace.WithAttributes(attribute.String("instance_id", c.InstanceID), attribute.String("kind", name.Kind), attribute.String("name", name.Name)))
+	defer span.End()
 	if err := c.checkRunning(); err != nil {
 		return nil, err
 	}
@@ -383,6 +381,8 @@ func (c *Controller) Get(ctx context.Context, name *runtimev1.ResourceName, clon
 // If kind is empty, all resources are returned.
 // Soft-deleted resources (i.e. resources where DeletedOn != nil) are not returned.
 func (c *Controller) List(ctx context.Context, kind string, clone bool) ([]*runtimev1.Resource, error) {
+	ctx, span := tracer.Start(ctx, "Controller.List", trace.WithAttributes(attribute.String("instance_id", c.InstanceID), attribute.String("kind", kind)))
+	defer span.End()
 	if err := c.checkRunning(); err != nil {
 		return nil, err
 	}
@@ -1279,7 +1279,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 		if inv.isRename {
 			tracerAttrs = append(tracerAttrs, attribute.String("renamed_from", r.Meta.RenamedFrom.Name))
 		}
-		ctx, span := tracer.Start(ctx, "reconcile", trace.WithAttributes(tracerAttrs...))
+		ctx, span := tracer.Start(ctx, fmt.Sprintf("%T.Reconcile", reconciler), trace.WithAttributes(tracerAttrs...))
 		defer span.End()
 
 		// Invoke reconciler
