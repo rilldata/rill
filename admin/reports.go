@@ -63,6 +63,9 @@ func (s *Service) TriggerReconcileAndAwaitReport(ctx context.Context, depl *data
 			PullTriggerSpec: &runtimev1.PullTriggerSpec{},
 		},
 	})
+	if err != nil {
+		return err
+	}
 
 	// Poll every 1 seconds until the report is found or the ctx is cancelled
 	for {
