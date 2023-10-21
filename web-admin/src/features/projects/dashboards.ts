@@ -1,5 +1,8 @@
 import type { V1GetProjectResponse } from "@rilldata/web-admin/client";
-import { V1DeploymentStatus } from "@rilldata/web-admin/client";
+import {
+  createAdminServiceGetProject,
+  V1DeploymentStatus,
+} from "@rilldata/web-admin/client";
 import {
   PollTimeDuringError,
   PollTimeDuringReconcile,
@@ -60,7 +63,37 @@ export async function getDashboardsForProject(
 }
 
 export function useDashboards(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.MetricsView);
+  return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
+    data.resources.filter((res) => !!res.metricsView?.state?.validSpec)
+  );
+}
+
+export function useDashboardsLastUpdated(
+  instanceId: string,
+  organization: string,
+  project: string
+) {
+  return derived(
+    [
+      useDashboards(instanceId),
+      createAdminServiceGetProject(organization, project),
+    ],
+    ([dashboardsResp, projResp]) => {
+      if (!dashboardsResp.data?.length) {
+        if (!projResp.data?.prodDeployment?.updatedOn) return undefined;
+
+        // return project's last updated if there are no dashboards
+        return new Date(projResp.data.prodDeployment.updatedOn);
+      }
+
+      const max = Math.max(
+        ...dashboardsResp.data.map((res) =>
+          new Date(res.meta.stateUpdatedOn).getTime()
+        )
+      );
+      return new Date(max);
+    }
+  );
 }
 
 export function useDashboardsStatus(instanceId: string) {
