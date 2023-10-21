@@ -134,6 +134,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 					"access_token": adminAuthToken,
 					"project_id":   opts.ProjectID,
 					"branch":       opts.ProdBranch,
+					"nonce":        time.Now().Format(time.RFC3339Nano), // Only set for consistency with updateDeployment
 				},
 			},
 		},
@@ -158,9 +159,10 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 }
 
 type updateDeploymentOptions struct {
-	Branch      string
-	Variables   map[string]string
-	Annotations deploymentAnnotations
+	Branch          string
+	Variables       map[string]string
+	Annotations     deploymentAnnotations
+	EvictCachedRepo bool // Set to true if config returned by GetRepoMeta has changed such that the runtime should do a fresh clone instead of a pull.
 }
 
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
@@ -186,6 +188,11 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 				c.Config = make(map[string]string)
 			}
 			c.Config["branch"] = opts.Branch
+
+			// Adding a nonce will cause the runtime to evict any currently open handle and open a new one.
+			if opts.EvictCachedRepo {
+				c.Config["nonce"] = time.Now().Format(time.RFC3339Nano)
+			}
 		}
 	}
 

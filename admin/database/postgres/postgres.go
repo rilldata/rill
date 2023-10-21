@@ -1269,7 +1269,8 @@ func (c *connection) FindVirtualFiles(ctx context.Context, projectID, branch str
 		SELECT path, data, deleted, updated_on
 		FROM virtual_files
 		WHERE project_id=$1 AND branch=$2 AND (updated_on>$3 OR updated_on=$3 AND afterPath>$4)
-	`, projectID, branch, afterUpdatedOn, afterPath)
+		ORDER BY updated_on, path LIMIT $5
+	`, projectID, branch, afterUpdatedOn, afterPath, limit)
 	if err != nil {
 		return nil, parseErr("virtual files", err)
 	}

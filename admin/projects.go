@@ -179,9 +179,10 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	// It needs to be refactored when implementing preview deploys.
 	for _, d := range ds {
 		err := s.updateDeployment(ctx, d, &updateDeploymentOptions{
-			Branch:      opts.ProdBranch,
-			Variables:   opts.ProdVariables,
-			Annotations: annotations,
+			Branch:          opts.ProdBranch,
+			Variables:       opts.ProdVariables,
+			Annotations:     annotations,
+			EvictCachedRepo: true,
 		})
 		if err != nil {
 			// TODO: This may leave things in an inconsistent state. (Although presently, there's almost never multiple deployments.)
@@ -212,9 +213,10 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 
 			for _, d := range ds {
 				err := s.updateDeployment(ctx, d, &updateDeploymentOptions{
-					Branch:      proj.ProdBranch,
-					Variables:   proj.ProdVariables,
-					Annotations: newDeploymentAnnotations(org, proj),
+					Branch:          proj.ProdBranch,
+					Variables:       proj.ProdVariables,
+					Annotations:     newDeploymentAnnotations(org, proj),
+					EvictCachedRepo: false,
 				})
 				if err != nil {
 					return err

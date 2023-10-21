@@ -33,7 +33,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 	}
 
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.ReadProdStatus { // TODO: Add a permission for repo
+	if !permissions.ReadProdStatus {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
@@ -86,7 +86,7 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 	}
 
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.ReadProdStatus { // TODO: Add a permission for repo
+	if !permissions.ReadProdStatus {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
@@ -101,6 +101,8 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 		return nil, err
 	}
 
+	// If no files were found, we return the same page token as the next page token.
+	// This enables the client to poll for new changes continuously. (The client is responsible for pausing when an empty page is returned.)
 	nextToken := req.PageToken
 	if len(vfs) > 0 {
 		f := vfs[len(vfs)-1]

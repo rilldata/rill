@@ -26,9 +26,10 @@ import (
 )
 
 const (
-	pullTimeout   = 10 * time.Minute
-	pullRetryN    = 3
-	pullRetryWait = 500 * time.Millisecond
+	pullTimeout         = 10 * time.Minute
+	pullRetryN          = 3
+	pullRetryWait       = 500 * time.Millisecond
+	pullVirtualPageSize = 100
 )
 
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/admin")
@@ -64,7 +65,7 @@ func (d driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 	}
 
 	cfg := &configProperties{}
-	err := mapstructure.Decode(cfgMap, cfg)
+	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -197,6 +198,10 @@ func (h *Handle) cloneOrPull(ctx context.Context, onlyClone bool) error {
 	defer span.End()
 
 	ch := h.singleflight.DoChan("cloneOrPull", func() (interface{}, error) {
+		if onlyClone && h.cloned.Load() {
+			return nil, nil
+		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
 		defer cancel()
 
@@ -282,7 +287,7 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 	return nil
 }
 
-// cloneUnsafe clones the Git repository. It removes any existing repository at the tempPath.
+// cloneUnsafe clones the Git repository. It removes any existing repository at the repoPath (in case a previous clone failed in a dirty state).
 // Unsafe for concurrent use.
 func (h *Handle) cloneUnsafeGit(ctx context.Context) error {
 	_, err := os.Stat(h.repoPath)
@@ -362,6 +367,7 @@ func (h *Handle) pullUnsafeVirtual(ctx context.Context) error {
 		res, err := h.admin.PullVirtualRepo(ctx, &adminv1.PullVirtualRepoRequest{
 			ProjectId: h.config.ProjectID,
 			Branch:    h.config.Branch,
+			PageSize:  pullVirtualPageSize,
 			PageToken: h.virtualNextPageToken,
 		})
 		if err != nil {
@@ -392,6 +398,8 @@ func (h *Handle) pullUnsafeVirtual(ctx context.Context) error {
 
 		h.virtualNextPageToken = res.NextPageToken
 
+		// If there are no more files, we're done for now.
+		// We can't just check NextPageToken because it will still be set, enabling us to pull new changes next time pullUnsafeVirtual is called.
 		if len(res.Files) == 0 {
 			break
 		}
