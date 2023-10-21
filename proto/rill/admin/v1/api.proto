@@ -5,7 +5,6 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 import "rill/runtime/v1/export_format.proto";
-import "rill/runtime/v1/queries.proto";
 import "validate/validate.proto";
 
 service AdminService {
