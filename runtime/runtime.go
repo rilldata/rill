@@ -10,9 +10,12 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime")
 
 type Options struct {
 	MetastoreConnector      string

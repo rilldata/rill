@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
@@ -57,7 +58,8 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return an.Kind < bn.Kind || (an.Kind == bn.Kind && an.Name < bn.Name)
 	})
 
-	for i := 0; i < len(rs); i++ {
+	i := 0
+	for i < len(rs) {
 		r := rs[i]
 		r, access, err := s.applySecurityPolicy(ctx, req.InstanceId, r)
 		if err != nil {
@@ -71,6 +73,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 			continue
 		}
 		rs[i] = r
+		i++
 	}
 
 	return &runtimev1.ListResourcesResponse{Resources: rs}, nil
@@ -231,6 +234,9 @@ func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runt
 
 // applySecurityPolicyReport applies relevant security policies to a metrics view.
 func (s *Server) applySecurityPolicyMetricsView(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
+	ctx, span := tracer.Start(ctx, "applySecurityPolicyMetricsView", trace.WithAttributes(attribute.String("instance_id", instID), attribute.String("kind", r.Meta.Name.Kind), attribute.String("name", r.Meta.Name.Name)))
+	defer span.End()
+
 	mv := r.GetMetricsView()
 	if mv.State.ValidSpec == nil || mv.State.ValidSpec.Security == nil {
 		// Allow if it doesn't have a valid security policy
