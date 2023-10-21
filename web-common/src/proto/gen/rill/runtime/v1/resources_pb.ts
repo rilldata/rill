@@ -1500,6 +1500,11 @@ export class ReportSpec extends Message<ReportSpec> {
    */
   emailExportUrl = "";
 
+  /**
+   * @generated from field: rill.runtime.v1.ReportSpec.Security security = 14;
+   */
+  security?: ReportSpec_Security;
+
   constructor(data?: PartialMessage<ReportSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1521,6 +1526,7 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 11, name: "email_open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "email_edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 13, name: "email_export_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "security", kind: "message", T: ReportSpec_Security },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {
@@ -1537,6 +1543,49 @@ export class ReportSpec extends Message<ReportSpec> {
 
   static equals(a: ReportSpec | PlainMessage<ReportSpec> | undefined, b: ReportSpec | PlainMessage<ReportSpec> | undefined): boolean {
     return proto3.util.equals(ReportSpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ReportSpec.Security
+ */
+export class ReportSpec_Security extends Message<ReportSpec_Security> {
+  /**
+   * @generated from field: string owner_user_id = 1;
+   */
+  ownerUserId = "";
+
+  /**
+   * @generated from field: bool managed_by_ui = 2;
+   */
+  managedByUi = false;
+
+  constructor(data?: PartialMessage<ReportSpec_Security>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ReportSpec.Security";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "owner_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "managed_by_ui", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec_Security {
+    return new ReportSpec_Security().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ReportSpec_Security {
+    return new ReportSpec_Security().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ReportSpec_Security {
+    return new ReportSpec_Security().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ReportSpec_Security | PlainMessage<ReportSpec_Security> | undefined, b: ReportSpec_Security | PlainMessage<ReportSpec_Security> | undefined): boolean {
+    return proto3.util.equals(ReportSpec_Security, a, b);
   }
 }
 

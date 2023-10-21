@@ -16,19 +16,19 @@ import (
 	_ "time/tzdata"
 )
 
-// sourceYAML is the raw structure of a Source resource defined in YAML (does not include common fields)
-type sourceYAML struct {
+// SourceYAML is the raw structure of a Source resource defined in YAML (does not include common fields)
+type SourceYAML struct {
 	commonYAML `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into Properties
 	Type       string                                  `yaml:"type"` // Backwards compatibility
 	Timeout    string                                  `yaml:"timeout"`
-	Refresh    *scheduleYAML                           `yaml:"refresh"`
+	Refresh    *ScheduleYAML                           `yaml:"refresh"`
 	Properties map[string]any                          `yaml:",inline" mapstructure:",remain"`
 }
 
 // parseSource parses a source definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	// Parse YAML
-	tmp := &sourceYAML{}
+	tmp := &SourceYAML{}
 	if p.RillYAML != nil && !p.RillYAML.Defaults.Sources.IsZero() {
 		if err := p.RillYAML.Defaults.Sources.Decode(tmp); err != nil {
 			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
@@ -117,16 +117,16 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 	return nil
 }
 
-// scheduleYAML is the raw structure of a refresh schedule clause defined in YAML.
+// ScheduleYAML is the raw structure of a refresh schedule clause defined in YAML.
 // This does not represent a stand-alone YAML file, just a partial used in other structs.
-type scheduleYAML struct {
+type ScheduleYAML struct {
 	Cron     string `yaml:"cron" mapstructure:"cron"`
 	Every    string `yaml:"every" mapstructure:"every"`
 	TimeZone string `yaml:"time_zone" mapstructure:"time_zone"`
 	Disable  bool   `yaml:"disable" mapstructure:"disable"`
 }
 
-func parseScheduleYAML(raw *scheduleYAML) (*runtimev1.Schedule, error) {
+func parseScheduleYAML(raw *ScheduleYAML) (*runtimev1.Schedule, error) {
 	if raw == nil || raw.Disable || (raw.Cron == "" && raw.Every == "") {
 		return nil, nil
 	}

@@ -206,6 +206,10 @@ message Report {
 }
 
 message ReportSpec {
+  message Security {
+    string owner_user_id = 1;
+    bool managed_by_ui = 2;
+  }
   bool trigger = 1;
   string title = 2;
   Schedule refresh_schedule = 3;
@@ -219,6 +223,7 @@ message ReportSpec {
   string email_open_url = 11;
   string email_edit_url = 12;
   string email_export_url = 13;
+  Security security = 14;
 }
 
 message ReportState {

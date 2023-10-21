@@ -14,11 +14,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// reportYAML is the raw structure of a Report resource defined in YAML (does not include common fields)
-type reportYAML struct {
+// ReportYAML is the raw structure of a Report resource defined in YAML (does not include common fields)
+type ReportYAML struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title      string           `yaml:"title"`
-	Refresh    *scheduleYAML    `yaml:"refresh"`
+	Refresh    *ScheduleYAML    `yaml:"refresh"`
 	Timeout    string           `yaml:"timeout"`
 	Query      struct {
 		Name      string         `yaml:"name"`
@@ -38,12 +38,16 @@ type reportYAML struct {
 			ExportURL string `yaml:"export_url"`
 		} `yaml:"template"`
 	} `yaml:"email"`
+	Security struct {
+		OwnerUserID string `yaml:"owner_user_id"`
+		ManagedByUI bool   `yaml:"managed_by_ui"`
+	} `yaml:"security"`
 }
 
 // parseReport parses a report definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 	// Parse YAML
-	tmp := &reportYAML{}
+	tmp := &ReportYAML{}
 	if node.YAMLRaw != "" {
 		// Can't use node.YAML because we want to set KnownFields for reports
 		dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
@@ -150,6 +154,11 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 	r.ReportSpec.EmailOpenUrl = tmp.Email.Template.OpenURL
 	r.ReportSpec.EmailEditUrl = tmp.Email.Template.EditURL
 	r.ReportSpec.EmailExportUrl = tmp.Email.Template.ExportURL
+	if tmp.Security.OwnerUserID != "" || tmp.Security.ManagedByUI {
+		r.ReportSpec.Security = &runtimev1.ReportSpec_Security{}
+		r.ReportSpec.Security.OwnerUserId = tmp.Security.OwnerUserID
+		r.ReportSpec.Security.ManagedByUi = tmp.Security.ManagedByUI
+	}
 
 	return nil
 }
@@ -165,6 +174,9 @@ func parseExportFormat(s string) (runtimev1.ExportFormat, error) {
 	case "parquet":
 		return runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET, nil
 	default:
+		if val, ok := runtimev1.ExportFormat_value[s]; ok {
+			return runtimev1.ExportFormat(val), nil
+		}
 		return runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED, fmt.Errorf("invalid export format %q", s)
 	}
 }

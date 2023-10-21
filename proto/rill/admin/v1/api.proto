@@ -4,6 +4,8 @@ package rill.admin.v1;
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
+import "rill/runtime/v1/export_format.proto";
+import "rill/runtime/v1/queries.proto";
 import "validate/validate.proto";
 
 service AdminService {
@@ -371,6 +373,51 @@ service AdminService {
   // PullVirtualRepo fetches files from a project's virtual repo
   rpc PullVirtualRepo(PullVirtualRepoRequest) returns (PullVirtualRepoResponse) {
     option (google.api.http) = {get: "/v1/projects/{project_id}/repo/virtual"};
+  }
+
+  // CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
+  rpc CreateReport(CreateReportRequest) returns (CreateReportResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/reports",
+      body: "*"
+    };
+  }
+
+  // EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
+  rpc EditReport(EditReportRequest) returns (EditReportResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/reports/{name}",
+      body: "*"
+    };
+  }
+
+  // UnsubscribeReport removes the calling user from a reports recipients list
+  rpc UnsubscribeReport(UnsubscribeReportRequest) returns (UnsubscribeReportResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/reports/{name}/unsubscribe",
+      body: "*"
+    };
+  }
+
+  // DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
+  rpc DeleteReport (DeleteReportRequest) returns (DeleteReportResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{project}/reports/{name}"};
+  }
+
+  // TriggerReport triggers an ad-hoc report run
+  rpc TriggerReport(TriggerReportRequest) returns (TriggerReportResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/reports/{name}/trigger",
+      body: "*"
+    };
+  }
+
+  // GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
+  rpc GenerateReportYAML(GenerateReportYAMLRequest) returns (GenerateReportYAMLResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/reports/-/yaml",
+      body: "*"
+    };
   }
 }
 
@@ -949,11 +996,59 @@ message PullVirtualRepoResponse {
   string next_page_token = 2;
 }
 
-message VirtualFile {
-  string path = 1;
-  bytes data = 2;
-  bool deleted = 3;
-  google.protobuf.Timestamp updated_on = 4;
+message CreateReportRequest {
+  string organization = 1;
+  string project = 2;
+  ReportOptions options = 4;
+}
+
+message CreateReportResponse {
+  string name = 1;
+}
+
+message EditReportRequest {
+  string organization = 1;
+  string project = 2;
+  string name = 3;
+  ReportOptions options = 4;
+}
+
+message EditReportResponse {
+}
+
+message UnsubscribeReportRequest {
+  string organization = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message UnsubscribeReportResponse {}
+
+message DeleteReportRequest {
+  string organization = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message DeleteReportResponse {
+}
+
+message TriggerReportRequest { 
+  string organization = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message TriggerReportResponse {}
+
+message GenerateReportYAMLRequest {
+  string organization = 1;
+  string project = 2;
+  ReportOptions options = 3;
+}
+
+message GenerateReportYAMLResponse {
+  string yaml = 1;
 }
 
 message User {
@@ -1095,4 +1190,22 @@ message ServiceToken {
   string id = 1;
   google.protobuf.Timestamp created_on = 2;
   google.protobuf.Timestamp expires_on = 3;
+}
+
+message VirtualFile {
+  string path = 1;
+  bytes data = 2;
+  bool deleted = 3;
+  google.protobuf.Timestamp updated_on = 4;
+}
+
+message ReportOptions {
+  string title = 1;
+  string refresh_cron = 2;
+  string query_name = 3;
+  string query_args_json = 4;
+  uint64 export_limit = 5;
+  rill.runtime.v1.ExportFormat export_format = 6;
+  string open_url = 7;
+  repeated string recipients = 8;
 }

@@ -2325,27 +2325,6 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
-  MetricsViewSecurity:
-    type: object
-    properties:
-      access:
-        type: string
-        title: Dashboard level access condition
-      rowFilter:
-        type: string
-        title: row level access condition
-      include:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/SecurityFieldCondition'
-        title: either one of include or exclude will be specified
-      exclude:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/SecurityFieldCondition'
-    title: Security for the metrics view
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -3275,7 +3254,7 @@ definitions:
           type: string
         description: Available time zones list preferred time zones using IANA location identifiers.
       security:
-        $ref: '#/definitions/MetricsViewSecurity'
+        $ref: '#/definitions/v1MetricsViewSecurity'
         title: Security for the dashboard
       firstDayOfWeek:
         type: integer
@@ -3509,6 +3488,27 @@ definitions:
         type: array
         items:
           type: object
+  v1MetricsViewSecurity:
+    type: object
+    properties:
+      access:
+        type: string
+        title: Dashboard level access condition
+      rowFilter:
+        type: string
+        title: row level access condition
+      include:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/SecurityFieldCondition'
+        title: either one of include or exclude will be specified
+      exclude:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/SecurityFieldCondition'
+    title: Security for the metrics view
   v1MetricsViewSort:
     type: object
     properties:
@@ -4340,6 +4340,15 @@ definitions:
         type: string
       emailExportUrl:
         type: string
+      security:
+        $ref: '#/definitions/v1ReportSpecSecurity'
+  v1ReportSpecSecurity:
+    type: object
+    properties:
+      ownerUserId:
+        type: string
+      managedByUi:
+        type: boolean
   v1ReportState:
     type: object
     properties:

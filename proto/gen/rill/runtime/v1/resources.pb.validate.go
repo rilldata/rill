@@ -3421,6 +3421,35 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for EmailExportUrl
 
+	if all {
+		switch v := interface{}(m.GetSecurity()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ReportSpecValidationError{
+					field:  "Security",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ReportSpecValidationError{
+					field:  "Security",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSecurity()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ReportSpecValidationError{
+				field:  "Security",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return ReportSpecMultiError(errors)
 	}
@@ -6294,3 +6323,109 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewSpec_SecurityV2_FieldConditionV2ValidationError{}
+
+// Validate checks the field values on ReportSpec_Security with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ReportSpec_Security) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ReportSpec_Security with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ReportSpec_SecurityMultiError, or nil if none found.
+func (m *ReportSpec_Security) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ReportSpec_Security) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for OwnerUserId
+
+	// no validation rules for ManagedByUi
+
+	if len(errors) > 0 {
+		return ReportSpec_SecurityMultiError(errors)
+	}
+
+	return nil
+}
+
+// ReportSpec_SecurityMultiError is an error wrapping multiple validation
+// errors returned by ReportSpec_Security.ValidateAll() if the designated
+// constraints aren't met.
+type ReportSpec_SecurityMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ReportSpec_SecurityMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ReportSpec_SecurityMultiError) AllErrors() []error { return m }
+
+// ReportSpec_SecurityValidationError is the validation error returned by
+// ReportSpec_Security.Validate if the designated constraints aren't met.
+type ReportSpec_SecurityValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ReportSpec_SecurityValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ReportSpec_SecurityValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ReportSpec_SecurityValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ReportSpec_SecurityValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ReportSpec_SecurityValidationError) ErrorName() string {
+	return "ReportSpec_SecurityValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ReportSpec_SecurityValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sReportSpec_Security.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ReportSpec_SecurityValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ReportSpec_SecurityValidationError{}
