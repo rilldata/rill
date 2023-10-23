@@ -77,10 +77,7 @@
         {#each $table.getRowModel().rows as row}
           <tr>
             {#each row.getVisibleCells() as cell, i}
-              <td
-                class="hover:bg-slate-50 px-4 {i ===
-                  row.getVisibleCells().length - 1 && 'pr-2'} py-[5px]"
-              >
+              <td class="hover:bg-slate-50">
                 <svelte:component
                   this={flexRender(
                     cell.column.columnDef.cell,

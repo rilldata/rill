@@ -19,7 +19,7 @@
 
 <a
   href={`/${organization}/${project}/${name}`}
-  class="flex flex-col gap-y-0.5 group"
+  class="flex flex-col gap-y-0.5 group px-4 py-[5px]"
 >
   <div class="flex gap-x-2 items-center">
     <DashboardIcon size={"14px"} className="text-slate-500" />
