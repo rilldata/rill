@@ -29,15 +29,15 @@
   const columns = [
     {
       id: "composite",
-      cell: (info) =>
+      cell: ({ row }) =>
         flexRender(DashboardsTableCompositeCell, {
           organization: organization,
           project: project,
-          name: info.row.original.resource.meta.name.name,
-          title: info.row.original.resource.metricsView.spec.title,
-          lastRefreshed: info.row.original.refreshedOn,
-          description: info.row.original.resource.metricsView.spec.description,
-          error: info.row.original.resource.meta.reconcileError,
+          name: row.original.resource.meta.name.name,
+          title: row.original.resource.metricsView.spec.title,
+          lastRefreshed: row.original.refreshedOn,
+          description: row.original.resource.metricsView.spec.description,
+          error: row.original.resource.meta.reconcileError,
         }),
     },
     {
