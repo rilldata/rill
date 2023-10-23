@@ -78,7 +78,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer release()
 
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 		return err
 	}
 
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
 		return err
 	}
