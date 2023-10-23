@@ -15,11 +15,11 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import {
-  V1ReconcileStatus,
   createRuntimeServiceListResources,
+  V1ReconcileStatus,
 } from "@rilldata/web-common/runtime-client";
 import { invalidateMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation";
-import type { QueryClient } from "@tanstack/svelte-query";
+import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import Axios from "axios";
 import { derived } from "svelte/store";
 
@@ -199,5 +199,42 @@ export function listenAndInvalidateDashboards(
     for (const oldName of existingDashboards) {
       dashboards.delete(oldName);
     }
+  });
+}
+
+/**
+ * The DashboardResource is a wrapper around a V1Resource that adds the
+ * "refreshedOn" attribute, which is the last time the dashboard was refreshed.
+ *
+ * If the backend is updated to include this attribute in the V1Resource, this
+ * wrapper can be removed.
+ */
+export interface DashboardResource {
+  resource: V1Resource;
+  refreshedOn: string;
+}
+
+export function useDashboardsV2(
+  instanceId: string
+): CreateQueryResult<DashboardResource[]> {
+  return createRuntimeServiceListResources(instanceId, undefined, {
+    query: {
+      select: (data) => {
+        const dashboards = data.resources.filter((res) => res.metricsView);
+        return dashboards.map((db) => {
+          // Extract table name from dashboard metadata
+          const refName = db.meta.refs[0];
+          const refTable = data.resources.find(
+            (r) => r.meta?.name?.name === refName?.name
+          );
+
+          // Add the "refreshedOn" attribute
+          const refreshedOn =
+            refTable?.model?.state.refreshedOn ||
+            refTable?.source?.state.refreshedOn;
+          return { resource: db, refreshedOn };
+        });
+      },
+    },
   });
 }
