@@ -11,7 +11,6 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/briandowns/spinner"
-	"github.com/fatih/color"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/printer"
@@ -193,11 +192,6 @@ func OrgExists(ctx context.Context, c *client.Client, name string) (bool, error)
 		return false, err
 	}
 	return true, nil
-}
-
-func PrintlnWarn(str string) {
-	boldYellow := color.New(color.FgYellow).Add(color.Bold)
-	boldYellow.Fprintln(color.Output, str)
 }
 
 func PrintUsers(p *printer.Printer, users []*adminv1.User) error {

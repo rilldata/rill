@@ -86,7 +86,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	// Print warning if currently acting as an assumed user
 	representingUser, err := dotrill.GetRepresentingUser()
 	if err != nil {
-		fmt.Printf("could 	not parse representing user email\n")
+		fmt.Printf("could not parse representing user email\n")
 	}
 	if representingUser != "" {
 		printer.BoldYellow(fmt.Sprintf("Warning: Running action as %q\n", representingUser))
