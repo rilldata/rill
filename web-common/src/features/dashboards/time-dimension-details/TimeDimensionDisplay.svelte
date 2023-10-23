@@ -18,7 +18,6 @@
   import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import type { TableData } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-  import { isFetching } from "@rilldata/web-common/components/column-profile/queries";
 
   export let metricViewName;
 
