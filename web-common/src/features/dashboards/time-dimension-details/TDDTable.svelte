@@ -281,7 +281,11 @@
 </div>
 
 <style>
-  :global(regular-table table tbody tr:first-child) {
+  :global(regular-table table tbody tr:first-child, regular-table thead) {
     cursor: default;
+  }
+
+  :global(regular-table div[sortable="true"]) {
+    cursor: pointer;
   }
 </style>
