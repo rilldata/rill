@@ -179,6 +179,7 @@ export function getDimensionValueTimeSeries(
       const zone = dashboardStore?.selectedTimezone;
 
       if (!dimensionName) return;
+      if (dashboardStore?.selectedScrubRange?.isScrubbing) return;
 
       return derived(
         dimensionValues?.values?.map((value, i) => {

@@ -33,7 +33,6 @@
   const dispatch = createEventDispatcher();
 
   let pivot;
-  let containerWidth;
 
   let rowIdxHover: number;
   let colIdxHover: number;
@@ -102,6 +101,7 @@
 
   // Any time visible line list changes, redraw the table
   $: {
+    scrubPos;
     highlightedCol;
     data?.selectedValues;
     pivot?.draw();
@@ -256,7 +256,6 @@
 
 <div
   on:mouseleave={resetHighlight}
-  bind:clientWidth={containerWidth}
   class="h-full w-full relative mb-2 {comparing === 'dimension' &&
     'cursor-pointer'}"
 >
