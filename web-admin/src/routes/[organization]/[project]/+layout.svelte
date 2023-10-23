@@ -22,10 +22,10 @@
 
 <!-- Note: we don't provide the runtime here when the user is being spoofed via the "View As" functionality.
     In these cases, the "View as" actions manually set the runtime.  -->
-{#if $projRuntime.data && !$viewAsUserStore}
+{#if !$viewAsUserStore}
   <RuntimeProvider
-    host={$projRuntime.data.host}
-    instanceId={$projRuntime.data.instanceId}
+    host={$projRuntime.data?.host}
+    instanceId={$projRuntime.data?.instanceId}
     jwt={$projRuntime.data?.jwt}
   >
     <ProjectDashboardsListener>
