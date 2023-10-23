@@ -59,7 +59,6 @@ require (
 	github.com/stretchr/testify v1.8.3
 	github.com/testcontainers/testcontainers-go v0.19.0
 	github.com/xuri/excelize/v2 v2.7.1
-	github.com/zeebo/assert v1.3.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.42.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.42.0

@@ -152,11 +152,15 @@ func (d *duplicatingHandler) Handle(ctx context.Context, record slog.Record) err
 }
 
 func (d *duplicatingHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	panic("not implemented")
+	newHandler := *d
+	newHandler.zapHandler = d.zapHandler.WithAttrs(attrs).(*zapslog.Handler)
+	return &newHandler
 }
 
 func (d *duplicatingHandler) WithGroup(name string) slog.Handler {
-	panic("not implemented")
+	newHandler := *d
+	newHandler.zapHandler = d.zapHandler.WithGroup(name).(*zapslog.Handler)
+	return &newHandler
 }
 
 // Run starts and runs the controller's event loop.
