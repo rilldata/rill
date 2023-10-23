@@ -20,8 +20,6 @@
   export let scrubStart;
   export let scrubEnd;
 
-  $: console.log(dimensionData);
-
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
   $: mainLineColor = hasSubrangeSelected

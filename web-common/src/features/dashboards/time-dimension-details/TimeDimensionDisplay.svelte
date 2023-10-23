@@ -17,8 +17,6 @@
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { TableData } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 
   export let metricViewName;
@@ -49,7 +47,7 @@
   let timeDimensionDataCopy: TableData;
   $: if (
     $timeDimensionDataStore?.data &&
-    $timeDimensionDataStore?.data.columnHeaderData
+    $timeDimensionDataStore?.data?.columnHeaderData
   ) {
     timeDimensionDataCopy = $timeDimensionDataStore.data;
   }
@@ -87,6 +85,7 @@
 <TDDHeader
   {dimensionName}
   {metricViewName}
+  isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
   comparing={$timeDimensionDataStore?.comparing}
   on:search={(e) => {
     metricsExplorerStore.setSearchText(metricViewName, e.detail);
@@ -113,6 +112,4 @@
       metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE)}
     on:highlight={highlightCell}
   />
-{:else}
-  <Spinner size="18px" status={EntityStatus.Running} />
 {/if}

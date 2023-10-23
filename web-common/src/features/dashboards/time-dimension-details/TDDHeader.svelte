@@ -4,6 +4,8 @@
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -23,10 +25,12 @@
   import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import type { TDDComparison } from "./types";
 
   export let metricViewName: string;
   export let dimensionName: string;
-  export let comparing;
+  export let isFetching = false;
+  export let comparing: TDDComparison;
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -106,6 +110,9 @@
     >
       <div slot="body" class="flex">{selectedMeasureLabel}</div>
     </Chip>
+    {#if isFetching}
+      <Spinner size="18px" status={EntityStatus.Running} />
+    {/if}
   </div>
 
   {#if comparing === "dimension"}

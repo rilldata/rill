@@ -45,14 +45,13 @@ export type TimeSeriesDataStore = Readable<TimeDimensionDataState>;
 function prepareDimensionData(
   totalsData,
   data: DimensionDataItem[],
-  // columnCount: number,
   total: number,
   unfilteredTotal: number,
   measure: MetricsViewSpecMeasureV2,
   selectedValues: string[],
   isAllTime: boolean
 ): TableData {
-  if (!data) return;
+  if (!data || !totalsData) return;
 
   const formatPreset =
     (measure?.formatPreset as FormatPreset) ?? FormatPreset.HUMANIZE;
@@ -265,16 +264,12 @@ function prepareTimeData(
 function createDimensionTableData(
   ctx: StateManagers
 ): Readable<DimensionDataItem[]> {
-  return derived(ctx.dashboardStore, ($dashboardStore, set) => {
-    const measureName = $dashboardStore?.expandedMeasureName;
-
-    if (!measureName) return;
-
-    getDimensionValueTimeSeries(ctx, [measureName], "table").subscribe(
-      (data) => {
-        set(data);
-      }
-    );
+  return derived(ctx.dashboardStore, (dashboardStore, set) => {
+    const measureName = dashboardStore?.expandedMeasureName;
+    return derived(
+      getDimensionValueTimeSeries(ctx, [measureName], "table"),
+      (data) => data
+    ).subscribe(set);
   });
 }
 
