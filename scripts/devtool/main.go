@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"os/exec"
@@ -81,7 +82,7 @@ func main() {
 		cmd = exec.CommandContext(ctx, "docker-compose", "-f", "admin/docker-compose.yml", "down", "--volumes")
 		err = cmd.Run()
 		if err != nil {
-			panic("could not stop db")
+			panic(fmt.Sprintf("could not stop db %s", err.Error()))
 		}
 		yellow.Println("DELETED EXISTING VOLUMES")
 	}
@@ -91,11 +92,11 @@ func main() {
 	yellow.Println("STARTING DOCKER SERVICES")
 	err = pgCmd.Start()
 	if err != nil {
-		panic("could not start db")
+		panic(fmt.Sprintf("could not start db %s", err.Error()))
 	}
 	group.Go(func() error {
 		err := pgCmd.Wait()
-		red.Println("STOPPING DOCKER SERVICES")
+		red.Printf("STOPPING DOCKER SERVICES %s\n", err.Error())
 		cancel()
 		return err
 	})
@@ -110,11 +111,11 @@ func main() {
 		yellow.Println("STARTING ADMIN")
 		err = admin.Start()
 		if err != nil {
-			panic("unable to start admin server")
+			panic(fmt.Sprintf("unable to start admin server: %s", err.Error()))
 		}
 		group.Go(func() error {
 			err := admin.Wait()
-			red.Println("ADMIN SERVER STOPPED")
+			red.Printf("ADMIN SERVER STOPPED %s\n", err.Error())
 			cancel()
 			return err
 		})
@@ -129,11 +130,11 @@ func main() {
 		yellow.Println("STARTING RUNTIME")
 		err = rt.Start()
 		if err != nil {
-			panic("unable to start runtime server")
+			panic(fmt.Sprintf("unable to start runtime server: %s", err.Error()))
 		}
 		group.Go(func() error {
 			err := rt.Wait()
-			red.Println("RUNTIME SERVER STOPPED")
+			red.Printf("RUNTIME SERVER STOPPED %s\n", err.Error())
 			cancel()
 			return err
 		})
@@ -155,7 +156,7 @@ func main() {
 		ui.Stderr = os.Stdout
 		err = ui.Start()
 		if err != nil {
-			panic("unable to start UI")
+			panic(fmt.Sprintf("unable to start UI: %s", err.Error()))
 		}
 		group.Go(func() error {
 			err := ui.Wait()
