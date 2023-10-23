@@ -116,12 +116,30 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		}
 	}
 
+	tz := time.UTC
+	if q.TimeZone != "" {
+		tz, err = time.LoadLocation(q.TimeZone)
+		if err != nil {
+			return err
+		}
+	}
+
+	fdow := mv.FirstDayOfWeek
+	if mv.FirstDayOfWeek > 7 || mv.FirstDayOfWeek <= 0 {
+		fdow = 1
+	}
+
+	fmoy := mv.FirstMonthOfYear
+	if mv.FirstMonthOfYear > 12 || mv.FirstMonthOfYear <= 0 {
+		fmoy = 1
+	}
+
 	var start time.Time
 	var zeroTime time.Time
 	var data []*runtimev1.TimeSeriesValue
 	var nullRecords *structpb.Struct
+	rowMap := make(map[string]any)
 	for rows.Next() {
-		rowMap := make(map[string]any)
 		err := rows.MapScan(rowMap)
 		if err != nil {
 			return err
@@ -141,20 +159,13 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 			return err
 		}
 
-		tz := time.UTC
-		if q.TimeZone != "" {
-			tz, err = time.LoadLocation(q.TimeZone)
-			if err != nil {
-				return err
-			}
-		}
 		if nullRecords == nil {
 			nullRecords = generateNullRecords(records)
 		}
 		if start.Before(t) {
 			if zeroTime.Equal(start) {
 				if q.TimeStart != nil {
-					start = truncateTime(q.TimeStart.AsTime(), q.TimeGranularity, tz, 1, 1)
+					start = truncateTime(q.TimeStart.AsTime(), q.TimeGranularity, tz, int(fdow), int(fmoy))
 					data = addNulls(data, nullRecords, start, t, q.TimeGranularity)
 				}
 			} else {
