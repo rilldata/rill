@@ -23,11 +23,12 @@ import type {
   ChartInteractionColumns,
   HighlightedCell,
   TableData,
+  TDDComparison,
 } from "./types";
 
 export type TimeDimensionDataState = {
   isFetching: boolean;
-  comparing: "dimension" | "time" | "none";
+  comparing: TDDComparison;
   data?: TableData;
 };
 

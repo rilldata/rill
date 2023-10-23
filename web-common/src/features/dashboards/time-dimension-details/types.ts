@@ -18,3 +18,5 @@ export interface ChartInteractionColumns {
   scrubStart: number;
   scrubEnd: number;
 }
+
+export type TDDComparison = "time" | "none" | "dimension";

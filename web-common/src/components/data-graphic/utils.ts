@@ -304,10 +304,10 @@ export function createAdaptiveLineThicknessStore(yAccessor) {
 
 // This is function equivalent of WithBisector
 export function bisectData(
-  value,
-  direction,
-  accessor,
-  data,
+  value: Date,
+  direction: "left" | "right" | "center",
+  accessor: string,
+  data: ArrayLike<unknown>,
   returnPos = false
 ) {
   if (!data?.length) return;
@@ -318,8 +318,12 @@ export function bisectData(
 }
 
 /** For a scale domain returns a formatter for axis label and super label */
-export function createTimeFormat(scaleDomain, numberOfValues) {
-  const diff = Math.abs(scaleDomain[1] - scaleDomain[0]) / 1000;
+export function createTimeFormat(
+  scaleDomain: [Date, Date],
+  numberOfValues: number
+): [(d: Date) => string, (d: Date) => string] {
+  const diff =
+    Math.abs(scaleDomain[1]?.getTime() - scaleDomain[0]?.getTime()) / 1000;
   if (!diff) return [timeFormat("%d %b"), timeFormat("%Y")];
   const gap = diff / (numberOfValues - 1); // time gap between two consecutive values
 

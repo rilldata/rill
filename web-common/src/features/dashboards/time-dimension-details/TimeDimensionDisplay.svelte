@@ -19,6 +19,7 @@
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import type { TableData } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 
   export let metricViewName;
 
@@ -45,7 +46,7 @@
   }
 
   // Create a copy of the data to avoid flashing of table in transient states
-  let timeDimensionDataCopy;
+  let timeDimensionDataCopy: TableData;
   $: if ($timeDimensionDataStore?.data) {
     timeDimensionDataCopy = $timeDimensionDataStore.data;
   }

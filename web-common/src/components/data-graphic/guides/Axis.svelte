@@ -156,7 +156,7 @@ This component will draw an axis on the specified side.
 
   $: if ($plotConfig[`${xOrY}Type`] === "date") {
     [formatterFunction, superLabelFormatter] = createTimeFormat(
-      $mainScale.domain(),
+      $mainScale.domain() as [Date, Date],
       ticks?.length
     );
   } else {

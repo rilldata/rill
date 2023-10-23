@@ -12,6 +12,7 @@
     MeasureArrow,
     PieChart,
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDIcons";
+  import type { TableData, TDDComparison } from "./types";
   import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
   import { createEventDispatcher } from "svelte";
 
@@ -22,12 +23,12 @@
   export let excludeMode: boolean;
   export let sortDirection: boolean;
   export let highlightedCol: number;
-  export let scrubPos;
-  export let comparing;
-  export let data;
+  export let scrubPos: { start: number; end: number };
+  export let comparing: TDDComparison;
+  export let data: TableData;
 
   /** Formatter for the time axis in the table*/
-  export let timeFormatter;
+  export let timeFormatter: (date: Date) => string;
 
   const dispatch = createEventDispatcher();
 
