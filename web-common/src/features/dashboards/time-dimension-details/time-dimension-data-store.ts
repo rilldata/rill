@@ -17,7 +17,10 @@ import {
   TIME_COMPARISON,
 } from "@rilldata/web-common/lib/time/config";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
-import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+import {
+  getDimensionValueTimeSeries,
+  type DimensionDataItem,
+} from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
   ChartInteractionColumns,
@@ -259,6 +262,29 @@ function prepareTimeData(
   };
 }
 
+function createDimensionTableData(
+  ctx: StateManagers
+): Readable<DimensionDataItem[]> {
+  return derived(ctx.dashboardStore, ($dashboardStore, set) => {
+    const measureName = $dashboardStore?.expandedMeasureName;
+
+    if (!measureName) return;
+
+    getDimensionValueTimeSeries(ctx, [measureName], "table").subscribe(
+      (data) => {
+        set(data);
+      }
+    );
+  });
+}
+
+/**
+ * Memoized version of the table data. Currently, memoized by metrics view name.
+ */
+export const useDimensionTableData = memoizeMetricsStore<
+  Readable<DimensionDataItem[]>
+>((ctx: StateManagers) => createDimensionTableData(ctx));
+
 export function createTimeDimensionDataStore(ctx: StateManagers) {
   return derived(
     [
@@ -266,8 +292,15 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
       useMetaQuery(ctx),
       useTimeControlStore(ctx),
       useTimeSeriesDataStore(ctx),
+      useDimensionTableData(ctx),
     ],
-    ([dashboardStore, metricsView, timeControls, timeSeries]) => {
+    ([
+      dashboardStore,
+      metricsView,
+      timeControls,
+      timeSeries,
+      tableDimensionData,
+    ]) => {
       if (
         !timeControls.ready ||
         timeControls?.isFetching ||
@@ -291,6 +324,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
 
       let comparing;
       let data: TableData;
+
       if (dimensionName) {
         comparing = "dimension";
 
@@ -308,7 +342,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
 
         data = prepareDimensionData(
           timeSeries?.timeSeriesData,
-          timeSeries?.dimensionTableData,
+          tableDimensionData,
           total,
           unfilteredTotal,
           measure,

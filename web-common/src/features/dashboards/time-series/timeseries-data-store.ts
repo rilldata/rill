@@ -30,7 +30,6 @@ export type TimeSeriesDataState = {
   unfilteredTotal?: V1MetricsViewAggregationResponseDataItem;
   comparisonTotal?: V1MetricsViewAggregationResponseDataItem;
   dimensionChartData?: DimensionDataItem[];
-  dimensionTableData?: DimensionDataItem[];
 };
 
 export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
@@ -131,15 +130,6 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
           measures,
           "chart"
         );
-
-        // Fetch table data only if in TDD view
-        if (dashboardStore?.expandedMeasureName) {
-          dimensionTimeSeriesTable = getDimensionValueTimeSeries(
-            ctx,
-            measures,
-            "table"
-          );
-        }
       }
 
       return derived(
@@ -159,7 +149,6 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
           unfilteredTotal,
           comparisonTotal,
           dimensionChart,
-          dimensionTable,
         ]) => {
           let timeSeriesData = primary?.data?.data;
 
@@ -185,7 +174,6 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
             unfilteredTotal: unfilteredTotal?.data?.data[0],
             comparisonTotal: comparisonTotal?.data?.data[0],
             dimensionChartData: (dimensionChart as DimensionDataItem[]) || [],
-            dimensionTableData: (dimensionTable as DimensionDataItem[]) || [],
           };
         }
       ).subscribe(set);

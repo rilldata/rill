@@ -47,7 +47,10 @@
 
   // Create a copy of the data to avoid flashing of table in transient states
   let timeDimensionDataCopy: TableData;
-  $: if ($timeDimensionDataStore?.data) {
+  $: if (
+    $timeDimensionDataStore?.data &&
+    $timeDimensionDataStore?.data.columnHeaderData
+  ) {
     timeDimensionDataCopy = $timeDimensionDataStore.data;
   }
   $: formattedData = timeDimensionDataCopy;
