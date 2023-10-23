@@ -138,7 +138,7 @@ func TestServiceWorkflow(t *testing.T) {
 	cmd.SetArgs([]string{"myservice"})
 	err = cmd.Execute()
 	c.Assert(err, qt.IsNil)
-	expectedMsg := fmt.Sprintf("Deleted service: %q", serviceName)
+	expectedMsg := fmt.Sprintf("Deleted service: %q\n", serviceName)
 	c.Assert(buf.String(), qt.Equals, expectedMsg)
 
 	// List service in org after delete
