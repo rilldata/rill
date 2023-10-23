@@ -2,7 +2,6 @@ package env
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -50,7 +49,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.Println(printer.BoldGreen("Updated project variables"))
+			ch.Printer.PrintlnSuccess("Updated project variables")
 			return nil
 		},
 	}

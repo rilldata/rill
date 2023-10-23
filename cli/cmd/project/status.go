@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -49,7 +48,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// 1. Print project info
-			ch.Printer.Println(printer.BoldGreen("Project info\n"))
+			ch.Printer.PrintlnSuccess("Project info")
 			err = ch.Printer.PrintResource(toRow(proj.Project))
 			if err != nil {
 				return err
@@ -61,7 +60,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// 2. Print deployment info
-			ch.Printer.Println(printer.BoldGreen("\nDeployment info\n"))
+			ch.Printer.PrintlnSuccess("\nDeployment info")
 			fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
 			fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 			fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
@@ -102,7 +101,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				table = append(table, newResourceTableRow(r))
 			}
 
-			ch.Printer.Println(printer.BoldGreen("\nResources\n"))
+			ch.Printer.PrintlnSuccess("\nResources")
 			err = ch.Printer.PrintResource(table)
 			if err != nil {
 				return err
@@ -114,7 +113,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 					table = append(table, newParseErrorTableRow(e))
 				}
 
-				ch.Printer.Println(printer.BoldGreen("\nParse errors\n"))
+				ch.Printer.PrintlnSuccess("\nParse errors")
 				err = ch.Printer.PrintResource(table)
 				if err != nil {
 					return err

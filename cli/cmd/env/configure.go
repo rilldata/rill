@@ -8,7 +8,6 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -49,8 +48,8 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				ch.Printer.Print(printer.BoldYellow(fmt.Sprintf("Directory at %q doesn't contain a valid Rill project.\n\n", fullpath)))
-				ch.Printer.Print(printer.BoldYellow("Run `rill env configure` from a Rill project directory or use `--path` to pass a project path.\n"))
+				ch.Printer.PrintlnWarn(fmt.Sprintf("Directory at %q doesn't contain a valid Rill project.\n", fullpath))
+				ch.Printer.PrintlnWarn("Run `rill env configure` from a Rill project directory or use `--path` to pass a project path.")
 				return nil
 			}
 
@@ -114,7 +113,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to update variables %w", err)
 			}
-			ch.Printer.Print(printer.BoldGreen("Updated project variables\n"))
+			ch.Printer.PrintlnSuccess("Updated project variables")
 
 			if !cmd.Flags().Changed("redeploy") {
 				redeploy = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redeploy)
@@ -123,10 +122,10 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 			if redeploy {
 				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: cfg.Org, Project: projectName})
 				if err != nil {
-					ch.Printer.Print(printer.BoldYellow("Redeploy trigger failed. Trigger redeploy again with `rill project reconcile --reset=true` if required.\n"))
+					ch.Printer.PrintlnWarn("Redeploy trigger failed. Trigger redeploy again with `rill project reconcile --reset=true` if required.")
 					return err
 				}
-				ch.Printer.Print(printer.BoldGreen("Redeploy triggered successfully.\n"))
+				ch.Printer.PrintlnSuccess("Redeploy triggered successfully.")
 			}
 			return nil
 		},

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -53,7 +52,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				orgQuotas := res.Organization.Quotas
-				ch.Printer.Println(printer.BoldGreen("Updated organizations quota"))
+				ch.Printer.PrintlnSuccess("Updated organizations quota")
 				fmt.Printf("Organization Name: %s\n", org)
 				fmt.Printf("Projects: %d\n", orgQuotas.Projects)
 				fmt.Printf("Deployments: %d\n", orgQuotas.Deployments)
@@ -75,7 +74,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				userQuotas := res.User.Quotas
-				ch.Printer.Println(printer.BoldGreen("Updated user's quota"))
+				ch.Printer.PrintlnSuccess("Updated user's quota")
 				fmt.Printf("User: %s\n", email)
 				fmt.Printf("Single user orgs: %d\n", userQuotas.SingleuserOrgs)
 			} else {

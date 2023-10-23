@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -42,7 +41,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if !force {
-				ch.Printer.Print(printer.BoldYellow(fmt.Sprintf("Warn: Deleting the project %q will remove all metadata associated with the project\n", name)))
+				ch.Printer.PrintlnWarn(fmt.Sprintf("Warn: Deleting the project %q will remove all metadata associated with the project", name))
 
 				msg := fmt.Sprintf("Type %q to confirm deletion", name)
 				project, err := cmdutil.InputPrompt(msg, "")
@@ -63,7 +62,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("Deleted project: %v", name)))
+			ch.Printer.PrintlnSuccess(fmt.Sprintf("Deleted project: %v", name))
 			return nil
 		},
 	}

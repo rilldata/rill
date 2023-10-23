@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -48,11 +47,11 @@ func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			if res.ProdDeployment == nil {
-				ch.Printer.Println(printer.BoldYellow("Project does not have a production deployment"))
+				ch.Printer.PrintlnWarn("Project does not have a production deployment")
 				return nil
 			}
 
-			ch.Printer.Println(printer.BoldGreen("Runtime info"))
+			ch.Printer.PrintlnSuccess("Runtime info")
 			ch.Printer.Printf("  Host: %s\n", res.ProdDeployment.RuntimeHost)
 			ch.Printer.Printf("  Instance: %s\n", res.ProdDeployment.RuntimeInstanceId)
 			ch.Printer.Printf("  JWT: %s\n", res.Jwt)

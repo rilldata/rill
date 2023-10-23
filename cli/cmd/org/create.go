@@ -6,7 +6,6 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -56,7 +55,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.Println(printer.BoldGreen("Created organization"))
+			ch.Printer.PrintlnSuccess("Created organization")
 			err = ch.Printer.PrintResource([]*organization{toRow(res.Organization)})
 			if err != nil {
 				return err

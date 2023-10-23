@@ -6,7 +6,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -71,7 +70,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.Println(printer.BoldGreen("Renamed organization"))
+			ch.Printer.PrintlnSuccess("Renamed organization")
 			err = ch.Printer.PrintResource([]*organization{toRow(updatedOrg.Organization)})
 			if err != nil {
 				return err

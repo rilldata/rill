@@ -7,7 +7,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/spf13/cobra"
 )
 
@@ -63,7 +62,7 @@ func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			cfg.AdminURL = url
 
-			ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("Set default env to %q, url is %q", env, url)))
+			ch.Printer.PrintlnSuccess(fmt.Sprintf("Set default env to %q, url is %q", env, url))
 			err = auth.SelectOrgFlow(cmd.Context(), ch)
 			if err != nil {
 				return err

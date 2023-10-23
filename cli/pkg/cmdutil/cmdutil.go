@@ -196,7 +196,7 @@ func OrgExists(ctx context.Context, c *client.Client, name string) (bool, error)
 
 func PrintUsers(p *printer.Printer, users []*adminv1.User) error {
 	if len(users) == 0 {
-		p.Println(printer.BoldYellow("No users found"))
+		p.PrintlnWarn("No users found")
 		return nil
 	}
 
@@ -210,7 +210,7 @@ func PrintUsers(p *printer.Printer, users []*adminv1.User) error {
 
 func PrintMembers(p *printer.Printer, members []*adminv1.Member) error {
 	if len(members) == 0 {
-		p.Println(printer.BoldYellow("No members found"))
+		p.PrintlnWarn("No members found")
 		return nil
 	}
 
@@ -227,7 +227,7 @@ func PrintInvites(p *printer.Printer, invites []*adminv1.UserInvite) error {
 		return nil
 	}
 
-	p.Println(printer.BoldGreen("Pending user invites"))
+	p.PrintlnSuccess("Pending user invites")
 	err := p.PrintResource(toInvitesTable(invites))
 	if err != nil {
 		return err

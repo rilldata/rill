@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -39,7 +38,7 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("Updated role of user %q to %q in the project \"%s/%s\"", email, role, cfg.Org, projectName)))
+				ch.Printer.PrintlnSuccess(fmt.Sprintf("Updated role of user %q to %q in the project \"%s/%s\"", email, role, cfg.Org, projectName))
 			} else {
 				_, err = client.SetOrganizationMemberRole(cmd.Context(), &adminv1.SetOrganizationMemberRoleRequest{
 					Organization: cfg.Org,
@@ -49,7 +48,7 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("Updated role of user %q to %q in the organization %q", email, role, cfg.Org)))
+				ch.Printer.PrintlnSuccess(fmt.Sprintf("Updated role of user %q to %q in the organization %q", email, role, cfg.Org))
 			}
 
 			return nil

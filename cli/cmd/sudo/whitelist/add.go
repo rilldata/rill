@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -28,9 +27,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 			domain := args[1]
 			role := args[2]
 
-			ch.Printer.Println(printer.BoldYellow(fmt.Sprintf("Warn: Whitelisting will give all users from domain %q access to the organization %q as %s", domain, org, role)))
+			ch.Printer.PrintlnWarn(fmt.Sprintf("Warn: Whitelisting will give all users from domain %q access to the organization %q as %s", domain, org, role))
 			if !cmdutil.ConfirmPrompt("Do you want to continue", "", false) {
-				ch.Printer.Println(printer.BoldYellow("Aborted"))
+				ch.Printer.PrintlnWarn("Aborted")
 				return nil
 			}
 
@@ -43,7 +42,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.Println(printer.BoldGreen("Success"))
+			ch.Printer.PrintlnSuccess("Success")
 
 			return nil
 		},

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -41,9 +40,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				if res.PendingSignup {
-					ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("Invitation sent to %q to join project \"%s/%s\" as %q", email, cfg.Org, projectName, role)))
+					ch.Printer.PrintlnSuccess(fmt.Sprintf("Invitation sent to %q to join project \"%s/%s\" as %q", email, cfg.Org, projectName, role))
 				} else {
-					ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("User %q added to the project \"%s/%s\" as %q", email, cfg.Org, projectName, role)))
+					ch.Printer.PrintlnSuccess(fmt.Sprintf("User %q added to the project \"%s/%s\" as %q", email, cfg.Org, projectName, role))
 				}
 			} else {
 				res, err := client.AddOrganizationMember(cmd.Context(), &adminv1.AddOrganizationMemberRequest{
@@ -56,9 +55,9 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				if res.PendingSignup {
-					ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("Invitation sent to %q to join organization %q as %q", email, cfg.Org, role)))
+					ch.Printer.PrintlnSuccess(fmt.Sprintf("Invitation sent to %q to join organization %q as %q", email, cfg.Org, role))
 				} else {
-					ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("User %q added to the organization %q as %q", email, cfg.Org, role)))
+					ch.Printer.PrintlnSuccess(fmt.Sprintf("User %q added to the organization %q as %q", email, cfg.Org, role))
 				}
 			}
 

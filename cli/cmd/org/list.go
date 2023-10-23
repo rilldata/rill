@@ -2,7 +2,6 @@ package org
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -32,11 +31,11 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(res.Organizations) == 0 {
-				ch.Printer.Println(printer.BoldYellow("No orgs found"))
+				ch.Printer.PrintlnWarn("No orgs found")
 				return nil
 			}
 
-			ch.Printer.Println(printer.BoldGreen("Organizations list"))
+			ch.Printer.PrintlnSuccess("Organizations list")
 			err = ch.Printer.PrintResource(toTable(res.Organizations, cfg.Org))
 			if err != nil {
 				return err

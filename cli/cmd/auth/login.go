@@ -9,7 +9,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -70,10 +69,10 @@ func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 		return err
 	}
 
-	ch.Printer.Print(printer.Bold("\nConfirmation Code: "))
-	ch.Printer.Println(printer.BoldGreen(deviceVerification.UserCode))
+	ch.Printer.PrintBold("\nConfirmation Code: ")
+	ch.Printer.PrintlnSuccess(deviceVerification.UserCode)
 
-	ch.Printer.Print(printer.Bold(fmt.Sprintf("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL)))
+	ch.Printer.PrintBold(fmt.Sprintf("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL))
 
 	_ = browser.Open(deviceVerification.VerificationCompleteURL)
 
@@ -88,7 +87,7 @@ func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	}
 	// set the default token to the one we just got
 	cfg.AdminTokenDefault = res1.AccessToken
-	ch.Printer.Print(printer.Bold("Successfully logged in. Welcome to Rill!\n"))
+	ch.Printer.PrintBold("Successfully logged in. Welcome to Rill!\n")
 	return nil
 }
 
@@ -106,7 +105,7 @@ func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper) error {
 	}
 
 	if len(res.Organizations) == 0 {
-		ch.Printer.Println(printer.BoldYellow("You are not part of an org. Run `rill org create` or `rill deploy` to create one."))
+		ch.Printer.PrintlnWarn("You are not part of an org. Run `rill org create` or `rill deploy` to create one.")
 		return nil
 	}
 

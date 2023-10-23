@@ -5,7 +5,6 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -21,7 +20,7 @@ func LogoutCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			token := cfg.AdminToken()
 			if token == "" {
-				ch.Printer.Println(printer.BoldYellow("You are already logged out."))
+				ch.Printer.PrintlnWarn("You are already logged out.")
 				return nil
 			}
 
@@ -30,7 +29,7 @@ func LogoutCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.Println(printer.BoldGreen("Successfully logged out."))
+			ch.Printer.PrintlnSuccess("Successfully logged out.")
 			return nil
 		},
 	}

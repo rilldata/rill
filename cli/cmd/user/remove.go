@@ -36,7 +36,7 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 					return err
 				}
 
-				ch.Printer.Println(fmt.Sprintf("Removed user %q from project \"%s/%s\"", email, cfg.Org, projectName))
+				ch.Printer.PrintlnSuccess(fmt.Sprintf("Removed user %q from project \"%s/%s\"", email, cfg.Org, projectName))
 			} else {
 				_, err = client.RemoveOrganizationMember(cmd.Context(), &adminv1.RemoveOrganizationMemberRequest{
 					Organization:     cfg.Org,
@@ -46,7 +46,7 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				ch.Printer.Println(fmt.Sprintf("Removed user %q from organization %q", email, cfg.Org))
+				ch.Printer.PrintlnSuccess(fmt.Sprintf("Removed user %q from organization %q", email, cfg.Org))
 			}
 
 			return nil

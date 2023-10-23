@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
@@ -76,7 +75,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.Println(printer.BoldGreen("Updated organization"))
+			ch.Printer.PrintlnSuccess("Updated organization")
 			err = ch.Printer.PrintResource([]*organization{toRow(updatedOrg.Organization)})
 			if err != nil {
 				return err

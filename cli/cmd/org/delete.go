@@ -6,7 +6,6 @@ import (
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -91,7 +90,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("Deleted organization: %v", name)))
+			ch.Printer.PrintlnSuccess(fmt.Sprintf("Deleted organization: %v", name))
 			return nil
 		},
 	}

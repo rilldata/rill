@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -27,10 +26,10 @@ func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			domain := args[0]
 
-			ch.Printer.Println(printer.BoldYellow(fmt.Sprintf("If you confirm, new and existing users with email addresses ending in %q will automatically be added to %q with role %q."+
-				"\n\nTo whitelist another email domain than your own, reach out to support: https://rilldata.com/support", domain, cfg.Org, role)))
+			ch.Printer.PrintlnWarn(fmt.Sprintf("If you confirm, new and existing users with email addresses ending in %q will automatically be added to %q with role %q."+
+				"\n\nTo whitelist another email domain than your own, reach out to support: https://rilldata.com/support", domain, cfg.Org, role))
 			if !cmdutil.ConfirmPrompt("Do you confirm?", "", false) {
-				ch.Printer.Println(printer.BoldYellow("Aborted"))
+				ch.Printer.PrintlnWarn("Aborted")
 				return nil
 			}
 
@@ -42,7 +41,7 @@ func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			ch.Printer.Println(printer.BoldGreen(fmt.Sprintf("Whitelisted %q for %q (to remove it, use `rill user whitelist remove`).", domain, cfg.Org)))
+			ch.Printer.PrintlnSuccess(fmt.Sprintf("Whitelisted %q for %q (to remove it, use `rill user whitelist remove`).", domain, cfg.Org))
 
 			return nil
 		},

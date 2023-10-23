@@ -151,6 +151,26 @@ func (p *Printer) Print(i ...interface{}) {
 	fmt.Fprint(p.out(), i...)
 }
 
+func (p *Printer) PrintlnSuccess(str string) {
+	p.Println(BoldGreen(str))
+}
+
+func (p *Printer) PrintlnWarn(str string) {
+	p.Println(BoldYellow(str))
+}
+
+func (p *Printer) PrintlnError(str string) {
+	p.Println(BoldRed(str))
+}
+
+func (p *Printer) PrintlnInfo(str string) {
+	p.Println(BoldWhite(str))
+}
+
+func (p *Printer) PrintBold(str string) {
+	p.Print(Bold(str))
+}
+
 // BoldGreen returns a string formatted with green and bold.
 func BoldGreen(msg interface{}) string {
 	return color.New(color.FgGreen).Add(color.Bold).Sprint(msg)

@@ -26,7 +26,7 @@ func RevokeCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printer.Println("Revoked token")
+			ch.Printer.PrintlnSuccess("Revoked token")
 
 			return nil
 		},

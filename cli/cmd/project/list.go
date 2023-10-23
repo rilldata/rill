@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -34,11 +33,11 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if len(res.Projects) == 0 {
-				ch.Printer.Println(printer.BoldYellow("No projects found"))
+				ch.Printer.PrintlnWarn("No projects found")
 				return nil
 			}
 
-			ch.Printer.Println(printer.BoldGreen("Projects list"))
+			ch.Printer.PrintlnSuccess("Projects list")
 			err = ch.Printer.PrintResource(toTable(res.Projects))
 			if err != nil {
 				return err

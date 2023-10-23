@@ -2,7 +2,6 @@ package project
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -34,7 +33,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			if len(res.Names) == 0 {
-				ch.Printer.Println(printer.BoldYellow("No projects found"))
+				ch.Printer.PrintlnWarn("No projects found")
 				return nil
 			}
 

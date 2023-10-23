@@ -10,7 +10,6 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
-	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/spf13/cobra"
@@ -77,7 +76,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				msg := fmt.Sprintf("Rill will create project files in %q. Do you want to continue?", displayPath)
 				confirm := cmdutil.ConfirmPrompt(msg, "", defval)
 				if !confirm {
-					ch.Printer.Println(printer.BoldYellow("Aborted"))
+					ch.Printer.PrintlnWarn("Aborted")
 					return nil
 				}
 			}
