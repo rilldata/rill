@@ -10,7 +10,6 @@
   import SignIn from "../authentication/SignIn.svelte";
   import ShareDashboardButton from "../dashboards/share/ShareDashboardButton.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
-  import ProjectTabs from "../projects/ProjectTabs.svelte";
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
   import { isDashboardPage, isProjectPage } from "./nav-utils";
@@ -66,7 +65,3 @@
     {/if}
   </div>
 </div>
-
-{#if onProjectPage}
-  <ProjectTabs />
-{/if}

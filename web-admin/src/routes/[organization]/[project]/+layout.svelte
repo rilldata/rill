@@ -3,6 +3,7 @@
   import { page } from "$app/stores";
   import ProjectDashboardsListener from "@rilldata/web-admin/features/projects/ProjectDashboardsListener.svelte";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
+  import ProjectTabs from "../../../features/projects/ProjectTabs.svelte";
   import { useProjectRuntime } from "../../../features/projects/selectors";
   import { viewAsUserStore } from "../../../features/view-as-user/viewAsUserStore";
 
@@ -28,6 +29,9 @@
     jwt={$projRuntime.data?.jwt}
   >
     <ProjectDashboardsListener>
+      <!-- We make sure to put the project tabs within the `RuntimeProvider` so we can add decoration 
+        to the tab labels that query the runtime (e.g. the project status badge) -->
+      <ProjectTabs />
       <slot />
     </ProjectDashboardsListener>
   </RuntimeProvider>
