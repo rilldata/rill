@@ -3,7 +3,6 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender } from "@tanstack/svelte-table";
-  import type { ColumnDef } from "@tanstack/table-core/src/types";
   import Table from "../../../components/table/Table.svelte";
   import { DashboardResource, useDashboardsV2 } from "./dashboards";
   import DashboardsError from "./DashboardsError.svelte";
@@ -21,8 +20,13 @@
    * Table column definitions.
    * - "composite": Renders all dashboard data in a single cell.
    * - Others: Used for sorting and filtering but not displayed.
+   *
+   * Note: TypeScript error prevents using `ColumnDef<DashboardResource, string>[]`.
+   * Relevant issues:
+   * - https://github.com/TanStack/table/issues/4241
+   * - https://github.com/TanStack/table/issues/4302
    */
-  const columns: ColumnDef<DashboardResource, string>[] = [
+  const columns = [
     {
       id: "composite",
       cell: (info) =>
