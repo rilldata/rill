@@ -15,15 +15,15 @@
   $: isValidLastRefreshedDate = !isNaN(lastRefreshedDate.getTime());
 </script>
 
-<div class="flex flex-col gap-y-0.5">
+<a
+  href={`/${organization}/${project}/${name}`}
+  class="flex flex-col gap-y-0.5 group"
+>
   <div class="flex gap-x-2 items-center">
     <DashboardIcon size={"14px"} className="text-slate-500" />
-    <a
-      href={`/${organization}/${project}/${name}`}
-      class="text-gray-700 text-sm font-semibold hover:text-blue-600"
-    >
+    <div class="text-gray-700 text-sm font-semibold group-hover:text-blue-600">
       {title}
-    </a>
+    </div>
     {#if error !== ""}
       <Tag color="red">Error</Tag>
     {/if}
@@ -39,4 +39,4 @@
       <span class="line-clamp-1">{description}</span>
     {/if}
   </div>
-</div>
+</a>
