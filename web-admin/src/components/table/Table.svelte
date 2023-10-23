@@ -11,7 +11,7 @@
   import { writable } from "svelte/store";
 
   export let data: unknown[] = [];
-  export let columns: ColumnDef<unknown>[] = [];
+  export let columns: ColumnDef<unknown, unknown>[] = [];
   export let columnVisibility: Record<string, boolean> = {};
 
   let sorting = [];
