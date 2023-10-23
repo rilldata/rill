@@ -106,19 +106,19 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	}.String()
 
 	// Try to get from cache
-	if val, ok := r.queryCache.cache.Get(key); ok {
-		observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", true))
-		return query.UnmarshalResult(val)
-	}
-	observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", false))
+	//if val, ok := r.queryCache.cache.Get(key); ok {
+	//	observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", true))
+	//	return query.UnmarshalResult(val)
+	//}
+	//observability.AddRequestAttributes(ctx, attribute.Bool("query.cache_hit", false))
 
 	// Load with singleflight
 	owner := false
 	val, err := r.queryCache.singleflight.Do(ctx, key, func(ctx context.Context) (any, error) {
 		// Try cache again
-		if val, ok := r.queryCache.cache.Get(key); ok {
-			return val, nil
-		}
+		//if val, ok := r.queryCache.cache.Get(key); ok {
+		//	return val, nil
+		//}
 
 		// Load
 		err := query.Resolve(ctx, r, instanceID, priority)

@@ -25,6 +25,7 @@
     metricsExplorerStore,
     useDashboardStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import {
     LeaderboardItemData,
@@ -32,7 +33,10 @@
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
-  import { prepareSortedQueryBody } from "../dashboard-utils";
+  import {
+    getDimensionColumn,
+    prepareSortedQueryBody,
+  } from "../dashboard-utils";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -43,9 +47,10 @@
   export let referenceValue: number;
   export let unfilteredTotal: number;
 
-  let slice = 7;
+  export let formatPreset: FormatPreset;
+  export let isSummableMeasure = false;
 
-  const stateManagers = getStateManagers();
+  let slice = 7;
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
@@ -63,6 +68,7 @@
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
   $: displayName = dimension?.label || dimension?.name;
+  $: dimensionColumn = getDimensionColumn(dimension);
 
   $: measureQuery = useMetaMeasure(
     $runtime.instanceId,
@@ -77,13 +83,20 @@
     dimensionName
   );
 
-  let activeValues: Array<unknown>;
-  $: activeValues =
-    $dashboardStore?.filters[filterKey]?.find((d) => d.name === dimension?.name)
-      ?.in ?? [];
-  $: atLeastOneActive = !!activeValues?.length;
+  // FIXME: it is possible for this way of accessing the filters
+  // to return the same value twice, which would seem to indicate
+  // a bug in the way we're setting the filters / active values.
+  // Need to investigate further to determine whether this is a
+  // problem with the runtime or the client, but for now wrapping
+  // it in a set dedupes the values.
+  $: activeValues = new Set(
+    ($dashboardStore?.filters[filterKey]?.find(
+      (d) => d.name === dimension?.name
+    )?.in as (number | string)[]) ?? []
+  );
+  $: atLeastOneActive = activeValues?.size > 0;
 
-  const timeControlsStore = useTimeControlStore(stateManagers);
+  const timeControlsStore = useTimeControlStore(getStateManagers());
 
   function selectDimension(dimensionName) {
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
@@ -102,6 +115,8 @@
 
   $: isBeingCompared =
     $dashboardStore?.selectedComparisonDimension === dimensionName;
+
+  $: contextColumn = $dashboardStore?.leaderboardContextColumn;
 
   $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
   $: sortType = $dashboardStore.dashboardSortType;
@@ -141,7 +156,7 @@
         getLabeledComparisonFromComparisonRow(r, measure.name)
       ) ?? [],
       slice,
-      activeValues,
+      [...activeValues],
       unfilteredTotal,
       filterExcludeMode
     );
@@ -162,12 +177,15 @@
     on:mouseleave={() => (hovered = false)}
   >
     <LeaderboardHeader
+      {contextColumn}
       isFetching={$sortedQuery.isFetching}
       {displayName}
       on:toggle-dimension-comparison={() =>
         toggleComparisonDimension(dimensionName, isBeingCompared)}
       {isBeingCompared}
       {hovered}
+      {sortAscending}
+      {sortType}
       dimensionDescription={dimension?.description}
       on:open-dimension-details={() => selectDimension(dimensionName)}
       on:toggle-sort={toggleSort}
@@ -178,10 +196,13 @@
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardListItem
             {itemData}
+            {contextColumn}
             {atLeastOneActive}
             {isBeingCompared}
             {filterExcludeMode}
+            {isSummableMeasure}
             {referenceValue}
+            {formatPreset}
             on:click
             on:keydown
             on:select-item
@@ -193,10 +214,13 @@
           {#each selectedBelowTheFold as itemData (itemData.dimensionValue)}
             <LeaderboardListItem
               {itemData}
+              {contextColumn}
               {atLeastOneActive}
               {isBeingCompared}
               {filterExcludeMode}
+              {isSummableMeasure}
               {referenceValue}
+              {formatPreset}
               on:click
               on:keydown
               on:select-item

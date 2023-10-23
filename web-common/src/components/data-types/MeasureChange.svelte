@@ -5,6 +5,9 @@
   export let dark = false;
   export let customStyle = "";
   export let value;
+
+  $: isNegative =
+    (typeof value === "string" && value?.startsWith("-")) || value < 0;
 </script>
 
 <Base
@@ -13,5 +16,7 @@
     'block text-right'}"
   {dark}
 >
-  {value}
+  <slot name="value">
+    {!isNegative ? "+" : ""}{value}
+  </slot>
 </Base>

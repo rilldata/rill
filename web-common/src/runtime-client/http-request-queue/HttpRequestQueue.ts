@@ -43,6 +43,7 @@ try {
 export class HttpRequestQueue {
   private readonly nameHeap = getHeapByName();
   private activeCount = 0;
+  private ids = 0;
 
   public constructor() {
     // no-op
@@ -80,13 +81,16 @@ export class HttpRequestQueue {
       requestOptions.data?.priority ??
       (requestOptions.params.priority as number);
     const columnName =
-      requestOptions.params.columnName ?? requestOptions.data?.columnName;
+      requestOptions.params.columnName ??
+      requestOptions.data?.columnName ??
+      requestOptions.data?.dimensionName;
 
     if (!priority) {
       priority = getPriority(type);
     }
     requestOptions.params.priority = priority;
     entry.weight = priority;
+    entry.id = this.ids++;
 
     // Adding more levels can be added here by adding more name entries under the top level one
     // Make sure to update popEntries if so
@@ -101,6 +105,7 @@ export class HttpRequestQueue {
     } else {
       entry.key = type;
     }
+    console.log("Add", entry.key);
     nameEntry.queryHeap.push(entry);
     // intentional to not await here
     this.popEntries();
@@ -142,6 +147,7 @@ export class HttpRequestQueue {
       const topNameEntry = this.nameHeap.peek();
       const entry = topNameEntry.queryHeap.pop();
 
+      console.log("Remove", entry.key);
       // intentional to not await here
       this.fireForEntry(entry);
       this.activeCount++;
