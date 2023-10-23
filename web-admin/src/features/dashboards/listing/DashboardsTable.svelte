@@ -55,6 +55,13 @@
         row.resource.metricsView.spec.description,
     },
   ];
+
+  const columnVisibility = {
+    title: false,
+    name: false,
+    lastRefreshed: false,
+    description: false,
+  };
 </script>
 
 {#if $dashboards.isLoading}
@@ -67,16 +74,7 @@
   {#if $dashboards.data.length === 0}
     <NoDashboardsCTA />
   {:else}
-    <Table
-      data={$dashboards?.data}
-      {columns}
-      columnVisibility={{
-        title: false,
-        name: false,
-        lastRefreshed: false,
-        description: false,
-      }}
-    >
+    <Table data={$dashboards?.data} {columns} {columnVisibility}>
       <DashboardsTableHeader slot="header" />
       <DashboardsTableEmpty slot="empty" />
     </Table>
