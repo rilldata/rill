@@ -1,6 +1,8 @@
 <script lang="ts">
   import DashboardIcon from "@rilldata/web-common/components/icons/DashboardIcon.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { timeAgo } from "./utils";
 
   export let organization: string;
@@ -32,7 +34,13 @@
     <span class="shrink-0">{name}</span>
     {#if isValidLastRefreshedDate}
       <span>•</span>
-      <span class="shrink-0">Last refreshed {timeAgo(lastRefreshedDate)}</span>
+      <Tooltip distance={8}>
+        <span class="shrink-0">Last refreshed {timeAgo(lastRefreshedDate)}</span
+        >
+        <TooltipContent slot="tooltip-content">
+          {lastRefreshedDate.toLocaleString()}
+        </TooltipContent>
+      </Tooltip>
     {/if}
     {#if description}
       <span>•</span>
