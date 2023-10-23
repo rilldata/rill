@@ -1,12 +1,11 @@
 <script lang="ts">
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender } from "@tanstack/svelte-table";
   import type { ColumnDef } from "@tanstack/table-core/src/types";
   import Table from "../../../components/table/Table.svelte";
-  import { useDashboardsV2 } from "./dashboards";
+  import { DashboardResource, useDashboardsV2 } from "./dashboards";
   import DashboardsError from "./DashboardsError.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import DashboardsTableHeader from "./DashboardsTableHeader.svelte";
@@ -16,11 +15,6 @@
   export let project: string;
 
   $: dashboards = useDashboardsV2($runtime.instanceId);
-
-  interface DashboardResource {
-    resource: V1Resource;
-    refreshedOn: string;
-  }
 
   /**
    * Table column definitions.

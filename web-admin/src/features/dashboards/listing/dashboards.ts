@@ -4,10 +4,12 @@ import {
   useFilteredResources,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
+  V1Resource,
   createRuntimeServiceListResources,
   type V1CatalogEntry,
   type V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
+import type { CreateQueryResult } from "@tanstack/svelte-query";
 import Axios from "axios";
 
 export interface DashboardListItem {
@@ -56,7 +58,21 @@ export function useDashboards(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.MetricsView);
 }
 
-export function useDashboardsV2(instanceId: string) {
+/**
+ * The DashboardResource is a wrapper around a V1Resource that adds the
+ * "refreshedOn" attribute, which is the last time the dashboard was refreshed.
+ *
+ * If the backend is updated to include this attribute in the V1Resource, this
+ * wrapper can be removed.
+ */
+export interface DashboardResource {
+  resource: V1Resource;
+  refreshedOn: string;
+}
+
+export function useDashboardsV2(
+  instanceId: string
+): CreateQueryResult<DashboardResource[]> {
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       select: (data) => {
