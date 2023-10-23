@@ -121,13 +121,17 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 	}
 
 	return ctrl.Subscribe(ss.Context(), func(e runtimev1.ResourceEvent, n *runtimev1.ResourceName, r *runtimev1.Resource) {
-		r, access, err := s.applySecurityPolicy(ss.Context(), req.InstanceId, r)
-		if err != nil {
-			s.logger.Info("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
-			return
-		}
-		if !access {
-			return
+		if r != nil { // r is nil for deletion events
+			var access bool
+			var err error
+			r, access, err = s.applySecurityPolicy(ss.Context(), req.InstanceId, r)
+			if err != nil {
+				s.logger.Info("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
+				return
+			}
+			if !access {
+				return
+			}
 		}
 
 		err = ss.Send(&runtimev1.WatchResourcesResponse{
