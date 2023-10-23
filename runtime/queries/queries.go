@@ -2,4 +2,4 @@ package queries
 
 import "time"
 
-const defaultExecutionTimeout = time.Minute * 2
+const defaultExecutionTimeout = time.Minute * 3

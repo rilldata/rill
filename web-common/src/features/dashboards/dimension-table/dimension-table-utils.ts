@@ -5,7 +5,7 @@ import PercentOfTotal from "./PercentOfTotal.svelte";
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import type {
   MetricsViewDimension,
-  MetricsViewMeasure,
+  MetricsViewSpecMeasureV2,
   V1MetricsViewComparisonRow,
   V1MetricsViewComparisonValue,
   V1MetricsViewFilter,
@@ -23,7 +23,8 @@ import type { SvelteComponent } from "svelte";
 import { getDimensionColumn } from "../dashboard-utils";
 import type { DimensionTableRow } from "./dimension-table-types";
 import { getFilterForDimension } from "../selectors";
-import { SortDirection, SortType } from "../proto-state/derived-types";
+import { SortType } from "../proto-state/derived-types";
+import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -90,7 +91,7 @@ export function computePercentOfTotal(
 
 export function getComparisonProperties(
   measureName: string,
-  selectedMeasure: MetricsViewMeasure
+  selectedMeasure: MetricsViewSpecMeasureV2
 ): {
   component: typeof SvelteComponent;
   type: string;
@@ -108,7 +109,7 @@ export function getComparisonProperties(
     return {
       component: DeltaChange,
       type: "RILL_CHANGE",
-      format: selectedMeasure.format,
+      format: selectedMeasure.formatPreset,
       description: "Change over comparison period",
     };
   } else if (measureName.includes("_percent_of_total")) {
@@ -217,42 +218,50 @@ export function estimateColumnSizes(
 }
 
 export function prepareVirtualizedDimTableColumns(
-  allMeasures: MetricsViewMeasure[],
-  leaderboardMeasureName: string,
+  dash: MetricsExplorerEntity,
+  allMeasures: MetricsViewSpecMeasureV2[],
   referenceValues: { [key: string]: number },
   dimension: MetricsViewDimension,
-
-  inputColumnNames: string[],
   timeComparison: boolean,
-  validPercentOfTotal: boolean,
-  sortType: SortType,
-  sortDirection: SortDirection
+  validPercentOfTotal: boolean
 ): VirtualizedTableColumns[] {
+  const sortType = dash.dashboardSortType;
+  const sortDirection = dash.sortDirection;
+
   const measureNames = allMeasures.map((m) => m.name);
+  const leaderboardMeasureName = dash.leaderboardMeasureName;
   const selectedMeasure = allMeasures.find(
     (m) => m.name === leaderboardMeasureName
   );
   const dimensionColumn = getDimensionColumn(dimension);
 
   // copy column names so we don't mutate the original
-  const columnNames = [...inputColumnNames];
+  const columnNames = [...dash.visibleMeasureKeys];
 
-  addContextColumnNames(
-    columnNames,
-    timeComparison,
-    validPercentOfTotal,
-    selectedMeasure
-  );
+  // don't add context columns if sorting by dimension
+  if (sortType !== SortType.DIMENSION) {
+    addContextColumnNames(
+      columnNames,
+      timeComparison,
+      validPercentOfTotal,
+      selectedMeasure
+    );
+  }
   // Make dimension the first column
   columnNames.unshift(dimensionColumn);
 
   return columnNames
     .map((name) => {
-      const highlight =
-        name === selectedMeasure.name ||
-        name.endsWith("_delta") ||
-        name.endsWith("_delta_perc") ||
-        name.endsWith("_percent_of_total");
+      let highlight = false;
+      if (sortType === SortType.DIMENSION) {
+        highlight = name === dimensionColumn;
+      } else {
+        highlight =
+          name === selectedMeasure.name ||
+          name.endsWith("_delta") ||
+          name.endsWith("_delta_perc") ||
+          name.endsWith("_percent_of_total");
+      }
 
       let sorted = undefined;
       if (name.endsWith("_delta") && sortType === SortType.DELTA_ABSOLUTE) {
@@ -281,7 +290,7 @@ export function prepareVirtualizedDimTableColumns(
           description: measure?.description,
           total: referenceValues[measure.name] || 0,
           enableResize: false,
-          format: measure?.format,
+          format: measure?.formatPreset,
           highlight,
           sorted,
         };
@@ -324,7 +333,7 @@ export function addContextColumnNames(
   columnNames: string[],
   timeComparison: boolean,
   validPercentOfTotal: boolean,
-  selectedMeasure: MetricsViewMeasure
+  selectedMeasure: MetricsViewSpecMeasureV2
 ) {
   const name = selectedMeasure?.name;
 
@@ -336,7 +345,7 @@ export function addContextColumnNames(
     columnNames.splice(sortByColumnIndex + 1, 0, `${name}_delta`);
 
     // Only push percentage delta column if selected measure is not a percentage
-    if (selectedMeasure?.format != FormatPreset.PERCENTAGE) {
+    if (selectedMeasure?.formatPreset != FormatPreset.PERCENTAGE) {
       percentOfTotalSpliceIndex = 3;
       columnNames.splice(sortByColumnIndex + 2, 0, `${name}_delta_perc`);
     }
@@ -358,7 +367,7 @@ export function addContextColumnNames(
  */
 export function prepareDimensionTableRows(
   queryRows: V1MetricsViewComparisonRow[],
-  measures: MetricsViewMeasure[],
+  measures: MetricsViewSpecMeasureV2[],
   activeMeasureName: string,
   dimensionColumn: string,
   addDeltas: boolean,
@@ -368,7 +377,7 @@ export function prepareDimensionTableRows(
   if (!queryRows || !queryRows.length) return [];
 
   const formatMap = Object.fromEntries(
-    measures.map((m) => [m.name, m.format as FormatPreset])
+    measures.map((m) => [m.name, m.formatPreset as FormatPreset])
   );
 
   const tableRows: DimensionTableRow[] = queryRows.map((row) => {

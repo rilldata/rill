@@ -1,5 +1,8 @@
-import { V1DeploymentStatus } from "@rilldata/web-admin/client";
 import type { V1GetProjectResponse } from "@rilldata/web-admin/client";
+import {
+  createAdminServiceGetProject,
+  V1DeploymentStatus,
+} from "@rilldata/web-admin/client";
 import {
   PollTimeDuringError,
   PollTimeDuringReconcile,
@@ -10,12 +13,11 @@ import {
   ResourceKind,
   useFilteredResources,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  createRuntimeServiceListResources,
-  V1ReconcileStatus,
-} from "@rilldata/web-common/runtime-client";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
-import { fetchWrapper } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import {
+  V1ReconcileStatus,
+  createRuntimeServiceListResources,
+} from "@rilldata/web-common/runtime-client";
 import { invalidateMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation";
 import type { QueryClient } from "@tanstack/svelte-query";
 import Axios from "axios";
@@ -61,13 +63,40 @@ export async function getDashboardsForProject(
 }
 
 export function useDashboards(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.MetricsView);
+  return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
+    data.resources.filter((res) => !!res.metricsView?.state?.validSpec)
+  );
 }
 
-export function useDashboardsStatus(
+export function useDashboardsLastUpdated(
   instanceId: string,
-  project?: V1GetProjectResponse
+  organization: string,
+  project: string
 ) {
+  return derived(
+    [
+      useDashboards(instanceId),
+      createAdminServiceGetProject(organization, project),
+    ],
+    ([dashboardsResp, projResp]) => {
+      if (!dashboardsResp.data?.length) {
+        if (!projResp.data?.prodDeployment?.updatedOn) return undefined;
+
+        // return project's last updated if there are no dashboards
+        return new Date(projResp.data.prodDeployment.updatedOn);
+      }
+
+      const max = Math.max(
+        ...dashboardsResp.data.map((res) =>
+          new Date(res.meta.stateUpdatedOn).getTime()
+        )
+      );
+      return new Date(max);
+    }
+  );
+}
+
+export function useDashboardsStatus(instanceId: string) {
   return createRuntimeServiceListResources(
     instanceId,
     {
@@ -116,34 +145,6 @@ export function useDashboardsStatus(
               return PollTimeWhenProjectReady;
           }
         },
-
-        // Do a manual call for project chip. This could be placed where `runtime` is not populated
-        ...(project
-          ? {
-              queryFn: ({ signal }) => {
-                // Hack: in development, the runtime host is actually on port 8081
-                const host = project.prodDeployment.runtimeHost.replace(
-                  "localhost:9091",
-                  "localhost:8081"
-                );
-                const instanceId = project.prodDeployment.runtimeInstanceId;
-                const jwt = project.jwt;
-                return fetchWrapper({
-                  url: `${host}/v1/instances/${instanceId}/resources?kind=${ResourceKind.MetricsView}`,
-                  method: "GET",
-                  ...(jwt
-                    ? {
-                        headers: {
-                          Authorization: `Bearer ${project.jwt}`,
-                          "Content-Type": "application/json",
-                        },
-                      }
-                    : {}),
-                  signal,
-                });
-              },
-            }
-          : {}),
       },
     }
   );

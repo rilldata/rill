@@ -435,8 +435,6 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for EmbedCatalog
 
-	// no validation rules for IngestionLimitBytes
-
 	// no validation rules for WatchRepo
 
 	// no validation rules for StageChanges
@@ -1200,8 +1198,6 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for EmbedCatalog
 
-	// no validation rules for IngestionLimitBytes
-
 	// no validation rules for WatchRepo
 
 	// no validation rules for StageChanges
@@ -1723,10 +1719,6 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	if m.EmbedCatalog != nil {
 		// no validation rules for EmbedCatalog
-	}
-
-	if m.IngestionLimitBytes != nil {
-		// no validation rules for IngestionLimitBytes
 	}
 
 	if m.WatchRepo != nil {

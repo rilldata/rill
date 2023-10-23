@@ -51,7 +51,7 @@ func ReconcileParserAndWait(t testing.TB, rt *runtime.Runtime, id string) {
 }
 
 func ReconcileAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName) {
-	ctrl, err := rt.Controller(id)
+	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
 
 	err = ctrl.Reconcile(context.Background(), n)
@@ -62,7 +62,7 @@ func ReconcileAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1
 }
 
 func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.ResourceName) {
-	ctrl, err := rt.Controller(id)
+	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
 
 	// Get spec version before refresh
@@ -92,7 +92,7 @@ func RefreshAndWait(t testing.TB, rt *runtime.Runtime, id string, n *runtimev1.R
 }
 
 func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenResources, lenReconcileErrs, lenParseErrs int) {
-	ctrl, err := rt.Controller(id)
+	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
 
 	rs, err := ctrl.List(context.Background(), "", false)
@@ -122,7 +122,7 @@ func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenReso
 }
 
 func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.Resource) {
-	ctrl, err := rt.Controller(id)
+	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
 
 	b, err := ctrl.Get(context.Background(), a.Meta.Name, true) // Set clone=true because we may manipulate it before comparing
@@ -174,7 +174,7 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 }
 
 func DumpResources(t testing.TB, rt *runtime.Runtime, id string) {
-	ctrl, err := rt.Controller(id)
+	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
 
 	rs, err := ctrl.List(context.Background(), "", false)
@@ -186,7 +186,7 @@ func DumpResources(t testing.TB, rt *runtime.Runtime, id string) {
 }
 
 func RequireParseErrors(t testing.TB, rt *runtime.Runtime, id string, expectedParseErrors map[string]string) {
-	ctrl, err := rt.Controller(id)
+	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
 
 	pp, err := ctrl.Get(context.Background(), runtime.GlobalProjectParserName, true)

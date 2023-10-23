@@ -10,7 +10,10 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // GlobalProjectParserName is the name of the instance-global project parser resource that is created for each new instance.
@@ -26,23 +29,18 @@ func (r *Runtime) Instance(ctx context.Context, instanceID string) (*drivers.Ins
 	return r.registryCache.get(instanceID)
 }
 
-// Controller returns the controller for the given instance. If the controller stopped with a fatal error, that error will be returned here until it's restarted.
-func (r *Runtime) Controller(instanceID string) (*Controller, error) {
-	return r.registryCache.getController(instanceID)
-}
-
-// WaitUntilReady waits until the instance's controller is ready (open for catalog calls).
-func (r *Runtime) WaitUntilReady(ctx context.Context, instanceID string) error {
-	ctrl, err := r.Controller(instanceID)
-	if err != nil {
-		return err
-	}
-	return ctrl.WaitUntilReady(ctx)
+// Controller returns the controller for the given instance.
+// If the controller is currently initializing, the call will wait until the controller is ready.
+// If the controller has closed with a fatal error, that error will be returned here until it's restarted.
+func (r *Runtime) Controller(ctx context.Context, instanceID string) (*Controller, error) {
+	ctx, span := tracer.Start(ctx, "Runtime.Controller", trace.WithAttributes(attribute.String("instance_id", instanceID)))
+	defer span.End()
+	return r.registryCache.getController(ctx, instanceID)
 }
 
 // WaitUntilIdle waits until the instance's controller is idle (not reconciling any resources).
 func (r *Runtime) WaitUntilIdle(ctx context.Context, instanceID string, ignoreHidden bool) error {
-	ctrl, err := r.Controller(instanceID)
+	ctrl, err := r.Controller(ctx, instanceID)
 	if err != nil {
 		return err
 	}
@@ -129,10 +127,13 @@ type instanceWithController struct {
 	controllerErr error
 
 	// State for managing controller execution
-	ctx    context.Context
-	cancel context.CancelFunc
-	reopen bool
-	closed chan struct{}
+	ctx       context.Context
+	cancel    context.CancelFunc
+	running   bool // Invariant: if false, controllerErr must be set
+	stoppedCh chan struct{}
+	ready     bool
+	readyCh   chan struct{}
+	reopen    bool
 }
 
 func newRegistryCache(ctx context.Context, rt *Runtime, registry drivers.RegistryStore, logger *zap.Logger, ac activity.Client) (*registryCache, error) {
@@ -163,17 +164,6 @@ func (r *registryCache) init(ctx context.Context) error {
 		r.add(inst)
 	}
 
-	for _, inst := range r.instances {
-		if inst.controller == nil {
-			continue
-		}
-		err := inst.controller.WaitUntilReady(ctx)
-		if err != nil {
-			return err
-		}
-		r.ensureProjectParser(ctx, inst.instance.ID)
-	}
-
 	return nil
 }
 
@@ -186,7 +176,7 @@ func (r *registryCache) close(ctx context.Context) error {
 		wg.Add(1)
 		go func() {
 			select {
-			case <-inst.closed:
+			case <-inst.stoppedCh:
 			case <-ctx.Done():
 			}
 			wg.Done()
@@ -223,11 +213,25 @@ func (r *registryCache) get(instanceID string) (*drivers.Instance, error) {
 	return iwc.instance, nil
 }
 
-func (r *registryCache) getController(instanceID string) (*Controller, error) {
+func (r *registryCache) getController(ctx context.Context, instanceID string) (*Controller, error) {
 	r.mu.RLock()
+	iwc, ok := r.instances[instanceID]
+
+	for ok && iwc.running && !iwc.ready {
+		readyCh := iwc.readyCh
+		r.mu.RUnlock()
+		select {
+		case <-readyCh:
+			// continue
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+		r.mu.RLock()
+		iwc, ok = r.instances[instanceID]
+	}
+
 	defer r.mu.RUnlock()
 
-	iwc, ok := r.instances[instanceID]
 	if !ok {
 		return nil, drivers.ErrNotFound
 	}
@@ -235,7 +239,6 @@ func (r *registryCache) getController(instanceID string) (*Controller, error) {
 	if iwc.controllerErr != nil {
 		return nil, iwc.controllerErr
 	}
-
 	return iwc.controller, nil
 }
 
@@ -246,7 +249,6 @@ func (r *registryCache) create(ctx context.Context, inst *drivers.Instance) erro
 	}
 
 	r.add(inst)
-	r.ensureProjectParser(ctx, inst.ID)
 
 	return nil
 }
@@ -275,7 +277,7 @@ func (r *registryCache) edit(ctx context.Context, inst *drivers.Instance, restar
 
 	iwc, ok := r.instances[inst.ID]
 	if !ok {
-		panic(fmt.Errorf("instance %q not found", inst.ID))
+		return fmt.Errorf("instance %q not found", inst.ID)
 	}
 
 	iwc.instance = inst
@@ -297,74 +299,64 @@ func (r *registryCache) delete(ctx context.Context, instanceID string) (chan str
 
 	iwc, ok := r.instances[instanceID]
 	if !ok {
-		panic(fmt.Errorf("instance %q not found", instanceID))
+		return nil, fmt.Errorf("instance %q not found", instanceID)
 	}
 	delete(r.instances, instanceID)
 
 	iwc.cancel()
 
-	return iwc.closed, nil
-}
-
-func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID string) {
-	r.mu.RLock()
-	iwc := r.instances[instanceID]
-	r.mu.RUnlock()
-	if iwc.controller == nil {
-		return
-	}
-	err := iwc.controller.WaitUntilReady(ctx)
-	if err != nil {
-		return
-	}
-
-	_, err = iwc.controller.Get(ctx, GlobalProjectParserName, false)
-	if err == nil {
-		return
-	}
-	if !errors.Is(err, drivers.ErrResourceNotFound) {
-		r.logger.Error("could not get project parser", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
-		return
-	}
-
-	err = iwc.controller.Create(ctx, GlobalProjectParserName, nil, nil, nil, true, &runtimev1.Resource{
-		Resource: &runtimev1.Resource_ProjectParser{
-			ProjectParser: &runtimev1.ProjectParser{Spec: &runtimev1.ProjectParserSpec{}},
-		},
-	})
-	if err != nil {
-		r.logger.Error("could not create project parser", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
-	}
+	return iwc.stoppedCh, nil
 }
 
 func (r *registryCache) restartController(iwc *instanceWithController) {
-	// If controller isn't nil, it's already running. Have the already running goroutine stop and restart it.
+	// If a goroutine for the controller is currently running, have it stop and restart the controller.
 	// (Easiest way to ensure only one controller is running at a time, without blocking the caller until the currently running one is done.)
-	if iwc.controller != nil {
+	if iwc.running {
 		iwc.reopen = true
 		iwc.cancel()
 		return
 	}
 
 	// Reset execution state
-	// NOTE: Duplicating this here and in the goroutine to ensure there's no moment where the mutex is unlocked and neither of controller or controllerErr is set.
-	iwc.controller, iwc.controllerErr = NewController(r.rt, iwc.instance.ID, r.logger, r.activity)
 	iwc.ctx, iwc.cancel = context.WithCancel(r.baseCtx)
+	iwc.running = true
+	iwc.stoppedCh = make(chan struct{})
+	iwc.ready = false
+	iwc.readyCh = make(chan struct{})
 	iwc.reopen = false
-	iwc.closed = make(chan struct{})
-	if iwc.controllerErr != nil {
-		// If NewController errored, no need to start a goroutine
-		iwc.cancel()
-		close(iwc.closed)
-		return
-	}
 
 	// Start goroutine that runs the controller
 	go func() {
 		// Loop in case reopen gets set
 		for {
-			err := iwc.controller.Run(iwc.ctx)
+			r.logger.Info("controller starting", zap.String("instance_id", iwc.instance.ID))
+
+			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instance.ID, r.logger, r.activity)
+			if err == nil {
+				r.ensureProjectParser(iwc.ctx, iwc.instance.ID, ctrl)
+
+				r.mu.Lock()
+				iwc.controller = ctrl
+				iwc.ready = true
+				close(iwc.readyCh)
+				r.mu.Unlock()
+
+				r.logger.Info("controller ready", zap.String("instance_id", iwc.instance.ID))
+
+				err = ctrl.Run(iwc.ctx)
+			}
+
 			iwc.cancel() // Always ensure cleanup
+
+			r.mu.Lock()
+			attrs := []zapcore.Field{zap.String("instance_id", iwc.instance.ID), zap.Error(err), zap.Bool("reopen", iwc.reopen), zap.Bool("called_run", iwc.ready)}
+			r.mu.Unlock()
+
+			if errors.Is(err, iwc.ctx.Err()) {
+				r.logger.Warn("controller stopped", attrs...)
+			} else {
+				r.logger.Error("controller failed", attrs...)
+			}
 
 			// When an instance is edited, connector config may have changed.
 			// So we want to evict all open connections for that instance, but it's unsafe to do so while the controller is running.
@@ -373,29 +365,49 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 				r.rt.connCache.evictAll(r.baseCtx, iwc.instance.ID)
 			}
 
+			r.mu.Lock()
+
 			// If not reopening, exit
 			if !iwc.reopen {
-				r.mu.Lock()
 				iwc.controller = nil
 				iwc.controllerErr = err
-				close(iwc.closed)
+				iwc.running = false
+				close(iwc.stoppedCh)
+				if !iwc.ready { // Ensure readyCh is always closed, even if it never got ready
+					close(iwc.readyCh)
+				}
 				r.mu.Unlock()
 				return
 			}
 
-			// Reopening – reset execution state and proceed to next loop iteration
-			// NOTE: Not resetting iwc.closed (keeping it open)
-			r.mu.Lock()
-			iwc.controller, iwc.controllerErr = NewController(r.rt, iwc.instance.ID, r.logger, r.activity)
+			// Reset execution state
 			iwc.ctx, iwc.cancel = context.WithCancel(r.baseCtx)
-			iwc.reopen = false
-			if iwc.controllerErr != nil {
-				// If NewController errored, no need to start a goroutine
-				iwc.cancel()
-				close(iwc.closed)
-				return
+			if iwc.ready {
+				iwc.ready = false
+				iwc.readyCh = make(chan struct{})
 			}
+			iwc.reopen = false
 			r.mu.Unlock()
 		}
 	}()
+}
+
+func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID string, ctrl *Controller) {
+	_, err := ctrl.Get(ctx, GlobalProjectParserName, false)
+	if err == nil {
+		return
+	}
+	if !errors.Is(err, drivers.ErrResourceNotFound) {
+		r.logger.Error("could not get project parser", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
+		return
+	}
+
+	err = ctrl.Create(ctx, GlobalProjectParserName, nil, nil, nil, true, &runtimev1.Resource{
+		Resource: &runtimev1.Resource_ProjectParser{
+			ProjectParser: &runtimev1.ProjectParser{Spec: &runtimev1.ProjectParserSpec{}},
+		},
+	})
+	if err != nil {
+		r.logger.Error("could not create project parser", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
+	}
 }

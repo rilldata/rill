@@ -3,13 +3,12 @@ package queries
 import (
 	"bytes"
 	"fmt"
+	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/stretchr/testify/require"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	"testing"
 )
 
 func Test_writeCSV_emptystring(t *testing.T) {

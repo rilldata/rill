@@ -13,6 +13,7 @@ admin/
 state/
 static/
 temp/
+dev-project/
 proto/
 
 .env
@@ -23,6 +24,7 @@ proto/
 *.txt
 *.db
 *.wal
+*.toml
 *.parquet
 *.parquet.gz
 .travis.yml
@@ -35,6 +37,8 @@ _redirects
 log
 *.log
 .gitignore
+.gitkeep
+.eslintignore
 .prettierignore
 Dockerfile
 Duckdb-Dockerfile
