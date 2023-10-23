@@ -2,8 +2,8 @@ package project
 
 import (
 	"context"
-	"errors"
 	"fmt"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -49,7 +49,7 @@ func LogsCmd(cfg *config.Config) *cobra.Command {
 
 			depl := proj.ProdDeployment
 			if depl == nil {
-				return errors.New(fmt.Sprintf("project %q is not currently deployed", name))
+				return fmt.Errorf("project %q is not currently deployed", name)
 			}
 
 			if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
