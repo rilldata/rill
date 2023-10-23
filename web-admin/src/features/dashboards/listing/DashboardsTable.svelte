@@ -8,8 +8,8 @@
   import Table from "../../../components/table/Table.svelte";
   import { useDashboardsV2 } from "./dashboards";
   import DashboardsError from "./DashboardsError.svelte";
+  import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import DashboardsTableHeader from "./DashboardsTableHeader.svelte";
-  import DashboardsTableInfoCell from "./DashboardsTableInfoCell.svelte";
   import NoDashboardsCTA from "./NoDashboardsCTA.svelte";
 
   export let organization: string;
@@ -22,16 +22,16 @@
     refreshedOn: string;
   }
 
+  /**
+   * Table column definitions.
+   * - "composite": Renders all dashboard data in a single cell.
+   * - Others: Used for sorting and filtering but not displayed.
+   */
   const columns: ColumnDef<DashboardResource, string>[] = [
     {
-      id: "monocolumn",
-      // The accessorFn enables sorting and filtering. It contains all the data that will be filtered.
-      accessorFn: (row: DashboardResource) =>
-        row.resource.metricsView.spec.title +
-        row.resource.metricsView.spec.description +
-        row.refreshedOn.toString(),
+      id: "composite",
       cell: (info) =>
-        flexRender(DashboardsTableInfoCell, {
+        flexRender(DashboardsTableCompositeCell, {
           organization: organization,
           project: project,
           name: info.row.original.resource.meta.name.name,
@@ -40,6 +40,24 @@
           description: info.row.original.resource.metricsView.spec.description,
           error: info.row.original.resource.meta.reconcileError,
         }),
+    },
+    {
+      id: "title",
+      accessorFn: (row: DashboardResource) =>
+        row.resource.metricsView.spec.title,
+    },
+    {
+      id: "name",
+      accessorFn: (row: DashboardResource) => row.resource.meta.name.name,
+    },
+    {
+      id: "lastRefreshed",
+      accessorFn: (row: DashboardResource) => row.refreshedOn,
+    },
+    {
+      id: "description",
+      accessorFn: (row: DashboardResource) =>
+        row.resource.metricsView.spec.description,
     },
   ];
 </script>
@@ -54,7 +72,17 @@
   {#if $dashboards.data.length === 0}
     <NoDashboardsCTA />
   {:else}
-    <Table dataTypeName="dashboard" {columns} data={$dashboards?.data}>
+    <Table
+      dataTypeName="dashboard"
+      {columns}
+      data={$dashboards?.data}
+      columnVisibility={{
+        title: false,
+        name: false,
+        lastRefreshed: false,
+        description: false,
+      }}
+    >
       <DashboardsTableHeader slot="header" />
     </Table>
   {/if}

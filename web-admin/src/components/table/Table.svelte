@@ -13,6 +13,7 @@
   export let dataTypeName: string;
   export let data: unknown[] = [];
   export let columns: ColumnDef<unknown>[] = [];
+  export let columnVisibility: Record<string, boolean> = {};
 
   let sorting = [];
   function setSorting(updater) {
@@ -39,6 +40,7 @@
     enableGlobalFilter: true,
     state: {
       sorting,
+      columnVisibility,
     },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),

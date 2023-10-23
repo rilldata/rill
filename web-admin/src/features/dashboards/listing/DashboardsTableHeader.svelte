@@ -25,7 +25,7 @@
 
   // Sort
   function sortByTitle() {
-    get(table).setSorting([{ id: "monocolumn", desc: false }]);
+    get(table).setSorting([{ id: "title", desc: false }]);
   }
 
   function sortByName() {
