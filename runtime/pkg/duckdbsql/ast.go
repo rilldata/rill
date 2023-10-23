@@ -1,6 +1,9 @@
 package duckdbsql
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type AST struct {
 	sql       string
@@ -59,6 +62,10 @@ func Parse(sql string) (*AST, error) {
 
 // Format normalizes a DuckDB SQL statement
 func (a *AST) Format() (string, error) {
+	if a.ast == nil {
+		return "", fmt.Errorf("calling format on failed parse")
+	}
+
 	sql, err := json.Marshal(a.ast)
 	if err != nil {
 		return "", err
@@ -69,7 +76,15 @@ func (a *AST) Format() (string, error) {
 
 // RewriteTableRefs replaces table references in a DuckDB SQL query. Only replacing with a base table reference is supported right now.
 func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error {
+	if a.ast == nil {
+		return fmt.Errorf("calling rewrite on failed parse")
+	}
+
 	for _, node := range a.fromNodes {
+		if node.ast == nil {
+			continue
+		}
+
 		newRef, shouldReplace := fn(node.ref)
 		if !shouldReplace {
 			continue
@@ -106,6 +121,10 @@ func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error
 
 // RewriteLimit rewrites a DuckDB SQL statement to limit the result size
 func (a *AST) RewriteLimit(limit, offset int) error {
+	if a.ast == nil {
+		return fmt.Errorf("calling rewrite on failed parse")
+	}
+
 	if len(a.rootNodes) == 0 {
 		return nil
 	}

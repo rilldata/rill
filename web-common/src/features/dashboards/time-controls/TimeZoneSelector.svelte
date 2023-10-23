@@ -1,24 +1,24 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
+  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import {
+    Divider,
+    Menu,
+    MenuItem,
+  } from "@rilldata/web-common/components/menu";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import SelectorButton from "@rilldata/web-common/features/dashboards/time-controls/SelectorButton.svelte";
   import {
     getAbbreviationForIANA,
     getLabelForIANA,
     getLocalIANA,
     getTimeZoneNameFromIANA,
   } from "@rilldata/web-common/lib/time/timezone";
-  import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
-  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
-  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import SelectorButton from "@rilldata/web-common/features/dashboards/time-controls/SelectorButton.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import {
-    Divider,
-    Menu,
-    MenuItem,
-  } from "@rilldata/web-common/components/menu";
+  import { createEventDispatcher } from "svelte";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
 
   export let metricViewName: string;
   // now indicates the latest reference point in the dashboard
@@ -61,7 +61,7 @@
         }}
       >
         <div class="flex items-center gap-x-2">
-          <Globe />
+          <Globe size="16px" />
           <span class="font-bold"
             >{getAbbreviationForIANA(now, activeTimeZone)}</span
           >

@@ -29,6 +29,11 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 	if err != nil {
 		return nil, nil, err
 	}
+	if ctx.Err() != nil {
+		// Many code paths around connection acquisition leverage caches that won't actually touch the ctx.
+		// So we take this moment to make sure the ctx gets checked for cancellation at least every once in a while.
+		return nil, nil, ctx.Err()
+	}
 	return r.connCache.get(ctx, instanceID, driver, cfg, false)
 }
 

@@ -341,7 +341,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			)
 		} else {
 			columnsTuple = fmt.Sprintf(
-				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS FLOAT))",
+				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE)))",
 				safeName(m.Name),
 			)
 		}
@@ -452,19 +452,26 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 
 	joinType := "FULL"
 	if !q.Exact {
-		approximationLimit := q.Limit
 		deltaComparison := q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA ||
 			q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA
-		if q.Limit < 100 && deltaComparison {
+
+		approximationLimit := q.Limit
+		if q.Limit != 0 && q.Limit < 100 && deltaComparison {
 			approximationLimit = 100
 		}
 
 		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE || deltaComparison {
 			joinType = "LEFT OUTER"
-			baseLimitClause = fmt.Sprintf("ORDER BY %s LIMIT %d", subQueryOrderClause, approximationLimit)
+			baseLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
+			if approximationLimit > 0 {
+				baseLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
+			}
 		} else if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
 			joinType = "RIGHT OUTER"
-			comparisonLimitClause = fmt.Sprintf("ORDER BY %s LIMIT %d", subQueryOrderClause, approximationLimit)
+			comparisonLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
+			if approximationLimit > 0 {
+				comparisonLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
+			}
 		}
 	}
 
@@ -523,11 +530,11 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		/*
 			Example of the SQL query:
 
-			SELECT COALESCE(a."user", b."user"),
+			SELECT a."user",
 			       ANY_VALUE(a."measure"),
 			       ANY_VALUE(b."measure"),
 			       ANY_VALUE(a."measure" - b."measure"),
-			       ANY_VALUE(SAFE_DIVIDE(a."measure" - b."measure",a."measure"))
+			       ANY_VALUE(SAFE_DIVIDE(a."measure" - b."measure", CAST(a."measure" AS DOUBLE)))
 			FROM
 			  (SELECT "user",
 			          sum(added)
@@ -541,9 +548,11 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			          sum(added)
 			   FROM "wikipedia"
 			   WHERE 1=1
-			   GROUP BY 2
+			   GROUP BY "user"
 			   ORDER BY "measure"
 			   LIMIT 10) a ON a."user" = b."user"
+			WHERE
+			  b."user" IS NOT NULL
 			GROUP BY 1
 			ORDER BY 2
 			LIMIT 10
@@ -562,7 +571,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		}
 
 		sql = fmt.Sprintf(`
-				SELECT COALESCE(base.%[2]s, comparison.%[2]s), %[9]s FROM 
+				SELECT %[11]s.%[2]s, %[9]s FROM 
 					(
 						SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s %[10]s OFFSET %[8]d 
 					) %[11]s
@@ -571,7 +580,9 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 						SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
 					) %[12]s
 				ON
-						base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
+						base.%[2]s = comparison.%[2]s
+				WHERE %[12]s.%[2]s IS NOT NULL
+				GROUP BY 1
 				ORDER BY
 					%[6]s
 				%[7]s

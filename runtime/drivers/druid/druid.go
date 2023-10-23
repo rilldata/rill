@@ -37,6 +37,11 @@ func (d driver) Open(config map[string]any, shared bool, client activity.Client,
 
 	db.SetMaxOpenConns(40)
 
+	err = db.Ping()
+	if err != nil {
+		return nil, fmt.Errorf("druid: %w", err)
+	}
+
 	conn := &connection{
 		db:     db,
 		config: config,
