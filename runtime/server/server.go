@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/securetoken"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -29,6 +30,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/server")
 
 var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
 

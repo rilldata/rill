@@ -10,6 +10,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -31,6 +33,8 @@ func (r *Runtime) Instance(ctx context.Context, instanceID string) (*drivers.Ins
 // If the controller is currently initializing, the call will wait until the controller is ready.
 // If the controller has closed with a fatal error, that error will be returned here until it's restarted.
 func (r *Runtime) Controller(ctx context.Context, instanceID string) (*Controller, error) {
+	ctx, span := tracer.Start(ctx, "Runtime.Controller", trace.WithAttributes(attribute.String("instance_id", instanceID)))
+	defer span.End()
 	return r.registryCache.getController(ctx, instanceID)
 }
 
@@ -325,8 +329,20 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 	go func() {
 		// Loop in case reopen gets set
 		for {
-			r.logger.Info("controller starting", zap.String("instance_id", iwc.instance.ID))
+			// Before starting the controller, sync the repo.
+			// This is necessary for resources (usually sources or models) that reference files in the repo,
+			// and may be triggered before the project parser is triggered and syncs the repo.
+			r.logger.Info("syncing repo", zap.String("instance_id", iwc.instance.ID))
+			err := r.ensureRepoSync(iwc.ctx, iwc.instance.ID)
+			if err != nil {
+				r.logger.Error("failed to sync repo", zap.String("instance_id", iwc.instance.ID), zap.Error(err))
+				// Even if repo sync failed, we'll start the controller
+			} else {
+				r.logger.Info("repo synced", zap.String("instance_id", iwc.instance.ID))
+			}
 
+			// Start controller
+			r.logger.Info("controller starting", zap.String("instance_id", iwc.instance.ID))
 			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instance.ID, r.logger, r.activity)
 			if err == nil {
 				r.ensureProjectParser(iwc.ctx, iwc.instance.ID, ctrl)
@@ -386,6 +402,16 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			r.mu.Unlock()
 		}
 	}()
+}
+
+func (r *registryCache) ensureRepoSync(ctx context.Context, instanceID string) error {
+	repo, release, err := r.rt.Repo(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	return repo.Sync(ctx)
 }
 
 func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID string, ctrl *Controller) {
