@@ -8,6 +8,7 @@
   import { DashboardResource, useDashboardsV2 } from "./dashboards";
   import DashboardsError from "./DashboardsError.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
+  import DashboardsTableEmpty from "./DashboardsTableEmpty.svelte";
   import DashboardsTableHeader from "./DashboardsTableHeader.svelte";
   import NoDashboardsCTA from "./NoDashboardsCTA.svelte";
 
@@ -67,9 +68,8 @@
     <NoDashboardsCTA />
   {:else}
     <Table
-      dataTypeName="dashboard"
-      {columns}
       data={$dashboards?.data}
+      {columns}
       columnVisibility={{
         title: false,
         name: false,
@@ -78,6 +78,7 @@
       }}
     >
       <DashboardsTableHeader slot="header" />
+      <DashboardsTableEmpty slot="empty" />
     </Table>
   {/if}
 {/if}

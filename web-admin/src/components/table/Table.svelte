@@ -10,7 +10,6 @@
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
 
-  export let dataTypeName: string;
   export let data: unknown[] = [];
   export let columns: ColumnDef<unknown>[] = [];
   export let columnVisibility: Record<string, boolean> = {};
@@ -70,8 +69,8 @@
     <tbody>
       {#if $table.getRowModel().rows.length === 0}
         <tr>
-          <td class="text-center py-4 text-gray-500">
-            No {dataTypeName}s found.
+          <td class="text-center py-4">
+            <slot name="empty" />
           </td>
         </tr>
       {:else}
