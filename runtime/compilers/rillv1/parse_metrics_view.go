@@ -29,7 +29,7 @@ type metricsViewYAML struct {
 	AvailableTimeZones []string         `yaml:"available_time_zones"`
 	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
-	Dimensions         []*struct {
+	Dimensions         []struct {
 		Name        string
 		Label       string
 		Column      string
@@ -37,7 +37,7 @@ type metricsViewYAML struct {
 		Description string
 		Ignore      bool `yaml:"ignore"`
 	}
-	Measures []*struct {
+	Measures []struct {
 		Name                string
 		Label               string
 		Expression          string
