@@ -10,10 +10,11 @@
 </script>
 
 <VerticalScrollContainer>
-  <div class="px-9 pt-4 pb-6 flex gap-x-16 items-start">
-    <ProjectDeploymentStatus {organization} {project} />
-    <ProjectGithubConnection {organization} {project} />
+  <div class="pt-4 flex flex-col gap-y-6">
+    <div class="px-12 flex gap-x-9 items-start">
+      <ProjectDeploymentStatus {organization} {project} />
+      <ProjectGithubConnection {organization} {project} />
+    </div>
+    <ProjectDeploymentLogs {organization} {project} />
   </div>
-
-  <ProjectDeploymentLogs {organization} {project} />
 </VerticalScrollContainer>
