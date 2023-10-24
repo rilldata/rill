@@ -8,7 +8,6 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     chartInteractionColumn,
-    lastKnownPosition,
     tableInteractionStore,
     useTimeDimensionDataStore,
   } from "./time-dimension-data-store";
@@ -19,7 +18,6 @@
   import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import type { TableData } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-  import { onMount } from "svelte";
 
   export let metricViewName;
 
