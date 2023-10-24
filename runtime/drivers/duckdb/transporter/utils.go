@@ -130,9 +130,8 @@ func sourceReader(paths []string, format string, ingestionProps map[string]any) 
 	} else if containsAny(format, []string{".json", ".ndjson"}) {
 		// JSON reader
 		return generateReadJSONStatement(paths, ingestionProps)
-	} else {
-		return "", fmt.Errorf("file type not supported : %s", format)
 	}
+	return "", fmt.Errorf("file type not supported : %s", format)
 }
 
 func generateReadCsvStatement(paths []string, properties map[string]any) (string, error) {

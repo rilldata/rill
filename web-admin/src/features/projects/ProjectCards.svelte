@@ -10,7 +10,7 @@
 {#if $projs.data && $projs.data.projects?.length === 0}
   <p class="text-gray-500 text-xs">This organization has no projects yet.</p>
 {:else if $projs.data && $projs.data.projects?.length > 0}
-  <ol class="flex gap-6">
+  <ol class="flex gap-6 flex-wrap">
     {#each $projs.data.projects as proj}
       <li>
         <ProjectCard {organization} project={proj.name} />
