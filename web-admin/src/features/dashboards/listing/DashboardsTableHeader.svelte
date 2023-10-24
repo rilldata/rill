@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { beforeNavigate } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -14,11 +15,13 @@
   // Search
   let filter = "";
 
-  $: filterTable(filter);
-
   function filterTable(filter: string) {
     $table.setGlobalFilter(filter);
   }
+
+  $: filterTable(filter);
+
+  beforeNavigate(() => (filter = "")); // resets filter when changing projects
 
   // Number of dashboards
   $: numDashboards = $table.getRowModel().rows.length;
