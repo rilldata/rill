@@ -73,9 +73,10 @@ export class IntTimesPowerOfTenFormatter implements Formatter {
 
   partsFormat(x: number): NumberParts {
     if (typeof x !== "number") {
-      console.warn(
-        `Input to IntTimesPowerOfTenFormatter must be a number, got: ${x}. Returning empty NumberParts.`
-      );
+      // FIXME add these warnings back in when the upstream code is robust enough
+      // console.warn(
+      //   `Input to IntTimesPowerOfTenFormatter must be a number, got: ${x}. Returning empty NumberParts.`
+      // );
       return { int: "", dot: "", frac: "", suffix: "" };
     }
     const { onInvalidInput } = this.options;

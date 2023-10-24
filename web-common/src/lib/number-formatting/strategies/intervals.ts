@@ -68,9 +68,10 @@ export class IntervalFormatter implements Formatter {
  */
 export function formatMsInterval(ms: number): string {
   if (typeof ms !== "number") {
-    console.warn(
-      `input to formatMsInterval must be a number, got: ${ms}. Returning empty string.`
-    );
+    // FIXME add these warnings back in when the upstream code is robust enough
+    // console.warn(
+    //   `input to formatMsInterval must be a number, got: ${ms}. Returning empty string.`
+    // );
     return "";
   }
   let negative = false;
