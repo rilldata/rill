@@ -25,10 +25,10 @@ const allowedGrainTests = [
     expected: [TIME_GRAIN.TIME_GRAIN_MINUTE, TIME_GRAIN.TIME_GRAIN_HOUR],
   },
   {
-    test: "should return TIME_GRAIN_HOUR if otherwise < 1 day",
+    test: "should return TIME_GRAIN_MINUTE and TIME_GRAIN_HOUR if otherwise < 1 day",
     start: new Date(0),
     end: new Date(durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) - 1),
-    expected: [TIME_GRAIN.TIME_GRAIN_HOUR],
+    expected: [TIME_GRAIN.TIME_GRAIN_MINUTE, TIME_GRAIN.TIME_GRAIN_HOUR],
   },
 
   {

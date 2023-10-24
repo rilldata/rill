@@ -118,7 +118,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	names := make(map[string]bool)
 	columns := make(map[string]bool)
 	for i, dim := range tmp.Dimensions {
-		if dim.Ignore {
+		if dim == nil || dim.Ignore {
 			continue
 		}
 
@@ -151,7 +151,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 	measureCount := 0
 	for i, measure := range tmp.Measures {
-		if measure.Ignore {
+		if measure == nil || measure.Ignore {
 			continue
 		}
 
@@ -283,7 +283,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
 
 	for _, dim := range tmp.Dimensions {
-		if dim.Ignore {
+		if dim == nil || dim.Ignore {
 			continue
 		}
 
@@ -296,7 +296,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	for _, measure := range tmp.Measures {
-		if measure.Ignore {
+		if measure == nil || measure.Ignore {
 			continue
 		}
 

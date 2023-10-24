@@ -145,9 +145,19 @@ const integerTestCases: [TestArgs, NumberParts][] = [
 ];
 
 describe("formatNumWithOrderOfMag", () => {
-  it("throw on non-numbers", () => {
-    expect(() => formatNumWithOrderOfMag("asdf" as any, -3, 5, true)).toThrow();
-    expect(() => formatNumWithOrderOfMag(undefined, -3, 5, true)).toThrow();
+  it("return empty on on non-numbers", () => {
+    expect(formatNumWithOrderOfMag("asdf" as any, -3, 5, true)).toEqual({
+      int: "",
+      dot: "",
+      frac: "",
+      suffix: "",
+    });
+    expect(formatNumWithOrderOfMag(undefined, -3, 5, true)).toEqual({
+      int: "",
+      dot: "",
+      frac: "",
+      suffix: "",
+    });
   });
 
   testCases.forEach(([input, output]) => {

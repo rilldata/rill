@@ -1,23 +1,23 @@
 import { SortDirection, SortType } from "../../proto-state/derived-types";
-import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { SelectorFnArgs } from "./types";
 
 export const sortingSelectors = {
   /**
    * Gets the sort type for the dash (value, percent, delta, etc.)
    */
-  sortType: (dashboard: MetricsExplorerEntity) => dashboard.dashboardSortType,
+  sortType: ({ dashboard }: SelectorFnArgs) => dashboard.dashboardSortType,
 
   /**
    * true if the dashboard is sorted ascending, false otherwise.
    */
-  sortedAscending: (dashboard: MetricsExplorerEntity) =>
+  sortedAscending: ({ dashboard }: SelectorFnArgs) =>
     dashboard.sortDirection === SortDirection.ASCENDING,
 
   /**
    * Returns the measure name that the dashboard is sorted by,
    * or null if the dashboard is sorted by dimension value.
    */
-  sortMeasure: (dashboard: MetricsExplorerEntity) =>
+  sortMeasure: ({ dashboard }: SelectorFnArgs) =>
     dashboard.dashboardSortType !== SortType.DIMENSION &&
     dashboard.dashboardSortType !== SortType.UNSPECIFIED
       ? dashboard.leaderboardMeasureName
@@ -26,6 +26,6 @@ export const sortingSelectors = {
   /**
    * Returns true if the dashboard is sorted by a dimension, false otherwise.
    */
-  sortedByDimensionValue: (dashboard: MetricsExplorerEntity) =>
+  sortedByDimensionValue: ({ dashboard }: SelectorFnArgs) =>
     dashboard.dashboardSortType === SortType.DIMENSION,
 };

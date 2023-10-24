@@ -427,6 +427,10 @@ func (c *connection) reopenDB() error {
 	connector, err := duckdb.NewConnector(c.config.DSN, func(execer driver.ExecerContext) error {
 		for _, qry := range bootQueries {
 			_, err := execer.ExecContext(context.Background(), qry, nil)
+			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
+				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
+				_, err = execer.ExecContext(context.Background(), qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
+			}
 			if err != nil {
 				return err
 			}
