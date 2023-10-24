@@ -67,6 +67,13 @@ export class IntervalFormatter implements Formatter {
  * see https://www.notion.so/rilldata/Support-display-of-intervals-and-formatting-of-intervals-e-g-25-days-in-dashboardsal-data-t-8720522eded648f58f35421ebc28ee2f
  */
 export function formatMsInterval(ms: number): string {
+  if (typeof ms !== "number") {
+    // FIXME add these warnings back in when the upstream code is robust enough
+    // console.warn(
+    //   `input to formatMsInterval must be a number, got: ${ms}. Returning empty string.`
+    // );
+    return "";
+  }
   let negative = false;
   if (ms < 0) {
     ms = -ms;

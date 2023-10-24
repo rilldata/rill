@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -14,7 +16,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -52,10 +53,16 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	slices.SortFunc(rs, func(a, b *runtimev1.Resource) bool {
+	slices.SortFunc(rs, func(a, b *runtimev1.Resource) int {
 		an := a.Meta.Name
 		bn := b.Meta.Name
-		return an.Kind < bn.Kind || (an.Kind == bn.Kind && an.Name < bn.Name)
+		if an.Kind < bn.Kind {
+			return -1
+		}
+		if an.Kind > bn.Kind {
+			return 1
+		}
+		return strings.Compare(an.Name, bn.Name)
 	})
 
 	i := 0
@@ -121,13 +128,17 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 	}
 
 	return ctrl.Subscribe(ss.Context(), func(e runtimev1.ResourceEvent, n *runtimev1.ResourceName, r *runtimev1.Resource) {
-		r, access, err := s.applySecurityPolicy(ss.Context(), req.InstanceId, r)
-		if err != nil {
-			s.logger.Info("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
-			return
-		}
-		if !access {
-			return
+		if r != nil { // r is nil for deletion events
+			var access bool
+			var err error
+			r, access, err = s.applySecurityPolicy(ss.Context(), req.InstanceId, r)
+			if err != nil {
+				s.logger.Info("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
+				return
+			}
+			if !access {
+				return
+			}
 		}
 
 		err = ss.Send(&runtimev1.WatchResourcesResponse{

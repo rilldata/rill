@@ -6,7 +6,7 @@
   export let inTable = false;
   export let dark = false;
   export let customStyle = "";
-  export let value: undefined | NumberParts | PERC_DIFF;
+  export let value: null | NumberParts | PERC_DIFF;
   export let tabularNumber = true;
 
   let diffIsNegative = false;
@@ -18,9 +18,9 @@
   const isPercDiff = (token: unknown): token is PERC_DIFF[keyof PERC_DIFF] =>
     Object.values(PERC_DIFF).includes(token as PERC_DIFF);
 
-  $: isNoData = isPercDiff(value) || value === undefined;
+  $: isNoData = isPercDiff(value) || value === null;
 
-  $: if (!isNoData && !isPercDiff(value)) {
+  $: if (!isNoData && !isPercDiff(value) && value !== null) {
     // in this case, we have a NumberParts object.
     // We have a couple cases to consider:
     // * If the NumberParts object has approxZero===true,
@@ -29,7 +29,7 @@
     // small negative change.
     //
     // Otherwise, we format the number as usual.
-    intValue = value?.int;
+    intValue = value.int;
     diffIsNegative = value?.neg === "-";
     negSign = diffIsNegative && !value?.approxZero ? "-" : "";
     approxSign = value?.approxZero ? "~" : "";
@@ -47,7 +47,7 @@
   <slot name="value">
     {#if isNoData}
       <span class="opacity-50 italic" style:font-size=".925em">no data</span>
-    {:else if value !== undefined}
+    {:else if value !== null}
       <span class:text-red-500={diffIsNegative}>
         {approxSign}{negSign}{intValue}{suffix}<span class="opacity-50">%</span>
       </span>
