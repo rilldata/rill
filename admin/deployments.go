@@ -387,8 +387,9 @@ func (da *deploymentAnnotations) toMap() map[string]string {
 }
 
 func defaultModelMaterialize(vars map[string]string) (bool, error) {
-	// Temporary hack to enable configure ModelDefaultMaterialize using a variable.
+	// Temporary hack to enable configuring ModelDefaultMaterialize using a variable.
 	// Remove when we have a way to conditionally configure it using code files.
+
 	if vars == nil {
 		return false, nil
 	}
