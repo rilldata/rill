@@ -20,3 +20,10 @@ export interface ChartInteractionColumns {
 }
 
 export type TDDComparison = "time" | "none" | "dimension";
+
+export interface TablePosition {
+  x0?: number;
+  x1?: number;
+  y0?: number;
+  y1?: number;
+}

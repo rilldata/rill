@@ -12,9 +12,10 @@
     MeasureArrow,
     PieChart,
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDIcons";
-  import type { TableData, TDDComparison } from "./types";
+  import type { TableData, TablePosition, TDDComparison } from "./types";
   import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
   import { createEventDispatcher } from "svelte";
+  import { lastKnownPosition } from "./time-dimension-data-store";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -195,8 +196,6 @@
   };
 
   const getRowHeaderWidth = (x: number) => {
-    // const dimensionColWidth =
-    //   containerWidth - data?.columnCount * getColumnWidth(x) - 130 - 50 - 20;
     return [250, 130, 70][x];
   };
 
@@ -245,6 +244,24 @@
     pivot?.draw();
   }
 
+  // Scroll to previous position in case of dashboard refresh during reconcile
+  let currentPosition: TablePosition;
+  let hasScrolled = false;
+  let isInitialized;
+  function handlePos(e) {
+    const pos = e.detail;
+    currentPosition = pos;
+    isInitialized = pivot?.isInitialized();
+    if (!$lastKnownPosition || hasScrolled) lastKnownPosition.set(pos);
+  }
+
+  $: if (isInitialized && !hasScrolled && $lastKnownPosition) {
+    pivot?.scrollToCell($lastKnownPosition?.x0, $lastKnownPosition?.y0);
+    hasScrolled =
+      currentPosition?.x0 === $lastKnownPosition?.x0 &&
+      currentPosition?.y0 === $lastKnownPosition?.y0;
+  }
+
   // Hack: for some reason, not enough columns are being drawn on first render.
   // Force a second initial render to workaround it.
   $: {
@@ -276,6 +293,7 @@
     {getRowHeaderWidth}
     onMouseDown={handleMouseDown}
     onMouseHover={handleMouseHover}
+    on:pos={handlePos}
   />
 </div>
 

@@ -26,6 +26,7 @@ import type {
   ChartInteractionColumns,
   HighlightedCell,
   TableData,
+  TablePosition,
   TDDComparison,
 } from "./types";
 
@@ -397,3 +398,5 @@ export const chartInteractionColumn = writable<ChartInteractionColumns>({
   scrubStart: undefined,
   scrubEnd: undefined,
 });
+
+export const lastKnownPosition = writable<TablePosition>(undefined);

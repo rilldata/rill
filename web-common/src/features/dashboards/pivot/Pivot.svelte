@@ -39,6 +39,13 @@
   export function draw() {
     if (initialized) table.draw();
   }
+  export const isInitialized = () => initialized;
+
+  export function scrollToCell(x: number, y: number) {
+    if (initialized) {
+      table.scrollToCell(x, y);
+    }
+  }
 
   let pos = {
     x0: 0,
