@@ -10,6 +10,8 @@
 
 <VerticalScrollContainer>
   <ContentContainer>
-    <ReportsTable {organization} {project} />
+    <div class="flex flex-col items-center">
+      <ReportsTable {organization} {project} />
+    </div>
   </ContentContainer>
 </VerticalScrollContainer>
