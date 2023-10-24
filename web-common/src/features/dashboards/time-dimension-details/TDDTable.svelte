@@ -256,8 +256,8 @@
 
 <div
   on:mouseleave={resetHighlight}
-  class="h-full w-full relative mb-2 {comparing === 'dimension' &&
-    'cursor-pointer'}"
+  style:height="calc(100% - 50px)"
+  class="w-full relative {comparing === 'dimension' && 'cursor-pointer'}"
 >
   <Pivot
     bind:this={pivot}
