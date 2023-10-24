@@ -1,10 +1,5 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
-  import { Button } from "@rilldata/web-common/components/button";
-  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import Menu from "@rilldata/web-common/components/menu/core/Menu.svelte";
-  import MenuItem from "@rilldata/web-common/components/menu/core/MenuItem.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import type { Table } from "@tanstack/table-core/src/types";
   import { getContext } from "svelte";
@@ -27,27 +22,29 @@
   $: numDashboards = $table.getRowModel().rows.length;
 
   // Sort
-  function sortByTitle() {
-    $table.setSorting([{ id: "title", desc: false }]);
-  }
+  // function sortByTitle() {
+  //   $table.setSorting([{ id: "title", desc: false }]);
+  // }
 
-  function sortByName() {
-    $table.setSorting([{ id: "name", desc: false }]);
-  }
+  // function sortByName() {
+  //   $table.setSorting([{ id: "name", desc: false }]);
+  // }
 
-  function sortByLastRefreshTime() {
-    $table.setSorting([{ id: "lastRefreshed", desc: true }]);
-  }
+  // function sortByLastRefreshTime() {
+  //   $table.setSorting([{ id: "lastRefreshed", desc: true }]);
+  // }
 
-  let openSortMenu = false;
-  function closeSortMenu() {
-    openSortMenu = false;
-  }
+  // let openSortMenu = false;
+  // function closeSortMenu() {
+  //   openSortMenu = false;
+  // }
 </script>
 
 <thead>
   <tr>
-    <td class="p-2 max-w-[800px] flex items-center gap-x-2 bg-slate-100">
+    <td
+      class="pl-2 pr-4 py-2 max-w-[800px] flex items-center gap-x-2 bg-slate-100"
+    >
       <!-- Search bar -->
       <div class="px-4 grow">
         <Search placeholder="Search" autofocus={false} bind:value={filter} />
@@ -60,7 +57,7 @@
       <span>{numDashboards} dashboard{numDashboards !== 1 ? "s" : ""}</span>
 
       <!-- Sort button -->
-      <WithTogglableFloatingElement
+      <!-- <WithTogglableFloatingElement
         active={openSortMenu}
         distance={4}
         alignment="end"
@@ -85,7 +82,7 @@
             >Most recently refreshed</MenuItem
           >
         </Menu>
-      </WithTogglableFloatingElement>
+      </WithTogglableFloatingElement> -->
     </td>
   </tr>
 </thead>
