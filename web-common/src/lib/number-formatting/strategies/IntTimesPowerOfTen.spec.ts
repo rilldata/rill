@@ -131,38 +131,38 @@ describe("default formatter, default options `.stringFormat()`", () => {
   });
 });
 
-const errorCases: [
-  number,
-  {
-    maxDigitsRightSmallNums?: number;
-    maxDigitsRightSuffixNums?: number;
-    padWithInsignificantZeros?: boolean;
-    numberKind?: NumberKind;
-  }
-][] = [
-  [12_320_000, {}],
-  [12_320_000, { numberKind: NumberKind.DOLLAR }],
-  [12_320_000, { numberKind: NumberKind.PERCENT }],
+// const errorCases: [
+//   number,
+//   {
+//     maxDigitsRightSmallNums?: number;
+//     maxDigitsRightSuffixNums?: number;
+//     padWithInsignificantZeros?: boolean;
+//     numberKind?: NumberKind;
+//   }
+// ][] = [
+//   [12_320_000, {}],
+//   [12_320_000, { numberKind: NumberKind.DOLLAR }],
+//   [12_320_000, { numberKind: NumberKind.PERCENT }],
 
-  [12_000, {}],
-  [12_000, { numberKind: NumberKind.DOLLAR }],
-  [12_000, { numberKind: NumberKind.PERCENT }],
+//   [12_000, {}],
+//   [12_000, { numberKind: NumberKind.DOLLAR }],
+//   [12_000, { numberKind: NumberKind.PERCENT }],
 
-  [12_320, {}],
-  [12_320, { numberKind: NumberKind.DOLLAR }],
-  [12_320, { numberKind: NumberKind.PERCENT }],
-  [12.23, {}],
-  [12.23, { numberKind: NumberKind.DOLLAR }],
-  [12.23, { numberKind: NumberKind.PERCENT }],
+//   [12_320, {}],
+//   [12_320, { numberKind: NumberKind.DOLLAR }],
+//   [12_320, { numberKind: NumberKind.PERCENT }],
+//   [12.23, {}],
+//   [12.23, { numberKind: NumberKind.DOLLAR }],
+//   [12.23, { numberKind: NumberKind.PERCENT }],
 
-  [0.001432, {}],
-  [0.001423, { numberKind: NumberKind.DOLLAR }],
-  [0.001423, { numberKind: NumberKind.PERCENT }],
+//   [0.001432, {}],
+//   [0.001423, { numberKind: NumberKind.DOLLAR }],
+//   [0.001423, { numberKind: NumberKind.PERCENT }],
 
-  [0.000_000_234_32, {}],
-  [0.000_000_234_32, { numberKind: NumberKind.DOLLAR }],
-  [0.000_000_234_32, { numberKind: NumberKind.PERCENT }],
-];
+//   [0.000_000_234_32, {}],
+//   [0.000_000_234_32, { numberKind: NumberKind.DOLLAR }],
+//   [0.000_000_234_32, { numberKind: NumberKind.PERCENT }],
+// ];
 
 //FIXME re-enable this test when we have a better way to handle invalid inputs
 // describe("IntTimesPowerOfTenFormatter, returns empty NumberParts on invalid inputs", () => {
