@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"sync"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -260,18 +259,6 @@ func (r *registryCache) add(inst *drivers.Instance) {
 
 	if _, ok := r.instances[inst.ID]; ok {
 		panic(fmt.Errorf("instance %q already open", inst.ID))
-	}
-
-	// Temporary hack to enable configuring ModelDefaultMaterialize using variables.
-	// Remove when we have a way to conditionally configure it using code files.
-	vars := inst.ResolveVariables()
-	if s, ok := vars["__materialize_default"]; ok {
-		val, err := strconv.ParseBool(s)
-		if err != nil {
-			r.logger.Error("invalid __materialize_default value", zap.String("instance_id", inst.ID), zap.String("value", s))
-		} else {
-			inst.ModelDefaultMaterialize = val
-		}
 	}
 
 	iwc := &instanceWithController{instance: inst}
