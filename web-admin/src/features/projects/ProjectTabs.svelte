@@ -19,11 +19,10 @@
             route: `/${organization}/${project}`,
             label: "Dashboards",
           },
-          // Hide until releasing Scheduled Reports
-          // {
-          //   route: `/${organization}/${project}/-/reports`,
-          //   label: "Reports",
-          // },
+          {
+            route: `/${organization}/${project}/-/reports`,
+            label: "Reports",
+          },
         ];
         const adminTabs = [
           {
