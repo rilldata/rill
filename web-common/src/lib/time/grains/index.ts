@@ -29,8 +29,7 @@ export function getDefaultTimeGrain(start: Date, end: Date): TimeGrain {
   ) {
     return TIME_GRAIN.TIME_GRAIN_MINUTE;
   } else if (
-    timeRangeDurationMs <
-    durationToMillis(TIME_GRAIN.TIME_GRAIN_WEEK.duration)
+    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_WEEK.duration)
   ) {
     return TIME_GRAIN.TIME_GRAIN_HOUR;
   } else if (
@@ -56,23 +55,15 @@ export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
   ) {
     return [TIME_GRAIN.TIME_GRAIN_MINUTE];
   } else if (
-    timeRangeDurationMs <
-    durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
   ) {
     return [TIME_GRAIN.TIME_GRAIN_MINUTE, TIME_GRAIN.TIME_GRAIN_HOUR];
   } else if (
-      timeRangeDurationMs ==
-      durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
-  ) {
-    return [TIME_GRAIN.TIME_GRAIN_MINUTE, TIME_GRAIN.TIME_GRAIN_HOUR, TIME_GRAIN.TIME_GRAIN_DAY];
-  } else if (
-    timeRangeDurationMs <
-    durationToMillis(TIME_GRAIN.TIME_GRAIN_WEEK.duration)
+    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_WEEK.duration)
   ) {
     return [TIME_GRAIN.TIME_GRAIN_HOUR, TIME_GRAIN.TIME_GRAIN_DAY];
   } else if (
-    timeRangeDurationMs <
-    durationToMillis(TIME_GRAIN.TIME_GRAIN_MONTH.duration)
+    timeRangeDurationMs < durationToMillis(TIME_GRAIN.TIME_GRAIN_MONTH.duration)
   ) {
     return [
       TIME_GRAIN.TIME_GRAIN_HOUR,
