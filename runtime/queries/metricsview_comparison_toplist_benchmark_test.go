@@ -1,4 +1,4 @@
-package queries
+package queries_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -15,7 +16,7 @@ import (
 func BenchmarkMetricsViewsComparison_compare(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
 		ColumnName: "timestamp",
 	}
@@ -24,13 +25,13 @@ func BenchmarkMetricsViewsComparison_compare(b *testing.B) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_1"},
@@ -65,20 +66,20 @@ func BenchmarkMetricsViewsComparison_compare(b *testing.B) {
 func BenchmarkMetricsViewsComparison_nocompare_all(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
 		ColumnName: "timestamp",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(b, err)
 
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_1"},
@@ -110,13 +111,13 @@ func BenchmarkMetricsViewsComparison_nocompare_all(b *testing.B) {
 func BenchmarkMetricsViewsComparison_compare_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
 
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_state_name",
 		MeasureNames:    []string{"total_agencies"},
@@ -152,19 +153,19 @@ func BenchmarkMetricsViewsComparison_compare_spending(b *testing.B) {
 func BenchmarkMetricsViewsComparison_nocompare_all_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "spending",
 		ColumnName: "action_date",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(b, err)
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_state_name",
 		MeasureNames:    []string{"total_agencies"},
@@ -196,7 +197,7 @@ func BenchmarkMetricsViewsComparison_nocompare_all_spending(b *testing.B) {
 func BenchmarkMetricsViewsComparison_delta_compare(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
 		ColumnName: "timestamp",
 	}
@@ -204,13 +205,13 @@ func BenchmarkMetricsViewsComparison_delta_compare(b *testing.B) {
 	require.NoError(b, err)
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_1"},
@@ -246,19 +247,19 @@ func BenchmarkMetricsViewsComparison_delta_compare(b *testing.B) {
 func BenchmarkMetricsViewsComparison_delta_nocompare_all(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
 		ColumnName: "timestamp",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(b, err)
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_1"},
@@ -289,13 +290,13 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all(b *testing.B) {
 
 func BenchmarkMetricsViewsComparison_delta_compare_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_state_name",
 		MeasureNames:    []string{"total_agencies"},
@@ -331,19 +332,19 @@ func BenchmarkMetricsViewsComparison_delta_compare_spending(b *testing.B) {
 func BenchmarkMetricsViewsComparison_delta_nocompare_all_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "spending",
 		ColumnName: "action_date",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(b, err)
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_state_name",
 		MeasureNames:    []string{"total_agencies"},
@@ -374,13 +375,13 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all_spending(b *testing.B) 
 
 func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		MeasureNames:    []string{"total_agencies"},
@@ -415,13 +416,13 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending(b *
 
 func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_approximate(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		MeasureNames:    []string{"total_agencies"},
@@ -457,19 +458,19 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 func BenchmarkMetricsViewsComparison_delta_high_cardinality_nocompare_all_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "spending",
 		ColumnName: "action_date",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(b, err)
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		MeasureNames:    []string{"total_agencies"},
@@ -500,13 +501,13 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_nocompare_all_spendi
 
 func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		MeasureNames:    []string{"total_agencies"},
@@ -541,13 +542,13 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending(b *testin
 
 func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending_approximate_limit_250(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		MeasureNames:    []string{"total_agencies"},
@@ -582,13 +583,13 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending_approxima
 
 func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_approximate_limit_500(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		MeasureNames:    []string{"total_agencies"},
@@ -622,13 +623,13 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 }
 func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_approximate_limit_1250(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		MeasureNames:    []string{"total_agencies"},
@@ -664,19 +665,19 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 func BenchmarkMetricsViewsComparison_high_cardinality_nocompare_all_spending(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
 
-	ctr := ColumnTimeRange{
+	ctr := &queries.ColumnTimeRange{
 		TableName:  "spending",
 		ColumnName: "action_date",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(b, err)
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 	res, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(b, err)
 	mv := res.GetMetricsView().Spec
 
-	q := &MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparisonToplist{
 		MetricsViewName: "spending_dashboard",
 		DimensionName:   "recipient_parent_name",
 		MeasureNames:    []string{"total_agencies"},

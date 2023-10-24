@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"testing"
@@ -15,13 +16,11 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
 )
 
 func TestRuntime_EditInstance(t *testing.T) {
 	repodsn := t.TempDir()
 	newRepodsn := t.TempDir()
-	rt := newTestRuntime(t)
 	tests := []struct {
 		name      string
 		inst      *drivers.Instance
@@ -271,6 +270,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			rt := newTestRuntime(t)
 			ctx := context.Background()
 
 			// Create instance
@@ -292,7 +292,8 @@ func TestRuntime_EditInstance(t *testing.T) {
 				},
 			}
 			require.NoError(t, rt.CreateInstance(context.Background(), inst))
-			rt.WaitUntilReady(ctx, inst.ID)
+			_, err := rt.Controller(ctx, inst.ID)
+			require.NoError(t, err)
 
 			// Acquire OLAP (to make sure it's opened)
 			firstOlap, release, err := rt.OLAP(ctx, inst.ID)
@@ -311,7 +312,8 @@ func TestRuntime_EditInstance(t *testing.T) {
 
 			// Wait for controller restart
 			time.Sleep(500 * time.Millisecond)
-			rt.WaitUntilReady(ctx, inst.ID)
+			_, err = rt.Controller(ctx, inst.ID)
+			require.NoError(t, err)
 
 			// Verify db instances are correctly updated
 			newInst, err := rt.Instance(ctx, inst.ID)
@@ -374,7 +376,8 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 				},
 			}
 			require.NoError(t, rt.CreateInstance(context.Background(), inst))
-			rt.WaitUntilReady(ctx, inst.ID)
+			_, err := rt.Controller(ctx, inst.ID)
+			require.NoError(t, err)
 
 			// Acquire OLAP
 			olap, release, err := rt.OLAP(ctx, inst.ID)

@@ -50,6 +50,9 @@ RILL_RUNTIME_TRACES_EXPORTER=""
 RILL_RUNTIME_ALLOWED_ORIGINS="*"
 RILL_RUNTIME_METASTORE_DRIVER="sqlite"
 RILL_RUNTIME_METASTORE_URL=":memory:"
+# Hex-encoded comma-separated list of key pairs. To generate, run "go run ./scripts/generate_keypairs/main.go"
+# For details: https://pkg.go.dev/github.com/gorilla/sessions#NewCookieStore
+RILL_RUNTIME_SESSION_KEY_PAIRS=7938b8c95ac90b3731c353076daeae8a,90c22a5a6c6b442afdb46855f95eb7d6
 RILL_RUNTIME_AUTH_ENABLE="false"
 RILL_RUNTIME_AUTH_ISSUER_URL=""
 RILL_RUNTIME_AUTH_AUDIENCE_URL=""

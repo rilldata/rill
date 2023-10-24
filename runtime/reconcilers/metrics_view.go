@@ -100,7 +100,10 @@ func (r *MetricsViewReconciler) validate(ctx context.Context, mv *runtimev1.Metr
 	// Check underlying table exists
 	t, err := olap.InformationSchema().Lookup(ctx, mv.Table)
 	if err != nil {
-		return fmt.Errorf("table %q does not exist", mv.Table)
+		if errors.Is(err, drivers.ErrNotFound) {
+			return fmt.Errorf("table %q does not exist", mv.Table)
+		}
+		return fmt.Errorf("could not find table %q: %w", mv.Table, err)
 	}
 
 	fields := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))

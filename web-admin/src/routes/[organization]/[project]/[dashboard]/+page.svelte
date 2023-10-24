@@ -35,13 +35,9 @@
   $: isProjectPending =
     $projectDeploymentStatus.data ===
     V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
-  $: isProjectReconciling = false;
-  // $projectDeploymentStatus.data ===
-  // V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING;
   $: isProjectErrored =
     $projectDeploymentStatus.data ===
     V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR;
-  $: isProjectBuilding = isProjectPending || isProjectReconciling;
   $: isProjectBuilt = isProjectOK || isProjectErrored;
 
   let isProjectOK: boolean;
@@ -74,10 +70,12 @@
   }
 
   $: dashboard = useDashboard(instanceId, dashboardName);
-  $: isDashboardOK = $dashboard.isSuccess;
   $: isDashboardNotFound =
     $dashboard.isError &&
     ($dashboard.error as QueryError)?.response?.status === 404;
+  // We check for metricsView.state.validSpec instead of meta.reconcileError. validSpec persists
+  // from previous valid dashboards, allowing display even when the current dashboard spec is invalid
+  // and a meta.reconcileError exists.
   $: isDashboardErrored = !$dashboard.data?.metricsView?.state?.validSpec;
 
   // If no dashboard is found, show a 404 page
@@ -97,11 +95,10 @@
 <!-- Note: Project and dashboard states might appear to diverge. A project could be errored 
   because dashboard #1 is errored, but dashboard #2 could be OK.  -->
 
-{#if isProjectBuilding && isDashboardNotFound}
+{#if isProjectPending && isDashboardNotFound}
   <ProjectBuilding organization={orgName} project={projectName} />
-{:else if isDashboardOK}
+{:else if $dashboard.isSuccess}
   {#if isDashboardErrored}
-    <!-- TODO: we should show the reconcile error -->
     <ProjectErrored organization={orgName} project={projectName} />
   {:else}
     <StateManagersProvider metricsViewName={dashboardName}>

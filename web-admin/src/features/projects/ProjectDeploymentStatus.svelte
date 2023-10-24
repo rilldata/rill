@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createAdminServiceGetProject } from "../../client";
   import ProjectDeploymentStatusChip from "./ProjectDeploymentStatusChip.svelte";
 
@@ -7,6 +9,11 @@
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: isProjectDeployed = $proj?.data && $proj.data.prodDeployment;
+  $: lastUpdated = useDashboardsLastUpdated(
+    $runtime.instanceId,
+    organization,
+    project
+  );
 </script>
 
 <div class="flex flex-col gap-y-2">
@@ -17,17 +24,14 @@
     <div>
       <ProjectDeploymentStatusChip {organization} {project} />
     </div>
-    {#if $proj && $proj.data && $proj.data.prodDeployment}
+    {#if $lastUpdated}
       <span class="text-gray-500 text-[11px] leading-4">
-        Synced {new Date($proj.data.prodDeployment.updatedOn).toLocaleString(
-          undefined,
-          {
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-          }
-        )}
+        Synced {$lastUpdated.toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+        })}
       </span>
     {/if}
   </div>

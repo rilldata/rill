@@ -10,9 +10,9 @@
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
 
-  export let dataTypeName: string;
   export let data: unknown[] = [];
-  export let columns: ColumnDef<unknown>[] = [];
+  export let columns: ColumnDef<unknown, unknown>[] = [];
+  export let columnVisibility: Record<string, boolean> = {};
 
   let sorting = [];
   function setSorting(updater) {
@@ -39,6 +39,7 @@
     enableGlobalFilter: true,
     state: {
       sorting,
+      columnVisibility,
     },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
@@ -62,38 +63,30 @@
   $: data && rerender();
 </script>
 
-<div class="flex flex-col gap-y-4 items-center">
-  <table class="w-full max-w-[800px]">
-    <slot name="header" />
-    <tbody>
-      {#if $table.getRowModel().rows.length === 0}
+<table class="w-full max-w-[800px]">
+  <slot name="header" />
+  <tbody>
+    {#if $table.getRowModel().rows.length === 0}
+      <tr>
+        <td class="text-center py-4">
+          <slot name="empty" />
+        </td>
+      </tr>
+    {:else}
+      {#each $table.getRowModel().rows as row}
         <tr>
-          <td class="text-center py-4 text-gray-500">
-            No {dataTypeName}s found.
-          </td>
+          {#each row.getVisibleCells() as cell, i}
+            <td class="hover:bg-slate-50">
+              <svelte:component
+                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+              />
+            </td>
+          {/each}
         </tr>
-      {:else}
-        {#each $table.getRowModel().rows as row}
-          <tr>
-            {#each row.getVisibleCells() as cell, i}
-              <td
-                class="hover:bg-slate-50 px-4 {i ===
-                  row.getVisibleCells().length - 1 && 'pr-2'} py-[5px]"
-              >
-                <svelte:component
-                  this={flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext()
-                  )}
-                />
-              </td>
-            {/each}
-          </tr>
-        {/each}
-      {/if}
-    </tbody>
-  </table>
-</div>
+      {/each}
+    {/if}
+  </tbody>
+</table>
 
 <!-- 
 Rounded table corners are tricky:

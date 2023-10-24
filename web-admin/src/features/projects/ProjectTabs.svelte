@@ -88,6 +88,4 @@
       </TabList>
     </TabGroup>
   </div>
-
-  <slot />
 {/if}

@@ -61,6 +61,10 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
 **`timeout`**
  — The maximum time to wait for souce ingestion.
 
+**`refresh`** - Optionally specify a schedule after which Rill should re-ingest the source
+  - **`cron`** - a cron schedule expression (optional)
+  - **`every`** - a Go duration string, such as `24h` ([docs](https://pkg.go.dev/time#ParseDuration)) (optional)
+
 **`extract`** - Optionally limit the data ingested from remote sources (S3/GCS only)
   - **`rows`** - limits the size of data fetched
     - **`strategy`** - strategy to fetch data (**head** or **tail**)

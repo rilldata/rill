@@ -1,5 +1,8 @@
 import type { V1GetProjectResponse } from "@rilldata/web-admin/client";
-import { V1DeploymentStatus } from "@rilldata/web-admin/client";
+import {
+  createAdminServiceGetProject,
+  V1DeploymentStatus,
+} from "@rilldata/web-admin/client";
 import {
   PollTimeDuringError,
   PollTimeDuringReconcile,
@@ -12,12 +15,11 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import {
-  V1ReconcileStatus,
   createRuntimeServiceListResources,
+  V1ReconcileStatus,
 } from "@rilldata/web-common/runtime-client";
-import { fetchWrapper } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { invalidateMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation";
-import type { QueryClient } from "@tanstack/svelte-query";
+import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import Axios from "axios";
 import { derived } from "svelte/store";
 
@@ -61,13 +63,40 @@ export async function getDashboardsForProject(
 }
 
 export function useDashboards(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.MetricsView);
+  return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
+    data.resources.filter((res) => !!res.metricsView?.state?.validSpec)
+  );
 }
 
-export function useDashboardsStatus(
+export function useDashboardsLastUpdated(
   instanceId: string,
-  project?: V1GetProjectResponse
+  organization: string,
+  project: string
 ) {
+  return derived(
+    [
+      useDashboards(instanceId),
+      createAdminServiceGetProject(organization, project),
+    ],
+    ([dashboardsResp, projResp]) => {
+      if (!dashboardsResp.data?.length) {
+        if (!projResp.data?.prodDeployment?.updatedOn) return undefined;
+
+        // return project's last updated if there are no dashboards
+        return new Date(projResp.data.prodDeployment.updatedOn);
+      }
+
+      const max = Math.max(
+        ...dashboardsResp.data.map((res) =>
+          new Date(res.meta.stateUpdatedOn).getTime()
+        )
+      );
+      return new Date(max);
+    }
+  );
+}
+
+export function useDashboardsStatus(instanceId: string) {
   return createRuntimeServiceListResources(
     instanceId,
     {
@@ -116,34 +145,6 @@ export function useDashboardsStatus(
               return PollTimeWhenProjectReady;
           }
         },
-
-        // Do a manual call for project chip. This could be placed where `runtime` is not populated
-        ...(project
-          ? {
-              queryFn: ({ signal }) => {
-                // Hack: in development, the runtime host is actually on port 8081
-                const host = project.prodDeployment.runtimeHost.replace(
-                  "localhost:9091",
-                  "localhost:8081"
-                );
-                const instanceId = project.prodDeployment.runtimeInstanceId;
-                const jwt = project.jwt;
-                return fetchWrapper({
-                  url: `${host}/v1/instances/${instanceId}/resources?kind=${ResourceKind.MetricsView}`,
-                  method: "GET",
-                  ...(jwt
-                    ? {
-                        headers: {
-                          Authorization: `Bearer ${project.jwt}`,
-                          "Content-Type": "application/json",
-                        },
-                      }
-                    : {}),
-                  signal,
-                });
-              },
-            }
-          : {}),
       },
     }
   );
@@ -201,8 +202,39 @@ export function listenAndInvalidateDashboards(
   });
 }
 
-export function useDashboardsV2(instanceId: string) {
-  return createRuntimeServiceListResources(instanceId, {
-    kind: ResourceKind.MetricsView,
+/**
+ * The DashboardResource is a wrapper around a V1Resource that adds the
+ * "refreshedOn" attribute, which is the last time the dashboard was refreshed.
+ *
+ * If the backend is updated to include this attribute in the V1Resource, this
+ * wrapper can be removed.
+ */
+export interface DashboardResource {
+  resource: V1Resource;
+  refreshedOn: string;
+}
+
+export function useDashboardsV2(
+  instanceId: string
+): CreateQueryResult<DashboardResource[]> {
+  return createRuntimeServiceListResources(instanceId, undefined, {
+    query: {
+      select: (data) => {
+        const dashboards = data.resources.filter((res) => res.metricsView);
+        return dashboards.map((db) => {
+          // Extract table name from dashboard metadata
+          const refName = db.meta.refs[0];
+          const refTable = data.resources.find(
+            (r) => r.meta?.name?.name === refName?.name
+          );
+
+          // Add the "refreshedOn" attribute
+          const refreshedOn =
+            refTable?.model?.state.refreshedOn ||
+            refTable?.source?.state.refreshedOn;
+          return { resource: db, refreshedOn };
+        });
+      },
+    },
   });
 }

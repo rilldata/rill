@@ -1,41 +1,28 @@
 <script lang="ts">
+  import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
   import DashboardIcon from "@rilldata/web-common/components/icons/DashboardIcon.svelte";
   import { Tag } from "@rilldata/web-common/components/tag";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import {
-    createAdminServiceGetProject,
-    V1DeploymentStatus,
-    V1GetProjectResponse,
-  } from "../../../client";
-  import { getDashboardsForProject } from "./dashboards";
+  import { createAdminServiceGetProject } from "../../../client";
 
   export let organization: string;
   export let project: string;
 
-  let dashboards: V1Resource[];
+  let dashboards: ReturnType<typeof useDashboards>;
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: if ($proj?.isSuccess && $proj.data?.prodDeployment) {
-    updateDashboardsForProject($proj.data);
-  }
-
-  // This method has to be here since we cannot have async-await in reactive statement to set dashboardListItems
-  async function updateDashboardsForProject(projectData: V1GetProjectResponse) {
-    const status = projectData.prodDeployment.status;
-    if (status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING) return;
-
-    dashboards = await getDashboardsForProject(projectData);
+    dashboards = useDashboards($proj.data.prodDeployment.runtimeInstanceId);
   }
 </script>
 
-{#if dashboards?.length === 0}
+{#if $dashboards?.data?.length === 0}
   <p class="text-gray-500 text-xs">This project has no dashboards yet.</p>
-{:else if dashboards?.length > 0}
+{:else if $dashboards?.data?.length > 0}
   <ol class="flex flex-col gap-y-4 max-w-full 2xl:max-w-[1200px]">
-    {#each dashboards as dashboard}
+    {#each $dashboards.data as dashboard}
       <li class="w-full h-[52px] border rounded">
         <a
           href={`/${organization}/${project}/${dashboard.meta.name.name}`}

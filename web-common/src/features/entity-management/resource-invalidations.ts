@@ -38,9 +38,6 @@ export function invalidateResourceResponse(
 ) {
   // only process for the `ResourceKind` present in `UsedResourceKinds`
   if (!UsedResourceKinds[res.name.kind]) return;
-  console.log(
-    `[${res.resource.meta.reconcileStatus}] ${res.name.kind}/${res.name.name}`
-  );
 
   const instanceId = get(runtime).instanceId;
   if (

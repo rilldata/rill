@@ -133,15 +133,6 @@ func (c *catalogCache) flush(ctx context.Context) error {
 	return nil
 }
 
-// checkLeader checks that we hold the current controller version number.
-func (c *catalogCache) checkLeader(ctx context.Context) error {
-	err := c.store.CheckControllerVersion(ctx, c.version)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // get returns a resource from the catalog.
 // Unlike other catalog functions, it is safe to call get concurrently with calls to list and flush (i.e. under a read lock).
 func (c *catalogCache) get(n *runtimev1.ResourceName, withDeleted, clone bool) (*runtimev1.Resource, error) {
@@ -551,6 +542,7 @@ func resourceFromDriver(r drivers.Resource) *runtimev1.Resource {
 
 	// Reset ephemeral fields.
 	res.Meta.ReconcileStatus = runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE
+	res.Meta.ReconcileError = ""
 	res.Meta.ReconcileOn = nil
 	res.Meta.RenamedFrom = nil
 

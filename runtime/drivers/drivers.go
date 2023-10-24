@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var ErrIngestionLimitExceeded = fmt.Errorf("connectors: source ingestion exceeds limit")
+var ErrStorageLimitExceeded = fmt.Errorf("connectors: exceeds storage limit")
 
 type PermissionDeniedError struct {
 	msg string
