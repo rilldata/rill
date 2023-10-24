@@ -1,6 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/projects/dashboards";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createAdminServiceGetProject } from "../../client";
   import ProjectDeploymentStatusChip from "./ProjectDeploymentStatusChip.svelte";
 
@@ -9,6 +11,11 @@
 
   $: proj = createAdminServiceGetProject(organization, project);
   $: isProjectDeployed = $proj?.data && $proj.data.prodDeployment;
+  $: lastUpdated = useDashboardsLastUpdated(
+    $runtime.instanceId,
+    organization,
+    project
+  );
 
   function handleViewLogs() {
     goto(`/${organization}/${project}/-/logs`);
@@ -23,17 +30,14 @@
     <div>
       <ProjectDeploymentStatusChip {organization} {project} />
     </div>
-    {#if $proj && $proj.data && $proj.data.prodDeployment}
+    {#if $lastUpdated}
       <span class="text-gray-500 text-[11px] leading-4">
-        Synced {new Date($proj.data.prodDeployment.updatedOn).toLocaleString(
-          undefined,
-          {
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "numeric",
-          }
-        )}
+        Synced {$lastUpdated.toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+        })}
       </span>
     {/if}
   </div>

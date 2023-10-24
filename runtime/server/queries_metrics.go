@@ -470,7 +470,7 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 
 // returns the metrics view and the time the catalog was last updated
 func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsViewSpec, time.Time, error) {
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
 		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
 	}

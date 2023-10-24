@@ -105,7 +105,7 @@ func BenchmarkMetricsViewsTimeSeries_TimeZone_Hour(b *testing.B) {
 func prepareEnvironment(b *testing.B) (*runtime.Runtime, string, *runtimev1.MetricsViewSpec) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(b, err)
 
 	obj, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
