@@ -72,6 +72,12 @@ export class IntTimesPowerOfTenFormatter implements Formatter {
   }
 
   partsFormat(x: number): NumberParts {
+    if (typeof x !== "number") {
+      console.warn(
+        `Input to IntTimesPowerOfTenFormatter must be a number, got: ${x}. Returning empty NumberParts.`
+      );
+      return { int: "", dot: "", frac: "", suffix: "" };
+    }
     const { onInvalidInput } = this.options;
 
     const isCurrency = this.options.numberKind === NumberKind.DOLLAR;

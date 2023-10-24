@@ -194,7 +194,7 @@
           <!-- FIXME: I can't select the big number by the measure id. -->
           <MeasureBigNumber
             {measure}
-            value={$totalsQuery?.data?.data?.[measure?.name] || 0}
+            value={$totalsQuery?.data?.data?.[measure?.name] ?? 0}
             withTimeseries={false}
             status={$totalsQuery?.isFetching
               ? EntityStatus.Running

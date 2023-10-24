@@ -69,11 +69,12 @@ export const formatPresetToNumberKind = (type: FormatPreset) => {
     case FormatPreset.HUMANIZE:
       return NumberKind.ANY;
     default:
-      throw new Error(
+      console.warn(
         `All FormatPreset variants must be explicity handled in formatPresetToNumberKind, got ${
           type === "" ? "empty string" : type
         }`
       );
+      return NumberKind.ANY;
   }
 };
 

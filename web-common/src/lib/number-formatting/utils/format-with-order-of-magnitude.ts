@@ -38,7 +38,12 @@ export const formatNumWithOrderOfMag = (
   // strip commas from output?
   stripCommas = false
 ): NumberParts => {
-  if (typeof x !== "number") throw new Error("input must be a number");
+  if (typeof x !== "number") {
+    console.warn(
+      `input to formatNumWithOrderOfMag must be a number, got: ${x}. Returning empty NumberParts.`
+    );
+    return { int: "", dot: "", frac: "", suffix: "" };
+  }
 
   if (x === Infinity) return { int: "∞", dot: "", frac: "", suffix: "" };
   if (x === -Infinity)

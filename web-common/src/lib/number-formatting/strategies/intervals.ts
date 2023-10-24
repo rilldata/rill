@@ -67,6 +67,12 @@ export class IntervalFormatter implements Formatter {
  * see https://www.notion.so/rilldata/Support-display-of-intervals-and-formatting-of-intervals-e-g-25-days-in-dashboardsal-data-t-8720522eded648f58f35421ebc28ee2f
  */
 export function formatMsInterval(ms: number): string {
+  if (typeof ms !== "number") {
+    console.warn(
+      `input to formatMsInterval must be a number, got: ${ms}. Returning empty string.`
+    );
+    return "";
+  }
   let negative = false;
   if (ms < 0) {
     ms = -ms;
