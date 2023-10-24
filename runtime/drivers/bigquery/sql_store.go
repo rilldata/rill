@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 )
 
 // recommended size is 512MB - 1GB, entire data is buffered in memory before its written to disk
@@ -44,21 +45,8 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		return nil, err
 	}
 
-	now := time.Now()
-
 	var client *bigquery.Client
 	var it *bigquery.RowIterator
-	bqClientFn := func(projectID string) (*bigquery.Client, error) {
-		client, err := bigquery.NewClient(ctx, projectID, opts...)
-		if err != nil {
-			if strings.Contains(err.Error(), "unable to detect projectID") {
-				return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
-			}
-			return nil, fmt.Errorf("failed to create bigquery client: %w", err)
-		}
-		return client, nil
-	}
-
 	r := regexp.MustCompile("(?i)^\\s*SELECT\\s+\\*\\s+FROM\\s+(`?[a-zA-Z0-9_.-]+`?)\\s*$")
 	match := r.FindStringSubmatch(srcProps.SQL)
 	if match != nil {
@@ -73,20 +61,13 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		switch len(parts) {
 		case 1:
 			tableID = parts[0]
-		case 2:
-			dataset, tableID = parts[0], parts[1]
 		case 3:
 			projectID, dataset, tableID = parts[0], parts[1], parts[2]
 		default:
 			return nil, fmt.Errorf("invalid table format, `project_id.dataset.table` is expected")
 		}
 
-		// Override projectID if a user-defined is set
-		if srcProps.ProjectID != "" && srcProps.ProjectID != bigquery.DetectProjectID {
-			projectID = srcProps.ProjectID
-		}
-
-		client, err = bqClientFn(projectID)
+		client, err = createClient(ctx, srcProps.ProjectID, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -96,9 +77,11 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 			return nil, err
 		}
 
-		it = client.Dataset(dataset).Table(tableID).Read(ctx)
+		it = client.DatasetInProject(projectID, dataset).Table(tableID).Read(ctx)
 	} else {
-		client, err = bqClientFn(srcProps.ProjectID)
+		now := time.Now()
+
+		client, err = createClient(ctx, srcProps.ProjectID, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -110,6 +93,13 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 
 		q := client.Query(srcProps.SQL)
 		it, err = q.Read(ctx)
+
+		if err != nil && !strings.Contains(err.Error(), "Response too large to return") {
+			// https://cloud.google.com/knowledge/kb/bigquery-response-too-large-to-return-consider-setting-allowlargeresults-to-true-in-your-job-configuration-000004266
+			client.Close()
+			return nil, fmt.Errorf("response too large, consider ingesting the entire table with 'select * from `project_id.dataset.tablename`'")
+		}
+
 		if err != nil && !strings.Contains(err.Error(), "Syntax error") {
 			// close the read storage API client
 			client.Close()
@@ -125,13 +115,14 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 			q := client.Query(srcProps.SQL)
 			it, err = q.Read(ctx)
 		}
+
 		if err != nil {
 			client.Close()
 			return nil, err
 		}
-	}
 
-	c.logger.Info("query took", zap.Duration("duration", time.Since(now)), observability.ZapCtx(ctx))
+		c.logger.Info("query took", zap.Duration("duration", time.Since(now)), observability.ZapCtx(ctx))
+	}
 
 	p.Target(int64(it.TotalRows), drivers.ProgressUnitRecord)
 	return &fileIterator{
@@ -143,6 +134,17 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		totalRecords: int64(it.TotalRows),
 		ctx:          ctx,
 	}, nil
+}
+
+func createClient(ctx context.Context, projectID string, opts []option.ClientOption) (*bigquery.Client, error) {
+	client, err := bigquery.NewClient(ctx, projectID, opts...)
+	if err != nil {
+		if strings.Contains(err.Error(), "unable to detect projectID") {
+			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
+		}
+		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
+	}
+	return client, nil
 }
 
 type fileIterator struct {
