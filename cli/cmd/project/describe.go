@@ -20,7 +20,8 @@ func DescribeCmd(cfg *config.Config) *cobra.Command {
 	statusCmd := &cobra.Command{
 		Use:   "describe [<project-name>] <kind> <name>",
 		Args:  cobra.MatchAll(cobra.MinimumNArgs(2), cobra.MaximumNArgs(3)),
-		Short: "Retrieve detailed state for a specific resource (source, model, dashboard, ...)",
+		Short: "Retrieve detailed state for a resource",
+		Long:  "Retrieve detailed state for a specific resource (source, model, dashboard, ...)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
