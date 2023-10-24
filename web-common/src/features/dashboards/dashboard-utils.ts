@@ -22,7 +22,7 @@ export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
  * becuase it is used in a few places and we want to make sure we
  * are consistent in how we handle this.
  */
-export function getDimensionColumn(dimension: MetricsViewDimension) {
+export function getDimensionColumn(dimension: MetricsViewDimension): string {
   return dimension?.column || dimension?.name;
 }
 

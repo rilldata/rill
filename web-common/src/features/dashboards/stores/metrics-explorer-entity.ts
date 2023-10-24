@@ -109,7 +109,7 @@ export interface MetricsExplorerEntity {
   leaderboardContextColumn: LeaderboardContextColumn;
 
   /**
-   * user selected dimension
+   * User selected dimension. Null if no dimension is selected.
    */
   selectedDimensionName?: string;
 

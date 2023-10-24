@@ -42,7 +42,7 @@
       cellData =
         $cellQuery.data.data[rowIdx - $cellQuery.data.block[0]][colIdx];
       rowDimension =
-        $cellQuery.data.data[rowIdx - $cellQuery.data.block[0]][0].text;
+        $cellQuery.data.data[rowIdx - $cellQuery.data.block[0]][0].text ?? "";
     } else cellData = { text: "...", isLoading: true };
   }
 
@@ -57,10 +57,14 @@
     const isColHighlighted = $store.highlightedCol === colIdx;
     const isHighlighted = isRowHighlighted || isColHighlighted;
     const isDoubleHighlighted = isRowHighlighted && isColHighlighted;
+    const scrubbedCols0 = $store.scrubbedCols?.at(0);
+    const scrubbedCols1 = $store.scrubbedCols?.at(1);
     const isScrubbed =
       $store.scrubbedCols &&
-      colIdx >= $store.scrubbedCols.at(0) &&
-      colIdx <= $store.scrubbedCols.at(1);
+      scrubbedCols0 &&
+      scrubbedCols1 &&
+      colIdx >= scrubbedCols0 &&
+      colIdx <= scrubbedCols1;
 
     let bgColors = {
       fixed: {

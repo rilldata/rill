@@ -164,7 +164,7 @@ export function estimateColumnSizes(
   },
   containerWidth: number,
   config: VirtualizedTableConfig
-) {
+): number[] {
   const estimateColumnSize = columns.map((column, i) => {
     if (column.name.includes("delta")) return config.comparisonColumnWidth;
     if (i != 0) return config.defaultColumnWidth;

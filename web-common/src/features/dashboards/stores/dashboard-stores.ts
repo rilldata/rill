@@ -267,7 +267,7 @@ const metricViewReducers = {
     });
   },
 
-  setMetricDimensionName(name: string, dimensionName: string) {
+  setMetricDimensionName(name: string, dimensionName: string | null) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedDimensionName = dimensionName;
     });

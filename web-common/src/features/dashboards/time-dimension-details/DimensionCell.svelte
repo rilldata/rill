@@ -16,9 +16,11 @@
 
   let dotClass = "";
   $: {
-    const isVisibleOnChart = $store.visibleDimensions.includes(cell.text);
+    const isVisibleOnChart =
+      cell.text && $store.visibleDimensions.includes(cell.text);
     dotClass = `rounded-lg h-[7px] w-[7px] outline-offset-1 outline-1 outline`;
-    const activeColor = getVisibleDimensionColor($store, cell.text);
+    const activeColor =
+      cell.text && getVisibleDimensionColor($store, cell.text);
     if (isVisibleOnChart)
       dotClass += ` bg-${activeColor} outline-${activeColor}`;
     if (!isVisibleOnChart)
@@ -31,7 +33,7 @@
 
   const handleDotClick = () => {
     store.update((state) => {
-      toggleVisibleDimensions(state, cell.text);
+      if (cell.text) toggleVisibleDimensions(state, cell.text);
       return state;
     });
   };

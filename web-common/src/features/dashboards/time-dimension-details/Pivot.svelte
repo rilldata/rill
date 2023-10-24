@@ -41,22 +41,26 @@
     const virtualColumns = $columnVirtualizer?.getVirtualItems() ?? [];
 
     // Manually calculate fixed virtual column set as they may not be in current virtualized item set
-    fixedColumnsToRender = range(fixedColCt).reduce((arr, idx) => {
-      const start = arr[idx - 1]?.end ?? 0;
-      const size = getColumnWidth(idx);
-      const end = start + getColumnWidth(idx);
-      return [
-        ...arr,
-        {
-          index: idx,
-          start,
-          end,
-          key: idx,
-          lane: 0,
-          size,
-        },
-      ];
-    }, []);
+
+    fixedColumnsToRender = range(fixedColCt).reduce(
+      (arr: VirtualItem[], idx) => {
+        const start = arr[idx - 1]?.end ?? 0;
+        const size = getColumnWidth(idx);
+        const end = start + getColumnWidth(idx);
+        return [
+          ...arr,
+          {
+            index: idx,
+            start,
+            end,
+            key: idx,
+            lane: 0,
+            size,
+          },
+        ];
+      },
+      []
+    );
 
     // If current virtual column set has fixed columns, remove them since we will use our measurements
     nonFixedColumnsToRender = virtualColumns.filter(
