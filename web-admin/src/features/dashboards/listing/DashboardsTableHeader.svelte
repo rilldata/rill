@@ -7,17 +7,17 @@
   import { Search } from "@rilldata/web-common/components/search";
   import type { Table } from "@tanstack/table-core/src/types";
   import { getContext } from "svelte";
-  import { get, Readable } from "svelte/store";
+  import type { Readable } from "svelte/store";
 
   const table = getContext("table") as Readable<Table<unknown>>;
 
   // Search
   let filter = "";
 
-  $: filterTable(table, filter);
+  $: filterTable(filter);
 
-  function filterTable(table: Readable<Table<unknown>>, filter: string) {
-    get(table).setGlobalFilter(filter);
+  function filterTable(filter: string) {
+    $table.setGlobalFilter(filter);
   }
 
   // Number of dashboards
@@ -25,15 +25,15 @@
 
   // Sort
   function sortByTitle() {
-    get(table).setSorting([{ id: "title", desc: false }]);
+    $table.setSorting([{ id: "title", desc: false }]);
   }
 
   function sortByName() {
-    get(table).setSorting([{ id: "name", desc: false }]);
+    $table.setSorting([{ id: "name", desc: false }]);
   }
 
   function sortByLastRefreshTime() {
-    get(table).setSorting([{ id: "lastRefreshed", desc: true }]);
+    $table.setSorting([{ id: "lastRefreshed", desc: true }]);
   }
 
   let openSortMenu = false;
