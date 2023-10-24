@@ -3,11 +3,12 @@ package rillv1
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 // Connector contains metadata about a connector used in a Rill project
@@ -34,8 +35,8 @@ func (p *Parser) AnalyzeConnectors(ctx context.Context) ([]*Connector, error) {
 	res := maps.Values(a.result)
 
 	// Sort output to ensure deterministic ordering
-	slices.SortFunc(res, func(a, b *Connector) bool {
-		return a.Name < b.Name
+	slices.SortFunc(res, func(a, b *Connector) int {
+		return strings.Compare(a.Name, b.Name)
 	})
 
 	return res, nil
