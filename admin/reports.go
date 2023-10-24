@@ -68,11 +68,15 @@ func (s *Service) TriggerReconcileAndAwaitReport(ctx context.Context, depl *data
 	}
 
 	// Poll every 1 seconds until the report is found or the ctx is cancelled
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
 	for {
-		time.Sleep(1 * time.Second)
-		if ctx.Err() != nil {
+		select {
+		case <-ctx.Done():
 			return ctx.Err()
+		case <-ticker.C:
 		}
+
 		r, err := rt.GetResource(ctx, reportReq)
 		if err != nil {
 			if oldSpecVersion != nil {

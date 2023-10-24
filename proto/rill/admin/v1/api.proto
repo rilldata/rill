@@ -385,7 +385,7 @@ service AdminService {
   // EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
   rpc EditReport(EditReportRequest) returns (EditReportResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/reports/{name}",
+      put: "/v1/organizations/{organization}/projects/{project}/reports/{name}",
       body: "*"
     };
   }
@@ -998,7 +998,7 @@ message PullVirtualRepoResponse {
 message CreateReportRequest {
   string organization = 1;
   string project = 2;
-  ReportOptions options = 4;
+  ReportOptions options = 3;
 }
 
 message CreateReportResponse {

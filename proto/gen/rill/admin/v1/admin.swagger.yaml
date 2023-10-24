@@ -679,7 +679,7 @@ paths:
           type: string
       tags:
         - AdminService
-    post:
+    put:
       summary: EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
       operationId: AdminService_EditReport
       responses:

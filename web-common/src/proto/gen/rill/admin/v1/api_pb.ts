@@ -5147,7 +5147,7 @@ export class CreateReportRequest extends Message<CreateReportRequest> {
   project = "";
 
   /**
-   * @generated from field: rill.admin.v1.ReportOptions options = 4;
+   * @generated from field: rill.admin.v1.ReportOptions options = 3;
    */
   options?: ReportOptions;
 
@@ -5161,7 +5161,7 @@ export class CreateReportRequest extends Message<CreateReportRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "options", kind: "message", T: ReportOptions },
+    { no: 3, name: "options", kind: "message", T: ReportOptions },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateReportRequest {

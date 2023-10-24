@@ -75,7 +75,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be created")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to trigger reconcile: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to reconcile report: %s", err.Error())
 	}
 
 	return &adminv1.CreateReportResponse{
@@ -122,7 +122,8 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
 	}
 
-	if !permissions.ManageProd && spec.Security.OwnerUserId != claims.OwnerID() {
+	isOwner := claims.OwnerType() == auth.OwnerTypeUser && spec.Security.OwnerUserId == claims.OwnerID()
+	if !permissions.ManageProd && !isOwner {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
@@ -146,7 +147,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be updated")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to trigger reconcile: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to reconcile report: %s", err.Error())
 	}
 
 	return &adminv1.EditReportResponse{}, nil
@@ -189,10 +190,6 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 
 	if spec.Security == nil || !spec.Security.ManagedByUi {
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
-	}
-
-	if !permissions.ManageProd && spec.Security.OwnerUserId != claims.OwnerID() {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
 	if claims.OwnerType() != auth.OwnerTypeUser {
@@ -248,7 +245,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be updated")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to trigger reconcile: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to reconcile report: %s", err.Error())
 	}
 
 	return &adminv1.UnsubscribeReportResponse{}, nil
@@ -293,7 +290,8 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
 	}
 
-	if !permissions.ManageProd && spec.Security.OwnerUserId != claims.OwnerID() {
+	isOwner := claims.OwnerType() == auth.OwnerTypeUser && spec.Security.OwnerUserId == claims.OwnerID()
+	if !permissions.ManageProd && !isOwner {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
@@ -307,7 +305,7 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be deleted")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to trigger reconcile: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to reconcile report: %s", err.Error())
 	}
 
 	return &adminv1.DeleteReportResponse{}, nil
@@ -348,7 +346,8 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
 	}
 
-	if !permissions.ManageProd && (spec.Security == nil || spec.Security.OwnerUserId != claims.OwnerID()) {
+	isOwner := spec.Security != nil && claims.OwnerType() == auth.OwnerTypeUser && spec.Security.OwnerUserId == claims.OwnerID()
+	if !permissions.ManageProd && !isOwner {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
@@ -406,8 +405,8 @@ func yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, error) {
 		Cron: opts.RefreshCron,
 	}
 	res.Query.Name = opts.QueryName
-	res.Query.ArgsJSON = opts.QueryArgsJson
-	res.Export.Format = opts.ExportFormat.String()
+	res.Query.ArgsJSON = opts.QueryArgsJson        // TODO: Format as YAML
+	res.Export.Format = opts.ExportFormat.String() // TODO: Format as pretty string
 	res.Export.Limit = uint(opts.ExportLimit)
 	res.Email.Template.OpenURL = opts.OpenUrl
 	res.Email.Template.EditURL = ""   // TODO: Add

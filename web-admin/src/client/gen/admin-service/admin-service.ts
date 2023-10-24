@@ -2169,7 +2169,7 @@ export const adminServiceEditReport = (
 ) => {
   return httpClient<V1EditReportResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/reports/${name}`,
-    method: "post",
+    method: "put",
     headers: { "Content-Type": "application/json" },
     data: adminServiceCreateReportBodyBody,
   });
