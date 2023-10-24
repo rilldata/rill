@@ -64,8 +64,8 @@ TableCells – the cell contents.
     })
     .filter((i) => i >= 0);
 
-  $: rowScrollOffset = 0;
-  $: colScrollOffset = 0;
+  $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
+  $: colScrollOffset = $columnVirtualizer?.scrollOffset || 0;
 
   /** if we're inferring the column widths from static-ish data, let's
    * find the largest strings in the column and use that to bootstrap the
