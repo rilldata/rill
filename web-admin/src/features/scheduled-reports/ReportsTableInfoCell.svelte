@@ -13,7 +13,7 @@
   export let status: string;
 </script>
 
-<div class="flex flex-col gap-y-0.5">
+<div class="flex flex-col gap-y-0.5 group px-4 py-[5px]">
   <div class="flex gap-x-2 items-center">
     <a
       href={`reports/${id}`}
