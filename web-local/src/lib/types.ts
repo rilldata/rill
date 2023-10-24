@@ -1,15 +1,11 @@
 import type { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import type { SvelteComponent } from "svelte";
 
-export interface ProfileColumn {
+export interface VirtualizedTableColumns {
   name: string;
   type: string;
   largestStringLength?: number;
   summary?: ProfileColumnSummary | any;
-  nullCount?: number;
-}
-
-export interface VirtualizedTableColumns extends ProfileColumn {
   label?: string | typeof SvelteComponent;
   total?: number;
   description?: string;
