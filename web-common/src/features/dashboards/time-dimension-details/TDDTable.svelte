@@ -196,7 +196,7 @@
   };
 
   const getRowHeaderWidth = (x: number) => {
-    return [250, 130, 70][x];
+    return [250, 130, 50][x];
   };
 
   const handleEvent = (evt, table, attribute, callback) => {

@@ -7,11 +7,7 @@ import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-clie
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { createSparkline } from "@rilldata/web-common/components/data-graphic/marks/sparkline";
-import { transposeArray } from "./util";
-import {
-  FormatPreset,
-  humanizeDataType,
-} from "@rilldata/web-common/features/dashboards/humanize-numbers";
+import { safeFormatter, transposeArray } from "./util";
 import {
   DEFAULT_TIME_RANGES,
   TIME_COMPARISON,
@@ -29,6 +25,10 @@ import type {
   TablePosition,
   TDDComparison,
 } from "./types";
+import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
+import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
+import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 
 export type TimeDimensionDataState = {
   isFetching: boolean;
@@ -54,8 +54,7 @@ function prepareDimensionData(
 ): TableData {
   if (!data || !totalsData) return;
 
-  const formatPreset =
-    (measure?.formatPreset as FormatPreset) ?? FormatPreset.HUMANIZE;
+  const formatter = safeFormatter(createMeasureValueFormatter(measure));
   const measureName = measure?.name;
   const validPercentOfTotal = measure?.validPercentOfTotal;
 
@@ -71,7 +70,7 @@ function prepareDimensionData(
   const totalsRow = [
     { value: "Total" },
     {
-      value: humanizeDataType(total, formatPreset),
+      value: formatter(total),
       spark: createSparkline(totalsData, (v) => v[measureName]),
     },
   ];
@@ -83,7 +82,7 @@ function prepareDimensionData(
     totalsRow.push({
       value: isNaN(percOfTotal)
         ? "...%"
-        : humanizeDataType(percOfTotal, FormatPreset.PERCENTAGE),
+        : numberPartsToString(formatProperFractionAsPercent(percOfTotal)),
     });
   }
 
@@ -94,7 +93,7 @@ function prepareDimensionData(
       const dataRow = [
         { value: row?.value },
         {
-          value: row?.total ? humanizeDataType(row?.total, formatPreset) : null,
+          value: row?.total ? formatter(row?.total) : null,
           spark: createSparkline(row?.data, (v) => v[measureName]),
         },
       ];
@@ -103,7 +102,7 @@ function prepareDimensionData(
         dataRow.push({
           value: isNaN(percOfTotal)
             ? "...%"
-            : humanizeDataType(percOfTotal, FormatPreset.PERCENTAGE),
+            : numberPartsToString(formatProperFractionAsPercent(percOfTotal)),
         });
       }
       return dataRow;
@@ -112,7 +111,7 @@ function prepareDimensionData(
 
   let body = [
     (isAllTime ? totalsData?.slice(1) : totalsData?.slice(1, -1))?.map((v) =>
-      v[measureName] ? humanizeDataType(v[measureName], formatPreset) : null
+      v[measureName] ? formatter(v[measureName]) : null
     ) || [],
   ];
 
@@ -120,7 +119,7 @@ function prepareDimensionData(
     data?.map((v) => {
       if (v.isFetching) return new Array(columnCount).fill(undefined);
       return (isAllTime ? v?.data?.slice(1) : v?.data?.slice(1, -1))?.map((v) =>
-        v[measureName] ? humanizeDataType(v[measureName], formatPreset) : null
+        v[measureName] ? formatter(v[measureName]) : null
       );
     })
   );
@@ -159,8 +158,7 @@ function prepareTimeData(
 ): TableData {
   if (!data) return;
 
-  const formatPreset =
-    (measure?.formatPreset as FormatPreset) ?? FormatPreset.HUMANIZE;
+  const formatter = safeFormatter(createMeasureValueFormatter(measure));
   const measureName = measure?.name;
 
   const columnHeaderData = (
@@ -173,7 +171,7 @@ function prepareTimeData(
   rowHeaderData.push([
     { value: "Total" },
     {
-      value: humanizeDataType(total, formatPreset),
+      value: formatter(total),
       spark: createSparkline(data, (v) => v[measureName]),
     },
   ]);
@@ -181,7 +179,7 @@ function prepareTimeData(
   const body = [];
   body.push(
     (isAllTime ? data?.slice(1) : data?.slice(1, -1))?.map((v) =>
-      v[measureName] ? humanizeDataType(v[measureName], formatPreset) : null
+      v[measureName] ? formatter(v[measureName]) : null
     )
   );
 
@@ -190,14 +188,14 @@ function prepareTimeData(
       [
         { value: currentLabel },
         {
-          value: humanizeDataType(total, formatPreset),
+          value: formatter(total),
           spark: createSparkline(data, (v) => v[measureName]),
         },
       ],
       [
         { value: comparisonLabel },
         {
-          value: humanizeDataType(comparisonTotal, formatPreset),
+          value: formatter(comparisonTotal),
           spark: createSparkline(data, (v) => v[`comparison.${measureName}`]),
         },
       ],
@@ -208,14 +206,14 @@ function prepareTimeData(
     // Push current range
     body.push(
       (isAllTime ? data?.slice(1) : data?.slice(1, -1))?.map((v) =>
-        v[measureName] ? humanizeDataType(v[measureName], formatPreset) : null
+        v[measureName] ? formatter(v[measureName]) : null
       )
     );
 
     body.push(
       data?.map((v) =>
         v[`comparison.${measureName}`]
-          ? humanizeDataType(v[`comparison.${measureName}`], formatPreset)
+          ? formatter(v[`comparison.${measureName}`])
           : null
       )
     );
@@ -229,7 +227,9 @@ function prepareTimeData(
           comparisonValue && currentValue !== undefined && currentValue !== null
             ? (currentValue - comparisonValue) / comparisonValue
             : undefined;
-        return humanizeDataType(comparisonPercChange, FormatPreset.PERCENTAGE);
+        return numberPartsToString(
+          formatMeasurePercentageDifference(comparisonPercChange)
+        );
       })
     );
 
@@ -243,7 +243,7 @@ function prepareTimeData(
             ? currentValue - comparisonValue
             : undefined;
 
-        return humanizeDataType(change, formatPreset);
+        return formatter(change);
       })
     );
   }
