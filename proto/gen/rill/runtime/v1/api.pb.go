@@ -11,7 +11,7 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	structpb "google.golang.org/protobuf/types/known/structpb"
+	_ "google.golang.org/protobuf/types/known/structpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -2307,10 +2307,10 @@ type Log struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Level   LogLevel               `protobuf:"varint,1,opt,name=level,proto3,enum=rill.runtime.v1.LogLevel" json:"level,omitempty"`
-	Time    *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=time,proto3" json:"time,omitempty"`
-	Message string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
-	Payload *structpb.Struct       `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"`
+	Level       LogLevel               `protobuf:"varint,1,opt,name=level,proto3,enum=rill.runtime.v1.LogLevel" json:"level,omitempty"`
+	Time        *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=time,proto3" json:"time,omitempty"`
+	Message     string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	JsonPayload string                 `protobuf:"bytes,4,opt,name=json_payload,json=jsonPayload,proto3" json:"json_payload,omitempty"`
 }
 
 func (x *Log) Reset() {
@@ -2366,11 +2366,11 @@ func (x *Log) GetMessage() string {
 	return ""
 }
 
-func (x *Log) GetPayload() *structpb.Struct {
+func (x *Log) GetJsonPayload() string {
 	if x != nil {
-		return x.Payload
+		return x.JsonPayload
 	}
-	return nil
+	return ""
 }
 
 type GetLogsRequest struct {
@@ -5284,7 +5284,7 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x14,
 	0x0a, 0x05, 0x66, 0x6f, 0x72, 0x63, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x05, 0x66,
 	0x6f, 0x72, 0x63, 0x65, 0x22, 0x15, 0x0a, 0x13, 0x55, 0x6e, 0x70, 0x61, 0x63, 0x6b, 0x45, 0x6d,
-	0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0xb3, 0x01, 0x0a, 0x03,
+	0x70, 0x74, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0xa3, 0x01, 0x0a, 0x03,
 	0x4c, 0x6f, 0x67, 0x12, 0x2f, 0x0a, 0x05, 0x6c, 0x65, 0x76, 0x65, 0x6c, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x0e, 0x32, 0x19, 0x2e, 0x72, 0x69, 0x6c, 0x6c, 0x2e, 0x72, 0x75, 0x6e, 0x74, 0x69, 0x6d,
 	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x4c, 0x6f, 0x67, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x52, 0x05, 0x6c,
@@ -5292,10 +5292,9 @@ var file_rill_runtime_v1_api_proto_rawDesc = []byte{
 	0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x04,
 	0x74, 0x69, 0x6d, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18,
-	0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x31,
-	0x0a, 0x07, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32,
-	0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
-	0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x07, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61,
+	0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x21,
+	0x0a, 0x0c, 0x6a, 0x73, 0x6f, 0x6e, 0x5f, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x18, 0x04,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x6a, 0x73, 0x6f, 0x6e, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61,
 	0x64, 0x22, 0x77, 0x0a, 0x0e, 0x47, 0x65, 0x74, 0x4c, 0x6f, 0x67, 0x73, 0x52, 0x65, 0x71, 0x75,
 	0x65, 0x73, 0x74, 0x12, 0x1f, 0x0a, 0x0b, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f,
 	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e,
@@ -6052,16 +6051,15 @@ var file_rill_runtime_v1_api_proto_goTypes = []interface{}{
 	(*ReconcileError_CharLocation)(nil),    // 84: rill.runtime.v1.ReconcileError.CharLocation
 	(*ConnectorSpec_Property)(nil),         // 85: rill.runtime.v1.ConnectorSpec.Property
 	(*timestamppb.Timestamp)(nil),          // 86: google.protobuf.Timestamp
-	(*structpb.Struct)(nil),                // 87: google.protobuf.Struct
-	(*Resource)(nil),                       // 88: rill.runtime.v1.Resource
-	(*ResourceName)(nil),                   // 89: rill.runtime.v1.ResourceName
-	(*PullTriggerSpec)(nil),                // 90: rill.runtime.v1.PullTriggerSpec
-	(*RefreshTriggerSpec)(nil),             // 91: rill.runtime.v1.RefreshTriggerSpec
-	(*Table)(nil),                          // 92: rill.runtime.v1.Table
-	(*Source)(nil),                         // 93: rill.runtime.v1.Source
-	(*Model)(nil),                          // 94: rill.runtime.v1.Model
-	(*MetricsView)(nil),                    // 95: rill.runtime.v1.MetricsView
-	(ObjectType)(0),                        // 96: rill.runtime.v1.ObjectType
+	(*Resource)(nil),                       // 87: rill.runtime.v1.Resource
+	(*ResourceName)(nil),                   // 88: rill.runtime.v1.ResourceName
+	(*PullTriggerSpec)(nil),                // 89: rill.runtime.v1.PullTriggerSpec
+	(*RefreshTriggerSpec)(nil),             // 90: rill.runtime.v1.RefreshTriggerSpec
+	(*Table)(nil),                          // 91: rill.runtime.v1.Table
+	(*Source)(nil),                         // 92: rill.runtime.v1.Source
+	(*Model)(nil),                          // 93: rill.runtime.v1.Model
+	(*MetricsView)(nil),                    // 94: rill.runtime.v1.MetricsView
+	(ObjectType)(0),                        // 95: rill.runtime.v1.ObjectType
 }
 var file_rill_runtime_v1_api_proto_depIdxs = []int32{
 	86, // 0: rill.runtime.v1.PingResponse.time:type_name -> google.protobuf.Timestamp
@@ -6088,105 +6086,104 @@ var file_rill_runtime_v1_api_proto_depIdxs = []int32{
 	31, // 21: rill.runtime.v1.ListExamplesResponse.examples:type_name -> rill.runtime.v1.Example
 	1,  // 22: rill.runtime.v1.Log.level:type_name -> rill.runtime.v1.LogLevel
 	86, // 23: rill.runtime.v1.Log.time:type_name -> google.protobuf.Timestamp
-	87, // 24: rill.runtime.v1.Log.payload:type_name -> google.protobuf.Struct
-	38, // 25: rill.runtime.v1.GetLogsResponse.logs:type_name -> rill.runtime.v1.Log
-	38, // 26: rill.runtime.v1.WatchLogsResponse.log:type_name -> rill.runtime.v1.Log
-	88, // 27: rill.runtime.v1.ListResourcesResponse.resources:type_name -> rill.runtime.v1.Resource
-	2,  // 28: rill.runtime.v1.WatchResourcesResponse.event:type_name -> rill.runtime.v1.ResourceEvent
-	89, // 29: rill.runtime.v1.WatchResourcesResponse.name:type_name -> rill.runtime.v1.ResourceName
-	88, // 30: rill.runtime.v1.WatchResourcesResponse.resource:type_name -> rill.runtime.v1.Resource
-	89, // 31: rill.runtime.v1.GetResourceRequest.name:type_name -> rill.runtime.v1.ResourceName
-	88, // 32: rill.runtime.v1.GetResourceResponse.resource:type_name -> rill.runtime.v1.Resource
-	90, // 33: rill.runtime.v1.CreateTriggerRequest.pull_trigger_spec:type_name -> rill.runtime.v1.PullTriggerSpec
-	91, // 34: rill.runtime.v1.CreateTriggerRequest.refresh_trigger_spec:type_name -> rill.runtime.v1.RefreshTriggerSpec
-	92, // 35: rill.runtime.v1.CatalogEntry.table:type_name -> rill.runtime.v1.Table
-	93, // 36: rill.runtime.v1.CatalogEntry.source:type_name -> rill.runtime.v1.Source
-	94, // 37: rill.runtime.v1.CatalogEntry.model:type_name -> rill.runtime.v1.Model
-	95, // 38: rill.runtime.v1.CatalogEntry.metrics_view:type_name -> rill.runtime.v1.MetricsView
-	86, // 39: rill.runtime.v1.CatalogEntry.created_on:type_name -> google.protobuf.Timestamp
-	86, // 40: rill.runtime.v1.CatalogEntry.updated_on:type_name -> google.protobuf.Timestamp
-	86, // 41: rill.runtime.v1.CatalogEntry.refreshed_on:type_name -> google.protobuf.Timestamp
-	96, // 42: rill.runtime.v1.ListCatalogEntriesRequest.type:type_name -> rill.runtime.v1.ObjectType
-	51, // 43: rill.runtime.v1.ListCatalogEntriesResponse.entries:type_name -> rill.runtime.v1.CatalogEntry
-	51, // 44: rill.runtime.v1.GetCatalogEntryResponse.entry:type_name -> rill.runtime.v1.CatalogEntry
-	62, // 45: rill.runtime.v1.ReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
-	3,  // 46: rill.runtime.v1.ReconcileError.code:type_name -> rill.runtime.v1.ReconcileError.Code
-	84, // 47: rill.runtime.v1.ReconcileError.start_location:type_name -> rill.runtime.v1.ReconcileError.CharLocation
-	84, // 48: rill.runtime.v1.ReconcileError.end_location:type_name -> rill.runtime.v1.ReconcileError.CharLocation
-	62, // 49: rill.runtime.v1.PutFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
-	62, // 50: rill.runtime.v1.DeleteFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
-	62, // 51: rill.runtime.v1.RenameFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
-	62, // 52: rill.runtime.v1.RefreshAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
-	85, // 53: rill.runtime.v1.ConnectorSpec.properties:type_name -> rill.runtime.v1.ConnectorSpec.Property
-	71, // 54: rill.runtime.v1.ListConnectorsResponse.connectors:type_name -> rill.runtime.v1.ConnectorSpec
-	4,  // 55: rill.runtime.v1.ConnectorSpec.Property.type:type_name -> rill.runtime.v1.ConnectorSpec.Property.Type
-	5,  // 56: rill.runtime.v1.RuntimeService.Ping:input_type -> rill.runtime.v1.PingRequest
-	9,  // 57: rill.runtime.v1.RuntimeService.ListInstances:input_type -> rill.runtime.v1.ListInstancesRequest
-	11, // 58: rill.runtime.v1.RuntimeService.GetInstance:input_type -> rill.runtime.v1.GetInstanceRequest
-	13, // 59: rill.runtime.v1.RuntimeService.CreateInstance:input_type -> rill.runtime.v1.CreateInstanceRequest
-	17, // 60: rill.runtime.v1.RuntimeService.EditInstance:input_type -> rill.runtime.v1.EditInstanceRequest
-	15, // 61: rill.runtime.v1.RuntimeService.DeleteInstance:input_type -> rill.runtime.v1.DeleteInstanceRequest
-	19, // 62: rill.runtime.v1.RuntimeService.ListFiles:input_type -> rill.runtime.v1.ListFilesRequest
-	21, // 63: rill.runtime.v1.RuntimeService.WatchFiles:input_type -> rill.runtime.v1.WatchFilesRequest
-	23, // 64: rill.runtime.v1.RuntimeService.GetFile:input_type -> rill.runtime.v1.GetFileRequest
-	25, // 65: rill.runtime.v1.RuntimeService.PutFile:input_type -> rill.runtime.v1.PutFileRequest
-	27, // 66: rill.runtime.v1.RuntimeService.DeleteFile:input_type -> rill.runtime.v1.DeleteFileRequest
-	29, // 67: rill.runtime.v1.RuntimeService.RenameFile:input_type -> rill.runtime.v1.RenameFileRequest
-	32, // 68: rill.runtime.v1.RuntimeService.ListExamples:input_type -> rill.runtime.v1.ListExamplesRequest
-	34, // 69: rill.runtime.v1.RuntimeService.UnpackExample:input_type -> rill.runtime.v1.UnpackExampleRequest
-	36, // 70: rill.runtime.v1.RuntimeService.UnpackEmpty:input_type -> rill.runtime.v1.UnpackEmptyRequest
-	39, // 71: rill.runtime.v1.RuntimeService.GetLogs:input_type -> rill.runtime.v1.GetLogsRequest
-	41, // 72: rill.runtime.v1.RuntimeService.WatchLogs:input_type -> rill.runtime.v1.WatchLogsRequest
-	43, // 73: rill.runtime.v1.RuntimeService.ListResources:input_type -> rill.runtime.v1.ListResourcesRequest
-	45, // 74: rill.runtime.v1.RuntimeService.WatchResources:input_type -> rill.runtime.v1.WatchResourcesRequest
-	47, // 75: rill.runtime.v1.RuntimeService.GetResource:input_type -> rill.runtime.v1.GetResourceRequest
-	49, // 76: rill.runtime.v1.RuntimeService.CreateTrigger:input_type -> rill.runtime.v1.CreateTriggerRequest
-	52, // 77: rill.runtime.v1.RuntimeService.ListCatalogEntries:input_type -> rill.runtime.v1.ListCatalogEntriesRequest
-	54, // 78: rill.runtime.v1.RuntimeService.GetCatalogEntry:input_type -> rill.runtime.v1.GetCatalogEntryRequest
-	56, // 79: rill.runtime.v1.RuntimeService.TriggerRefresh:input_type -> rill.runtime.v1.TriggerRefreshRequest
-	60, // 80: rill.runtime.v1.RuntimeService.Reconcile:input_type -> rill.runtime.v1.ReconcileRequest
-	63, // 81: rill.runtime.v1.RuntimeService.PutFileAndReconcile:input_type -> rill.runtime.v1.PutFileAndReconcileRequest
-	65, // 82: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:input_type -> rill.runtime.v1.DeleteFileAndReconcileRequest
-	67, // 83: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:input_type -> rill.runtime.v1.RenameFileAndReconcileRequest
-	69, // 84: rill.runtime.v1.RuntimeService.RefreshAndReconcile:input_type -> rill.runtime.v1.RefreshAndReconcileRequest
-	72, // 85: rill.runtime.v1.RuntimeService.ListConnectors:input_type -> rill.runtime.v1.ListConnectorsRequest
-	74, // 86: rill.runtime.v1.RuntimeService.IssueDevJWT:input_type -> rill.runtime.v1.IssueDevJWTRequest
-	6,  // 87: rill.runtime.v1.RuntimeService.Ping:output_type -> rill.runtime.v1.PingResponse
-	10, // 88: rill.runtime.v1.RuntimeService.ListInstances:output_type -> rill.runtime.v1.ListInstancesResponse
-	12, // 89: rill.runtime.v1.RuntimeService.GetInstance:output_type -> rill.runtime.v1.GetInstanceResponse
-	14, // 90: rill.runtime.v1.RuntimeService.CreateInstance:output_type -> rill.runtime.v1.CreateInstanceResponse
-	18, // 91: rill.runtime.v1.RuntimeService.EditInstance:output_type -> rill.runtime.v1.EditInstanceResponse
-	16, // 92: rill.runtime.v1.RuntimeService.DeleteInstance:output_type -> rill.runtime.v1.DeleteInstanceResponse
-	20, // 93: rill.runtime.v1.RuntimeService.ListFiles:output_type -> rill.runtime.v1.ListFilesResponse
-	22, // 94: rill.runtime.v1.RuntimeService.WatchFiles:output_type -> rill.runtime.v1.WatchFilesResponse
-	24, // 95: rill.runtime.v1.RuntimeService.GetFile:output_type -> rill.runtime.v1.GetFileResponse
-	26, // 96: rill.runtime.v1.RuntimeService.PutFile:output_type -> rill.runtime.v1.PutFileResponse
-	28, // 97: rill.runtime.v1.RuntimeService.DeleteFile:output_type -> rill.runtime.v1.DeleteFileResponse
-	30, // 98: rill.runtime.v1.RuntimeService.RenameFile:output_type -> rill.runtime.v1.RenameFileResponse
-	33, // 99: rill.runtime.v1.RuntimeService.ListExamples:output_type -> rill.runtime.v1.ListExamplesResponse
-	35, // 100: rill.runtime.v1.RuntimeService.UnpackExample:output_type -> rill.runtime.v1.UnpackExampleResponse
-	37, // 101: rill.runtime.v1.RuntimeService.UnpackEmpty:output_type -> rill.runtime.v1.UnpackEmptyResponse
-	40, // 102: rill.runtime.v1.RuntimeService.GetLogs:output_type -> rill.runtime.v1.GetLogsResponse
-	42, // 103: rill.runtime.v1.RuntimeService.WatchLogs:output_type -> rill.runtime.v1.WatchLogsResponse
-	44, // 104: rill.runtime.v1.RuntimeService.ListResources:output_type -> rill.runtime.v1.ListResourcesResponse
-	46, // 105: rill.runtime.v1.RuntimeService.WatchResources:output_type -> rill.runtime.v1.WatchResourcesResponse
-	48, // 106: rill.runtime.v1.RuntimeService.GetResource:output_type -> rill.runtime.v1.GetResourceResponse
-	50, // 107: rill.runtime.v1.RuntimeService.CreateTrigger:output_type -> rill.runtime.v1.CreateTriggerResponse
-	53, // 108: rill.runtime.v1.RuntimeService.ListCatalogEntries:output_type -> rill.runtime.v1.ListCatalogEntriesResponse
-	55, // 109: rill.runtime.v1.RuntimeService.GetCatalogEntry:output_type -> rill.runtime.v1.GetCatalogEntryResponse
-	57, // 110: rill.runtime.v1.RuntimeService.TriggerRefresh:output_type -> rill.runtime.v1.TriggerRefreshResponse
-	61, // 111: rill.runtime.v1.RuntimeService.Reconcile:output_type -> rill.runtime.v1.ReconcileResponse
-	64, // 112: rill.runtime.v1.RuntimeService.PutFileAndReconcile:output_type -> rill.runtime.v1.PutFileAndReconcileResponse
-	66, // 113: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:output_type -> rill.runtime.v1.DeleteFileAndReconcileResponse
-	68, // 114: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:output_type -> rill.runtime.v1.RenameFileAndReconcileResponse
-	70, // 115: rill.runtime.v1.RuntimeService.RefreshAndReconcile:output_type -> rill.runtime.v1.RefreshAndReconcileResponse
-	73, // 116: rill.runtime.v1.RuntimeService.ListConnectors:output_type -> rill.runtime.v1.ListConnectorsResponse
-	75, // 117: rill.runtime.v1.RuntimeService.IssueDevJWT:output_type -> rill.runtime.v1.IssueDevJWTResponse
-	87, // [87:118] is the sub-list for method output_type
-	56, // [56:87] is the sub-list for method input_type
-	56, // [56:56] is the sub-list for extension type_name
-	56, // [56:56] is the sub-list for extension extendee
-	0,  // [0:56] is the sub-list for field type_name
+	38, // 24: rill.runtime.v1.GetLogsResponse.logs:type_name -> rill.runtime.v1.Log
+	38, // 25: rill.runtime.v1.WatchLogsResponse.log:type_name -> rill.runtime.v1.Log
+	87, // 26: rill.runtime.v1.ListResourcesResponse.resources:type_name -> rill.runtime.v1.Resource
+	2,  // 27: rill.runtime.v1.WatchResourcesResponse.event:type_name -> rill.runtime.v1.ResourceEvent
+	88, // 28: rill.runtime.v1.WatchResourcesResponse.name:type_name -> rill.runtime.v1.ResourceName
+	87, // 29: rill.runtime.v1.WatchResourcesResponse.resource:type_name -> rill.runtime.v1.Resource
+	88, // 30: rill.runtime.v1.GetResourceRequest.name:type_name -> rill.runtime.v1.ResourceName
+	87, // 31: rill.runtime.v1.GetResourceResponse.resource:type_name -> rill.runtime.v1.Resource
+	89, // 32: rill.runtime.v1.CreateTriggerRequest.pull_trigger_spec:type_name -> rill.runtime.v1.PullTriggerSpec
+	90, // 33: rill.runtime.v1.CreateTriggerRequest.refresh_trigger_spec:type_name -> rill.runtime.v1.RefreshTriggerSpec
+	91, // 34: rill.runtime.v1.CatalogEntry.table:type_name -> rill.runtime.v1.Table
+	92, // 35: rill.runtime.v1.CatalogEntry.source:type_name -> rill.runtime.v1.Source
+	93, // 36: rill.runtime.v1.CatalogEntry.model:type_name -> rill.runtime.v1.Model
+	94, // 37: rill.runtime.v1.CatalogEntry.metrics_view:type_name -> rill.runtime.v1.MetricsView
+	86, // 38: rill.runtime.v1.CatalogEntry.created_on:type_name -> google.protobuf.Timestamp
+	86, // 39: rill.runtime.v1.CatalogEntry.updated_on:type_name -> google.protobuf.Timestamp
+	86, // 40: rill.runtime.v1.CatalogEntry.refreshed_on:type_name -> google.protobuf.Timestamp
+	95, // 41: rill.runtime.v1.ListCatalogEntriesRequest.type:type_name -> rill.runtime.v1.ObjectType
+	51, // 42: rill.runtime.v1.ListCatalogEntriesResponse.entries:type_name -> rill.runtime.v1.CatalogEntry
+	51, // 43: rill.runtime.v1.GetCatalogEntryResponse.entry:type_name -> rill.runtime.v1.CatalogEntry
+	62, // 44: rill.runtime.v1.ReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
+	3,  // 45: rill.runtime.v1.ReconcileError.code:type_name -> rill.runtime.v1.ReconcileError.Code
+	84, // 46: rill.runtime.v1.ReconcileError.start_location:type_name -> rill.runtime.v1.ReconcileError.CharLocation
+	84, // 47: rill.runtime.v1.ReconcileError.end_location:type_name -> rill.runtime.v1.ReconcileError.CharLocation
+	62, // 48: rill.runtime.v1.PutFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
+	62, // 49: rill.runtime.v1.DeleteFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
+	62, // 50: rill.runtime.v1.RenameFileAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
+	62, // 51: rill.runtime.v1.RefreshAndReconcileResponse.errors:type_name -> rill.runtime.v1.ReconcileError
+	85, // 52: rill.runtime.v1.ConnectorSpec.properties:type_name -> rill.runtime.v1.ConnectorSpec.Property
+	71, // 53: rill.runtime.v1.ListConnectorsResponse.connectors:type_name -> rill.runtime.v1.ConnectorSpec
+	4,  // 54: rill.runtime.v1.ConnectorSpec.Property.type:type_name -> rill.runtime.v1.ConnectorSpec.Property.Type
+	5,  // 55: rill.runtime.v1.RuntimeService.Ping:input_type -> rill.runtime.v1.PingRequest
+	9,  // 56: rill.runtime.v1.RuntimeService.ListInstances:input_type -> rill.runtime.v1.ListInstancesRequest
+	11, // 57: rill.runtime.v1.RuntimeService.GetInstance:input_type -> rill.runtime.v1.GetInstanceRequest
+	13, // 58: rill.runtime.v1.RuntimeService.CreateInstance:input_type -> rill.runtime.v1.CreateInstanceRequest
+	17, // 59: rill.runtime.v1.RuntimeService.EditInstance:input_type -> rill.runtime.v1.EditInstanceRequest
+	15, // 60: rill.runtime.v1.RuntimeService.DeleteInstance:input_type -> rill.runtime.v1.DeleteInstanceRequest
+	19, // 61: rill.runtime.v1.RuntimeService.ListFiles:input_type -> rill.runtime.v1.ListFilesRequest
+	21, // 62: rill.runtime.v1.RuntimeService.WatchFiles:input_type -> rill.runtime.v1.WatchFilesRequest
+	23, // 63: rill.runtime.v1.RuntimeService.GetFile:input_type -> rill.runtime.v1.GetFileRequest
+	25, // 64: rill.runtime.v1.RuntimeService.PutFile:input_type -> rill.runtime.v1.PutFileRequest
+	27, // 65: rill.runtime.v1.RuntimeService.DeleteFile:input_type -> rill.runtime.v1.DeleteFileRequest
+	29, // 66: rill.runtime.v1.RuntimeService.RenameFile:input_type -> rill.runtime.v1.RenameFileRequest
+	32, // 67: rill.runtime.v1.RuntimeService.ListExamples:input_type -> rill.runtime.v1.ListExamplesRequest
+	34, // 68: rill.runtime.v1.RuntimeService.UnpackExample:input_type -> rill.runtime.v1.UnpackExampleRequest
+	36, // 69: rill.runtime.v1.RuntimeService.UnpackEmpty:input_type -> rill.runtime.v1.UnpackEmptyRequest
+	39, // 70: rill.runtime.v1.RuntimeService.GetLogs:input_type -> rill.runtime.v1.GetLogsRequest
+	41, // 71: rill.runtime.v1.RuntimeService.WatchLogs:input_type -> rill.runtime.v1.WatchLogsRequest
+	43, // 72: rill.runtime.v1.RuntimeService.ListResources:input_type -> rill.runtime.v1.ListResourcesRequest
+	45, // 73: rill.runtime.v1.RuntimeService.WatchResources:input_type -> rill.runtime.v1.WatchResourcesRequest
+	47, // 74: rill.runtime.v1.RuntimeService.GetResource:input_type -> rill.runtime.v1.GetResourceRequest
+	49, // 75: rill.runtime.v1.RuntimeService.CreateTrigger:input_type -> rill.runtime.v1.CreateTriggerRequest
+	52, // 76: rill.runtime.v1.RuntimeService.ListCatalogEntries:input_type -> rill.runtime.v1.ListCatalogEntriesRequest
+	54, // 77: rill.runtime.v1.RuntimeService.GetCatalogEntry:input_type -> rill.runtime.v1.GetCatalogEntryRequest
+	56, // 78: rill.runtime.v1.RuntimeService.TriggerRefresh:input_type -> rill.runtime.v1.TriggerRefreshRequest
+	60, // 79: rill.runtime.v1.RuntimeService.Reconcile:input_type -> rill.runtime.v1.ReconcileRequest
+	63, // 80: rill.runtime.v1.RuntimeService.PutFileAndReconcile:input_type -> rill.runtime.v1.PutFileAndReconcileRequest
+	65, // 81: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:input_type -> rill.runtime.v1.DeleteFileAndReconcileRequest
+	67, // 82: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:input_type -> rill.runtime.v1.RenameFileAndReconcileRequest
+	69, // 83: rill.runtime.v1.RuntimeService.RefreshAndReconcile:input_type -> rill.runtime.v1.RefreshAndReconcileRequest
+	72, // 84: rill.runtime.v1.RuntimeService.ListConnectors:input_type -> rill.runtime.v1.ListConnectorsRequest
+	74, // 85: rill.runtime.v1.RuntimeService.IssueDevJWT:input_type -> rill.runtime.v1.IssueDevJWTRequest
+	6,  // 86: rill.runtime.v1.RuntimeService.Ping:output_type -> rill.runtime.v1.PingResponse
+	10, // 87: rill.runtime.v1.RuntimeService.ListInstances:output_type -> rill.runtime.v1.ListInstancesResponse
+	12, // 88: rill.runtime.v1.RuntimeService.GetInstance:output_type -> rill.runtime.v1.GetInstanceResponse
+	14, // 89: rill.runtime.v1.RuntimeService.CreateInstance:output_type -> rill.runtime.v1.CreateInstanceResponse
+	18, // 90: rill.runtime.v1.RuntimeService.EditInstance:output_type -> rill.runtime.v1.EditInstanceResponse
+	16, // 91: rill.runtime.v1.RuntimeService.DeleteInstance:output_type -> rill.runtime.v1.DeleteInstanceResponse
+	20, // 92: rill.runtime.v1.RuntimeService.ListFiles:output_type -> rill.runtime.v1.ListFilesResponse
+	22, // 93: rill.runtime.v1.RuntimeService.WatchFiles:output_type -> rill.runtime.v1.WatchFilesResponse
+	24, // 94: rill.runtime.v1.RuntimeService.GetFile:output_type -> rill.runtime.v1.GetFileResponse
+	26, // 95: rill.runtime.v1.RuntimeService.PutFile:output_type -> rill.runtime.v1.PutFileResponse
+	28, // 96: rill.runtime.v1.RuntimeService.DeleteFile:output_type -> rill.runtime.v1.DeleteFileResponse
+	30, // 97: rill.runtime.v1.RuntimeService.RenameFile:output_type -> rill.runtime.v1.RenameFileResponse
+	33, // 98: rill.runtime.v1.RuntimeService.ListExamples:output_type -> rill.runtime.v1.ListExamplesResponse
+	35, // 99: rill.runtime.v1.RuntimeService.UnpackExample:output_type -> rill.runtime.v1.UnpackExampleResponse
+	37, // 100: rill.runtime.v1.RuntimeService.UnpackEmpty:output_type -> rill.runtime.v1.UnpackEmptyResponse
+	40, // 101: rill.runtime.v1.RuntimeService.GetLogs:output_type -> rill.runtime.v1.GetLogsResponse
+	42, // 102: rill.runtime.v1.RuntimeService.WatchLogs:output_type -> rill.runtime.v1.WatchLogsResponse
+	44, // 103: rill.runtime.v1.RuntimeService.ListResources:output_type -> rill.runtime.v1.ListResourcesResponse
+	46, // 104: rill.runtime.v1.RuntimeService.WatchResources:output_type -> rill.runtime.v1.WatchResourcesResponse
+	48, // 105: rill.runtime.v1.RuntimeService.GetResource:output_type -> rill.runtime.v1.GetResourceResponse
+	50, // 106: rill.runtime.v1.RuntimeService.CreateTrigger:output_type -> rill.runtime.v1.CreateTriggerResponse
+	53, // 107: rill.runtime.v1.RuntimeService.ListCatalogEntries:output_type -> rill.runtime.v1.ListCatalogEntriesResponse
+	55, // 108: rill.runtime.v1.RuntimeService.GetCatalogEntry:output_type -> rill.runtime.v1.GetCatalogEntryResponse
+	57, // 109: rill.runtime.v1.RuntimeService.TriggerRefresh:output_type -> rill.runtime.v1.TriggerRefreshResponse
+	61, // 110: rill.runtime.v1.RuntimeService.Reconcile:output_type -> rill.runtime.v1.ReconcileResponse
+	64, // 111: rill.runtime.v1.RuntimeService.PutFileAndReconcile:output_type -> rill.runtime.v1.PutFileAndReconcileResponse
+	66, // 112: rill.runtime.v1.RuntimeService.DeleteFileAndReconcile:output_type -> rill.runtime.v1.DeleteFileAndReconcileResponse
+	68, // 113: rill.runtime.v1.RuntimeService.RenameFileAndReconcile:output_type -> rill.runtime.v1.RenameFileAndReconcileResponse
+	70, // 114: rill.runtime.v1.RuntimeService.RefreshAndReconcile:output_type -> rill.runtime.v1.RefreshAndReconcileResponse
+	73, // 115: rill.runtime.v1.RuntimeService.ListConnectors:output_type -> rill.runtime.v1.ListConnectorsResponse
+	75, // 116: rill.runtime.v1.RuntimeService.IssueDevJWT:output_type -> rill.runtime.v1.IssueDevJWTResponse
+	86, // [86:117] is the sub-list for method output_type
+	55, // [55:86] is the sub-list for method input_type
+	55, // [55:55] is the sub-list for extension type_name
+	55, // [55:55] is the sub-list for extension extendee
+	0,  // [0:55] is the sub-list for field type_name
 }
 
 func init() { file_rill_runtime_v1_api_proto_init() }

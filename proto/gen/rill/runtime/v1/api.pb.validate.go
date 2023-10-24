@@ -4191,34 +4191,7 @@ func (m *Log) validate(all bool) error {
 
 	// no validation rules for Message
 
-	if all {
-		switch v := interface{}(m.GetPayload()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, LogValidationError{
-					field:  "Payload",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, LogValidationError{
-					field:  "Payload",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetPayload()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return LogValidationError{
-				field:  "Payload",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+	// no validation rules for JsonPayload
 
 	if len(errors) > 0 {
 		return LogMultiError(errors)

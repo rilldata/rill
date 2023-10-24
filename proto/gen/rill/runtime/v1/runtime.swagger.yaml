@@ -3224,8 +3224,8 @@ definitions:
         format: date-time
       message:
         type: string
-      payload:
-        type: object
+      jsonPayload:
+        type: string
   v1LogLevel:
     type: string
     enum:

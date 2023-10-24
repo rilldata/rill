@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func LogsCmd(cfg *config.Config) *cobra.Command {
@@ -79,7 +80,7 @@ func LogsCmd(cfg *config.Config) *cobra.Command {
 							break
 						}
 
-						fmt.Println(res.Log)
+						printLog(res.Log)
 					}
 				}()
 
@@ -94,7 +95,7 @@ func LogsCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			for _, log := range res.Logs {
-				fmt.Println(log)
+				printLog(log)
 			}
 			return nil
 		},
@@ -107,4 +108,27 @@ func LogsCmd(cfg *config.Config) *cobra.Command {
 	logsCmd.Flags().IntVarP(&tail, "tail", "t", -1, "Number of lines to show from the end of the logs, use -1 for all logs")
 
 	return logsCmd
+}
+
+func printLog(log *runtimev1.Log) {
+	fmt.Printf("%s\t%s\t%s\t%s\n", printTime(log.Time), printLogLevel(log.Level), log.Message, log.JsonPayload)
+}
+
+func printTime(t *timestamppb.Timestamp) string {
+	return t.AsTime().Format("2006-01-02T15:04:05.000000")
+}
+
+func printLogLevel(logLevel runtimev1.LogLevel) string {
+	switch logLevel {
+	case runtimev1.LogLevel_LOG_LEVEL_DEBUG:
+		return "DEBUG"
+	case runtimev1.LogLevel_LOG_LEVEL_INFO:
+		return "INFO"
+	case runtimev1.LogLevel_LOG_LEVEL_WARN:
+		return "WARN"
+	case runtimev1.LogLevel_LOG_LEVEL_ERROR:
+		return "ERROR"
+	default:
+		return "UNKNOWN"
+	}
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/dag"
 	"github.com/rilldata/rill/runtime/pkg/logbuffer"
+	"github.com/rilldata/rill/runtime/pkg/logutil"
 	"github.com/rilldata/rill/runtime/pkg/schedule"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -120,10 +121,7 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 	}
 
 	c.Logs = logbuffer.NewBuffer(rt.opts.ControllerLogBufferCapacity, rt.opts.ControllerLogBufferSizeBytes)
-	c.Logger = slog.New(&duplicatingHandler{
-		zapHandler: zapslog.HandlerOptions{LoggerName: "console"}.New(logger.Core()),
-		logs:       c.Logs,
-	})
+	c.Logger = slog.New(logutil.NewDuplicatingHandler(zapslog.HandlerOptions{LoggerName: "console"}.New(logger.Core()), c.Logs))
 
 	cc, err := newCatalogCache(ctx, c, c.InstanceID)
 	if err != nil {
@@ -132,35 +130,6 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 	c.catalog = cc
 
 	return c, nil
-}
-
-type duplicatingHandler struct {
-	zapHandler *zapslog.Handler
-	logs       *logbuffer.Buffer
-}
-
-func (d *duplicatingHandler) Enabled(ctx context.Context, level slog.Level) bool {
-	return d.zapHandler.Enabled(ctx, level)
-}
-
-func (d *duplicatingHandler) Handle(ctx context.Context, record slog.Record) error {
-	err := d.zapHandler.Handle(ctx, record)
-	if err != nil {
-		return err
-	}
-	return d.logs.Add(record)
-}
-
-func (d *duplicatingHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	newHandler := *d
-	newHandler.zapHandler = d.zapHandler.WithAttrs(attrs).(*zapslog.Handler)
-	return &newHandler
-}
-
-func (d *duplicatingHandler) WithGroup(name string) slog.Handler {
-	newHandler := *d
-	newHandler.zapHandler = d.zapHandler.WithGroup(name).(*zapslog.Handler)
-	return &newHandler
 }
 
 // Run starts and runs the controller's event loop.

@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
+import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
 import { PullTriggerSpec, RefreshTriggerSpec, Resource, ResourceName } from "./resources_pb.js";
 import { MetricsView, Model, ObjectType, Source, Table } from "./catalog_pb.js";
 
@@ -1735,9 +1735,9 @@ export class Log extends Message<Log> {
   message = "";
 
   /**
-   * @generated from field: google.protobuf.Struct payload = 4;
+   * @generated from field: string json_payload = 4;
    */
-  payload?: Struct;
+  jsonPayload = "";
 
   constructor(data?: PartialMessage<Log>) {
     super();
@@ -1750,7 +1750,7 @@ export class Log extends Message<Log> {
     { no: 1, name: "level", kind: "enum", T: proto3.getEnumType(LogLevel) },
     { no: 2, name: "time", kind: "message", T: Timestamp },
     { no: 3, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "payload", kind: "message", T: Struct },
+    { no: 4, name: "json_payload", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Log {

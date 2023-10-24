@@ -475,7 +475,7 @@ message Log {
   LogLevel level = 1;
   google.protobuf.Timestamp time = 2;
   string message = 3;
-  google.protobuf.Struct payload = 4;
+  string json_payload = 4;
 }
 
 enum LogLevel {

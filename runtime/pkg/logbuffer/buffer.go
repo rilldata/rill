@@ -2,12 +2,12 @@ package logbuffer
 
 import (
 	"context"
+	"encoding/json"
 	"sync"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/bufferutil"
 	"golang.org/x/exp/slog"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -37,7 +37,7 @@ func (b *Buffer) Add(record slog.Record) error {
 	}
 	// hacky way of collecting attributes
 	record.Attrs(gatherAttr)
-	payload, err := structpb.NewStruct(attrs)
+	payload, err := json.Marshal(attrs)
 	if err != nil {
 		return err
 	}
@@ -48,10 +48,10 @@ func (b *Buffer) Add(record slog.Record) error {
 	size += 12
 
 	message := &runtimev1.Log{
-		Level:   slogLevelToPBLevel(record.Level),
-		Time:    timestamppb.New(record.Time),
-		Message: record.Message,
-		Payload: payload,
+		Level:       slogLevelToPBLevel(record.Level),
+		Time:        timestamppb.New(record.Time),
+		Message:     record.Message,
+		JsonPayload: string(payload),
 	}
 
 	b.mu.Lock()
