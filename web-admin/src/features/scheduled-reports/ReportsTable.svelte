@@ -4,8 +4,8 @@
   import Table from "../../components/table/Table.svelte";
   import { defaultData, Report } from "./fetch-reports";
   import ReportsTableActionCell from "./ReportsTableActionCell.svelte";
+  import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
   import ReportsTableHeader from "./ReportsTableHeader.svelte";
-  import ReportsTableInfoCell from "./ReportsTableInfoCell.svelte";
 
   export let organization: string;
   export let project: string;
@@ -22,7 +22,7 @@
       // accessorFn that returns all the info to filter on -- this will take some massauging to get right (objects and arrays don't seem to work)
       accessorFn: (row) => row.name + row.author,
       cell: (info) =>
-        flexRender(ReportsTableInfoCell, {
+        flexRender(ReportsTableCompositeCell, {
           id: info.row.original.id,
           reportName: info.row.original.name,
           lastRun: info.row.original.lastRun,
