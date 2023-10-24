@@ -4,13 +4,14 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
 )
 
 func TestWatch(t *testing.T) {
@@ -72,7 +73,10 @@ func TestWatch(t *testing.T) {
 	for _, e := range res[3:] {
 		batch2 = append(batch2, e)
 	}
-	less := func(a, b drivers.WatchEvent) bool { return a.Path < b.Path }
+	less := func(a, b drivers.WatchEvent) int {
+		return strings.Compare(a.Path, b.Path)
+	}
+
 	slices.SortFunc(batch1, less)
 	slices.SortFunc(batch2, less)
 
