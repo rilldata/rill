@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
@@ -29,6 +30,9 @@
   export let showComparison = false;
   export let status: EntityStatus;
   export let withTimeseries = true;
+  export let isMeasureExpanded = false;
+
+  const dispatch = createEventDispatcher();
 
   $: description =
     measure?.description || measure?.label || measure?.expression;
@@ -64,9 +68,10 @@
 </script>
 
 <button
-  class="flex flex-col px-2 py-1 text-left {withTimeseries
-    ? 'my-2'
-    : 'justify-between'}"
+  on:click={() => dispatch("expand-measure")}
+  class="big-number flex flex-col px-2 text-left rounded
+  {isMeasureExpanded ? 'pointer-events-none' : 'hover:bg-gray-100'}
+  {withTimeseries ? 'py-3' : 'py-1 justify-between'}"
 >
   <Tooltip distance={16} location="top" alignment="start">
     <h2
@@ -174,3 +179,9 @@
     </div>
   </div>
 </button>
+
+<style>
+  :global(.big-number:hover + .time-series-body) {
+    border-top: 1px solid var(--color-gray-200);
+  }
+</style>

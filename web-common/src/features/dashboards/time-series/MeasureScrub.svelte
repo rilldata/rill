@@ -35,8 +35,8 @@
   const strokeWidth = 1;
   const xLabelBuffer = 8;
   const yLabelBuffer = 10;
-  const y1 = $plotConfig.plotTop + $plotConfig.top + 5;
-  const y2 = $plotConfig.plotBottom - $plotConfig.bottom - 1;
+  $: y1 = $plotConfig.plotTop + $plotConfig.top + 5;
+  $: y2 = $plotConfig.plotBottom - $plotConfig.bottom - 1;
 
   $: hasSubrangeSelected = Boolean(start && stop);
 

@@ -13,6 +13,7 @@
 
   export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: boolean[];
+  export let allowMultiSelect = true;
 
   interface MenuItemData {
     name: string;
@@ -92,13 +93,15 @@
           {#if selected}
             <Check
               size="20px"
-              color={singleSelection ? "#9CA3AF" : "#15141A"}
+              color={allowMultiSelect && singleSelection
+                ? "#9CA3AF"
+                : "#15141A"}
             />
           {:else}
             <Spacer size="20px" />
           {/if}
         </svelte:fragment>
-        <span class:ui-copy-disabled={!selected}>
+        <span class:ui-copy-disabled={!selected && allowMultiSelect}>
           {#if label.length > 240}
             {label.slice(0, 240)}...
           {:else}
@@ -110,16 +113,18 @@
       <div class="mt-5 ui-copy-disabled text-center">no results</div>
     {/each}
   </div>
-  <Footer>
-    <span class="ui-copy">
-      <Button compact on:click={dispatchAllToggleEvt} type="text"
-        >{allToggleText}</Button
-      >
-    </span>
-    {#if numSelectedNotShown}
-      <div class="ui-label">
-        {numSelectedNotShown} other value{numSelectedNotShown > 1 ? "s" : ""} selected
-      </div>
-    {/if}
-  </Footer>
+  {#if allowMultiSelect}
+    <Footer>
+      <span class="ui-copy">
+        <Button compact on:click={dispatchAllToggleEvt} type="text"
+          >{allToggleText}</Button
+        >
+      </span>
+      {#if numSelectedNotShown}
+        <div class="ui-label">
+          {numSelectedNotShown} other value{numSelectedNotShown > 1 ? "s" : ""} selected
+        </div>
+      {/if}
+    </Footer>
+  {/if}
 </Menu>

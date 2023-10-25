@@ -56,6 +56,12 @@ export interface MetricsExplorerEntity {
    */
   leaderboardMeasureName: string;
 
+  /***
+   * The name of the measure that is currently being expanded
+   * in the Time Detailed Dimension view
+   */
+  expandedMeasureName?: string;
+
   /**
    * This is the sort type that will be used for the leaderboard
    * and dimension detail table. See SortType for more details.
@@ -94,6 +100,11 @@ export interface MetricsExplorerEntity {
    * user selected timezone
    */
   selectedTimezone?: string;
+
+  /**
+   * Search text state for dimension tables
+   */
+  dimensionSearchText?: string;
 
   /**
    * flag to show/hide time comparison based on user preference.

@@ -213,6 +213,12 @@ const metricViewReducers = {
     });
   },
 
+  setExpandedMeasureName(name: string, measureName: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.expandedMeasureName = measureName;
+    });
+  },
+
   setSortDescending(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.sortDirection = SortDirection.DESCENDING;
@@ -307,6 +313,12 @@ const metricViewReducers = {
       setSelectedScrubRange(metricsExplorer, undefined);
 
       metricsExplorer.selectedTimezone = zoneIANA;
+    });
+  },
+
+  setSearchText(name: string, searchText: string) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.dimensionSearchText = searchText;
     });
   },
 
