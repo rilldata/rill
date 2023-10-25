@@ -137,7 +137,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	var start time.Time
 	var zeroTime time.Time
 	var data []*runtimev1.TimeSeriesValue
-	var nullRecords *structpb.Struct
+	nullRecords := generateNullRecords(schema)
 	rowMap := make(map[string]any)
 	for rows.Next() {
 		err := rows.MapScan(rowMap)
@@ -159,9 +159,6 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 			return err
 		}
 
-		if nullRecords == nil {
-			nullRecords = generateNullRecords(records)
-		}
 		if zeroTime.Equal(start) {
 			if q.TimeStart != nil {
 				start = truncateTime(q.TimeStart.AsTime(), q.TimeGranularity, tz, int(fdow), int(fmoy))
@@ -411,10 +408,10 @@ func truncateTime(start time.Time, tg runtimev1.TimeGrain, tz *time.Location, fi
 	return start
 }
 
-func generateNullRecords(s *structpb.Struct) *structpb.Struct {
-	nullStruct := structpb.Struct{Fields: make(map[string]*structpb.Value, len(s.Fields))}
-	for k := range s.Fields {
-		nullStruct.Fields[k] = structpb.NewNullValue()
+func generateNullRecords(schema *runtimev1.StructType) *structpb.Struct {
+	nullStruct := structpb.Struct{Fields: make(map[string]*structpb.Value, len(schema.Fields))}
+	for _, f := range schema.Fields {
+		nullStruct.Fields[f.Name] = structpb.NewNullValue()
 	}
 	return &nullStruct
 }
