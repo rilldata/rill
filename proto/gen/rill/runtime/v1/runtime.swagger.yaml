@@ -824,6 +824,11 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: limit
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs/watch:
@@ -854,6 +859,11 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: replayLimit
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
@@ -3211,8 +3221,8 @@ definitions:
         format: date-time
       message:
         type: string
-      payload:
-        type: object
+      jsonPayload:
+        type: string
   v1LogLevel:
     type: string
     enum:
@@ -4787,11 +4797,8 @@ definitions:
   v1WatchLogsResponse:
     type: object
     properties:
-      logs:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Log'
+      log:
+        $ref: '#/definitions/v1Log'
   v1WatchResourcesResponse:
     type: object
     properties:
