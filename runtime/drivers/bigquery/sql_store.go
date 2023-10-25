@@ -64,6 +64,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		switch len(parts) {
 		case 2:
 			dataset, tableID = parts[0], parts[1]
+			projectID = srcProps.ProjectID
 		case 3:
 			projectID, dataset, tableID = parts[0], parts[1], parts[2]
 		default:
