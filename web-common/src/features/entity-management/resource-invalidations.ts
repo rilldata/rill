@@ -1,5 +1,6 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
+import { sourceImportedName } from "@rilldata/web-common/features/sources/sources-store";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetResourceQueryKey,
@@ -84,6 +85,8 @@ async function invalidateResource(
 
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
+      if (!failed) sourceImportedName.set(resource.meta.name.name);
+    // eslint-disable-next-line no-fallthrough
     case ResourceKind.Model:
       return invalidateProfilingQueries(
         queryClient,
