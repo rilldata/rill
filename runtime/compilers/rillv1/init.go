@@ -29,7 +29,7 @@ func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, title st
 	if gitignore != "" {
 		gitignore += "\n"
 	}
-	gitignore += ".DS_Store\n\n# Rill\n*.db\n*.db.tmp\n*.db.wal\n.env\n"
+	gitignore += ".DS_Store\n\n# Rill\n*.db\n*.db.tmp\n*.db.wal\n.env\nrill_db\n"
 
 	err = repo.Put(ctx, ".gitignore", strings.NewReader(gitignore))
 	if err != nil {

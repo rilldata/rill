@@ -40,7 +40,7 @@ func (c *Codec) InitEmpty(ctx context.Context, title string) error {
 	if gitignore != "" {
 		gitignore += "\n"
 	}
-	gitignore += ".DS_Store\n\n# Rill\n*.db\n*.db.tmp\n*.db.wal\n"
+	gitignore += ".DS_Store\n\n# Rill\n*.db\n*.db.tmp\n*.db.wal\nrill_db\n"
 
 	err = c.Repo.Put(ctx, ".gitignore", strings.NewReader(gitignore))
 	if err != nil {

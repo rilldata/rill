@@ -47,6 +47,7 @@ const (
 	DefaultInstanceID = "default"
 	DefaultOLAPDriver = "duckdb"
 	DefaultOLAPDSN    = "stage.db"
+	DefaultDBDir      = "rill_db"
 )
 
 // App encapsulates the logic associated with configuring and running the UI and the runtime in a local environment.
@@ -82,12 +83,28 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		return nil, err
 	}
 
+	// Get full path to project
+	projectPath, err = filepath.Abs(projectPath)
+	if err != nil {
+		return nil, err
+	}
+	dbDirPath := filepath.Join(projectPath, DefaultDBDir)
+	err = os.MkdirAll(dbDirPath, os.ModePerm) // Create project dir and db dir if it doesn't exist
+	if err != nil {
+		return nil, err
+	}
+
+	parsedVariables, err := variable.Parse(variables)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create a local runtime with an in-memory metastore
 	systemConnectors := []*runtimev1.Connector{
 		{
 			Type:   "sqlite",
 			Name:   "metastore",
-			Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+			Config: map[string]string{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, "metastore.db"))},
 		},
 	}
 
@@ -104,26 +121,11 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		return nil, err
 	}
 
-	// Get full path to project
-	projectPath, err = filepath.Abs(projectPath)
-	if err != nil {
-		return nil, err
-	}
-	err = os.MkdirAll(projectPath, os.ModePerm) // Create project dir if it doesn't exist
-	if err != nil {
-		return nil, err
-	}
-
 	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
-	isDefault := false
+	defaultOLAP := false
 	if olapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
-		isDefault = true
-		olapDSN = path.Join(projectPath, olapDSN)
-	}
-
-	parsedVariables, err := variable.Parse(variables)
-	if err != nil {
-		return nil, err
+		defaultOLAP = true
+		olapDSN = path.Join(dbDirPath, olapDSN)
 	}
 
 	if reset {
@@ -137,7 +139,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 	olapCfg := map[string]string{"dsn": olapDSN}
 	if olapDriver == "duckdb" {
 		olapCfg["pool_size"] = "4"
-		if !isDefault {
+		if !defaultOLAP {
 			olapCfg["error_on_incompatible_version"] = "true"
 		}
 	}
@@ -165,14 +167,21 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 				Config: olapCfg,
 			},
 		},
-		Variables:    parsedVariables,
-		Annotations:  map[string]string{},
-		EmbedCatalog: olapDriver == "duckdb",
-		WatchRepo:    true,
+		Variables:   parsedVariables,
+		Annotations: map[string]string{},
+		WatchRepo:   true,
 		// ModelMaterializeDelaySeconds:     30, // TODO: Enable when we support skipping it for the initial load
 		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}
-	err = rt.CreateInstance(ctx, inst)
+	_, err = rt.Instance(ctx, DefaultInstanceID)
+	if err != nil {
+		if !errors.Is(err, drivers.ErrNotFound) {
+			return nil, err
+		}
+		err = rt.CreateInstance(ctx, inst)
+	} else {
+		err = rt.EditInstance(ctx, inst, true)
+	}
 	if err != nil {
 		return nil, err
 	}
