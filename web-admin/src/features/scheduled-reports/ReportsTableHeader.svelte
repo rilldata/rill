@@ -19,6 +19,9 @@
     get(table).setGlobalFilter(filter);
   }
 
+  // Number of reports
+  $: numReports = $table.getRowModel().rows.length;
+
   function sortAlphabetically() {
     get(table).setSorting([{ id: "monocolumn", desc: false }]);
   }
@@ -37,13 +40,15 @@
   }
 </script>
 
-<thead class="bg-slate-100">
+<thead>
   <tr>
-    <div class="p-2 max-w-[800px] flex items-center gap-x-2">
-      <div class="grow" />
-
-      <!-- search bar -->
-      <Search placeholder="Search" bind:value={filter} />
+    <td
+      class="pl-2 pr-4 py-2 max-w-[800px] flex items-center gap-x-2 bg-slate-100"
+    >
+      <!-- Search bar -->
+      <div class="px-4 grow">
+        <Search placeholder="Search" autofocus={false} bind:value={filter} />
+      </div>
 
       <!-- filter menu button (future work) -->
       <!-- <Button on:click={() => console.log("open filter menu")} type="secondary">
@@ -51,7 +56,12 @@
     <CaretDownIcon />
   </Button> -->
 
-      <!-- sort menu button -->
+      <!-- Number of reports -->
+      <span class="shrink-0"
+        >{numReports} report{numReports !== 1 ? "s" : ""}</span
+      >
+
+      <!-- Sort button -->
       <WithTogglableFloatingElement active={openSortMenu}>
         <Button on:click={() => (openSortMenu = true)} type="secondary">
           <span>Sort</span>
@@ -71,6 +81,23 @@
           <MenuItem on:select={sortByNextToRun} disabled>Next to run</MenuItem>
         </Menu>
       </WithTogglableFloatingElement>
-    </div>
+    </td>
   </tr>
 </thead>
+
+<!-- 
+Rounded table corners are tricky:
+- `border-radius` does not apply to table elements when `border-collapse` is `collapse`.
+- You can only apply `border-radius` to <td>, not <tr> or <table>.
+-->
+<style lang="postcss">
+  thead tr td {
+    @apply border-y;
+  }
+  thead tr td:first-child {
+    @apply border-l rounded-tl-sm;
+  }
+  thead tr td:last-child {
+    @apply border-r rounded-tr-sm;
+  }
+</style>

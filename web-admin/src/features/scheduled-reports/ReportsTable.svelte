@@ -1,9 +1,7 @@
 <script lang="ts">
   import { flexRender } from "@tanstack/svelte-table";
-  import type { ColumnDef } from "@tanstack/table-core/src/types";
   import Table from "../../components/table/Table.svelte";
-  import { defaultData, Report } from "./fetch-reports";
-  import ReportsTableActionCell from "./ReportsTableActionCell.svelte";
+  import { defaultData } from "./fetch-reports";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
   import ReportsTableHeader from "./ReportsTableHeader.svelte";
 
@@ -12,15 +10,19 @@
 
   // TODO: fetch reports for a given project
 
-  // Note: need an accessorFn in order to enable sorting and filtering
-
-  const columns: ColumnDef<Report>[] = [
+  /**
+   * Table column definitions.
+   * - "composite": Renders all dashboard data in a single cell.
+   * - Others: Used for sorting and filtering but not displayed.
+   *
+   * Note: TypeScript error prevents using `ColumnDef<DashboardResource, string>[]`.
+   * Relevant issues:
+   * - https://github.com/TanStack/table/issues/4241
+   * - https://github.com/TanStack/table/issues/4302
+   */
+  const columns = [
     {
-      // TODO: this header should be a Search element
-      id: "monocolumn",
-      header: "",
-      // accessorFn that returns all the info to filter on -- this will take some massauging to get right (objects and arrays don't seem to work)
-      accessorFn: (row) => row.name + row.author,
+      id: "composite",
       cell: (info) =>
         flexRender(ReportsTableCompositeCell, {
           id: info.row.original.id,
@@ -31,39 +33,33 @@
           status: info.row.original.status,
         }),
     },
-    // Hidden column to enable sorting by last run. There's probably a better way than this.
+    {
+      id: "name",
+      accessorFn: (row) => row.name,
+    },
     {
       id: "lastRun",
-      header: "",
       accessorFn: (row) => row.lastRun,
-      cell: undefined,
     },
-    // Hidden column to enable sorting by next run. There's probably a better way than this.
     // {
     //   id: "nextRun",
-    //   header: "",
     //   accessorFn: (row) => row.nextRun,
-    //   cell: undefined,
     // },
-    {
-      // TODO: this header should be a "Display" dropdown button + a total rows count
-      id: "actions",
-      header: "",
-      cell: (info) =>
-        flexRender(ReportsTableActionCell, {
-          reportName: info.row.original.name,
-        }),
-    },
+    // {
+    //   id: "actions",
+    //   cell: ({ row }) =>
+    //     flexRender(ReportsTableActionCell, {
+    //       reportName: row.original.name,
+    //     }),
+    // },
   ];
 
-  function globalFilterFn(row: Report, filter: string) {
-    return (
-      row.name.toLowerCase().includes(filter.toLowerCase()) ||
-      row.author.toLowerCase().includes(filter.toLowerCase())
-    );
-  }
+  const columnVisibility = {
+    name: false,
+    lastRun: false,
+  };
 </script>
 
-<Table dataTypeName="report" {columns} data={defaultData} {globalFilterFn}>
+<Table {columns} data={defaultData} {columnVisibility}>
   <ReportsTableHeader slot="header" />
 </Table>
