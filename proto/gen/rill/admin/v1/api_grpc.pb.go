@@ -76,6 +76,8 @@ const (
 	AdminService_GetBookmark_FullMethodName                  = "/rill.admin.v1.AdminService/GetBookmark"
 	AdminService_CreateBookmark_FullMethodName               = "/rill.admin.v1.AdminService/CreateBookmark"
 	AdminService_RemoveBookmark_FullMethodName               = "/rill.admin.v1.AdminService/RemoveBookmark"
+	AdminService_GetRepoMeta_FullMethodName                  = "/rill.admin.v1.AdminService/GetRepoMeta"
+	AdminService_PullVirtualRepo_FullMethodName              = "/rill.admin.v1.AdminService/PullVirtualRepo"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -197,6 +199,10 @@ type AdminServiceClient interface {
 	CreateBookmark(ctx context.Context, in *CreateBookmarkRequest, opts ...grpc.CallOption) (*CreateBookmarkResponse, error)
 	// RemoveBookmark removes the bookmark for the given user for the given project
 	RemoveBookmark(ctx context.Context, in *RemoveBookmarkRequest, opts ...grpc.CallOption) (*RemoveBookmarkResponse, error)
+	// GetRepoMeta returns credentials and other metadata for accessing a project's repo
+	GetRepoMeta(ctx context.Context, in *GetRepoMetaRequest, opts ...grpc.CallOption) (*GetRepoMetaResponse, error)
+	// PullVirtualRepo fetches files from a project's virtual repo
+	PullVirtualRepo(ctx context.Context, in *PullVirtualRepoRequest, opts ...grpc.CallOption) (*PullVirtualRepoResponse, error)
 }
 
 type adminServiceClient struct {
@@ -720,6 +726,24 @@ func (c *adminServiceClient) RemoveBookmark(ctx context.Context, in *RemoveBookm
 	return out, nil
 }
 
+func (c *adminServiceClient) GetRepoMeta(ctx context.Context, in *GetRepoMetaRequest, opts ...grpc.CallOption) (*GetRepoMetaResponse, error) {
+	out := new(GetRepoMetaResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetRepoMeta_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) PullVirtualRepo(ctx context.Context, in *PullVirtualRepoRequest, opts ...grpc.CallOption) (*PullVirtualRepoResponse, error) {
+	out := new(PullVirtualRepoResponse)
+	err := c.cc.Invoke(ctx, AdminService_PullVirtualRepo_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
@@ -839,6 +863,10 @@ type AdminServiceServer interface {
 	CreateBookmark(context.Context, *CreateBookmarkRequest) (*CreateBookmarkResponse, error)
 	// RemoveBookmark removes the bookmark for the given user for the given project
 	RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error)
+	// GetRepoMeta returns credentials and other metadata for accessing a project's repo
+	GetRepoMeta(context.Context, *GetRepoMetaRequest) (*GetRepoMetaResponse, error)
+	// PullVirtualRepo fetches files from a project's virtual repo
+	PullVirtualRepo(context.Context, *PullVirtualRepoRequest) (*PullVirtualRepoResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -1016,6 +1044,12 @@ func (UnimplementedAdminServiceServer) CreateBookmark(context.Context, *CreateBo
 }
 func (UnimplementedAdminServiceServer) RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveBookmark not implemented")
+}
+func (UnimplementedAdminServiceServer) GetRepoMeta(context.Context, *GetRepoMetaRequest) (*GetRepoMetaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRepoMeta not implemented")
+}
+func (UnimplementedAdminServiceServer) PullVirtualRepo(context.Context, *PullVirtualRepoRequest) (*PullVirtualRepoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PullVirtualRepo not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -2056,6 +2090,42 @@ func _AdminService_RemoveBookmark_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetRepoMeta_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRepoMetaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetRepoMeta(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetRepoMeta_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetRepoMeta(ctx, req.(*GetRepoMetaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_PullVirtualRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PullVirtualRepoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).PullVirtualRepo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_PullVirtualRepo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).PullVirtualRepo(ctx, req.(*PullVirtualRepoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2290,6 +2360,14 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveBookmark",
 			Handler:    _AdminService_RemoveBookmark_Handler,
+		},
+		{
+			MethodName: "GetRepoMeta",
+			Handler:    _AdminService_GetRepoMeta_Handler,
+		},
+		{
+			MethodName: "PullVirtualRepo",
+			Handler:    _AdminService_PullVirtualRepo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

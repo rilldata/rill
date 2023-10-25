@@ -78,6 +78,10 @@ import type {
   V1PingResponse,
   V1TriggerRedeployResponse,
   V1TriggerRedeployRequest,
+  V1GetRepoMetaResponse,
+  AdminServiceGetRepoMetaParams,
+  V1PullVirtualRepoResponse,
+  AdminServicePullVirtualRepoParams,
   V1RevokeServiceAuthTokenResponse,
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
@@ -3436,6 +3440,191 @@ export const createAdminServiceTriggerRedeploy = <
 
   return createMutation(mutationOptions);
 };
+/**
+ * @summary GetRepoMeta returns credentials and other metadata for accessing a project's repo
+ */
+export const adminServiceGetRepoMeta = (
+  projectId: string,
+  params?: AdminServiceGetRepoMetaParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetRepoMetaResponse>({
+    url: `/v1/projects/${projectId}/repo/meta`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetRepoMetaQueryKey = (
+  projectId: string,
+  params?: AdminServiceGetRepoMetaParams
+) =>
+  [`/v1/projects/${projectId}/repo/meta`, ...(params ? [params] : [])] as const;
+
+export const getAdminServiceGetRepoMetaQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetRepoMeta>>,
+  TError = RpcStatus
+>(
+  projectId: string,
+  params?: AdminServiceGetRepoMetaParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetRepoMeta>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof adminServiceGetRepoMeta>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetRepoMetaQueryKey(projectId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetRepoMeta>>
+  > = ({ signal }) => adminServiceGetRepoMeta(projectId, params, signal);
+
+  return { queryKey, queryFn, enabled: !!projectId, ...queryOptions };
+};
+
+export type AdminServiceGetRepoMetaQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetRepoMeta>>
+>;
+export type AdminServiceGetRepoMetaQueryError = RpcStatus;
+
+/**
+ * @summary GetRepoMeta returns credentials and other metadata for accessing a project's repo
+ */
+export const createAdminServiceGetRepoMeta = <
+  TData = Awaited<ReturnType<typeof adminServiceGetRepoMeta>>,
+  TError = RpcStatus
+>(
+  projectId: string,
+  params?: AdminServiceGetRepoMetaParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetRepoMeta>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServiceGetRepoMetaQueryOptions(
+    projectId,
+    params,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary PullVirtualRepo fetches files from a project's virtual repo
+ */
+export const adminServicePullVirtualRepo = (
+  projectId: string,
+  params?: AdminServicePullVirtualRepoParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1PullVirtualRepoResponse>({
+    url: `/v1/projects/${projectId}/repo/virtual`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServicePullVirtualRepoQueryKey = (
+  projectId: string,
+  params?: AdminServicePullVirtualRepoParams
+) =>
+  [
+    `/v1/projects/${projectId}/repo/virtual`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export const getAdminServicePullVirtualRepoQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServicePullVirtualRepo>>,
+  TError = RpcStatus
+>(
+  projectId: string,
+  params?: AdminServicePullVirtualRepoParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServicePullVirtualRepo>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof adminServicePullVirtualRepo>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServicePullVirtualRepoQueryKey(projectId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServicePullVirtualRepo>>
+  > = ({ signal }) => adminServicePullVirtualRepo(projectId, params, signal);
+
+  return { queryKey, queryFn, enabled: !!projectId, ...queryOptions };
+};
+
+export type AdminServicePullVirtualRepoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServicePullVirtualRepo>>
+>;
+export type AdminServicePullVirtualRepoQueryError = RpcStatus;
+
+/**
+ * @summary PullVirtualRepo fetches files from a project's virtual repo
+ */
+export const createAdminServicePullVirtualRepo = <
+  TData = Awaited<ReturnType<typeof adminServicePullVirtualRepo>>,
+  TError = RpcStatus
+>(
+  projectId: string,
+  params?: AdminServicePullVirtualRepoParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServicePullVirtualRepo>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServicePullVirtualRepoQueryOptions(
+    projectId,
+    params,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
 /**
  * @summary RevokeServiceAuthToken revoke the service auth token
  */
