@@ -5,7 +5,7 @@ import { writable } from "svelte/store";
  * put on a DOM element, will listen to it.
  */
 export function createResizeListenerActionFactory() {
-  const { set, subscribe } = writable(undefined);
+  const { set, subscribe } = writable<HTMLElement>(undefined);
   return {
     observedNode: { subscribe },
     listenToNodeResize(node) {

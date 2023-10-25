@@ -9,7 +9,12 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
-  import { crossfade, fly } from "svelte/transition";
+  import {
+    CrossfadeParams,
+    FlyParams,
+    crossfade,
+    fly,
+  } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
 
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
@@ -19,9 +24,9 @@
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number;
-  export let comparisonOption: TimeComparisonOption = undefined;
-  export let comparisonValue: number = undefined;
-  export let comparisonPercChange: number = undefined;
+  export let comparisonOption: TimeComparisonOption | undefined = undefined;
+  export let comparisonValue: number | undefined = undefined;
+  export let comparisonPercChange: number | undefined = undefined;
   export let showComparison = false;
   export let status: EntityStatus;
   export let withTimeseries = true;
@@ -42,7 +47,10 @@
 
   $: valueIsPresent = value !== undefined && value !== null;
 
-  const [send, receive] = crossfade({ fallback: fly });
+  const [send, receive] = crossfade({
+    fallback: (node: Element, params: CrossfadeParams) =>
+      fly(node, params as FlyParams),
+  });
 
   $: diff =
     valueIsPresent && comparisonValue !== undefined
@@ -98,7 +106,7 @@
             </TooltipDescription>
           </TooltipContent>
         </Tooltip>
-        {#if showComparison}
+        {#if showComparison && comparisonOption && comparisonValue}
           <Tooltip distance={8} location="bottom" alignment="start">
             <div class="flex items-baseline gap-x-3">
               {#if comparisonValue != null}
@@ -135,9 +143,6 @@
               {/if}
             </div>
             <TooltipContent slot="tooltip-content" maxWidth="300px">
-              {@const tooltipPercentage =
-                formatMeasurePercentageDifference(comparisonPercChange)}
-
               {#if noChange}
                 no change over {TIME_COMPARISON[comparisonOption].shorthand}
               {:else}
@@ -145,10 +150,11 @@
                 <span class="font-semibold">
                   {measureValueFormatter(comparisonValue)}
                 </span>
-                {#if !measureIsPercentage}
+                {#if !measureIsPercentage && comparisonPercChange}
                   <span class="text-gray-300">,</span>
                   <span
-                    >{tooltipPercentage.int}% {isComparisonPositive
+                    >{formatMeasurePercentageDifference(comparisonPercChange)
+                      .int}% {isComparisonPositive
                       ? "increase"
                       : "decrease"}</span
                   >

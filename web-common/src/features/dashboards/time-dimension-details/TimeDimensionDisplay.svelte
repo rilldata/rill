@@ -24,19 +24,19 @@
   const timeDimensionDataStore = useTimeDimensionDataStore(getStateManagers());
   $: metaQuery = useMetaQuery(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: dimensionName = $dashboardStore?.selectedComparisonDimension;
+  $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
 
   // Get labels for table headers
   $: measureLabel =
     $metaQuery?.data?.measures?.find(
       (m) => m.name === $dashboardStore?.expandedMeasureName
-    ).label || "";
+    )?.label ?? "";
 
   let dimensionLabel = "";
   $: if ($timeDimensionDataStore?.comparing === "dimension") {
-    dimensionLabel = $metaQuery?.data?.dimensions?.find(
-      (d) => d.name === dimensionName
-    ).label;
+    dimensionLabel =
+      $metaQuery?.data?.dimensions?.find((d) => d.name === dimensionName)
+        ?.label ?? "";
   } else if ($timeDimensionDataStore?.comparing === "time") {
     dimensionLabel = "Time";
   } else {
@@ -59,26 +59,26 @@
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
 
   // Create a time formatter for the column headers
-  $: timeFormatter =
-    columnHeaders?.length &&
+  $: timeFormatter = (columnHeaders?.length &&
     createTimeFormat(
       [
         new Date(columnHeaders[0]?.value),
         new Date(columnHeaders[columnHeaders?.length - 1]?.value),
       ],
       columnHeaders?.length
-    )[0];
+    )[0]) as (d: Date) => string;
 
   function highlightCell(e) {
     const { x, y } = e.detail;
 
     const dimensionValue = formattedData?.rowHeaderData[y]?.[0]?.value;
-    const time = columnHeaders?.[x]?.value && new Date(columnHeaders[x]?.value);
-
-    tableInteractionStore.set({
-      dimensionValue,
-      time,
-    });
+    const timeStr = columnHeaders?.[x]?.value;
+    if (timeStr) {
+      tableInteractionStore.set({
+        dimensionValue,
+        time: new Date(timeStr),
+      });
+    }
   }
 </script>
 

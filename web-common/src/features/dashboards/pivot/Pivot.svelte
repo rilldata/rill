@@ -22,8 +22,10 @@
   export let columnCount = 0;
   export let rowHeaderDepth = 0;
   export let columnHeaderDepth = 0;
-  export let onMouseDown: (evt: MouseEvent, table: any) => any = undefined;
-  export let onMouseHover: (evt: MouseEvent, table: any) => any = undefined;
+  export let onMouseDown: undefined | ((evt: MouseEvent, table: any) => any) =
+    undefined;
+  export let onMouseHover: undefined | ((evt: MouseEvent, table: any) => any) =
+    undefined;
   export let renderCell: PivotRenderCallback = () => undefined;
   export let renderColumnHeader: PivotRenderCallback = () => undefined;
   export let renderRowHeader: PivotRenderCallback = () => undefined;
@@ -37,12 +39,14 @@
   let table = undefined;
   let initialized = false;
   export function draw() {
+    // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
     if (initialized) table.draw();
   }
   export const isInitialized = () => initialized;
 
   export function scrollToCell(x: number, y: number) {
     if (initialized) {
+      // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
       table.scrollToCell(x, y);
     }
   }
@@ -103,6 +107,7 @@
   };
 
   function style_row_th(th: HTMLElement) {
+    // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
     const meta = table.getMeta(th);
     const numFixedCols = meta.row_header.length;
     const x = meta.row_header_x;
@@ -131,6 +136,7 @@
   }
 
   function style_td(td: HTMLElement) {
+    // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
     const { x, y, value } = table.getMeta(td);
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
@@ -151,6 +157,7 @@
   }
 
   function style_column_th(th: HTMLElement) {
+    // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
     const meta = table.getMeta(th);
     const x = meta.x;
     const y = meta.column_header_y;
@@ -180,6 +187,7 @@
   }
 
   function style_row_corner(th: HTMLElement) {
+    // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
     const meta = table.getMeta(th);
 
     if (meta.column_header_y === columnHeaderDepth - 1) {
@@ -202,7 +210,9 @@
 
   $: {
     if (table) {
+      // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
       table.setDataListener(reactiveDataListener);
+      // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
       table.draw();
       initialized = true;
     }
@@ -210,9 +220,11 @@
 
   const handlerCache = new Map();
   function addHandler(type: string, handler: (evt: MouseEvent) => any) {
+    // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
     table.addEventListener(type, handler);
     const prevHandler = handlerCache.get(type);
     if (prevHandler) {
+      // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
       table.removeEventListener(type, prevHandler);
     }
     handlerCache.set(type, handler);
@@ -220,29 +232,35 @@
 
   $: {
     if (table && onMouseDown) {
-      const handler = (evt: MouseEvent) => onMouseDown(evt, table);
-      const hoverHandler = (evt: MouseEvent) => onMouseHover(evt, table);
+      const handler = (evt: MouseEvent) =>
+        onMouseDown ? onMouseDown(evt, table) : undefined;
+      const hoverHandler = (evt: MouseEvent) =>
+        onMouseHover ? onMouseHover(evt, table) : undefined;
       addHandler("mouseover", hoverHandler);
       addHandler("mouseout", hoverHandler);
       addHandler("mousedown", handler);
     }
   }
 
-  let lastColumnSizer = null;
-  let lastRowHeaderSizer = null;
+  let lastColumnSizer: null | ((x: number) => number | void) = null;
+  let lastRowHeaderSizer: null | ((x: number) => number | void) = null;
   function styleListener() {
+    // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
     for (const td of table.querySelectorAll("tbody td")) {
       style_td(td);
     }
 
+    // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
     for (const th of table.querySelectorAll("tbody th")) {
       style_row_th(th);
     }
 
+    // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
     for (const th of table.querySelectorAll("thead th:not(.rt-group-corner)")) {
       style_column_th(th);
     }
 
+    // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
     for (const th of table.querySelectorAll("thead th.rt-group-corner")) {
       style_row_corner(th);
     }
@@ -251,6 +269,7 @@
       lastColumnSizer !== getColumnWidth ||
       lastRowHeaderSizer !== getRowHeaderWidth
     ) {
+      // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
       table.invalidate();
       lastColumnSizer = getColumnWidth;
       lastRowHeaderSizer = getRowHeaderWidth;
@@ -260,6 +279,7 @@
   }
 
   onMount(() => {
+    // @ts-expect-error `table` is not typed correctly -- FIXME @djbarnwal
     table.addStyleListener(styleListener);
   });
 
