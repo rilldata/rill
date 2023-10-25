@@ -63,7 +63,7 @@ export default defineConfig({
               useQuery: true,
             },
           },
-          QueryService_MetricsViewComparisonToplist: {
+          QueryService_MetricsViewComparison: {
             query: {
               useQuery: true,
             },

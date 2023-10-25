@@ -47,12 +47,12 @@ func (s *Server) forwardQuery(ctx context.Context, instID string, idx int, qry *
 			res.Result = &runtimev1.QueryResult_MetricsViewToplistResponse{MetricsViewToplistResponse: r}
 		}
 
-	case *runtimev1.Query_MetricsViewComparisonToplistRequest:
-		var r *runtimev1.MetricsViewComparisonToplistResponse
-		q.MetricsViewComparisonToplistRequest.InstanceId = instID
-		r, err = s.MetricsViewComparisonToplist(ctx, q.MetricsViewComparisonToplistRequest)
+	case *runtimev1.Query_MetricsViewComparisonRequest:
+		var r *runtimev1.MetricsViewComparisonResponse
+		q.MetricsViewComparisonRequest.InstanceId = instID
+		r, err = s.MetricsViewComparison(ctx, q.MetricsViewComparisonRequest)
 		if err == nil {
-			res.Result = &runtimev1.QueryResult_MetricsViewComparisonToplistResponse{MetricsViewComparisonToplistResponse: r}
+			res.Result = &runtimev1.QueryResult_MetricsViewComparisonResponse{MetricsViewComparisonResponse: r}
 		}
 
 	case *runtimev1.Query_MetricsViewTimeSeriesRequest:

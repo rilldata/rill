@@ -363,7 +363,7 @@ export function addContextColumnNames(
 
 /**
  * This function prepares the data for the dimension table
- * from data returned by the createQueryServiceMetricsViewComparisonToplist
+ * from data returned by the createQueryServiceMetricsViewComparison
  * API.
  *
  */
