@@ -7,13 +7,13 @@
   } from "svelte";
   import { cubicOut } from "svelte/easing";
   import { tweened } from "svelte/motion";
-  import { derived, Readable, writable } from "svelte/store";
+  import { derived, Readable, Writable, writable } from "svelte/store";
 
   export let variant: "panel" | "secondary" = "panel";
 
   let container;
 
-  const selectedValue = writable(undefined);
+  const selectedValue: Writable<undefined | HTMLElement> = writable(undefined);
   const dispatch = createEventDispatcher();
   function callback(element, value) {
     dispatch("select", value);
@@ -30,7 +30,7 @@
     left: number;
     top: number;
     height: number;
-  }> = derived(selectedValue, ($element, set) => {
+  }> = derived(selectedValue, ($element: HTMLElement, set) => {
     const r = $element?.getBoundingClientRect();
     if (r)
       set({
