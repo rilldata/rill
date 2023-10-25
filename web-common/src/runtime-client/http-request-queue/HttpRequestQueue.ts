@@ -105,7 +105,6 @@ export class HttpRequestQueue {
     } else {
       entry.key = type;
     }
-    console.log("Add", entry.key);
     nameEntry.queryHeap.push(entry);
     // intentional to not await here
     this.popEntries();
@@ -147,7 +146,6 @@ export class HttpRequestQueue {
       const topNameEntry = this.nameHeap.peek();
       const entry = topNameEntry.queryHeap.pop();
 
-      console.log("Remove", entry.key);
       // intentional to not await here
       this.fireForEntry(entry);
       this.activeCount++;
