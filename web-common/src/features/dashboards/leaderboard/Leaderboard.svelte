@@ -34,7 +34,6 @@
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
   import { prepareSortedQueryBody } from "../dashboard-utils";
 
-  export let metricViewName: string;
   export let dimensionName: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
    * gets scaled with. For a summable metric, the total is a reference value,
@@ -47,7 +46,17 @@
 
   const stateManagers = getStateManagers();
 
-  $: dashboardStore = useDashboardStore(metricViewName);
+  const {
+    selectors: {
+      activeMeasure: { activeMeasure },
+      dimensions: { getDimensionByName, getDimensionDisplayName },
+      sorting: { sortAscending, sortType },
+    },
+    actions,
+    metricsViewName,
+  } = stateManagers;
+
+  $: dashboardStore = stateManagers.dashboardStore;
 
   let filterExcludeMode: boolean;
   $: filterExcludeMode =
@@ -55,22 +64,16 @@
   let filterKey: "exclude" | "include";
   $: filterKey = filterExcludeMode ? "exclude" : "include";
 
-  $: dimensionQuery = useMetaDimension(
-    $runtime.instanceId,
-    metricViewName,
-    dimensionName
-  );
-  let dimension: MetricsViewDimension;
-  $: dimension = $dimensionQuery?.data;
-  $: displayName = dimension?.label || dimension?.name || dimensionName;
+  // $: dimensionQuery = useMetaDimension(
+  //   $runtime.instanceId,
+  //   $metricsViewName,
+  //   dimensionName
+  // );
+  // let dimension: MetricsViewDimension;
+  $: dimension = $getDimensionByName(dimensionName);
+  $: displayName = $getDimensionDisplayName(dimensionName);
 
-  $: measureQuery = useMetaMeasure(
-    $runtime.instanceId,
-    metricViewName,
-    $dashboardStore?.leaderboardMeasureName
-  );
-  let measure: MetricsViewSpecMeasureV2;
-  $: measure = $measureQuery?.data;
+  $: activeMeasureName = $activeMeasure?.name;
 
   $: filterForDimension = getFilterForDimension(
     $dashboardStore?.filters,
@@ -85,7 +88,7 @@
   // it in a set dedupes the values.
   $: activeValues = new Set(
     ($dashboardStore?.filters[filterKey]?.find(
-      (d) => d.name === dimension?.name
+      (d) => d.name === getDimensionByName
     )?.in as (number | string)[]) ?? []
   );
   $: atLeastOneActive = activeValues?.size > 0;
@@ -93,35 +96,37 @@
   const timeControlsStore = useTimeControlStore(stateManagers);
 
   function selectDimension(dimensionName) {
-    metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
+    metricsExplorerStore.setMetricDimensionName(
+      $metricsViewName,
+      dimensionName
+    );
   }
 
   function toggleComparisonDimension(dimensionName, isBeingCompared) {
     metricsExplorerStore.setComparisonDimension(
-      metricViewName,
+      $metricsViewName,
       isBeingCompared ? undefined : dimensionName
     );
   }
 
   function toggleSort(evt) {
-    metricsExplorerStore.toggleSort(metricViewName, evt.detail);
+    actions.sorting.toggleSort(evt.detail);
   }
 
   $: isBeingCompared =
     $dashboardStore?.selectedComparisonDimension === dimensionName;
 
-  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
-  $: sortType = $dashboardStore.dashboardSortType;
-
-  $: sortedQueryBody = prepareSortedQueryBody(
-    dimensionName,
-    [measure?.name],
-    $timeControlsStore,
-    measure?.name,
-    sortType,
-    sortAscending,
-    filterForDimension
-  );
+  $: sortedQueryBody =
+    activeMeasureName &&
+    prepareSortedQueryBody(
+      dimensionName,
+      [activeMeasureName],
+      $timeControlsStore,
+      activeMeasureName,
+      $sortType,
+      $sortAscending,
+      filterForDimension
+    );
 
   $: sortedQueryEnabled = $timeControlsStore.ready && !!filterForDimension;
 
@@ -131,21 +136,31 @@
     },
   };
 
-  $: sortedQuery = createQueryServiceMetricsViewComparison(
-    $runtime.instanceId,
-    metricViewName,
-    sortedQueryBody,
-    sortedQueryOptions
-  );
+  $: sortedQuery = sortedQueryBody
+    ? createQueryServiceMetricsViewComparison(
+        $runtime.instanceId,
+        $metricsViewName,
+        sortedQueryBody,
+        sortedQueryOptions
+      )
+    : undefined;
 
   let aboveTheFold: LeaderboardItemData[] = [];
   let selectedBelowTheFold: LeaderboardItemData[] = [];
   let noAvailableValues = true;
   let showExpandTable = false;
-  $: if (!$sortedQuery?.isFetching) {
+  $: if (
+    sortedQuery &&
+    !$sortedQuery?.isFetching &&
+    activeMeasureName !== undefined
+  ) {
+    // NOTE: for some reason, the compiler is not able to infer that
+    // activeMeasureName is not undefined here. Reassigning it to a
+    // new const seems to fix the problem.
+    const activeMeasureName2 = activeMeasureName;
     const leaderboardData = prepareLeaderboardItemData(
       $sortedQuery?.data?.rows?.map((r) =>
-        getLabeledComparisonFromComparisonRow(r, measure.name)
+        getLabeledComparisonFromComparisonRow(r, activeMeasureName2)
       ) ?? [],
       slice,
       [...activeValues],
@@ -162,7 +177,7 @@
   let hovered: boolean;
 </script>
 
-{#if sortedQuery}
+{#if $sortedQuery !== undefined}
   <div
     style:width="315px"
     on:mouseenter={() => (hovered = true)}

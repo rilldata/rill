@@ -10,6 +10,7 @@ import type {
 import { formattingSelectors } from "./data-formatting";
 import { contextColSelectors } from "./context-column";
 import { activeMeasureSelectors } from "./active-measure";
+import { dimensionSelectors } from "./dimensions";
 
 export type StateManagerReadables = ReturnType<
   typeof createStateManagerReadables
@@ -55,6 +56,11 @@ export const createStateManagerReadables = (
      */
     activeMeasure: createReadablesFromSelectors(
       activeMeasureSelectors,
+      dashboardStore,
+      metricsSpecQueryResultStore
+    ),
+    dimensions: createReadablesFromSelectors(
+      dimensionSelectors,
       dashboardStore,
       metricsSpecQueryResultStore
     ),
