@@ -35,8 +35,8 @@
 
   let pivot;
 
-  let rowIdxHover: number;
-  let colIdxHover: number;
+  let rowIdxHover: number | undefined;
+  let colIdxHover: number | undefined;
 
   function getBodyData(pos: PivotPos) {
     return data?.body

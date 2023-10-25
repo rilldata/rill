@@ -41,15 +41,23 @@
   $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
   $: allMeasures = $metaQuery?.data?.measures ?? [];
 
-  $: selectableMeasures = allMeasures?.map((m) => ({
-    name: m.name,
-    label: m.label,
-  }));
+  $: selectableMeasures = allMeasures
+    ?.filter((m) => m.name !== undefined || m.label !== undefined)
+    .map((m) =>
+      // Note: undefined values are filtered out above, so the
+      // empty string fallback is unreachable.
+      ({
+        name: m.name ?? "",
+        label: m.label ?? "",
+      })
+    );
+
   $: selectedItems = allMeasures?.map((m) => m.name === expandedMeasureName);
 
   $: selectedMeasureLabel =
     allMeasures?.find((m) => m.name === expandedMeasureName)?.label ??
-    expandedMeasureName;
+    expandedMeasureName ??
+    "";
 
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
