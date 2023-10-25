@@ -162,15 +162,13 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		if nullRecords == nil {
 			nullRecords = generateNullRecords(records)
 		}
-		if start.Before(t) {
-			if zeroTime.Equal(start) {
-				if q.TimeStart != nil {
-					start = truncateTime(q.TimeStart.AsTime(), q.TimeGranularity, tz, int(fdow), int(fmoy))
-					data = addNulls(data, nullRecords, start, t, q.TimeGranularity)
-				}
-			} else {
+		if zeroTime.Equal(start) {
+			if q.TimeStart != nil {
+				start = truncateTime(q.TimeStart.AsTime(), q.TimeGranularity, tz, int(fdow), int(fmoy))
 				data = addNulls(data, nullRecords, start, t, q.TimeGranularity)
 			}
+		} else {
+			data = addNulls(data, nullRecords, start, t, q.TimeGranularity)
 		}
 
 		data = append(data, &runtimev1.TimeSeriesValue{
