@@ -175,7 +175,7 @@
 </button>
 
 <style>
-  .big-number:hover + .time-series-body {
+  :global(.big-number:hover + .time-series-body) {
     border-top: 1px solid var(--color-gray-200);
   }
 </style>
