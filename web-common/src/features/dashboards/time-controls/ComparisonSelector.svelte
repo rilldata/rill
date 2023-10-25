@@ -5,22 +5,22 @@ This component needs to do the following:
 3. read the existing active comparison from somewhere.
 -->
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
-  import { matchSorter } from "match-sorter";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
+  import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
+  import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import {
     Divider,
     Menu,
     MenuItem,
   } from "@rilldata/web-common/components/menu";
+  import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import type { MetricsViewDimension } from "@rilldata/web-common/runtime-client";
   import { NO_COMPARISON_LABEL } from "@rilldata/web-common/lib/time/config";
+  import type { MetricsViewDimension } from "@rilldata/web-common/runtime-client";
+  import { matchSorter } from "match-sorter";
+  import { createEventDispatcher } from "svelte";
   import SelectorButton from "./SelectorButton.svelte";
-  import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
-  import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
-  import { Search } from "@rilldata/web-common/components/search";
 
   const dispatch = createEventDispatcher();
 
@@ -90,7 +90,9 @@ This component needs to do the following:
     on:click-outside={toggleFloatingElement}
     label="Comparison selector"
   >
-    <Search placeholder="Search Dimension" bind:value={searchText} />
+    <div class="px-2 pb-2">
+      <Search placeholder="Search Dimension" bind:value={searchText} />
+    </div>
     <MenuItem
       focusOnMount={false}
       selected={!(showTimeComparison || selectedDimension)}
