@@ -28,6 +28,9 @@ const rowGroupBufferSize = int64(datasize.MB) * 512
 
 const _jsonDownloadLimitBytes = 100 * int64(datasize.MB)
 
+// Regex to parse BigQuery SELECT ALL statement: SELECT * FROM `project_id.dataset.table`
+var selectQueryRegex = regexp.MustCompile("(?i)^\\s*SELECT\\s+\\*\\s+FROM\\s+(`?[a-zA-Z0-9_.-]+`?)\\s*$")
+
 // Query implements drivers.SQLStore
 func (c *Connection) Query(ctx context.Context, props map[string]any) (drivers.RowIterator, error) {
 	return nil, drivers.ErrNotImplemented
@@ -47,8 +50,8 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 
 	var client *bigquery.Client
 	var it *bigquery.RowIterator
-	r := regexp.MustCompile("(?i)^\\s*SELECT\\s+\\*\\s+FROM\\s+(`?[a-zA-Z0-9_.-]+`?)\\s*$")
-	match := r.FindStringSubmatch(srcProps.SQL)
+
+	match := selectQueryRegex.FindStringSubmatch(srcProps.SQL)
 	if match != nil {
 		// "SELECT * FROM `project_id.dataset.table`" statement so storage api might be used
 		// project_id, dataset, backticks are optional
@@ -59,8 +62,8 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 
 		parts := strings.Split(fullTableName, ".")
 		switch len(parts) {
-		case 1:
-			tableID = parts[0]
+		case 2:
+			dataset, tableID = parts[0], parts[1]
 		case 3:
 			projectID, dataset, tableID = parts[0], parts[1], parts[2]
 		default:
