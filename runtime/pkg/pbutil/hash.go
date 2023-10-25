@@ -4,9 +4,9 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"slices"
 
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
