@@ -95,7 +95,7 @@
       : $dashboardStore?.filters.include.find((d) => d.name === dimensionName)
           ?.in) ?? [];
 
-  $: allMeasures = $metaQuery.data?.measures.filter((m) =>
+  $: visibleMeasures = $metaQuery.data?.measures.filter((m) =>
     $dashboardStore?.visibleMeasureKeys.has(m.name)
   );
 
@@ -118,7 +118,7 @@
 
   let referenceValues: { [key: string]: number } = {};
   $: if ($totalsQuery?.data?.data) {
-    allMeasures.map((m) => {
+    visibleMeasures.map((m) => {
       if (isSummableMeasure(m)) {
         referenceValues[m.name] = $totalsQuery.data.data?.[m.name];
       }
@@ -127,7 +127,7 @@
 
   $: columns = prepareVirtualizedDimTableColumns(
     $dashboardStore,
-    allMeasures,
+    visibleMeasures,
     referenceValues,
     dimension,
     $timeControlsStore.showComparison,
@@ -157,7 +157,7 @@
 
   $: tableRows = prepareDimensionTableRows(
     $sortedQuery?.data?.rows,
-    allMeasures,
+    $metaQuery.data?.measures,
     leaderboardMeasureName,
     dimensionColumn,
     $timeControlsStore.showComparison,
