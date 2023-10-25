@@ -14,6 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/dag"
+	"github.com/rilldata/rill/runtime/pkg/logbuffer"
+	"github.com/rilldata/rill/runtime/pkg/logutil"
 	"github.com/rilldata/rill/runtime/pkg/schedule"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -68,6 +70,7 @@ type Controller struct {
 	InstanceID  string
 	Logger      *slog.Logger
 	Activity    activity.Client
+	Logs        *logbuffer.Buffer
 	mu          sync.RWMutex
 	reconcilers map[string]Reconciler
 	catalog     *catalogCache
@@ -116,7 +119,9 @@ func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *
 		logger = logger.With(zap.String("instance_id", instanceID))
 		logger = logger.Named("console")
 	}
-	c.Logger = slog.New(zapslog.HandlerOptions{LoggerName: "console"}.New(logger.Core()))
+
+	c.Logs = logbuffer.NewBuffer(rt.opts.ControllerLogBufferCapacity, rt.opts.ControllerLogBufferSizeBytes)
+	c.Logger = slog.New(logutil.NewDuplicatingHandler(zapslog.HandlerOptions{LoggerName: "console"}.New(logger.Core()), c.Logs))
 
 	cc, err := newCatalogCache(ctx, c, c.InstanceID)
 	if err != nil {

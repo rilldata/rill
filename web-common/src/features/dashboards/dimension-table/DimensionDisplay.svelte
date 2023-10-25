@@ -14,7 +14,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
-    createQueryServiceMetricsViewComparisonToplist,
+    createQueryServiceMetricsViewComparison,
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     MetricsViewSpecMeasureV2,
@@ -95,9 +95,9 @@
       : $dashboardStore?.filters?.include?.find((d) => d.name === dimensionName)
           ?.in) ?? [];
 
-  $: allMeasures =
+  $: visibleMeasures =
     $metaQuery.data?.measures?.filter((m) =>
-      $dashboardStore?.visibleMeasureKeys.has(m?.name ?? "")
+      $dashboardStore?.visibleMeasureKeys.has(m.name ?? "")
     ) ?? [];
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
@@ -119,7 +119,7 @@
 
   let referenceValues: { [key: string]: number } = {};
   $: if ($totalsQuery?.data?.data) {
-    allMeasures?.map((m) => {
+    visibleMeasures.map((m) => {
       if (m.name && isSummableMeasure(m)) {
         referenceValues[m.name] = $totalsQuery.data?.data?.[m.name];
       }
@@ -128,7 +128,7 @@
 
   $: columns = prepareVirtualizedDimTableColumns(
     $dashboardStore,
-    allMeasures,
+    visibleMeasures,
     referenceValues,
     dimension,
     $timeControlsStore?.showComparison ?? false,
@@ -145,7 +145,7 @@
     filterSet
   );
 
-  $: sortedQuery = createQueryServiceMetricsViewComparisonToplist(
+  $: sortedQuery = createQueryServiceMetricsViewComparison(
     $runtime.instanceId,
     metricViewName,
     sortedQueryBody,
@@ -158,7 +158,7 @@
 
   $: tableRows = prepareDimensionTableRows(
     $sortedQuery?.data?.rows ?? [],
-    allMeasures,
+    $metaQuery.data?.measures ?? [],
     leaderboardMeasureName,
     dimensionColumn,
     $timeControlsStore.showComparison ?? false,
