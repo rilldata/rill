@@ -369,7 +369,9 @@ export function addContextColumnNames(
  */
 export function prepareDimensionTableRows(
   queryRows: V1MetricsViewComparisonRow[],
-  measures: MetricsViewSpecMeasureV2[],
+  // all of the measures defined for this metrics spec,
+  // including those that are not visible
+  allMeasuresForSpec: MetricsViewSpecMeasureV2[],
   activeMeasureName: string,
   dimensionColumn: string,
   addDeltas: boolean,
@@ -379,7 +381,7 @@ export function prepareDimensionTableRows(
   if (!queryRows || !queryRows.length) return [];
 
   const formattersForMeasures = Object.fromEntries(
-    measures.map((m) => [m.name, createMeasureValueFormatter(m)])
+    allMeasuresForSpec.map((m) => [m.name, createMeasureValueFormatter(m)])
   );
 
   const tableRows: DimensionTableRow[] = queryRows.map((row) => {
