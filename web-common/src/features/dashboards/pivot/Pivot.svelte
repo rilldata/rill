@@ -30,7 +30,7 @@
 
   const dispatch = createEventDispatcher();
 
-  let table: RegularTableElement = undefined;
+  let table: RegularTableElement;
   let initialized = false;
   export function draw() {
     if (initialized) table.draw();
@@ -101,11 +101,11 @@
 
   function style_row_th(th: HTMLTableCellElement) {
     const meta = table.getMeta(th);
-    const numFixedCols = meta.row_header.length;
-    const x = meta.row_header_x;
-    const y = meta.y;
-    th.setAttribute("__col", String(x - numFixedCols));
-    th.setAttribute("__row", String(y));
+    const numFixedCols = meta?.row_header?.length;
+    const x = meta?.row_header_x;
+    const y = meta?.y;
+    th.setAttribute("__col", String(x! - numFixedCols!));
+    th.setAttribute("__row", String(y!));
 
     const maybeWidth = getRowHeaderWidth(x);
     if (maybeWidth) {
