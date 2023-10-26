@@ -7,24 +7,11 @@
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import {
-    getFilterForDimension,
-    useMetaDimension,
-    useMetaMeasure,
-  } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import {
-    createQueryServiceMetricsViewComparison,
-    MetricsViewDimension,
-    MetricsViewSpecMeasureV2,
-  } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewComparison } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { SortDirection } from "../proto-state/derived-types";
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import {
     LeaderboardItemData,
@@ -48,9 +35,14 @@
 
   const {
     selectors: {
-      activeMeasure: { activeMeasure },
+      activeMeasure: { activeMeasureName },
       dimensions: { getDimensionByName, getDimensionDisplayName },
-      sorting: { sortAscending, sortType },
+      sorting: { sortedAscending, sortType },
+      dimensionFilters: {
+        getFiltersForOtherDimensions,
+        selectedDimensionValues,
+        atLeastOneSelection,
+      },
     },
     actions,
     metricsViewName,
@@ -64,69 +56,26 @@
   let filterKey: "exclude" | "include";
   $: filterKey = filterExcludeMode ? "exclude" : "include";
 
-  // $: dimensionQuery = useMetaDimension(
-  //   $runtime.instanceId,
-  //   $metricsViewName,
-  //   dimensionName
-  // );
-  // let dimension: MetricsViewDimension;
   $: dimension = $getDimensionByName(dimensionName);
   $: displayName = $getDimensionDisplayName(dimensionName);
-
-  $: activeMeasureName = $activeMeasure?.name;
-
-  $: filterForDimension = getFilterForDimension(
-    $dashboardStore?.filters,
-    dimensionName
-  );
-
-  // FIXME: it is possible for this way of accessing the filters
-  // to return the same value twice, which would seem to indicate
-  // a bug in the way we're setting the filters / active values.
-  // Need to investigate further to determine whether this is a
-  // problem with the runtime or the client, but for now wrapping
-  // it in a set dedupes the values.
-  $: activeValues = new Set(
-    ($dashboardStore?.filters[filterKey]?.find(
-      (d) => d.name === getDimensionByName
-    )?.in as (number | string)[]) ?? []
-  );
-  $: atLeastOneActive = activeValues?.size > 0;
+  $: filterForDimension = $getFiltersForOtherDimensions(dimensionName);
+  $: activeValues = $selectedDimensionValues(dimensionName);
+  $: atLeastOneActive = $atLeastOneSelection(dimensionName);
 
   const timeControlsStore = useTimeControlStore(stateManagers);
-
-  function selectDimension(dimensionName) {
-    metricsExplorerStore.setMetricDimensionName(
-      $metricsViewName,
-      dimensionName
-    );
-  }
-
-  function toggleComparisonDimension(dimensionName, isBeingCompared) {
-    metricsExplorerStore.setComparisonDimension(
-      $metricsViewName,
-      isBeingCompared ? undefined : dimensionName
-    );
-  }
-
-  function toggleSort(evt) {
-    actions.sorting.toggleSort(evt.detail);
-  }
 
   $: isBeingCompared =
     $dashboardStore?.selectedComparisonDimension === dimensionName;
 
-  $: sortedQueryBody =
-    activeMeasureName &&
-    prepareSortedQueryBody(
-      dimensionName,
-      [activeMeasureName],
-      $timeControlsStore,
-      activeMeasureName,
-      $sortType,
-      $sortAscending,
-      filterForDimension
-    );
+  $: sortedQueryBody = prepareSortedQueryBody(
+    dimensionName,
+    [$activeMeasureName],
+    $timeControlsStore,
+    $activeMeasureName,
+    $sortType,
+    $sortedAscending,
+    filterForDimension
+  );
 
   $: sortedQueryEnabled = $timeControlsStore.ready && !!filterForDimension;
 
@@ -149,21 +98,13 @@
   let selectedBelowTheFold: LeaderboardItemData[] = [];
   let noAvailableValues = true;
   let showExpandTable = false;
-  $: if (
-    sortedQuery &&
-    !$sortedQuery?.isFetching &&
-    activeMeasureName !== undefined
-  ) {
-    // NOTE: for some reason, the compiler is not able to infer that
-    // activeMeasureName is not undefined here. Reassigning it to a
-    // new const seems to fix the problem.
-    const activeMeasureName2 = activeMeasureName;
+  $: if (sortedQuery && !$sortedQuery?.isFetching) {
     const leaderboardData = prepareLeaderboardItemData(
       $sortedQuery?.data?.rows?.map((r) =>
-        getLabeledComparisonFromComparisonRow(r, activeMeasureName2)
+        getLabeledComparisonFromComparisonRow(r, $activeMeasureName)
       ) ?? [],
       slice,
-      [...activeValues],
+      activeValues,
       unfilteredTotal,
       filterExcludeMode
     );
@@ -175,6 +116,24 @@
   }
 
   let hovered: boolean;
+
+  function selectDimension(dimensionName) {
+    metricsExplorerStore.setMetricDimensionName(
+      $metricsViewName,
+      dimensionName
+    );
+  }
+
+  function toggleComparisonDimension(dimensionName, isBeingCompared) {
+    metricsExplorerStore.setComparisonDimension(
+      $metricsViewName,
+      isBeingCompared ? undefined : dimensionName
+    );
+  }
+
+  function toggleSort(evt) {
+    actions.sorting.toggleSort(evt.detail);
+  }
 </script>
 
 {#if $sortedQuery !== undefined}

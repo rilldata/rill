@@ -8,18 +8,20 @@ export const allDimensions = ({
 };
 
 export const getDimensionByName = (
-  args: DashboardDataSources
+  dashData: DashboardDataSources
 ): ((name: string) => MetricsViewSpecDimensionV2 | undefined) => {
   return (name: string) => {
-    return allDimensions(args)?.find((dimension) => dimension.name === name);
+    return allDimensions(dashData)?.find(
+      (dimension) => dimension.name === name
+    );
   };
 };
 
 export const getDimensionDisplayName = (
-  args: DashboardDataSources
+  dashData: DashboardDataSources
 ): ((name: string) => string) => {
   return (name: string) => {
-    const dim = getDimensionByName(args)(name);
+    const dim = getDimensionByName(dashData)(name);
     return dim?.label || name;
   };
 };

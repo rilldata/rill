@@ -1,7 +1,7 @@
 import type { QueryServiceMetricsViewComparisonBody } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 import { prepareSortedQueryBody } from "../../dashboard-utils";
-import { activeMeasure } from "./active-measure";
+import { activeMeasure, activeMeasureName } from "./active-measure";
 import { sortingSelectors } from "./sorting";
 
 /**
@@ -11,22 +11,25 @@ import { sortingSelectors } from "./sorting";
  * If there is no active measure, or if the active measure
  */
 function leaderboardSortedQueryBody(
-  selectorArgs: DashboardDataSources
+  dashData: DashboardDataSources
 ):
   | undefined
   | ((dimensionName: string) => QueryServiceMetricsViewComparisonBody) {
-  const measure = activeMeasure(selectorArgs);
+  const measure = activeMeasure(dashData);
+  if (!measure) {
+    return undefined;
+  }
 
   const timeControls = undefined;
 
   return (dimensionName: string) =>
     prepareSortedQueryBody(
       dimensionName,
-      [measure],
+      [activeMeasureName(dashData)],
       timeControls,
-      sortingSelectors.sortMeasure(selectorArgs),
-      sortingSelectors.sortType(selectorArgs),
-      sortingSelectors.sortedAscending(selectorArgs),
+      sortingSelectors.sortMeasure(dashData),
+      sortingSelectors.sortType(dashData),
+      sortingSelectors.sortedAscending(dashData),
       undefined
     );
 }

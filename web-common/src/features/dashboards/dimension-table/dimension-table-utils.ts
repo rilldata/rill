@@ -18,7 +18,7 @@ import type { VirtualizedTableConfig } from "@rilldata/web-common/components/vir
 import type { SvelteComponent } from "svelte";
 import { getDimensionColumn } from "../dashboard-utils";
 import type { DimensionTableRow } from "./dimension-table-types";
-import { getFilterForDimension } from "../selectors";
+import { getFiltersForOtherDimensions } from "../selectors";
 import { SortType } from "../proto-state/derived-types";
 import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 import {
@@ -69,7 +69,10 @@ export function getDimensionFilterWithSearch(
   searchText: string,
   dimensionName: string
 ) {
-  const filterForDimension = getFilterForDimension(filters, dimensionName);
+  const filterForDimension = getFiltersForOtherDimensions(
+    filters,
+    dimensionName
+  );
 
   return updateFilterOnSearch(filterForDimension, searchText, dimensionName);
 }

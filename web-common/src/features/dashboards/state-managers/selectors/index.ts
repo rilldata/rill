@@ -11,6 +11,7 @@ import { formattingSelectors } from "./data-formatting";
 import { contextColSelectors } from "./context-column";
 import { activeMeasureSelectors } from "./active-measure";
 import { dimensionSelectors } from "./dimensions";
+import { dimensionFilterSelectors } from "./dimension-filters";
 
 export type StateManagerReadables = ReturnType<
   typeof createStateManagerReadables
@@ -59,8 +60,24 @@ export const createStateManagerReadables = (
       dashboardStore,
       metricsSpecQueryResultStore
     ),
+
+    /**
+     * Readables related to the dimensions available in the
+     * leaderboard.
+     */
     dimensions: createReadablesFromSelectors(
       dimensionSelectors,
+      dashboardStore,
+      metricsSpecQueryResultStore
+    ),
+
+    /**
+     * Readables related to selected (aka "filtered)
+     * dimension values in the leaderboard, including
+     * whether or not a dimension is in include or exclude mode.
+     */
+    dimensionFilters: createReadablesFromSelectors(
+      dimensionFilterSelectors,
       dashboardStore,
       metricsSpecQueryResultStore
     ),
