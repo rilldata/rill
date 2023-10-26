@@ -200,6 +200,20 @@ export function getLastStateVersion(resource: V1Resource) {
   return get(resourcesStore).lastStateVersion[getKeyForResource(resource)];
 }
 
+export function getLastStateVersionByKindAndName(
+  kind: ResourceKind,
+  name: string
+) {
+  return get(resourcesStore).lastStateVersion[`${kind}/${name}`];
+}
+
+export function useLastStateVersion(kind: ResourceKind, name: string) {
+  return derived(
+    [resourcesStore],
+    ([state]) => state.lastStateVersion[`${kind}/${name}`]
+  );
+}
+
 function getKeyForResource(resource: V1Resource) {
   return `${resource.meta.name.kind}/${resource.meta.name.name}`;
 }

@@ -1,7 +1,13 @@
-import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import {
+  ResourceKind,
+  useProjectParser,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   getAllErrorsForFile,
+  getLastStateVersion,
+  getLastStateVersionByKindAndName,
   getResourceNameForFile,
+  useLastStateVersion,
   useResourceForFile,
 } from "@rilldata/web-common/features/entity-management/resources-store";
 import {
@@ -67,6 +73,84 @@ export function waitForResource(
       if (status === ResourceStatus.Busy) return;
       unsub?.();
       resolve();
+    });
+  });
+}
+
+/**
+ * Used while saving to wait until either a resource is created or parse has errored.
+ */
+export function resourceStatusStore(
+  queryClient: QueryClient,
+  instanceId: string,
+  filePath: string,
+  kind: ResourceKind,
+  name: string
+) {
+  const version = getLastStateVersionByKindAndName(kind, name);
+  return derived(
+    [
+      useResourceForFile(queryClient, instanceId, filePath),
+      getAllErrorsForFile(queryClient, instanceId, filePath),
+    ],
+    ([res, errors]) => {
+      if (res.isFetching) return { status: ResourceStatus.Busy };
+      if (res.isError || errors.length > 0)
+        return { status: ResourceStatus.Errored, changed: false };
+      if (!version) return { status: ResourceStatus.Idle };
+
+      if (
+        res.data?.meta?.reconcileStatus !==
+        V1ReconcileStatus.RECONCILE_STATUS_IDLE
+      )
+        return { status: ResourceStatus.Busy };
+
+      return {
+        status: !res.data?.meta?.reconcileError
+          ? ResourceStatus.Idle
+          : ResourceStatus.Errored,
+        changed: res.data?.meta?.stateUpdatedOn > version,
+      };
+    }
+  );
+}
+
+export function waitForResourceUpdate(
+  queryClient: QueryClient,
+  instanceId: string,
+  filePath: string,
+  kind: ResourceKind,
+  name: string
+) {
+  return new Promise<boolean>((resolve) => {
+    let timer;
+    let idled = false;
+
+    const end = (changed: boolean) => {
+      unsub?.();
+      resolve(changed);
+    };
+
+    // eslint-disable-next-line prefer-const
+    const unsub = resourceStatusStore(
+      queryClient,
+      instanceId,
+      filePath,
+      kind,
+      name
+    ).subscribe((status) => {
+      if (status.status === ResourceStatus.Busy) return;
+      if (timer) clearTimeout(timer);
+
+      if (idled) {
+        end(status.status === ResourceStatus.Idle && status.changed);
+        return;
+      } else {
+        idled = true;
+        timer = setTimeout(() => {
+          end(status.status === ResourceStatus.Idle && status.changed);
+        }, 500);
+      }
     });
   });
 }
