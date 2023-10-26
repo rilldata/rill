@@ -96,7 +96,7 @@
       column_headers,
     };
 
-    return dataSlice;
+    return Promise.resolve(dataSlice);
   };
 
   function style_row_th(th: HTMLTableCellElement) {
