@@ -9,7 +9,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-const cpuThreadRatio float64 = 0.5
+// one runtime slot gives 2GB memory and one CPU. We need to give one thread 1GB memory to operate on.
+const cpuThreadRatio float64 = 2
 
 // config represents the DuckDB driver config
 type config struct {
