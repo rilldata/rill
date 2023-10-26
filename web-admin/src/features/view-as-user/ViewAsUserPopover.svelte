@@ -63,7 +63,7 @@
     > by viewing this project from the perspective of another user.
   </div>
   <div class="px-2 pb-2">
-    <Search bind:value={searchText} />
+    <Search bind:value={searchText} autofocus={false} />
   </div>
   {#if visibleUsers.length > 0}
     <div class="overflow-auto pb-1">

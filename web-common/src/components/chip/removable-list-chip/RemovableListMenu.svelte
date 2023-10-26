@@ -64,7 +64,12 @@
   <!-- the min-height is set to have about 3 entries in it -->
 
   <div class="px-1 pb-1">
-    <Search bind:value={searchText} on:input={onSearch} label="Search list" />
+    <Search
+      bind:value={searchText}
+      on:input={onSearch}
+      label="Search list"
+      autofocus={false}
+    />
   </div>
 
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->

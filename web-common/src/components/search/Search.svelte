@@ -4,13 +4,14 @@
 
   /* Autofocus search bar on mount */
   export let autofocus = true;
-  /* Get reference of input DOM element */
-  export let ref = null;
   /* Input value being searched */
   export let value;
   /* Aria label for input */
   export let label = "Search";
   export let placeholder = "Search";
+
+  /* Reference of input DOM element */
+  let ref: HTMLInputElement;
 
   function handleKeyDown(event) {
     if (event.code == "Enter") {
