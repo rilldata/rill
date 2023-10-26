@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"path"
 	"strconv"
 	"strings"
@@ -404,12 +406,20 @@ func yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID string) ([]by
 }
 
 func yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, error) {
+	var args map[string]interface{}
+	if opts.QueryArgsJson != "" {
+		err := json.Unmarshal([]byte(opts.QueryArgsJson), &args)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse queryArgsJSON: %w", err)
+		}
+	}
+
 	res := reportYAML{}
 	res.Kind = "report"
 	res.Title = opts.Title
 	res.Refresh.Cron = opts.RefreshCron
 	res.Query.Name = opts.QueryName
-	res.Query.ArgsJSON = opts.QueryArgsJson        // TODO: Format as YAML
+	res.Query.Args = args
 	res.Export.Format = opts.ExportFormat.String() // TODO: Format as pretty string
 	res.Export.Limit = uint(opts.ExportLimit)
 	res.Email.Template.OpenURL = opts.OpenUrl
@@ -453,10 +463,10 @@ type reportYAML struct {
 	Email struct {
 		Recipients []string `yaml:"recipients"`
 		Template   struct {
-			OpenURL   string `yaml:"open_url"`
-			EditURL   string `yaml:"edit_url"`
-			ExportURL string `yaml:"export_url"`
-		} `yaml:"template"`
+			OpenURL   string `yaml:"open_url,omitempty"`
+			EditURL   string `yaml:"edit_url,omitempty"`
+			ExportURL string `yaml:"export_url,omitempty"`
+		} `yaml:"template,omitempty"`
 	} `yaml:"email"`
 	Annotations reportAnnotations `yaml:"annotations,omitempty"`
 }
