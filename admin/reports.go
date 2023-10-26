@@ -67,7 +67,9 @@ func (s *Service) TriggerReconcileAndAwaitReport(ctx context.Context, depl *data
 		return err
 	}
 
-	// Poll every 1 seconds until the report is found or the ctx is cancelled
+	// Poll every 1 seconds until the report is found or the ctx is cancelled or times out
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {

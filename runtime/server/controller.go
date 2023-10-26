@@ -286,7 +286,7 @@ func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runt
 	}
 }
 
-// applySecurityPolicyReport applies relevant security policies to a metrics view.
+// applySecurityPolicyMetricsView applies relevant security policies to a metrics view.
 func (s *Server) applySecurityPolicyMetricsView(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
 	ctx, span := tracer.Start(ctx, "applySecurityPolicyMetricsView", trace.WithAttributes(attribute.String("instance_id", instID), attribute.String("kind", r.Meta.Name.Kind), attribute.String("name", r.Meta.Name.Name)))
 	defer span.End()
