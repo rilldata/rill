@@ -15,7 +15,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
-    createQueryServiceMetricsViewComparisonToplist,
+    createQueryServiceMetricsViewComparison,
     MetricsViewDimension,
     MetricsViewSpecMeasureV2,
   } from "@rilldata/web-common/runtime-client";
@@ -25,7 +25,6 @@
     metricsExplorerStore,
     useDashboardStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import type { FormatPreset } from "../humanize-numbers";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import {
     LeaderboardItemData,
@@ -33,10 +32,7 @@
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
-  import {
-    getDimensionColumn,
-    prepareSortedQueryBody,
-  } from "../dashboard-utils";
+  import { prepareSortedQueryBody } from "../dashboard-utils";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -47,10 +43,9 @@
   export let referenceValue: number;
   export let unfilteredTotal: number;
 
-  export let formatPreset: FormatPreset;
-  export let isSummableMeasure = false;
-
   let slice = 7;
+
+  const stateManagers = getStateManagers();
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
@@ -67,8 +62,7 @@
   );
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data;
-  $: displayName = dimension?.label || dimension?.name;
-  $: dimensionColumn = getDimensionColumn(dimension);
+  $: displayName = dimension?.label || dimension?.name || dimensionName;
 
   $: measureQuery = useMetaMeasure(
     $runtime.instanceId,
@@ -96,7 +90,7 @@
   );
   $: atLeastOneActive = activeValues?.size > 0;
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const timeControlsStore = useTimeControlStore(stateManagers);
 
   function selectDimension(dimensionName) {
     metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
@@ -115,8 +109,6 @@
 
   $: isBeingCompared =
     $dashboardStore?.selectedComparisonDimension === dimensionName;
-
-  $: contextColumn = $dashboardStore?.leaderboardContextColumn;
 
   $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
   $: sortType = $dashboardStore.dashboardSortType;
@@ -139,7 +131,7 @@
     },
   };
 
-  $: sortedQuery = createQueryServiceMetricsViewComparisonToplist(
+  $: sortedQuery = createQueryServiceMetricsViewComparison(
     $runtime.instanceId,
     metricViewName,
     sortedQueryBody,
@@ -177,16 +169,13 @@
     on:mouseleave={() => (hovered = false)}
   >
     <LeaderboardHeader
-      {contextColumn}
       isFetching={$sortedQuery.isFetching}
       {displayName}
       on:toggle-dimension-comparison={() =>
         toggleComparisonDimension(dimensionName, isBeingCompared)}
       {isBeingCompared}
       {hovered}
-      {sortAscending}
-      {sortType}
-      dimensionDescription={dimension?.description}
+      dimensionDescription={dimension?.description || ""}
       on:open-dimension-details={() => selectDimension(dimensionName)}
       on:toggle-sort={toggleSort}
     />
@@ -196,13 +185,10 @@
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardListItem
             {itemData}
-            {contextColumn}
             {atLeastOneActive}
             {isBeingCompared}
             {filterExcludeMode}
-            {isSummableMeasure}
             {referenceValue}
-            {formatPreset}
             on:click
             on:keydown
             on:select-item
@@ -214,13 +200,10 @@
           {#each selectedBelowTheFold as itemData (itemData.dimensionValue)}
             <LeaderboardListItem
               {itemData}
-              {contextColumn}
               {atLeastOneActive}
               {isBeingCompared}
               {filterExcludeMode}
-              {isSummableMeasure}
               {referenceValue}
-              {formatPreset}
               on:click
               on:keydown
               on:select-item

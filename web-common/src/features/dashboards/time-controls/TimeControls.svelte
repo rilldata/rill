@@ -43,7 +43,6 @@
   let baseTimeRange: TimeRange;
   let minTimeGrain: V1TimeGrain;
   let availableTimeZones: string[] = [];
-  let dimensions = [];
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
@@ -78,7 +77,6 @@
       localUserPreferences.set({ timeZone: "Etc/UTC" });
     }
 
-    dimensions = $metaQuery?.data?.dimensions;
     baseTimeRange ??= {
       ...$dashboardStore.selectedTimeRange,
     };
@@ -135,14 +133,6 @@
       start,
       end,
     });
-  }
-
-  function enableComparison(type: string, name: string) {
-    if (type === "time") {
-      metricsExplorerStore.displayTimeComparison(metricViewName, true);
-    } else {
-      metricsExplorerStore.setComparisonDimension(metricViewName, name);
-    }
   }
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -206,16 +196,7 @@
         now={allTimeRange?.end}
       />
     {/if}
-    <ComparisonSelector
-      on:enable-comparison={(e) => {
-        enableComparison(e.detail.type, e.detail.name);
-      }}
-      on:disable-all-comparison={() =>
-        metricsExplorerStore.disableAllComparisons(metricViewName)}
-      showTimeComparison={$dashboardStore?.showTimeComparison}
-      selectedDimension={$dashboardStore?.selectedComparisonDimension}
-      {dimensions}
-    />
+    <ComparisonSelector {metricViewName} />
     {#if $dashboardStore?.showTimeComparison}
       <TimeComparisonSelector
         on:select-comparison={(e) => {

@@ -25,8 +25,8 @@ import type {
   QueryServiceExportBody,
   V1MetricsViewAggregationResponse,
   QueryServiceMetricsViewAggregationBody,
-  V1MetricsViewComparisonToplistResponse,
-  QueryServiceMetricsViewComparisonToplistBody,
+  V1MetricsViewComparisonResponse,
+  QueryServiceMetricsViewComparisonBody,
   V1MetricsViewRowsResponse,
   QueryServiceMetricsViewRowsBody,
   V1MetricsViewTimeRangeResponse,
@@ -566,45 +566,45 @@ export const createQueryServiceMetricsViewAggregation = <
   return query;
 };
 
-export const queryServiceMetricsViewComparisonToplist = (
+export const queryServiceMetricsViewComparison = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewComparisonToplistBody: QueryServiceMetricsViewComparisonToplistBody
+  queryServiceMetricsViewComparisonBody: QueryServiceMetricsViewComparisonBody
 ) => {
-  return httpClient<V1MetricsViewComparisonToplistResponse>({
+  return httpClient<V1MetricsViewComparisonResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/compare-toplist`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: queryServiceMetricsViewComparisonToplistBody,
+    data: queryServiceMetricsViewComparisonBody,
   });
 };
 
-export const getQueryServiceMetricsViewComparisonToplistQueryKey = (
+export const getQueryServiceMetricsViewComparisonQueryKey = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewComparisonToplistBody: QueryServiceMetricsViewComparisonToplistBody
+  queryServiceMetricsViewComparisonBody: QueryServiceMetricsViewComparisonBody
 ) =>
   [
     `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/compare-toplist`,
-    queryServiceMetricsViewComparisonToplistBody,
+    queryServiceMetricsViewComparisonBody,
   ] as const;
 
-export const getQueryServiceMetricsViewComparisonToplistQueryOptions = <
-  TData = Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+export const getQueryServiceMetricsViewComparisonQueryOptions = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
   TError = RpcStatus
 >(
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewComparisonToplistBody: QueryServiceMetricsViewComparisonToplistBody,
+  queryServiceMetricsViewComparisonBody: QueryServiceMetricsViewComparisonBody,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+      Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
       TError,
       TData
     >;
   }
 ): CreateQueryOptions<
-  Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+  Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
   TError,
   TData
 > & { queryKey: QueryKey } => {
@@ -612,19 +612,19 @@ export const getQueryServiceMetricsViewComparisonToplistQueryOptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getQueryServiceMetricsViewComparisonToplistQueryKey(
+    getQueryServiceMetricsViewComparisonQueryKey(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewComparisonToplistBody
+      queryServiceMetricsViewComparisonBody
     );
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>
+    Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>
   > = () =>
-    queryServiceMetricsViewComparisonToplist(
+    queryServiceMetricsViewComparison(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewComparisonToplistBody
+      queryServiceMetricsViewComparisonBody
     );
 
   return {
@@ -635,30 +635,30 @@ export const getQueryServiceMetricsViewComparisonToplistQueryOptions = <
   };
 };
 
-export type QueryServiceMetricsViewComparisonToplistQueryResult = NonNullable<
-  Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>
+export type QueryServiceMetricsViewComparisonQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>
 >;
-export type QueryServiceMetricsViewComparisonToplistQueryError = RpcStatus;
+export type QueryServiceMetricsViewComparisonQueryError = RpcStatus;
 
-export const createQueryServiceMetricsViewComparisonToplist = <
-  TData = Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+export const createQueryServiceMetricsViewComparison = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
   TError = RpcStatus
 >(
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewComparisonToplistBody: QueryServiceMetricsViewComparisonToplistBody,
+  queryServiceMetricsViewComparisonBody: QueryServiceMetricsViewComparisonBody,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof queryServiceMetricsViewComparisonToplist>>,
+      Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
       TError,
       TData
     >;
   }
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const queryOptions = getQueryServiceMetricsViewComparisonToplistQueryOptions(
+  const queryOptions = getQueryServiceMetricsViewComparisonQueryOptions(
     instanceId,
     metricsViewName,
-    queryServiceMetricsViewComparisonToplistBody,
+    queryServiceMetricsViewComparisonBody,
     options
   );
 

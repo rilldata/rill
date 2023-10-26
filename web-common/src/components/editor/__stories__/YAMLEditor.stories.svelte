@@ -4,6 +4,7 @@
   import Button from "../../button/Button.svelte";
   import { setLineStatuses } from "../line-status";
   import YAMLEditor from "../YAMLEditor.svelte";
+  import type { LineStatus } from "../line-status/state";
 
   let content = `name: this is the name
 values:
@@ -15,10 +16,11 @@ values:
 
   let view: EditorView;
 
-  let errors = [];
+  let errors: LineStatus[] = [];
   function toggleError() {
-    if (errors.length) errors = [];
-    else
+    if (errors.length > 1) {
+      errors = [];
+    } else
       errors = [
         {
           line: 1,

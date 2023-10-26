@@ -86,6 +86,11 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		olapConfig["storage_limit_bytes"] = "0"
 	}
 
+	modelDefaultMaterialize, err := defaultModelMaterialize(opts.ProdVariables)
+	if err != nil {
+		return nil, err
+	}
+
 	// Open a runtime client
 	rt, err := s.openRuntimeClient(alloc.Host, alloc.Audience)
 	if err != nil {
@@ -138,10 +143,11 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 				},
 			},
 		},
-		Variables:    opts.ProdVariables,
-		Annotations:  opts.Annotations.toMap(),
-		EmbedCatalog: embedCatalog,
-		StageChanges: true,
+		Variables:               opts.ProdVariables,
+		Annotations:             opts.Annotations.toMap(),
+		EmbedCatalog:            embedCatalog,
+		StageChanges:            true,
+		ModelDefaultMaterialize: modelDefaultMaterialize,
 	})
 	if err != nil {
 		err2 := s.DB.DeleteDeployment(ctx, depl.ID)
@@ -168,6 +174,15 @@ type updateDeploymentOptions struct {
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
 	if opts.Branch == "" {
 		return fmt.Errorf("cannot update deployment without specifying a valid branch")
+	}
+
+	var modelDefaultMaterialize *bool
+	if opts.Variables != nil { // if variables are nil, it means they were not changed
+		val, err := defaultModelMaterialize(opts.Variables)
+		if err != nil {
+			return err
+		}
+		modelDefaultMaterialize = &val
 	}
 
 	rt, err := s.openRuntimeClientForDeployment(depl)
@@ -197,10 +212,11 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:  depl.RuntimeInstanceID,
-		Connectors:  connectors,
-		Annotations: opts.Annotations.toMap(),
-		Variables:   opts.Variables,
+		InstanceId:              depl.RuntimeInstanceID,
+		Connectors:              connectors,
+		Annotations:             opts.Annotations.toMap(),
+		Variables:               opts.Variables,
+		ModelDefaultMaterialize: modelDefaultMaterialize,
 	})
 	if err != nil {
 		return err
@@ -343,4 +359,25 @@ func (da *deploymentAnnotations) toMap() map[string]string {
 		"project_id":        da.projID,
 		"project_name":      da.projName,
 	}
+}
+
+func defaultModelMaterialize(vars map[string]string) (bool, error) {
+	// Temporary hack to enable configuring ModelDefaultMaterialize using a variable.
+	// Remove when we have a way to conditionally configure it using code files.
+
+	if vars == nil {
+		return false, nil
+	}
+
+	s, ok := vars["__materialize_default"]
+	if !ok {
+		return false, nil
+	}
+
+	val, err := strconv.ParseBool(s)
+	if err != nil {
+		return false, fmt.Errorf("invalid __materialize_default value %q: %w", s, err)
+	}
+
+	return val, nil
 }

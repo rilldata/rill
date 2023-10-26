@@ -26,14 +26,14 @@ are details left to the consumer of the component; this component should remain 
 
   export let name: string;
   export let selectedValues: string[];
-  export let searchedValues: string[];
+  export let searchedValues: string[] | null;
 
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
   export let excludeMode;
   export let isHidden = false;
   export let colors: ChipColors = defaultChipColors;
-  export let label = undefined;
+  export let label: string | undefined = undefined;
 
   const dispatch = createEventDispatcher();
 

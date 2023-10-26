@@ -80,7 +80,7 @@
     on:escape={toggleFloatingElement}
     slot="floating-element"
   >
-    {#if $mockUsers.data?.length === 0}
+    {#if !$mockUsers.data || $mockUsers.data?.length === 0}
       <MenuItem disabled>No mock users</MenuItem>
     {:else if $mockUsers.data?.length > 0}
       {#each $mockUsers.data as user}

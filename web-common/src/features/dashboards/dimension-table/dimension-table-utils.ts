@@ -11,11 +11,7 @@ import type {
   V1MetricsViewFilter,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
-import {
-  FormatPreset,
-  formatMeasurePercentageDifference,
-  humanizeDimTableValue,
-} from "../humanize-numbers";
+
 import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
 import type { VirtualizedTableConfig } from "@rilldata/web-common/components/virtualized-table/types";
 
@@ -25,6 +21,9 @@ import type { DimensionTableRow } from "./dimension-table-types";
 import { getFilterForDimension } from "../selectors";
 import { SortType } from "../proto-state/derived-types";
 import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
+import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -165,7 +164,7 @@ export function estimateColumnSizes(
   },
   containerWidth: number,
   config: VirtualizedTableConfig
-) {
+): number[] {
   const estimateColumnSize = columns.map((column, i) => {
     if (column.name.includes("delta")) return config.comparisonColumnWidth;
     if (i != 0) return config.defaultColumnWidth;
@@ -340,17 +339,20 @@ export function addContextColumnNames(
   const sortByColumnIndex = columnNames.indexOf(name);
   // Add comparison columns if available
   let percentOfTotalSpliceIndex = 1;
+  const isPercent = selectedMeasure?.formatPreset === FormatPreset.PERCENTAGE;
   if (timeComparison) {
     percentOfTotalSpliceIndex = 2;
     columnNames.splice(sortByColumnIndex + 1, 0, `${name}_delta`);
 
     // Only push percentage delta column if selected measure is not a percentage
-    if (selectedMeasure?.formatPreset != FormatPreset.PERCENTAGE) {
+    if (!isPercent) {
       percentOfTotalSpliceIndex = 3;
       columnNames.splice(sortByColumnIndex + 2, 0, `${name}_delta_perc`);
     }
   }
-  if (validPercentOfTotal) {
+  // Only push percentage-of-total if selected measure is
+  // validPercentOfTotal and not a percentage
+  if (validPercentOfTotal && !isPercent) {
     columnNames.splice(
       sortByColumnIndex + percentOfTotalSpliceIndex,
       0,
@@ -361,13 +363,15 @@ export function addContextColumnNames(
 
 /**
  * This function prepares the data for the dimension table
- * from data returned by the createQueryServiceMetricsViewComparisonToplist
+ * from data returned by the createQueryServiceMetricsViewComparison
  * API.
  *
  */
 export function prepareDimensionTableRows(
   queryRows: V1MetricsViewComparisonRow[],
-  measures: MetricsViewSpecMeasureV2[],
+  // all of the measures defined for this metrics spec,
+  // including those that are not visible
+  allMeasuresForSpec: MetricsViewSpecMeasureV2[],
   activeMeasureName: string,
   dimensionColumn: string,
   addDeltas: boolean,
@@ -376,8 +380,8 @@ export function prepareDimensionTableRows(
 ): DimensionTableRow[] {
   if (!queryRows || !queryRows.length) return [];
 
-  const formatMap = Object.fromEntries(
-    measures.map((m) => [m.name, m.formatPreset as FormatPreset])
+  const formattersForMeasures = Object.fromEntries(
+    allMeasuresForSpec.map((m) => [m.name, createMeasureValueFormatter(m)])
   );
 
   const tableRows: DimensionTableRow[] = queryRows.map((row) => {
@@ -389,7 +393,7 @@ export function prepareDimensionTableRows(
     const formattedVals: [string, string | number][] = row.measureValues.map(
       (m) => [
         "__formatted_" + m.measureName,
-        humanizeDimTableValue(m.baseValue as number, formatMap[m.measureName]),
+        formattersForMeasures[m.measureName](m.baseValue as number),
       ]
     );
 
@@ -404,12 +408,11 @@ export function prepareDimensionTableRows(
         (m) => m.measureName === activeMeasureName
       ) as V1MetricsViewComparisonValue;
 
-      rowOut[`${activeMeasureName}_delta`] = humanizeDimTableValue(
-        activeMeasure.deltaAbs as number,
-        formatMap[activeMeasureName]
-      );
-      rowOut[`${activeMeasureName}_delta_perc`] =
-        formatMeasurePercentageDifference(activeMeasure.deltaRel as number);
+      (rowOut[`${activeMeasureName}_delta`] = formattersForMeasures[
+        activeMeasureName
+      ](activeMeasure.deltaAbs as number)),
+        (rowOut[`${activeMeasureName}_delta_perc`] =
+          formatMeasurePercentageDifference(activeMeasure.deltaRel as number));
     }
 
     if (addPercentOfTotal) {

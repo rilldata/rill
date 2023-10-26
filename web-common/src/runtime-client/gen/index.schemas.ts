@@ -96,16 +96,6 @@ export type QueryServiceColumnTopKBody = {
   priority?: number;
 };
 
-export type QueryServiceColumnTimeSeriesBody = {
-  measures?: ColumnTimeSeriesRequestBasicMeasure[];
-  timestampColumnName?: string;
-  timeRange?: V1TimeSeriesTimeRange;
-  pixels?: number;
-  sampleSize?: number;
-  priority?: number;
-  timeZone?: string;
-};
-
 export type QueryServiceColumnTimeRangeParams = {
   columnName?: string;
   priority?: number;
@@ -205,13 +195,12 @@ export type QueryServiceMetricsViewRowsBody = {
   timeZone?: string;
 };
 
-export type QueryServiceMetricsViewComparisonToplistBody = {
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
+export type QueryServiceMetricsViewComparisonBody = {
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
   filter?: V1MetricsViewFilter;
   limit?: string;
   offset?: string;
@@ -259,10 +248,12 @@ export type RuntimeServiceWatchLogs200 = {
 
 export type RuntimeServiceWatchLogsParams = {
   replay?: boolean;
+  replayLimit?: number;
 };
 
 export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;
+  limit?: number;
 };
 
 export type RuntimeServiceWatchFiles200 = {
@@ -411,7 +402,7 @@ export interface V1WatchResourcesResponse {
 }
 
 export interface V1WatchLogsResponse {
-  logs?: V1Log[];
+  log?: V1Log;
 }
 
 export interface V1WatchFilesResponse {
@@ -575,11 +566,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -591,6 +577,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export type V1SourceProperties = { [key: string]: any };
@@ -770,6 +761,22 @@ export interface V1RefreshTrigger {
   state?: V1RefreshTriggerState;
 }
 
+/**
+ * ReconcileError represents an error encountered while running Reconcile.
+ */
+export interface V1ReconcileError {
+  code?: V1ReconcileErrorCode;
+  message?: string;
+  filePath?: string;
+  /** Property path of the error in the code artifact (if any).
+It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+It only applies to structured code artifacts (i.e. YAML).
+Only applicable if file_path is set. */
+  propertyPath?: string[];
+  startLocation?: V1ReconcileErrorCharLocation;
+  endLocation?: V1ReconcileErrorCharLocation;
+}
+
 export interface V1RefreshAndReconcileResponse {
   /** Errors encountered during reconciliation. If strict = false, any path in
 affected_paths without an error can be assumed to have been reconciled succesfully. */
@@ -837,26 +844,10 @@ export interface V1ReconcileErrorCharLocation {
   column?: number;
 }
 
-/**
- * ReconcileError represents an error encountered while running Reconcile.
- */
-export interface V1ReconcileError {
-  code?: V1ReconcileErrorCode;
-  message?: string;
-  filePath?: string;
-  /** Property path of the error in the code artifact (if any).
-It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-It only applies to structured code artifacts (i.e. YAML).
-Only applicable if file_path is set. */
-  propertyPath?: string[];
-  startLocation?: V1ReconcileErrorCharLocation;
-  endLocation?: V1ReconcileErrorCharLocation;
-}
-
 export interface V1QueryResult {
   metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
   metricsViewToplistResponse?: V1MetricsViewToplistResponse;
-  metricsViewComparisonToplistResponse?: V1MetricsViewComparisonToplistResponse;
+  metricsViewComparisonResponse?: V1MetricsViewComparisonResponse;
   metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
   metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
   metricsViewRowsResponse?: V1MetricsViewRowsResponse;
@@ -891,7 +882,7 @@ export interface V1QueryBatchResponse {
 export interface V1Query {
   metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
-  metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
+  metricsViewComparisonRequest?: V1MetricsViewComparisonRequest;
   metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
   metricsViewTotalsRequest?: V1MetricsViewTotalsRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
@@ -1104,6 +1095,21 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
+}
+
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
@@ -1160,21 +1166,6 @@ export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  filter?: V1MetricsViewFilter;
-  priority?: number;
-}
-
 export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1210,10 +1201,6 @@ export interface V1MetricsViewComparisonValue {
   deltaRel?: unknown;
 }
 
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
-}
-
 export type V1MetricsViewComparisonSortType =
   (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
 
@@ -1232,30 +1219,33 @@ export const V1MetricsViewComparisonSortType = {
 } as const;
 
 export interface V1MetricsViewComparisonSort {
-  measureName?: string;
-  ascending?: boolean;
+  name?: string;
+  desc?: boolean;
   type?: V1MetricsViewComparisonSortType;
-}
-
-export interface V1MetricsViewComparisonToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  sort?: V1MetricsViewComparisonSort[];
-  filter?: V1MetricsViewFilter;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
 }
 
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
+}
+
+export interface V1MetricsViewComparisonResponse {
+  rows?: V1MetricsViewComparisonRow[];
+}
+
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
 }
 
 export interface V1MetricsViewColumn {
@@ -1336,13 +1326,11 @@ export const V1LogLevel = {
   LOG_LEVEL_ERROR: "LOG_LEVEL_ERROR",
 } as const;
 
-export type V1LogPayload = { [key: string]: any };
-
 export interface V1Log {
   level?: V1LogLevel;
   time?: string;
   message?: string;
-  payload?: V1LogPayload;
+  jsonPayload?: string;
 }
 
 export interface V1ListResourcesResponse {
@@ -1924,6 +1912,16 @@ export interface ColumnTimeSeriesRequestBasicMeasure {
   expression?: string;
   sqlName?: string;
 }
+
+export type QueryServiceColumnTimeSeriesBody = {
+  measures?: ColumnTimeSeriesRequestBasicMeasure[];
+  timestampColumnName?: string;
+  timeRange?: V1TimeSeriesTimeRange;
+  pixels?: number;
+  sampleSize?: number;
+  priority?: number;
+  timeZone?: string;
+};
 
 export type BucketExtractPolicyStrategy =
   (typeof BucketExtractPolicyStrategy)[keyof typeof BucketExtractPolicyStrategy];
