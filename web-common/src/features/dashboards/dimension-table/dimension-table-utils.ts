@@ -21,13 +21,9 @@ import type { DimensionTableRow } from "./dimension-table-types";
 import { getFiltersForOtherDimensions } from "../selectors";
 import { SortType } from "../proto-state/derived-types";
 import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
-import {
-  createMeasureValueFormatter,
-  defaultHumanizer,
-} from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
-import { ro } from "date-fns/locale";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
