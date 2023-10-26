@@ -36,7 +36,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.ReadProd { // TODO: Better permissions!
+	if !permissions.CreateReports {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
@@ -100,7 +100,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.ReadProd { // TODO: Better permissions!
+	if !permissions.ReadProd {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
@@ -123,7 +123,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 	}
 
 	isOwner := claims.OwnerType() == auth.OwnerTypeUser && spec.Security.OwnerUserId == claims.OwnerID()
-	if !permissions.ManageProd && !isOwner {
+	if !permissions.ManageReports && !isOwner {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
@@ -170,7 +170,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.ReadProd { // TODO: Better permissions!
+	if !permissions.ReadProd {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
@@ -268,7 +268,7 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.ReadProd { // TODO: Better permissions!
+	if !permissions.ReadProd {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
@@ -291,7 +291,7 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 	}
 
 	isOwner := claims.OwnerType() == auth.OwnerTypeUser && spec.Security.OwnerUserId == claims.OwnerID()
-	if !permissions.ManageProd && !isOwner {
+	if !permissions.ManageReports && !isOwner {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
@@ -328,7 +328,7 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.ReadProd { // TODO: Better permissions!
+	if !permissions.ReadProd {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
@@ -347,7 +347,7 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 	}
 
 	isOwner := spec.Security != nil && claims.OwnerType() == auth.OwnerTypeUser && spec.Security.OwnerUserId == claims.OwnerID()
-	if !permissions.ManageProd && !isOwner {
+	if !permissions.ManageReports && !isOwner {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
