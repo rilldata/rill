@@ -17792,6 +17792,10 @@ func (m *ProjectPermissions) validate(all bool) error {
 
 	// no validation rules for ManageProjectMembers
 
+	// no validation rules for CreateReports
+
+	// no validation rules for ManageReports
+
 	if len(errors) > 0 {
 		return ProjectPermissionsMultiError(errors)
 	}

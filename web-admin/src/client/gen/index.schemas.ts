@@ -386,6 +386,8 @@ export interface V1ProjectPermissions {
   manageDev?: boolean;
   readProjectMembers?: boolean;
   manageProjectMembers?: boolean;
+  createReports?: boolean;
+  manageReports?: boolean;
 }
 
 export interface V1Project {

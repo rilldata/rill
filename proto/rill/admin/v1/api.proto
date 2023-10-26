@@ -1152,6 +1152,8 @@ message ProjectPermissions {
   bool manage_dev = 8;
   bool read_project_members = 9;
   bool manage_project_members = 10;
+  bool create_reports = 11;
+  bool manage_reports = 12;
 }
 
 message Member {

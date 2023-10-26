@@ -6296,6 +6296,16 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
    */
   manageProjectMembers = false;
 
+  /**
+   * @generated from field: bool create_reports = 11;
+   */
+  createReports = false;
+
+  /**
+   * @generated from field: bool manage_reports = 12;
+   */
+  manageReports = false;
+
   constructor(data?: PartialMessage<ProjectPermissions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6314,6 +6324,8 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
     { no: 8, name: "manage_dev", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "read_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 10, name: "manage_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "create_reports", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "manage_reports", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectPermissions {
