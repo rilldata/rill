@@ -85,12 +85,7 @@
             main: proj.name,
           }))}
         menuKey={projectName}
-        onSelectMenuOption={(project) =>
-          goto(
-            isDashboardPage
-              ? `/${orgName}/${project}/-/redirect`
-              : `/${orgName}/${project}`
-          )}
+        onSelectMenuOption={(project) => goto(`/${orgName}/${project}`)}
         isCurrentPage={onProjectPage}
       />
     {/if}
