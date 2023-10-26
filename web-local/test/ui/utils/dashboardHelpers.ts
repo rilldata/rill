@@ -111,7 +111,7 @@ export async function waitForComparisonTopLists(
       page.waitForResponse(
         (response) =>
           topListUrlRegex.test(response.url()) &&
-          response.request().postDataJSON().dimensionName === dimension &&
+          response.request().postDataJSON().dimension.name === dimension &&
           (filterMatcher ? filterMatcher(response) : true)
       )
     )

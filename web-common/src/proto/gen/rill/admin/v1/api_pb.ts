@@ -4942,6 +4942,251 @@ export class ListWhitelistedDomainsResponse extends Message<ListWhitelistedDomai
 }
 
 /**
+ * @generated from message rill.admin.v1.GetRepoMetaRequest
+ */
+export class GetRepoMetaRequest extends Message<GetRepoMetaRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: string branch = 2;
+   */
+  branch = "";
+
+  constructor(data?: PartialMessage<GetRepoMetaRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetRepoMetaRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRepoMetaRequest {
+    return new GetRepoMetaRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetRepoMetaRequest {
+    return new GetRepoMetaRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetRepoMetaRequest {
+    return new GetRepoMetaRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetRepoMetaRequest | PlainMessage<GetRepoMetaRequest> | undefined, b: GetRepoMetaRequest | PlainMessage<GetRepoMetaRequest> | undefined): boolean {
+    return proto3.util.equals(GetRepoMetaRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetRepoMetaResponse
+ */
+export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
+  /**
+   * @generated from field: string git_url = 1;
+   */
+  gitUrl = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp git_url_expires_on = 2;
+   */
+  gitUrlExpiresOn?: Timestamp;
+
+  /**
+   * @generated from field: string git_subpath = 3;
+   */
+  gitSubpath = "";
+
+  constructor(data?: PartialMessage<GetRepoMetaResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetRepoMetaResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "git_url_expires_on", kind: "message", T: Timestamp },
+    { no: 3, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRepoMetaResponse {
+    return new GetRepoMetaResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetRepoMetaResponse {
+    return new GetRepoMetaResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetRepoMetaResponse {
+    return new GetRepoMetaResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetRepoMetaResponse | PlainMessage<GetRepoMetaResponse> | undefined, b: GetRepoMetaResponse | PlainMessage<GetRepoMetaResponse> | undefined): boolean {
+    return proto3.util.equals(GetRepoMetaResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.PullVirtualRepoRequest
+ */
+export class PullVirtualRepoRequest extends Message<PullVirtualRepoRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: string branch = 2;
+   */
+  branch = "";
+
+  /**
+   * @generated from field: uint32 page_size = 3;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 4;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<PullVirtualRepoRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.PullVirtualRepoRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PullVirtualRepoRequest {
+    return new PullVirtualRepoRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PullVirtualRepoRequest {
+    return new PullVirtualRepoRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PullVirtualRepoRequest {
+    return new PullVirtualRepoRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PullVirtualRepoRequest | PlainMessage<PullVirtualRepoRequest> | undefined, b: PullVirtualRepoRequest | PlainMessage<PullVirtualRepoRequest> | undefined): boolean {
+    return proto3.util.equals(PullVirtualRepoRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.PullVirtualRepoResponse
+ */
+export class PullVirtualRepoResponse extends Message<PullVirtualRepoResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.VirtualFile files = 1;
+   */
+  files: VirtualFile[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<PullVirtualRepoResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.PullVirtualRepoResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "files", kind: "message", T: VirtualFile, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PullVirtualRepoResponse {
+    return new PullVirtualRepoResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PullVirtualRepoResponse {
+    return new PullVirtualRepoResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PullVirtualRepoResponse {
+    return new PullVirtualRepoResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PullVirtualRepoResponse | PlainMessage<PullVirtualRepoResponse> | undefined, b: PullVirtualRepoResponse | PlainMessage<PullVirtualRepoResponse> | undefined): boolean {
+    return proto3.util.equals(PullVirtualRepoResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.VirtualFile
+ */
+export class VirtualFile extends Message<VirtualFile> {
+  /**
+   * @generated from field: string path = 1;
+   */
+  path = "";
+
+  /**
+   * @generated from field: bytes data = 2;
+   */
+  data = new Uint8Array(0);
+
+  /**
+   * @generated from field: bool deleted = 3;
+   */
+  deleted = false;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_on = 4;
+   */
+  updatedOn?: Timestamp;
+
+  constructor(data?: PartialMessage<VirtualFile>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.VirtualFile";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 3, name: "deleted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "updated_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): VirtualFile {
+    return new VirtualFile().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): VirtualFile {
+    return new VirtualFile().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): VirtualFile {
+    return new VirtualFile().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: VirtualFile | PlainMessage<VirtualFile> | undefined, b: VirtualFile | PlainMessage<VirtualFile> | undefined): boolean {
+    return proto3.util.equals(VirtualFile, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.User
  */
 export class User extends Message<User> {

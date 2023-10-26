@@ -164,7 +164,7 @@ export function estimateColumnSizes(
   },
   containerWidth: number,
   config: VirtualizedTableConfig
-) {
+): number[] {
   const estimateColumnSize = columns.map((column, i) => {
     if (column.name.includes("delta")) return config.comparisonColumnWidth;
     if (i != 0) return config.defaultColumnWidth;
@@ -363,13 +363,15 @@ export function addContextColumnNames(
 
 /**
  * This function prepares the data for the dimension table
- * from data returned by the createQueryServiceMetricsViewComparisonToplist
+ * from data returned by the createQueryServiceMetricsViewComparison
  * API.
  *
  */
 export function prepareDimensionTableRows(
   queryRows: V1MetricsViewComparisonRow[],
-  measures: MetricsViewSpecMeasureV2[],
+  // all of the measures defined for this metrics spec,
+  // including those that are not visible
+  allMeasuresForSpec: MetricsViewSpecMeasureV2[],
   activeMeasureName: string,
   dimensionColumn: string,
   addDeltas: boolean,
@@ -379,7 +381,7 @@ export function prepareDimensionTableRows(
   if (!queryRows || !queryRows.length) return [];
 
   const formattersForMeasures = Object.fromEntries(
-    measures.map((m) => [m.name, createMeasureValueFormatter(m)])
+    allMeasuresForSpec.map((m) => [m.name, createMeasureValueFormatter(m)])
   );
 
   const tableRows: DimensionTableRow[] = queryRows.map((row) => {

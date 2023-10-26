@@ -14,7 +14,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
-    createQueryServiceMetricsViewComparisonToplist,
+    createQueryServiceMetricsViewComparison,
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
     MetricsViewSpecMeasureV2,
@@ -53,7 +53,7 @@
   );
 
   let dimension: MetricsViewDimension;
-  $: dimension = $dimensionQuery?.data;
+  $: dimension = $dimensionQuery?.data as MetricsViewDimension;
   $: dimensionColumn = getDimensionColumn(dimension);
   const stateManagers = getStateManagers();
   const timeControlsStore = useTimeControlStore(stateManagers);
@@ -90,14 +90,15 @@
 
   $: selectedValues =
     (excludeMode
-      ? $dashboardStore?.filters.exclude.find((d) => d.name === dimensionName)
+      ? $dashboardStore?.filters?.exclude?.find((d) => d.name === dimensionName)
           ?.in
-      : $dashboardStore?.filters.include.find((d) => d.name === dimensionName)
+      : $dashboardStore?.filters?.include?.find((d) => d.name === dimensionName)
           ?.in) ?? [];
 
-  $: allMeasures = $metaQuery.data?.measures.filter((m) =>
-    $dashboardStore?.visibleMeasureKeys.has(m.name)
-  );
+  $: visibleMeasures =
+    $metaQuery.data?.measures?.filter((m) =>
+      $dashboardStore?.visibleMeasureKeys.has(m.name ?? "")
+    ) ?? [];
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
@@ -118,20 +119,20 @@
 
   let referenceValues: { [key: string]: number } = {};
   $: if ($totalsQuery?.data?.data) {
-    allMeasures.map((m) => {
-      if (isSummableMeasure(m)) {
-        referenceValues[m.name] = $totalsQuery.data.data?.[m.name];
+    visibleMeasures.map((m) => {
+      if (m.name && isSummableMeasure(m)) {
+        referenceValues[m.name] = $totalsQuery.data?.data?.[m.name];
       }
     });
   }
 
   $: columns = prepareVirtualizedDimTableColumns(
     $dashboardStore,
-    allMeasures,
+    visibleMeasures,
     referenceValues,
     dimension,
-    $timeControlsStore.showComparison,
-    validPercentOfTotal
+    $timeControlsStore?.showComparison ?? false,
+    validPercentOfTotal ?? false
   );
 
   $: sortedQueryBody = prepareSortedQueryBody(
@@ -144,7 +145,7 @@
     filterSet
   );
 
-  $: sortedQuery = createQueryServiceMetricsViewComparisonToplist(
+  $: sortedQuery = createQueryServiceMetricsViewComparison(
     $runtime.instanceId,
     metricViewName,
     sortedQueryBody,
@@ -156,12 +157,12 @@
   );
 
   $: tableRows = prepareDimensionTableRows(
-    $sortedQuery?.data?.rows,
-    allMeasures,
+    $sortedQuery?.data?.rows ?? [],
+    $metaQuery.data?.measures ?? [],
     leaderboardMeasureName,
     dimensionColumn,
-    $timeControlsStore.showComparison,
-    validPercentOfTotal,
+    $timeControlsStore.showComparison ?? false,
+    validPercentOfTotal ?? false,
     unfilteredTotal
   );
 
@@ -193,7 +194,7 @@
       />
     </div>
 
-    {#if tableRows && columns.length}
+    {#if tableRows && columns.length && dimensionColumn}
       <div class="grow" style="overflow-y: hidden;">
         <DimensionTable
           on:select-item={(event) => onSelectItem(event)}

@@ -14,6 +14,7 @@ type Options struct {
 	DatabaseDriver  string
 	DatabaseDSN     string
 	ProvisionerSpec string
+	ExternalURL     string
 }
 
 type Service struct {

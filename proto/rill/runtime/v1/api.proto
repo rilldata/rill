@@ -2,7 +2,6 @@ syntax = "proto3";
 package rill.runtime.v1;
 
 import "google/api/annotations.proto";
-import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/catalog.proto";
 import "rill/runtime/v1/resources.proto";
@@ -475,7 +474,7 @@ message Log {
   LogLevel level = 1;
   google.protobuf.Timestamp time = 2;
   string message = 3;
-  google.protobuf.Struct payload = 4;
+  string json_payload = 4;
 }
 
 enum LogLevel {
@@ -495,6 +494,7 @@ enum ResourceEvent {
 message GetLogsRequest {
   string instance_id = 1;
   bool ascending = 2;
+  int32 limit = 3 [(validate.rules).int32 = {gte: -1}];
 }
 
 message GetLogsResponse {
@@ -504,10 +504,11 @@ message GetLogsResponse {
 message WatchLogsRequest {
   string instance_id = 1;
   bool replay = 2;
+  int32 replay_limit = 3 [(validate.rules).int32 = {gte: -1}];
 }
 
 message WatchLogsResponse {
-  repeated Log logs = 1;
+  Log log = 1;
 }
 
 message ListResourcesRequest {

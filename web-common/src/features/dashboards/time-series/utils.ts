@@ -3,8 +3,8 @@ import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
 import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { removeZoneOffset } from "../../../lib/time/timezone";
-import { TimeOffsetType, TimeGrain } from "../../../lib/time/types";
-import { DateTime, DateTimeUnit } from "luxon";
+import { TimeOffsetType } from "../../../lib/time/types";
+import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
@@ -43,27 +43,14 @@ export function toComparisonKeys(d, offsetDuration: string, zone: string) {
 export function prepareTimeSeries(
   original,
   comparison,
-  timeGrain: TimeGrain,
-  zone: string,
-  start: string,
-  end: string,
-  compStart?: string,
-  compEnd?: string
-): any[] {
-  let i = 0;
-  let j = 0;
-  let k = 0;
-  const dtu = timeGrain.label as DateTimeUnit;
-  let dtStart = DateTime.fromISO(start, { zone }).startOf(dtu);
-  const dtEnd = DateTime.fromISO(end, { zone }).startOf(dtu);
-  let dtCompStart = DateTime.fromISO(compStart, { zone }).startOf(dtu);
-  const dtCompEnd = DateTime.fromISO(compEnd, { zone }).startOf(dtu);
+  timeGrainDuration: string,
+  zone: string
+) {
+  return original?.map((originalPt, i) => {
+    const comparisonPt = comparison?.[i];
 
-  const result = [];
-
-  const offsetDuration = getDurationMultiple(timeGrain.duration, 0.5);
-  while (dtStart < dtEnd || dtCompStart < dtCompEnd) {
-    const ts = adjustOffsetForZone(dtStart.toISO(), zone);
+    const ts = adjustOffsetForZone(originalPt.ts, zone);
+    const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
     const ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
     result.push({
       ts,
@@ -184,9 +171,10 @@ export function getOrderedStartEnd(start: Date, stop: Date) {
 }
 
 export function getFilterForComparedDimension(
-  dimensionName,
-  filters,
-  topListValues
+  dimensionName: string,
+  filters: V1MetricsViewFilter,
+  topListValues: string[],
+  surface
 ) {
   // Check if we have an excluded filter for the dimension
   const excludedFilter = filters.exclude.find((d) => d.name === dimensionName);
@@ -195,11 +183,17 @@ export function getFilterForComparedDimension(
   if (excludedFilter) {
     excludedValues = excludedFilter.in;
   }
+  let includedValues;
 
-  // Remove excluded values from top list
-  const includedValues = topListValues
-    ?.filter((d) => !excludedValues.includes(d))
-    ?.slice(0, 3);
+  if (surface === "table") {
+    // TODO : make this configurable
+    includedValues = topListValues?.slice(0, 250);
+  } else {
+    // Remove excluded values from top list
+    includedValues = topListValues
+      ?.filter((d) => !excludedValues.includes(d))
+      ?.slice(0, 3);
+  }
 
   // Add dimension to filter
   const updatedFilter = {
@@ -208,7 +202,7 @@ export function getFilterForComparedDimension(
       ...filters.include,
       {
         name: dimensionName,
-        in: includedValues,
+        in: [],
       },
     ],
   };

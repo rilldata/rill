@@ -8,10 +8,19 @@
   export let yAccessor;
   export let mouseoverFormat;
   export let dimensionData;
+  export let dimensionValue;
 
   $: x = point[xAccessor];
 
-  $: yValues = dimensionData.map((dimension) => {
+  let pointsData = dimensionData;
+  $: if (dimensionValue !== undefined) {
+    const higlighted = dimensionData.filter((d) => d.value === dimensionValue);
+
+    if (higlighted.length) {
+      pointsData = higlighted;
+    }
+  }
+  $: yValues = pointsData.map((dimension) => {
     const y = bisectData(x, "center", xAccessor, dimension?.data)[yAccessor];
     return {
       y,
@@ -52,6 +61,7 @@
 {#if pointSet.length}
   <WithGraphicContexts let:xScale let:yScale>
     <MultiMetricMouseoverLabel
+      isDimension={true}
       attachPointToLabel
       direction="right"
       flipAtEdge="body"

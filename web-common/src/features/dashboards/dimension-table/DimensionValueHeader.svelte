@@ -13,7 +13,7 @@
 
   export let totalHeight: number;
   export let virtualRowItems;
-  export let selectedIndex = [];
+  export let selectedIndex: number[] = [];
   export let column: VirtualizedTableColumns;
   export let rows;
   export let width = config.indexWidth;
