@@ -15,13 +15,19 @@
   } from "../../client";
   import { useDashboards } from "../dashboards/listing/dashboards";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
-  import { isProjectPage } from "./nav-utils";
+  import {
+    isDashboardPage,
+    isOrganizationPage,
+    isProjectPage,
+    isReportPage,
+  } from "./nav-utils";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
   $: instanceId = $runtime?.instanceId;
 
+  // Org breadcrumb
   $: orgName = $page.params.organization;
   $: organization = createAdminServiceGetOrganization(orgName);
   $: organizations = createAdminServiceListOrganizations(undefined, {
@@ -29,8 +35,9 @@
       enabled: !!$user.data?.user,
     },
   });
-  $: isOrganizationPage = $page.route.id === "/[organization]";
+  $: onOrganizationPage = isOrganizationPage($page);
 
+  // Project breadcrumb
   $: projectName = $page.params.project;
   $: project = createAdminServiceGetProject(orgName, projectName);
   $: projects = createAdminServiceListProjectsForOrganization(
@@ -44,6 +51,7 @@
   );
   $: onProjectPage = isProjectPage($page);
 
+  // Dashboard breadcrumb
   $: dashboards = useDashboards(instanceId);
   let currentResource: V1Resource;
   $: currentResource = $dashboards?.data?.find(
@@ -52,8 +60,11 @@
   $: currentDashboardName = currentResource?.meta?.name?.name;
   let currentDashboard: V1MetricsViewSpec;
   $: currentDashboard = currentResource?.metricsView?.state?.validSpec;
-  $: isDashboardPage =
-    $page.route.id === "/[organization]/[project]/[dashboard]";
+  $: onDashboardPage = isDashboardPage($page);
+
+  // Report breadcrumb
+  $: report = $page.params.report;
+  $: onReportPage = isReportPage($page);
 </script>
 
 <nav>
@@ -69,7 +80,7 @@
           }))}
         menuKey={orgName}
         onSelectMenuOption={(organization) => goto(`/${organization}`)}
-        isCurrentPage={isOrganizationPage}
+        isCurrentPage={onOrganizationPage}
       >
         <OrganizationAvatar organization={orgName} slot="icon" />
       </BreadcrumbItem>
@@ -111,7 +122,20 @@
         menuKey={currentDashboardName}
         onSelectMenuOption={(dashboard) =>
           goto(`/${orgName}/${projectName}/${dashboard}`)}
-        isCurrentPage={isDashboardPage}
+        isCurrentPage={onDashboardPage}
+      />
+    {/if}
+    <!-- TODO: Add menuOptions once we have an API to fetch reports -->
+    {#if report}
+      <span class="text-gray-600">/</span>
+      <BreadcrumbItem
+        label={report}
+        href={`/${orgName}/${projectName}/-/reports/${report}`}
+        menuOptions={[]}
+        menuKey={undefined}
+        onSelectMenuOption={(report) =>
+          goto(`/${orgName}/${projectName}/${report}`)}
+        isCurrentPage={onReportPage}
       />
     {/if}
   </ol>

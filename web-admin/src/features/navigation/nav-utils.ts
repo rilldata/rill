@@ -1,5 +1,9 @@
 import type { Page } from "@sveltejs/kit";
 
+export function isOrganizationPage(page: Page): boolean {
+  return page.route.id === "/[organization]";
+}
+
 export function isProjectPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]/[project]" ||
@@ -9,4 +13,8 @@ export function isProjectPage(page: Page): boolean {
 }
 export function isDashboardPage(page: Page): boolean {
   return page.route.id === "/[organization]/[project]/[dashboard]";
+}
+
+export function isReportPage(page: Page): boolean {
+  return page.route.id === "/[organization]/[project]/-/reports/[report]";
 }
