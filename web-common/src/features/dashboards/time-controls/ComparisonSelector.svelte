@@ -141,7 +141,11 @@ This component needs to do the following:
     label="Comparison selector"
   >
     <div class="px-2 pb-2">
-      <Search placeholder="Search Dimension" bind:value={searchText} />
+      <Search
+        placeholder="Search Dimension"
+        bind:value={searchText}
+        autofocus={false}
+      />
     </div>
     <MenuItem
       focusOnMount={false}
