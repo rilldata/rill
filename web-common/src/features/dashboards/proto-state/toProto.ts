@@ -79,6 +79,9 @@ export function getProtoFromDashboardState(
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
   }
+  if (metrics.expandedMeasureName) {
+    state.expandedMeasure = metrics.expandedMeasureName;
+  }
   if (metrics.selectedDimensionName) {
     state.selectedDimension = metrics.selectedDimensionName;
   }

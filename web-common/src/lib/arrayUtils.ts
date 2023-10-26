@@ -9,7 +9,7 @@ export function removeIfExists<T>(array: Array<T>, checker: (e: T) => boolean) {
 
 export function getMapFromArray<T>(
   array: Array<T>,
-  keyGetter: (entity: T) => string | number
+  keyGetter: (entity: T) => string | number | undefined
 ): Map<string | number, T> {
   const map = new Map();
   for (const entity of array) {

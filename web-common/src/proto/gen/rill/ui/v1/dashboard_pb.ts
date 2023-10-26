@@ -115,6 +115,13 @@ export class DashboardState extends Message<DashboardState> {
    */
   comparisonDimension?: string;
 
+  /**
+   * Expanded measure for TDD view
+   *
+   * @generated from field: optional string expanded_measure = 18;
+   */
+  expandedMeasure?: string;
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -140,6 +147,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 15, name: "leaderboard_sort_direction", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortDirection), opt: true },
     { no: 16, name: "leaderboard_sort_type", kind: "enum", T: proto3.getEnumType(DashboardState_LeaderboardSortType), opt: true },
     { no: 17, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 18, name: "expanded_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {

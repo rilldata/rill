@@ -346,14 +346,14 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 		}
 		req.TimeStart = start
 		req.TimeEnd = end
-	case "MetricsViewComparisonToplist":
-		req := &runtimev1.MetricsViewComparisonToplistRequest{}
-		qry.Query = &runtimev1.Query_MetricsViewComparisonToplistRequest{MetricsViewComparisonToplistRequest: req}
+	case "MetricsViewComparison":
+		req := &runtimev1.MetricsViewComparisonRequest{}
+		qry.Query = &runtimev1.Query_MetricsViewComparisonRequest{MetricsViewComparisonRequest: req}
 		err := protojson.Unmarshal([]byte(rep.Spec.QueryArgsJson), req)
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
-		req.BaseTimeRange = &runtimev1.TimeRange{Start: start, End: end}
+		req.TimeRange = &runtimev1.TimeRange{Start: start, End: end}
 		req.ComparisonTimeRange = nil // TODO: Need ability pass comparison offset somewhere
 	default:
 		return nil, fmt.Errorf("query %q not supported for reports", rep.Spec.QueryName)

@@ -4191,34 +4191,7 @@ func (m *Log) validate(all bool) error {
 
 	// no validation rules for Message
 
-	if all {
-		switch v := interface{}(m.GetPayload()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, LogValidationError{
-					field:  "Payload",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, LogValidationError{
-					field:  "Payload",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetPayload()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return LogValidationError{
-				field:  "Payload",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
+	// no validation rules for JsonPayload
 
 	if len(errors) > 0 {
 		return LogMultiError(errors)
@@ -4322,6 +4295,17 @@ func (m *GetLogsRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for Ascending
+
+	if m.GetLimit() < -1 {
+		err := GetLogsRequestValidationError{
+			field:  "Limit",
+			reason: "value must be greater than or equal to -1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return GetLogsRequestMultiError(errors)
@@ -4561,6 +4545,17 @@ func (m *WatchLogsRequest) validate(all bool) error {
 
 	// no validation rules for Replay
 
+	if m.GetReplayLimit() < -1 {
+		err := WatchLogsRequestValidationError{
+			field:  "ReplayLimit",
+			reason: "value must be greater than or equal to -1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return WatchLogsRequestMultiError(errors)
 	}
@@ -4661,38 +4656,33 @@ func (m *WatchLogsResponse) validate(all bool) error {
 
 	var errors []error
 
-	for idx, item := range m.GetLogs() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, WatchLogsResponseValidationError{
-						field:  fmt.Sprintf("Logs[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, WatchLogsResponseValidationError{
-						field:  fmt.Sprintf("Logs[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return WatchLogsResponseValidationError{
-					field:  fmt.Sprintf("Logs[%v]", idx),
+	if all {
+		switch v := interface{}(m.GetLog()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, WatchLogsResponseValidationError{
+					field:  "Log",
 					reason: "embedded message failed validation",
 					cause:  err,
-				}
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, WatchLogsResponseValidationError{
+					field:  "Log",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
 			}
 		}
-
+	} else if v, ok := interface{}(m.GetLog()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return WatchLogsResponseValidationError{
+				field:  "Log",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {

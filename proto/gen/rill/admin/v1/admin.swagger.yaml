@@ -1113,6 +1113,63 @@ paths:
             $ref: '#/definitions/v1TriggerRedeployRequest'
       tags:
         - AdminService
+  /v1/projects/{projectId}/repo/meta:
+    get:
+      summary: GetRepoMeta returns credentials and other metadata for accessing a project's repo
+      operationId: AdminService_GetRepoMeta
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetRepoMetaResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: branch
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/projects/{projectId}/repo/virtual:
+    get:
+      summary: PullVirtualRepo fetches files from a project's virtual repo
+      operationId: AdminService_PullVirtualRepo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PullVirtualRepoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: branch
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/services/tokens/{tokenId}:
     delete:
       summary: RevokeServiceAuthToken revoke the service auth token
@@ -1691,6 +1748,16 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1GetRepoMetaResponse:
+    type: object
+    properties:
+      gitUrl:
+        type: string
+      gitUrlExpiresOn:
+        type: string
+        format: date-time
+      gitSubpath:
+        type: string
   v1GetUserResponse:
     type: object
     properties:
@@ -1961,6 +2028,16 @@ definitions:
         type: boolean
       manageProjectMembers:
         type: boolean
+  v1PullVirtualRepoResponse:
+    type: object
+    properties:
+      files:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1VirtualFile'
+      nextPageToken:
+        type: string
   v1RemoveBookmarkResponse:
     type: object
   v1RemoveOrganizationMemberResponse:
@@ -2186,6 +2263,19 @@ definitions:
       singleuserOrgs:
         type: integer
         format: int64
+  v1VirtualFile:
+    type: object
+    properties:
+      path:
+        type: string
+      data:
+        type: string
+        format: byte
+      deleted:
+        type: boolean
+      updatedOn:
+        type: string
+        format: date-time
   v1WhitelistedDomain:
     type: object
     properties:
