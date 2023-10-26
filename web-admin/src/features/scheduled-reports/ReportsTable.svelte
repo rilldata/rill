@@ -3,6 +3,7 @@
   import Table from "../../components/table/Table.svelte";
   import { defaultData } from "./fetch-reports";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
+  import ReportsTableEmpty from "./ReportsTableEmpty.svelte";
   import ReportsTableHeader from "./ReportsTableHeader.svelte";
 
   export let organization: string;
@@ -62,4 +63,5 @@
 
 <Table {columns} data={defaultData} {columnVisibility}>
   <ReportsTableHeader slot="header" />
+  <ReportsTableEmpty slot="empty" />
 </Table>
