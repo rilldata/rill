@@ -135,7 +135,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 				Name: "admin",
 				Type: "admin",
 				Config: map[string]string{
-					"host":         s.opts.ExternalURL,
+					"admin_url":    s.opts.ExternalURL,
 					"access_token": adminAuthToken,
 					"project_id":   opts.ProjectID,
 					"branch":       opts.ProdBranch,

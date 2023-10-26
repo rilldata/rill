@@ -680,25 +680,14 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-}
-
 export interface V1ReportState {
   nextRunOn?: string;
   currentExecution?: V1ReportExecution;
   executionHistory?: V1ReportExecution[];
   executionCount?: number;
 }
+
+export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
   trigger?: boolean;
@@ -714,6 +703,7 @@ export interface V1ReportSpec {
   emailOpenUrl?: string;
   emailEditUrl?: string;
   emailExportUrl?: string;
+  annotations?: V1ReportSpecAnnotations;
 }
 
 export interface V1ReportExecution {
@@ -727,6 +717,19 @@ export interface V1ReportExecution {
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
 }
 
 export interface V1RenameFileResponse {

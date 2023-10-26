@@ -6,15 +6,15 @@ import (
 	"strings"
 )
 
-// migrationYAML is the raw structure of a Migration resource defined in YAML (does not include common fields)
-type migrationYAML struct {
+// MigrationYAML is the raw structure of a Migration resource defined in YAML (does not include common fields)
+type MigrationYAML struct {
 	Version uint `yaml:"version" mapstructure:"version"`
 }
 
 // parseMigration parses a migration definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseMigration(ctx context.Context, node *Node) error {
 	// Parse YAML
-	tmp := &migrationYAML{}
+	tmp := &MigrationYAML{}
 	if p.RillYAML != nil && !p.RillYAML.Defaults.Migrations.IsZero() {
 		if err := p.RillYAML.Defaults.Migrations.Decode(tmp); err != nil {
 			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
