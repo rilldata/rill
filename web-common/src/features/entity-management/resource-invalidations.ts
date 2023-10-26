@@ -1,5 +1,8 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
+import {
+  getLastStateVersion,
+  resourcesStore,
+} from "@rilldata/web-common/features/entity-management/resources-store";
 import { sourceImportedName } from "@rilldata/web-common/features/sources/sources-store";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
@@ -79,8 +82,14 @@ async function invalidateResource(
 ) {
   refreshResource(queryClient, instanceId, resource);
 
-  if (resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE)
+  const lastStateUpdatedOn = getLastStateVersion(resource);
+  if (
+    resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE ||
+    lastStateUpdatedOn === resource.meta.stateUpdatedOn
+  )
     return;
+
+  resourcesStore.setVersion(resource);
   const failed = !!resource.meta.reconcileError;
 
   switch (resource.meta.name.kind) {
