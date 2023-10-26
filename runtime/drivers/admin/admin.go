@@ -76,9 +76,10 @@ func (d driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 	}
 
 	h := &Handle{
-		config: cfg,
-		logger: logger,
-		admin:  admin,
+		config:       cfg,
+		logger:       logger,
+		admin:        admin,
+		singleflight: &singleflight.Group{},
 	}
 
 	return h, nil
