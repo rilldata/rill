@@ -221,8 +221,8 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 
 		var data []*runtimev1.TimeSeriesValue
+		rowMap := make(map[string]any)
 		for rows.Next() {
-			rowMap := make(map[string]any)
 			err := rows.MapScan(rowMap)
 			if err != nil {
 				rows.Close()
