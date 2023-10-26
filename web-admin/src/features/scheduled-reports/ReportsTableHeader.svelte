@@ -43,7 +43,7 @@
       class="pl-2 pr-4 py-2 max-w-[800px] flex items-center gap-x-2 bg-slate-100"
     >
       <!-- Search bar -->
-      <div class="px-4 grow">
+      <div class="px-2 grow">
         <Search placeholder="Search" autofocus={false} bind:value={filter} />
       </div>
 
