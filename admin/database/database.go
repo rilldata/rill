@@ -133,6 +133,11 @@ type DB interface {
 	DeleteServiceAuthToken(ctx context.Context, id string) error
 	DeleteExpiredServiceAuthTokens(ctx context.Context, retention time.Duration) error
 
+	FindDeploymentAuthToken(ctx context.Context, id string) (*DeploymentAuthToken, error)
+	InsertDeploymentAuthToken(ctx context.Context, opts *InsertDeploymentAuthTokenOptions) (*DeploymentAuthToken, error)
+	UpdateDeploymentAuthTokenUsedOn(ctx context.Context, ids []string) error
+	DeleteExpiredDeploymentAuthTokens(ctx context.Context, retention time.Duration) error
+
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
 	InsertDeviceAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*DeviceAuthCode, error)
@@ -180,6 +185,11 @@ type DB interface {
 	DeleteBookmark(ctx context.Context, bookmarkID string) error
 
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
+
+	FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
+	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
+	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
+	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -441,7 +451,7 @@ type InsertUserAuthTokenOptions struct {
 	ExpiresOn          *time.Time
 }
 
-// ServiceAuthToken is a persistent API token for a service.
+// ServiceAuthToken is a persistent API token for an external (tenant managed) service.
 type ServiceAuthToken struct {
 	ID         string
 	SecretHash []byte     `db:"secret_hash"`
@@ -457,6 +467,24 @@ type InsertServiceAuthTokenOptions struct {
 	SecretHash []byte
 	ServiceID  string
 	ExpiresOn  *time.Time
+}
+
+// DeploymentAuthToken is a persistent API token for a deployment.
+type DeploymentAuthToken struct {
+	ID           string
+	SecretHash   []byte     `db:"secret_hash"`
+	DeploymentID string     `db:"deployment_id"`
+	CreatedOn    time.Time  `db:"created_on"`
+	ExpiresOn    *time.Time `db:"expires_on"`
+	UsedOn       time.Time  `db:"used_on"`
+}
+
+// InsertDeploymentAuthTokenOptions defines options for creating a DeploymentAuthToken.
+type InsertDeploymentAuthTokenOptions struct {
+	ID           string
+	SecretHash   []byte
+	DeploymentID string
+	ExpiresOn    *time.Time
 }
 
 // AuthClient is a client that requests and consumes auth tokens.
@@ -640,4 +668,20 @@ type InsertBookmarkOptions struct {
 	DashboardName string `json:"dashboard_name"`
 	ProjectID     string `json:"project_id"`
 	UserID        string `json:"user_id"`
+}
+
+// VirtualFile represents an ad-hoc file for a project (not managed in Git)
+type VirtualFile struct {
+	Path      string    `db:"path"`
+	Data      []byte    `db:"data"`
+	Deleted   bool      `db:"deleted"`
+	UpdatedOn time.Time `db:"updated_on"`
+}
+
+// InsertVirtualFileOptions defines options for inserting a VirtualFile
+type InsertVirtualFileOptions struct {
+	ProjectID string
+	Branch    string
+	Path      string `validate:"required"`
+	Data      []byte `validate:"max=8192"` // 8kb
 }

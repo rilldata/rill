@@ -361,6 +361,279 @@ var _ interface {
 	ErrorName() string
 } = QueryResponseValidationError{}
 
+// Validate checks the field values on QueryBatchRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *QueryBatchRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on QueryBatchRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// QueryBatchRequestMultiError, or nil if none found.
+func (m *QueryBatchRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *QueryBatchRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	for idx, item := range m.GetQueries() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryBatchRequestValidationError{
+						field:  fmt.Sprintf("Queries[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryBatchRequestValidationError{
+						field:  fmt.Sprintf("Queries[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryBatchRequestValidationError{
+					field:  fmt.Sprintf("Queries[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return QueryBatchRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// QueryBatchRequestMultiError is an error wrapping multiple validation errors
+// returned by QueryBatchRequest.ValidateAll() if the designated constraints
+// aren't met.
+type QueryBatchRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m QueryBatchRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m QueryBatchRequestMultiError) AllErrors() []error { return m }
+
+// QueryBatchRequestValidationError is the validation error returned by
+// QueryBatchRequest.Validate if the designated constraints aren't met.
+type QueryBatchRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e QueryBatchRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e QueryBatchRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e QueryBatchRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e QueryBatchRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e QueryBatchRequestValidationError) ErrorName() string {
+	return "QueryBatchRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e QueryBatchRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sQueryBatchRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = QueryBatchRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = QueryBatchRequestValidationError{}
+
+// Validate checks the field values on QueryBatchResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *QueryBatchResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on QueryBatchResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// QueryBatchResponseMultiError, or nil if none found.
+func (m *QueryBatchResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *QueryBatchResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Index
+
+	if all {
+		switch v := interface{}(m.GetResult()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, QueryBatchResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, QueryBatchResponseValidationError{
+					field:  "Result",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResult()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return QueryBatchResponseValidationError{
+				field:  "Result",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for Error
+
+	if len(errors) > 0 {
+		return QueryBatchResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// QueryBatchResponseMultiError is an error wrapping multiple validation errors
+// returned by QueryBatchResponse.ValidateAll() if the designated constraints
+// aren't met.
+type QueryBatchResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m QueryBatchResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m QueryBatchResponseMultiError) AllErrors() []error { return m }
+
+// QueryBatchResponseValidationError is the validation error returned by
+// QueryBatchResponse.Validate if the designated constraints aren't met.
+type QueryBatchResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e QueryBatchResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e QueryBatchResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e QueryBatchResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e QueryBatchResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e QueryBatchResponseValidationError) ErrorName() string {
+	return "QueryBatchResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e QueryBatchResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sQueryBatchResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = QueryBatchResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = QueryBatchResponseValidationError{}
+
 // Validate checks the field values on ExportRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -385,221 +658,40 @@ func (m *ExportRequest) validate(all bool) error {
 
 	// no validation rules for InstanceId
 
+	// no validation rules for Limit
+
 	// no validation rules for Format
 
-	switch v := m.Request.(type) {
-	case *ExportRequest_MetricsViewAggregationRequest:
-		if v == nil {
-			err := ExportRequestValidationError{
-				field:  "Request",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewAggregationRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ExportRequestValidationError{
-						field:  "MetricsViewAggregationRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ExportRequestValidationError{
-						field:  "MetricsViewAggregationRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewAggregationRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ExportRequestValidationError{
-					field:  "MetricsViewAggregationRequest",
+	if all {
+		switch v := interface{}(m.GetQuery()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ExportRequestValidationError{
+					field:  "Query",
 					reason: "embedded message failed validation",
 					cause:  err,
-				}
+				})
 			}
-		}
-
-	case *ExportRequest_MetricsViewToplistRequest:
-		if v == nil {
-			err := ExportRequestValidationError{
-				field:  "Request",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewToplistRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ExportRequestValidationError{
-						field:  "MetricsViewToplistRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ExportRequestValidationError{
-						field:  "MetricsViewToplistRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewToplistRequest()).(interface{ Validate() error }); ok {
+		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				return ExportRequestValidationError{
-					field:  "MetricsViewToplistRequest",
+				errors = append(errors, ExportRequestValidationError{
+					field:  "Query",
 					reason: "embedded message failed validation",
 					cause:  err,
-				}
+				})
 			}
 		}
-
-	case *ExportRequest_MetricsViewRowsRequest:
-		if v == nil {
-			err := ExportRequestValidationError{
-				field:  "Request",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewRowsRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ExportRequestValidationError{
-						field:  "MetricsViewRowsRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ExportRequestValidationError{
-						field:  "MetricsViewRowsRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewRowsRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ExportRequestValidationError{
-					field:  "MetricsViewRowsRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
+	} else if v, ok := interface{}(m.GetQuery()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExportRequestValidationError{
+				field:  "Query",
+				reason: "embedded message failed validation",
+				cause:  err,
 			}
 		}
-
-	case *ExportRequest_MetricsViewTimeSeriesRequest:
-		if v == nil {
-			err := ExportRequestValidationError{
-				field:  "Request",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewTimeSeriesRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ExportRequestValidationError{
-						field:  "MetricsViewTimeSeriesRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ExportRequestValidationError{
-						field:  "MetricsViewTimeSeriesRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewTimeSeriesRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ExportRequestValidationError{
-					field:  "MetricsViewTimeSeriesRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *ExportRequest_MetricsViewComparisonToplistRequest:
-		if v == nil {
-			err := ExportRequestValidationError{
-				field:  "Request",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewComparisonToplistRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ExportRequestValidationError{
-						field:  "MetricsViewComparisonToplistRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ExportRequestValidationError{
-						field:  "MetricsViewComparisonToplistRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewComparisonToplistRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ExportRequestValidationError{
-					field:  "MetricsViewComparisonToplistRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	default:
-		_ = v // ensures v is used
 	}
 
-	if m.Limit != nil {
-		// no validation rules for Limit
-	}
+	// no validation rules for BakedQuery
 
 	if len(errors) > 0 {
 		return ExportRequestMultiError(errors)
@@ -780,6 +872,1771 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ExportResponseValidationError{}
+
+// Validate checks the field values on Query with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Query) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Query with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in QueryMultiError, or nil if none found.
+func (m *Query) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Query) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	switch v := m.Query.(type) {
+	case *Query_MetricsViewAggregationRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewAggregationRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "MetricsViewAggregationRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "MetricsViewAggregationRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewAggregationRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "MetricsViewAggregationRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_MetricsViewToplistRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewToplistRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "MetricsViewToplistRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "MetricsViewToplistRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewToplistRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "MetricsViewToplistRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_MetricsViewComparisonRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewComparisonRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "MetricsViewComparisonRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "MetricsViewComparisonRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewComparisonRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "MetricsViewComparisonRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_MetricsViewTimeSeriesRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewTimeSeriesRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "MetricsViewTimeSeriesRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "MetricsViewTimeSeriesRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewTimeSeriesRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "MetricsViewTimeSeriesRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_MetricsViewTotalsRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewTotalsRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "MetricsViewTotalsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "MetricsViewTotalsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewTotalsRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "MetricsViewTotalsRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_MetricsViewRowsRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewRowsRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "MetricsViewRowsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "MetricsViewRowsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewRowsRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "MetricsViewRowsRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_ColumnRollupIntervalRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnRollupIntervalRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnRollupIntervalRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnRollupIntervalRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnRollupIntervalRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "ColumnRollupIntervalRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_ColumnTopKRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnTopKRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnTopKRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnTopKRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnTopKRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "ColumnTopKRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_ColumnNullCountRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnNullCountRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnNullCountRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnNullCountRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnNullCountRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "ColumnNullCountRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_ColumnDescriptiveStatisticsRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnDescriptiveStatisticsRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnDescriptiveStatisticsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnDescriptiveStatisticsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnDescriptiveStatisticsRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "ColumnDescriptiveStatisticsRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_ColumnTimeGrainRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnTimeGrainRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnTimeGrainRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnTimeGrainRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnTimeGrainRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "ColumnTimeGrainRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_ColumnNumericHistogramRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnNumericHistogramRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnNumericHistogramRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnNumericHistogramRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnNumericHistogramRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "ColumnNumericHistogramRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_ColumnRugHistogramRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnRugHistogramRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnRugHistogramRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnRugHistogramRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnRugHistogramRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "ColumnRugHistogramRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_ColumnTimeRangeRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnTimeRangeRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnTimeRangeRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnTimeRangeRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnTimeRangeRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "ColumnTimeRangeRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_ColumnCardinalityRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnCardinalityRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnCardinalityRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnCardinalityRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnCardinalityRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "ColumnCardinalityRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_ColumnTimeSeriesRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnTimeSeriesRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnTimeSeriesRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "ColumnTimeSeriesRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnTimeSeriesRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "ColumnTimeSeriesRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_TableCardinalityRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetTableCardinalityRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "TableCardinalityRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "TableCardinalityRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetTableCardinalityRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "TableCardinalityRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_TableColumnsRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetTableColumnsRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "TableColumnsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "TableColumnsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetTableColumnsRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "TableColumnsRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *Query_TableRowsRequest:
+		if v == nil {
+			err := QueryValidationError{
+				field:  "Query",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetTableRowsRequest()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "TableRowsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryValidationError{
+						field:  "TableRowsRequest",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetTableRowsRequest()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryValidationError{
+					field:  "TableRowsRequest",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return QueryMultiError(errors)
+	}
+
+	return nil
+}
+
+// QueryMultiError is an error wrapping multiple validation errors returned by
+// Query.ValidateAll() if the designated constraints aren't met.
+type QueryMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m QueryMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m QueryMultiError) AllErrors() []error { return m }
+
+// QueryValidationError is the validation error returned by Query.Validate if
+// the designated constraints aren't met.
+type QueryValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e QueryValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e QueryValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e QueryValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e QueryValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e QueryValidationError) ErrorName() string { return "QueryValidationError" }
+
+// Error satisfies the builtin error interface
+func (e QueryValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sQuery.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = QueryValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = QueryValidationError{}
+
+// Validate checks the field values on QueryResult with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *QueryResult) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on QueryResult with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in QueryResultMultiError, or
+// nil if none found.
+func (m *QueryResult) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *QueryResult) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	switch v := m.Result.(type) {
+	case *QueryResult_MetricsViewAggregationResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewAggregationResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "MetricsViewAggregationResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "MetricsViewAggregationResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewAggregationResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "MetricsViewAggregationResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_MetricsViewToplistResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewToplistResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "MetricsViewToplistResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "MetricsViewToplistResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewToplistResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "MetricsViewToplistResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_MetricsViewComparisonResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewComparisonResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "MetricsViewComparisonResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "MetricsViewComparisonResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewComparisonResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "MetricsViewComparisonResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_MetricsViewTimeSeriesResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewTimeSeriesResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "MetricsViewTimeSeriesResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "MetricsViewTimeSeriesResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewTimeSeriesResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "MetricsViewTimeSeriesResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_MetricsViewTotalsResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewTotalsResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "MetricsViewTotalsResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "MetricsViewTotalsResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewTotalsResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "MetricsViewTotalsResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_MetricsViewRowsResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMetricsViewRowsResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "MetricsViewRowsResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "MetricsViewRowsResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMetricsViewRowsResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "MetricsViewRowsResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_ColumnRollupIntervalResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnRollupIntervalResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnRollupIntervalResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnRollupIntervalResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnRollupIntervalResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "ColumnRollupIntervalResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_ColumnTopKResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnTopKResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnTopKResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnTopKResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnTopKResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "ColumnTopKResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_ColumnNullCountResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnNullCountResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnNullCountResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnNullCountResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnNullCountResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "ColumnNullCountResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_ColumnDescriptiveStatisticsResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnDescriptiveStatisticsResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnDescriptiveStatisticsResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnDescriptiveStatisticsResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnDescriptiveStatisticsResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "ColumnDescriptiveStatisticsResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_ColumnTimeGrainResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnTimeGrainResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnTimeGrainResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnTimeGrainResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnTimeGrainResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "ColumnTimeGrainResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_ColumnNumericHistogramResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnNumericHistogramResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnNumericHistogramResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnNumericHistogramResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnNumericHistogramResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "ColumnNumericHistogramResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_ColumnRugHistogramResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnRugHistogramResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnRugHistogramResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnRugHistogramResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnRugHistogramResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "ColumnRugHistogramResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_ColumnTimeRangeResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnTimeRangeResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnTimeRangeResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnTimeRangeResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnTimeRangeResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "ColumnTimeRangeResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_ColumnCardinalityResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnCardinalityResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnCardinalityResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnCardinalityResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnCardinalityResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "ColumnCardinalityResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_ColumnTimeSeriesResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetColumnTimeSeriesResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnTimeSeriesResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "ColumnTimeSeriesResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetColumnTimeSeriesResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "ColumnTimeSeriesResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_TableCardinalityResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetTableCardinalityResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "TableCardinalityResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "TableCardinalityResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetTableCardinalityResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "TableCardinalityResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_TableColumnsResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetTableColumnsResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "TableColumnsResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "TableColumnsResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetTableColumnsResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "TableColumnsResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *QueryResult_TableRowsResponse:
+		if v == nil {
+			err := QueryResultValidationError{
+				field:  "Result",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetTableRowsResponse()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "TableRowsResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, QueryResultValidationError{
+						field:  "TableRowsResponse",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetTableRowsResponse()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return QueryResultValidationError{
+					field:  "TableRowsResponse",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return QueryResultMultiError(errors)
+	}
+
+	return nil
+}
+
+// QueryResultMultiError is an error wrapping multiple validation errors
+// returned by QueryResult.ValidateAll() if the designated constraints aren't met.
+type QueryResultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m QueryResultMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m QueryResultMultiError) AllErrors() []error { return m }
+
+// QueryResultValidationError is the validation error returned by
+// QueryResult.Validate if the designated constraints aren't met.
+type QueryResultValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e QueryResultValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e QueryResultValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e QueryResultValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e QueryResultValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e QueryResultValidationError) ErrorName() string { return "QueryResultValidationError" }
+
+// Error satisfies the builtin error interface
+func (e QueryResultValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sQueryResult.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = QueryResultValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = QueryResultValidationError{}
 
 // Validate checks the field values on MetricsViewAggregationRequest with the
 // rules defined in the proto definition for this message. If any rules are
@@ -2107,23 +3964,22 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewToplistResponseValidationError{}
 
-// Validate checks the field values on MetricsViewComparisonToplistRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the first error encountered is returned, or nil if there are
-// no violations.
-func (m *MetricsViewComparisonToplistRequest) Validate() error {
+// Validate checks the field values on MetricsViewComparisonRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewComparisonRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsViewComparisonToplistRequest
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// MetricsViewComparisonToplistRequestMultiError, or nil if none found.
-func (m *MetricsViewComparisonToplistRequest) ValidateAll() error {
+// ValidateAll checks the field values on MetricsViewComparisonRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsViewComparisonRequestMultiError, or nil if none found.
+func (m *MetricsViewComparisonRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
+func (m *MetricsViewComparisonRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -2133,7 +3989,7 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
-		err := MetricsViewComparisonToplistRequestValidationError{
+		err := MetricsViewComparisonRequestValidationError{
 			field:  "MetricsViewName",
 			reason: "value length must be at least 1 runes",
 		}
@@ -2143,34 +3999,52 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetDimensionName()) < 1 {
-		err := MetricsViewComparisonToplistRequestValidationError{
-			field:  "DimensionName",
-			reason: "value length must be at least 1 runes",
+	if all {
+		switch v := interface{}(m.GetDimension()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonRequestValidationError{
+					field:  "Dimension",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonRequestValidationError{
+					field:  "Dimension",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
 		}
-		if !all {
-			return err
+	} else if v, ok := interface{}(m.GetDimension()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonRequestValidationError{
+				field:  "Dimension",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
 		}
-		errors = append(errors, err)
 	}
 
-	for idx, item := range m.GetInlineMeasures() {
+	for idx, item := range m.GetMeasures() {
 		_, _ = idx, item
 
 		if all {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
-						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+					errors = append(errors, MetricsViewComparisonRequestValidationError{
+						field:  fmt.Sprintf("Measures[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
-						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+					errors = append(errors, MetricsViewComparisonRequestValidationError{
+						field:  fmt.Sprintf("Measures[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -2178,72 +4052,14 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return MetricsViewComparisonToplistRequestValidationError{
-					field:  fmt.Sprintf("InlineMeasures[%v]", idx),
+				return MetricsViewComparisonRequestValidationError{
+					field:  fmt.Sprintf("Measures[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
 			}
 		}
 
-	}
-
-	if all {
-		switch v := interface{}(m.GetBaseTimeRange()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
-					field:  "BaseTimeRange",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
-					field:  "BaseTimeRange",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetBaseTimeRange()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return MetricsViewComparisonToplistRequestValidationError{
-				field:  "BaseTimeRange",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetComparisonTimeRange()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
-					field:  "ComparisonTimeRange",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
-					field:  "ComparisonTimeRange",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetComparisonTimeRange()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return MetricsViewComparisonToplistRequestValidationError{
-				field:  "ComparisonTimeRange",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
 	}
 
 	for idx, item := range m.GetSort() {
@@ -2253,7 +4069,7 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+					errors = append(errors, MetricsViewComparisonRequestValidationError{
 						field:  fmt.Sprintf("Sort[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -2261,7 +4077,7 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+					errors = append(errors, MetricsViewComparisonRequestValidationError{
 						field:  fmt.Sprintf("Sort[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -2270,7 +4086,7 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return MetricsViewComparisonToplistRequestValidationError{
+				return MetricsViewComparisonRequestValidationError{
 					field:  fmt.Sprintf("Sort[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2281,10 +4097,68 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 	}
 
 	if all {
+		switch v := interface{}(m.GetTimeRange()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonRequestValidationError{
+					field:  "TimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonRequestValidationError{
+					field:  "TimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeRange()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonRequestValidationError{
+				field:  "TimeRange",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetComparisonTimeRange()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonRequestValidationError{
+					field:  "ComparisonTimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonRequestValidationError{
+					field:  "ComparisonTimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetComparisonTimeRange()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonRequestValidationError{
+				field:  "ComparisonTimeRange",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
 		switch v := interface{}(m.GetFilter()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+				errors = append(errors, MetricsViewComparisonRequestValidationError{
 					field:  "Filter",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2292,7 +4166,7 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 			}
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewComparisonToplistRequestValidationError{
+				errors = append(errors, MetricsViewComparisonRequestValidationError{
 					field:  "Filter",
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2301,7 +4175,7 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 		}
 	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
-			return MetricsViewComparisonToplistRequestValidationError{
+			return MetricsViewComparisonRequestValidationError{
 				field:  "Filter",
 				reason: "embedded message failed validation",
 				cause:  err,
@@ -2310,7 +4184,7 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 	}
 
 	if m.GetLimit() < 0 {
-		err := MetricsViewComparisonToplistRequestValidationError{
+		err := MetricsViewComparisonRequestValidationError{
 			field:  "Limit",
 			reason: "value must be greater than or equal to 0",
 		}
@@ -2321,7 +4195,7 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 	}
 
 	if m.GetOffset() < 0 {
-		err := MetricsViewComparisonToplistRequestValidationError{
+		err := MetricsViewComparisonRequestValidationError{
 			field:  "Offset",
 			reason: "value must be greater than or equal to 0",
 		}
@@ -2333,21 +4207,22 @@ func (m *MetricsViewComparisonToplistRequest) validate(all bool) error {
 
 	// no validation rules for Priority
 
+	// no validation rules for Exact
+
 	if len(errors) > 0 {
-		return MetricsViewComparisonToplistRequestMultiError(errors)
+		return MetricsViewComparisonRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsViewComparisonToplistRequestMultiError is an error wrapping multiple
-// validation errors returned by
-// MetricsViewComparisonToplistRequest.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsViewComparisonToplistRequestMultiError []error
+// MetricsViewComparisonRequestMultiError is an error wrapping multiple
+// validation errors returned by MetricsViewComparisonRequest.ValidateAll() if
+// the designated constraints aren't met.
+type MetricsViewComparisonRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewComparisonToplistRequestMultiError) Error() string {
+func (m MetricsViewComparisonRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2356,12 +4231,12 @@ func (m MetricsViewComparisonToplistRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsViewComparisonToplistRequestMultiError) AllErrors() []error { return m }
+func (m MetricsViewComparisonRequestMultiError) AllErrors() []error { return m }
 
-// MetricsViewComparisonToplistRequestValidationError is the validation error
-// returned by MetricsViewComparisonToplistRequest.Validate if the designated
-// constraints aren't met.
-type MetricsViewComparisonToplistRequestValidationError struct {
+// MetricsViewComparisonRequestValidationError is the validation error returned
+// by MetricsViewComparisonRequest.Validate if the designated constraints
+// aren't met.
+type MetricsViewComparisonRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2369,24 +4244,24 @@ type MetricsViewComparisonToplistRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsViewComparisonToplistRequestValidationError) Field() string { return e.field }
+func (e MetricsViewComparisonRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsViewComparisonToplistRequestValidationError) Reason() string { return e.reason }
+func (e MetricsViewComparisonRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsViewComparisonToplistRequestValidationError) Cause() error { return e.cause }
+func (e MetricsViewComparisonRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsViewComparisonToplistRequestValidationError) Key() bool { return e.key }
+func (e MetricsViewComparisonRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsViewComparisonToplistRequestValidationError) ErrorName() string {
-	return "MetricsViewComparisonToplistRequestValidationError"
+func (e MetricsViewComparisonRequestValidationError) ErrorName() string {
+	return "MetricsViewComparisonRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsViewComparisonToplistRequestValidationError) Error() string {
+func (e MetricsViewComparisonRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2398,14 +4273,14 @@ func (e MetricsViewComparisonToplistRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsViewComparisonToplistRequest.%s: %s%s",
+		"invalid %sMetricsViewComparisonRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsViewComparisonToplistRequestValidationError{}
+var _ error = MetricsViewComparisonRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -2413,25 +4288,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsViewComparisonToplistRequestValidationError{}
+} = MetricsViewComparisonRequestValidationError{}
 
-// Validate checks the field values on MetricsViewComparisonToplistResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the first error encountered is returned, or nil if
-// there are no violations.
-func (m *MetricsViewComparisonToplistResponse) Validate() error {
+// Validate checks the field values on MetricsViewComparisonResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewComparisonResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsViewComparisonToplistResponse
-// with the rules defined in the proto definition for this message. If any
-// rules are violated, the result is a list of violation errors wrapped in
-// MetricsViewComparisonToplistResponseMultiError, or nil if none found.
-func (m *MetricsViewComparisonToplistResponse) ValidateAll() error {
+// ValidateAll checks the field values on MetricsViewComparisonResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// MetricsViewComparisonResponseMultiError, or nil if none found.
+func (m *MetricsViewComparisonResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsViewComparisonToplistResponse) validate(all bool) error {
+func (m *MetricsViewComparisonResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -2445,7 +4319,7 @@ func (m *MetricsViewComparisonToplistResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewComparisonToplistResponseValidationError{
+					errors = append(errors, MetricsViewComparisonResponseValidationError{
 						field:  fmt.Sprintf("Rows[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -2453,7 +4327,7 @@ func (m *MetricsViewComparisonToplistResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewComparisonToplistResponseValidationError{
+					errors = append(errors, MetricsViewComparisonResponseValidationError{
 						field:  fmt.Sprintf("Rows[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -2462,7 +4336,7 @@ func (m *MetricsViewComparisonToplistResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return MetricsViewComparisonToplistResponseValidationError{
+				return MetricsViewComparisonResponseValidationError{
 					field:  fmt.Sprintf("Rows[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -2473,20 +4347,19 @@ func (m *MetricsViewComparisonToplistResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return MetricsViewComparisonToplistResponseMultiError(errors)
+		return MetricsViewComparisonResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsViewComparisonToplistResponseMultiError is an error wrapping multiple
-// validation errors returned by
-// MetricsViewComparisonToplistResponse.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsViewComparisonToplistResponseMultiError []error
+// MetricsViewComparisonResponseMultiError is an error wrapping multiple
+// validation errors returned by MetricsViewComparisonResponse.ValidateAll()
+// if the designated constraints aren't met.
+type MetricsViewComparisonResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewComparisonToplistResponseMultiError) Error() string {
+func (m MetricsViewComparisonResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -2495,12 +4368,12 @@ func (m MetricsViewComparisonToplistResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsViewComparisonToplistResponseMultiError) AllErrors() []error { return m }
+func (m MetricsViewComparisonResponseMultiError) AllErrors() []error { return m }
 
-// MetricsViewComparisonToplistResponseValidationError is the validation error
-// returned by MetricsViewComparisonToplistResponse.Validate if the designated
+// MetricsViewComparisonResponseValidationError is the validation error
+// returned by MetricsViewComparisonResponse.Validate if the designated
 // constraints aren't met.
-type MetricsViewComparisonToplistResponseValidationError struct {
+type MetricsViewComparisonResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -2508,24 +4381,24 @@ type MetricsViewComparisonToplistResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsViewComparisonToplistResponseValidationError) Field() string { return e.field }
+func (e MetricsViewComparisonResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsViewComparisonToplistResponseValidationError) Reason() string { return e.reason }
+func (e MetricsViewComparisonResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsViewComparisonToplistResponseValidationError) Cause() error { return e.cause }
+func (e MetricsViewComparisonResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsViewComparisonToplistResponseValidationError) Key() bool { return e.key }
+func (e MetricsViewComparisonResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsViewComparisonToplistResponseValidationError) ErrorName() string {
-	return "MetricsViewComparisonToplistResponseValidationError"
+func (e MetricsViewComparisonResponseValidationError) ErrorName() string {
+	return "MetricsViewComparisonResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsViewComparisonToplistResponseValidationError) Error() string {
+func (e MetricsViewComparisonResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -2537,14 +4410,14 @@ func (e MetricsViewComparisonToplistResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsViewComparisonToplistResponse.%s: %s%s",
+		"invalid %sMetricsViewComparisonResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsViewComparisonToplistResponseValidationError{}
+var _ error = MetricsViewComparisonResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -2552,7 +4425,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsViewComparisonToplistResponseValidationError{}
+} = MetricsViewComparisonResponseValidationError{}
 
 // Validate checks the field values on TimeRange with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -2733,9 +4606,9 @@ func (m *MetricsViewComparisonSort) validate(all bool) error {
 
 	var errors []error
 
-	if utf8.RuneCountInString(m.GetMeasureName()) < 1 {
+	if utf8.RuneCountInString(m.GetName()) < 1 {
 		err := MetricsViewComparisonSortValidationError{
-			field:  "MeasureName",
+			field:  "Name",
 			reason: "value length must be at least 1 runes",
 		}
 		if !all {
@@ -2744,7 +4617,7 @@ func (m *MetricsViewComparisonSort) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Ascending
+	// no validation rules for Desc
 
 	// no validation rules for Type
 
@@ -10367,1920 +12240,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = TableRowsResponseValidationError{}
-
-// Validate checks the field values on QueryBatchEntry with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *QueryBatchEntry) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on QueryBatchEntry with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// QueryBatchEntryMultiError, or nil if none found.
-func (m *QueryBatchEntry) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *QueryBatchEntry) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Key
-
-	switch v := m.Query.(type) {
-	case *QueryBatchEntry_MetricsViewAggregationRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewAggregationRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "MetricsViewAggregationRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "MetricsViewAggregationRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewAggregationRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "MetricsViewAggregationRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_MetricsViewToplistRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewToplistRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "MetricsViewToplistRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "MetricsViewToplistRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewToplistRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "MetricsViewToplistRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_MetricsViewComparisonToplistRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewComparisonToplistRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "MetricsViewComparisonToplistRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "MetricsViewComparisonToplistRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewComparisonToplistRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "MetricsViewComparisonToplistRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_MetricsViewTimeSeriesRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewTimeSeriesRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "MetricsViewTimeSeriesRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "MetricsViewTimeSeriesRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewTimeSeriesRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "MetricsViewTimeSeriesRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_MetricsViewTotalsRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewTotalsRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "MetricsViewTotalsRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "MetricsViewTotalsRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewTotalsRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "MetricsViewTotalsRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_MetricsViewRowsRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewRowsRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "MetricsViewRowsRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "MetricsViewRowsRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewRowsRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "MetricsViewRowsRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_ColumnRollupIntervalRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnRollupIntervalRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnRollupIntervalRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnRollupIntervalRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnRollupIntervalRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "ColumnRollupIntervalRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_ColumnTopKRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnTopKRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnTopKRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnTopKRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnTopKRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "ColumnTopKRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_ColumnNullCountRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnNullCountRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnNullCountRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnNullCountRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnNullCountRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "ColumnNullCountRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_ColumnDescriptiveStatisticsRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnDescriptiveStatisticsRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnDescriptiveStatisticsRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnDescriptiveStatisticsRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnDescriptiveStatisticsRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "ColumnDescriptiveStatisticsRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_ColumnTimeGrainRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnTimeGrainRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnTimeGrainRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnTimeGrainRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnTimeGrainRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "ColumnTimeGrainRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_ColumnNumericHistogramRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnNumericHistogramRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnNumericHistogramRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnNumericHistogramRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnNumericHistogramRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "ColumnNumericHistogramRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_ColumnRugHistogramRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnRugHistogramRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnRugHistogramRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnRugHistogramRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnRugHistogramRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "ColumnRugHistogramRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_ColumnTimeRangeRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnTimeRangeRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnTimeRangeRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnTimeRangeRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnTimeRangeRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "ColumnTimeRangeRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_ColumnCardinalityRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnCardinalityRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnCardinalityRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnCardinalityRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnCardinalityRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "ColumnCardinalityRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_ColumnTimeSeriesRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnTimeSeriesRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnTimeSeriesRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "ColumnTimeSeriesRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnTimeSeriesRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "ColumnTimeSeriesRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_TableCardinalityRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetTableCardinalityRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "TableCardinalityRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "TableCardinalityRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetTableCardinalityRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "TableCardinalityRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_TableColumnsRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetTableColumnsRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "TableColumnsRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "TableColumnsRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetTableColumnsRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "TableColumnsRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchEntry_TableRowsRequest:
-		if v == nil {
-			err := QueryBatchEntryValidationError{
-				field:  "Query",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetTableRowsRequest()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "TableRowsRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchEntryValidationError{
-						field:  "TableRowsRequest",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetTableRowsRequest()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchEntryValidationError{
-					field:  "TableRowsRequest",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	default:
-		_ = v // ensures v is used
-	}
-
-	if len(errors) > 0 {
-		return QueryBatchEntryMultiError(errors)
-	}
-
-	return nil
-}
-
-// QueryBatchEntryMultiError is an error wrapping multiple validation errors
-// returned by QueryBatchEntry.ValidateAll() if the designated constraints
-// aren't met.
-type QueryBatchEntryMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m QueryBatchEntryMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m QueryBatchEntryMultiError) AllErrors() []error { return m }
-
-// QueryBatchEntryValidationError is the validation error returned by
-// QueryBatchEntry.Validate if the designated constraints aren't met.
-type QueryBatchEntryValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e QueryBatchEntryValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e QueryBatchEntryValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e QueryBatchEntryValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e QueryBatchEntryValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e QueryBatchEntryValidationError) ErrorName() string { return "QueryBatchEntryValidationError" }
-
-// Error satisfies the builtin error interface
-func (e QueryBatchEntryValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sQueryBatchEntry.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = QueryBatchEntryValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = QueryBatchEntryValidationError{}
-
-// Validate checks the field values on QueryBatchRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *QueryBatchRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on QueryBatchRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// QueryBatchRequestMultiError, or nil if none found.
-func (m *QueryBatchRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *QueryBatchRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for InstanceId
-
-	for idx, item := range m.GetQueries() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchRequestValidationError{
-						field:  fmt.Sprintf("Queries[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchRequestValidationError{
-						field:  fmt.Sprintf("Queries[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchRequestValidationError{
-					field:  fmt.Sprintf("Queries[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return QueryBatchRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// QueryBatchRequestMultiError is an error wrapping multiple validation errors
-// returned by QueryBatchRequest.ValidateAll() if the designated constraints
-// aren't met.
-type QueryBatchRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m QueryBatchRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m QueryBatchRequestMultiError) AllErrors() []error { return m }
-
-// QueryBatchRequestValidationError is the validation error returned by
-// QueryBatchRequest.Validate if the designated constraints aren't met.
-type QueryBatchRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e QueryBatchRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e QueryBatchRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e QueryBatchRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e QueryBatchRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e QueryBatchRequestValidationError) ErrorName() string {
-	return "QueryBatchRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e QueryBatchRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sQueryBatchRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = QueryBatchRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = QueryBatchRequestValidationError{}
-
-// Validate checks the field values on QueryBatchResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *QueryBatchResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on QueryBatchResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// QueryBatchResponseMultiError, or nil if none found.
-func (m *QueryBatchResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *QueryBatchResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Key
-
-	// no validation rules for Error
-
-	switch v := m.Result.(type) {
-	case *QueryBatchResponse_MetricsViewAggregationResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewAggregationResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewAggregationResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewAggregationResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewAggregationResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "MetricsViewAggregationResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_MetricsViewToplistResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewToplistResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewToplistResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewToplistResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewToplistResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "MetricsViewToplistResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_MetricsViewComparisonToplistResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewComparisonToplistResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewComparisonToplistResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewComparisonToplistResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewComparisonToplistResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "MetricsViewComparisonToplistResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_MetricsViewTimeSeriesResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewTimeSeriesResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewTimeSeriesResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewTimeSeriesResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewTimeSeriesResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "MetricsViewTimeSeriesResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_MetricsViewTotalsResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewTotalsResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewTotalsResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewTotalsResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewTotalsResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "MetricsViewTotalsResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_MetricsViewRowsResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsViewRowsResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewRowsResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "MetricsViewRowsResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsViewRowsResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "MetricsViewRowsResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_ColumnRollupIntervalResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnRollupIntervalResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnRollupIntervalResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnRollupIntervalResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnRollupIntervalResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "ColumnRollupIntervalResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_ColumnTopKResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnTopKResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnTopKResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnTopKResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnTopKResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "ColumnTopKResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_ColumnNullCountResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnNullCountResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnNullCountResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnNullCountResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnNullCountResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "ColumnNullCountResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_ColumnDescriptiveStatisticsResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnDescriptiveStatisticsResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnDescriptiveStatisticsResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnDescriptiveStatisticsResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnDescriptiveStatisticsResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "ColumnDescriptiveStatisticsResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_ColumnTimeGrainResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnTimeGrainResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnTimeGrainResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnTimeGrainResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnTimeGrainResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "ColumnTimeGrainResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_ColumnNumericHistogramResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnNumericHistogramResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnNumericHistogramResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnNumericHistogramResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnNumericHistogramResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "ColumnNumericHistogramResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_ColumnRugHistogramResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnRugHistogramResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnRugHistogramResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnRugHistogramResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnRugHistogramResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "ColumnRugHistogramResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_ColumnTimeRangeResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnTimeRangeResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnTimeRangeResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnTimeRangeResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnTimeRangeResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "ColumnTimeRangeResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_ColumnCardinalityResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnCardinalityResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnCardinalityResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnCardinalityResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnCardinalityResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "ColumnCardinalityResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_ColumnTimeSeriesResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetColumnTimeSeriesResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnTimeSeriesResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "ColumnTimeSeriesResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetColumnTimeSeriesResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "ColumnTimeSeriesResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_TableCardinalityResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetTableCardinalityResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "TableCardinalityResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "TableCardinalityResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetTableCardinalityResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "TableCardinalityResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_TableColumnsResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetTableColumnsResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "TableColumnsResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "TableColumnsResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetTableColumnsResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "TableColumnsResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *QueryBatchResponse_TableRowsResponse:
-		if v == nil {
-			err := QueryBatchResponseValidationError{
-				field:  "Result",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetTableRowsResponse()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "TableRowsResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, QueryBatchResponseValidationError{
-						field:  "TableRowsResponse",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetTableRowsResponse()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return QueryBatchResponseValidationError{
-					field:  "TableRowsResponse",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	default:
-		_ = v // ensures v is used
-	}
-
-	if len(errors) > 0 {
-		return QueryBatchResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// QueryBatchResponseMultiError is an error wrapping multiple validation errors
-// returned by QueryBatchResponse.ValidateAll() if the designated constraints
-// aren't met.
-type QueryBatchResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m QueryBatchResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m QueryBatchResponseMultiError) AllErrors() []error { return m }
-
-// QueryBatchResponseValidationError is the validation error returned by
-// QueryBatchResponse.Validate if the designated constraints aren't met.
-type QueryBatchResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e QueryBatchResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e QueryBatchResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e QueryBatchResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e QueryBatchResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e QueryBatchResponseValidationError) ErrorName() string {
-	return "QueryBatchResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e QueryBatchResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sQueryBatchResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = QueryBatchResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = QueryBatchResponseValidationError{}
 
 // Validate checks the field values on MetricsViewFilter_Cond with the rules
 // defined in the proto definition for this message. If any rules are

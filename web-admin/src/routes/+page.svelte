@@ -35,7 +35,7 @@
           <WelcomeMessage />
         {:else}
           <h3 class="text-base leading-6 font-normal text-gray-500 mb-3">
-            Check out your dashboards below.
+            Check out your projects below.
           </h3>
           <OrganizationList />
         {/if}

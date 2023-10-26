@@ -516,6 +516,8 @@ dimensions:
 
     await runThroughLeaderboardContextColumnFlows(page);
 
+    await runThroughDefaultTimeRanges(page);
+
     // go back to the dashboard
 
     // TODO
@@ -686,6 +688,7 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   // Switch to measure "total bid price"
   await page.getByRole("button", { name: "Total rows" }).click();
   await page.getByRole("menuitem", { name: "Total Bid Price" }).click();
+  await page.getByRole("button", { name: "Total Bid Price" }).isVisible();
 
   // open the context column menu
   await page.getByLabel("Select a context column").click();
@@ -781,9 +784,12 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   await expect(
     page.getByRole("menuitem", { name: "Percent of total" })
   ).toBeDisabled();
+
+  // Go back to metrics editor
+  await page.getByRole("button", { name: "Edit metrics" }).click();
 }
 
-async function runThroughEmptyMetricsFlows(page) {
+async function runThroughEmptyMetricsFlows(page: Page) {
   await updateCodeEditor(page, "");
 
   // the inspector should be empty.
@@ -840,6 +846,109 @@ async function runThroughEmptyMetricsFlows(page) {
   ).toBeVisible();
 
   // go back to the metrics page.
+  await page.getByRole("button", { name: "Edit metrics" }).click();
+}
+
+async function runThroughDefaultTimeRanges(page: Page) {
+  /**
+   * SUBFLOW: Change default time range and assert it updates the selected range.
+   */
+
+  // Set a time range that is one of the supported presets
+  const docWithPresetDefaultTimeRange = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+
+title: "AdBids_model_dashboard_rename"
+model: "AdBids_model"
+default_time_range: "P4W"
+smallest_time_grain: "week"
+timeseries: "timestamp"
+measures:
+  - label: Total rows
+    expression: count(*)
+    name: total_rows
+    description: Total number of records present
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain Name
+    column: domain
+    description: ""
+        `;
+  await updateCodeEditor(page, docWithPresetDefaultTimeRange);
+  await waitForDashboard(page);
+  // Go to dashboard
+  await page.getByRole("button", { name: "Go to dashboard" }).click();
+
+  // Time range has changed
+  await expect(page.getByText("Last 4 Weeks")).toBeVisible();
+  // Data has changed as well
+  await expect(page.getByText("Total rows 26.7k")).toBeVisible();
+  await expect(page.getByText("Facebook 7.0k")).toBeVisible();
+  await page.getByRole("button", { name: "Edit metrics" }).click();
+
+  // Set a time range that is not one of the supported presets
+  const docWithCustomDefaultTimeRange = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+
+title: "AdBids_model_dashboard_rename"
+model: "AdBids_model"
+default_time_range: "P2W"
+smallest_time_grain: "week"
+timeseries: "timestamp"
+measures:
+  - label: Total rows
+    expression: count(*)
+    name: total_rows
+    description: Total number of records present
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain Name
+    column: domain
+    description: ""
+        `;
+  await updateCodeEditor(page, docWithCustomDefaultTimeRange);
+  await waitForDashboard(page);
+  // Go to dashboard
+  await page.getByRole("button", { name: "Go to dashboard" }).click();
+
+  // Time range has changed
+  await expect(page.getByText("Last 2 Weeks")).toBeVisible();
+  // Data has changed as well
+  await expect(page.getByText("Total rows 11.2k")).toBeVisible();
+  await expect(page.getByText("Facebook 2.9k")).toBeVisible();
+
+  // Select a different time range
+  await interactWithTimeRangeMenu(page, async () => {
+    await page.getByRole("menuitem", { name: "Last 7 Days" }).click();
+  });
+  // Wait for menu to close
+  await expect(
+    page.getByRole("menuitem", { name: "Last 7 Days" })
+  ).not.toBeVisible();
+  // Data has changed
+  await expect(page.getByText("Total rows 7.9k")).toBeVisible();
+  await expect(page.getByText("Facebook 2.0k")).toBeVisible();
+
+  // Last 2 weeks is still available in the menu
+  // Select a different time range
+  await interactWithTimeRangeMenu(page, async () => {
+    await page.getByRole("menuitem", { name: "Last 2 Weeks" }).click();
+  });
+  // Wait for menu to close
+  await expect(
+    page.getByRole("menuitem", { name: "Last 2 Weeks" })
+  ).not.toBeVisible();
+  // Data has changed
+  await expect(page.getByText("Total rows 11.2k")).toBeVisible();
+  await expect(page.getByText("Facebook 2.9k")).toBeVisible();
+
+  // Go back to metrics editor
   await page.getByRole("button", { name: "Edit metrics" }).click();
 }
 

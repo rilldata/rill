@@ -1,14 +1,14 @@
 <script lang="ts">
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender } from "@tanstack/svelte-table";
-  import type { ColumnDef } from "@tanstack/table-core/src/types";
   import Table from "../../../components/table/Table.svelte";
-  import { useDashboardsV2 } from "./dashboards";
+  import { DashboardResource, useDashboardsV2 } from "./dashboards";
+  import DashboardsError from "./DashboardsError.svelte";
+  import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
+  import DashboardsTableEmpty from "./DashboardsTableEmpty.svelte";
   import DashboardsTableHeader from "./DashboardsTableHeader.svelte";
-  import DashboardsTableInfoCell from "./DashboardsTableInfoCell.svelte";
   import NoDashboardsCTA from "./NoDashboardsCTA.svelte";
 
   export let organization: string;
@@ -16,25 +16,56 @@
 
   $: dashboards = useDashboardsV2($runtime.instanceId);
 
-  const columns: ColumnDef<V1Resource>[] = [
+  /**
+   * Table column definitions.
+   * - "composite": Renders all dashboard data in a single cell.
+   * - Others: Used for sorting and filtering but not displayed.
+   *
+   * Note: TypeScript error prevents using `ColumnDef<DashboardResource, string>[]`.
+   * Relevant issues:
+   * - https://github.com/TanStack/table/issues/4241
+   * - https://github.com/TanStack/table/issues/4302
+   */
+  const columns = [
     {
-      id: "monocolumn",
-      // The accessorFn enables sorting and filtering. It contains all the data that will be filtered.
-      accessorFn: (row) =>
-        row.metricsView.spec.title + row.metricsView.spec.description,
-      cell: (info) =>
-        flexRender(DashboardsTableInfoCell, {
+      id: "composite",
+      cell: ({ row }) =>
+        flexRender(DashboardsTableCompositeCell, {
           organization: organization,
           project: project,
-          name: info.row.original.meta.name.name,
-          title: info.row.original.metricsView.spec.title,
-          // TODO: it'd be more accurate to use the `state.refreshedOn` field of the `meta.refs[0]` resource
-          lastRefreshed: new Date(info.row.original.meta.stateUpdatedOn),
-          description: info.row.original.metricsView.spec.description,
-          error: info.row.original.meta.reconcileError,
+          name: row.original.resource.meta.name.name,
+          title: row.original.resource.metricsView.spec.title,
+          lastRefreshed: row.original.refreshedOn,
+          description: row.original.resource.metricsView.spec.description,
+          error: row.original.resource.meta.reconcileError,
         }),
     },
+    {
+      id: "title",
+      accessorFn: (row: DashboardResource) =>
+        row.resource.metricsView.spec.title,
+    },
+    {
+      id: "name",
+      accessorFn: (row: DashboardResource) => row.resource.meta.name.name,
+    },
+    {
+      id: "lastRefreshed",
+      accessorFn: (row: DashboardResource) => row.refreshedOn,
+    },
+    {
+      id: "description",
+      accessorFn: (row: DashboardResource) =>
+        row.resource.metricsView.spec.description,
+    },
   ];
+
+  const columnVisibility = {
+    title: false,
+    name: false,
+    lastRefreshed: false,
+    description: false,
+  };
 </script>
 
 {#if $dashboards.isLoading}
@@ -42,17 +73,14 @@
     <Spinner status={EntityStatus.Running} size="24px" />
   </div>
 {:else if $dashboards.isError}
-  <p class="m-auto mt-20">Error loading dashboards</p>
+  <DashboardsError />
 {:else if $dashboards.isSuccess}
-  {#if $dashboards.data.resources.length === 0}
+  {#if $dashboards.data.length === 0}
     <NoDashboardsCTA />
   {:else}
-    <Table
-      dataTypeName="dashboard"
-      {columns}
-      data={$dashboards?.data?.resources}
-    >
+    <Table data={$dashboards?.data} {columns} {columnVisibility}>
       <DashboardsTableHeader slot="header" />
+      <DashboardsTableEmpty slot="empty" />
     </Table>
   {/if}
 {/if}

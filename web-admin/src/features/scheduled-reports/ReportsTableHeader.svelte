@@ -1,49 +1,54 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
-  import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import Menu from "@rilldata/web-common/components/menu/core/Menu.svelte";
-  import MenuItem from "@rilldata/web-common/components/menu/core/MenuItem.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import type { Table } from "@tanstack/table-core/src/types";
   import { getContext } from "svelte";
-  import { get, Readable } from "svelte/store";
+  import type { Readable } from "svelte/store";
 
   const table = getContext("table") as Readable<Table<unknown>>;
 
+  // Search
   let filter = "";
 
-  $: filterTable(table, filter);
+  $: filterTable(filter);
 
-  function filterTable(table: Readable<Table<unknown>>, filter: string) {
-    get(table).setGlobalFilter(filter);
+  function filterTable(filter: string) {
+    $table.setGlobalFilter(filter);
   }
 
-  function sortAlphabetically() {
-    get(table).setSorting([{ id: "monocolumn", desc: false }]);
-  }
+  // Number of reports
+  $: numReports = $table.getRowModel().rows.length;
 
-  function sortByMostRecentlyRun() {
-    get(table).setSorting([{ id: "lastRun", desc: true }]);
-  }
+  // Sort
+  // function sortAlphabetically() {
+  //   $table.setSorting([{ id: "monocolumn", desc: false }]);
+  // }
 
-  function sortByNextToRun() {
-    get(table).setSorting([{ id: "monocolumn", desc: false }]);
-  }
+  // function sortByMostRecentlyRun() {
+  //   $table.setSorting([{ id: "lastRun", desc: true }]);
+  // }
 
-  let openSortMenu = false;
-  function closeSortMenu() {
-    openSortMenu = false;
-  }
+  // function sortByNextToRun() {
+  //   $table.setSorting([{ id: "monocolumn", desc: false }]);
+  // }
+
+  // let openSortMenu = false;
+  // function closeSortMenu() {
+  //   openSortMenu = false;
+  // }
 </script>
 
-<thead class="bg-slate-100">
+<thead>
   <tr>
-    <div class="p-2 max-w-[800px] flex items-center gap-x-2">
-      <div class="grow" />
+    <td
+      class="pl-2 pr-4 py-2 max-w-[800px] flex items-center gap-x-2 bg-slate-100"
+    >
+      <!-- Search bar -->
+      <div class="px-4 grow">
+        <Search placeholder="Search" autofocus={false} bind:value={filter} />
+      </div>
 
-      <!-- search bar -->
-      <Search placeholder="Search" bind:value={filter} />
+      <!-- Spacer -->
+      <div class="grow" />
 
       <!-- filter menu button (future work) -->
       <!-- <Button on:click={() => console.log("open filter menu")} type="secondary">
@@ -51,8 +56,13 @@
     <CaretDownIcon />
   </Button> -->
 
-      <!-- sort menu button -->
-      <WithTogglableFloatingElement active={openSortMenu}>
+      <!-- Number of reports -->
+      <span class="shrink-0"
+        >{numReports} report{numReports !== 1 ? "s" : ""}</span
+      >
+
+      <!-- Sort button -->
+      <!-- <WithTogglableFloatingElement active={openSortMenu}>
         <Button on:click={() => (openSortMenu = true)} type="secondary">
           <span>Sort</span>
           <CaretDownIcon />
@@ -70,7 +80,24 @@
           >
           <MenuItem on:select={sortByNextToRun} disabled>Next to run</MenuItem>
         </Menu>
-      </WithTogglableFloatingElement>
-    </div>
+      </WithTogglableFloatingElement> -->
+    </td>
   </tr>
 </thead>
+
+<!-- 
+Rounded table corners are tricky:
+- `border-radius` does not apply to table elements when `border-collapse` is `collapse`.
+- You can only apply `border-radius` to <td>, not <tr> or <table>.
+-->
+<style lang="postcss">
+  thead tr td {
+    @apply border-y;
+  }
+  thead tr td:first-child {
+    @apply border-l rounded-tl-sm;
+  }
+  thead tr td:last-child {
+    @apply border-r rounded-tr-sm;
+  }
+</style>

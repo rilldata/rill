@@ -54,11 +54,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
         }
         return;
       }
-      if (!this.prevFocus) {
-        console.log("Focus reconnect");
-        // Call onReconnect on page focus to make sure we didnt miss anything
-        this.onReconnect();
-      }
+      const prevFocus = this.prevFocus;
       this.prevInstanceId = runtimeState.instanceId;
       this.prevHost = runtimeState.host;
       this.prevFocus = true;
@@ -68,6 +64,10 @@ export class WatchRequestClient<Res extends WatchResponse> {
         this.outOfFocusThrottler.cancel();
         // The client is already running. Do not cancel the client.
         return;
+      }
+      // Call onReconnect on page focus to make sure we didnt miss anything
+      if (!prevFocus) {
+        this.onReconnect();
       }
       this.controller?.abort();
       if (!runtimeState?.instanceId) return;
@@ -107,7 +107,6 @@ export class WatchRequestClient<Res extends WatchResponse> {
           else if (res.result) this.onResponse(res.result);
         }
       } catch (err) {
-        console.log(err);
         if (!(await this.tracker.failed())) {
           return;
         }

@@ -1,31 +1,52 @@
 <script lang="ts">
   import { afterNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { createAdminServiceGetProject } from "../../client";
   import Tab from "../../components/tabs/Tab.svelte";
   import TabGroup from "../../components/tabs/TabGroup.svelte";
   import TabList from "../../components/tabs/TabList.svelte";
+  import ProjectDeploymentStatusChip from "./ProjectDeploymentStatusChip.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  $: tabs = [
-    {
-      route: `/${organization}/${project}`,
-      label: "Dashboards",
-    },
-    {
-      route: `/${organization}/${project}/-/reports`,
-      label: "Reports",
-    },
-    {
-      route: `/${organization}/${project}/-/logs`,
-      label: "Logs",
-    },
-  ];
+  // Get the list of tabs to display, depending on the user's permissions
+  $: tabsQuery = createAdminServiceGetProject(organization, project, {
+    query: {
+      select: (data) => {
+        const commonTabs = [
+          {
+            route: `/${organization}/${project}`,
+            label: "Dashboards",
+          },
+          {
+            route: `/${organization}/${project}/-/reports`,
+            label: "Reports",
+          },
+        ];
+        const adminTabs = [
+          {
+            route: `/${organization}/${project}/-/logs`,
+            label: "Logs",
+          },
+        ];
 
-  $: currentTabIndex = tabs.findIndex((tab) => {
-    return tab.route === window.location.pathname;
+        if (data.projectPermissions?.manageProject) {
+          return [...commonTabs, ...adminTabs];
+        } else {
+          return commonTabs;
+        }
+      },
+    },
   });
+  $: tabs = $tabsQuery.data;
+
+  function getCurrentTabIndex(tabs: { route: string }[], pathname: string) {
+    return tabs.findIndex((tab) => {
+      return tab.route === pathname;
+    });
+  }
+  $: currentTabIndex = tabs && getCurrentTabIndex(tabs, $page.url.pathname);
 
   function handleTabChange(event: CustomEvent) {
     // Navigate to the new tab
@@ -39,20 +60,31 @@
       // See: https://github.com/rgossiaux/svelte-headlessui/issues/80
       const dashboardTab = Array.from(
         document.querySelectorAll('button[role="tab"]')
-      ).find((el) => el.textContent === "Dashboards") as HTMLButtonElement;
+      ).find(
+        (el) => (el as HTMLElement).innerText === "Dashboards"
+      ) as HTMLButtonElement;
       dashboardTab.click();
     }
   });
 </script>
 
-<div class="pl-[17px] border-b pt-1 pb-[3px]">
-  <TabGroup defaultIndex={currentTabIndex} on:change={handleTabChange}>
-    <TabList>
-      {#each tabs as tab}
-        <Tab>{tab.label}</Tab>
-      {/each}
-    </TabList>
-  </TabGroup>
-</div>
-
-<slot />
+{#if tabs}
+  <div class="pl-[17px] border-b pt-1 pb-[3px]">
+    <TabGroup defaultIndex={currentTabIndex} on:change={handleTabChange}>
+      <TabList>
+        {#each tabs as tab}
+          <Tab>
+            {tab.label}
+            {#if tab.label === "Logs"}
+              <ProjectDeploymentStatusChip
+                {organization}
+                {project}
+                iconOnly={true}
+              />
+            {/if}
+          </Tab>
+        {/each}
+      </TabList>
+    </TabGroup>
+  </div>
+{/if}

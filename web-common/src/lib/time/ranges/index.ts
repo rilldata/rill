@@ -5,6 +5,7 @@
  * - there's some legacy stuff that needs to get deprecated out of this.
  * - we need tests for this.
  */
+import { getSmallestTimeGrain } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DEFAULT_TIME_RANGES, TIME_GRAIN } from "../config";
 import {
@@ -119,6 +120,8 @@ export function ISODurationToTimePreset(
       return TimeRangePreset.LAST_14_DAYS;
     case "P4W":
       return TimeRangePreset.LAST_4_WEEKS;
+    case "P2W":
+      return TimeRangePreset.LAST_14_DAYS;
     case "inf":
       return TimeRangePreset.ALL_TIME;
     default:
@@ -371,7 +374,8 @@ export function getAdjustedChartTime(
   end: Date,
   zone: string,
   interval: V1TimeGrain,
-  timePreset: TimeRangeType
+  timePreset: TimeRangeType,
+  defaultTimeRange: string
 ) {
   if (!start || !end)
     return {
@@ -390,6 +394,14 @@ export function getAdjustedChartTime(
     start = getStartOfPeriod(start, grainDuration, zone);
     start = getOffset(start, offsetDuration, TimeOffsetType.ADD);
     adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration, zone);
+  } else if (timePreset === TimeRangePreset.DEFAULT) {
+    // For default presets the iso range can be mixed. There the offset added will be the smallest unit in the range.
+    // But for the graph we need the offset based on selected grain.
+    const smallestTimeGrain = getSmallestTimeGrain(defaultTimeRange);
+    // Only add this if the selected grain is greater than the smallest unit in the iso range
+    if (isGrainBigger(interval, smallestTimeGrain)) {
+      adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration, zone);
+    }
   }
 
   adjustedEnd = getOffset(adjustedEnd, offsetDuration, TimeOffsetType.SUBTRACT);

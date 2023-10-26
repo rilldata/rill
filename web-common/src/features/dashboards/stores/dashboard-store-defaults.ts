@@ -8,10 +8,8 @@ import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboard
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
-import {
-  convertTimeRangePreset,
-  ISODurationToTimePreset,
-} from "@rilldata/web-common/lib/time/ranges";
+import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
+import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type {
   V1ColumnTimeRangeResponse,
@@ -26,12 +24,11 @@ export function setDefaultTimeRange(
 ) {
   // This function implementation mirrors some code in the metricsExplorer.init() function
   if (!fullTimeRange) return;
-  const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
   const timeZone = get(getLocalUserPreferences()).timeZone;
   const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
   const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);
-  const timeRange = convertTimeRangePreset(
-    preset,
+  const timeRange = isoDurationToFullTimeRange(
+    metricsView.defaultTimeRange,
     fullTimeStart,
     fullTimeEnd,
     timeZone
@@ -107,6 +104,7 @@ export function getDefaultMetricsExplorerEntity(
     sortDirection: SortDirection.DESCENDING,
 
     showTimeComparison: false,
+    dimensionSearchText: "",
   };
   // set time range related stuff
   setDefaultTimeRange(metricsView, metricsExplorer, fullTimeRange);

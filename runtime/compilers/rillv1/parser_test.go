@@ -3,6 +3,8 @@ package rillv1
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 
@@ -11,8 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -898,19 +898,25 @@ title: My Report
 
 refresh:
   cron: 0 * * * *
+  time_zone: America/Los_Angeles
 
-operation:
+query:
   name: MetricsViewToplist
   time_range: P2W
-  properties:
+  args:
     metrics_view: mv1
 
 export:
   format: csv
   limit: 10000
 
-recipients:
-- jane@example.com
+email:
+  recipients:
+    - benjamin@example.com
+  template:
+    open_url: https://example.com/open
+    edit_url: https://example.com/edit
+    export_url: https://example.com/export
 `,
 	})
 
@@ -921,14 +927,18 @@ recipients:
 			ReportSpec: &runtimev1.ReportSpec{
 				Title: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
-					Cron: "0 * * * *",
+					Cron:     "0 * * * *",
+					TimeZone: "America/Los_Angeles",
 				},
-				OperationName:       "MetricsViewToplist",
-				OperationProperties: must(structpb.NewStruct(map[string]any{"metrics_view": "mv1"})),
-				OperationTimeRange:  "P2W",
-				ExportFormat:        runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
-				ExportLimit:         10000,
-				Recipients:          []string{"jane@example.com"},
+				QueryName:       "MetricsViewToplist",
+				QueryArgsJson:   `{"metrics_view":"mv1"}`,
+				QueryTimeRange:  "P2W",
+				ExportFormat:    runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportLimit:     10000,
+				EmailRecipients: []string{"jane@example.com"},
+				EmailOpenUrl:    "https://example.com/open",
+				EmailEditUrl:    "https://example.com/edit",
+				EmailExportUrl:  "https://example.com/export",
 			},
 		},
 	}

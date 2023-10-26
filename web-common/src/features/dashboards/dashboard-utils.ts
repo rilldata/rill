@@ -1,12 +1,13 @@
 import type {
-  QueryServiceMetricsViewComparisonToplistBody,
+  QueryServiceMetricsViewComparisonBody,
   MetricsViewDimension,
   V1MetricsViewFilter,
   MetricsViewSpecMeasureV2,
+  V1MetricsViewAggregationMeasure,
 } from "@rilldata/web-common/runtime-client";
 import type { TimeControlState } from "./time-controls/time-control-store";
 import { getQuerySortType } from "./leaderboard/leaderboard-utils";
-import type { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
+import { SortType } from "./proto-state/derived-types";
 
 export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
   return (
@@ -22,7 +23,7 @@ export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
  * becuase it is used in a few places and we want to make sure we
  * are consistent in how we handle this.
  */
-export function getDimensionColumn(dimension: MetricsViewDimension) {
+export function getDimensionColumn(dimension: MetricsViewDimension): string {
   return dimension?.column || dimension?.name;
 }
 
@@ -31,27 +32,47 @@ export function prepareSortedQueryBody(
   measureNames: string[],
   timeControls: TimeControlState,
   sortMeasureName: string,
-  sortType: DashboardState_LeaderboardSortType,
+  sortType: SortType,
   sortAscending: boolean,
   filterForDimension: V1MetricsViewFilter
-): QueryServiceMetricsViewComparisonToplistBody {
+): QueryServiceMetricsViewComparisonBody {
+  let comparisonTimeRange = {
+    start: timeControls.comparisonTimeStart,
+    end: timeControls.comparisonTimeEnd,
+  };
+
+  // FIXME: As a temporary way of enabling sorting by dimension values,
+  // Benjamin and Egor put in a patch that will allow us to use the
+  // dimension name as the measure name. This will need to be updated
+  // once they have stabilized the API.
+  if (sortType === SortType.DIMENSION) {
+    sortMeasureName = dimensionName;
+    // note also that we need to remove the comparison time range
+    // when sorting by dimension values, or the query errors
+    comparisonTimeRange = undefined;
+  }
+
   const querySortType = getQuerySortType(sortType);
 
   return {
-    dimensionName,
-    measureNames,
-    baseTimeRange: {
+    dimension: {
+      name: dimensionName,
+    },
+    measures: measureNames.map(
+      (n) =>
+        <V1MetricsViewAggregationMeasure>{
+          name: n,
+        }
+    ),
+    timeRange: {
       start: timeControls.timeStart,
       end: timeControls.timeEnd,
     },
-    comparisonTimeRange: {
-      start: timeControls.comparisonTimeStart,
-      end: timeControls.comparisonTimeEnd,
-    },
+    comparisonTimeRange,
     sort: [
       {
-        ascending: sortAscending,
-        measureName: sortMeasureName,
+        desc: !sortAscending,
+        name: sortMeasureName,
         type: querySortType,
       },
     ],

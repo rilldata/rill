@@ -14,7 +14,7 @@
   export let end = 0;
   export let columnSize: string | "auto" = "auto";
   // local state
-  let height_map = [];
+  let height_map: number[] = [];
   let rows;
   let viewport;
   let contents;

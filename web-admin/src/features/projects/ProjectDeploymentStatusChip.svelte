@@ -6,7 +6,7 @@
   import {
     getDashboardsForProject,
     useDashboardsStatus,
-  } from "@rilldata/web-admin/features/projects/dashboards";
+  } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -17,7 +17,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
-  import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import type { SvelteComponent } from "svelte";
 
   export let organization: string;
@@ -34,12 +34,7 @@
 
   $: instanceId = $proj?.data?.prodDeployment?.runtimeInstanceId;
 
-  let deploymentStatusFromDashboards: CreateQueryResult<V1DeploymentStatus>;
-  $: if ($proj?.data)
-    deploymentStatusFromDashboards = useDashboardsStatus(
-      instanceId,
-      $proj?.data
-    );
+  $: deploymentStatusFromDashboards = useDashboardsStatus(instanceId);
 
   const queryClient = useQueryClient();
 
@@ -149,12 +144,10 @@
 
 {#if deploymentStatus}
   {#if iconOnly}
-    <div class="pb-0.5">
-      <svelte:component
-        this={currentStatusDisplay.icon}
-        {...currentStatusDisplay.iconProps}
-      />
-    </div>
+    <svelte:component
+      this={currentStatusDisplay.icon}
+      {...currentStatusDisplay.iconProps}
+    />
   {:else}
     <div
       class="flex space-x-1 items-center px-2 border rounded rounded-[20px] w-fit {currentStatusDisplay.wrapperClass} {iconOnly &&

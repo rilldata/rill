@@ -19,7 +19,7 @@
 </svelte:head>
 <VerticalScrollContainer>
   <ContentContainer>
-    <div class="flex flex-col gap-y-4">
+    <div class="flex flex-col items-center gap-y-4">
       {#if isProjectDeployed}
         <DashboardsTable {organization} {project} />
       {:else if isProjectHibernating}

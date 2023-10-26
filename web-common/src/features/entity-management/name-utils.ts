@@ -10,7 +10,7 @@ const INCREMENT = new RegExp(/(\d+)$/);
  * @param name The name to increment.
  * @param others The array of existing names.
  */
-export function getName(name: string, others: string[]) {
+export function getName(name: string, others: string[]): string {
   const set = new Set(others.map((other) => other.toLowerCase()));
 
   let result = name;

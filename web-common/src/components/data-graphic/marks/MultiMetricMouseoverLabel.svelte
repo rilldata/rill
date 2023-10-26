@@ -9,7 +9,9 @@ It is probably not the most up to date code; but it works very well in practice.
   import { WithTween } from "../functional-components";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
   import { preventVerticalOverlap } from "./prevent-vertical-overlap";
+  import DelayedLabel from "@rilldata/web-common/components/data-graphic/marks/DelayedLabel.svelte";
 
+  const DIMENSION_HOVER_DURATION = 250;
   interface Point {
     x: number;
     y: number;
@@ -34,6 +36,7 @@ It is probably not the most up to date code; but it works very well in practice.
   export let elementHeight = 12;
   export let yBuffer = 4;
   export let showLabels = true;
+  export let isDimension = false;
 
   // plot the middle and push out from there
 
@@ -54,6 +57,7 @@ It is probably not the most up to date code; but it works very well in practice.
   let containerWidths = [];
   // let labelWidth = 0;
 
+  $: fanOutLabels = !isDimension || false;
   // update locations.
   $: nonOverlappingLocations = preventVerticalOverlap(
     point.map((p) => ({
@@ -70,7 +74,9 @@ It is probably not the most up to date code; but it works very well in practice.
     return {
       ...p,
       xRange: $xScale(p.x),
-      yRange: nonOverlappingLocations.find((l) => l.key === p.key).value,
+      yRange: fanOutLabels
+        ? nonOverlappingLocations.find((l) => l.key === p.key).value
+        : $yScale(p.y),
     };
   });
 
@@ -132,6 +138,7 @@ It is probably not the most up to date code; but it works very well in practice.
   /** the full text width */
   let textWidths = [];
   let transitionalTimeoutForCalculatingLabelWidth;
+
   $: if (container && locations && $xScale && $yScale) {
     clearTimeout(transitionalTimeoutForCalculatingLabelWidth);
     transitionalTimeoutForCalculatingLabelWidth = setTimeout(() => {
@@ -150,6 +157,15 @@ It is probably not the most up to date code; but it works very well in practice.
         }
       }
     }, 0);
+  }
+
+  let transitionalTimeoutForFanningOutLabels;
+  $: if (isDimension && container && point?.[0]?.x) {
+    fanOutLabels = false;
+    clearTimeout(transitionalTimeoutForFanningOutLabels);
+    transitionalTimeoutForFanningOutLabels = setTimeout(() => {
+      fanOutLabels = true;
+    }, DIMENSION_HOVER_DURATION);
   }
 </script>
 
@@ -174,71 +190,85 @@ It is probably not the most up to date code; but it works very well in practice.
             }}
             let:output={y}
           >
-            <text
-              font-size={fontSize}
-              class="text-elements pointer-events-none"
+            <DelayedLabel
+              value={location.x}
+              {isDimension}
+              duration={DIMENSION_HOVER_DURATION}
+              let:visibility
             >
-              {#if internalDirection === "right"}
-                <tspan
-                  dy=".35em"
-                  class="widths {location?.valueStyleClass ||
-                    'font-bold'} {location?.valueColorClass || ''}"
-                  y={y.label}
-                  text-anchor="end"
-                  x={xText}
-                >
-                  {#if !location?.yOverride}
-                    {formatValue(location.y)}
-                  {/if}
-                </tspan>
-                <tspan
-                  dy=".35em"
-                  y={y.label}
-                  x={xText - (location?.yOverride ? labelWidth : 0)}
-                  class="mc-mouseover-label {location?.yOverride
-                    ? location?.yOverrideStyleClass
-                    : location?.labelStyleClass || ''} {(!location?.yOverride &&
-                    location?.labelColorClass) ||
-                    ''}"
-                >
-                  {#if location?.yOverride}
-                    {location.yOverrideLabel}
-                  {:else}
-                    {location.label}
-                  {/if}
-                </tspan>
-              {:else}
-                <tspan
-                  dy=".35em"
-                  y={y.label}
-                  x={xText - (location?.yOverride ? 0 : labelWidth)}
-                  class="mc-mouseover-label {location?.yOverride
-                    ? location?.yOverrideStyleClass
-                    : location?.labelStyleClass || ''} {(!location?.yOverride &&
-                    location?.labelColorClass) ||
-                    ''}"
-                  text-anchor="end"
-                >
-                  {#if location?.yOverride}
-                    {location.yOverrideLabel}
-                  {:else}
-                    {location.label}
-                  {/if}
-                </tspan>
-                <tspan
-                  dy=".35em"
-                  class="widths {location?.valueStyleClass ||
-                    'font-bold'} {location?.valueColorClass || ''}"
-                  text-anchor="end"
-                  y={y.label}
-                  x={xText}
-                >
-                  {#if !location?.yOverride}
-                    {formatValue(location.y)}
-                  {/if}
-                </tspan>
-              {/if}
-            </text>
+              <text
+                font-size={fontSize}
+                class="text-elements pointer-events-none"
+              >
+                {#if internalDirection === "right"}
+                  <tspan
+                    dy=".35em"
+                    class="widths {location?.valueStyleClass ||
+                      'font-bold'} {location?.valueColorClass || ''}"
+                    y={y.label}
+                    text-anchor="end"
+                    x={xText}
+                    {visibility}
+                  >
+                    {#if !location?.yOverride}
+                      {formatValue(location.y)}
+                    {/if}
+                  </tspan>
+
+                  <tspan
+                    dy=".35em"
+                    y={y.label}
+                    x={xText - (location?.yOverride ? labelWidth : 0)}
+                    {visibility}
+                    class="mc-mouseover-label {location?.yOverride
+                      ? location?.yOverrideStyleClass
+                      : location?.labelStyleClass ||
+                        ''} {(!location?.yOverride &&
+                      location?.labelColorClass) ||
+                      ''}"
+                  >
+                    {#if location?.yOverride}
+                      {location.yOverrideLabel}
+                    {:else}
+                      {location.label}
+                    {/if}
+                  </tspan>
+                {:else}
+                  <tspan
+                    dy=".35em"
+                    y={y.label}
+                    x={xText - (location?.yOverride ? 0 : labelWidth)}
+                    {visibility}
+                    class="mc-mouseover-label {location?.yOverride
+                      ? location?.yOverrideStyleClass
+                      : location?.labelStyleClass ||
+                        ''} {(!location?.yOverride &&
+                      location?.labelColorClass) ||
+                      ''}"
+                    text-anchor="end"
+                  >
+                    {#if location?.yOverride}
+                      {location.yOverrideLabel}
+                    {:else}
+                      {location.label}
+                    {/if}
+                  </tspan>
+                  <tspan
+                    dy=".35em"
+                    class="widths {location?.valueStyleClass ||
+                      'font-bold'} {location?.valueColorClass || ''}"
+                    text-anchor="end"
+                    y={y.label}
+                    x={xText}
+                    {visibility}
+                  >
+                    {#if !location?.yOverride}
+                      {formatValue(location.y)}
+                    {/if}
+                  </tspan>
+                {/if}
+              </text>
+            </DelayedLabel>
             {#if location.yRange}
               <circle
                 cx={x}

@@ -114,7 +114,7 @@ describe("time-control-store", () => {
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
       AD_BIDS_INIT_WITH_TIME
     );
-    await waitForUpdate(timeControlsStore, "2022-03-30T01:00:00.000Z");
+    await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
       name: TimeRangePreset.LAST_24_HOURS,
@@ -351,6 +351,57 @@ describe("time-control-store", () => {
     unmount();
   });
 
+  it("Default time ranges", async () => {
+    dashboardFetchMocks.mockTimeRangeSummary(
+      AD_BIDS_SOURCE_NAME,
+      AD_BIDS_TIMESTAMP_DIMENSION,
+      {
+        min: "2022-01-01",
+        max: "2022-03-31",
+      }
+    );
+    const { unmount, timeControlsStore, queryClient } =
+      initTimeControlStoreTest(AD_BIDS_INIT_WITH_TIME);
+    await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
+    assertStartAndEnd(
+      get(timeControlsStore),
+      "2022-01-01T00:00:00.000Z",
+      "2022-03-31T00:00:00.001Z",
+      "2021-12-31T00:00:00.000Z",
+      "2022-04-01T00:00:00.000Z"
+    );
+
+    dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, {
+      ...AD_BIDS_INIT_WITH_TIME,
+      defaultTimeRange: "P4W",
+    });
+    await queryClient.refetchQueries({
+      type: "active",
+    });
+    await waitForDefaultUpdate(timeControlsStore, "2022-03-07T00:00:00.000Z");
+    expect(get(timeControlsStore).defaultTimeRange).toEqual({
+      name: TimeRangePreset.LAST_4_WEEKS,
+      start: new Date("2022-03-07T00:00:00.000Z"),
+      end: new Date("2022-04-04T00:00:00.000Z"),
+    });
+
+    dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, {
+      ...AD_BIDS_INIT_WITH_TIME,
+      defaultTimeRange: "P2W",
+    });
+    await queryClient.refetchQueries({
+      type: "active",
+    });
+    await waitForDefaultUpdate(timeControlsStore, "2022-03-21T00:00:00.000Z");
+    expect(get(timeControlsStore).defaultTimeRange).toEqual({
+      name: TimeRangePreset.DEFAULT,
+      start: new Date("2022-03-21T00:00:00.000Z"),
+      end: new Date("2022-04-04T00:00:00.000Z"),
+    });
+
+    unmount();
+  });
+
   function initTimeControlStoreTest(resp: V1MetricsView) {
     const { stateManagers, queryClient } = initStateManagers(
       dashboardFetchMocks,
@@ -398,8 +449,22 @@ async function waitForUpdate(
   timeControlsStore: TimeControlStore,
   startTime: string
 ) {
-  return waitUntil(
+  await waitUntil(
     () => get(timeControlsStore).timeStart === startTime,
+    1000,
+    20
+  );
+  expect(get(timeControlsStore).timeStart).toBe(startTime);
+}
+
+async function waitForDefaultUpdate(
+  timeControlsStore: TimeControlStore,
+  startTime: string
+) {
+  return waitUntil(
+    () =>
+      get(timeControlsStore).defaultTimeRange?.start?.toISOString() ===
+      startTime,
     1000,
     20
   );

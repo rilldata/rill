@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
+  import type { Writable } from "svelte/store";
   import { Switch } from "../../button";
   import Cancel from "../../icons/Cancel.svelte";
   import Check from "../../icons/Check.svelte";
@@ -7,7 +8,6 @@
   import { Menu, MenuItem } from "../../menu";
   import { Search } from "../../search";
   import Footer from "./Footer.svelte";
-  import type { Writable } from "svelte/store";
 
   export let excludeStore: Writable<boolean>;
   export let selectedValues: string[];
@@ -63,7 +63,14 @@
 >
   <!-- the min-height is set to have about 3 entries in it -->
 
-  <Search bind:value={searchText} on:input={onSearch} label="Search list" />
+  <div class="px-1 pb-1">
+    <Search
+      bind:value={searchText}
+      on:input={onSearch}
+      label="Search list"
+      autofocus={false}
+    />
+  </div>
 
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
   <div class="flex flex-col flex-1 overflow-auto w-full pb-1">

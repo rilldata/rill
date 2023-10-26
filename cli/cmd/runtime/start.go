@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"time"
@@ -51,6 +52,7 @@ type Config struct {
 	MetastoreDriver         string                 `default:"sqlite" split_words:"true"`
 	MetastoreURL            string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
+	SessionKeyPairs         []string               `split_words:"true"`
 	AuthEnable              bool                   `default:"false" split_words:"true"`
 	AuthIssuerURL           string                 `default:"" split_words:"true"`
 	AuthAudienceURL         string                 `default:"" split_words:"true"`
@@ -66,6 +68,8 @@ type Config struct {
 	ConnectionCacheSize     int                    `default:"100" split_words:"true"`
 	QueryCacheSizeBytes     int64                  `default:"104857600" split_words:"true"` // 100MB by default
 	SecurityEngineCacheSize int                    `default:"1000" split_words:"true"`
+	LogBufferCapacity       int                    `default:"10000" split_words:"true"`    // 10k log lines
+	LogBufferSizeBytes      int64                  `default:"16777216" split_words:"true"` // 16MB by default
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
@@ -130,6 +134,16 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 			emailClient := email.New(sender)
 
+			// Parse session keys as hex strings
+			keyPairs := make([][]byte, len(conf.SessionKeyPairs))
+			for idx, keyHex := range conf.SessionKeyPairs {
+				key, err := hex.DecodeString(keyHex)
+				if err != nil {
+					logger.Fatal("failed to parse session key from hex string to bytes")
+				}
+				keyPairs[idx] = key
+			}
+
 			// Init telemetry
 			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
 				MetricsExporter: conf.MetricsExporter,
@@ -176,12 +190,14 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init runtime
 			opts := &runtime.Options{
-				ConnectionCacheSize:     conf.ConnectionCacheSize,
-				MetastoreConnector:      "metastore",
-				QueryCacheSizeBytes:     conf.QueryCacheSizeBytes,
-				SecurityEngineCacheSize: conf.SecurityEngineCacheSize,
-				AllowHostAccess:         conf.AllowHostAccess,
-				SafeSourceRefresh:       conf.SafeSourceRefresh,
+				ConnectionCacheSize:          conf.ConnectionCacheSize,
+				MetastoreConnector:           "metastore",
+				QueryCacheSizeBytes:          conf.QueryCacheSizeBytes,
+				SecurityEngineCacheSize:      conf.SecurityEngineCacheSize,
+				ControllerLogBufferCapacity:  conf.LogBufferCapacity,
+				ControllerLogBufferSizeBytes: conf.LogBufferSizeBytes,
+				AllowHostAccess:              conf.AllowHostAccess,
+				SafeSourceRefresh:            conf.SafeSourceRefresh,
 				SystemConnectors: []*runtimev1.Connector{
 					{
 						Type:   conf.MetastoreDriver,
@@ -213,6 +229,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				GRPCPort:         conf.GRPCPort,
 				AllowedOrigins:   conf.AllowedOrigins,
 				ServePrometheus:  conf.MetricsExporter == observability.PrometheusExporter,
+				SessionKeyPairs:  keyPairs,
 				AuthEnable:       conf.AuthEnable,
 				AuthIssuerURL:    conf.AuthIssuerURL,
 				AuthAudienceURL:  conf.AuthAudienceURL,

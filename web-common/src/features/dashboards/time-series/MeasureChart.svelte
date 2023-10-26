@@ -32,11 +32,10 @@
   import ChartBody from "./ChartBody.svelte";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
-  import {
-    FormatPreset,
-    humanizeDataType,
-    formatPresetToNumberKind,
-  } from "../humanize-numbers";
+  import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+  import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
@@ -52,7 +51,7 @@
 
   export let showComparison = false;
   export let data;
-  export let dimensionData;
+  export let dimensionData: DimensionDataItem[] = [];
   export let xAccessor = "ts";
   export let labelAccessor = "label";
   export let yAccessor = "value";
@@ -67,9 +66,8 @@
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
     v.toString();
 
-  $: mouseoverFormat = (value) =>
-    humanizeDataType(value, measure?.formatPreset as FormatPreset);
-  $: numberKind = formatPresetToNumberKind(measure?.formatPreset);
+  $: mouseoverFormat = createMeasureValueFormatter(measure);
+  $: numberKind = numberKindForMeasure(measure);
 
   export let tweenProps = { duration: 400, easing: cubicOut };
 
@@ -78,6 +76,8 @@
   let scrub;
   let cursorClass;
   let preventScrubReset;
+
+  $: hoveredTime = mouseoverValue?.x || $tableInteractionStore.time;
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
@@ -120,9 +120,9 @@
   }
 
   /** if we have dimension data, factor that into the extents */
-
   let isFetchingDimensions = false;
 
+  // Move to utils
   $: if (isComparingDimension) {
     let dimExtents = dimensionData.map((d) =>
       extent(d?.data || [], (datum) => datum[yAccessor])
@@ -231,7 +231,8 @@
       <ChartBody
         {data}
         {dimensionData}
-        isHovering={mouseoverValue?.x}
+        isHovering={hoveredTime}
+        dimensionValue={$tableInteractionStore?.dimensionValue}
         {scrubEnd}
         {scrubStart}
         {showComparison}
@@ -249,10 +250,10 @@
         y2={yScale(0)}
       />
     </Body>
-    {#if !isScrubbing && mouseoverValue?.x && !isFetchingDimensions}
+    {#if !isScrubbing && hoveredTime && !isFetchingDimensions}
       <WithRoundToTimegrain
         strategy={TimeRoundingStrategy.PREVIOUS}
-        value={mouseoverValue.x}
+        value={hoveredTime}
         {timeGrain}
         let:roundedValue
       >
@@ -294,6 +295,7 @@
                   {xAccessor}
                   {yAccessor}
                   {dimensionData}
+                  dimensionValue={$tableInteractionStore?.dimensionValue}
                   {mouseoverFormat}
                 />
               {:else}

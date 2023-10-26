@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -12,8 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -21,12 +23,55 @@ import (
 
 // GetLogs implements runtimev1.RuntimeServiceServer
 func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*runtimev1.GetLogsResponse, error) {
-	panic("not implemented")
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.ascending", req.Ascending),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		return nil, ErrForbidden
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	return &runtimev1.GetLogsResponse{Logs: ctrl.Logs.GetLogs(req.Ascending, int(req.Limit))}, nil
 }
 
 // WatchLogs implements runtimev1.RuntimeServiceServer
 func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.RuntimeService_WatchLogsServer) error {
-	panic("not implemented")
+	ctx := srv.Context()
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.replay", req.Replay),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		return ErrForbidden
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	if req.Replay {
+		for _, l := range ctrl.Logs.GetLogs(true, int(req.ReplayLimit)) {
+			err := srv.Send(&runtimev1.WatchLogsResponse{Log: l})
+			if err != nil {
+				return status.Error(codes.InvalidArgument, err.Error())
+			}
+		}
+	}
+
+	return ctrl.Logs.WatchLogs(srv.Context(), func(item *runtimev1.Log) {
+		err := srv.Send(&runtimev1.WatchLogsResponse{Log: item})
+		if err != nil {
+			s.logger.Info("failed to send log event", zap.Error(err))
+		}
+	})
 }
 
 // ListResources implements runtimev1.RuntimeServiceServer
@@ -41,7 +86,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return nil, ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -51,13 +96,20 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	slices.SortFunc(rs, func(a, b *runtimev1.Resource) bool {
+	slices.SortFunc(rs, func(a, b *runtimev1.Resource) int {
 		an := a.Meta.Name
 		bn := b.Meta.Name
-		return an.Kind < bn.Kind || (an.Kind == bn.Kind && an.Name < bn.Name)
+		if an.Kind < bn.Kind {
+			return -1
+		}
+		if an.Kind > bn.Kind {
+			return 1
+		}
+		return strings.Compare(an.Name, bn.Name)
 	})
 
-	for i := 0; i < len(rs); i++ {
+	i := 0
+	for i < len(rs) {
 		r := rs[i]
 		r, access, err := s.applySecurityPolicy(ctx, req.InstanceId, r)
 		if err != nil {
@@ -71,6 +123,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 			continue
 		}
 		rs[i] = r
+		i++
 	}
 
 	return &runtimev1.ListResourcesResponse{Resources: rs}, nil
@@ -87,7 +140,7 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 		return ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ss.Context(), req.InstanceId)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -118,13 +171,17 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 	}
 
 	return ctrl.Subscribe(ss.Context(), func(e runtimev1.ResourceEvent, n *runtimev1.ResourceName, r *runtimev1.Resource) {
-		r, access, err := s.applySecurityPolicy(ss.Context(), req.InstanceId, r)
-		if err != nil {
-			s.logger.Info("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
-			return
-		}
-		if !access {
-			return
+		if r != nil { // r is nil for deletion events
+			var access bool
+			var err error
+			r, access, err = s.applySecurityPolicy(ss.Context(), req.InstanceId, r)
+			if err != nil {
+				s.logger.Info("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
+				return
+			}
+			if !access {
+				return
+			}
 		}
 
 		err = ss.Send(&runtimev1.WatchResourcesResponse{
@@ -151,7 +208,7 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 		return nil, ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -186,7 +243,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 		return nil, ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -219,6 +276,9 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 // applySecurityPolicy applies relevant security policies to the resource.
 // The input resource will not be modified in-place (so no need to set clone=true when obtaining it from the catalog).
 func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
+	ctx, span := tracer.Start(ctx, "applySecurityPolicy", trace.WithAttributes(attribute.String("instance_id", instID), attribute.String("kind", r.Meta.Name.Kind), attribute.String("name", r.Meta.Name.Name)))
+	defer span.End()
+
 	mv := r.GetMetricsView()
 	if mv == nil || mv.State.ValidSpec == nil || mv.State.ValidSpec.Security == nil {
 		// Allow if it's not a metrics view or it doesn't have a valid security policy.

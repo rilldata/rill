@@ -78,7 +78,7 @@ export type QueryServiceQueryBatch200 = {
 };
 
 export type QueryServiceQueryBatchBody = {
-  queries?: V1QueryBatchEntry[];
+  queries?: V1Query[];
 };
 
 export type QueryServiceQueryBody = {
@@ -89,9 +89,6 @@ export type QueryServiceQueryBody = {
   limit?: number;
 };
 
-/**
- * Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
- */
 export type QueryServiceColumnTopKBody = {
   columnName?: string;
   agg?: string;
@@ -208,17 +205,17 @@ export type QueryServiceMetricsViewRowsBody = {
   timeZone?: string;
 };
 
-export type QueryServiceMetricsViewComparisonToplistBody = {
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
+export type QueryServiceMetricsViewComparisonBody = {
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
   filter?: V1MetricsViewFilter;
   limit?: string;
   offset?: string;
   priority?: number;
+  exact?: boolean;
 };
 
 export type QueryServiceMetricsViewAggregationBody = {
@@ -236,11 +233,8 @@ export type QueryServiceMetricsViewAggregationBody = {
 export type QueryServiceExportBody = {
   limit?: string;
   format?: V1ExportFormat;
-  metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
-  metricsViewToplistRequest?: V1MetricsViewToplistRequest;
-  metricsViewRowsRequest?: V1MetricsViewRowsRequest;
-  metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
-  metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
+  query?: V1Query;
+  bakedQuery?: string;
 };
 
 export type QueryServiceColumnDescriptiveStatisticsParams = {
@@ -264,10 +258,12 @@ export type RuntimeServiceWatchLogs200 = {
 
 export type RuntimeServiceWatchLogsParams = {
   replay?: boolean;
+  replayLimit?: number;
 };
 
 export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;
+  limit?: number;
 };
 
 export type RuntimeServiceWatchFiles200 = {
@@ -339,7 +335,6 @@ export type RuntimeServiceEditInstanceBody = {
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
   embedCatalog?: boolean;
-  ingestionLimitBytes?: string;
   watchRepo?: boolean;
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
@@ -417,7 +412,7 @@ export interface V1WatchResourcesResponse {
 }
 
 export interface V1WatchLogsResponse {
-  logs?: V1Log[];
+  log?: V1Log;
 }
 
 export interface V1WatchFilesResponse {
@@ -685,6 +680,19 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+}
+
 export interface V1ReportState {
   nextRunOn?: string;
   currentExecution?: V1ReportExecution;
@@ -692,21 +700,20 @@ export interface V1ReportState {
   executionCount?: number;
 }
 
-export type V1ReportSpecOperationProperties = { [key: string]: any };
-
 export interface V1ReportSpec {
   trigger?: boolean;
   title?: string;
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
-  operationName?: string;
-  operationProperties?: V1ReportSpecOperationProperties;
-  operationTimeRange?: string;
-  exportLimit?: number;
+  queryName?: string;
+  queryArgsJson?: string;
+  queryTimeRange?: string;
+  exportLimit?: string;
   exportFormat?: V1ExportFormat;
-  recipients?: string[];
+  emailRecipients?: string[];
   emailOpenUrl?: string;
   emailEditUrl?: string;
+  emailExportUrl?: string;
 }
 
 export interface V1ReportExecution {
@@ -720,19 +727,6 @@ export interface V1ReportExecution {
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
-}
-
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
 }
 
 export interface V1RenameFileResponse {
@@ -854,19 +848,10 @@ Only applicable if file_path is set. */
   endLocation?: V1ReconcileErrorCharLocation;
 }
 
-export type V1QueryResponseDataItem = { [key: string]: any };
-
-export interface V1QueryResponse {
-  meta?: V1StructType;
-  data?: V1QueryResponseDataItem[];
-}
-
-export interface V1QueryBatchResponse {
-  key?: number;
-  error?: string;
+export interface V1QueryResult {
   metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
   metricsViewToplistResponse?: V1MetricsViewToplistResponse;
-  metricsViewComparisonToplistResponse?: V1MetricsViewComparisonToplistResponse;
+  metricsViewComparisonResponse?: V1MetricsViewComparisonResponse;
   metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
   metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
   metricsViewRowsResponse?: V1MetricsViewRowsResponse;
@@ -885,12 +870,23 @@ export interface V1QueryBatchResponse {
   tableRowsResponse?: V1TableRowsResponse;
 }
 
-export interface V1QueryBatchEntry {
-  /** Since response could out of order `key` is used to co-relate a specific response to request. */
-  key?: number;
+export type V1QueryResponseDataItem = { [key: string]: any };
+
+export interface V1QueryResponse {
+  meta?: V1StructType;
+  data?: V1QueryResponseDataItem[];
+}
+
+export interface V1QueryBatchResponse {
+  index?: number;
+  result?: V1QueryResult;
+  error?: string;
+}
+
+export interface V1Query {
   metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
-  metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
+  metricsViewComparisonRequest?: V1MetricsViewComparisonRequest;
   metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
   metricsViewTotalsRequest?: V1MetricsViewTotalsRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
@@ -1020,10 +1016,6 @@ export interface V1NumericHistogramBins {
   bins?: NumericHistogramBinsBin[];
 }
 
-/**
- * Response for QueryService.ColumnNumericHistogram, QueryService.ColumnDescriptiveStatistics and QueryService.ColumnCardinality.
-Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
- */
 export interface V1NumericSummary {
   numericHistogramBins?: V1NumericHistogramBins;
   numericStatistics?: V1NumericStatistics;
@@ -1107,6 +1099,26 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
+}
+
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
+}
+
 export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1164,21 +1176,6 @@ export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  filter?: V1MetricsViewFilter;
-  priority?: number;
-}
-
 export interface V1MetricsViewRowsRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1201,10 +1198,6 @@ export interface V1MetricsViewComparisonValue {
   deltaRel?: unknown;
 }
 
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
-}
-
 export type V1MetricsViewComparisonSortType =
   (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
 
@@ -1223,24 +1216,9 @@ export const V1MetricsViewComparisonSortType = {
 } as const;
 
 export interface V1MetricsViewComparisonSort {
-  measureName?: string;
-  ascending?: boolean;
+  name?: string;
+  desc?: boolean;
   type?: V1MetricsViewComparisonSortType;
-}
-
-export interface V1MetricsViewComparisonToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  sort?: V1MetricsViewComparisonSort[];
-  filter?: V1MetricsViewFilter;
-  limit?: string;
-  offset?: string;
-  priority?: number;
 }
 
 export interface V1MetricsViewComparisonRow {
@@ -1248,15 +1226,29 @@ export interface V1MetricsViewComparisonRow {
   measureValues?: V1MetricsViewComparisonValue[];
 }
 
+export interface V1MetricsViewComparisonResponse {
+  rows?: V1MetricsViewComparisonRow[];
+}
+
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
 }
 
 export interface V1MetricsViewAggregationSort {
@@ -1331,13 +1323,11 @@ export const V1LogLevel = {
   LOG_LEVEL_ERROR: "LOG_LEVEL_ERROR",
 } as const;
 
-export type V1LogPayload = { [key: string]: any };
-
 export interface V1Log {
   level?: V1LogLevel;
   time?: string;
   message?: string;
-  payload?: V1LogPayload;
+  jsonPayload?: string;
 }
 
 export interface V1ListResourcesResponse {
@@ -1395,7 +1385,6 @@ export interface V1Instance {
   projectVariables?: V1InstanceProjectVariables;
   annotations?: V1InstanceAnnotations;
   embedCatalog?: boolean;
-  ingestionLimitBytes?: string;
   watchRepo?: boolean;
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
@@ -1550,7 +1539,6 @@ export interface V1CreateInstanceRequest {
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
   embedCatalog?: boolean;
-  ingestionLimitBytes?: string;
   watchRepo?: boolean;
   stageChanges?: boolean;
   modelDefaultMaterialize?: boolean;
@@ -1581,9 +1569,6 @@ export interface V1ColumnTopKResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
 
-/**
- * Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
- */
 export interface V1ColumnTopKRequest {
   instanceId?: string;
   tableName?: string;
@@ -1700,9 +1685,6 @@ export interface V1ColumnCardinalityRequest {
   priority?: number;
 }
 
-/**
- * Response for QueryService.ColumnTopK and QueryService.ColumnCardinality. Message will have either topK or cardinality set.
- */
 export interface V1CategoricalSummary {
   topK?: V1TopK;
   cardinality?: number;

@@ -92,6 +92,7 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 	if err != nil {
 		return nil, err
 	}
+	logger.Info("opening duckdb handle", zap.String("dsn", cfg.DSN))
 
 	// We've seen the DuckDB .wal and .tmp files grow to 100s of GBs in some cases.
 	// This prevents recovery after restarts since DuckDB hangs while trying to reprocess the files.
@@ -426,6 +427,10 @@ func (c *connection) reopenDB() error {
 	connector, err := duckdb.NewConnector(c.config.DSN, func(execer driver.ExecerContext) error {
 		for _, qry := range bootQueries {
 			_, err := execer.ExecContext(context.Background(), qry, nil)
+			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
+				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
+				_, err = execer.ExecContext(context.Background(), qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
+			}
 			if err != nil {
 				return err
 			}

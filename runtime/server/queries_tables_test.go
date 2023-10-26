@@ -1,9 +1,11 @@
-package server
+package server_test
 
 import (
 	"context"
-	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"testing"
+
+	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	"github.com/rilldata/rill/runtime/server"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -110,21 +112,21 @@ func TestServer_TableRows_EmptyModel(t *testing.T) {
 	require.Equal(t, 0, len(cr.Data))
 }
 
-func getTableTestServer(t *testing.T) (*Server, string) {
+func getTableTestServer(t *testing.T) (*server.Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
 		SELECT 1::int AS a, 10::int AS "b""b"
 	`)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
 }
 
-func getTableTestServerWithSql(t *testing.T, sql string) (*Server, string) {
+func getTableTestServerWithSql(t *testing.T, sql string) (*server.Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", sql)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID
@@ -140,12 +142,12 @@ func getSingleValue(t *testing.T, rows *sqlx.Rows) int {
 	return val
 }
 
-func getTableTestServerWithEmptyModel(t *testing.T) (*Server, string) {
+func getTableTestServerWithEmptyModel(t *testing.T) (*server.Server, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
 		SELECT 1::int AS a, 10::int AS "b""b" where 1<>1
 	`)
 
-	server, err := NewServer(context.Background(), &Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
+	server, err := server.NewServer(context.Background(), &server.Options{}, rt, nil, ratelimit.NewNoop(), activity.NewNoopClient())
 	require.NoError(t, err)
 
 	return server, instanceID

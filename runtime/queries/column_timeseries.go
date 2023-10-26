@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"slices"
 	"strconv"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -94,7 +94,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	timeRange, err := q.resolveNormaliseTimeRange(ctx, rt, instanceID, priority)
+	timeRange, err := q.ResolveNormaliseTimeRange(ctx, rt, instanceID, priority)
 	if err != nil {
 		return err
 	}
@@ -221,8 +221,8 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 
 		var data []*runtimev1.TimeSeriesValue
+		rowMap := make(map[string]any)
 		for rows.Next() {
-			rowMap := make(map[string]any)
 			err := rows.MapScan(rowMap)
 			if err != nil {
 				rows.Close()
@@ -261,7 +261,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 
 		var sparkValues []*runtimev1.TimeSeriesValue
 		if q.Pixels != 0 {
-			sparkValues, err = q.createTimestampRollupReduction(ctx, rt, olap, instanceID, priority, temporaryTableName, tsAlias, "count")
+			sparkValues, err = q.CreateTimestampRollupReduction(ctx, rt, olap, instanceID, priority, temporaryTableName, tsAlias, "count")
 			if err != nil {
 				return err
 			}
@@ -280,7 +280,7 @@ func (q *ColumnTimeseries) Export(ctx context.Context, rt *runtime.Runtime, inst
 	return ErrExportNotSupported
 }
 
-func (q *ColumnTimeseries) resolveNormaliseTimeRange(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) (*runtimev1.TimeSeriesTimeRange, error) {
+func (q *ColumnTimeseries) ResolveNormaliseTimeRange(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) (*runtimev1.TimeSeriesTimeRange, error) {
 	rtr := q.TimeRange
 	if rtr == nil {
 		rtr = &runtimev1.TimeSeriesTimeRange{}
@@ -355,7 +355,7 @@ func (q *ColumnTimeseries) resolveNormaliseTimeRange(ctx context.Context, rt *ru
  * Importantly, this function runs very fast. For more information about the original M4 method,
  * see http://www.vldb.org/pvldb/vol7/p797-jugel.pdf
  */
-func (q *ColumnTimeseries) createTimestampRollupReduction(
+func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 	ctx context.Context,
 	rt *runtime.Runtime,
 	olap drivers.OLAPStore,

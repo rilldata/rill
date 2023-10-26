@@ -467,9 +467,6 @@ paths:
                   type: string
               embedCatalog:
                 type: boolean
-              ingestionLimitBytes:
-                type: string
-                format: int64
               watchRepo:
                 type: boolean
               stageChanges:
@@ -827,6 +824,11 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: limit
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs/watch:
@@ -857,6 +859,11 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: replayLimit
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
@@ -983,17 +990,10 @@ paths:
                 format: int64
               format:
                 $ref: '#/definitions/v1ExportFormat'
-              metricsViewAggregationRequest:
-                $ref: '#/definitions/v1MetricsViewAggregationRequest'
-              metricsViewToplistRequest:
-                $ref: '#/definitions/v1MetricsViewToplistRequest'
-              metricsViewRowsRequest:
-                $ref: '#/definitions/v1MetricsViewRowsRequest'
-              metricsViewTimeSeriesRequest:
-                $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
-              metricsViewComparisonToplistRequest:
-                $ref: '#/definitions/v1MetricsViewComparisonToplistRequest'
-            title: Request message for QueryService.Export
+              query:
+                $ref: '#/definitions/v1Query'
+              bakedQuery:
+                type: string
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsView}/aggregation:
@@ -1060,12 +1060,12 @@ paths:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
     post:
-      operationId: QueryService_MetricsViewComparisonToplist
+      operationId: QueryService_MetricsViewComparison
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1MetricsViewComparisonToplistResponse'
+            $ref: '#/definitions/v1MetricsViewComparisonResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1085,26 +1085,22 @@ paths:
           schema:
             type: object
             properties:
-              dimensionName:
-                type: string
-              measureNames:
-                type: array
-                items:
-                  type: string
-              inlineMeasures:
+              dimension:
+                $ref: '#/definitions/v1MetricsViewAggregationDimension'
+              measures:
                 type: array
                 items:
                   type: object
-                  $ref: '#/definitions/v1InlineMeasure'
-              baseTimeRange:
-                $ref: '#/definitions/v1TimeRange'
-              comparisonTimeRange:
-                $ref: '#/definitions/v1TimeRange'
+                  $ref: '#/definitions/v1MetricsViewAggregationMeasure'
               sort:
                 type: array
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewComparisonSort'
+              timeRange:
+                $ref: '#/definitions/v1TimeRange'
+              comparisonTimeRange:
+                $ref: '#/definitions/v1TimeRange'
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
               limit:
@@ -1116,7 +1112,9 @@ paths:
               priority:
                 type: integer
                 format: int32
-            title: Request message for QueryService.MetricsViewComparisonToplist
+              exact:
+                type: boolean
+            title: Request message for QueryService.MetricsViewComparison
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows:
@@ -1173,7 +1171,6 @@ paths:
                 format: int32
               timeZone:
                 type: string
-            title: Request message for QueryService.MetricsViewRows
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
@@ -1263,7 +1260,6 @@ paths:
               priority:
                 type: integer
                 format: int32
-            title: Request message for QueryService.MetricsViewTimeSeries
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist:
@@ -1329,7 +1325,6 @@ paths:
               priority:
                 type: integer
                 format: int32
-            title: Request message for QueryService.MetricsViewToplist
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/totals:
@@ -1382,7 +1377,6 @@ paths:
               priority:
                 type: integer
                 format: int32
-            title: Request message for QueryService.MetricsViewTotals
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
@@ -1749,7 +1743,6 @@ paths:
               priority:
                 type: integer
                 format: int32
-            description: Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
       tags:
         - QueryService
   /v1/instances/{instanceId}/query:
@@ -1767,7 +1760,6 @@ paths:
             $ref: '#/definitions/rpcStatus'
       parameters:
         - name: instanceId
-          description: Instance to query
           in: path
           required: true
           type: string
@@ -1779,22 +1771,17 @@ paths:
             properties:
               sql:
                 type: string
-                title: SELECT statement
               args:
                 type: array
                 items: {}
-                title: Args to interpolate into the statement
               priority:
                 type: integer
                 format: int32
-                title: Query priority (not supported by all backends)
               dryRun:
                 type: boolean
-                title: If true, will only validate the query, not execute it
               limit:
                 type: integer
                 format: int32
-            title: Request message for QueryService.Query
       tags:
         - QueryService
   /v1/instances/{instanceId}/query/batch:
@@ -1831,7 +1818,7 @@ paths:
                 type: array
                 items:
                   type: object
-                  $ref: '#/definitions/v1QueryBatchEntry'
+                  $ref: '#/definitions/v1Query'
       tags:
         - QueryService
   /v1/instances/{instanceId}/reconcile:
@@ -2662,7 +2649,6 @@ definitions:
       cardinality:
         type: number
         format: double
-    description: Response for QueryService.ColumnTopK and QueryService.ColumnCardinality. Message will have either topK or cardinality set.
   v1ColumnCardinalityRequest:
     type: object
     properties:
@@ -2675,7 +2661,6 @@ definitions:
       priority:
         type: integer
         format: int32
-    title: Request for QueryService.ColumnCardinality. Returns the cardinality for a given column for table table_name
   v1ColumnCardinalityResponse:
     type: object
     properties:
@@ -2693,7 +2678,6 @@ definitions:
       priority:
         type: integer
         format: int32
-    title: Request for QueryService.GetColumnDescriptiveStatisticsRequest. Returns the stats for a given column for table table_name
   v1ColumnDescriptiveStatisticsResponse:
     type: object
     properties:
@@ -2711,14 +2695,12 @@ definitions:
       priority:
         type: integer
         format: int32
-    title: Request for QueryService.ColumnNullCount. Returns the null count for a given column for table table_name
   v1ColumnNullCountResponse:
     type: object
     properties:
       count:
         type: number
         format: double
-    title: Response for QueryService.ColumnNullCount
   v1ColumnNumericHistogramRequest:
     type: object
     properties:
@@ -2733,13 +2715,11 @@ definitions:
       priority:
         type: integer
         format: int32
-    title: Request for QueryService.ColumnNumericHistogram. Returns the histogram for a given column for table table_name
   v1ColumnNumericHistogramResponse:
     type: object
     properties:
       numericSummary:
         $ref: '#/definitions/v1NumericSummary'
-    title: Response for QueryService.ColumnNumericHistogram
   v1ColumnRollupIntervalRequest:
     type: object
     properties:
@@ -2775,7 +2755,6 @@ definitions:
       priority:
         type: integer
         format: int32
-    title: Request for QueryService.ColumnRugHistogram
   v1ColumnRugHistogramResponse:
     type: object
     properties:
@@ -2793,13 +2772,11 @@ definitions:
       priority:
         type: integer
         format: int32
-    title: Request for QueryService.ColumnTimeGrainRequest
   v1ColumnTimeGrainResponse:
     type: object
     properties:
       timeGrain:
         $ref: '#/definitions/v1TimeGrain'
-    title: Response for QueryService.ColumnTimeGrain
   v1ColumnTimeRangeRequest:
     type: object
     properties:
@@ -2812,7 +2789,6 @@ definitions:
       priority:
         type: integer
         format: int32
-    title: Request for QueryService.ColumnTimeRange
   v1ColumnTimeRangeResponse:
     type: object
     properties:
@@ -2869,7 +2845,6 @@ definitions:
       priority:
         type: integer
         format: int32
-    description: Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
   v1ColumnTopKResponse:
     type: object
     properties:
@@ -2934,9 +2909,6 @@ definitions:
           type: string
       embedCatalog:
         type: boolean
-      ingestionLimitBytes:
-        type: string
-        format: int64
       watchRepo:
         type: boolean
       stageChanges:
@@ -3029,7 +3001,6 @@ definitions:
     properties:
       downloadUrlPath:
         type: string
-    title: Response message for QueryService.Export
   v1FileEvent:
     type: string
     enum:
@@ -3125,7 +3096,6 @@ definitions:
         type: string
       expression:
         type: string
-    title: InlineMeasure is a measure to inject in a metrics view query that is not defined in the underlying MetricsView
   v1Instance:
     type: object
     properties:
@@ -3165,9 +3135,6 @@ definitions:
           type: string
       embedCatalog:
         type: boolean
-      ingestionLimitBytes:
-        type: string
-        format: int64
       watchRepo:
         type: boolean
       stageChanges:
@@ -3254,8 +3221,8 @@ definitions:
         format: date-time
       message:
         type: string
-      payload:
-        type: object
+      jsonPayload:
+        type: string
   v1LogLevel:
     type: string
     enum:
@@ -3407,7 +3374,52 @@ definitions:
         type: string
       nullable:
         type: boolean
-    title: MetricsViewColumn represents a column in a metrics view
+  v1MetricsViewComparisonRequest:
+    type: object
+    properties:
+      instanceId:
+        type: string
+      metricsViewName:
+        type: string
+      dimension:
+        $ref: '#/definitions/v1MetricsViewAggregationDimension'
+      measures:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+      sort:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewComparisonSort'
+      timeRange:
+        $ref: '#/definitions/v1TimeRange'
+      comparisonTimeRange:
+        $ref: '#/definitions/v1TimeRange'
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+      limit:
+        type: string
+        format: int64
+      offset:
+        type: string
+        format: int64
+      priority:
+        type: integer
+        format: int32
+      exact:
+        type: boolean
+    title: Request message for QueryService.MetricsViewComparison
+  v1MetricsViewComparisonResponse:
+    type: object
+    properties:
+      rows:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewComparisonRow'
+    title: Response message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonRow:
     type: object
     properties:
@@ -3420,9 +3432,9 @@ definitions:
   v1MetricsViewComparisonSort:
     type: object
     properties:
-      measureName:
+      name:
         type: string
-      ascending:
+      desc:
         type: boolean
       type:
         $ref: '#/definitions/v1MetricsViewComparisonSortType'
@@ -3435,54 +3447,6 @@ definitions:
       - METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA
       - METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA
     default: METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
-  v1MetricsViewComparisonToplistRequest:
-    type: object
-    properties:
-      instanceId:
-        type: string
-      metricsViewName:
-        type: string
-      dimensionName:
-        type: string
-      measureNames:
-        type: array
-        items:
-          type: string
-      inlineMeasures:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1InlineMeasure'
-      baseTimeRange:
-        $ref: '#/definitions/v1TimeRange'
-      comparisonTimeRange:
-        $ref: '#/definitions/v1TimeRange'
-      sort:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1MetricsViewComparisonSort'
-      filter:
-        $ref: '#/definitions/v1MetricsViewFilter'
-      limit:
-        type: string
-        format: int64
-      offset:
-        type: string
-        format: int64
-      priority:
-        type: integer
-        format: int32
-    title: Request message for QueryService.MetricsViewComparisonToplist
-  v1MetricsViewComparisonToplistResponse:
-    type: object
-    properties:
-      rows:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1MetricsViewComparisonRow'
-    title: Response message for QueryService.MetricsViewComparisonToplist
   v1MetricsViewComparisonValue:
     type: object
     properties:
@@ -3505,7 +3469,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/MetricsViewFilterCond'
-    title: Filter clause for metrics view requests
   v1MetricsViewRowsRequest:
     type: object
     properties:
@@ -3539,7 +3502,6 @@ definitions:
         format: int32
       timeZone:
         type: string
-    title: Request message for QueryService.MetricsViewRows
   v1MetricsViewRowsResponse:
     type: object
     properties:
@@ -3552,7 +3514,6 @@ definitions:
         type: array
         items:
           type: object
-    title: Response message for QueryService.MetricsViewRows
   v1MetricsViewSort:
     type: object
     properties:
@@ -3560,7 +3521,6 @@ definitions:
         type: string
       ascending:
         type: boolean
-    title: Sort clause for metrics view requests
   v1MetricsViewSpec:
     type: object
     properties:
@@ -3654,7 +3614,6 @@ definitions:
       priority:
         type: integer
         format: int32
-    title: Request message for QueryService.MetricsViewTimeSeries
   v1MetricsViewTimeSeriesResponse:
     type: object
     properties:
@@ -3668,7 +3627,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1TimeSeriesValue'
-    title: Response message for QueryService.MetricsViewTimeSeries
   v1MetricsViewToplistRequest:
     type: object
     properties:
@@ -3709,7 +3667,6 @@ definitions:
       priority:
         type: integer
         format: int32
-    title: Request message for QueryService.MetricsViewToplist
   v1MetricsViewToplistResponse:
     type: object
     properties:
@@ -3722,7 +3679,6 @@ definitions:
         type: array
         items:
           type: object
-    title: Response message for QueryService.MetricsViewToplist
   v1MetricsViewTotalsRequest:
     type: object
     properties:
@@ -3750,7 +3706,6 @@ definitions:
       priority:
         type: integer
         format: int32
-    title: Request message for QueryService.MetricsViewTotals
   v1MetricsViewTotalsResponse:
     type: object
     properties:
@@ -3761,7 +3716,6 @@ definitions:
           $ref: '#/definitions/v1MetricsViewColumn'
       data:
         type: object
-    title: Response message for QueryService.MetricsViewTotals
   v1MetricsViewV2:
     type: object
     properties:
@@ -3894,7 +3848,6 @@ definitions:
       sd:
         type: number
         format: double
-    title: Response for QueryService.ColumnDescriptiveStatistics
   v1NumericSummary:
     type: object
     properties:
@@ -3904,9 +3857,6 @@ definitions:
         $ref: '#/definitions/v1NumericStatistics'
       numericOutliers:
         $ref: '#/definitions/v1NumericOutliers'
-    description: |-
-      Response for QueryService.ColumnNumericHistogram, QueryService.ColumnDescriptiveStatistics and QueryService.ColumnCardinality.
-      Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
   v1OLAPGetTableResponse:
     type: object
     properties:
@@ -4051,19 +4001,15 @@ definitions:
         type: string
         title: 'TODO: Redundant, should be removed (but frontend currently uses it)'
     title: Response message for RuntimeService.PutFile
-  v1QueryBatchEntry:
+  v1Query:
     type: object
     properties:
-      key:
-        type: integer
-        format: int32
-        description: Since response could out of order `key` is used to co-relate a specific response to request.
       metricsViewAggregationRequest:
         $ref: '#/definitions/v1MetricsViewAggregationRequest'
       metricsViewToplistRequest:
         $ref: '#/definitions/v1MetricsViewToplistRequest'
-      metricsViewComparisonToplistRequest:
-        $ref: '#/definitions/v1MetricsViewComparisonToplistRequest'
+      metricsViewComparisonRequest:
+        $ref: '#/definitions/v1MetricsViewComparisonRequest'
       metricsViewTimeSeriesRequest:
         $ref: '#/definitions/v1MetricsViewTimeSeriesRequest'
       metricsViewTotalsRequest:
@@ -4099,17 +4045,31 @@ definitions:
   v1QueryBatchResponse:
     type: object
     properties:
-      key:
+      index:
         type: integer
-        format: int32
+        format: int64
+      result:
+        $ref: '#/definitions/v1QueryResult'
       error:
         type: string
+  v1QueryResponse:
+    type: object
+    properties:
+      meta:
+        $ref: '#/definitions/v1StructType'
+      data:
+        type: array
+        items:
+          type: object
+  v1QueryResult:
+    type: object
+    properties:
       metricsViewAggregationResponse:
         $ref: '#/definitions/v1MetricsViewAggregationResponse'
       metricsViewToplistResponse:
         $ref: '#/definitions/v1MetricsViewToplistResponse'
-      metricsViewComparisonToplistResponse:
-        $ref: '#/definitions/v1MetricsViewComparisonToplistResponse'
+      metricsViewComparisonResponse:
+        $ref: '#/definitions/v1MetricsViewComparisonResponse'
       metricsViewTimeSeriesResponse:
         $ref: '#/definitions/v1MetricsViewTimeSeriesResponse'
       metricsViewTotalsResponse:
@@ -4142,18 +4102,6 @@ definitions:
         $ref: '#/definitions/v1TableColumnsResponse'
       tableRowsResponse:
         $ref: '#/definitions/v1TableRowsResponse'
-  v1QueryResponse:
-    type: object
-    properties:
-      meta:
-        $ref: '#/definitions/v1StructType'
-        title: Schema of result data
-      data:
-        type: array
-        items:
-          type: object
-        title: Result data
-    title: Response message for QueryService.Query
   v1ReconcileError:
     type: object
     properties:
@@ -4376,24 +4324,26 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
-      operationName:
+      queryName:
         type: string
-      operationProperties:
-        type: object
-      operationTimeRange:
+      queryArgsJson:
+        type: string
+      queryTimeRange:
         type: string
       exportLimit:
-        type: integer
-        format: int64
+        type: string
+        format: uint64
       exportFormat:
         $ref: '#/definitions/v1ExportFormat'
-      recipients:
+      emailRecipients:
         type: array
         items:
           type: string
       emailOpenUrl:
         type: string
       emailEditUrl:
+        type: string
+      emailExportUrl:
         type: string
   v1ReportState:
     type: object
@@ -4847,11 +4797,8 @@ definitions:
   v1WatchLogsResponse:
     type: object
     properties:
-      logs:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Log'
+      log:
+        $ref: '#/definitions/v1Log'
   v1WatchResourcesResponse:
     type: object
     properties:
