@@ -399,7 +399,7 @@ service AdminService {
   }
 
   // DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
-  rpc DeleteReport (DeleteReportRequest) returns (DeleteReportResponse) {
+  rpc DeleteReport(DeleteReportRequest) returns (DeleteReportResponse) {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{project}/reports/{name}"};
   }
 

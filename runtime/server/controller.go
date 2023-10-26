@@ -418,7 +418,7 @@ func (s *Server) applySecurityPolicyReport(ctx context.Context, instID string, r
 	claims := auth.GetClaims(ctx)
 
 	// Allow if the owner is accessing the report
-	if report.Spec.Security != nil && claims.Subject() == report.Spec.Security.OwnerUserId {
+	if report.Spec.Annotations != nil && claims.Subject() == report.Spec.Annotations["admin_owner_user_id"] {
 		return r, true, nil
 	}
 

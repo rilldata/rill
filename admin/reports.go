@@ -2,11 +2,14 @@ package admin
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // TriggerReport triggers an ad-hoc run of a report
@@ -81,6 +84,9 @@ func (s *Service) TriggerReconcileAndAwaitReport(ctx context.Context, depl *data
 
 		r, err := rt.GetResource(ctx, reportReq)
 		if err != nil {
+			if s, ok := status.FromError(err); !ok || s.Code() != codes.NotFound {
+				return fmt.Errorf("failed to poll for report: %w", err)
+			}
 			if oldSpecVersion != nil {
 				// Success - previously the report was found, now we cannot find it anymore
 				return nil

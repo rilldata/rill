@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"path"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/exp/slices"
@@ -117,17 +118,18 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
 	}
+	annotations := parseReportAnnotations(spec)
 
-	if spec.Security == nil || !spec.Security.ManagedByUi {
+	if !annotations.AdminManaged {
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
 	}
 
-	isOwner := claims.OwnerType() == auth.OwnerTypeUser && spec.Security.OwnerUserId == claims.OwnerID()
+	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
 	if !permissions.ManageReports && !isOwner {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
-	data, err := yamlForManagedReport(req.Options, spec.Security.OwnerUserId)
+	data, err := yamlForManagedReport(req.Options, annotations.AdminOwnerUserID)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -187,8 +189,9 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
 	}
+	annotations := parseReportAnnotations(spec)
 
-	if spec.Security == nil || !spec.Security.ManagedByUi {
+	if !annotations.AdminManaged {
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
 	}
 
@@ -224,7 +227,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 		}
 	} else {
-		data, err := yamlForManagedReport(opts, spec.Security.OwnerUserId)
+		data, err := yamlForManagedReport(opts, annotations.AdminOwnerUserID)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 		}
@@ -285,12 +288,13 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
 	}
+	annotations := parseReportAnnotations(spec)
 
-	if spec.Security == nil || !spec.Security.ManagedByUi {
+	if !annotations.AdminManaged {
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
 	}
 
-	isOwner := claims.OwnerType() == auth.OwnerTypeUser && spec.Security.OwnerUserId == claims.OwnerID()
+	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
 	if !permissions.ManageReports && !isOwner {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
@@ -345,8 +349,9 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
 	}
+	annotations := parseReportAnnotations(spec)
 
-	isOwner := spec.Security != nil && claims.OwnerType() == auth.OwnerTypeUser && spec.Security.OwnerUserId == claims.OwnerID()
+	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
 	if !permissions.ManageReports && !isOwner {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
@@ -380,11 +385,10 @@ func virtualFilePathForManagedReport(name string) string {
 }
 
 func yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID string) ([]byte, error) {
-	res := rillv1.ReportYAML{}
+	res := reportYAML{}
+	res.Kind = "report"
 	res.Title = opts.Title
-	res.Refresh = &rillv1.ScheduleYAML{
-		Cron: opts.RefreshCron,
-	}
+	res.Refresh.Cron = opts.RefreshCron
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	res.Export.Format = opts.ExportFormat.String()
@@ -393,17 +397,17 @@ func yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID string) ([]by
 	res.Email.Template.EditURL = ""   // TODO: Add
 	res.Email.Template.ExportURL = "" // TODO: Add
 	res.Email.Recipients = opts.Recipients
-	res.Security.ManagedByUI = true
-	res.Security.OwnerUserID = ownerUserID
+	res.Annotations.AdminOwnerUserID = ownerUserID
+	res.Annotations.AdminManaged = true
+	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
 	return yaml.Marshal(res)
 }
 
 func yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, error) {
-	res := rillv1.ReportYAML{}
+	res := reportYAML{}
+	res.Kind = "report"
 	res.Title = opts.Title
-	res.Refresh = &rillv1.ScheduleYAML{
-		Cron: opts.RefreshCron,
-	}
+	res.Refresh.Cron = opts.RefreshCron
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson        // TODO: Format as YAML
 	res.Export.Format = opts.ExportFormat.String() // TODO: Format as pretty string
@@ -428,4 +432,50 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	opts.OpenUrl = spec.EmailOpenUrl
 	opts.Recipients = spec.EmailRecipients
 	return opts, nil
+}
+
+// reportYAML is derived from rillv1.ReportYAML, but adapted for generating (as opposed to parsing) the report YAML.
+type reportYAML struct {
+	Kind    string `yaml:"kind"`
+	Title   string `yaml:"title"`
+	Refresh struct {
+		Cron string `yaml:"cron"`
+	} `yaml:"refresh"`
+	Query struct {
+		Name     string         `yaml:"name"`
+		Args     map[string]any `yaml:"args,omitempty"`
+		ArgsJSON string         `yaml:"args_json,omitempty"`
+	} `yaml:"query"`
+	Export struct {
+		Format string `yaml:"format"`
+		Limit  uint   `yaml:"limit"`
+	} `yaml:"export"`
+	Email struct {
+		Recipients []string `yaml:"recipients"`
+		Template   struct {
+			OpenURL   string `yaml:"open_url"`
+			EditURL   string `yaml:"edit_url"`
+			ExportURL string `yaml:"export_url"`
+		} `yaml:"template"`
+	} `yaml:"email"`
+	Annotations reportAnnotations `yaml:"annotations,omitempty"`
+}
+
+type reportAnnotations struct {
+	AdminOwnerUserID string `yaml:"admin_owner_user_id"`
+	AdminManaged     bool   `yaml:"admin_managed"`
+	AdminNonce       string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
+}
+
+func parseReportAnnotations(r *runtimev1.ReportSpec) reportAnnotations {
+	if r.Annotations == nil {
+		return reportAnnotations{}
+	}
+
+	res := reportAnnotations{}
+	res.AdminOwnerUserID = r.Annotations["admin_owner_user_id"]
+	res.AdminManaged, _ = strconv.ParseBool(r.Annotations["admin_managed"])
+	res.AdminNonce = r.Annotations["admin_nonce"]
+
+	return res
 }

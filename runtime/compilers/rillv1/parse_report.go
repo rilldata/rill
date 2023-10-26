@@ -38,10 +38,7 @@ type ReportYAML struct {
 			ExportURL string `yaml:"export_url"`
 		} `yaml:"template"`
 	} `yaml:"email"`
-	Security struct {
-		OwnerUserID string `yaml:"owner_user_id"`
-		ManagedByUI bool   `yaml:"managed_by_ui"`
-	} `yaml:"security"`
+	Annotations map[string]string `yaml:"annotations"`
 }
 
 // parseReport parses a report definition and adds the resulting resource to p.Resources.
@@ -154,11 +151,7 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 	r.ReportSpec.EmailOpenUrl = tmp.Email.Template.OpenURL
 	r.ReportSpec.EmailEditUrl = tmp.Email.Template.EditURL
 	r.ReportSpec.EmailExportUrl = tmp.Email.Template.ExportURL
-	if tmp.Security.OwnerUserID != "" || tmp.Security.ManagedByUI {
-		r.ReportSpec.Security = &runtimev1.ReportSpec_Security{}
-		r.ReportSpec.Security.OwnerUserId = tmp.Security.OwnerUserID
-		r.ReportSpec.Security.ManagedByUi = tmp.Security.ManagedByUI
-	}
+	r.ReportSpec.Annotations = tmp.Annotations
 
 	return nil
 }
