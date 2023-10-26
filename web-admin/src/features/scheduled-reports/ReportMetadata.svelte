@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from "@rilldata/web-common/components/button";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
 
   export let organization: string;
@@ -21,13 +22,15 @@
   };
 </script>
 
-<div class="flex flex-col gap-y-2 max-w-full 2xl:max-w-[1200px]">
+<div class="flex flex-col gap-y-2 w-full max-w-full 2xl:max-w-[1200px]">
   <div class="flex flex-col gap-y-2">
     <div class="flex gap-x-2 items-center">
       <h1 class="text-gray-800 text-base font-medium leading-none">
         {reportMetadata.label}
       </h1>
       <Tag>Report</Tag>
+      <div class="grow" />
+      <Button type="primary">Export now</Button>
     </div>
     {#if reportMetadata?.description}
       <p class="text-gray-500 text-sm">{reportMetadata.description}</p>
@@ -44,7 +47,7 @@
         {reportMetadata.dashboard}
       </span>
       <!-- author -->
-      <span class="text-gray-800 text-sm font-medium">Author</span>
+      <span class="text-gray-800 text-sm font-medium">Creator</span>
       <span class="text-gray-700 text-sm font-normal">
         {reportMetadata.author}
       </span>
