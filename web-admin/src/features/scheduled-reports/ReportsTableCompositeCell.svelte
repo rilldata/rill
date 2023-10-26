@@ -1,5 +1,6 @@
 <script lang="ts">
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
+  import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
   import {
     capitalizeFirstLetter,
     formatDateToCustomString,
@@ -13,14 +14,12 @@
   export let status: string;
 </script>
 
-<div class="flex flex-col gap-y-0.5 group px-4 py-[5px]">
+<a href={`reports/${id}`} class="flex flex-col gap-y-0.5 group px-4 py-[5px]">
   <div class="flex gap-x-2 items-center">
-    <a
-      href={`reports/${id}`}
-      class="text-gray-700 text-sm font-semibold hover:text-blue-600"
-    >
+    <ReportIcon size={"14px"} className="text-slate-500" />
+    <div class="text-gray-700 text-sm font-semibold group-hover:text-blue-600">
       {reportName}
-    </a>
+    </div>
     {#if status === "success"}
       <CheckCircle className="text-blue-500" />
     {/if}
@@ -32,4 +31,4 @@
     <span>•</span>
     <span>Created by {author}</span>
   </div>
-</div>
+</a>
