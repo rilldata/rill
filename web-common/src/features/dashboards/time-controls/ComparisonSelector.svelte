@@ -1,11 +1,14 @@
 <!-- @component 
 This component needs to do the following:
 1. display the set of available comparisons in the menu.
-2. dispatch to TimeControl.svelte the selected comparison.
-3. read the existing active comparison from somewhere.
+2. read the existing active comparison
+3. update comparisons on user interactions
 -->
 <script lang="ts">
+  import { IconSpaceFixer } from "@rilldata/web-common/components/button";
+  import { Chip } from "@rilldata/web-common/components/chip";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
   import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import {
@@ -16,19 +19,29 @@ This component needs to do the following:
   import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { NO_COMPARISON_LABEL } from "@rilldata/web-common/lib/time/config";
-  import type { MetricsViewDimension } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { matchSorter } from "match-sorter";
-  import { createEventDispatcher } from "svelte";
   import SelectorButton from "./SelectorButton.svelte";
 
-  const dispatch = createEventDispatcher();
-
-  export let showTimeComparison = true;
-  export let selectedDimension;
-  export let dimensions: MetricsViewDimension[];
+  export let metricViewName;
+  export let chipStyle = false;
 
   const TIME = "Time";
+
+  let dimensions = [];
+
+  $: dashboardStore = useDashboardStore(metricViewName);
+  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+
+  $: showTimeComparison = $dashboardStore?.showTimeComparison;
+  $: selectedDimension = $dashboardStore?.selectedComparisonDimension;
+  $: dimensions = $metaQuery?.data?.dimensions;
 
   let searchText = "";
 
@@ -37,7 +50,7 @@ This component needs to do the following:
   }
 
   /** compile the comparison options */
-  let options = dimensions.map((d) => ({
+  $: options = dimensions.map((d) => ({
     name: d.name,
     label: d.label,
   }));
@@ -55,6 +68,18 @@ This component needs to do the following:
     : showTimeComparison
     ? TIME
     : NO_COMPARISON_LABEL;
+
+  function enableComparison(type: string, name = "") {
+    if (type === "time") {
+      metricsExplorerStore.displayTimeComparison(metricViewName, true);
+    } else {
+      metricsExplorerStore.setComparisonDimension(metricViewName, name);
+    }
+  }
+
+  function disableAllComparisons() {
+    metricsExplorerStore.disableAllComparisons(metricViewName);
+  }
 </script>
 
 <WithTogglableFloatingElement
@@ -64,21 +89,46 @@ This component needs to do the following:
   let:active
 >
   <Tooltip distance={8} suppress={active}>
-    <SelectorButton
-      {active}
-      on:click={() => {
-        toggleFloatingElement();
-      }}
-    >
-      <div class="flex items-center gap-x-3">
-        <span class="ui-copy-icon"><Compare size="16px" /></span>
+    {#if chipStyle}
+      <Chip
+        on:click={() => {
+          toggleFloatingElement();
+        }}
+        {label}
+      >
+        <div slot="body" class="flex gap-x-2">
+          <div
+            class="font-bold text-ellipsis overflow-hidden whitespace-nowrap ml-2"
+          >
+            {label}
+          </div>
 
-        <span style:transform="translateY(-1px)" class="font-normal">
-          {showTimeComparison || selectedDimension ? "Comparing by" : ""}
-          <span class="font-bold">{label}</span>
-        </span>
-      </div>
-    </SelectorButton>
+          <div class="flex items-center">
+            <IconSpaceFixer pullRight>
+              <div class="transition-transform" class:-rotate-180={active}>
+                <CaretDownIcon size="14px" />
+              </div>
+            </IconSpaceFixer>
+          </div>
+        </div>
+      </Chip>
+    {:else}
+      <SelectorButton
+        {active}
+        on:click={() => {
+          toggleFloatingElement();
+        }}
+      >
+        <div class="flex items-center gap-x-3">
+          <span class="ui-copy-icon"><Compare size="16px" /></span>
+
+          <span style:transform="translateY(-1px)" class="font-normal">
+            {showTimeComparison || selectedDimension ? "Comparing by" : ""}
+            <span class="font-bold">{label}</span>
+          </span>
+        </div>
+      </SelectorButton>
+    {/if}
     <TooltipContent slot="tooltip-content" maxWidth="220px">
       Select a comparison for the dashboard
     </TooltipContent>
@@ -100,7 +150,7 @@ This component needs to do the following:
         intermediateSelection = NO_COMPARISON_LABEL;
       }}
       on:select={() => {
-        dispatch("disable-all-comparison");
+        disableAllComparisons();
         toggleFloatingElement();
       }}
     >
@@ -115,7 +165,7 @@ This component needs to do the following:
         intermediateSelection = TIME;
       }}
       on:select={() => {
-        dispatch("enable-comparison", { type: "time" });
+        enableComparison("time");
         toggleFloatingElement();
       }}
     >
@@ -132,10 +182,7 @@ This component needs to do the following:
             intermediateSelection = option.name;
           }}
           on:select={() => {
-            dispatch("enable-comparison", {
-              type: "dimension",
-              name: option.name,
-            });
+            enableComparison("dimension", option.name);
             toggleFloatingElement();
           }}
         >

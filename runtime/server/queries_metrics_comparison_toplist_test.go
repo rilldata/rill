@@ -56,16 +56,22 @@ measures:
   - label: "Total clicks"
     expression: sum(clicks)
 */
-func TestServer_MetricsViewComparisonToplist(t *testing.T) {
+func TestServer_MetricsViewComparison(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "ad words",
-		MeasureNames:    []string{"measure_2"},
-		BaseTimeRange: &runtimev1.TimeRange{
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "ad words",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
 			Start: parseTimeToProtoTimeStamps(t, "2022-01-02T00:00:00Z"),
 			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
@@ -75,9 +81,9 @@ func TestServer_MetricsViewComparisonToplist(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Ascending:   true,
+				Name: "measure_2",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Desc: false,
 			},
 		},
 		Exact: true,
@@ -102,22 +108,26 @@ func TestServer_MetricsViewComparisonToplist(t *testing.T) {
 |msn.com                 |1    |1         |0    |0      |2    |1         | -1  |-0.5   |
 |yahoo.com               |1    |1         |0    |0      |1    |2         |1    |1      |
 */
-func TestServer_MetricsViewComparisonToplist_inline_measures(t *testing.T) {
+func TestServer_MetricsViewComparison_inline_measures(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "ad words",
-		MeasureNames:    []string{"tmp_measure", "measure_2"},
-		InlineMeasures: []*runtimev1.InlineMeasure{
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "ad words",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:       "tmp_measure",
-				Expression: "count(*)",
+				Name:           "tmp_measure",
+				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+			},
+			{
+				Name: "measure_2",
 			},
 		},
-		BaseTimeRange: &runtimev1.TimeRange{
+		TimeRange: &runtimev1.TimeRange{
 			Start: parseTimeToProtoTimeStamps(t, "2022-01-02T00:00:00Z"),
 			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
@@ -127,9 +137,9 @@ func TestServer_MetricsViewComparisonToplist_inline_measures(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Ascending:   true,
+				Name: "measure_2",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Desc: false,
 			},
 		},
 		Exact: true,
@@ -153,16 +163,22 @@ func TestServer_MetricsViewComparisonToplist_inline_measures(t *testing.T) {
 	require.Equal(t, -0.5, rows[0].MeasureValues[1].DeltaRel.GetNumberValue())
 }
 
-func TestServer_MetricsViewComparisonToplist_nulls(t *testing.T) {
+func TestServer_MetricsViewComparison_nulls(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_2"},
-		BaseTimeRange: &runtimev1.TimeRange{
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
 			Start: parseTimeToProtoTimeStamps(t, "2022-01-02T00:00:00Z"),
 			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
 		},
@@ -172,9 +188,9 @@ func TestServer_MetricsViewComparisonToplist_nulls(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Ascending:   true,
+				Name: "measure_2",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Desc: false,
 			},
 		},
 		Exact: true,
@@ -214,16 +230,22 @@ the result should be:
 |msn.com                 |2    |1         | -1  |-0.5   |
 |yahoo.com               |1    |2         |1    |1      |
 */
-func TestServer_MetricsViewComparisonToplist_sort_by_base(t *testing.T) {
+func TestServer_MetricsViewComparison_sort_by_base(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_2"},
-		BaseTimeRange: &runtimev1.TimeRange{
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
 			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
 			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
@@ -233,9 +255,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Ascending:   false,
+				Name: "measure_2",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Desc: true,
 			},
 		},
 		Exact: true,
@@ -266,16 +288,22 @@ the result should be:
 |yahoo.com               |1    |2         |1    |1      |
 |msn.com                 |2    |1         | -1  |-0.5   |
 */
-func TestServer_MetricsViewComparisonToplist_sort_by_comparison(t *testing.T) {
+func TestServer_MetricsViewComparison_sort_by_comparison(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_2"},
-		BaseTimeRange: &runtimev1.TimeRange{
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
 			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
 			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
@@ -285,9 +313,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_comparison(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
-				Ascending:   false,
+				Name: "measure_2",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Desc: true,
 			},
 		},
 		Exact: true,
@@ -319,16 +347,22 @@ the result should be:
 |msn.com                 |1    |10        |9    |9      |
 */
 
-func TestServer_MetricsViewComparisonToplist_sort_by_abs_delta(t *testing.T) {
+func TestServer_MetricsViewComparison_sort_by_abs_delta(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_1"},
-		BaseTimeRange: &runtimev1.TimeRange{
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
 			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
 			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
@@ -338,9 +372,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_abs_delta(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_1",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
-				Ascending:   false,
+				Name: "measure_1",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Desc: true,
 			},
 		},
 		Exact: true,
@@ -371,16 +405,22 @@ the result should be:
 |msn.com                 |1    |10        |9    |9      |
 |yahoo.com               |100  |200       |100  |1      |
 */
-func TestServer_MetricsViewComparisonToplist_sort_by_rel_delta(t *testing.T) {
+func TestServer_MetricsViewComparison_sort_by_rel_delta(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_1"},
-		BaseTimeRange: &runtimev1.TimeRange{
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
 			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
 			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
@@ -390,9 +430,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_rel_delta(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_1",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA,
-				Ascending:   false,
+				Name: "measure_1",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA,
+				Desc: true,
 			},
 		},
 		Exact: true,
@@ -415,16 +455,22 @@ func TestServer_MetricsViewComparisonToplist_sort_by_rel_delta(t *testing.T) {
 	require.Equal(t, 1.0, rows[1].MeasureValues[0].DeltaRel.GetNumberValue())
 }
 
-func TestServer_MetricsViewComparisonToplist_sort_error(t *testing.T) {
+func TestServer_MetricsViewComparison_sort_error(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	_, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	_, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_2"},
-		BaseTimeRange: &runtimev1.TimeRange{
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
 			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
 			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
@@ -434,9 +480,9 @@ func TestServer_MetricsViewComparisonToplist_sort_error(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_1",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
-				Ascending:   false,
+				Name: "measure_1",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Desc: true,
 			},
 		},
 		Exact: true,
@@ -452,16 +498,22 @@ the result should be:
 |yahoo.com               |1    |2         |1    |1      |
 */
 
-func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T) {
+func TestServer_MetricsViewComparison_sort_by_delta_limit_1(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_2"},
-		BaseTimeRange: &runtimev1.TimeRange{
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
 			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
 			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
@@ -471,9 +523,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T)
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
-				Ascending:   false,
+				Name: "measure_2",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Desc: true,
 			},
 		},
 		Limit: 1,
@@ -491,16 +543,22 @@ func TestServer_MetricsViewComparisonToplist_sort_by_delta_limit_1(t *testing.T)
 	require.Equal(t, 1.0, rows[0].MeasureValues[0].DeltaRel.GetNumberValue())
 }
 
-func TestServer_MetricsViewComparisonToplist_sort_by_base_limit_1(t *testing.T) {
+func TestServer_MetricsViewComparison_sort_by_base_limit_1(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_2"},
-		BaseTimeRange: &runtimev1.TimeRange{
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
 			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
 			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
@@ -510,9 +568,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_limit_1(t *testing.T) 
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Ascending:   false,
+				Name: "measure_2",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Desc: true,
 			},
 		},
 		Limit: 1,
@@ -530,16 +588,22 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_limit_1(t *testing.T) 
 	require.Equal(t, 1.0, rows[0].MeasureValues[0].DeltaRel.GetNumberValue())
 }
 
-func TestServer_MetricsViewComparisonToplist_sort_by_base_filter(t *testing.T) {
+func TestServer_MetricsViewComparison_sort_by_base_filter(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_2"},
-		BaseTimeRange: &runtimev1.TimeRange{
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
 			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
 			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
@@ -549,9 +613,9 @@ func TestServer_MetricsViewComparisonToplist_sort_by_base_filter(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Ascending:   false,
+				Name: "measure_2",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Desc: true,
 			},
 		},
 		Filter: &runtimev1.MetricsViewFilter{
@@ -593,16 +657,25 @@ the result should be:
 |yahoo.com               |100  |200       |100  |1      | 1   |2         |1    |1      |
 |msn.com                 |1    |10        |9    |9      | 2   |1         | -1  |-0.5   |
 */
-func TestServer_MetricsViewComparisonToplist_2_measures(t *testing.T) {
+func TestServer_MetricsViewComparison_2_measures(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_mini_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_1", "measure_2"},
-		BaseTimeRange: &runtimev1.TimeRange{
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+			{
+				Name: "measure_2",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
 			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
 			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
 		},
@@ -612,9 +685,9 @@ func TestServer_MetricsViewComparisonToplist_2_measures(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
-				Ascending:   false,
+				Name: "measure_2",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Desc: true,
 			},
 		},
 		Exact: true,
@@ -668,19 +741,25 @@ Measures:
   - label: "Total clicks"
     expression: sum(clicks)
 */
-func TestServer_MetricsViewComparisonToplist_no_comparison(t *testing.T) {
+func TestServer_MetricsViewComparison_no_comparison(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_2"},
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
-				Ascending:   false,
+				Name: "measure_2",
+				Desc: true,
 			},
 		},
 		Exact: true,
@@ -698,18 +777,24 @@ func TestServer_MetricsViewComparisonToplist_no_comparison(t *testing.T) {
 	require.Equal(t, 1.0, tr.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
 }
 
-func TestServer_MetricsViewComparisonToplist_no_comparison_quotes(t *testing.T) {
+func TestServer_MetricsViewComparison_no_comparison_quotes(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "ad words",
-		MeasureNames:    []string{"measure_0"},
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "ad words",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_0",
+				Name: "measure_0",
 			},
 		},
 		Exact: true,
@@ -723,18 +808,24 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_quotes(t *testing.T) 
 	require.Equal(t, 2.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
 }
 
-func TestServer_MetricsViewComparisonToplist_no_comparison_numeric_dim(t *testing.T) {
+func TestServer_MetricsViewComparison_no_comparison_numeric_dim(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "numeric_dim",
-		MeasureNames:    []string{"measure_0"},
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "numeric_dim",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_0",
+				Name: "measure_0",
 			},
 		},
 		Exact: true,
@@ -748,18 +839,24 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_numeric_dim(t *testin
 	require.Equal(t, 2.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
 }
 
-func Ignore_TestServer_MetricsViewComparisonToplist_no_comparison_HugeInt(t *testing.T) {
+func Ignore_TestServer_MetricsViewComparison_no_comparison_HugeInt(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "id",
-		MeasureNames:    []string{"measure_2"},
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "id",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
+				Name: "measure_2",
 			},
 		},
 		Exact: true,
@@ -777,19 +874,25 @@ func Ignore_TestServer_MetricsViewComparisonToplist_no_comparison_HugeInt(t *tes
 	require.Equal(t, 2.0, tr.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
 }
 
-func TestServer_MetricsViewComparisonToplist_no_comparison_asc(t *testing.T) {
+func TestServer_MetricsViewComparison_no_comparison_asc(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_2"},
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
-				Ascending:   true,
+				Name: "measure_2",
+				Desc: false,
 			},
 		},
 		Exact: true,
@@ -807,19 +910,25 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_asc(t *testing.T) {
 	require.Equal(t, 2.0, tr.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
 }
 
-func TestServer_MetricsViewComparisonToplist_no_comparison_nulls_last(t *testing.T) {
+func TestServer_MetricsViewComparison_no_comparison_nulls_last(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_3"},
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_3",
+			},
+		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_3",
-				Ascending:   true,
+				Name: "measure_3",
+				Desc: false,
 			},
 		},
 		Exact: true,
@@ -836,15 +945,21 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_nulls_last(t *testing
 	require.Equal(t, "msn.com", tr.Rows[1].DimensionValue.GetStringValue())
 	require.Equal(t, structpb.NullValue(0), tr.Rows[1].MeasureValues[0].BaseValue.GetNullValue())
 
-	tr, err = server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err = server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_3"},
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_3",
+			},
+		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_3",
-				Ascending:   false,
+				Name: "measure_3",
+				Desc: true,
 			},
 		},
 		Exact: true,
@@ -863,19 +978,25 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_nulls_last(t *testing
 	require.Equal(t, structpb.NullValue(0), tr.Rows[1].MeasureValues[0].BaseValue.GetNullValue())
 }
 
-func TestServer_MetricsViewComparisonToplist_no_comparison_asc_limit(t *testing.T) {
+func TestServer_MetricsViewComparison_no_comparison_asc_limit(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_2"},
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_2",
-				Ascending:   true,
+				Name: "measure_2",
+				Desc: false,
 			},
 		},
 		Limit: 1,
@@ -889,23 +1010,33 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_asc_limit(t *testing.
 	require.Equal(t, 1.0, tr.Rows[0].MeasureValues[0].BaseValue.GetNumberValue())
 }
 
-func TestServer_MetricsViewComparisonToplist_no_comparison_2measures(t *testing.T) {
+func TestServer_MetricsViewComparison_no_comparison_2measures(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "domain",
-		MeasureNames:    []string{"measure_0", "measure_2"},
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+
+			{
+				Name: "measure_2",
+			},
+		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_0",
-				Ascending:   true,
+				Name: "measure_0",
+				Desc: false,
 			},
 			{
-				MeasureName: "measure_2",
-				Ascending:   true,
+				Name: "measure_2",
+				Desc: false,
 			},
 		},
 		Exact: true,
@@ -923,19 +1054,25 @@ func TestServer_MetricsViewComparisonToplist_no_comparison_2measures(t *testing.
 	require.Equal(t, 2.0, tr.Rows[1].MeasureValues[1].BaseValue.GetNumberValue())
 }
 
-func TestServer_MetricsViewComparisonToplist_no_comparison_complete_source_sanity_test(t *testing.T) {
+func TestServer_MetricsViewComparison_no_comparison_complete_source_sanity_test(t *testing.T) {
 	t.Parallel()
 	server, instanceId := getMetricsTestServer(t, "ad_bids")
 
-	tr, err := server.MetricsViewComparisonToplist(testCtx(), &runtimev1.MetricsViewComparisonToplistRequest{
+	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
-		DimensionName:   "dom",
-		MeasureNames:    []string{"measure_0"},
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "dom",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_0",
-				Ascending:   true,
+				Name: "measure_0",
+				Desc: false,
 			},
 		},
 		Filter: &runtimev1.MetricsViewFilter{

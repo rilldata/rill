@@ -34,12 +34,18 @@ func TestServer_QueryBatch_MetricsViewQueries(t *testing.T) {
 				},
 			},
 			{
-				Query: &runtimev1.Query_MetricsViewComparisonToplistRequest{
-					MetricsViewComparisonToplistRequest: &runtimev1.MetricsViewComparisonToplistRequest{
+				Query: &runtimev1.Query_MetricsViewComparisonRequest{
+					MetricsViewComparisonRequest: &runtimev1.MetricsViewComparisonRequest{
 						MetricsViewName: "ad_bids_metrics",
-						DimensionName:   "ad words",
-						MeasureNames:    []string{"measure_2"},
-						BaseTimeRange: &runtimev1.TimeRange{
+						Dimension: &runtimev1.MetricsViewAggregationDimension{
+							Name: "ad words",
+						},
+						Measures: []*runtimev1.MetricsViewAggregationMeasure{
+							{
+								Name: "measure_2",
+							},
+						},
+						TimeRange: &runtimev1.TimeRange{
 							Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
 							End:   parseTimeToProtoTimeStamps(t, "2022-01-01T23:59:00Z"),
 						},
@@ -49,9 +55,9 @@ func TestServer_QueryBatch_MetricsViewQueries(t *testing.T) {
 						},
 						Sort: []*runtimev1.MetricsViewComparisonSort{
 							{
-								MeasureName: "measure_2",
-								Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-								Ascending:   true,
+								Name: "measure_2",
+								Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+								Desc: false,
 							},
 						},
 					},
@@ -104,8 +110,8 @@ func TestServer_QueryBatch_MetricsViewQueries(t *testing.T) {
 			require.Equal(t, 2, len(tr.Data[1].Fields))
 
 		case 1:
-			require.IsType(t, &runtimev1.QueryResult_MetricsViewComparisonToplistResponse{}, response.Result.Result)
-			tr := response.Result.GetMetricsViewComparisonToplistResponse()
+			require.IsType(t, &runtimev1.QueryResult_MetricsViewComparisonResponse{}, response.Result.Result)
+			tr := response.Result.GetMetricsViewComparisonResponse()
 			rows := tr.Rows
 			require.NoError(t, err)
 			require.Equal(t, 1, len(rows))

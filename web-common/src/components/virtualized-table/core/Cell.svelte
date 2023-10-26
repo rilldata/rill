@@ -28,7 +28,7 @@
   export let atLeastOneSelected = false;
   export let excludeMode = false;
   export let positionStatic = false;
-  export let label = undefined;
+  export let label: string | undefined = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";

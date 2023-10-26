@@ -1263,6 +1263,54 @@ func (c *connection) DeleteBookmark(ctx context.Context, bookmarkID string) erro
 	return checkDeleteRow("bookmarks", res, err)
 }
 
+func (c *connection) FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*database.VirtualFile, error) {
+	var res []*database.VirtualFile
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT path, data, deleted, updated_on
+		FROM virtual_files
+		WHERE project_id=$1 AND branch=$2 AND (updated_on>$3 OR updated_on=$3 AND afterPath>$4)
+		ORDER BY updated_on, path LIMIT $5
+	`, projectID, branch, afterUpdatedOn, afterPath, limit)
+	if err != nil {
+		return nil, parseErr("virtual files", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.InsertVirtualFileOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
+	}
+
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO virtual_files (project_id, branch, path, data, deleted)
+		VALUES ($1, $2, $3, $4, FALSE)
+		ON CONFLICT (project_id, branch, path) DO UPDATE SET
+			data = EXCLUDED.data,
+			deleted = FALSE,
+			updated_on = now()
+	`, opts.ProjectID, opts.Branch, opts.Path, opts.Data)
+	if err != nil {
+		return parseErr("virtual file", err)
+	}
+	return nil
+}
+
+func (c *connection) UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE virtual_files SET
+			data = ''::BYTEA,
+			deleted = TRUE,
+			updated_on = now()
+		WHERE project_id=$1, branch=$2, path=$3`, projectID, branch, path)
+	return checkUpdateRow("virtual file", res, err)
+}
+
+func (c *connection) DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `DELETE FROM virtual_files WHERE deleted AND updated_on + $1 < now()`, retention)
+	return parseErr("virtual files", err)
+}
+
 func checkUpdateRow(target string, res sql.Result, err error) error {
 	if err != nil {
 		return parseErr(target, err)
@@ -1345,6 +1393,8 @@ func parseErr(target string, err error) error {
 			return newAlreadyExistsErr("domain has already been added for the org")
 		case "service_name_idx":
 			return newAlreadyExistsErr("a service with that name already exists in the org")
+		case "virtual_files_pkey":
+			return newAlreadyExistsErr("a virtual file already exists at that path")
 		default:
 			if target == "" {
 				return database.ErrNotUnique

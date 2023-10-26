@@ -54,7 +54,7 @@
   let showMetricsDefs = true;
 
   let showRenameMetricsDefinitionModal = false;
-  let renameMetricsDefName = null;
+  let renameMetricsDefName: string | null = null;
 
   async function getDashboardArtifact(
     instanceId: string,
@@ -65,7 +65,7 @@
       EntityType.MetricsDefinition
     );
     const resp = await runtimeServiceGetFile(instanceId, filePath);
-    const metricYAMLString = resp.blob;
+    const metricYAMLString = resp.blob as string;
     fileArtifactsStore.setJSONRep(filePath, metricYAMLString);
   }
 
@@ -78,7 +78,7 @@
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-    const newDashboardName = getName("dashboard", $dashboardNames.data);
+    const newDashboardName = getName("dashboard", $dashboardNames?.data ?? []);
     await $createDashboard.mutateAsync({
       instanceId,
       path: getFileAPIPathFromNameAndType(
@@ -102,7 +102,7 @@
       $fileArtifactsStore.entities,
       dashboardName
     );
-    const sourceModelName = dashboardData.jsonRepresentation?.model;
+    const sourceModelName = dashboardData.jsonRepresentation?.model as string;
 
     const previousActiveEntity = $appScreen?.type;
     goto(`/model/${sourceModelName}`);
@@ -139,11 +139,11 @@
       instanceId,
       dashboardName,
       EntityType.MetricsDefinition,
-      $dashboardNames.data
+      $dashboardNames?.data ?? []
     );
 
     // redirect to model when metric is deleted
-    const sourceModelName = dashboardData.jsonRepresentation.model;
+    const sourceModelName = dashboardData?.jsonRepresentation?.model as string;
     if ($appScreen?.name === dashboardName) {
       if (sourceModelName) {
         goto(`/model/${sourceModelName}`);
@@ -175,6 +175,8 @@
   $: canAddDashboard = $featureFlags.readOnly === false;
 
   $: hasSourceAndModelButNoDashboards =
+    $sourceNames?.data &&
+    $modelNames?.data &&
     $sourceNames?.data?.length > 0 &&
     $modelNames?.data?.length > 0 &&
     $dashboardNames?.data?.length === 0;
@@ -250,12 +252,12 @@
       <AddAssetButton
         id="add-dashboard"
         label="Add dashboard"
-        bold={hasSourceAndModelButNoDashboards}
+        bold={hasSourceAndModelButNoDashboards ?? false}
         on:click={() => dispatchAddEmptyMetricsDef()}
       />
     {/if}
   </div>
-  {#if showRenameMetricsDefinitionModal}
+  {#if showRenameMetricsDefinitionModal && renameMetricsDefName}
     <RenameAssetModal
       entityType={EntityType.MetricsDefinition}
       closeModal={() => (showRenameMetricsDefinitionModal = false)}

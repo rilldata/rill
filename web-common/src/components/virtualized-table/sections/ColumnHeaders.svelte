@@ -10,7 +10,7 @@
   export let virtualColumnItems;
   export let noPin = false;
   export let showDataIcon = false;
-  export let selectedColumn: string = null;
+  export let selectedColumn: string | null = null;
 
   const getColumnHeaderProps = (header) => {
     const column = columns[header.index];
