@@ -7,7 +7,6 @@ import type {
   MetricsViewDimension,
   MetricsViewSpecMeasureV2,
   V1MetricsViewComparisonRow,
-  V1MetricsViewComparisonValue,
   V1MetricsViewFilter,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
