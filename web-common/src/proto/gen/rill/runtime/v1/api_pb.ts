@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, Struct, Timestamp } from "@bufbuild/protobuf";
+import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
 import { PullTriggerSpec, RefreshTriggerSpec, Resource, ResourceName } from "./resources_pb.js";
 import { MetricsView, Model, ObjectType, Source, Table } from "./catalog_pb.js";
 
@@ -1735,9 +1735,9 @@ export class Log extends Message<Log> {
   message = "";
 
   /**
-   * @generated from field: google.protobuf.Struct payload = 4;
+   * @generated from field: string json_payload = 4;
    */
-  payload?: Struct;
+  jsonPayload = "";
 
   constructor(data?: PartialMessage<Log>) {
     super();
@@ -1750,7 +1750,7 @@ export class Log extends Message<Log> {
     { no: 1, name: "level", kind: "enum", T: proto3.getEnumType(LogLevel) },
     { no: 2, name: "time", kind: "message", T: Timestamp },
     { no: 3, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "payload", kind: "message", T: Struct },
+    { no: 4, name: "json_payload", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Log {
@@ -1784,6 +1784,11 @@ export class GetLogsRequest extends Message<GetLogsRequest> {
    */
   ascending = false;
 
+  /**
+   * @generated from field: int32 limit = 3;
+   */
+  limit = 0;
+
   constructor(data?: PartialMessage<GetLogsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1794,6 +1799,7 @@ export class GetLogsRequest extends Message<GetLogsRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "ascending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetLogsRequest {
@@ -1864,6 +1870,11 @@ export class WatchLogsRequest extends Message<WatchLogsRequest> {
    */
   replay = false;
 
+  /**
+   * @generated from field: int32 replay_limit = 3;
+   */
+  replayLimit = 0;
+
   constructor(data?: PartialMessage<WatchLogsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1874,6 +1885,7 @@ export class WatchLogsRequest extends Message<WatchLogsRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "replay", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "replay_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchLogsRequest {
@@ -1898,9 +1910,9 @@ export class WatchLogsRequest extends Message<WatchLogsRequest> {
  */
 export class WatchLogsResponse extends Message<WatchLogsResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.Log logs = 1;
+   * @generated from field: rill.runtime.v1.Log log = 1;
    */
-  logs: Log[] = [];
+  log?: Log;
 
   constructor(data?: PartialMessage<WatchLogsResponse>) {
     super();
@@ -1910,7 +1922,7 @@ export class WatchLogsResponse extends Message<WatchLogsResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.WatchLogsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "logs", kind: "message", T: Log, repeated: true },
+    { no: 1, name: "log", kind: "message", T: Log },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchLogsResponse {

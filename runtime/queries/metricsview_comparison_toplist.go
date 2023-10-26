@@ -14,57 +14,56 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-type MetricsViewComparisonToplist struct {
-	MetricsViewName     string                                 `json:"metrics_view_name,omitempty"`
-	DimensionName       string                                 `json:"dimension_name,omitempty"`
-	MeasureNames        []string                               `json:"measure_names,omitempty"`
-	InlineMeasures      []*runtimev1.InlineMeasure             `json:"inline_measures,omitempty"`
-	BaseTimeRange       *runtimev1.TimeRange                   `json:"base_time_range,omitempty"`
-	ComparisonTimeRange *runtimev1.TimeRange                   `json:"comparison_time_range,omitempty"`
-	Limit               int64                                  `json:"limit,omitempty"`
-	Offset              int64                                  `json:"offset,omitempty"`
-	Sort                []*runtimev1.MetricsViewComparisonSort `json:"sort,omitempty"`
-	Filter              *runtimev1.MetricsViewFilter           `json:"filter,omitempty"`
-	MetricsView         *runtimev1.MetricsViewSpec             `json:"-"`
-	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity   `json:"security"`
-	Exact               bool                                   `json:"exact"`
+type MetricsViewComparison struct {
+	MetricsViewName     string                                     `json:"metrics_view_name,omitempty"`
+	DimensionName       string                                     `json:"dimension_name,omitempty"`
+	Measures            []*runtimev1.MetricsViewAggregationMeasure `json:"measures,omitempty"`
+	TimeRange           *runtimev1.TimeRange                       `json:"base_time_range,omitempty"`
+	ComparisonTimeRange *runtimev1.TimeRange                       `json:"comparison_time_range,omitempty"`
+	Limit               int64                                      `json:"limit,omitempty"`
+	Offset              int64                                      `json:"offset,omitempty"`
+	Sort                []*runtimev1.MetricsViewComparisonSort     `json:"sort,omitempty"`
+	Filter              *runtimev1.MetricsViewFilter               `json:"filter,omitempty"`
+	MetricsView         *runtimev1.MetricsViewSpec                 `json:"-"`
+	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity       `json:"security"`
+	Exact               bool                                       `json:"exact"`
 
-	Result *runtimev1.MetricsViewComparisonToplistResponse `json:"-"`
+	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
 }
 
-var _ runtime.Query = &MetricsViewComparisonToplist{}
+var _ runtime.Query = &MetricsViewComparison{}
 
-func (q *MetricsViewComparisonToplist) Key() string {
+func (q *MetricsViewComparison) Key() string {
 	r, err := json.Marshal(q)
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("MetricsViewComparisonToplist:%s", r)
+	return fmt.Sprintf("MetricsViewComparison:%s", r)
 }
 
-func (q *MetricsViewComparisonToplist) Deps() []*runtimev1.ResourceName {
+func (q *MetricsViewComparison) Deps() []*runtimev1.ResourceName {
 	return []*runtimev1.ResourceName{
 		{Kind: runtime.ResourceKindMetricsView, Name: q.MetricsViewName},
 	}
 }
 
-func (q *MetricsViewComparisonToplist) MarshalResult() *runtime.QueryResult {
+func (q *MetricsViewComparison) MarshalResult() *runtime.QueryResult {
 	return &runtime.QueryResult{
 		Value: q.Result,
 		Bytes: sizeProtoMessage(q.Result),
 	}
 }
 
-func (q *MetricsViewComparisonToplist) UnmarshalResult(v any) error {
-	res, ok := v.(*runtimev1.MetricsViewComparisonToplistResponse)
+func (q *MetricsViewComparison) UnmarshalResult(v any) error {
+	res, ok := v.(*runtimev1.MetricsViewComparisonResponse)
 	if !ok {
-		return fmt.Errorf("MetricsViewComparisonToplist: mismatched unmarshal input")
+		return fmt.Errorf("MetricsViewComparison: mismatched unmarshal input")
 	}
 	q.Result = res
 	return nil
 }
 
-func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
+func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
@@ -75,7 +74,7 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	if q.MetricsView.TimeDimension == "" && (!isTimeRangeNil(q.BaseTimeRange) || !isTimeRangeNil(q.ComparisonTimeRange)) {
+	if q.MetricsView.TimeDimension == "" && (!isTimeRangeNil(q.TimeRange) || !isTimeRangeNil(q.ComparisonTimeRange)) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
@@ -91,7 +90,7 @@ func (q *MetricsViewComparisonToplist) Resolve(ctx context.Context, rt *runtime.
 	return q.executeToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
 }
 
-func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
+func (q *MetricsViewComparison) executeToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
 	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect(), policy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
@@ -113,16 +112,16 @@ func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap 
 		if err != nil {
 			return err
 		}
-		measureValues := make([]*runtimev1.MetricsViewComparisonValue, 0, len(q.MeasureNames))
+		measureValues := make([]*runtimev1.MetricsViewComparisonValue, 0, len(q.Measures))
 
-		for i, name := range q.MeasureNames {
+		for i, m := range q.Measures {
 			v, err := pbutil.ToValue(values[1+i], safeFieldType(rows.Schema, 1+i))
 			if err != nil {
 				return err
 			}
 
 			measureValues = append(measureValues, &runtimev1.MetricsViewComparisonValue{
-				MeasureName: name,
+				MeasureName: m.Name,
 				BaseValue:   v,
 			})
 		}
@@ -138,14 +137,14 @@ func (q *MetricsViewComparisonToplist) executeToplist(ctx context.Context, olap 
 		})
 	}
 
-	q.Result = &runtimev1.MetricsViewComparisonToplistResponse{
+	q.Result = &runtimev1.MetricsViewComparisonResponse{
 		Rows: data,
 	}
 
 	return nil
 }
 
-func (q *MetricsViewComparisonToplist) executeComparisonToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
+func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
 	sql, args, err := q.buildMetricsComparisonTopListSQL(mv, olap.Dialect(), policy)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
@@ -169,7 +168,7 @@ func (q *MetricsViewComparisonToplist) executeComparisonToplist(ctx context.Cont
 		}
 		measureValues := []*runtimev1.MetricsViewComparisonValue{}
 
-		for i, name := range q.MeasureNames {
+		for i, m := range q.Measures {
 			bv, err := pbutil.ToValue(values[1+i*4], safeFieldType(rows.Schema, 1+i*4))
 			if err != nil {
 				return err
@@ -191,7 +190,7 @@ func (q *MetricsViewComparisonToplist) executeComparisonToplist(ctx context.Cont
 			}
 
 			measureValues = append(measureValues, &runtimev1.MetricsViewComparisonValue{
-				MeasureName:     name,
+				MeasureName:     m.Name,
 				BaseValue:       bv,
 				ComparisonValue: cv,
 				DeltaAbs:        da,
@@ -210,7 +209,7 @@ func (q *MetricsViewComparisonToplist) executeComparisonToplist(ctx context.Cont
 		})
 	}
 
-	q.Result = &runtimev1.MetricsViewComparisonToplistResponse{
+	q.Result = &runtimev1.MetricsViewComparisonResponse{
 		Rows: data,
 	}
 
@@ -236,21 +235,36 @@ func timeRangeClause(timeRange *runtimev1.TimeRange, td string, args *[]any) str
 	return clause
 }
 
-func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
-	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
-	if err != nil {
-		return "", nil, err
-	}
-
+func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
 
 	selectCols := []string{colName}
-	for _, m := range ms {
-		expr := fmt.Sprintf(`%s as %s`, m.Expression, safeName(m.Name))
-		selectCols = append(selectCols, expr)
+
+	for _, m := range q.Measures {
+		switch m.BuiltinMeasure {
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
+			expr, err := metricsViewMeasureExpression(mv, m.Name)
+			if err != nil {
+				return "", nil, err
+			}
+			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
+			selectCols = append(selectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
+			if len(m.BuiltinMeasureArgs) != 1 {
+				return "", nil, fmt.Errorf("builtin measure '%s' expects 1 argument", m.BuiltinMeasure.String())
+			}
+			arg := m.BuiltinMeasureArgs[0].GetStringValue()
+			if arg == "" {
+				return "", nil, fmt.Errorf("builtin measure '%s' expects non-empty string argument, got '%v'", m.BuiltinMeasure.String(), m.BuiltinMeasureArgs[0])
+			}
+			selectCols = append(selectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
+		default:
+			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
+		}
 	}
 
 	selectClause := strings.Join(selectCols, ", ")
@@ -259,7 +273,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	args := []any{}
 	td := safeName(mv.TimeDimension)
 
-	baseWhereClause += timeRangeClause(q.BaseTimeRange, td, &args)
+	baseWhereClause += timeRangeClause(q.TimeRange, td, &args)
 	if q.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
@@ -272,9 +286,9 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 
 	orderClause := "true"
 	for _, s := range q.Sort {
-		if s.MeasureName == q.DimensionName {
+		if s.Name == q.DimensionName {
 			orderClause += ", 1"
-			if !s.Ascending {
+			if s.Desc {
 				orderClause += " DESC"
 			}
 			if dialect == drivers.DialectDuckDB {
@@ -283,8 +297,8 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 			break
 		}
 		orderClause += ", "
-		orderClause += safeName(s.MeasureName)
-		if !s.Ascending {
+		orderClause += safeName(s.Name)
+		if s.Desc {
 			orderClause += " DESC"
 		}
 		if dialect == drivers.DialectDuckDB {
@@ -311,12 +325,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsTopListSQL(mv *runtimev1.Metr
 	return sql, args, nil
 }
 
-func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
-	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
-	if err != nil {
-		return "", nil, err
-	}
-
+func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
@@ -324,12 +333,34 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 
 	selectCols := []string{colName}
 
+	for _, m := range q.Measures {
+		switch m.BuiltinMeasure {
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
+			expr, err := metricsViewMeasureExpression(mv, m.Name)
+			if err != nil {
+				return "", nil, err
+			}
+			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
+			selectCols = append(selectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
+			if len(m.BuiltinMeasureArgs) != 1 {
+				return "", nil, fmt.Errorf("builtin measure '%s' expects 1 argument", m.BuiltinMeasure.String())
+			}
+			arg := m.BuiltinMeasureArgs[0].GetStringValue()
+			if arg == "" {
+				return "", nil, fmt.Errorf("builtin measure '%s' expects non-empty string argument, got '%v'", m.BuiltinMeasure.String(), m.BuiltinMeasureArgs[0])
+			}
+			selectCols = append(selectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
+		default:
+			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
+		}
+	}
+
 	finalSelectCols := []string{}
 	measureMap := make(map[string]int)
-	for i, m := range ms {
+	for i, m := range q.Measures {
 		measureMap[m.Name] = i
-		expr := fmt.Sprintf(`%s as %s`, m.Expression, safeName(m.Name))
-		selectCols = append(selectCols, expr)
 		var columnsTuple string
 		if dialect != drivers.DialectDruid {
 			columnsTuple = fmt.Sprintf(
@@ -364,7 +395,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 
 	td := safeName(mv.TimeDimension)
 
-	baseWhereClause += timeRangeClause(q.BaseTimeRange, td, &args)
+	baseWhereClause += timeRangeClause(q.TimeRange, td, &args)
 	if q.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
@@ -394,11 +425,11 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	orderClause := "true"
 	subQueryOrderClause := "true"
 	for _, s := range q.Sort {
-		if s.MeasureName == q.DimensionName {
+		if s.Name == q.DimensionName {
 			orderClause += ", 1"
 			subQueryOrderClause += ", 1"
 			var ending string
-			if !s.Ascending {
+			if s.Desc {
 				ending += " DESC"
 			}
 			if dialect == drivers.DialectDuckDB {
@@ -408,9 +439,9 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 			subQueryOrderClause += ending
 			break
 		}
-		i, ok := measureMap[s.MeasureName]
+		i, ok := measureMap[s.Name]
 		if !ok {
-			return "", nil, fmt.Errorf("metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.MeasureName)
+			return "", nil, fmt.Errorf("metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.Name)
 		}
 		orderClause += ", "
 		subQueryOrderClause += ", "
@@ -425,12 +456,12 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA:
 			pos = 5 + i*4
 		default:
-			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.MeasureName)
+			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.Name)
 		}
 		orderClause += fmt.Sprint(pos)
 		subQueryOrderClause += fmt.Sprint(i + 2) // 1-based + skip the first dim column
 		ending := ""
-		if !s.Ascending {
+		if s.Desc {
 			ending += " DESC"
 		}
 		if dialect == drivers.DialectDuckDB {
@@ -609,7 +640,7 @@ func (q *MetricsViewComparisonToplist) buildMetricsComparisonTopListSQL(mv *runt
 	return sql, args, nil
 }
 
-func (q *MetricsViewComparisonToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
 		return err
@@ -653,7 +684,7 @@ func (q *MetricsViewComparisonToplist) Export(ctx context.Context, rt *runtime.R
 	return nil
 }
 
-func (q *MetricsViewComparisonToplist) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, mv *runtimev1.MetricsViewSpec) error {
+func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, mv *runtimev1.MetricsViewSpec) error {
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
@@ -757,7 +788,7 @@ func (q *MetricsViewComparisonToplist) generalExport(ctx context.Context, rt *ru
 	return nil
 }
 
-func (q *MetricsViewComparisonToplist) generateFilename() string {
+func (q *MetricsViewComparison) generateFilename() string {
 	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
 	filename += "_" + q.DimensionName
 	if q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {

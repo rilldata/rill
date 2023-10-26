@@ -5,16 +5,18 @@
     ClippedChunkedLine,
   } from "@rilldata/web-common/components/data-graphic/marks";
   import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
+  import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 
   export let xMin: Date = undefined;
   export let xMax: Date = undefined;
   export let yExtentMax: number = undefined;
-  export let showComparison;
-  export let isHovering;
+  export let showComparison: boolean;
+  export let dimensionValue: string;
+  export let isHovering: boolean;
   export let data;
-  export let dimensionData;
-  export let xAccessor;
-  export let yAccessor;
+  export let dimensionData: DimensionDataItem[] = [];
+  export let xAccessor: string;
+  export let yAccessor: string;
   export let scrubStart;
   export let scrubEnd;
 
@@ -27,6 +29,10 @@
   $: areaColor = hasSubrangeSelected
     ? "hsla(225, 20%, 80%, .2)"
     : "hsla(217,70%, 80%, .4)";
+
+  $: isDimValueHiglighted =
+    dimensionValue !== undefined &&
+    dimensionData.map((d) => d.value).includes(dimensionValue);
 
   // we delay the tween if previousYMax < yMax
   let yMaxStore = writable(yExtentMax);
@@ -62,18 +68,26 @@
     -->
 {#key $timeRangeKey}
   {#if dimensionData?.length}
-    {#each dimensionData as dimensionValue}
-      <ChunkedLine
-        area={false}
-        delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
-        duration={hasSubrangeSelected || $timeRangeKey !== $previousTimeRangeKey
-          ? 0
-          : 200}
-        lineClasses={dimensionValue?.strokeClass}
-        data={dimensionValue?.data || []}
-        {xAccessor}
-        {yAccessor}
-      />
+    {#each dimensionData as d}
+      {@const isHighlighted = d?.value === dimensionValue}
+      <g
+        class="transition-opacity"
+        class:opacity-10={isDimValueHiglighted && !isHighlighted}
+      >
+        <ChunkedLine
+          area={false}
+          isComparingDimension
+          delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
+          duration={hasSubrangeSelected ||
+          $timeRangeKey !== $previousTimeRangeKey
+            ? 0
+            : 200}
+          lineClasses={d?.strokeClass}
+          data={d?.data || []}
+          {xAccessor}
+          {yAccessor}
+        />
+      </g>
     {/each}
   {:else}
     {#if showComparison}

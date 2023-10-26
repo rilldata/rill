@@ -6,8 +6,8 @@
   } from "@rgossiaux/svelte-headlessui";
 
   export let open: boolean;
-  export let titleMarginBottomOverride: string = null;
-  export let widthOverride: string = null;
+  export let titleMarginBottomOverride: string | null = null;
+  export let widthOverride: string | null = null;
 
   let titleMarginBottom = titleMarginBottomOverride ?? "mb-2";
   let width = widthOverride ?? "max-w-lg w-full";

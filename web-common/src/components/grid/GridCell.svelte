@@ -2,7 +2,7 @@
   import type { Side } from "./types";
 
   export let side: Side = "left";
-  export let classes: string = undefined;
+  export let classes: string | undefined = undefined;
 </script>
 
 <div

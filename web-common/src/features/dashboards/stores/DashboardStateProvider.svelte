@@ -19,6 +19,7 @@
   const timeRangeQuery = createTimeRangeSummary(stateManagers);
 
   function syncDashboardState() {
+    if (!$metaQuery.data) return;
     if (metricViewName in $metricsExplorerStore.entities) {
       metricsExplorerStore.sync(metricViewName, $metaQuery.data);
     } else {

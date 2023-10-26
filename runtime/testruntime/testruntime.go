@@ -52,10 +52,12 @@ func New(t TestingT) *runtime.Runtime {
 				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
-		ConnectionCacheSize:     100,
-		QueryCacheSizeBytes:     int64(datasize.MB * 100),
-		SecurityEngineCacheSize: 100,
-		AllowHostAccess:         true,
+		ConnectionCacheSize:          100,
+		QueryCacheSizeBytes:          int64(datasize.MB * 100),
+		SecurityEngineCacheSize:      100,
+		ControllerLogBufferCapacity:  10000,
+		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
+		AllowHostAccess:              true,
 	}
 
 	logger := zap.NewNop()
