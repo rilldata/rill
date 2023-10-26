@@ -56,12 +56,12 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	data, err := yamlForManagedReport(req.Options, claims.OwnerID())
+	name := uuid.New().String()
+
+	data, err := s.yamlForManagedReport(req.Options, name, claims.OwnerID())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
-
-	name := uuid.New().String()
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
 		ProjectID: proj.ID,
@@ -131,7 +131,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
-	data, err := yamlForManagedReport(req.Options, annotations.AdminOwnerUserID)
+	data, err := s.yamlForManagedReport(req.Options, req.Name, annotations.AdminOwnerUserID)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -229,7 +229,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 		}
 	} else {
-		data, err := yamlForManagedReport(opts, annotations.AdminOwnerUserID)
+		data, err := s.yamlForManagedReport(opts, req.Name, annotations.AdminOwnerUserID)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 		}
@@ -372,7 +372,7 @@ func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateRe
 		attribute.String("args.project", req.Project),
 	)
 
-	data, err := yamlForCommittedReport(req.Options)
+	data, err := s.yamlForCommittedReport(req.Options)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -382,11 +382,7 @@ func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateRe
 	}, nil
 }
 
-func virtualFilePathForManagedReport(name string) string {
-	return path.Join("reports", name+".yaml")
-}
-
-func yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID string) ([]byte, error) {
+func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, reportName, ownerUserID string) ([]byte, error) {
 	res := reportYAML{}
 	res.Kind = "report"
 	res.Title = opts.Title
@@ -405,7 +401,8 @@ func yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID string) ([]by
 	return yaml.Marshal(res)
 }
 
-func yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, error) {
+func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, error) {
+	// Format args as pretty YAML
 	var args map[string]interface{}
 	if opts.QueryArgsJson != "" {
 		err := json.Unmarshal([]byte(opts.QueryArgsJson), &args)
@@ -414,13 +411,26 @@ func yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, error) {
 		}
 	}
 
+	// Format export format as pretty string
+	var exportFormat string
+	switch opts.ExportFormat {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		exportFormat = "csv"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		exportFormat = "parquet"
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+		exportFormat = "xlsx"
+	default:
+		exportFormat = opts.ExportFormat.String()
+	}
+
 	res := reportYAML{}
 	res.Kind = "report"
 	res.Title = opts.Title
 	res.Refresh.Cron = opts.RefreshCron
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
-	res.Export.Format = opts.ExportFormat.String() // TODO: Format as pretty string
+	res.Export.Format = exportFormat
 	res.Export.Limit = uint(opts.ExportLimit)
 	res.Email.Template.OpenURL = opts.OpenUrl
 	res.Email.Template.EditURL = ""   // TODO: Add
@@ -488,4 +498,8 @@ func parseReportAnnotations(r *runtimev1.ReportSpec) reportAnnotations {
 	res.AdminNonce = r.Annotations["admin_nonce"]
 
 	return res
+}
+
+func virtualFilePathForManagedReport(name string) string {
+	return path.Join("reports", name+".yaml")
 }
