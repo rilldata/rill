@@ -5,6 +5,7 @@ import type { ReadablesObj, SelectorFnsObj } from "./types";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type {
   RpcStatus,
+  V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import { formattingSelectors } from "./data-formatting";
@@ -12,16 +13,25 @@ import { contextColSelectors } from "./context-column";
 import { activeMeasureSelectors } from "./active-measure";
 import { dimensionSelectors } from "./dimensions";
 import { dimensionFilterSelectors } from "./dimension-filters";
+import { timeRangeSelectors } from "./time-range";
+import { leaderboardQuerySelectors } from "./leaderboard-query";
+
+type DashboardDataReadables = {
+  dashboardStore: Readable<MetricsExplorerEntity>;
+  metricsSpecQueryResultStore: Readable<
+    QueryObserverResult<V1MetricsViewSpec, RpcStatus>
+  >;
+  timeRangeSummaryStore: Readable<
+    QueryObserverResult<V1ColumnTimeRangeResponse, unknown>
+  >;
+};
 
 export type StateManagerReadables = ReturnType<
   typeof createStateManagerReadables
 >;
 
 export const createStateManagerReadables = (
-  dashboardStore: Readable<MetricsExplorerEntity>,
-  metricsSpecQueryResultStore: Readable<
-    QueryObserverResult<V1MetricsViewSpec, RpcStatus>
-  >
+  dashboardDataReadables: DashboardDataReadables
 ) => {
   return {
     /**
@@ -29,8 +39,7 @@ export const createStateManagerReadables = (
      */
     sorting: createReadablesFromSelectors(
       sortingSelectors,
-      dashboardStore,
-      metricsSpecQueryResultStore
+      dashboardDataReadables
     ),
 
     /**
@@ -38,8 +47,7 @@ export const createStateManagerReadables = (
      */
     numberFormat: createReadablesFromSelectors(
       formattingSelectors,
-      dashboardStore,
-      metricsSpecQueryResultStore
+      dashboardDataReadables
     ),
 
     /**
@@ -47,8 +55,7 @@ export const createStateManagerReadables = (
      */
     contextColumn: createReadablesFromSelectors(
       contextColSelectors,
-      dashboardStore,
-      metricsSpecQueryResultStore
+      dashboardDataReadables
     ),
 
     /**
@@ -57,8 +64,7 @@ export const createStateManagerReadables = (
      */
     activeMeasure: createReadablesFromSelectors(
       activeMeasureSelectors,
-      dashboardStore,
-      metricsSpecQueryResultStore
+      dashboardDataReadables
     ),
 
     /**
@@ -67,8 +73,7 @@ export const createStateManagerReadables = (
      */
     dimensions: createReadablesFromSelectors(
       dimensionSelectors,
-      dashboardStore,
-      metricsSpecQueryResultStore
+      dashboardDataReadables
     ),
 
     /**
@@ -78,18 +83,31 @@ export const createStateManagerReadables = (
      */
     dimensionFilters: createReadablesFromSelectors(
       dimensionFilterSelectors,
-      dashboardStore,
-      metricsSpecQueryResultStore
+      dashboardDataReadables
+    ),
+
+    /**
+     * Readables related to the state of the time range selector
+     * for the dashboard.
+     */
+    timeRangeSelectors: createReadablesFromSelectors(
+      timeRangeSelectors,
+      dashboardDataReadables
+    ),
+
+    /**
+     * Readables for query construction
+     */
+    leaderboardQueries: createReadablesFromSelectors(
+      leaderboardQuerySelectors,
+      dashboardDataReadables
     ),
   };
 };
 
 function createReadablesFromSelectors<T extends SelectorFnsObj>(
   selectors: T,
-  dashboardStore: Readable<MetricsExplorerEntity>,
-  metricsSpecQueryResultStore: Readable<
-    QueryObserverResult<V1MetricsViewSpec, RpcStatus>
-  >
+  readables: DashboardDataReadables
 ): ReadablesObj<T> {
   return Object.fromEntries(
     Object.entries(selectors).map(([key, selectorFn]) => [
@@ -99,11 +117,16 @@ function createReadablesFromSelectors<T extends SelectorFnsObj>(
         // requires supplying a tuple of stores.
         // To simplify the selector function, we pack this into a single
         // selectorFnArgs object.
-        [dashboardStore, metricsSpecQueryResultStore],
-        ([dashboard, metricsSpecQueryResult]) =>
+        [
+          readables.dashboardStore,
+          readables.metricsSpecQueryResultStore,
+          readables.timeRangeSummaryStore,
+        ],
+        ([dashboard, metricsSpecQueryResult, timeRangeSummary]) =>
           selectorFn({
             dashboard,
             metricsSpecQueryResult,
+            timeRangeSummary,
           })
       ),
     ])

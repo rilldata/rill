@@ -8,7 +8,6 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { createQueryServiceMetricsViewComparison } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
@@ -19,7 +18,6 @@
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
-  import { prepareSortedQueryBody } from "../dashboard-utils";
 
   export let dimensionName: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
@@ -37,12 +35,13 @@
     selectors: {
       activeMeasure: { activeMeasureName },
       dimensions: { getDimensionByName, getDimensionDisplayName },
-      sorting: { sortedAscending, sortType },
       dimensionFilters: {
         getFiltersForOtherDimensions,
         selectedDimensionValues,
         atLeastOneSelection,
       },
+      timeRangeSelectors: { timeControlsState },
+      leaderboardQueries: { leaderboardSortedQueryBody },
     },
     actions,
     metricsViewName,
@@ -62,22 +61,12 @@
   $: activeValues = $selectedDimensionValues(dimensionName);
   $: atLeastOneActive = $atLeastOneSelection(dimensionName);
 
-  const timeControlsStore = useTimeControlStore(stateManagers);
-
   $: isBeingCompared =
     $dashboardStore?.selectedComparisonDimension === dimensionName;
 
-  $: sortedQueryBody = prepareSortedQueryBody(
-    dimensionName,
-    [$activeMeasureName],
-    $timeControlsStore,
-    $activeMeasureName,
-    $sortType,
-    $sortedAscending,
-    filterForDimension
-  );
+  $: sortedQueryBody = $leaderboardSortedQueryBody(dimensionName);
 
-  $: sortedQueryEnabled = $timeControlsStore.ready && !!filterForDimension;
+  $: sortedQueryEnabled = $timeControlsState.ready && !!filterForDimension;
 
   $: sortedQueryOptions = {
     query: {

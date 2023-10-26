@@ -1,8 +1,10 @@
 import type { QueryServiceMetricsViewComparisonBody } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 import { prepareSortedQueryBody } from "../../dashboard-utils";
-import { activeMeasure, activeMeasureName } from "./active-measure";
+import { activeMeasureName } from "./active-measure";
 import { sortingSelectors } from "./sorting";
+import { timeControlsState } from "./time-range";
+import { getFiltersForOtherDimensions } from "./dimension-filters";
 
 /**
  * Returns a function that can be used to get the sorted query body
@@ -12,26 +14,23 @@ import { sortingSelectors } from "./sorting";
  */
 function leaderboardSortedQueryBody(
   dashData: DashboardDataSources
-):
-  | undefined
-  | ((dimensionName: string) => QueryServiceMetricsViewComparisonBody) {
-  const measure = activeMeasure(dashData);
-  if (!measure) {
-    return undefined;
-  }
-
-  const timeControls = undefined;
-
+): (dimensionName: string) => QueryServiceMetricsViewComparisonBody {
   return (dimensionName: string) =>
     prepareSortedQueryBody(
       dimensionName,
       [activeMeasureName(dashData)],
-      timeControls,
+      timeControlsState(dashData),
       sortingSelectors.sortMeasure(dashData),
       sortingSelectors.sortType(dashData),
       sortingSelectors.sortedAscending(dashData),
-      undefined
+      getFiltersForOtherDimensions(dashData)(dimensionName)
     );
 }
 
-export const leaderboardQuerySelectors = { leaderboardSortedQueryBody };
+export const leaderboardQuerySelectors = {
+  /**
+   * Readable containg a function that will return
+   * the sorted query body for a leaderboard for the given dimension.
+   */
+  leaderboardSortedQueryBody,
+};

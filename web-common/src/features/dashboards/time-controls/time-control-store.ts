@@ -27,11 +27,17 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
+  RpcStatus,
   V1ColumnTimeRangeResponse,
+  V1MetricsViewSpec,
   V1TimeGrain,
   createQueryServiceColumnTimeRange,
 } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
+import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type {
+  CreateQueryResult,
+  QueryObserverResult,
+} from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import type { Readable } from "svelte/store";
 
@@ -66,6 +72,27 @@ export type TimeControlState = {
   ComparisonTimeRangeState;
 export type TimeControlStore = Readable<TimeControlState>;
 
+export const createTimeRangeSummaryInnerCallback = (
+  [runtime, metricsView]: [
+    Runtime,
+    QueryObserverResult<V1MetricsViewSpec, RpcStatus>
+  ],
+  set: (value: QueryObserverResult<V1ColumnTimeRangeResponse, unknown>) => void
+) =>
+  createQueryServiceColumnTimeRange(
+    runtime.instanceId,
+    metricsView.data?.table,
+    {
+      columnName: metricsView.data?.timeDimension,
+    },
+    {
+      query: {
+        enabled: !!metricsView.data?.timeDimension,
+        queryClient: ctx.queryClient,
+      },
+    }
+  ).subscribe(set);
+
 function createTimeRangeSummary(
   ctx: StateManagers
 ): CreateQueryResult<V1ColumnTimeRangeResponse> {
@@ -87,6 +114,75 @@ function createTimeRangeSummary(
       ).subscribe(set)
   );
 }
+
+export const timeControlStateSelector = ([
+  metricsView,
+  timeRangeResponse,
+  metricsExplorer,
+]: [
+  QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
+  QueryObserverResult<V1ColumnTimeRangeResponse, unknown>,
+  MetricsExplorerEntity
+]): TimeControlState => {
+  const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
+  if (
+    !metricsView.data ||
+    !metricsExplorer ||
+    !metricsView.data ||
+    !timeRangeResponse ||
+    !timeRangeResponse.isSuccess
+  ) {
+    return {
+      isFetching: metricsView.isFetching || timeRangeResponse.isRefetching,
+      ready: !metricsExplorer || !hasTimeSeries,
+    } as TimeControlState;
+  }
+
+  const allTimeRange = {
+    name: TimeRangePreset.ALL_TIME,
+    start: new Date(timeRangeResponse.data.timeRangeSummary.min),
+    end: new Date(timeRangeResponse.data.timeRangeSummary.max),
+  };
+  const minTimeGrain =
+    (metricsView.data.smallestTimeGrain as V1TimeGrain) ||
+    V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+  const defaultTimeRange = isoDurationToFullTimeRange(
+    metricsView.data.defaultTimeRange,
+    allTimeRange.start,
+    allTimeRange.end,
+    metricsExplorer.selectedTimezone
+  );
+
+  const timeRangeState = calculateTimeRangePartial(
+    metricsExplorer,
+    allTimeRange,
+    defaultTimeRange,
+    minTimeGrain
+  );
+  if (!timeRangeState) {
+    return {
+      ready: false,
+    };
+  }
+
+  const comparisonTimeRangeState = calculateComparisonTimeRangePartial(
+    metricsExplorer,
+    allTimeRange,
+    timeRangeState
+  );
+
+  return {
+    isFetching: false,
+    minTimeGrain,
+    allTimeRange,
+    defaultTimeRange,
+    ready: true,
+
+    ...timeRangeState,
+
+    ...comparisonTimeRangeState,
+  } as TimeControlState;
+};
 
 export function createTimeControlStore(ctx: StateManagers) {
   return derived(

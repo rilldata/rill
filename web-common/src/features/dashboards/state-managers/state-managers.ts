@@ -20,9 +20,11 @@ import {
   ResourceKind,
   useResource,
 } from "../../entity-management/resource-selectors";
-import type {
-  RpcStatus,
-  V1MetricsViewSpec,
+import {
+  createQueryServiceColumnTimeRange,
+  V1ColumnTimeRangeResponse,
+  type RpcStatus,
+  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 
 export type StateManagers = {
@@ -30,6 +32,9 @@ export type StateManagers = {
   metricsViewName: Writable<string>;
   metricsStore: Readable<MetricsExplorerStoreType>;
   dashboardStore: Readable<MetricsExplorerEntity>;
+  timeRangeSummaryStore: Readable<
+    QueryObserverResult<V1ColumnTimeRangeResponse, unknown>
+  >;
   queryClient: QueryClient;
   setMetricsViewName: (s: string) => void;
   updateDashboard: DashboardCallbackExecutor;
@@ -65,6 +70,7 @@ export function createStateManagers({
     }
   );
 
+  // Note: this is equivalent to `useMetaQuery`
   const metricsSpecStore: Readable<
     QueryObserverResult<V1MetricsViewSpec, RpcStatus>
   > = derived([runtime, metricsViewNameStore], ([r, metricViewName], set) => {
@@ -76,6 +82,24 @@ export function createStateManagers({
       queryClient
     ).subscribe(set);
   });
+
+  const timeRangeSummaryStore: Readable<
+    QueryObserverResult<V1ColumnTimeRangeResponse, unknown>
+  > = derived([runtime, metricsSpecStore], ([runtime, metricsView], set) =>
+    createQueryServiceColumnTimeRange(
+      runtime.instanceId,
+      metricsView.data?.table ?? "",
+      {
+        columnName: metricsView.data?.timeDimension,
+      },
+      {
+        query: {
+          enabled: !!metricsView.data?.timeDimension,
+          queryClient: queryClient,
+        },
+      }
+    ).subscribe(set)
+  );
 
   const updateDashboard = (
     callback: (metricsExplorer: MetricsExplorerEntity) => void
@@ -89,7 +113,7 @@ export function createStateManagers({
     runtime: runtime,
     metricsViewName: metricsViewNameStore,
     metricsStore: metricsExplorerStore,
-
+    timeRangeSummaryStore,
     queryClient,
     dashboardStore,
     setMetricsViewName: (name) => {
@@ -99,7 +123,11 @@ export function createStateManagers({
     /**
      * A collection of Readables that can be used to select data from the dashboard.
      */
-    selectors: createStateManagerReadables(dashboardStore, metricsSpecStore),
+    selectors: createStateManagerReadables({
+      dashboardStore,
+      metricsSpecQueryResultStore: metricsSpecStore,
+      timeRangeSummaryStore,
+    }),
     /**
      * A collection of functions that update the dashboard data model.
      */

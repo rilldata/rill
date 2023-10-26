@@ -3,6 +3,7 @@ import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type {
   RpcStatus,
+  V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 
@@ -22,6 +23,7 @@ import type {
 export type DashboardDataSources = {
   dashboard: MetricsExplorerEntity;
   metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, RpcStatus>;
+  timeRangeSummary: QueryObserverResult<V1ColumnTimeRangeResponse, unknown>;
 };
 
 /**
