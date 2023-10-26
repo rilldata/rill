@@ -1,6 +1,6 @@
 <script lang="ts">
   import { flexRender } from "@tanstack/svelte-table";
-  import Table from "../../components/table/Table.svelte";
+  import Table from "../../../components/table/Table.svelte";
   import { defaultData } from "./fetch-reports";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
   import ReportsTableEmpty from "./ReportsTableEmpty.svelte";

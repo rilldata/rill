@@ -4,7 +4,7 @@
   import {
     capitalizeFirstLetter,
     formatDateToCustomString,
-  } from "./tableUtils";
+  } from "../tableUtils";
 
   export let id: string;
   export let reportName: string;
