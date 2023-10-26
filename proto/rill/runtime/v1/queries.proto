@@ -340,12 +340,14 @@ message MetricsViewComparisonRequest {
   repeated MetricsViewAggregationMeasure measures = 4;
   repeated MetricsViewComparisonSort sort = 5;
   TimeRange time_range = 6;
-  TimeRange comparison_time_range = 7;
-  MetricsViewFilter filter = 8;
-  int64 limit = 9 [(validate.rules).int64.gte = 0];
-  int64 offset = 10 [(validate.rules).int64.gte = 0];
-  int32 priority = 11;
-  bool exact = 13;
+  string iso_time_range = 7;
+  TimeRange comparison_time_range = 8;
+  string iso_comparison_time_range_offset = 9;
+  MetricsViewFilter filter = 10;
+  int64 limit = 11 [(validate.rules).int64.gte = 0];
+  int64 offset = 12 [(validate.rules).int64.gte = 0];
+  int32 priority = 13;
+  bool exact = 14;
 }
 
 // Response message for QueryService.MetricsViewComparison

@@ -1099,8 +1099,12 @@ paths:
                   $ref: '#/definitions/v1MetricsViewComparisonSort'
               timeRange:
                 $ref: '#/definitions/v1TimeRange'
+              isoTimeRange:
+                type: string
               comparisonTimeRange:
                 $ref: '#/definitions/v1TimeRange'
+              isoComparisonTimeRangeOffset:
+                type: string
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
               limit:
@@ -3395,8 +3399,12 @@ definitions:
           $ref: '#/definitions/v1MetricsViewComparisonSort'
       timeRange:
         $ref: '#/definitions/v1TimeRange'
+      isoTimeRange:
+        type: string
       comparisonTimeRange:
         $ref: '#/definitions/v1TimeRange'
+      isoComparisonTimeRangeOffset:
+        type: string
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
       limit:

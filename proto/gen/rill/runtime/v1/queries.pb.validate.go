@@ -4125,6 +4125,8 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for IsoTimeRange
+
 	if all {
 		switch v := interface{}(m.GetComparisonTimeRange()).(type) {
 		case interface{ ValidateAll() error }:
@@ -4153,6 +4155,8 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for IsoComparisonTimeRangeOffset
 
 	if all {
 		switch v := interface{}(m.GetFilter()).(type) {

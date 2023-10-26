@@ -10,23 +10,27 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type MetricsViewComparison struct {
-	MetricsViewName     string                                     `json:"metrics_view_name,omitempty"`
-	DimensionName       string                                     `json:"dimension_name,omitempty"`
-	Measures            []*runtimev1.MetricsViewAggregationMeasure `json:"measures,omitempty"`
-	TimeRange           *runtimev1.TimeRange                       `json:"base_time_range,omitempty"`
-	ComparisonTimeRange *runtimev1.TimeRange                       `json:"comparison_time_range,omitempty"`
-	Limit               int64                                      `json:"limit,omitempty"`
-	Offset              int64                                      `json:"offset,omitempty"`
-	Sort                []*runtimev1.MetricsViewComparisonSort     `json:"sort,omitempty"`
-	Filter              *runtimev1.MetricsViewFilter               `json:"filter,omitempty"`
-	MetricsView         *runtimev1.MetricsViewSpec                 `json:"-"`
-	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity       `json:"security"`
-	Exact               bool                                       `json:"exact"`
+	MetricsViewName              string                                     `json:"metrics_view_name,omitempty"`
+	DimensionName                string                                     `json:"dimension_name,omitempty"`
+	Measures                     []*runtimev1.MetricsViewAggregationMeasure `json:"measures,omitempty"`
+	TimeRange                    *runtimev1.TimeRange                       `json:"base_time_range,omitempty"`
+	ISOTimeRange                 string                                     `json:"iso_time_range,omitempty"`
+	ComparisonTimeRange          *runtimev1.TimeRange                       `json:"comparison_time_range,omitempty"`
+	ISOComparisonTimeRangeOffset string                                     `json:"iso_comparison_time_range_offset,omitempty"`
+	Limit                        int64                                      `json:"limit,omitempty"`
+	Offset                       int64                                      `json:"offset,omitempty"`
+	Sort                         []*runtimev1.MetricsViewComparisonSort     `json:"sort,omitempty"`
+	Filter                       *runtimev1.MetricsViewFilter               `json:"filter,omitempty"`
+	MetricsView                  *runtimev1.MetricsViewSpec                 `json:"-"`
+	ResolvedMVSecurity           *runtime.ResolvedMetricsViewSecurity       `json:"security"`
+	Exact                        bool                                       `json:"exact"`
 
 	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
 }
@@ -83,11 +87,39 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
+	err = q.resolveISORanges()
+	if err != nil {
+		return err
+	}
+
 	if !isTimeRangeNil(q.ComparisonTimeRange) {
 		return q.executeComparisonToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
 	}
 
 	return q.executeToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
+}
+
+func (q *MetricsViewComparison) resolveISORanges() error {
+	if q.ISOTimeRange != "" {
+		d, err := duration.ParseISO8601(q.ISOTimeRange)
+		if err != nil {
+			return err
+		}
+
+		q.TimeRange.Start = timestamppb.New(d.Add(q.TimeRange.End.AsTime()))
+	}
+
+	if q.ISOComparisonTimeRangeOffset != "" {
+		d, err := duration.ParseISO8601(q.ISOTimeRange)
+		if err != nil {
+			return err
+		}
+
+		q.ComparisonTimeRange.Start = timestamppb.New(d.Add(q.TimeRange.Start.AsTime()))
+		q.ComparisonTimeRange.End = timestamppb.New(d.Add(q.TimeRange.End.AsTime()))
+	}
+
+	return nil
 }
 
 func (q *MetricsViewComparison) executeToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {

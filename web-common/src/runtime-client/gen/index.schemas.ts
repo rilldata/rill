@@ -210,7 +210,9 @@ export type QueryServiceMetricsViewComparisonBody = {
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewComparisonSort[];
   timeRange?: V1TimeRange;
+  isoTimeRange?: string;
   comparisonTimeRange?: V1TimeRange;
+  isoComparisonTimeRangeOffset?: string;
   filter?: V1MetricsViewFilter;
   limit?: string;
   offset?: string;
@@ -1237,7 +1239,9 @@ export interface V1MetricsViewComparisonRequest {
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewComparisonSort[];
   timeRange?: V1TimeRange;
+  isoTimeRange?: string;
   comparisonTimeRange?: V1TimeRange;
+  isoComparisonTimeRangeOffset?: string;
   filter?: V1MetricsViewFilter;
   limit?: string;
   offset?: string;

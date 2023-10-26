@@ -206,18 +206,20 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 	}
 
 	q := &queries.MetricsViewComparison{
-		MetricsViewName:     req.MetricsViewName,
-		DimensionName:       req.Dimension.Name,
-		Measures:            req.Measures,
-		TimeRange:           req.TimeRange,
-		ComparisonTimeRange: req.ComparisonTimeRange,
-		Limit:               req.Limit,
-		Offset:              req.Offset,
-		Sort:                req.Sort,
-		Filter:              req.Filter,
-		MetricsView:         mv,
-		ResolvedMVSecurity:  security,
-		Exact:               req.Exact,
+		MetricsViewName:              req.MetricsViewName,
+		DimensionName:                req.Dimension.Name,
+		Measures:                     req.Measures,
+		TimeRange:                    req.TimeRange,
+		ISOTimeRange:                 req.IsoTimeRange,
+		ComparisonTimeRange:          req.ComparisonTimeRange,
+		ISOComparisonTimeRangeOffset: req.IsoComparisonTimeRangeOffset,
+		Limit:                        req.Limit,
+		Offset:                       req.Offset,
+		Sort:                         req.Sort,
+		Filter:                       req.Filter,
+		MetricsView:                  mv,
+		ResolvedMVSecurity:           security,
+		Exact:                        req.Exact,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
