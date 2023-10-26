@@ -1,43 +1,40 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
-  import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import Menu from "@rilldata/web-common/components/menu/core/Menu.svelte";
-  import MenuItem from "@rilldata/web-common/components/menu/core/MenuItem.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import type { Table } from "@tanstack/table-core/src/types";
   import { getContext } from "svelte";
-  import { get, Readable } from "svelte/store";
+  import type { Readable } from "svelte/store";
 
   const table = getContext("table") as Readable<Table<unknown>>;
 
+  // Search
   let filter = "";
 
-  $: filterTable(table, filter);
+  $: filterTable(filter);
 
-  function filterTable(table: Readable<Table<unknown>>, filter: string) {
-    get(table).setGlobalFilter(filter);
+  function filterTable(filter: string) {
+    $table.setGlobalFilter(filter);
   }
 
   // Number of reports
   $: numReports = $table.getRowModel().rows.length;
 
-  function sortAlphabetically() {
-    get(table).setSorting([{ id: "monocolumn", desc: false }]);
-  }
+  // Sort
+  // function sortAlphabetically() {
+  //   $table.setSorting([{ id: "monocolumn", desc: false }]);
+  // }
 
-  function sortByMostRecentlyRun() {
-    get(table).setSorting([{ id: "lastRun", desc: true }]);
-  }
+  // function sortByMostRecentlyRun() {
+  //   $table.setSorting([{ id: "lastRun", desc: true }]);
+  // }
 
-  function sortByNextToRun() {
-    get(table).setSorting([{ id: "monocolumn", desc: false }]);
-  }
+  // function sortByNextToRun() {
+  //   $table.setSorting([{ id: "monocolumn", desc: false }]);
+  // }
 
-  let openSortMenu = false;
-  function closeSortMenu() {
-    openSortMenu = false;
-  }
+  // let openSortMenu = false;
+  // function closeSortMenu() {
+  //   openSortMenu = false;
+  // }
 </script>
 
 <thead>
@@ -49,6 +46,9 @@
       <div class="px-4 grow">
         <Search placeholder="Search" autofocus={false} bind:value={filter} />
       </div>
+
+      <!-- Spacer -->
+      <div class="grow" />
 
       <!-- filter menu button (future work) -->
       <!-- <Button on:click={() => console.log("open filter menu")} type="secondary">
@@ -62,7 +62,7 @@
       >
 
       <!-- Sort button -->
-      <WithTogglableFloatingElement active={openSortMenu}>
+      <!-- <WithTogglableFloatingElement active={openSortMenu}>
         <Button on:click={() => (openSortMenu = true)} type="secondary">
           <span>Sort</span>
           <CaretDownIcon />
@@ -80,7 +80,7 @@
           >
           <MenuItem on:select={sortByNextToRun} disabled>Next to run</MenuItem>
         </Menu>
-      </WithTogglableFloatingElement>
+      </WithTogglableFloatingElement> -->
     </td>
   </tr>
 </thead>
