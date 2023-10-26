@@ -1,5 +1,5 @@
 <script lang="ts">
-  import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
+  import CheckCircleOutline from "@rilldata/web-common/components/icons/CheckCircleOutline.svelte";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
   import {
     capitalizeFirstLetter,
@@ -21,7 +21,7 @@
       {reportName}
     </div>
     {#if status === "success"}
-      <CheckCircle className="text-blue-500" />
+      <CheckCircleOutline className="text-blue-500" />
     {/if}
   </div>
   <div class="flex gap-x-1 text-gray-500 text-xs font-normal">
