@@ -16,6 +16,13 @@ import { humanizedFormatterFactory } from "./humanizer";
  * potentially lossy, humanized string representation of a number.
  */
 function humanizeDataType(value: number, type: FormatPreset): string {
+  if (typeof value !== "number") {
+    console.warn(
+      `humanizeDataType only accepts numbers, got ${value} for FormatPreset "${type}"`
+    );
+
+    return JSON.stringify(value);
+  }
   const numberKind = formatPresetToNumberKind(type);
 
   let innerOptions: FormatterFactoryOptions;
@@ -43,6 +50,12 @@ function humanizeDataType(value: number, type: FormatPreset): string {
  * where a raw number will be meaningless to the user.
  */
 function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
+  if (typeof value !== "number") {
+    console.warn(
+      `humanizeDataTypeUnabridged only accepts numbers, got ${value} for FormatPreset "${type}"`
+    );
+    return JSON.stringify(value);
+  }
   if (type === FormatPreset.INTERVAL) {
     return formatMsToDuckDbIntervalString(value as number);
   }
