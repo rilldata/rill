@@ -83,7 +83,7 @@
           <MetadataLabel>Limit</MetadataLabel>
           <MetadataValue>
             {$reportQuery.data?.resource.report.spec.exportLimit === "0"
-              ? "No limit"
+              ? "None"
               : $reportQuery.data?.resource.report.spec.exportLimit}
           </MetadataValue>
         </div>
