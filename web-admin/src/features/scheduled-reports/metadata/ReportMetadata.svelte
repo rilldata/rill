@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -30,7 +29,8 @@
         </h1>
         <Tag>Report</Tag>
         <div class="grow" />
-        <Button type="primary">Export now</Button>
+        <!-- TODO -->
+        <!-- <Button type="primary" on:click={handleExportNow}>Export now</Button> -->
       </div>
     </div>
 
@@ -48,7 +48,7 @@
         <MetadataValue>
           {$reportQuery.data.resource.report.spec.annotations[
             "admin_owner_user_id"
-          ] ?? "Created by a project admin"}
+          ] ?? "A project admin"}
         </MetadataValue>
         <!-- Recipients -->
         <MetadataLabel>Recipients</MetadataLabel>
