@@ -32,6 +32,15 @@ export type AdminServiceSearchProjectNamesParams = {
   pageToken?: string;
 };
 
+export type AdminServiceGetReportMetaParams = {
+  branch?: string;
+  report?: string;
+  /**
+   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+   */
+  annotations?: string;
+};
+
 export type AdminServicePullVirtualRepoParams = {
   branch?: string;
   pageSize?: number;
@@ -40,15 +49,6 @@ export type AdminServicePullVirtualRepoParams = {
 
 export type AdminServiceGetRepoMetaParams = {
   branch?: string;
-};
-
-export type AdminServiceGetReportMetaParams = {
-  branch?: string;
-  report?: string;
-  /**
-   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-   */
-  annotations?: string;
 };
 
 export type AdminServiceUpdateServiceBody = {

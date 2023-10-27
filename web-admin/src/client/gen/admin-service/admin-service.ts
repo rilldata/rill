@@ -85,12 +85,12 @@ import type {
   V1PingResponse,
   V1TriggerRedeployResponse,
   V1TriggerRedeployRequest,
-  V1GetReportMetaResponse,
-  AdminServiceGetReportMetaParams,
   V1GetRepoMetaResponse,
   AdminServiceGetRepoMetaParams,
   V1PullVirtualRepoResponse,
   AdminServicePullVirtualRepoParams,
+  V1GetReportMetaResponse,
+  AdminServiceGetReportMetaParams,
   V1RevokeServiceAuthTokenResponse,
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
@@ -3994,100 +3994,6 @@ export const createAdminServiceTriggerRedeploy = <
   return createMutation(mutationOptions);
 };
 /**
- * @summary GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
- */
-export const adminServiceGetReportMeta = (
-  projectId: string,
-  params?: AdminServiceGetReportMetaParams,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1GetReportMetaResponse>({
-    url: `/v1/projects/${projectId}/admin/meta`,
-    method: "get",
-    params,
-    signal,
-  });
-};
-
-export const getAdminServiceGetReportMetaQueryKey = (
-  projectId: string,
-  params?: AdminServiceGetReportMetaParams
-) =>
-  [
-    `/v1/projects/${projectId}/admin/meta`,
-    ...(params ? [params] : []),
-  ] as const;
-
-export const getAdminServiceGetReportMetaQueryOptions = <
-  TData = Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
-  TError = RpcStatus
->(
-  projectId: string,
-  params?: AdminServiceGetReportMetaParams,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
-      TError,
-      TData
-    >;
-  }
-): CreateQueryOptions<
-  Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
-  TError,
-  TData
-> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceGetReportMetaQueryKey(projectId, params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetReportMeta>>
-  > = ({ signal }) => adminServiceGetReportMeta(projectId, params, signal);
-
-  return { queryKey, queryFn, enabled: !!projectId, ...queryOptions };
-};
-
-export type AdminServiceGetReportMetaQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceGetReportMeta>>
->;
-export type AdminServiceGetReportMetaQueryError = RpcStatus;
-
-/**
- * @summary GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
- */
-export const createAdminServiceGetReportMeta = <
-  TData = Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
-  TError = RpcStatus
->(
-  projectId: string,
-  params?: AdminServiceGetReportMetaParams,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
-      TError,
-      TData
-    >;
-  }
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const queryOptions = getAdminServiceGetReportMetaQueryOptions(
-    projectId,
-    params,
-    options
-  );
-
-  const query = createQuery(queryOptions) as CreateQueryResult<
-    TData,
-    TError
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-};
-
-/**
  * @summary GetRepoMeta returns credentials and other metadata for accessing a project's repo
  */
 export const adminServiceGetRepoMeta = (
@@ -4257,6 +4163,100 @@ export const createAdminServicePullVirtualRepo = <
   }
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getAdminServicePullVirtualRepoQueryOptions(
+    projectId,
+    params,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
+ */
+export const adminServiceGetReportMeta = (
+  projectId: string,
+  params?: AdminServiceGetReportMetaParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetReportMetaResponse>({
+    url: `/v1/projects/${projectId}/reports/meta`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetReportMetaQueryKey = (
+  projectId: string,
+  params?: AdminServiceGetReportMetaParams
+) =>
+  [
+    `/v1/projects/${projectId}/reports/meta`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export const getAdminServiceGetReportMetaQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
+  TError = RpcStatus
+>(
+  projectId: string,
+  params?: AdminServiceGetReportMetaParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetReportMetaQueryKey(projectId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetReportMeta>>
+  > = ({ signal }) => adminServiceGetReportMeta(projectId, params, signal);
+
+  return { queryKey, queryFn, enabled: !!projectId, ...queryOptions };
+};
+
+export type AdminServiceGetReportMetaQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetReportMeta>>
+>;
+export type AdminServiceGetReportMetaQueryError = RpcStatus;
+
+/**
+ * @summary GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
+ */
+export const createAdminServiceGetReportMeta = <
+  TData = Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
+  TError = RpcStatus
+>(
+  projectId: string,
+  params?: AdminServiceGetReportMetaParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServiceGetReportMetaQueryOptions(
     projectId,
     params,
     options

@@ -72,13 +72,15 @@
     const { x, y } = e.detail;
 
     const dimensionValue = formattedData?.rowHeaderData[y]?.[0]?.value;
-    const timeStr = columnHeaders?.[x]?.value;
-    if (timeStr) {
-      tableInteractionStore.set({
-        dimensionValue,
-        time: new Date(timeStr),
-      });
+    let time: Date | undefined = undefined;
+    if (columnHeaders?.[x]?.value) {
+      time = new Date(columnHeaders?.[x]?.value);
     }
+
+    tableInteractionStore.set({
+      dimensionValue,
+      time: time,
+    });
   }
 </script>
 
