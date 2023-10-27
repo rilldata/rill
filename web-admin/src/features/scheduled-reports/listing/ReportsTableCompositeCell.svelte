@@ -12,6 +12,8 @@
   export let frequency: string;
   export let author: string;
   export let status: string;
+
+  // TODO: translate frequency cron expression to human readable format
 </script>
 
 <a href={`reports/${id}`} class="flex flex-col gap-y-0.5 group px-4 py-[5px]">
@@ -29,6 +31,10 @@
     <span>•</span>
     <span>{capitalizeFirstLetter(frequency)}</span>
     <span>•</span>
-    <span>Created by {author}</span>
+    {#if author}
+      <span>Created by {author}</span>
+    {:else}
+      <span>Created by your project admin</span>
+    {/if}
   </div>
 </a>

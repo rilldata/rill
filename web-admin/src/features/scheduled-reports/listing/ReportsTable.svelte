@@ -1,15 +1,21 @@
 <script lang="ts">
-  import { flexRender } from "@tanstack/svelte-table";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { ColumnDef, flexRender } from "@tanstack/svelte-table";
   import Table from "../../../components/table/Table.svelte";
-  import { defaultData } from "./fetch-reports";
+  import NoReportsCTA from "./NoReportsCTA.svelte";
+  import ReportsError from "./ReportsError.svelte";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
   import ReportsTableEmpty from "./ReportsTableEmpty.svelte";
   import ReportsTableHeader from "./ReportsTableHeader.svelte";
+  import { useReports } from "./selectors";
 
   export let organization: string;
   export let project: string;
 
-  // TODO: fetch reports for a given project
+  $: reports = useReports($runtime.instanceId);
 
   /**
    * Table column definitions.
@@ -21,26 +27,27 @@
    * - https://github.com/TanStack/table/issues/4241
    * - https://github.com/TanStack/table/issues/4302
    */
-  const columns = [
+  const columns: ColumnDef<V1Resource, string>[] = [
     {
       id: "composite",
       cell: (info) =>
         flexRender(ReportsTableCompositeCell, {
-          id: info.row.original.id,
-          reportName: info.row.original.name,
-          lastRun: info.row.original.lastRun,
-          frequency: info.row.original.frequency,
-          author: info.row.original.author,
-          status: info.row.original.status,
+          id: info.row.original.meta.name.name,
+          reportName: info.row.original.report.spec.title,
+          lastRun:
+            info.row.original.report.state.executionHistory[0].reportTime,
+          frequency: info.row.original.report.spec.refreshSchedule.cron,
+          author: info.row.original.report.spec.annotations,
+          status: info.row.original.report.state.currentExecution?.errorMessage,
         }),
     },
     {
       id: "name",
-      accessorFn: (row) => row.name,
+      accessorFn: (row) => row.meta.name.name,
     },
     {
       id: "lastRun",
-      accessorFn: (row) => row.lastRun,
+      accessorFn: (row) => row.report.state.currentExecution.reportTime,
     },
     // {
     //   id: "nextRun",
@@ -61,7 +68,19 @@
   };
 </script>
 
-<Table {columns} data={defaultData} {columnVisibility}>
-  <ReportsTableHeader slot="header" />
-  <ReportsTableEmpty slot="empty" />
-</Table>
+{#if $reports.isLoading}
+  <div class="m-auto mt-20">
+    <Spinner status={EntityStatus.Running} size="24px" />
+  </div>
+{:else if $reports.isError}
+  <ReportsError />
+{:else if $reports.isSuccess}
+  {#if $reports.data.resources.length === 0}
+    <NoReportsCTA />
+  {:else}
+    <Table {columns} data={$reports?.data?.resources} {columnVisibility}>
+      <ReportsTableHeader slot="header" />
+      <ReportsTableEmpty slot="empty" />
+    </Table>
+  {/if}
+{/if}
