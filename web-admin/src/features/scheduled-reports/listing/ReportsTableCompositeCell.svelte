@@ -1,10 +1,8 @@
 <script lang="ts">
   import CheckCircleOutline from "@rilldata/web-common/components/icons/CheckCircleOutline.svelte";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
-  import {
-    capitalizeFirstLetter,
-    formatDateToCustomString,
-  } from "../tableUtils";
+  import cronstrue from "cronstrue";
+  import { formatDateToCustomString } from "../tableUtils";
 
   export let id: string;
   export let reportName: string;
@@ -13,7 +11,7 @@
   export let owner: string;
   export let currentExecutionErrorMessage: string | undefined;
 
-  // TODO: translate frequency cron expression to human readable format
+  const humanReadableFrequency = cronstrue.toString(frequency) + " (UTC)";
 </script>
 
 <a href={`reports/${id}`} class="flex flex-col gap-y-0.5 group px-4 py-[5px]">
@@ -33,7 +31,7 @@
       <span>Last run {formatDateToCustomString(new Date(lastRun))}</span>
     {/if}
     <span>•</span>
-    <span>{capitalizeFirstLetter(frequency)}</span>
+    <span>{humanReadableFrequency}</span>
     <span>•</span>
     <span>Created by {owner}</span>
   </div>
