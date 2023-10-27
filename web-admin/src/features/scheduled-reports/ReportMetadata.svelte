@@ -8,7 +8,6 @@
   export let report: string;
 
   $: reportQuery = useReport($runtime.instanceId, report);
-  $: console.log("reportQuery", $reportQuery.data);
 
   $: metricViewsName =
     ($reportQuery.data &&
