@@ -12,9 +12,6 @@
   import ReportsTableEmpty from "./ReportsTableEmpty.svelte";
   import ReportsTableHeader from "./ReportsTableHeader.svelte";
 
-  export let organization: string;
-  export let project: string;
-
   $: reports = useReports($runtime.instanceId);
 
   /**
@@ -37,7 +34,9 @@
           lastRun:
             info.row.original.report.state.executionHistory[0].reportTime,
           frequency: info.row.original.report.spec.refreshSchedule.cron,
-          author: info.row.original.report.spec.annotations,
+          owner:
+            info.row.original.report.spec.annotations["admin_owner_user_id"] ??
+            "a project admin",
           status: info.row.original.report.state.currentExecution?.errorMessage,
         }),
     },
