@@ -913,10 +913,6 @@ export:
 email:
   recipients:
     - benjamin@example.com
-  template:
-    open_url: https://example.com/open
-    edit_url: https://example.com/edit
-    export_url: https://example.com/export
 `,
 	})
 
