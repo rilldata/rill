@@ -161,8 +161,8 @@ func (h *Handle) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return h, true
 }
 
-// AsAdminStore implements drivers.Handle.
-func (h *Handle) AsAdminStore(instanceID string) (drivers.AdminStore, bool) {
+// AsAdmin implements drivers.Handle.
+func (h *Handle) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return h, true
 }
 
