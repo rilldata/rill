@@ -8,10 +8,10 @@
 
   export let id: string;
   export let reportName: string;
-  export let lastRun: string;
+  export let lastRun: string | undefined;
   export let frequency: string;
   export let owner: string;
-  export let status: string;
+  export let currentExecutionErrorMessage: string | undefined;
 
   // TODO: translate frequency cron expression to human readable format
 </script>
@@ -22,12 +22,16 @@
     <div class="text-gray-700 text-sm font-semibold group-hover:text-blue-600">
       {reportName}
     </div>
-    {#if status === "success"}
+    {#if lastRun && !currentExecutionErrorMessage}
       <CheckCircleOutline className="text-blue-500" />
     {/if}
   </div>
   <div class="flex gap-x-1 text-gray-500 text-xs font-normal">
-    <span>Last run {formatDateToCustomString(new Date(lastRun))}</span>
+    {#if !lastRun}
+      <span>Hasn't run yet</span>
+    {:else}
+      <span>Last run {formatDateToCustomString(new Date(lastRun))}</span>
+    {/if}
     <span>•</span>
     <span>{capitalizeFirstLetter(frequency)}</span>
     <span>•</span>
