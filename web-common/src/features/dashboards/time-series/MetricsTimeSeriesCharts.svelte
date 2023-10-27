@@ -2,6 +2,7 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import Expand from "@rilldata/web-common/components/icons/Expand.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import {
     metricsExplorerStore,
@@ -264,31 +265,39 @@
         {#if $timeSeriesDataStore?.isError}
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
-          <MeasureChart
-            bind:mouseoverValue
-            {measure}
-            {isScrubbing}
-            {scrubStart}
-            {scrubEnd}
-            {metricViewName}
-            data={formattedData}
-            {dimensionData}
-            zone={$dashboardStore?.selectedTimezone}
-            xAccessor="ts_position"
-            labelAccessor="ts"
-            timeGrain={interval}
-            yAccessor={measure.name}
-            xMin={startValue}
-            xMax={endValue}
-            {showComparison}
-            mouseoverTimeFormat={(value) => {
-              /** format the date according to the time grain */
-              return new Date(value).toLocaleDateString(
-                undefined,
-                TIME_GRAIN[interval].formatDate
-              );
-            }}
-          />
+          <div class="relative">
+            <MeasureChart
+              bind:mouseoverValue
+              {measure}
+              {isScrubbing}
+              {scrubStart}
+              {scrubEnd}
+              {metricViewName}
+              data={formattedData}
+              {dimensionData}
+              zone={$dashboardStore?.selectedTimezone}
+              xAccessor="ts_position"
+              labelAccessor="ts"
+              timeGrain={interval}
+              yAccessor={measure.name}
+              xMin={startValue}
+              xMax={endValue}
+              {showComparison}
+              mouseoverTimeFormat={(value) => {
+                /** format the date according to the time grain */
+                return new Date(value).toLocaleDateString(
+                  undefined,
+                  TIME_GRAIN[interval].formatDate
+                );
+              }}
+            />
+            <div
+              style="display: var(--expand, none)"
+              class="absolute right-0 top-0 p-2"
+            >
+              <Expand />
+            </div>
+          </div>
         {:else}
           <div class="flex items-center justify-center w-24">
             <Spinner status={EntityStatus.Running} />
@@ -302,5 +311,6 @@
 <style>
   :global(.big-number:hover + .time-series-body) {
     background-color: rgb(243 244 246);
+    --expand: "block";
   }
 </style>
