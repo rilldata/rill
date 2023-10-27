@@ -61,7 +61,8 @@
   </Button> -->
 
       <!-- Number of runs -->
-      <span class="shrink-0">{numReports} run{numReports !== 1 ? "s" : ""}</span
+      <span class="shrink-0"
+        >Last {numReports} run{numReports !== 1 ? "s" : ""}</span
       >
 
       <!-- Sort button -->
