@@ -89,7 +89,9 @@
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
         label={projectName}
-        href={`/${orgName}/${projectName}`}
+        href={onReportPage
+          ? `/${orgName}/${projectName}/-/reports`
+          : `/${orgName}/${projectName}`}
         menuOptions={$projects.data?.projects?.length > 1 &&
           $projects.data.projects.map((proj) => ({
             key: proj.name,
