@@ -115,9 +115,9 @@ type Handle interface {
 	// A repo stores file artifacts (either in a folder or virtualized in a database).
 	AsRepoStore(instanceID string) (RepoStore, bool)
 
-	// AsAdminStore returns an AdminStore if the driver can serve as such, otherwise returns false.
+	// AsAdmin returns an AdminService if the driver can serve as such, otherwise returns false.
 	// An admin store enables an instance to request contextual information from the admin service that deployed it.
-	AsAdminStore(instanceID string) (AdminStore, bool)
+	AsAdmin(instanceID string) (AdminService, bool)
 
 	// AsOLAP returns an OLAP if the driver can serve as such, otherwise returns false.
 	// OLAP stores are where we actually store, transform, and query users' data.

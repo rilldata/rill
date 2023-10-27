@@ -41,7 +41,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !permissions.ReadProdStatus {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read report meta")
 	}
 
 	if proj.ProdBranch != req.Branch {
@@ -56,7 +56,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	annotations := parseReportAnnotations(req.Annotations)
 
 	return &adminv1.GetReportMetaResponse{
-		OpenUrl:   s.urls.reportOpen(org.Name, proj.Name, req.Report, annotations.WebOpenProjectSubpath),
+		OpenUrl:   s.urls.reportOpen(org.Name, proj.Name, annotations.WebOpenProjectSubpath),
 		ExportUrl: s.urls.reportExport(org.Name, proj.Name, req.Report),
 		EditUrl:   s.urls.reportEdit(org.Name, proj.Name, req.Report),
 	}, nil

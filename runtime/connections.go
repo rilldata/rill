@@ -59,7 +59,7 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 	return repo, release, nil
 }
 
-func (r *Runtime) Admin(ctx context.Context, instanceID string) (drivers.AdminStore, func(), error) {
+func (r *Runtime) Admin(ctx context.Context, instanceID string) (drivers.AdminService, func(), error) {
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return nil, nil, err
@@ -75,7 +75,7 @@ func (r *Runtime) Admin(ctx context.Context, instanceID string) (drivers.AdminSt
 		return nil, nil, err
 	}
 
-	admin, ok := conn.AsAdminStore(instanceID)
+	admin, ok := conn.AsAdmin(instanceID)
 	if !ok {
 		release()
 		return nil, nil, fmt.Errorf("connector %q is not a valid admin store", inst.AdminConnector)

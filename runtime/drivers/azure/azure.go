@@ -170,8 +170,8 @@ func (c *Connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
-// AsAdminStore implements drivers.Handle.
-func (c *Connection) AsAdminStore(instanceID string) (drivers.AdminStore, bool) {
+// AsAdmin implements drivers.Handle.
+func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 

@@ -2,7 +2,7 @@ package drivers
 
 import "context"
 
-type AdminStore interface {
+type AdminService interface {
 	GetReportMetadata(ctx context.Context, reportName string, annotations map[string]string) (*ReportMetadata, error)
 }
 

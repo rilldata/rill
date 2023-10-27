@@ -394,7 +394,7 @@ func newURLRegistry(opts *Options) *externalURLs {
 	}
 }
 
-func (u *externalURLs) reportOpen(org, project, report, projectSubpath string) string {
+func (u *externalURLs) reportOpen(org, project, projectSubpath string) string {
 	return urlutil.MustJoinURL(u.frontend, org, project, projectSubpath)
 }
 
