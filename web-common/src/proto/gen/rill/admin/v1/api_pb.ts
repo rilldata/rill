@@ -5133,6 +5133,110 @@ export class PullVirtualRepoResponse extends Message<PullVirtualRepoResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.GetReportMetaRequest
+ */
+export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: string branch = 2;
+   */
+  branch = "";
+
+  /**
+   * @generated from field: string report = 3;
+   */
+  report = "";
+
+  /**
+   * @generated from field: map<string, string> annotations = 4;
+   */
+  annotations: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<GetReportMetaRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetReportMetaRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaRequest {
+    return new GetReportMetaRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetReportMetaRequest {
+    return new GetReportMetaRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetReportMetaRequest {
+    return new GetReportMetaRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetReportMetaRequest | PlainMessage<GetReportMetaRequest> | undefined, b: GetReportMetaRequest | PlainMessage<GetReportMetaRequest> | undefined): boolean {
+    return proto3.util.equals(GetReportMetaRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetReportMetaResponse
+ */
+export class GetReportMetaResponse extends Message<GetReportMetaResponse> {
+  /**
+   * @generated from field: string open_url = 1;
+   */
+  openUrl = "";
+
+  /**
+   * @generated from field: string export_url = 2;
+   */
+  exportUrl = "";
+
+  /**
+   * @generated from field: string edit_url = 3;
+   */
+  editUrl = "";
+
+  constructor(data?: PartialMessage<GetReportMetaResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetReportMetaResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "export_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaResponse {
+    return new GetReportMetaResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetReportMetaResponse {
+    return new GetReportMetaResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetReportMetaResponse {
+    return new GetReportMetaResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetReportMetaResponse | PlainMessage<GetReportMetaResponse> | undefined, b: GetReportMetaResponse | PlainMessage<GetReportMetaResponse> | undefined): boolean {
+    return proto3.util.equals(GetReportMetaResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.CreateReportRequest
  */
 export class CreateReportRequest extends Message<CreateReportRequest> {
@@ -6722,9 +6826,9 @@ export class ReportOptions extends Message<ReportOptions> {
   exportFormat = ExportFormat.UNSPECIFIED;
 
   /**
-   * @generated from field: string open_url = 7;
+   * @generated from field: string open_project_subpath = 7;
    */
-  openUrl = "";
+  openProjectSubpath = "";
 
   /**
    * @generated from field: repeated string recipients = 8;
@@ -6745,7 +6849,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 4, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 6, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
-    { no: 7, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "open_project_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 

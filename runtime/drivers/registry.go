@@ -25,6 +25,8 @@ type Instance struct {
 	OLAPConnector string
 	// Driver name for reading/editing code artifacts
 	RepoConnector string
+	// Driver name for the admin service managing the deployment (optional)
+	AdminConnector string
 	// CreatedOn is when the instance was created
 	CreatedOn time.Time `db:"created_on"`
 	// UpdatedOn is when the instance was last updated in the registry

@@ -254,6 +254,21 @@ func (r *ReportReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
 	r.C.Logger.Info("Sending report", "report", self.Meta.Name.Name, "report_time", t)
 
+	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
+	if err != nil {
+		if errors.Is(err, runtime.ErrAdminNotConfigured) {
+			r.C.Logger.Info("Skipped sending report because an admin service is not configured", "report", self.Meta.Name.Name)
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to get admin client: %w", err)
+	}
+	defer release()
+
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec.Annotations)
+	if err != nil {
+		return false, fmt.Errorf("failed to get report metadata: %w", err)
+	}
+
 	qry, err := buildQuery(rep, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to build export request: %w", err)
@@ -264,9 +279,9 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		return false, fmt.Errorf("failed to bake query of type %T: %w", qry, err)
 	}
 
-	exportURL, err := url.Parse(rep.Spec.EmailExportUrl)
+	exportURL, err := url.Parse(meta.ExportURL)
 	if err != nil {
-		return false, fmt.Errorf("failed to parse export URL %q: %w", rep.Spec.EmailExportUrl, err)
+		return false, fmt.Errorf("failed to parse export URL %q: %w", meta.ExportURL, err)
 	}
 
 	exportURLQry := exportURL.Query()
@@ -284,9 +299,9 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			Title:          rep.Spec.Title,
 			ReportTime:     t,
 			DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-			OpenLink:       rep.Spec.EmailOpenUrl,
+			OpenLink:       meta.OpenURL,
 			DownloadLink:   exportURL.String(),
-			EditLink:       rep.Spec.EmailEditUrl,
+			EditLink:       meta.EditURL,
 		})
 		if err != nil {
 			return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)

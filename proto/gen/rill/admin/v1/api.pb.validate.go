@@ -15164,6 +15164,224 @@ var _ interface {
 	ErrorName() string
 } = PullVirtualRepoResponseValidationError{}
 
+// Validate checks the field values on GetReportMetaRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetReportMetaRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetReportMetaRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetReportMetaRequestMultiError, or nil if none found.
+func (m *GetReportMetaRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetReportMetaRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ProjectId
+
+	// no validation rules for Branch
+
+	// no validation rules for Report
+
+	// no validation rules for Annotations
+
+	if len(errors) > 0 {
+		return GetReportMetaRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetReportMetaRequestMultiError is an error wrapping multiple validation
+// errors returned by GetReportMetaRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetReportMetaRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetReportMetaRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetReportMetaRequestMultiError) AllErrors() []error { return m }
+
+// GetReportMetaRequestValidationError is the validation error returned by
+// GetReportMetaRequest.Validate if the designated constraints aren't met.
+type GetReportMetaRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetReportMetaRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetReportMetaRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetReportMetaRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetReportMetaRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetReportMetaRequestValidationError) ErrorName() string {
+	return "GetReportMetaRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetReportMetaRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetReportMetaRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetReportMetaRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetReportMetaRequestValidationError{}
+
+// Validate checks the field values on GetReportMetaResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetReportMetaResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetReportMetaResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetReportMetaResponseMultiError, or nil if none found.
+func (m *GetReportMetaResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetReportMetaResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for OpenUrl
+
+	// no validation rules for ExportUrl
+
+	// no validation rules for EditUrl
+
+	if len(errors) > 0 {
+		return GetReportMetaResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetReportMetaResponseMultiError is an error wrapping multiple validation
+// errors returned by GetReportMetaResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetReportMetaResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetReportMetaResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetReportMetaResponseMultiError) AllErrors() []error { return m }
+
+// GetReportMetaResponseValidationError is the validation error returned by
+// GetReportMetaResponse.Validate if the designated constraints aren't met.
+type GetReportMetaResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetReportMetaResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetReportMetaResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetReportMetaResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetReportMetaResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetReportMetaResponseValidationError) ErrorName() string {
+	return "GetReportMetaResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetReportMetaResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetReportMetaResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetReportMetaResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetReportMetaResponseValidationError{}
+
 // Validate checks the field values on CreateReportRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -18747,7 +18965,7 @@ func (m *ReportOptions) validate(all bool) error {
 
 	// no validation rules for ExportFormat
 
-	// no validation rules for OpenUrl
+	// no validation rules for OpenProjectSubpath
 
 	if len(errors) > 0 {
 		return ReportOptionsMultiError(errors)
