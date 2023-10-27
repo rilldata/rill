@@ -1,15 +1,16 @@
 <script lang="ts">
+  import type { V1ReportExecution } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender } from "@tanstack/svelte-table";
   import type { ColumnDef } from "@tanstack/table-core/src/types";
   import Table from "../../../components/table/Table.svelte";
-  import { defaultData, ReportRun } from "./fetch-report-history";
+  import { useReport } from "../selectors";
   import ReportHistoryTableCompositeCell from "./ReportHistoryTableCompositeCell.svelte";
   import ReportHistoryTableHeader from "./ReportHistoryTableHeader.svelte";
 
-  export let organization: string;
-  export let project: string;
+  export let report: string;
 
-  // TODO: fetch report
+  $: reportQuery = useReport($runtime.instanceId, report);
 
   /**
    * Table column definitions.
@@ -21,23 +22,21 @@
    * - https://github.com/TanStack/table/issues/4241
    * - https://github.com/TanStack/table/issues/4302
    */
-  const columns: ColumnDef<ReportRun>[] = [
+  const columns: ColumnDef<V1ReportExecution>[] = [
     {
       id: "composite",
       cell: (info) =>
         flexRender(ReportHistoryTableCompositeCell, {
-          id: info.row.original.id,
-          timestamp: info.row.original.timestamp,
-          exportSize: info.row.original.exportSize,
-          status: info.row.original.status,
+          reportTime: info.row.original.reportTime,
+          errorMessage: info.row.original.errorMessage,
         }),
     },
-    {
-      id: "timestamp",
-      header: "",
-      accessorFn: (row) => row.timestamp,
-      cell: undefined,
-    },
+    // {
+    //   id: "timestamp",
+    //   header: "",
+    //   accessorFn: (row) => row.timestamp,
+    //   cell: undefined,
+    // },
   ];
 
   const columnVisibility = {
@@ -51,7 +50,7 @@
   </h1>
   <Table
     {columns}
-    data={defaultData}
+    data={$reportQuery.data.resource.report.state.executionHistory}
     {columnVisibility}
     maxWidthOverride="max-w-[960px]"
   >
