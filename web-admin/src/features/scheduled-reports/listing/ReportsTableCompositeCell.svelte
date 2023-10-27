@@ -10,7 +10,7 @@
   export let reportName: string;
   export let lastRun: string;
   export let frequency: string;
-  export let author: string;
+  export let owner: string;
   export let status: string;
 
   // TODO: translate frequency cron expression to human readable format
@@ -31,10 +31,6 @@
     <span>•</span>
     <span>{capitalizeFirstLetter(frequency)}</span>
     <span>•</span>
-    {#if author}
-      <span>Created by {author}</span>
-    {:else}
-      <span>Created by your project admin</span>
-    {/if}
+    <span>Created by {owner}</span>
   </div>
 </a>
