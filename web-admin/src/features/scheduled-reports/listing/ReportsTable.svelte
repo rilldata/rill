@@ -5,12 +5,12 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { ColumnDef, flexRender } from "@tanstack/svelte-table";
   import Table from "../../../components/table/Table.svelte";
+  import { useReports } from "../selectors";
   import NoReportsCTA from "./NoReportsCTA.svelte";
   import ReportsError from "./ReportsError.svelte";
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
   import ReportsTableEmpty from "./ReportsTableEmpty.svelte";
   import ReportsTableHeader from "./ReportsTableHeader.svelte";
-  import { useReports } from "./selectors";
 
   export let organization: string;
   export let project: string;
