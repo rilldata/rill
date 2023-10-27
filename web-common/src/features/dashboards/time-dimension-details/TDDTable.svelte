@@ -269,12 +269,16 @@
       setTimeout(pivot.draw, 0);
     }
   }
+  $: cssVarStyles = `--cursor: ${
+    comparing === "dimension" ? "pointer" : "default"
+  }`;
 </script>
 
 <div
   on:mouseleave={resetHighlight}
   style:height="calc(100% - 50px)"
-  class="w-full relative {comparing === 'dimension' && 'cursor-pointer'}"
+  style={cssVarStyles}
+  class="w-full relative"
 >
   <Pivot
     bind:this={pivot}
@@ -298,10 +302,13 @@
 </div>
 
 <style>
+  /* Define cursor styles */
+  :global(regular-table table) {
+    cursor: var(--cursor, default);
+  }
   :global(regular-table table tbody tr:first-child, regular-table thead) {
     cursor: default;
   }
-
   :global(regular-table div[sortable="true"]) {
     cursor: pointer;
   }
