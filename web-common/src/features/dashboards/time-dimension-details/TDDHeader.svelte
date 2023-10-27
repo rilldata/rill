@@ -2,6 +2,8 @@
   import { Switch } from "@rilldata/web-common/components/button";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
+  import Row from "@rilldata/web-common/components/icons/Row.svelte";
+  import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -92,32 +94,36 @@
 <div
   class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3 h-11"
 >
-  <div class="flex gap-x-3 font-bold items-center">
-    <ComparisonSelector {metricViewName} chipStyle />
+  <div class="flex gap-x-3 items-center font-normal text-gray-500">
+    <div class="flex items-center gap-x-2">
+      <div class="flex items-center gap-x-1">
+        <Row size="16px" /> Rows
+      </div>
 
-    <SearchableFilterChip
-      label={selectedMeasureLabel}
-      on:item-clicked={switchMeasure}
-      selectableItems={selectableMeasures}
-      {selectedItems}
-      tooltipText="Choose a measure to display"
-    />
-    <span class="font-normal text-gray-400"> | </span>
+      <ComparisonSelector {metricViewName} chipStyle />
+    </div>
 
-    <Chip {...disabledChipColors} extraPadding={false}>
-      <div slot="body" class="flex">Time</div>
-    </Chip>
+    <div class="flex items-center gap-x-2 pl-2">
+      <div class="flex items-center gap-x-1">
+        <Column size="16px" /> Columns
+      </div>
+      <SearchableFilterChip
+        label={selectedMeasureLabel}
+        on:item-clicked={switchMeasure}
+        selectableItems={selectableMeasures}
+        {selectedItems}
+        tooltipText="Choose a measure to display"
+      />
+    </div>
 
-    <span class="font-normal text-gray-400"> : </span>
+    <span> | </span>
 
-    <Chip
-      {...disabledChipColors}
-      extraPadding={false}
-      extraRounded={false}
-      label={selectedMeasureLabel}
-    >
-      <div slot="body" class="flex">{selectedMeasureLabel}</div>
-    </Chip>
+    <div>Time</div>
+
+    <span> : </span>
+
+    <div>{selectedMeasureLabel}</div>
+
     {#if isFetching}
       <Spinner size="18px" status={EntityStatus.Running} />
     {/if}
