@@ -18,6 +18,8 @@
     "";
   $: dashboard = useDashboard($runtime.instanceId, metricViewsName);
   $: dashboardTitle = $dashboard.data?.metricsView.spec.title;
+
+  $: exportLimit = $reportQuery.data.resource.report.spec.exportLimit;
 </script>
 
 {#if $reportQuery.data}
@@ -72,7 +74,7 @@
         <div class="flex gap-x-6">
           <MetadataLabel>Limit</MetadataLabel>
           <MetadataValue>
-            {$reportQuery.data.resource.report.spec.exportLimit}
+            {exportLimit === "0" ? "No limit" : exportLimit}
           </MetadataValue>
         </div>
       </div>
