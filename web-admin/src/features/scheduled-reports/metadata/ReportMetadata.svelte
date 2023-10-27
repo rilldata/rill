@@ -6,6 +6,7 @@
   import { useReport } from "../selectors";
   import MetadataLabel from "./MetadataLabel.svelte";
   import MetadataValue from "./MetadataValue.svelte";
+  import { exportFormatToPrettyString } from "./utils";
 
   export let report: string;
 
@@ -35,38 +36,39 @@
 
     <!-- Three columns of metadata -->
     <div class="flex flex-wrap gap-x-16 gap-y-3">
-      <!-- column 1 -->
+      <!-- Column 1 -->
       <div class="grid grid-cols-2 gap-x-6 gap-y-3 grid-cols-[auto,1fr]">
-        <!-- dashboard name -->
+        <!-- Dashboard -->
         <MetadataLabel>Dashboard</MetadataLabel>
         <MetadataValue>
           {dashboardTitle}
         </MetadataValue>
-        <!-- author -->
+        <!-- Creator -->
         <MetadataLabel>Creator</MetadataLabel>
         <MetadataValue>
           {$reportQuery.data.resource.report.spec.annotations[
             "admin_owner_user_id"
           ] ?? "Created by a project admin"}
         </MetadataValue>
-        <!-- recipients -->
+        <!-- Recipients -->
         <MetadataLabel>Recipients</MetadataLabel>
         <MetadataValue>
           {$reportQuery.data.resource.report.spec.emailRecipients.length}
         </MetadataValue>
       </div>
 
-      <!-- column 2 -->
+      <!-- Column 2 -->
       <div class="flex flex-col gap-y-3">
-        <!-- last run -->
+        <!-- Format -->
         <div class="flex gap-x-6">
           <MetadataLabel>Format</MetadataLabel>
           <MetadataValue>
-            <!-- TODO: make this pretty -->
-            {$reportQuery.data.resource.report.spec.exportFormat}
+            {exportFormatToPrettyString(
+              $reportQuery.data.resource.report.spec.exportFormat
+            )}
           </MetadataValue>
         </div>
-        <!-- next run -->
+        <!-- Limit -->
         <div class="flex gap-x-6">
           <MetadataLabel>Limit</MetadataLabel>
           <MetadataValue>
@@ -75,20 +77,29 @@
         </div>
       </div>
 
-      <!-- column 3 -->
+      <!-- Column 3 -->
       <div class="flex flex-col gap-y-3">
-        <!-- last run -->
+        <!-- Frequency -->
         <div class="flex gap-x-6">
           <MetadataLabel>Frequency</MetadataLabel>
           <MetadataValue>
             {$reportQuery.data.resource.report.spec.refreshSchedule.cron}
           </MetadataValue>
         </div>
-        <!-- next run -->
+        <!-- Next run -->
         <div class="flex gap-x-6">
           <MetadataLabel>Next run</MetadataLabel>
           <MetadataValue>
-            {$reportQuery.data.resource.report.state.nextRunOn}
+            {new Date(
+              $reportQuery.data.resource.report.state.nextRunOn
+            ).toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+              hour12: true,
+            })}
           </MetadataValue>
         </div>
       </div>
