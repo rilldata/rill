@@ -1016,7 +1016,7 @@ message GetReportMetaResponse {
 message CreateReportRequest {
   string organization = 1;
   string project = 2;
-  ReportOptions options = 3;
+  ReportOptions options = 3 [(validate.rules).message.required = true];
 }
 
 message CreateReportResponse {
@@ -1027,7 +1027,7 @@ message EditReportRequest {
   string organization = 1;
   string project = 2;
   string name = 3;
-  ReportOptions options = 4;
+  ReportOptions options = 4 [(validate.rules).message.required = true];
 }
 
 message EditReportResponse {
@@ -1061,7 +1061,7 @@ message TriggerReportResponse {}
 message GenerateReportYAMLRequest {
   string organization = 1;
   string project = 2;
-  ReportOptions options = 3;
+  ReportOptions options = 3 [(validate.rules).message.required = true];
 }
 
 message GenerateReportYAMLResponse {

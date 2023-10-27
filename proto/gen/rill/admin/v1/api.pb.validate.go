@@ -15408,6 +15408,17 @@ func (m *CreateReportRequest) validate(all bool) error {
 
 	// no validation rules for Project
 
+	if m.GetOptions() == nil {
+		err := CreateReportRequestValidationError{
+			field:  "Options",
+			reason: "value is required",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if all {
 		switch v := interface{}(m.GetOptions()).(type) {
 		case interface{ ValidateAll() error }:
@@ -15648,6 +15659,17 @@ func (m *EditReportRequest) validate(all bool) error {
 	// no validation rules for Project
 
 	// no validation rules for Name
+
+	if m.GetOptions() == nil {
+		err := EditReportRequestValidationError{
+			field:  "Options",
+			reason: "value is required",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if all {
 		switch v := interface{}(m.GetOptions()).(type) {
@@ -16515,6 +16537,17 @@ func (m *GenerateReportYAMLRequest) validate(all bool) error {
 	// no validation rules for Organization
 
 	// no validation rules for Project
+
+	if m.GetOptions() == nil {
+		err := GenerateReportYAMLRequestValidationError{
+			field:  "Options",
+			reason: "value is required",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if all {
 		switch v := interface{}(m.GetOptions()).(type) {
