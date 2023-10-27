@@ -14,6 +14,7 @@
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
   import { useDashboards } from "../dashboards/listing/dashboards";
+  import { useReports } from "../scheduled-reports/selectors";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import {
     isDashboardPage,
@@ -63,7 +64,8 @@
   $: onDashboardPage = isDashboardPage($page);
 
   // Report breadcrumb
-  $: report = $page.params.report;
+  $: reportName = $page.params.report;
+  $: reports = useReports(instanceId);
   $: onReportPage = isReportPage($page);
 </script>
 
@@ -122,14 +124,16 @@
         isCurrentPage={onDashboardPage}
       />
     {/if}
-    <!-- TODO: Add menuOptions once we have an API to fetch reports -->
-    {#if report}
+    {#if reportName}
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
-        label={report}
-        href={`/${orgName}/${projectName}/-/reports/${report}`}
-        menuOptions={[]}
-        menuKey={undefined}
+        label={reportName}
+        href={`/${orgName}/${projectName}/-/reports/${reportName}`}
+        menuOptions={$reports.data.resources.map((resource) => ({
+          key: resource.meta.name.name,
+          main: resource.report.spec.title || resource.meta.name.name,
+        }))}
+        menuKey={reportName}
         onSelectMenuOption={(report) =>
           goto(`/${orgName}/${projectName}/${report}`)}
         isCurrentPage={onReportPage}
