@@ -4345,6 +4345,10 @@ definitions:
         type: string
       emailExportUrl:
         type: string
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
   v1ReportState:
     type: object
     properties:

@@ -15,8 +15,8 @@ import (
 	_ "time/tzdata"
 )
 
-// metricsViewYAML is the raw structure of a MetricsView resource defined in YAML
-type metricsViewYAML struct {
+// MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
+type MetricsViewYAML struct {
 	commonYAML         `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title              string           `yaml:"title"`
 	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
@@ -64,7 +64,7 @@ type metricsViewYAML struct {
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	// Parse YAML
-	tmp := &metricsViewYAML{}
+	tmp := &MetricsViewYAML{}
 	if p.RillYAML != nil && !p.RillYAML.Defaults.MetricsViews.IsZero() {
 		if err := p.RillYAML.Defaults.MetricsViews.Decode(tmp); err != nil {
 			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}

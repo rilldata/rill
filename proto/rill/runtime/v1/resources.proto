@@ -219,6 +219,7 @@ message ReportSpec {
   string email_open_url = 11;
   string email_edit_url = 12;
   string email_export_url = 13;
+  map<string, string> annotations = 14;
 }
 
 message ReportState {

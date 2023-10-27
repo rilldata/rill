@@ -1268,7 +1268,7 @@ func (c *connection) FindVirtualFiles(ctx context.Context, projectID, branch str
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT path, data, deleted, updated_on
 		FROM virtual_files
-		WHERE project_id=$1 AND branch=$2 AND (updated_on>$3 OR updated_on=$3 AND afterPath>$4)
+		WHERE project_id=$1 AND branch=$2 AND (updated_on>$3 OR updated_on=$3 AND path>$4)
 		ORDER BY updated_on, path LIMIT $5
 	`, projectID, branch, afterUpdatedOn, afterPath, limit)
 	if err != nil {
@@ -1302,7 +1302,7 @@ func (c *connection) UpdateVirtualFileDeleted(ctx context.Context, projectID, br
 			data = ''::BYTEA,
 			deleted = TRUE,
 			updated_on = now()
-		WHERE project_id=$1, branch=$2, path=$3`, projectID, branch, path)
+		WHERE project_id=$1 AND branch=$2 AND path=$3`, projectID, branch, path)
 	return checkUpdateRow("virtual file", res, err)
 }
 
