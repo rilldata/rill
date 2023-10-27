@@ -478,6 +478,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 }
 
 // generateReportName generates a random report name with the title as a seed.
+// Example: "My report!" -> "my-report-5b3f7e1a".
 // It verifies that the name is not taken (the random component makes any collision unlikely, but we check to be sure).
 func (s *Server) generateReportName(ctx context.Context, depl *database.Deployment, title string) (string, error) {
 	for i := 0; i < 5; i++ {
