@@ -32,12 +32,13 @@
           id: info.row.original.meta.name.name,
           reportName: info.row.original.report.spec.title,
           lastRun:
-            info.row.original.report.state.executionHistory[0].reportTime,
+            info.row.original.report.state.executionHistory[0]?.reportTime,
           frequency: info.row.original.report.spec.refreshSchedule.cron,
           owner:
             info.row.original.report.spec.annotations["admin_owner_user_id"] ??
             "a project admin",
-          status: info.row.original.report.state.currentExecution?.errorMessage,
+          currentExecutionErrorMessage:
+            info.row.original.report.state.currentExecution?.errorMessage,
         }),
     },
     {
