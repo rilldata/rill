@@ -33,11 +33,24 @@
   <h1 class="text-gray-800 text-base font-medium leading-none">
     Recent history
   </h1>
-  <Table
-    {columns}
-    data={$reportQuery.data?.resource.report.state.executionHistory}
-    maxWidthOverride="max-w-[960px]"
-  >
-    <ReportHistoryTableHeader slot="header" maxWidthOverride="max-w-[960px]" />
-  </Table>
+  {#if $reportQuery.error}
+    <div class="text-red-500">
+      {$reportQuery.error.message}
+    </div>
+  {:else if $reportQuery.isLoading}
+    <div class="text-gray-500">Loading...</div>
+  {:else if !$reportQuery.data?.resource.report.state.executionHistory.length}
+    <div class="text-gray-500">No history available.</div>
+  {:else}
+    <Table
+      {columns}
+      data={$reportQuery.data?.resource.report.state.executionHistory}
+      maxWidthOverride="max-w-[960px]"
+    >
+      <ReportHistoryTableHeader
+        slot="header"
+        maxWidthOverride="max-w-[960px]"
+      />
+    </Table>
+  {/if}
 </div>
