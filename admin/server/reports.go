@@ -40,7 +40,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !permissions.ReadProdStatus {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read report meta")
 	}
 
 	if proj.ProdBranch != req.Branch {
