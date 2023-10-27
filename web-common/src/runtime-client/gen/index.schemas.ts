@@ -697,7 +697,6 @@ export interface V1ReportSpec {
   timeoutSeconds?: number;
   queryName?: string;
   queryArgsJson?: string;
-  queryTimeRange?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   emailRecipients?: string[];

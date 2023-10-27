@@ -10,7 +10,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/server"
 	"golang.org/x/exp/slices"
@@ -312,17 +311,6 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 }
 
 func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
-	var start, end *timestamppb.Timestamp
-	if rep.Spec.QueryTimeRange != "" {
-		d, err := duration.ParseISO8601(rep.Spec.QueryTimeRange)
-		if err != nil {
-			return nil, fmt.Errorf("invalid query time range %q: %w", rep.Spec.QueryTimeRange, err)
-		}
-
-		start = timestamppb.New(d.Sub(t))
-		end = timestamppb.New(t)
-	}
-
 	qry := &runtimev1.Query{}
 	switch rep.Spec.QueryName {
 	case "MetricsViewAggregation":
@@ -332,8 +320,6 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
-		req.TimeStart = start
-		req.TimeEnd = end
 	case "MetricsViewToplist":
 		req := &runtimev1.MetricsViewToplistRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewToplistRequest{MetricsViewToplistRequest: req}
@@ -341,8 +327,6 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
-		req.TimeStart = start
-		req.TimeEnd = end
 	case "MetricsViewRows":
 		req := &runtimev1.MetricsViewRowsRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewRowsRequest{MetricsViewRowsRequest: req}
@@ -350,8 +334,6 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
-		req.TimeStart = start
-		req.TimeEnd = end
 	case "MetricsViewTimeSeries":
 		req := &runtimev1.MetricsViewTimeSeriesRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewTimeSeriesRequest{MetricsViewTimeSeriesRequest: req}
@@ -359,8 +341,6 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
-		req.TimeStart = start
-		req.TimeEnd = end
 	case "MetricsViewComparison":
 		req := &runtimev1.MetricsViewComparisonRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewComparisonRequest{MetricsViewComparisonRequest: req}
@@ -368,8 +348,6 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
-		req.TimeRange = &runtimev1.TimeRange{Start: start, End: end}
-		req.ComparisonTimeRange = nil // TODO: Need ability pass comparison offset somewhere
 	default:
 		return nil, fmt.Errorf("query %q not supported for reports", rep.Spec.QueryName)
 	}

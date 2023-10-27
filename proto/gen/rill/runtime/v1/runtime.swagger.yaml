@@ -4334,8 +4334,6 @@ definitions:
         type: string
       queryArgsJson:
         type: string
-      queryTimeRange:
-        type: string
       exportLimit:
         type: string
         format: uint64
