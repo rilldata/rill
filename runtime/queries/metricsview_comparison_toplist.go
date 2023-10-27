@@ -222,12 +222,23 @@ func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, ol
 }
 
 func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
-	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
+	dim, err := findDimension(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
+	rawColName := getMetricsViewDimensionName(dim)
+	colName := safeName(rawColName)
+	unnestColName := safeName(fmt.Sprintf("%s_%s", "unnested", rawColName))
 
-	selectCols := []string{colName}
+	var selectCols []string
+	unnestClause := ""
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
+		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
+		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%q.%s) tbl(%s)`, mv.Table, colName, unnestColName)
+	} else {
+		selectCols = append(selectCols, colName)
+	}
 
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
@@ -302,27 +313,44 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
 	}
 
+	groupByCol := colName
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		groupByCol = unnestColName
+	}
+
 	sql := fmt.Sprintf(
-		`SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d`,
+		`SELECT %[1]s FROM %[3]q %[8]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d`,
 		selectClause,    // 1
-		colName,         // 2
+		groupByCol,      // 2
 		mv.Table,        // 3
 		baseWhereClause, // 4
 		orderClause,     // 5
 		limitClause,     // 6
 		q.Offset,        // 7
+		unnestClause,    // 8
 	)
 
 	return sql, args, nil
 }
 
 func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
-	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
+	dim, err := findDimension(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
+	rawColName := getMetricsViewDimensionName(dim)
+	colName := safeName(rawColName)
+	unnestColName := safeName(fmt.Sprintf("%s_%s", "unnested", rawColName))
 
-	selectCols := []string{colName}
+	var selectCols []string
+	unnestClause := ""
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
+		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
+		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%q.%s) tbl(%s)`, mv.Table, colName, unnestColName)
+	} else {
+		selectCols = append(selectCols, colName)
+	}
 
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
@@ -525,16 +553,21 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		LIMIT 10
 		OFFSET 0
 	*/
+	groupByCol := colName
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		groupByCol = unnestColName
+	}
+
 	var sql string
 	if dialect != drivers.DialectDruid {
 		sql = fmt.Sprintf(`
 		SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
 			(
-				SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s %[12]s 
+				SELECT %[1]s FROM %[3]q %[14]s WHERE %[4]s GROUP BY %[15]s %[12]s 
 			) base
 		%[11]s JOIN
 			(
-				SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s %[13]s 
+				SELECT %[1]s FROM %[3]q %[14]s WHERE %[5]s GROUP BY %[15]s %[13]s 
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
@@ -556,7 +589,9 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			safeName(q.DimensionName), // 10
 			joinType,                  // 11
 			baseLimitClause,           // 12
-			comparisonLimitClause,     // 12
+			comparisonLimitClause,     // 13
+			unnestClause,              // 14
+			groupByCol,                // 15
 		)
 	} else {
 		/*

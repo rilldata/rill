@@ -197,10 +197,11 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev
 
 	// NOTE: Looking up for dimension like this will lead to O(nm).
 	//       Ideal way would be to create a map, but we need to find a clean solution down the line
-	name, err := metricsViewDimensionToSafeColumn(mv, cond.Name)
+	dim, err := findDimension(mv, cond.Name)
 	if err != nil {
 		return "", nil, err
 	}
+	name := safeName(getMetricsViewDimensionName(dim))
 
 	notKeyword := ""
 	if exclude {
@@ -228,7 +229,13 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev
 		// If there were non-null args, add a "dim [NOT] IN (...)" clause
 		if len(args) > 0 {
 			questionMarks := strings.Join(repeatString("?", len(args)), ",")
-			clause := fmt.Sprintf("%s %s IN (%s)", name, notKeyword, questionMarks)
+			var clause string
+			// Build [NOT] list_has_any("dim", ARRAY[?, ?, ...])
+			if dim.Unnest && dialect != drivers.DialectDruid {
+				clause = fmt.Sprintf("%s list_has_any(%s, ARRAY[%s])", notKeyword, name, questionMarks)
+			} else {
+				clause = fmt.Sprintf("%s %s IN (%s)", name, notKeyword, questionMarks)
+			}
 			clauses = append(clauses, clause)
 		}
 	}
@@ -237,11 +244,16 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev
 	if len(cond.Like) > 0 {
 		for _, val := range cond.Like {
 			var clause string
-			if dialect == drivers.DialectDruid {
-				// Druid does not support ILIKE
-				clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(?)", name, notKeyword)
+			// Build [NOT] len(list_filter("dim", x -> x ILIKE ?)) > 0
+			if dim.Unnest && dialect != drivers.DialectDruid {
+				clause = fmt.Sprintf("%s len(list_filter(%s, x -> x %s ILIKE ?)) > 0", notKeyword, name, notKeyword)
 			} else {
-				clause = fmt.Sprintf("%s %s ILIKE ?", name, notKeyword)
+				if dialect == drivers.DialectDruid {
+					// Druid does not support ILIKE
+					clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(?)", name, notKeyword)
+				} else {
+					clause = fmt.Sprintf("%s %s ILIKE ?", name, notKeyword)
+				}
 			}
 
 			args = append(args, val)
@@ -322,17 +334,29 @@ func convertToXLSXValue(pbvalue *structpb.Value) (interface{}, error) {
 
 func metricsViewDimensionToSafeColumn(mv *runtimev1.MetricsViewSpec, dimName string) (string, error) {
 	dimName = strings.ToLower(dimName)
+	dimension, err := findDimension(mv, dimName)
+	if err != nil {
+		return "", err
+	}
+	return safeName(getMetricsViewDimensionName(dimension)), nil
+}
+
+func findDimension(mv *runtimev1.MetricsViewSpec, dimName string) (*runtimev1.MetricsViewSpec_DimensionV2, error) {
 	for _, dimension := range mv.Dimensions {
 		if strings.EqualFold(dimension.Name, dimName) {
-			if dimension.Column != "" {
-				return safeName(dimension.Column), nil
-			}
-			// backwards compatibility for older projects that have not run reconcile on this dashboard
-			// in that case `column` will not be present
-			return safeName(dimension.Name), nil
+			return dimension, nil
 		}
 	}
-	return "", fmt.Errorf("dimension %s not found", dimName)
+	return nil, fmt.Errorf("dimension %s not found", dimName)
+}
+
+func getMetricsViewDimensionName(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
+	if dimension.Column != "" {
+		return dimension.Column
+	}
+	// backwards compatibility for older projects that have not run reconcile on this dashboard
+	// in that case `column` will not be present
+	return dimension.Name
 }
 
 func metricsViewMeasureExpression(mv *runtimev1.MetricsViewSpec, measureName string) (string, error) {

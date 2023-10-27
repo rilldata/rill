@@ -5810,6 +5810,8 @@ func (m *MetricsViewSpec_DimensionV2) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for Unnest
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionV2MultiError(errors)
 	}
