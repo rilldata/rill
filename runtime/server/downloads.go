@@ -123,13 +123,20 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			limitPtr = &limit
 		}
 
+		tr := r.TimeRange
+		if r.TimeStart != nil || r.TimeEnd != nil {
+			tr = &runtimev1.TimeRange{
+				Start: r.TimeStart,
+				End:   r.TimeEnd,
+			}
+		}
+
 		q = &queries.MetricsViewAggregation{
 			MetricsViewName:    r.MetricsView,
 			Dimensions:         r.Dimensions,
 			Measures:           r.Measures,
 			Sort:               r.Sort,
-			TimeStart:          r.TimeStart,
-			TimeEnd:            r.TimeEnd,
+			TimeRange:          tr,
 			Filter:             r.Filter,
 			Limit:              limitPtr,
 			Offset:             r.Offset,

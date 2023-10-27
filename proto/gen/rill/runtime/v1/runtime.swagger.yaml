@@ -1041,12 +1041,16 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewAggregationSort'
+              timeRange:
+                $ref: '#/definitions/v1TimeRange'
               timeStart:
                 type: string
                 format: date-time
+                title: Deprecated in favor of time_range
               timeEnd:
                 type: string
                 format: date-time
+                title: Deprecated in favor of time_range
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
               limit:
@@ -3338,12 +3342,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewAggregationSort'
+      timeRange:
+        $ref: '#/definitions/v1TimeRange'
       timeStart:
         type: string
         format: date-time
+        title: Deprecated in favor of time_range
       timeEnd:
         type: string
         format: date-time
+        title: Deprecated in favor of time_range
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
       limit:
@@ -4692,6 +4700,14 @@ definitions:
       end:
         type: string
         format: date-time
+      isoDuration:
+        type: string
+      isoOffset:
+        type: string
+      roundToGrain:
+        $ref: '#/definitions/v1TimeGrain'
+      timeZone:
+        type: string
   v1TimeRangeSummary:
     type: object
     properties:
