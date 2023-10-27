@@ -102,10 +102,10 @@
   function style_row_th(th: HTMLTableCellElement) {
     const meta = table.getMeta(th);
     const numFixedCols = meta?.row_header?.length;
-    const x = meta?.row_header_x;
-    const y = meta?.y;
-    th.setAttribute("__col", String(x! - numFixedCols!));
-    th.setAttribute("__row", String(y!));
+    const x = meta?.row_header_x!;
+    const y = meta?.y!;
+    th.setAttribute("__col", String(x - numFixedCols!));
+    th.setAttribute("__row", String(y));
 
     const maybeWidth = getRowHeaderWidth(x);
     if (maybeWidth) {
@@ -131,7 +131,10 @@
   }
 
   function style_td(td: HTMLTableCellElement) {
-    const { x, y, value } = table.getMeta(td);
+    const meta = table.getMeta(td);
+    const x = meta?.x!;
+    const y = meta?.y!;
+    const value = meta?.value;
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
 
@@ -155,8 +158,8 @@
 
   function style_column_th(th: HTMLTableCellElement) {
     const meta = table.getMeta(th);
-    const x = meta.x;
-    const y = meta.column_header_y;
+    const x = meta.x!;
+    const y = meta.column_header_y!;
     th.setAttribute("__col", String(x));
     th.setAttribute("__row", String(y));
 
@@ -188,8 +191,10 @@
   function style_row_corner(th: HTMLTableCellElement) {
     const meta = table.getMeta(th);
 
+    const x = meta.row_header_x!;
+
     if (meta.column_header_y === columnHeaderDepth - 1) {
-      const maybeWidth = getRowHeaderWidth(meta.row_header_x);
+      const maybeWidth = getRowHeaderWidth(x);
       if (maybeWidth) {
         th.style.width = `${maybeWidth}px`;
         th.style.minWidth = `${maybeWidth}px`;
@@ -198,8 +203,8 @@
     }
 
     const maybeVal = renderRowCorner({
-      x: meta.row_header_x,
-      y: meta.column_header_y,
+      x: meta.row_header_x!,
+      y: meta.column_header_y!,
       value: meta.value,
       element: th,
     });
