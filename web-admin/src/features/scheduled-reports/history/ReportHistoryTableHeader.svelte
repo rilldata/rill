@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Search } from "@rilldata/web-common/components/search";
   import type { Table } from "@tanstack/table-core/src/types";
   import { getContext } from "svelte";
   import type { Readable } from "svelte/store";
@@ -48,9 +47,9 @@
       class="pl-2 pr-4 py-2 {maxWidth} flex items-center gap-x-2 bg-slate-100"
     >
       <!-- Search bar -->
-      <div class="px-2 grow">
+      <!-- <div class="px-2 grow">
         <Search placeholder="Search" autofocus={false} bind:value={filter} />
-      </div>
+      </div> -->
 
       <!-- Spacer -->
       <div class="grow" />

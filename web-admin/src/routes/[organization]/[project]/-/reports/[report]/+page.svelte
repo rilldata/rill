@@ -11,7 +11,7 @@
 <VerticalScrollContainer>
   <ContentContainer>
     <div class="flex justify-center">
-      <div class="w-[960px] flex flex-col items-start gap-y-8">
+      <div class="w-[960px] flex flex-col items-start gap-y-16">
         <ReportMetadata {report} />
         <ReportHistoryTable {report} />
       </div>

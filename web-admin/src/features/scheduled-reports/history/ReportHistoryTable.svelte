@@ -46,7 +46,7 @@
 
 <div class="flex flex-col gap-y-4 w-full">
   <h1 class="text-gray-800 text-base font-medium leading-none">
-    Report history
+    Recent history
   </h1>
   <Table
     {columns}
