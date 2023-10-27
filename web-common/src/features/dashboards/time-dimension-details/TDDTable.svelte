@@ -72,7 +72,7 @@
     const cellBgColor = getClassForCell(
       isScrubbed ? "scrubbed" : "default",
       rowIdxHover,
-      colIdxHover || highlightedCol,
+      colIdxHover === undefined ? highlightedCol : colIdxHover,
       data.y,
       data.x
     );
@@ -154,7 +154,7 @@
     const cellBgColor = getClassForCell(
       "fixed",
       rowIdxHover,
-      colIdxHover || highlightedCol,
+      colIdxHover === undefined ? highlightedCol : colIdxHover,
       y,
       x - data?.fixedColCount
     );
