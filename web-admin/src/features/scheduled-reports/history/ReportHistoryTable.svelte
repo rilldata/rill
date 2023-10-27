@@ -50,7 +50,7 @@
   </h1>
   <Table
     {columns}
-    data={$reportQuery.data.resource.report.state.executionHistory}
+    data={$reportQuery.data?.resource.report.state.executionHistory}
     {columnVisibility}
     maxWidthOverride="max-w-[960px]"
   >
