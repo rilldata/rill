@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -94,7 +95,10 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	name := uuid.New().String()
+	name, err := s.generateReportName(ctx, depl, req.Options.Title)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
 	data, err := s.yamlForManagedReport(req.Options, name, claims.OwnerID())
 	if err != nil {
@@ -471,6 +475,43 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Email.Recipients = opts.Recipients
 	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
 	return yaml.Marshal(res)
+}
+
+// generateReportName generates a random report name with the title as a seed.
+// It verifies that the name is not taken (the random component makes any collision unlikely, but we check to be sure).
+func (s *Server) generateReportName(ctx context.Context, depl *database.Deployment, title string) (string, error) {
+	for i := 0; i < 5; i++ {
+		name := randomReportName(title)
+
+		_, err := s.admin.LookupReport(ctx, depl, name)
+		if err != nil {
+			if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
+				// Success! Name isn't taken
+				return name, nil
+			}
+			return "", fmt.Errorf("failed to check report name: %w", err)
+		}
+	}
+
+	// Fail-safe in case all names we tried were taken
+	return uuid.New().String(), nil
+}
+
+var reportNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)
+
+var reportNameExcludeCharsRegexp = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
+
+func randomReportName(title string) string {
+	name := reportNameToDashCharsRegexp.ReplaceAllString(title, "-")
+	name = reportNameExcludeCharsRegexp.ReplaceAllString(name, "")
+	name = strings.ToLower(name)
+	name = strings.Trim(name, "-")
+	if name == "" {
+		name = uuid.New().String()
+	} else {
+		name = name + "-" + uuid.New().String()[0:8]
+	}
+	return name
 }
 
 func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportOptions, error) {
