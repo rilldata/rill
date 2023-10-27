@@ -5,8 +5,6 @@
   import ReportHistoryTable from "../../../../../../features/scheduled-reports/history/ReportHistoryTable.svelte";
   import ReportMetadata from "../../../../../../features/scheduled-reports/metadata/ReportMetadata.svelte";
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
   $: report = $page.params.report;
 </script>
 
