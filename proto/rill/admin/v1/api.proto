@@ -376,7 +376,7 @@ service AdminService {
 
   // GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
   rpc GetReportMeta(GetReportMetaRequest) returns (GetReportMetaResponse) {
-    option (google.api.http) = {get: "/v1/projects/{project_id}/admin/meta"};
+    option (google.api.http) = {get: "/v1/projects/{project_id}/reports/meta"};
   }
 
   // CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
