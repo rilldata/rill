@@ -3,6 +3,8 @@
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import MetadataLabel from "./metadata/MetadataLabel.svelte";
+  import MetadataValue from "./metadata/MetadataValue.svelte";
   import { useReport } from "./selectors";
 
   export let report: string;
@@ -19,7 +21,7 @@
 </script>
 
 {#if $reportQuery.data}
-  <div class="flex flex-col gap-y-2 w-full max-w-full 2xl:max-w-[1200px]">
+  <div class="flex flex-col gap-y-8 w-full max-w-full 2xl:max-w-[1200px]">
     <div class="flex flex-col gap-y-2">
       <div class="flex gap-x-2 items-center">
         <h1 class="text-gray-800 text-base font-medium leading-none">
@@ -31,57 +33,64 @@
       </div>
     </div>
 
-    <!-- three columns of metadata -->
-    <div class="grid grid-cols-3 gap-x-20 grid-cols-[auto,auto,1fr]">
+    <!-- Three columns of metadata -->
+    <div class="flex flex-wrap gap-x-16 gap-y-3">
       <!-- column 1 -->
       <div class="grid grid-cols-2 gap-x-6 gap-y-3 grid-cols-[auto,1fr]">
         <!-- dashboard name -->
-        <span class="text-gray-800 text-sm font-medium">Dashboard</span>
-        <span class="text-gray-700 text-sm font-normal">
+        <MetadataLabel>Dashboard</MetadataLabel>
+        <MetadataValue>
           {dashboardTitle}
-        </span>
+        </MetadataValue>
         <!-- author -->
-        <span class="text-gray-800 text-sm font-medium">Creator</span>
-        <span class="text-gray-700 text-sm font-normal">
+        <MetadataLabel>Creator</MetadataLabel>
+        <MetadataValue>
           {$reportQuery.data.resource.report.spec.annotations[
             "admin_owner_user_id"
           ] ?? "Created by a project admin"}
-        </span>
+        </MetadataValue>
         <!-- recipients -->
-        <span class="text-gray-800 text-sm font-medium">Recipients</span>
-        <span class="text-gray-700 text-sm font-normal">
+        <MetadataLabel>Recipients</MetadataLabel>
+        <MetadataValue>
           {$reportQuery.data.resource.report.spec.emailRecipients.length}
-        </span>
-        <!-- TODO -->
+        </MetadataValue>
       </div>
 
       <!-- column 2 -->
-      <div class="grid grid-cols-2 gap-x-6 gap-y-3 grid-cols-[auto,1fr]">
+      <div class="flex flex-col gap-y-3">
         <!-- last run -->
-        <span class="text-gray-800 text-sm font-medium">Format</span>
-        <span class="text-gray-700 text-sm font-normal">
-          <!-- TODO: make this pretty -->
-          {$reportQuery.data.resource.report.spec.exportFormat}
-        </span>
+        <div class="flex gap-x-6">
+          <MetadataLabel>Format</MetadataLabel>
+          <MetadataValue>
+            <!-- TODO: make this pretty -->
+            {$reportQuery.data.resource.report.spec.exportFormat}
+          </MetadataValue>
+        </div>
         <!-- next run -->
-        <span class="text-gray-800 text-sm font-medium">Limit</span>
-        <span class="text-gray-700 text-sm font-normal">
-          {$reportQuery.data.resource.report.spec.exportLimit}
-        </span>
+        <div class="flex gap-x-6">
+          <MetadataLabel>Limit</MetadataLabel>
+          <MetadataValue>
+            {$reportQuery.data.resource.report.spec.exportLimit}
+          </MetadataValue>
+        </div>
       </div>
 
       <!-- column 3 -->
-      <div class="grid grid-cols-2 gap-x-6 gap-y-3 grid-cols-[auto,1fr]">
+      <div class="flex flex-col gap-y-3">
         <!-- last run -->
-        <span class="text-gray-800 text-sm font-medium">Frequency</span>
-        <span class="text-gray-700 text-sm font-normal">
-          {$reportQuery.data.resource.report.spec.refreshSchedule.cron}
-        </span>
+        <div class="flex gap-x-6">
+          <MetadataLabel>Frequency</MetadataLabel>
+          <MetadataValue>
+            {$reportQuery.data.resource.report.spec.refreshSchedule.cron}
+          </MetadataValue>
+        </div>
         <!-- next run -->
-        <span class="text-gray-800 text-sm font-medium">Next run</span>
-        <span class="text-gray-700 text-sm font-normal">
-          {$reportQuery.data.resource.report.state.nextRunOn}
-        </span>
+        <div class="flex gap-x-6">
+          <MetadataLabel>Next run</MetadataLabel>
+          <MetadataValue>
+            {$reportQuery.data.resource.report.state.nextRunOn}
+          </MetadataValue>
+        </div>
       </div>
     </div>
   </div>
