@@ -2,6 +2,7 @@
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import cronstrue from "cronstrue";
   import { useReport } from "../selectors";
   import MetadataLabel from "./MetadataLabel.svelte";
   import MetadataValue from "./MetadataValue.svelte";
@@ -11,15 +12,22 @@
 
   $: reportQuery = useReport($runtime.instanceId, report);
 
-  $: metricViewsName =
+  // Get dashboard
+  $: metricsViewName =
     ($reportQuery.data &&
       JSON.parse($reportQuery.data.resource.report.spec.queryArgsJson)
         ?.metrics_view_name) ??
     "";
-  $: dashboard = useDashboard($runtime.instanceId, metricViewsName);
+  $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
   $: dashboardTitle = $dashboard.data?.metricsView.spec.title;
 
-  $: exportLimit = $reportQuery.data.resource.report.spec.exportLimit;
+  // Get human-readable frequency
+  $: humanReadableFrequency =
+    $reportQuery.data &&
+    cronstrue.toString(
+      $reportQuery.data.resource.report.spec.refreshSchedule.cron,
+      { verbose: true }
+    ) + " (UTC)";
 </script>
 
 {#if $reportQuery.data}
@@ -74,7 +82,9 @@
         <div class="flex gap-x-6">
           <MetadataLabel>Limit</MetadataLabel>
           <MetadataValue>
-            {exportLimit === "0" ? "No limit" : exportLimit}
+            {$reportQuery.data?.resource.report.spec.exportLimit === "0"
+              ? "No limit"
+              : $reportQuery.data?.resource.report.spec.exportLimit}
           </MetadataValue>
         </div>
       </div>
@@ -85,7 +95,7 @@
         <div class="flex gap-x-6">
           <MetadataLabel>Frequency</MetadataLabel>
           <MetadataValue>
-            {$reportQuery.data.resource.report.spec.refreshSchedule.cron}
+            {humanReadableFrequency}
           </MetadataValue>
         </div>
         <!-- Next run -->
