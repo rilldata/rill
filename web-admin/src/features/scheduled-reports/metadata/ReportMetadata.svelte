@@ -3,9 +3,9 @@
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import MetadataLabel from "./metadata/MetadataLabel.svelte";
-  import MetadataValue from "./metadata/MetadataValue.svelte";
-  import { useReport } from "./selectors";
+  import { useReport } from "../selectors";
+  import MetadataLabel from "./MetadataLabel.svelte";
+  import MetadataValue from "./MetadataValue.svelte";
 
   export let report: string;
 
