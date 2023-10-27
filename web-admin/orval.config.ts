@@ -22,6 +22,11 @@ export default defineConfig({
               useQuery: true,
             },
           },
+          AdminService_GenerateReportYAML: {
+            query: {
+              useQuery: true,
+            },
+          },
         },
       },
     },

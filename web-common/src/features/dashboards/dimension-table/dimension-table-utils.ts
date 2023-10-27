@@ -7,7 +7,6 @@ import type {
   MetricsViewDimension,
   MetricsViewSpecMeasureV2,
   V1MetricsViewComparisonRow,
-  V1MetricsViewComparisonValue,
   V1MetricsViewFilter,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
@@ -385,16 +384,14 @@ export function prepareDimensionTableRows(
   );
 
   const tableRows: DimensionTableRow[] = queryRows.map((row) => {
-    const rawVals: [string, number][] = row.measureValues.map((m) => [
-      m.measureName,
-      m.baseValue as number,
-    ]);
+    if (!row.measureValues) return {};
 
-    const formattedVals: [string, string | number][] = row.measureValues.map(
-      (m) => [
-        "__formatted_" + m.measureName,
-        formattersForMeasures[m.measureName](m.baseValue as number),
-      ]
+    const rawVals: [string, number][] = row.measureValues.map((m) => {
+      return [m.measureName ?? "", m.baseValue ? (m.baseValue as number) : 0];
+    });
+
+    const formattedVals: [string, string | number][] = rawVals.map(
+      ([name, val]) => ["__formatted_" + name, formattersForMeasures[name](val)]
     );
 
     const rowOut: DimensionTableRow = Object.fromEntries([
@@ -403,22 +400,21 @@ export function prepareDimensionTableRows(
       ...formattedVals,
     ]);
 
-    if (addDeltas) {
-      const activeMeasure = row.measureValues.find(
-        (m) => m.measureName === activeMeasureName
-      ) as V1MetricsViewComparisonValue;
+    const activeMeasure = row.measureValues?.find(
+      (m) => m.measureName === activeMeasureName
+    );
 
-      (rowOut[`${activeMeasureName}_delta`] = formattersForMeasures[
-        activeMeasureName
-      ](activeMeasure.deltaAbs as number)),
-        (rowOut[`${activeMeasureName}_delta_perc`] =
-          formatMeasurePercentageDifference(activeMeasure.deltaRel as number));
+    if (addDeltas && activeMeasure) {
+      rowOut[`${activeMeasureName}_delta`] = activeMeasure.deltaAbs
+        ? formattersForMeasures[activeMeasureName](activeMeasure.deltaAbs)
+        : PERC_DIFF.PREV_VALUE_NO_DATA;
+
+      rowOut[`${activeMeasureName}_delta_perc`] = activeMeasure.deltaRel
+        ? formatMeasurePercentageDifference(activeMeasure.deltaRel as number)
+        : PERC_DIFF.PREV_VALUE_NO_DATA;
     }
 
-    if (addPercentOfTotal) {
-      const activeMeasure = row.measureValues.find(
-        (m) => m.measureName === activeMeasureName
-      ) as V1MetricsViewComparisonValue;
+    if (addPercentOfTotal && activeMeasure) {
       const value = activeMeasure.baseValue as number;
 
       if (unfilteredTotal === 0 || !unfilteredTotal) {

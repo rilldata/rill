@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	// Load database drivers for testing.
+	_ "github.com/rilldata/rill/runtime/drivers/admin"
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"

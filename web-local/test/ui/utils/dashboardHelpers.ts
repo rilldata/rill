@@ -30,8 +30,7 @@ export async function assertLeaderboards(
     await expect(leaderboardBlock).toBeVisible();
 
     const actualValues = await leaderboardBlock
-      .locator(".leaderboard-entry")
-      .locator(".leaderboard-label")
+      .locator(".leaderboard-entry > div:first-child")
       .allInnerTexts();
     expect(actualValues).toEqual(values);
   }
