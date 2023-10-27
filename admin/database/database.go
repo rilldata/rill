@@ -182,6 +182,7 @@ type DB interface {
 	FindBookmarks(ctx context.Context, projectID, userID string) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
 	InsertBookmark(ctx context.Context, opts *InsertBookmarkOptions) (*Bookmark, error)
+	UpdateBookmark(ctx context.Context, bookmarkID string, opts *UpdateBookmarkOptions) (*Bookmark, error)
 	DeleteBookmark(ctx context.Context, bookmarkID string) error
 
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
@@ -663,13 +664,19 @@ type Bookmark struct {
 	UpdatedOn     time.Time `db:"updated_on"`
 }
 
-// InsertBookmarksOptions defines options for inserting a new bookmark
+// InsertBookmarkOptions defines options for inserting a new bookmark
 type InsertBookmarkOptions struct {
 	DisplayName   string `json:"display_name"`
 	Data          []byte `json:"data"`
 	DashboardName string `json:"dashboard_name"`
 	ProjectID     string `json:"project_id"`
 	UserID        string `json:"user_id"`
+}
+
+// UpdateBookmarkOptions defines options for updating a bookmark
+type UpdateBookmarkOptions struct {
+	DisplayName string `json:"display_name"`
+	Data        []byte `json:"data"`
 }
 
 // VirtualFile represents an ad-hoc file for a project (not managed in Git)

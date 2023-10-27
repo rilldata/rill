@@ -10,6 +10,11 @@ export type AdminServiceSearchUsersParams = {
   pageToken?: string;
 };
 
+export type AdminServiceUpdateBookmarkBody = {
+  displayName?: string;
+  data?: string;
+};
+
 export type AdminServiceListBookmarksParams = {
   projectId?: string;
 };
@@ -230,6 +235,10 @@ export interface V1UpdateProjectResponse {
 
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
+}
+
+export interface V1UpdateBookmarkResponse {
+  bookmark?: V1Bookmark;
 }
 
 export interface V1UnsubscribeReportResponse {

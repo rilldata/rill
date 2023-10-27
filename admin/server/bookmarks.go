@@ -116,6 +116,54 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 	}, nil
 }
 
+func (s *Server) UpdateBookmark(ctx context.Context, req *adminv1.UpdateBookmarkRequest) (*adminv1.UpdateBookmarkResponse, error) {
+	claims := auth.GetClaims(ctx)
+
+	// Error if authenticated as anything other than a user
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, fmt.Errorf("not authenticated as a user")
+	}
+
+	bookmark, err := s.admin.DB.FindBookmark(ctx, req.BookmarkId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if claims.OwnerID() != bookmark.UserID {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update this bookmark")
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, bookmark.ProjectID)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "project not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if proj.Public {
+		permissions.ReadProject = true
+		permissions.ReadProd = true
+	}
+
+	if !permissions.ReadProject && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read the project")
+	}
+
+	bookmark, err = s.admin.DB.UpdateBookmark(ctx, req.BookmarkId, &database.UpdateBookmarkOptions{
+		DisplayName: req.DisplayName,
+		Data:        req.Data,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.UpdateBookmarkResponse{
+		Bookmark: bookmarkToPB(bookmark),
+	}, nil
+}
+
 // RemoveBookmark server removes a bookmark for bookmark id
 func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmarkRequest) (*adminv1.RemoveBookmarkResponse, error) {
 	claims := auth.GetClaims(ctx)

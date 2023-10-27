@@ -358,6 +358,13 @@ service AdminService {
       body: "*"
     };
   }
+
+  rpc UpdateBookmark(UpdateBookmarkRequest) returns (UpdateBookmarkResponse) {
+    option (google.api.http) = {
+      put: "/v1/users/bookmarks/{bookmark_id}",
+      body: "*"
+    };
+  }
   
   // RemoveBookmark removes the bookmark for the given user for the given project
   rpc RemoveBookmark(RemoveBookmarkRequest) returns (RemoveBookmarkResponse) {
@@ -867,6 +874,16 @@ message CreateBookmarkRequest {
 }
 
 message CreateBookmarkResponse {
+  Bookmark bookmark = 1;
+}
+
+message UpdateBookmarkRequest {
+  string bookmark_id = 1;
+  string display_name = 2;
+  bytes data = 3;
+}
+
+message UpdateBookmarkResponse {
   Bookmark bookmark = 1;
 }
 

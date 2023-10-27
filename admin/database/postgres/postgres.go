@@ -1252,7 +1252,21 @@ func (c *connection) InsertBookmark(ctx context.Context, opts *database.InsertBo
 		VALUES ($1, $2, $3, $4, $5) RETURNING *`,
 		opts.DisplayName, opts.Data, opts.DashboardName, opts.ProjectID, opts.UserID).StructScan(res)
 	if err != nil {
-		return nil, parseErr("bookmarks", err)
+		return nil, parseErr("bookmark", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateBookmark(ctx context.Context, bookmarkID string, opts *database.UpdateBookmarkOptions) (*database.Bookmark, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.Bookmark{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `UPDATE bookmarks SET display_name = $1, data = $2 WHERE id = $3 RETURNING *`,
+		opts.DisplayName, opts.Data, bookmarkID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("bookmark", err)
 	}
 	return res, nil
 }

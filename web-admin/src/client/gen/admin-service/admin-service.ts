@@ -112,6 +112,8 @@ import type {
   V1CreateBookmarkRequest,
   V1GetBookmarkResponse,
   V1RemoveBookmarkResponse,
+  V1UpdateBookmarkResponse,
+  AdminServiceUpdateBookmarkBody,
   V1GetCurrentUserResponse,
   V1UpdateUserPreferencesResponse,
   V1UpdateUserPreferencesRequest,
@@ -5200,6 +5202,70 @@ export const createAdminServiceRemoveBookmark = <
   >;
 }) => {
   const mutationOptions = getAdminServiceRemoveBookmarkMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+export const adminServiceUpdateBookmark = (
+  bookmarkId: string,
+  adminServiceUpdateBookmarkBody: AdminServiceUpdateBookmarkBody
+) => {
+  return httpClient<V1UpdateBookmarkResponse>({
+    url: `/v1/users/bookmarks/${bookmarkId}`,
+    method: "put",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceUpdateBookmarkBody,
+  });
+};
+
+export const getAdminServiceUpdateBookmarkMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUpdateBookmark>>,
+    TError,
+    { bookmarkId: string; data: AdminServiceUpdateBookmarkBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceUpdateBookmark>>,
+  TError,
+  { bookmarkId: string; data: AdminServiceUpdateBookmarkBody },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUpdateBookmark>>,
+    { bookmarkId: string; data: AdminServiceUpdateBookmarkBody }
+  > = (props) => {
+    const { bookmarkId, data } = props ?? {};
+
+    return adminServiceUpdateBookmark(bookmarkId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceUpdateBookmarkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUpdateBookmark>>
+>;
+export type AdminServiceUpdateBookmarkMutationBody =
+  AdminServiceUpdateBookmarkBody;
+export type AdminServiceUpdateBookmarkMutationError = RpcStatus;
+
+export const createAdminServiceUpdateBookmark = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUpdateBookmark>>,
+    TError,
+    { bookmarkId: string; data: AdminServiceUpdateBookmarkBody },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getAdminServiceUpdateBookmarkMutationOptions(options);
 
   return createMutation(mutationOptions);
 };

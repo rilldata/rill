@@ -75,6 +75,7 @@ const (
 	AdminService_ListBookmarks_FullMethodName                = "/rill.admin.v1.AdminService/ListBookmarks"
 	AdminService_GetBookmark_FullMethodName                  = "/rill.admin.v1.AdminService/GetBookmark"
 	AdminService_CreateBookmark_FullMethodName               = "/rill.admin.v1.AdminService/CreateBookmark"
+	AdminService_UpdateBookmark_FullMethodName               = "/rill.admin.v1.AdminService/UpdateBookmark"
 	AdminService_RemoveBookmark_FullMethodName               = "/rill.admin.v1.AdminService/RemoveBookmark"
 	AdminService_GetRepoMeta_FullMethodName                  = "/rill.admin.v1.AdminService/GetRepoMeta"
 	AdminService_PullVirtualRepo_FullMethodName              = "/rill.admin.v1.AdminService/PullVirtualRepo"
@@ -203,6 +204,7 @@ type AdminServiceClient interface {
 	GetBookmark(ctx context.Context, in *GetBookmarkRequest, opts ...grpc.CallOption) (*GetBookmarkResponse, error)
 	// CreateBookmark creates a bookmark for the given user for the given project
 	CreateBookmark(ctx context.Context, in *CreateBookmarkRequest, opts ...grpc.CallOption) (*CreateBookmarkResponse, error)
+	UpdateBookmark(ctx context.Context, in *UpdateBookmarkRequest, opts ...grpc.CallOption) (*UpdateBookmarkResponse, error)
 	// RemoveBookmark removes the bookmark for the given user for the given project
 	RemoveBookmark(ctx context.Context, in *RemoveBookmarkRequest, opts ...grpc.CallOption) (*RemoveBookmarkResponse, error)
 	// GetRepoMeta returns credentials and other metadata for accessing a project's repo
@@ -735,6 +737,15 @@ func (c *adminServiceClient) CreateBookmark(ctx context.Context, in *CreateBookm
 	return out, nil
 }
 
+func (c *adminServiceClient) UpdateBookmark(ctx context.Context, in *UpdateBookmarkRequest, opts ...grpc.CallOption) (*UpdateBookmarkResponse, error) {
+	out := new(UpdateBookmarkResponse)
+	err := c.cc.Invoke(ctx, AdminService_UpdateBookmark_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) RemoveBookmark(ctx context.Context, in *RemoveBookmarkRequest, opts ...grpc.CallOption) (*RemoveBookmarkResponse, error) {
 	out := new(RemoveBookmarkResponse)
 	err := c.cc.Invoke(ctx, AdminService_RemoveBookmark_FullMethodName, in, out, opts...)
@@ -933,6 +944,7 @@ type AdminServiceServer interface {
 	GetBookmark(context.Context, *GetBookmarkRequest) (*GetBookmarkResponse, error)
 	// CreateBookmark creates a bookmark for the given user for the given project
 	CreateBookmark(context.Context, *CreateBookmarkRequest) (*CreateBookmarkResponse, error)
+	UpdateBookmark(context.Context, *UpdateBookmarkRequest) (*UpdateBookmarkResponse, error)
 	// RemoveBookmark removes the bookmark for the given user for the given project
 	RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error)
 	// GetRepoMeta returns credentials and other metadata for accessing a project's repo
@@ -1125,6 +1137,9 @@ func (UnimplementedAdminServiceServer) GetBookmark(context.Context, *GetBookmark
 }
 func (UnimplementedAdminServiceServer) CreateBookmark(context.Context, *CreateBookmarkRequest) (*CreateBookmarkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateBookmark not implemented")
+}
+func (UnimplementedAdminServiceServer) UpdateBookmark(context.Context, *UpdateBookmarkRequest) (*UpdateBookmarkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateBookmark not implemented")
 }
 func (UnimplementedAdminServiceServer) RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveBookmark not implemented")
@@ -2174,6 +2189,24 @@ func _AdminService_CreateBookmark_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_UpdateBookmark_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateBookmarkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateBookmark(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UpdateBookmark_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateBookmark(ctx, req.(*UpdateBookmarkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_RemoveBookmark_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RemoveBookmarkRequest)
 	if err := dec(in); err != nil {
@@ -2566,6 +2599,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateBookmark",
 			Handler:    _AdminService_CreateBookmark_Handler,
+		},
+		{
+			MethodName: "UpdateBookmark",
+			Handler:    _AdminService_UpdateBookmark_Handler,
 		},
 		{
 			MethodName: "RemoveBookmark",

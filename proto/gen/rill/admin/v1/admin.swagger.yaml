@@ -1660,6 +1660,35 @@ paths:
           type: string
       tags:
         - AdminService
+    put:
+      operationId: AdminService_UpdateBookmark
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateBookmarkResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: bookmarkId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              displayName:
+                type: string
+              data:
+                type: string
+                format: byte
+      tags:
+        - AdminService
   /v1/users/current:
     get:
       summary: GetCurrentUser returns the currently authenticated user (if any)
@@ -2437,6 +2466,11 @@ definitions:
     type: object
   v1UnsubscribeReportResponse:
     type: object
+  v1UpdateBookmarkResponse:
+    type: object
+    properties:
+      bookmark:
+        $ref: '#/definitions/v1Bookmark'
   v1UpdateOrganizationResponse:
     type: object
     properties:

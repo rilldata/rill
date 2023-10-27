@@ -4,6 +4,7 @@
     createAdminServiceGetProject,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
+  import DashboardSaveStateProvider from "@rilldata/web-admin/features/dashboards/DashboardSaveStateProvider.svelte";
   import { getDashboardsForProject } from "@rilldata/web-admin/features/projects/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import ProjectErrored from "@rilldata/web-admin/features/projects/ProjectErrored.svelte";
@@ -104,9 +105,11 @@
     <StateManagersProvider metricsViewName={dashboardName}>
       {#key dashboardName}
         <DashboardStateProvider metricViewName={dashboardName}>
-          <DashboardURLStateProvider metricViewName={dashboardName}>
-            <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
-          </DashboardURLStateProvider>
+          <DashboardSaveStateProvider {orgName} {projectName} {dashboardName}>
+            <DashboardURLStateProvider metricViewName={dashboardName}>
+              <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
+            </DashboardURLStateProvider>
+          </DashboardSaveStateProvider>
         </DashboardStateProvider>
       {/key}
     </StateManagersProvider>
