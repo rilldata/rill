@@ -55,7 +55,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 	annotations := parseReportAnnotations(req.Annotations)
 
 	return &adminv1.GetReportMetaResponse{
-		OpenUrl:   s.urls.reportOpen(org.Name, proj.Name, req.Report, annotations.WebOpenProjectSubpath),
+		OpenUrl:   s.urls.reportOpen(org.Name, proj.Name, annotations.WebOpenProjectSubpath),
 		ExportUrl: s.urls.reportExport(org.Name, proj.Name, req.Report),
 		EditUrl:   s.urls.reportEdit(org.Name, proj.Name, req.Report),
 	}, nil
