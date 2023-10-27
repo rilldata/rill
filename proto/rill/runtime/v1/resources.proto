@@ -216,10 +216,7 @@ message ReportSpec {
   uint64 export_limit = 8;
   ExportFormat export_format = 9;
   repeated string email_recipients = 10;
-  string email_open_url = 11;
-  string email_edit_url = 12;
-  string email_export_url = 13;
-  map<string, string> annotations = 14;
+  map<string, string> annotations = 11;
 }
 
 message ReportState {

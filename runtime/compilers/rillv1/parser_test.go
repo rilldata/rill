@@ -936,9 +936,6 @@ email:
 				ExportFormat:    runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 				ExportLimit:     10000,
 				EmailRecipients: []string{"jane@example.com"},
-				EmailOpenUrl:    "https://example.com/open",
-				EmailEditUrl:    "https://example.com/edit",
-				EmailExportUrl:  "https://example.com/export",
 			},
 		},
 	}

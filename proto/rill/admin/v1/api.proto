@@ -374,6 +374,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/projects/{project_id}/repo/virtual"};
   }
 
+  // GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
+  rpc GetReportMeta(GetReportMetaRequest) returns (GetReportMetaResponse) {
+    option (google.api.http) = {get: "/v1/projects/{project_id}/admin/meta"};
+  }
+
   // CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
   rpc CreateReport(CreateReportRequest) returns (CreateReportResponse) {
     option (google.api.http) = {
@@ -995,6 +1000,19 @@ message PullVirtualRepoResponse {
   string next_page_token = 2;
 }
 
+message GetReportMetaRequest {
+  string project_id = 1;
+  string branch = 2;
+  string report = 3;
+  map<string, string> annotations = 4;
+}
+
+message GetReportMetaResponse {
+  string open_url = 1;
+  string export_url = 2;
+  string edit_url = 3;
+}
+
 message CreateReportRequest {
   string organization = 1;
   string project = 2;
@@ -1207,6 +1225,6 @@ message ReportOptions {
   string query_args_json = 4;
   uint64 export_limit = 5;
   rill.runtime.v1.ExportFormat export_format = 6;
-  string open_url = 7;
+  string open_project_subpath = 7;
   repeated string recipients = 8;
 }

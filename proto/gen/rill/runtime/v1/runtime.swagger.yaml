@@ -4345,12 +4345,6 @@ definitions:
         type: array
         items:
           type: string
-      emailOpenUrl:
-        type: string
-      emailEditUrl:
-        type: string
-      emailExportUrl:
-        type: string
       annotations:
         type: object
         additionalProperties:

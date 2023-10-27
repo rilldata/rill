@@ -1486,22 +1486,7 @@ export class ReportSpec extends Message<ReportSpec> {
   emailRecipients: string[] = [];
 
   /**
-   * @generated from field: string email_open_url = 11;
-   */
-  emailOpenUrl = "";
-
-  /**
-   * @generated from field: string email_edit_url = 12;
-   */
-  emailEditUrl = "";
-
-  /**
-   * @generated from field: string email_export_url = 13;
-   */
-  emailExportUrl = "";
-
-  /**
-   * @generated from field: map<string, string> annotations = 14;
+   * @generated from field: map<string, string> annotations = 11;
    */
   annotations: { [key: string]: string } = {};
 
@@ -1523,10 +1508,7 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 8, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
     { no: 9, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 10, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 11, name: "email_open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 12, name: "email_edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 13, name: "email_export_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 14, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 11, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {
