@@ -131,17 +131,17 @@ func (c *connection) Config() map[string]any {
 	return c.config
 }
 
-// Registry implements drivers.Connection.
+// AsRegistry implements drivers.Connection.
 func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// Catalog implements drivers.Connection.
+// AsCatalogStore implements drivers.Connection.
 func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-// Repo implements drivers.Connection.
+// AsRepoStore implements drivers.Connection.
 func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	if c.shared {
 		return nil, false
@@ -149,7 +149,12 @@ func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return c, true
 }
 
-// OLAP implements drivers.Connection.
+// AsAdminStore implements drivers.Handle.
+func (c *connection) AsAdminStore(instanceID string) (drivers.AdminStore, bool) {
+	return nil, false
+}
+
+// AsOLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }

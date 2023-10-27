@@ -336,6 +336,11 @@ func (*mockHandle) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	panic("unimplemented")
 }
 
+// AsAdminStore implements drivers.Handle.
+func (*mockHandle) AsAdminStore(instanceID string) (drivers.AdminStore, bool) {
+	panic("unimplemented")
+}
+
 // AsSQLStore implements drivers.Handle.
 func (*mockHandle) AsSQLStore() (drivers.SQLStore, bool) {
 	panic("unimplemented")

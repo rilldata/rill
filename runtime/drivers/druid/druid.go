@@ -100,6 +100,11 @@ func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
+// AsAdminStore implements drivers.Handle.
+func (c *connection) AsAdminStore(instanceID string) (drivers.AdminStore, bool) {
+	return nil, false
+}
+
 // OLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return c, true
