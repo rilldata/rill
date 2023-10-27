@@ -16,11 +16,6 @@
    * Table column definitions.
    * - "composite": Renders all dashboard data in a single cell.
    * - Others: Used for sorting and filtering but not displayed.
-   *
-   * Note: TypeScript error prevents using `ColumnDef<DashboardResource, string>[]`.
-   * Relevant issues:
-   * - https://github.com/TanStack/table/issues/4241
-   * - https://github.com/TanStack/table/issues/4302
    */
   const columns: ColumnDef<V1ReportExecution>[] = [
     {
@@ -31,17 +26,7 @@
           errorMessage: info.row.original.errorMessage,
         }),
     },
-    // {
-    //   id: "timestamp",
-    //   header: "",
-    //   accessorFn: (row) => row.timestamp,
-    //   cell: undefined,
-    // },
   ];
-
-  const columnVisibility = {
-    timestamp: false,
-  };
 </script>
 
 <div class="flex flex-col gap-y-4 w-full">
@@ -51,7 +36,6 @@
   <Table
     {columns}
     data={$reportQuery.data?.resource.report.state.executionHistory}
-    {columnVisibility}
     maxWidthOverride="max-w-[960px]"
   >
     <ReportHistoryTableHeader slot="header" maxWidthOverride="max-w-[960px]" />
