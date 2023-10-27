@@ -5,6 +5,7 @@
   import type { ColumnDef } from "@tanstack/table-core/src/types";
   import Table from "../../../components/table/Table.svelte";
   import { useReport } from "../selectors";
+  import NoRunsYet from "./NoRunsYet.svelte";
   import ReportHistoryTableCompositeCell from "./ReportHistoryTableCompositeCell.svelte";
   import ReportHistoryTableHeader from "./ReportHistoryTableHeader.svelte";
 
@@ -40,7 +41,7 @@
   {:else if $reportQuery.isLoading}
     <div class="text-gray-500">Loading...</div>
   {:else if !$reportQuery.data?.resource.report.state.executionHistory.length}
-    <div class="text-gray-500">No history available.</div>
+    <NoRunsYet />
   {:else}
     <Table
       {columns}
