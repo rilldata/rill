@@ -18,6 +18,7 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 		Use:               "reconcile [<project-name>]",
 		Args:              cobra.MaximumNArgs(1),
 		Short:             "Send trigger to deployment",
+		Hidden:            true,
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
