@@ -10,20 +10,15 @@ import { createMutation, CreateMutationOptions } from "@tanstack/svelte-query";
 import type { MutationFunction } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
-export const DownloadFormatMap: Record<string, V1ExportFormat> = {
-  csv: V1ExportFormat.EXPORT_FORMAT_CSV,
-  parquet: V1ExportFormat.EXPORT_FORMAT_PARQUET,
-  xlsx: V1ExportFormat.EXPORT_FORMAT_XLSX,
-};
-
 export type DownloadReportRequest = {
   instanceId: string;
-  format: string;
+  format: V1ExportFormat;
   bakedQuery: string;
+  limit?: string;
 };
 
 export function createDownloadReportMutation<
-  TError = RpcStatus,
+  TError = { response: { data: RpcStatus } },
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -46,10 +41,9 @@ export function createDownloadReportMutation<
     const exportResp = await get(exporter).mutateAsync({
       instanceId: data.instanceId,
       data: {
-        format:
-          DownloadFormatMap[data.format] ??
-          V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
+        format: data.format,
         bakedQuery: data.bakedQuery,
+        limit: data.limit,
       },
     });
     const downloadUrl = `${get(runtime).host}${exportResp.downloadUrlPath}`;
