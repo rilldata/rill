@@ -78,6 +78,12 @@ const (
 	AdminService_RemoveBookmark_FullMethodName               = "/rill.admin.v1.AdminService/RemoveBookmark"
 	AdminService_GetRepoMeta_FullMethodName                  = "/rill.admin.v1.AdminService/GetRepoMeta"
 	AdminService_PullVirtualRepo_FullMethodName              = "/rill.admin.v1.AdminService/PullVirtualRepo"
+	AdminService_CreateReport_FullMethodName                 = "/rill.admin.v1.AdminService/CreateReport"
+	AdminService_EditReport_FullMethodName                   = "/rill.admin.v1.AdminService/EditReport"
+	AdminService_UnsubscribeReport_FullMethodName            = "/rill.admin.v1.AdminService/UnsubscribeReport"
+	AdminService_DeleteReport_FullMethodName                 = "/rill.admin.v1.AdminService/DeleteReport"
+	AdminService_TriggerReport_FullMethodName                = "/rill.admin.v1.AdminService/TriggerReport"
+	AdminService_GenerateReportYAML_FullMethodName           = "/rill.admin.v1.AdminService/GenerateReportYAML"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -203,6 +209,18 @@ type AdminServiceClient interface {
 	GetRepoMeta(ctx context.Context, in *GetRepoMetaRequest, opts ...grpc.CallOption) (*GetRepoMetaResponse, error)
 	// PullVirtualRepo fetches files from a project's virtual repo
 	PullVirtualRepo(ctx context.Context, in *PullVirtualRepoRequest, opts ...grpc.CallOption) (*PullVirtualRepoResponse, error)
+	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
+	CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error)
+	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
+	EditReport(ctx context.Context, in *EditReportRequest, opts ...grpc.CallOption) (*EditReportResponse, error)
+	// UnsubscribeReport removes the calling user from a reports recipients list
+	UnsubscribeReport(ctx context.Context, in *UnsubscribeReportRequest, opts ...grpc.CallOption) (*UnsubscribeReportResponse, error)
+	// DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
+	DeleteReport(ctx context.Context, in *DeleteReportRequest, opts ...grpc.CallOption) (*DeleteReportResponse, error)
+	// TriggerReport triggers an ad-hoc report run
+	TriggerReport(ctx context.Context, in *TriggerReportRequest, opts ...grpc.CallOption) (*TriggerReportResponse, error)
+	// GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
+	GenerateReportYAML(ctx context.Context, in *GenerateReportYAMLRequest, opts ...grpc.CallOption) (*GenerateReportYAMLResponse, error)
 }
 
 type adminServiceClient struct {
@@ -744,6 +762,60 @@ func (c *adminServiceClient) PullVirtualRepo(ctx context.Context, in *PullVirtua
 	return out, nil
 }
 
+func (c *adminServiceClient) CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error) {
+	out := new(CreateReportResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateReport_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) EditReport(ctx context.Context, in *EditReportRequest, opts ...grpc.CallOption) (*EditReportResponse, error) {
+	out := new(EditReportResponse)
+	err := c.cc.Invoke(ctx, AdminService_EditReport_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UnsubscribeReport(ctx context.Context, in *UnsubscribeReportRequest, opts ...grpc.CallOption) (*UnsubscribeReportResponse, error) {
+	out := new(UnsubscribeReportResponse)
+	err := c.cc.Invoke(ctx, AdminService_UnsubscribeReport_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteReport(ctx context.Context, in *DeleteReportRequest, opts ...grpc.CallOption) (*DeleteReportResponse, error) {
+	out := new(DeleteReportResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteReport_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) TriggerReport(ctx context.Context, in *TriggerReportRequest, opts ...grpc.CallOption) (*TriggerReportResponse, error) {
+	out := new(TriggerReportResponse)
+	err := c.cc.Invoke(ctx, AdminService_TriggerReport_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GenerateReportYAML(ctx context.Context, in *GenerateReportYAMLRequest, opts ...grpc.CallOption) (*GenerateReportYAMLResponse, error) {
+	out := new(GenerateReportYAMLResponse)
+	err := c.cc.Invoke(ctx, AdminService_GenerateReportYAML_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
@@ -867,6 +939,18 @@ type AdminServiceServer interface {
 	GetRepoMeta(context.Context, *GetRepoMetaRequest) (*GetRepoMetaResponse, error)
 	// PullVirtualRepo fetches files from a project's virtual repo
 	PullVirtualRepo(context.Context, *PullVirtualRepoRequest) (*PullVirtualRepoResponse, error)
+	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
+	CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error)
+	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
+	EditReport(context.Context, *EditReportRequest) (*EditReportResponse, error)
+	// UnsubscribeReport removes the calling user from a reports recipients list
+	UnsubscribeReport(context.Context, *UnsubscribeReportRequest) (*UnsubscribeReportResponse, error)
+	// DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
+	DeleteReport(context.Context, *DeleteReportRequest) (*DeleteReportResponse, error)
+	// TriggerReport triggers an ad-hoc report run
+	TriggerReport(context.Context, *TriggerReportRequest) (*TriggerReportResponse, error)
+	// GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
+	GenerateReportYAML(context.Context, *GenerateReportYAMLRequest) (*GenerateReportYAMLResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -1050,6 +1134,24 @@ func (UnimplementedAdminServiceServer) GetRepoMeta(context.Context, *GetRepoMeta
 }
 func (UnimplementedAdminServiceServer) PullVirtualRepo(context.Context, *PullVirtualRepoRequest) (*PullVirtualRepoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PullVirtualRepo not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateReport not implemented")
+}
+func (UnimplementedAdminServiceServer) EditReport(context.Context, *EditReportRequest) (*EditReportResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EditReport not implemented")
+}
+func (UnimplementedAdminServiceServer) UnsubscribeReport(context.Context, *UnsubscribeReportRequest) (*UnsubscribeReportResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnsubscribeReport not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteReport(context.Context, *DeleteReportRequest) (*DeleteReportResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteReport not implemented")
+}
+func (UnimplementedAdminServiceServer) TriggerReport(context.Context, *TriggerReportRequest) (*TriggerReportResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerReport not implemented")
+}
+func (UnimplementedAdminServiceServer) GenerateReportYAML(context.Context, *GenerateReportYAMLRequest) (*GenerateReportYAMLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateReportYAML not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -2126,6 +2228,114 @@ func _AdminService_PullVirtualRepo_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_CreateReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateReportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateReport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateReport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateReport(ctx, req.(*CreateReportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_EditReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EditReportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).EditReport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_EditReport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).EditReport(ctx, req.(*EditReportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UnsubscribeReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnsubscribeReportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UnsubscribeReport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UnsubscribeReport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UnsubscribeReport(ctx, req.(*UnsubscribeReportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteReportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteReport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteReport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteReport(ctx, req.(*DeleteReportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_TriggerReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TriggerReportRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).TriggerReport(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_TriggerReport_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).TriggerReport(ctx, req.(*TriggerReportRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GenerateReportYAML_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateReportYAMLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GenerateReportYAML(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GenerateReportYAML_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GenerateReportYAML(ctx, req.(*GenerateReportYAMLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2368,6 +2578,30 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PullVirtualRepo",
 			Handler:    _AdminService_PullVirtualRepo_Handler,
+		},
+		{
+			MethodName: "CreateReport",
+			Handler:    _AdminService_CreateReport_Handler,
+		},
+		{
+			MethodName: "EditReport",
+			Handler:    _AdminService_EditReport_Handler,
+		},
+		{
+			MethodName: "UnsubscribeReport",
+			Handler:    _AdminService_UnsubscribeReport_Handler,
+		},
+		{
+			MethodName: "DeleteReport",
+			Handler:    _AdminService_DeleteReport_Handler,
+		},
+		{
+			MethodName: "TriggerReport",
+			Handler:    _AdminService_TriggerReport_Handler,
+		},
+		{
+			MethodName: "GenerateReportYAML",
+			Handler:    _AdminService_GenerateReportYAML_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
