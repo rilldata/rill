@@ -143,16 +143,16 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-			dim, err := findDimension(mv, d.Name)
+			dim, err := metricsViewDimension(mv, d.Name)
 			if err != nil {
 				return "", nil, err
 			}
-			rawColName := getMetricsViewDimensionName(dim)
+			rawColName := metricsViewDimensionColumn(dim)
 			col := safeName(rawColName)
-			unnestColName := safeName(fmt.Sprintf("%s_%s", "unnested", rawColName))
 
 			if dim.Unnest && dialect != drivers.DialectDruid {
 				// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
+				unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
 				selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, col))
 				unnestClauses = append(unnestClauses, fmt.Sprintf(`, LATERAL UNNEST(%q.%s) tbl(%s)`, mv.Table, col, unnestColName))
 			} else {

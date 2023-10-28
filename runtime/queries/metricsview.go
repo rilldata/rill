@@ -197,11 +197,11 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev
 
 	// NOTE: Looking up for dimension like this will lead to O(nm).
 	//       Ideal way would be to create a map, but we need to find a clean solution down the line
-	dim, err := findDimension(mv, cond.Name)
+	dim, err := metricsViewDimension(mv, cond.Name)
 	if err != nil {
 		return "", nil, err
 	}
-	name := safeName(getMetricsViewDimensionName(dim))
+	name := safeName(metricsViewDimensionColumn(dim))
 
 	notKeyword := ""
 	if exclude {
@@ -334,14 +334,14 @@ func convertToXLSXValue(pbvalue *structpb.Value) (interface{}, error) {
 
 func metricsViewDimensionToSafeColumn(mv *runtimev1.MetricsViewSpec, dimName string) (string, error) {
 	dimName = strings.ToLower(dimName)
-	dimension, err := findDimension(mv, dimName)
+	dimension, err := metricsViewDimension(mv, dimName)
 	if err != nil {
 		return "", err
 	}
-	return safeName(getMetricsViewDimensionName(dimension)), nil
+	return safeName(metricsViewDimensionColumn(dimension)), nil
 }
 
-func findDimension(mv *runtimev1.MetricsViewSpec, dimName string) (*runtimev1.MetricsViewSpec_DimensionV2, error) {
+func metricsViewDimension(mv *runtimev1.MetricsViewSpec, dimName string) (*runtimev1.MetricsViewSpec_DimensionV2, error) {
 	for _, dimension := range mv.Dimensions {
 		if strings.EqualFold(dimension.Name, dimName) {
 			return dimension, nil
@@ -350,7 +350,7 @@ func findDimension(mv *runtimev1.MetricsViewSpec, dimName string) (*runtimev1.Me
 	return nil, fmt.Errorf("dimension %s not found", dimName)
 }
 
-func getMetricsViewDimensionName(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
+func metricsViewDimensionColumn(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
 	if dimension.Column != "" {
 		return dimension.Column
 	}

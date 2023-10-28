@@ -222,13 +222,13 @@ func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, ol
 }
 
 func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
-	dim, err := findDimension(mv, q.DimensionName)
+	dim, err := metricsViewDimension(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
-	rawColName := getMetricsViewDimensionName(dim)
+	rawColName := metricsViewDimensionColumn(dim)
 	colName := safeName(rawColName)
-	unnestColName := safeName(fmt.Sprintf("%s_%s", "unnested", rawColName))
+	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
 
 	var selectCols []string
 	unnestClause := ""
@@ -334,13 +334,13 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 }
 
 func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
-	dim, err := findDimension(mv, q.DimensionName)
+	dim, err := metricsViewDimension(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
-	rawColName := getMetricsViewDimensionName(dim)
+	rawColName := metricsViewDimensionColumn(dim)
 	colName := safeName(rawColName)
-	unnestColName := safeName(fmt.Sprintf("%s_%s", "unnested", rawColName))
+	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
 
 	var selectCols []string
 	unnestClause := ""
