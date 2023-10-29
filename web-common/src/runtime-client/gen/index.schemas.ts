@@ -331,6 +331,7 @@ See message Instance for field descriptions.
 export type RuntimeServiceEditInstanceBody = {
   olapConnector?: string;
   repoConnector?: string;
+  adminConnector?: string;
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
@@ -700,9 +701,6 @@ export interface V1ReportSpec {
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   emailRecipients?: string[];
-  emailOpenUrl?: string;
-  emailEditUrl?: string;
-  emailExportUrl?: string;
   annotations?: V1ReportSpecAnnotations;
 }
 
@@ -1380,6 +1378,7 @@ export interface V1Instance {
   instanceId?: string;
   olapConnector?: string;
   repoConnector?: string;
+  adminConnector?: string;
   createdOn?: string;
   updatedOn?: string;
   connectors?: V1Connector[];
@@ -1538,6 +1537,7 @@ export interface V1CreateInstanceRequest {
   instanceId?: string;
   olapConnector?: string;
   repoConnector?: string;
+  adminConnector?: string;
   connectors?: V1Connector[];
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;

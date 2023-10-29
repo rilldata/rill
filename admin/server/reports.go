@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,44 @@ import (
 	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
 )
+
+func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRequest) (*adminv1.GetReportMetaResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.ProjectId),
+		attribute.String("args.branch", req.Branch),
+		attribute.String("args.report", req.Report),
+	)
+
+	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "project not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !permissions.ReadProdStatus {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read report meta")
+	}
+
+	if proj.ProdBranch != req.Branch {
+		return nil, status.Error(codes.InvalidArgument, "branch not found")
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	annotations := parseReportAnnotations(req.Annotations)
+
+	return &adminv1.GetReportMetaResponse{
+		OpenUrl:   s.urls.reportOpen(org.Name, proj.Name, annotations.WebOpenProjectSubpath),
+		ExportUrl: s.urls.reportExport(org.Name, proj.Name, req.Report),
+		EditUrl:   s.urls.reportEdit(org.Name, proj.Name, req.Report),
+	}, nil
+}
 
 func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequest) (*adminv1.CreateReportResponse, error) {
 	observability.AddRequestAttributes(ctx,
@@ -56,7 +95,10 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	name := uuid.New().String()
+	name, err := s.generateReportName(ctx, depl, req.Options.Title)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
 	data, err := s.yamlForManagedReport(req.Options, name, claims.OwnerID())
 	if err != nil {
@@ -120,7 +162,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
 	}
-	annotations := parseReportAnnotations(spec)
+	annotations := parseReportAnnotations(spec.Annotations)
 
 	if !annotations.AdminManaged {
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
@@ -191,7 +233,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
 	}
-	annotations := parseReportAnnotations(spec)
+	annotations := parseReportAnnotations(spec.Annotations)
 
 	if !annotations.AdminManaged {
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
@@ -290,7 +332,7 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
 	}
-	annotations := parseReportAnnotations(spec)
+	annotations := parseReportAnnotations(spec.Annotations)
 
 	if !annotations.AdminManaged {
 		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
@@ -351,7 +393,7 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
 	}
-	annotations := parseReportAnnotations(spec)
+	annotations := parseReportAnnotations(spec.Annotations)
 
 	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
 	if !permissions.ManageReports && !isOwner {
@@ -391,13 +433,11 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, reportName, o
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	res.Export.Format = opts.ExportFormat.String()
 	res.Export.Limit = uint(opts.ExportLimit)
-	res.Email.Template.OpenURL = opts.OpenUrl
-	res.Email.Template.EditURL = ""   // TODO: Add
-	res.Email.Template.ExportURL = "" // TODO: Add
 	res.Email.Recipients = opts.Recipients
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
+	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
 	return yaml.Marshal(res)
 }
 
@@ -432,14 +472,52 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Query.Args = args
 	res.Export.Format = exportFormat
 	res.Export.Limit = uint(opts.ExportLimit)
-	res.Email.Template.OpenURL = opts.OpenUrl
-	res.Email.Template.EditURL = ""   // TODO: Add
-	res.Email.Template.ExportURL = "" // TODO: Add
 	res.Email.Recipients = opts.Recipients
+	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
 	return yaml.Marshal(res)
 }
 
+// generateReportName generates a random report name with the title as a seed.
+// Example: "My report!" -> "my-report-5b3f7e1a".
+// It verifies that the name is not taken (the random component makes any collision unlikely, but we check to be sure).
+func (s *Server) generateReportName(ctx context.Context, depl *database.Deployment, title string) (string, error) {
+	for i := 0; i < 5; i++ {
+		name := randomReportName(title)
+
+		_, err := s.admin.LookupReport(ctx, depl, name)
+		if err != nil {
+			if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
+				// Success! Name isn't taken
+				return name, nil
+			}
+			return "", fmt.Errorf("failed to check report name: %w", err)
+		}
+	}
+
+	// Fail-safe in case all names we tried were taken
+	return uuid.New().String(), nil
+}
+
+var reportNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)
+
+var reportNameExcludeCharsRegexp = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
+
+func randomReportName(title string) string {
+	name := reportNameToDashCharsRegexp.ReplaceAllString(title, "-")
+	name = reportNameExcludeCharsRegexp.ReplaceAllString(name, "")
+	name = strings.ToLower(name)
+	name = strings.Trim(name, "-")
+	if name == "" {
+		name = uuid.New().String()
+	} else {
+		name = name + "-" + uuid.New().String()[0:8]
+	}
+	return name
+}
+
 func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportOptions, error) {
+	annotations := parseReportAnnotations(spec.Annotations)
+
 	opts := &adminv1.ReportOptions{}
 	opts.Title = spec.Title
 	if spec.RefreshSchedule != nil && spec.RefreshSchedule.Cron != "" {
@@ -449,7 +527,7 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	opts.QueryArgsJson = spec.QueryArgsJson
 	opts.ExportLimit = spec.ExportLimit
 	opts.ExportFormat = spec.ExportFormat
-	opts.OpenUrl = spec.EmailOpenUrl
+	opts.OpenProjectSubpath = annotations.WebOpenProjectSubpath
 	opts.Recipients = spec.EmailRecipients
 	return opts, nil
 }
@@ -472,30 +550,27 @@ type reportYAML struct {
 	} `yaml:"export"`
 	Email struct {
 		Recipients []string `yaml:"recipients"`
-		Template   struct {
-			OpenURL   string `yaml:"open_url,omitempty"`
-			EditURL   string `yaml:"edit_url,omitempty"`
-			ExportURL string `yaml:"export_url,omitempty"`
-		} `yaml:"template,omitempty"`
 	} `yaml:"email"`
 	Annotations reportAnnotations `yaml:"annotations,omitempty"`
 }
 
 type reportAnnotations struct {
-	AdminOwnerUserID string `yaml:"admin_owner_user_id"`
-	AdminManaged     bool   `yaml:"admin_managed"`
-	AdminNonce       string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
+	AdminOwnerUserID      string `yaml:"admin_owner_user_id"`
+	AdminManaged          bool   `yaml:"admin_managed"`
+	AdminNonce            string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
+	WebOpenProjectSubpath string `yaml:"web_open_project_subpath"`
 }
 
-func parseReportAnnotations(r *runtimev1.ReportSpec) reportAnnotations {
-	if r.Annotations == nil {
+func parseReportAnnotations(annotations map[string]string) reportAnnotations {
+	if annotations == nil {
 		return reportAnnotations{}
 	}
 
 	res := reportAnnotations{}
-	res.AdminOwnerUserID = r.Annotations["admin_owner_user_id"]
-	res.AdminManaged, _ = strconv.ParseBool(r.Annotations["admin_managed"])
-	res.AdminNonce = r.Annotations["admin_nonce"]
+	res.AdminOwnerUserID = annotations["admin_owner_user_id"]
+	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
+	res.AdminNonce = annotations["admin_nonce"]
+	res.WebOpenProjectSubpath = annotations["web_open_project_subpath"]
 
 	return res
 }

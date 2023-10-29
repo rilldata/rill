@@ -452,6 +452,8 @@ paths:
                 type: string
               repoConnector:
                 type: string
+              adminConnector:
+                type: string
               connectors:
                 type: array
                 items:
@@ -2894,6 +2896,8 @@ definitions:
         type: string
       repoConnector:
         type: string
+      adminConnector:
+        type: string
       connectors:
         type: array
         items:
@@ -3104,6 +3108,8 @@ definitions:
       olapConnector:
         type: string
       repoConnector:
+        type: string
+      adminConnector:
         type: string
       createdOn:
         type: string
@@ -4339,12 +4345,6 @@ definitions:
         type: array
         items:
           type: string
-      emailOpenUrl:
-        type: string
-      emailEditUrl:
-        type: string
-      emailExportUrl:
-        type: string
       annotations:
         type: object
         additionalProperties:
