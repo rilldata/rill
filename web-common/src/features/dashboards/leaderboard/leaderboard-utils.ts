@@ -3,16 +3,8 @@ import {
   type V1MetricsViewComparisonRow,
   type V1MetricsViewComparisonValue,
 } from "@rilldata/web-common/runtime-client";
-import { PERC_DIFF } from "../../../components/data-types/type-utils";
-import {
-  FormatPreset,
-  formatMeasurePercentageDifference,
-  formatProperFractionAsPercent,
-  humanizeDataType,
-} from "../humanize-numbers";
-import { LeaderboardContextColumn } from "../leaderboard-context-column";
+
 import { SortType } from "../proto-state/derived-types";
-import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
 /**
  * A `V1MetricsViewComparisonRow` basically represents a row of data
@@ -146,8 +138,8 @@ export function prepareLeaderboardItemData(
   // selected values that _are_ in the API results.
   //
   // We also need to retain the original selection indices
-  let selectedButNotInAPIResults: [string | number, number][] =
-    selectedValues.map((v, i) => [v, i]);
+  const selectedButNotInAPIResults = new Map<string | number, number>();
+  selectedValues.map((v, i) => selectedButNotInAPIResults.set(v, i));
 
   values.forEach((v, i) => {
     const selectedIndex = selectedValues.findIndex(
@@ -155,16 +147,11 @@ export function prepareLeaderboardItemData(
     );
     // if we have found this selected value in the API results,
     // remove it from the selectedButNotInAPIResults array
-    if (selectedIndex > -1)
-      selectedButNotInAPIResults = selectedButNotInAPIResults.filter(
-        (value) => value[0] !== v.dimensionValue
-      );
+    if (selectedIndex > -1) selectedButNotInAPIResults.delete(v.dimensionValue);
 
     const defaultComparedIndex = comparisonDefaultSelection.findIndex(
       (value) => value === v.dimensionValue
     );
-    // if we have found this selected value in the API results,
-    // remove it from the selectedButNotInAPIResults array
 
     const cleanValue = cleanUpComparisonValue(
       v,
@@ -190,7 +177,7 @@ export function prepareLeaderboardItemData(
   // that pushes it out of the top N. In that case, we will follow
   // the previous strategy, and just push a dummy value with only
   // the dimension value and nulls for all measure values.
-  selectedButNotInAPIResults.forEach(([dimensionValue, selectedIndex]) => {
+  for (const [dimensionValue, selectedIndex] of selectedButNotInAPIResults) {
     const defaultComparedIndex = comparisonDefaultSelection.findIndex(
       (value) => value === dimensionValue
     );
@@ -205,7 +192,7 @@ export function prepareLeaderboardItemData(
       deltaRel: null,
       deltaAbs: null,
     });
-  });
+  }
 
   const noAvailableValues = values.length === 0;
   const showExpandTable = values.length > numberAboveTheFold;
@@ -252,47 +239,6 @@ export function getComparisonDefaultSelection(
     .map((value) => value.dimensionValue)
     .slice(0, 3);
 }
-
-/**
- * Returns the formatted value for the context column
- * accounting for the context column type.
- */
-export function formatContextColumnValue(
-  itemData: LeaderboardItemData,
-  contextType: LeaderboardContextColumn,
-  formatPreset: FormatPreset
-): string | NumberParts | PERC_DIFF.PREV_VALUE_NO_DATA {
-  switch (contextType) {
-    case LeaderboardContextColumn.DELTA_ABSOLUTE: {
-      return humanizeDataType(itemData.deltaAbs, formatPreset);
-    }
-    case LeaderboardContextColumn.DELTA_PERCENT:
-      if (itemData.deltaRel === null || itemData.deltaRel === undefined)
-        return PERC_DIFF.PREV_VALUE_NO_DATA;
-      return formatMeasurePercentageDifference(itemData.deltaRel);
-    case LeaderboardContextColumn.PERCENT:
-      return formatProperFractionAsPercent(itemData.pctOfTotal);
-    case LeaderboardContextColumn.HIDDEN:
-      return "";
-    default:
-      throw new Error("Invalid context column, all cases must be handled");
-  }
-}
-export const contextColumnWidth = (
-  contextType: LeaderboardContextColumn
-): string => {
-  switch (contextType) {
-    case LeaderboardContextColumn.DELTA_ABSOLUTE:
-    case LeaderboardContextColumn.DELTA_PERCENT:
-      return "56px";
-    case LeaderboardContextColumn.PERCENT:
-      return "44px";
-    case LeaderboardContextColumn.HIDDEN:
-      return "0px";
-    default:
-      throw new Error("Invalid context column, all cases must be handled");
-  }
-};
 
 export function getQuerySortType(sortType: SortType) {
   return (

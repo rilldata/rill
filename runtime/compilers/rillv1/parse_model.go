@@ -10,11 +10,11 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 )
 
-// modelYAML is the raw structure of a Model resource defined in YAML (does not include common fields)
-type modelYAML struct {
+// ModelYAML is the raw structure of a Model resource defined in YAML (does not include common fields)
+type ModelYAML struct {
 	Materialize  *bool         `yaml:"materialize" mapstructure:"materialize"`
 	Timeout      string        `yaml:"timeout" mapstructure:"timeout"`
-	Refresh      *scheduleYAML `yaml:"refresh" mapstructure:"refresh"`
+	Refresh      *ScheduleYAML `yaml:"refresh" mapstructure:"refresh"`
 	ParserConfig struct {
 		DuckDB struct {
 			InferRefs *bool `yaml:"infer_refs" mapstructure:"infer_refs"`
@@ -25,7 +25,7 @@ type modelYAML struct {
 // parseModel parses a model definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Parse YAML
-	tmp := &modelYAML{}
+	tmp := &ModelYAML{}
 	if p.RillYAML != nil && !p.RillYAML.Defaults.Models.IsZero() {
 		if err := p.RillYAML.Defaults.Models.Decode(tmp); err != nil {
 			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}

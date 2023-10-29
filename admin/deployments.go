@@ -2,7 +2,6 @@ package admin
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path"
 	"strconv"
@@ -14,7 +13,6 @@ import (
 	"github.com/rilldata/rill/admin/provisioner"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/client"
-	"github.com/rilldata/rill/runtime/drivers/github"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/multierr"
@@ -22,27 +20,20 @@ import (
 )
 
 type createDeploymentOptions struct {
-	ProjectID            string
-	Region               string
-	GithubURL            *string
-	GithubInstallationID *int64
-	Subpath              string
-	ProdBranch           string
-	ProdVariables        database.Variables
-	ProdOLAPDriver       string
-	ProdOLAPDSN          string
-	ProdSlots            int
-	Annotations          deploymentAnnotations
+	ProjectID      string
+	Region         string
+	ProdBranch     string
+	ProdVariables  database.Variables
+	ProdOLAPDriver string
+	ProdOLAPDSN    string
+	ProdSlots      int
+	Annotations    deploymentAnnotations
 }
 
 func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOptions) (*database.Deployment, error) {
-	// We require Github info on project to create a deployment
-	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == "" {
-		return nil, fmt.Errorf("cannot create project without github info")
-	}
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Subpath, opts.ProdBranch)
-	if err != nil {
-		return nil, err
+	// We require a branch to be specified to create a deployment
+	if opts.ProdBranch == "" {
+		return nil, fmt.Errorf("cannot create project without a branch")
 	}
 
 	// Get a runtime with capacity for the deployment
@@ -95,6 +86,11 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		olapConfig["storage_limit_bytes"] = "0"
 	}
 
+	modelDefaultMaterialize, err := defaultModelMaterialize(opts.ProdVariables)
+	if err != nil {
+		return nil, err
+	}
+
 	// Open a runtime client
 	rt, err := s.openRuntimeClient(alloc.Host, alloc.Audience)
 	if err != nil {
@@ -128,7 +124,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:    instanceID,
 		OlapConnector: olapDriver,
-		RepoConnector: "repo",
+		RepoConnector: "admin",
 		Connectors: []*runtimev1.Connector{
 			{
 				Name:   olapDriver,
@@ -136,20 +132,22 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 				Config: olapConfig,
 			},
 			{
-				Name:   "repo",
-				Type:   repoDriver,
-				Config: map[string]string{"dsn": repoDSN},
-			},
-			{
-				Name:   "admin",
-				Type:   "admin",
-				Config: map[string]string{"access_token": adminAuthToken},
+				Name: "admin",
+				Type: "admin",
+				Config: map[string]string{
+					"admin_url":    s.opts.ExternalURL,
+					"access_token": adminAuthToken,
+					"project_id":   opts.ProjectID,
+					"branch":       opts.ProdBranch,
+					"nonce":        time.Now().Format(time.RFC3339Nano), // Only set for consistency with updateDeployment
+				},
 			},
 		},
-		Variables:    opts.ProdVariables,
-		Annotations:  opts.Annotations.toMap(),
-		EmbedCatalog: embedCatalog,
-		StageChanges: true,
+		Variables:               opts.ProdVariables,
+		Annotations:             opts.Annotations.toMap(),
+		EmbedCatalog:            embedCatalog,
+		StageChanges:            true,
+		ModelDefaultMaterialize: modelDefaultMaterialize,
 	})
 	if err != nil {
 		err2 := s.DB.DeleteDeployment(ctx, depl.ID)
@@ -167,22 +165,24 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 }
 
 type updateDeploymentOptions struct {
-	GithubURL            *string
-	GithubInstallationID *int64
-	Subpath              string
-	Branch               string
-	Variables            map[string]string
-	Annotations          deploymentAnnotations
+	Branch          string
+	Variables       map[string]string
+	Annotations     deploymentAnnotations
+	EvictCachedRepo bool // Set to true if config returned by GetRepoMeta has changed such that the runtime should do a fresh clone instead of a pull.
 }
 
 func (s *Service) updateDeployment(ctx context.Context, depl *database.Deployment, opts *updateDeploymentOptions) error {
-	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.Branch == "" {
-		return fmt.Errorf("cannot update deployment without github info")
+	if opts.Branch == "" {
+		return fmt.Errorf("cannot update deployment without specifying a valid branch")
 	}
 
-	repoDriver, repoDSN, err := githubRepoInfoForRuntime(*opts.GithubURL, *opts.GithubInstallationID, opts.Subpath, opts.Branch)
-	if err != nil {
-		return err
+	var modelDefaultMaterialize *bool
+	if opts.Variables != nil { // if variables are nil, it means they were not changed
+		val, err := defaultModelMaterialize(opts.Variables)
+		if err != nil {
+			return err
+		}
+		modelDefaultMaterialize = &val
 	}
 
 	rt, err := s.openRuntimeClientForDeployment(depl)
@@ -198,20 +198,25 @@ func (s *Service) updateDeployment(ctx context.Context, depl *database.Deploymen
 
 	connectors := res.Instance.Connectors
 	for _, c := range connectors {
-		if c.Name == "repo" {
+		if c.Name == "admin" {
 			if c.Config == nil {
 				c.Config = make(map[string]string)
 			}
-			c.Config["dsn"] = repoDSN
-			c.Type = repoDriver
+			c.Config["branch"] = opts.Branch
+
+			// Adding a nonce will cause the runtime to evict any currently open handle and open a new one.
+			if opts.EvictCachedRepo {
+				c.Config["nonce"] = time.Now().Format(time.RFC3339Nano)
+			}
 		}
 	}
 
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
-		InstanceId:  depl.RuntimeInstanceID,
-		Connectors:  connectors,
-		Annotations: opts.Annotations.toMap(),
-		Variables:   opts.Variables,
+		InstanceId:              depl.RuntimeInstanceID,
+		Connectors:              connectors,
+		Annotations:             opts.Annotations.toMap(),
+		Variables:               opts.Variables,
+		ModelDefaultMaterialize: modelDefaultMaterialize,
 	})
 	if err != nil {
 		return err
@@ -331,20 +336,6 @@ func (s *Service) openRuntimeClient(host, audience string) (*client.Client, erro
 	return rt, nil
 }
 
-func githubRepoInfoForRuntime(githubURL string, installationID int64, subPath, branch string) (string, string, error) {
-	dsn, err := json.Marshal(github.DSN{
-		GithubURL:      githubURL,
-		InstallationID: installationID,
-		Subpath:        subPath,
-		Branch:         branch,
-	})
-	if err != nil {
-		return "", "", err
-	}
-
-	return "github", string(dsn), nil
-}
-
 type deploymentAnnotations struct {
 	orgID    string
 	orgName  string
@@ -368,4 +359,25 @@ func (da *deploymentAnnotations) toMap() map[string]string {
 		"project_id":        da.projID,
 		"project_name":      da.projName,
 	}
+}
+
+func defaultModelMaterialize(vars map[string]string) (bool, error) {
+	// Temporary hack to enable configuring ModelDefaultMaterialize using a variable.
+	// Remove when we have a way to conditionally configure it using code files.
+
+	if vars == nil {
+		return false, nil
+	}
+
+	s, ok := vars["__materialize_default"]
+	if !ok {
+		return false, nil
+	}
+
+	val, err := strconv.ParseBool(s)
+	if err != nil {
+		return false, fmt.Errorf("invalid __materialize_default value %q: %w", s, err)
+	}
+
+	return val, nil
 }

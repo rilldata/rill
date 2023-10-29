@@ -58,14 +58,14 @@ TableCells – the cell contents.
   const CHARACTER_LIMIT_FOR_WRAPPING = 9;
   const FILTER_COLUMN_WIDTH = config.indexWidth;
 
-  $: selectedIndex = selectedValues
+  $: selectedIndices = selectedValues
     .map((label) => {
       return rows.findIndex((row) => row[dimensionName] === label);
     })
     .filter((i) => i >= 0);
 
-  $: rowScrollOffset = 0;
-  $: colScrollOffset = 0;
+  $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
+  $: colScrollOffset = $columnVirtualizer?.scrollOffset || 0;
 
   /** if we're inferring the column widths from static-ish data, let's
    * find the largest strings in the column and use that to bootstrap the
@@ -87,7 +87,9 @@ TableCells – the cell contents.
   let estimateColumnSize: number[] = [];
 
   /* Separate out dimension column */
-  $: dimensionColumn = columns?.find((c) => c.name == dimensionName);
+  $: dimensionColumn = columns?.find(
+    (c) => c.name == dimensionName
+  ) as VirtualizedTableColumns;
   $: measureColumns = columns?.filter((c) => c.name !== dimensionName) ?? [];
 
   let horizontalScrolling = false;
@@ -236,7 +238,7 @@ TableCells – the cell contents.
           <DimensionFilterGutter
             virtualRowItems={virtualRows}
             totalHeight={virtualHeight}
-            {selectedIndex}
+            selectedIndex={selectedIndices}
             {isBeingCompared}
             {excludeMode}
             atLeastOneActive={selectedValues?.length > 0}
@@ -251,7 +253,7 @@ TableCells – the cell contents.
             column={dimensionColumn}
             {rows}
             {activeIndex}
-            {selectedIndex}
+            selectedIndex={selectedIndices}
             {excludeMode}
             {scrolling}
             {horizontalScrolling}
@@ -268,7 +270,7 @@ TableCells – the cell contents.
             columns={measureColumns}
             {rows}
             {activeIndex}
-            {selectedIndex}
+            selectedIndex={selectedIndices}
             {scrolling}
             {excludeMode}
             on:select-item={(event) => onSelectItem(event)}

@@ -50,6 +50,13 @@ import type {
   V1AddProjectMemberResponse,
   V1RemoveProjectMemberResponse,
   V1SetProjectMemberRoleResponse,
+  V1CreateReportResponse,
+  AdminServiceCreateReportBodyBody,
+  V1GenerateReportYAMLResponse,
+  V1DeleteReportResponse,
+  V1EditReportResponse,
+  V1TriggerReportResponse,
+  V1UnsubscribeReportResponse,
   V1SearchProjectUsersResponse,
   AdminServiceSearchProjectUsersParams,
   V1ListWhitelistedDomainsResponse,
@@ -78,6 +85,10 @@ import type {
   V1PingResponse,
   V1TriggerRedeployResponse,
   V1TriggerRedeployRequest,
+  V1GetRepoMetaResponse,
+  AdminServiceGetRepoMetaParams,
+  V1PullVirtualRepoResponse,
+  AdminServicePullVirtualRepoParams,
   V1RevokeServiceAuthTokenResponse,
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
@@ -1881,6 +1892,550 @@ export const createAdminServiceSetProjectMemberRole = <
   return createMutation(mutationOptions);
 };
 /**
+ * @summary CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
+ */
+export const adminServiceCreateReport = (
+  organization: string,
+  project: string,
+  adminServiceCreateReportBodyBody: AdminServiceCreateReportBodyBody
+) => {
+  return httpClient<V1CreateReportResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/reports`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateReportBodyBody,
+  });
+};
+
+export const getAdminServiceCreateReportMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateReport>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceCreateReportBodyBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceCreateReport>>,
+  TError,
+  {
+    organization: string;
+    project: string;
+    data: AdminServiceCreateReportBodyBody;
+  },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateReport>>,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceCreateReportBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, data } = props ?? {};
+
+    return adminServiceCreateReport(organization, project, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceCreateReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateReport>>
+>;
+export type AdminServiceCreateReportMutationBody =
+  AdminServiceCreateReportBodyBody;
+export type AdminServiceCreateReportMutationError = RpcStatus;
+
+/**
+ * @summary CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
+ */
+export const createAdminServiceCreateReport = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateReport>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceCreateReportBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getAdminServiceCreateReportMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
+ * @summary GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
+ */
+export const adminServiceGenerateReportYAML = (
+  organization: string,
+  project: string,
+  adminServiceCreateReportBodyBody: AdminServiceCreateReportBodyBody
+) => {
+  return httpClient<V1GenerateReportYAMLResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/reports/-/yaml`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateReportBodyBody,
+  });
+};
+
+export const getAdminServiceGenerateReportYAMLQueryKey = (
+  organization: string,
+  project: string,
+  adminServiceCreateReportBodyBody: AdminServiceCreateReportBodyBody
+) =>
+  [
+    `/v1/organizations/${organization}/projects/${project}/reports/-/yaml`,
+    adminServiceCreateReportBodyBody,
+  ] as const;
+
+export const getAdminServiceGenerateReportYAMLQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGenerateReportYAML>>,
+  TError = RpcStatus
+>(
+  organization: string,
+  project: string,
+  adminServiceCreateReportBodyBody: AdminServiceCreateReportBodyBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGenerateReportYAML>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof adminServiceGenerateReportYAML>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGenerateReportYAMLQueryKey(
+      organization,
+      project,
+      adminServiceCreateReportBodyBody
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGenerateReportYAML>>
+  > = () =>
+    adminServiceGenerateReportYAML(
+      organization,
+      project,
+      adminServiceCreateReportBodyBody
+    );
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project),
+    ...queryOptions,
+  };
+};
+
+export type AdminServiceGenerateReportYAMLQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGenerateReportYAML>>
+>;
+export type AdminServiceGenerateReportYAMLQueryError = RpcStatus;
+
+/**
+ * @summary GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
+ */
+export const createAdminServiceGenerateReportYAML = <
+  TData = Awaited<ReturnType<typeof adminServiceGenerateReportYAML>>,
+  TError = RpcStatus
+>(
+  organization: string,
+  project: string,
+  adminServiceCreateReportBodyBody: AdminServiceCreateReportBodyBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGenerateReportYAML>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServiceGenerateReportYAMLQueryOptions(
+    organization,
+    project,
+    adminServiceCreateReportBodyBody,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
+ */
+export const adminServiceDeleteReport = (
+  organization: string,
+  project: string,
+  name: string
+) => {
+  return httpClient<V1DeleteReportResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/reports/${name}`,
+    method: "delete",
+  });
+};
+
+export const getAdminServiceDeleteReportMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteReport>>,
+    TError,
+    { organization: string; project: string; name: string },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceDeleteReport>>,
+  TError,
+  { organization: string; project: string; name: string },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteReport>>,
+    { organization: string; project: string; name: string }
+  > = (props) => {
+    const { organization, project, name } = props ?? {};
+
+    return adminServiceDeleteReport(organization, project, name);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceDeleteReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteReport>>
+>;
+
+export type AdminServiceDeleteReportMutationError = RpcStatus;
+
+/**
+ * @summary DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
+ */
+export const createAdminServiceDeleteReport = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteReport>>,
+    TError,
+    { organization: string; project: string; name: string },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getAdminServiceDeleteReportMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
+ * @summary EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
+ */
+export const adminServiceEditReport = (
+  organization: string,
+  project: string,
+  name: string,
+  adminServiceCreateReportBodyBody: AdminServiceCreateReportBodyBody
+) => {
+  return httpClient<V1EditReportResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/reports/${name}`,
+    method: "put",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateReportBodyBody,
+  });
+};
+
+export const getAdminServiceEditReportMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceEditReport>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceCreateReportBodyBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceEditReport>>,
+  TError,
+  {
+    organization: string;
+    project: string;
+    name: string;
+    data: AdminServiceCreateReportBodyBody;
+  },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceEditReport>>,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceCreateReportBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, name, data } = props ?? {};
+
+    return adminServiceEditReport(organization, project, name, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceEditReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceEditReport>>
+>;
+export type AdminServiceEditReportMutationBody =
+  AdminServiceCreateReportBodyBody;
+export type AdminServiceEditReportMutationError = RpcStatus;
+
+/**
+ * @summary EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
+ */
+export const createAdminServiceEditReport = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceEditReport>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceCreateReportBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getAdminServiceEditReportMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
+ * @summary TriggerReport triggers an ad-hoc report run
+ */
+export const adminServiceTriggerReport = (
+  organization: string,
+  project: string,
+  name: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody
+) => {
+  return httpClient<V1TriggerReportResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/reports/${name}/trigger`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export const getAdminServiceTriggerReportMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceTriggerReport>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceTriggerReport>>,
+  TError,
+  {
+    organization: string;
+    project: string;
+    name: string;
+    data: AdminServiceTriggerReconcileBodyBody;
+  },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceTriggerReport>>,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, name, data } = props ?? {};
+
+    return adminServiceTriggerReport(organization, project, name, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceTriggerReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceTriggerReport>>
+>;
+export type AdminServiceTriggerReportMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceTriggerReportMutationError = RpcStatus;
+
+/**
+ * @summary TriggerReport triggers an ad-hoc report run
+ */
+export const createAdminServiceTriggerReport = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceTriggerReport>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getAdminServiceTriggerReportMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
+ * @summary UnsubscribeReport removes the calling user from a reports recipients list
+ */
+export const adminServiceUnsubscribeReport = (
+  organization: string,
+  project: string,
+  name: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody
+) => {
+  return httpClient<V1UnsubscribeReportResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/reports/${name}/unsubscribe`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export const getAdminServiceUnsubscribeReportMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUnsubscribeReport>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceUnsubscribeReport>>,
+  TError,
+  {
+    organization: string;
+    project: string;
+    name: string;
+    data: AdminServiceTriggerReconcileBodyBody;
+  },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUnsubscribeReport>>,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, name, data } = props ?? {};
+
+    return adminServiceUnsubscribeReport(organization, project, name, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceUnsubscribeReportMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUnsubscribeReport>>
+>;
+export type AdminServiceUnsubscribeReportMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceUnsubscribeReportMutationError = RpcStatus;
+
+/**
+ * @summary UnsubscribeReport removes the calling user from a reports recipients list
+ */
+export const createAdminServiceUnsubscribeReport = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUnsubscribeReport>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const mutationOptions =
+    getAdminServiceUnsubscribeReportMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
+/**
  * @summary SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
  */
 export const adminServiceSearchProjectUsers = (
@@ -3436,6 +3991,191 @@ export const createAdminServiceTriggerRedeploy = <
 
   return createMutation(mutationOptions);
 };
+/**
+ * @summary GetRepoMeta returns credentials and other metadata for accessing a project's repo
+ */
+export const adminServiceGetRepoMeta = (
+  projectId: string,
+  params?: AdminServiceGetRepoMetaParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1GetRepoMetaResponse>({
+    url: `/v1/projects/${projectId}/repo/meta`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetRepoMetaQueryKey = (
+  projectId: string,
+  params?: AdminServiceGetRepoMetaParams
+) =>
+  [`/v1/projects/${projectId}/repo/meta`, ...(params ? [params] : [])] as const;
+
+export const getAdminServiceGetRepoMetaQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceGetRepoMeta>>,
+  TError = RpcStatus
+>(
+  projectId: string,
+  params?: AdminServiceGetRepoMetaParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetRepoMeta>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof adminServiceGetRepoMeta>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetRepoMetaQueryKey(projectId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetRepoMeta>>
+  > = ({ signal }) => adminServiceGetRepoMeta(projectId, params, signal);
+
+  return { queryKey, queryFn, enabled: !!projectId, ...queryOptions };
+};
+
+export type AdminServiceGetRepoMetaQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetRepoMeta>>
+>;
+export type AdminServiceGetRepoMetaQueryError = RpcStatus;
+
+/**
+ * @summary GetRepoMeta returns credentials and other metadata for accessing a project's repo
+ */
+export const createAdminServiceGetRepoMeta = <
+  TData = Awaited<ReturnType<typeof adminServiceGetRepoMeta>>,
+  TError = RpcStatus
+>(
+  projectId: string,
+  params?: AdminServiceGetRepoMetaParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetRepoMeta>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServiceGetRepoMetaQueryOptions(
+    projectId,
+    params,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary PullVirtualRepo fetches files from a project's virtual repo
+ */
+export const adminServicePullVirtualRepo = (
+  projectId: string,
+  params?: AdminServicePullVirtualRepoParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1PullVirtualRepoResponse>({
+    url: `/v1/projects/${projectId}/repo/virtual`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServicePullVirtualRepoQueryKey = (
+  projectId: string,
+  params?: AdminServicePullVirtualRepoParams
+) =>
+  [
+    `/v1/projects/${projectId}/repo/virtual`,
+    ...(params ? [params] : []),
+  ] as const;
+
+export const getAdminServicePullVirtualRepoQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServicePullVirtualRepo>>,
+  TError = RpcStatus
+>(
+  projectId: string,
+  params?: AdminServicePullVirtualRepoParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServicePullVirtualRepo>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryOptions<
+  Awaited<ReturnType<typeof adminServicePullVirtualRepo>>,
+  TError,
+  TData
+> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServicePullVirtualRepoQueryKey(projectId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServicePullVirtualRepo>>
+  > = ({ signal }) => adminServicePullVirtualRepo(projectId, params, signal);
+
+  return { queryKey, queryFn, enabled: !!projectId, ...queryOptions };
+};
+
+export type AdminServicePullVirtualRepoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServicePullVirtualRepo>>
+>;
+export type AdminServicePullVirtualRepoQueryError = RpcStatus;
+
+/**
+ * @summary PullVirtualRepo fetches files from a project's virtual repo
+ */
+export const createAdminServicePullVirtualRepo = <
+  TData = Awaited<ReturnType<typeof adminServicePullVirtualRepo>>,
+  TError = RpcStatus
+>(
+  projectId: string,
+  params?: AdminServicePullVirtualRepoParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServicePullVirtualRepo>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServicePullVirtualRepoQueryOptions(
+    projectId,
+    params,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
 /**
  * @summary RevokeServiceAuthToken revoke the service auth token
  */

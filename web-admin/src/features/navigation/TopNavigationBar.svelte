@@ -8,19 +8,23 @@
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
-  import ShareButton from "../dashboards/share/ShareButton.svelte";
+  import ShareDashboardButton from "../dashboards/share/ShareDashboardButton.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
+  import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
-  import { isDashboardPage } from "./nav-utils";
+  import { isDashboardPage, isProjectPage } from "./nav-utils";
 
   $: organization = $page.params.organization;
+  $: project = $page.params.project;
+  $: onProjectPage = isProjectPage($page);
   $: onDashboardPage = isDashboardPage($page);
 
   const user = createAdminServiceGetCurrentUser();
 </script>
 
 <div
-  class="border-b grid items-center w-full justify-stretch pr-4"
+  class="grid items-center w-full justify-stretch pr-4 {!onProjectPage &&
+    'border-b'}"
   style:grid-template-columns="max-content auto max-content"
 >
   <Tooltip distance={2}>
@@ -46,8 +50,11 @@
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
+    {#if onProjectPage}
+      <ShareProjectButton {organization} {project} />
+    {/if}
     {#if onDashboardPage}
-      <ShareButton />
+      <ShareDashboardButton />
     {/if}
     {#if $user.isSuccess}
       {#if $user.data && $user.data.user}

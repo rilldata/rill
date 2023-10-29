@@ -2,11 +2,19 @@
   import { page } from "$app/stores";
   import ProjectDeploymentLogs from "@rilldata/web-admin/features/projects/ProjectDeploymentLogs.svelte";
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
+  import ProjectDeploymentStatus from "../../../../../features/projects/ProjectDeploymentStatus.svelte";
+  import ProjectGithubConnection from "./../../../../../features/projects/ProjectGithubConnection.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 </script>
 
 <VerticalScrollContainer>
-  <ProjectDeploymentLogs {organization} {project} />
+  <div class="pt-4 flex flex-col gap-y-6">
+    <div class="px-12 flex gap-x-9 items-start">
+      <ProjectDeploymentStatus {organization} {project} />
+      <ProjectGithubConnection {organization} {project} />
+    </div>
+    <ProjectDeploymentLogs {organization} {project} />
+  </div>
 </VerticalScrollContainer>

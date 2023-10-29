@@ -11,7 +11,7 @@
 
   export let content: string;
   export let extensions: Extension[] = [];
-  export let view: EditorView = undefined;
+  export let view: EditorView | undefined = undefined;
 
   let container: HTMLElement;
 

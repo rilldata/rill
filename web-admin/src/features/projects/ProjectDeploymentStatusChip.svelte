@@ -6,7 +6,7 @@
   import {
     getDashboardsForProject,
     useDashboardsStatus,
-  } from "@rilldata/web-admin/features/projects/dashboards";
+  } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -144,12 +144,10 @@
 
 {#if deploymentStatus}
   {#if iconOnly}
-    <div class="pb-0.5">
-      <svelte:component
-        this={currentStatusDisplay.icon}
-        {...currentStatusDisplay.iconProps}
-      />
-    </div>
+    <svelte:component
+      this={currentStatusDisplay.icon}
+      {...currentStatusDisplay.iconProps}
+    />
   {:else}
     <div
       class="flex space-x-1 items-center px-2 border rounded rounded-[20px] w-fit {currentStatusDisplay.wrapperClass} {iconOnly &&

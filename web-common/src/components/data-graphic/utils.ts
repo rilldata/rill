@@ -1,5 +1,6 @@
 import type { ScaleLinear, ScaleTime } from "d3-scale";
 import { bisector } from "d3-array";
+import { timeFormat } from "d3-time-format";
 import { area, curveLinear, curveStep, line } from "d3-shape";
 import { getContext } from "svelte";
 import { derived, writable } from "svelte/store";
@@ -302,8 +303,52 @@ export function createAdaptiveLineThicknessStore(yAccessor) {
 }
 
 // This is function equivalent of WithBisector
-export function bisectData(value, direction, accessor, data) {
+export function bisectData(
+  value: Date,
+  direction: "left" | "right" | "center",
+  accessor: string,
+  data: ArrayLike<unknown>,
+  returnPos = false
+) {
+  if (!data?.length) return;
   const bisect = bisector((d) => d[accessor])[direction];
 
+  if (returnPos) return value !== undefined ? bisect(data, value) : undefined;
   return value !== undefined ? data[bisect(data, value)] : undefined;
+}
+
+/** For a scale domain returns a formatter for axis label and super label */
+export function createTimeFormat(
+  scaleDomain: [Date, Date],
+  numberOfValues: number
+): [(d: Date) => string, (d: Date) => string] {
+  const diff =
+    Math.abs(scaleDomain[1]?.getTime() - scaleDomain[0]?.getTime()) / 1000;
+  if (!diff) return [timeFormat("%d %b"), timeFormat("%Y")];
+  const gap = diff / (numberOfValues - 1); // time gap between two consecutive values
+
+  // If the gap is less than a second, format in milliseconds
+  if (gap < 1) {
+    return [timeFormat("%M:%S.%L"), timeFormat("%H %d %b %Y")];
+  }
+  // If the gap is less than a minute, format in seconds
+  else if (gap < 60) {
+    return [timeFormat("%M:%S"), timeFormat("%H %d %b %Y")];
+  }
+  // If the gap is less than 24 hours, format in hours and minutes
+  else if (gap < 60 * 60 * 24) {
+    return [timeFormat("%H:%M"), timeFormat("%d %b %Y")];
+  }
+  // If the gap is less than 30 days, format in days
+  else if (gap < 60 * 60 * 24 * 30) {
+    return [timeFormat("%b %d"), timeFormat("%Y")];
+  }
+  // If the gap is less than a year, format in months
+  else if (gap < 60 * 60 * 24 * 365) {
+    return [timeFormat("%b"), timeFormat("%Y")];
+  }
+  // Else format in years
+  else {
+    return [timeFormat("%Y"), undefined];
+  }
 }

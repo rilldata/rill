@@ -1025,7 +1025,7 @@ func TestWatch(t *testing.T) {
 		WatchRepo: true,
 	})
 
-	ctrl, err := rt.Controller(id)
+	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
 
 	// Since we're using WatchRepo, we can't use testruntime.ReconcileParserAndWait.

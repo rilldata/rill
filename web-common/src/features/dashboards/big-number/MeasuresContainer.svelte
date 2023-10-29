@@ -46,11 +46,11 @@
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
-  $: metricsContainerHeight = $observedNode?.offsetHeight || 0;
+  $: metricsContainerHeight = ($observedNode?.offsetHeight as number) || 0;
 
   let measuresWrapper;
-  let measuresHeight = [];
-  let measureGridHeights = [];
+  let measuresHeight: number[] = [];
+  let measureGridHeights: number[] = [];
 
   let containerWidths = MEASURE_CONFIG.bigNumber.widthWithoutChart;
 
@@ -141,7 +141,7 @@
     }
   );
 
-  let measureNodes = [];
+  let measureNodes: HTMLDivElement[] = [];
 
   $: if (metricsContainerHeight && measureNodes.length) {
     calculateGridColumns();
@@ -194,7 +194,7 @@
           <!-- FIXME: I can't select the big number by the measure id. -->
           <MeasureBigNumber
             {measure}
-            value={$totalsQuery?.data?.data?.[measure.name]}
+            value={$totalsQuery?.data?.data?.[measure?.name ?? ""] ?? 0}
             withTimeseries={false}
             status={$totalsQuery?.isFetching
               ? EntityStatus.Running

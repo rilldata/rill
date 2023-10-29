@@ -120,6 +120,8 @@ export function ISODurationToTimePreset(
       return TimeRangePreset.LAST_14_DAYS;
     case "P4W":
       return TimeRangePreset.LAST_4_WEEKS;
+    case "P2W":
+      return TimeRangePreset.LAST_14_DAYS;
     case "inf":
       return TimeRangePreset.ALL_TIME;
     default:

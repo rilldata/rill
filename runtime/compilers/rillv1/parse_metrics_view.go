@@ -15,8 +15,8 @@ import (
 	_ "time/tzdata"
 )
 
-// metricsViewYAML is the raw structure of a MetricsView resource defined in YAML
-type metricsViewYAML struct {
+// MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
+type MetricsViewYAML struct {
 	commonYAML         `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title              string           `yaml:"title"`
 	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
@@ -64,7 +64,7 @@ type metricsViewYAML struct {
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	// Parse YAML
-	tmp := &metricsViewYAML{}
+	tmp := &MetricsViewYAML{}
 	if p.RillYAML != nil && !p.RillYAML.Defaults.MetricsViews.IsZero() {
 		if err := p.RillYAML.Defaults.MetricsViews.Decode(tmp); err != nil {
 			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
@@ -118,7 +118,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	names := make(map[string]bool)
 	columns := make(map[string]bool)
 	for i, dim := range tmp.Dimensions {
-		if dim.Ignore {
+		if dim == nil || dim.Ignore {
 			continue
 		}
 
@@ -151,7 +151,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 	measureCount := 0
 	for i, measure := range tmp.Measures {
-		if measure.Ignore {
+		if measure == nil || measure.Ignore {
 			continue
 		}
 
@@ -283,7 +283,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
 
 	for _, dim := range tmp.Dimensions {
-		if dim.Ignore {
+		if dim == nil || dim.Ignore {
 			continue
 		}
 
@@ -296,7 +296,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	for _, measure := range tmp.Measures {
-		if measure.Ignore {
+		if measure == nil || measure.Ignore {
 			continue
 		}
 

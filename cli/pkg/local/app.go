@@ -92,12 +92,14 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 	}
 
 	rtOpts := &runtime.Options{
-		ConnectionCacheSize:     100,
-		MetastoreConnector:      "metastore",
-		QueryCacheSizeBytes:     int64(datasize.MB * 100),
-		AllowHostAccess:         true,
-		SystemConnectors:        systemConnectors,
-		SecurityEngineCacheSize: 1000,
+		ConnectionCacheSize:          100,
+		MetastoreConnector:           "metastore",
+		QueryCacheSizeBytes:          int64(datasize.MB * 100),
+		AllowHostAccess:              true,
+		SystemConnectors:             systemConnectors,
+		SecurityEngineCacheSize:      1000,
+		ControllerLogBufferCapacity:  10000,
+		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 	}
 	rt, err := runtime.New(ctx, rtOpts, logger, client, email.New(email.NewNoopSender()))
 	if err != nil {
@@ -165,11 +167,11 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 				Config: olapCfg,
 			},
 		},
-		Variables:                        parsedVariables,
-		Annotations:                      map[string]string{},
-		EmbedCatalog:                     olapDriver == "duckdb",
-		WatchRepo:                        true,
-		ModelMaterializeDelaySeconds:     30,
+		Variables:    parsedVariables,
+		Annotations:  map[string]string{},
+		EmbedCatalog: olapDriver == "duckdb",
+		WatchRepo:    true,
+		// ModelMaterializeDelaySeconds:     30, // TODO: Enable when we support skipping it for the initial load
 		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}
 	err = rt.CreateInstance(ctx, inst)
@@ -232,12 +234,7 @@ func (a *App) AwaitInitialReconcile(strict bool) (err error) {
 		}
 	}()
 
-	err = a.Runtime.WaitUntilReady(a.Context, a.Instance.ID)
-	if err != nil {
-		return err
-	}
-
-	controller, err := a.Runtime.Controller(a.Instance.ID)
+	controller, err := a.Runtime.Controller(a.Context, a.Instance.ID)
 	if err != nil {
 		return err
 	}

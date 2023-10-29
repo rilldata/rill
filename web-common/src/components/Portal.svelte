@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy, onMount } from "svelte";
 
-  export let target: string = undefined;
+  export let target: string | undefined = undefined;
 
   let ref;
   let portal;

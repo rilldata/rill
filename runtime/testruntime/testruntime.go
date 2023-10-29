@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	// Load database drivers for testing.
+	_ "github.com/rilldata/rill/runtime/drivers/admin"
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -52,10 +53,12 @@ func New(t TestingT) *runtime.Runtime {
 				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
-		ConnectionCacheSize:     100,
-		QueryCacheSizeBytes:     int64(datasize.MB * 100),
-		SecurityEngineCacheSize: 100,
-		AllowHostAccess:         true,
+		ConnectionCacheSize:          100,
+		QueryCacheSizeBytes:          int64(datasize.MB * 100),
+		SecurityEngineCacheSize:      100,
+		ControllerLogBufferCapacity:  10000,
+		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
+		AllowHostAccess:              true,
 	}
 
 	logger := zap.NewNop()
@@ -119,13 +122,10 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
-	ctrl, err := rt.Controller(inst.ID)
+	ctrl, err := rt.Controller(context.Background(), inst.ID)
 	require.NoError(t, err)
 
 	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
-	require.NoError(t, err)
-
-	err = ctrl.WaitUntilReady(context.Background())
 	require.NoError(t, err)
 
 	err = ctrl.WaitUntilIdle(context.Background(), opts.WatchRepo)
@@ -184,13 +184,10 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
-	ctrl, err := rt.Controller(inst.ID)
+	ctrl, err := rt.Controller(context.Background(), inst.ID)
 	require.NoError(t, err)
 
 	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
-	require.NoError(t, err)
-
-	err = ctrl.WaitUntilReady(context.Background())
 	require.NoError(t, err)
 
 	err = ctrl.WaitUntilIdle(context.Background(), false)

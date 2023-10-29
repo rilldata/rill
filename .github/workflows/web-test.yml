@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - ".github/workflows/web-test.yml"
+      - "admin/**"
+      - "cli/**"
+      - "runtime/**"
       - "web-admin/**"
       - "web-auth/**"
       - "web-common/**"
@@ -21,15 +24,22 @@ jobs:
           filters: |
             admin:
               - ".github/workflows/web-test.yml"
+              - "admin/**"
+              - "cli/**"
+              - "runtime/**"
               - "web-admin/**"
             auth:
               - ".github/workflows/web-test.yml"
               - "web-auth/**"
             local:
               - ".github/workflows/web-test.yml"
+              - "cli/**"
+              - "runtime/**"
               - "web-local/**"
             common:
               - ".github/workflows/web-test.yml"
+              - "cli/**"
+              - "runtime/**"
               - "web-common/**"
 
       - name: Set up NodeJS
@@ -40,7 +50,7 @@ jobs:
       - name: Set up go for E2E
         uses: actions/setup-go@v3
         with:
-          go-version: 1.20.3
+          go-version: 1.21
       - name: go build cache
         uses: actions/cache@v3
         with:

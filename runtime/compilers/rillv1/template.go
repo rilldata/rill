@@ -94,9 +94,8 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 			}
 			config[key] = parts[1]
 			return "", nil
-		} else {
-			return "", fmt.Errorf(`"configure" takes one or two arguments`)
 		}
+		return "", fmt.Errorf(`"configure" takes one or two arguments`)
 	}
 	funcMap["dependency"] = func(parts ...string) (string, error) {
 		name, err := resourceNameFromArgs(parts...)
