@@ -1,45 +1,72 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { createAdminServiceCreateReport } from "@rilldata/web-admin/client";
   import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
+  import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
-  import * as yup from "yup";
   import { Button } from "../../../components/button";
-  import FormItemDatePicker from "../../../components/forms/FormItemDatePicker.svelte";
   import FormItemInput from "../../../components/forms/FormItemInput.svelte";
   import FormItemSelect from "../../../components/forms/FormItemSelect.svelte";
-  import FormItemTimePicker from "../../../components/forms/FormItemTimePicker.svelte";
-  import {
-    formatTime,
-    getNextQuarterHour,
-  } from "../../../components/forms/time-utils";
   import RecipientsFormElement from "./RecipientsFormElement.svelte";
 
-  export let metricViewName: string;
+  export let queryName: string;
+  export let queryArgsJson: string;
   export let open: boolean;
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
+  const createReport = createAdminServiceCreateReport();
+  const dispatch = createEventDispatcher();
+
   const { form, errors, handleSubmit, isSubmitting } = createForm({
     initialValues: {
-      reportName: "",
-      firstRunAtDate: new Date().toISOString().split("T")[0], // Today's date
-      firstRunAtTime: formatTime(getNextQuarterHour()), // Next quarter hour
-      firstRunAtTimezone: "UTC",
-      frequency: "Daily",
-      limit: "",
+      title: "",
+      // firstRunAtDate: new Date().toISOString().split("T")[0], // Today's date
+      // firstRunAtTime: formatTime(getNextQuarterHour()), // Next quarter hour
+      // firstRunAtTimezone: "UTC",
+      refreshCron: "* * * * *",
+      exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
+      exportLimit: "",
       recipients: [],
     },
-    validationSchema: yup.object({
-      reportName: yup.string().required("Required"),
-      firstRunAtDate: yup.string().required("Required"),
-      firstRunAtTime: yup.string().required("Required"),
-      firstRunAtTimezone: yup.string().required("Required"),
-      frequency: yup.string().required("Required"),
-      recipients: yup.string().required("Required"),
-    }),
+    // This isn't showing issues
+    // validationSchema: yup.object({
+    //   title: yup.string().required("Required"),
+    //   firstRunAtDate: yup.string().required("Required"),
+    //   firstRunAtTime: yup.string().required("Required"),
+    //   firstRunAtTimezone: yup.string().required("Required"),
+    //   refreshCron: yup.string().required("Required"),
+    //   recipients: yup.string().required("Required"),
+    // }),
     onSubmit: async (values) => {
-      console.log(`Submit form for ${metricViewName}`, values);
+      try {
+        await $createReport.mutateAsync({
+          organization,
+          project,
+          data: {
+            options: {
+              title: values.title,
+              refreshCron: values.refreshCron,
+              queryName: queryName,
+              queryArgsJson: queryArgsJson,
+              exportLimit: values.exportLimit || undefined,
+              exportFormat: values.exportFormat,
+              openProjectSubpath: "/-/reports", // It'd be nice for this to be the specific report's path, but we don't have that data at request time
+              recipients: values.recipients,
+            },
+          },
+        });
+        dispatch("close");
+        notifications.send({
+          message: "Report created",
+          type: "success",
+        });
+      } catch (e) {
+        // showing error below
+      }
     },
   });
 </script>
@@ -55,14 +82,14 @@
   >
     <span>Email recurring exports to recipients.</span>
     <FormItemInput
-      bind:value={$form["reportName"]}
-      error={$errors["reportName"]}
-      id="reportName"
-      label="Report name"
+      bind:value={$form["title"]}
+      error={$errors["title"]}
+      id="title"
+      label="Report title"
       placeholder="My report"
     />
-    <!-- error={$errors["firstRunAt"]} -->
-    <div class="flex items-end gap-x-2 w-full">
+    <!-- Hide while backend doesn't support a "firstRunAt" time -->
+    <!-- <div class="flex items-end gap-x-2 w-full">
       <FormItemDatePicker
         bind:value={$form["firstRunAtDate"]}
         id="firstRunAtDate"
@@ -79,19 +106,29 @@
         label=""
         options={["UTC"]}
       />
-    </div>
+    </div> -->
     <FormItemSelect
-      bind:value={$form["frequency"]}
-      id="frequency"
+      bind:value={$form["refreshCron"]}
+      id="refreshCron"
       label="Frequency"
       options={["Daily", "Weekdays", "Weekly", "Monthly"]}
     />
+    <FormItemSelect
+      bind:value={$form["exportFormat"]}
+      id="exportFormat"
+      label="Format"
+      options={[
+        V1ExportFormat.EXPORT_FORMAT_CSV,
+        V1ExportFormat.EXPORT_FORMAT_PARQUET,
+        V1ExportFormat.EXPORT_FORMAT_XLSX,
+      ]}
+    />
     <FormItemInput
-      bind:value={$form["limit"]}
-      error={$errors["limit"]}
-      id="limit"
+      bind:value={$form["exportLimit"]}
+      error={$errors["exportLimit"]}
+      id="exportLimit"
       label="Row limit"
-      placeholder="1000 (rows)"
+      placeholder="1000"
       optional
     />
     <RecipientsFormElement
@@ -101,7 +138,10 @@
     />
   </form>
   <svelte:fragment slot="footer">
-    <div class="flex gap-x-2">
+    <div class="flex items-center gap-x-2">
+      {#if $createReport.isError}
+        <div class="text-red-500">{$createReport.error.message}</div>
+      {/if}
       <div class="grow" />
       <Button type="secondary" on:click={close}>Cancel</Button>
       <Button

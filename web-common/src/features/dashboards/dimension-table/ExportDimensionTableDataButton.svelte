@@ -7,8 +7,13 @@
     createQueryServiceExport,
     V1ExportFormat,
   } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { get } from "svelte/store";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
+  import { getQuerySortType } from "../leaderboard/leaderboard-utils";
+  import { SortDirection } from "../proto-state/derived-types";
   import CreateScheduledReportModal from "../scheduled-reports/CreateScheduledReportModal.svelte";
+  import { useDashboardStore } from "../stores/dashboard-stores";
   import exportToplist from "./export-toplist";
 
   export let metricViewName: string;
@@ -16,6 +21,7 @@
   let exportMenuOpen = false;
   let showScheduledReportDialog = false;
 
+  const dashboardStore = useDashboardStore(metricViewName);
   const timeControlStore = useTimeControlStore(getStateManagers());
 
   const exportDash = createQueryServiceExport();
@@ -87,13 +93,38 @@
         showScheduledReportDialog = true;
       }}
     >
-      Export on schedule
+      Create scheduled report...
     </MenuItem>
   </Menu>
 </WithTogglableFloatingElement>
 
 <CreateScheduledReportModal
+  queryName="MetricsViewComparison"
+  queryArgsJson={JSON.stringify({
+    instanceId: get(runtime).instanceId,
+    metricsViewName: metricViewName,
+    dimension: {
+      name: $dashboardStore.selectedDimensionName,
+    },
+    measures: $dashboardStore.selectedMeasureNames, // this is wrong; match dimension format
+    timeRange: {
+      start: $timeControlStore.timeStart,
+      end: $timeControlStore.timeEnd,
+    },
+    comparisonTimeRange: {
+      start: $timeControlStore.comparisonTimeStart,
+      end: $timeControlStore.comparisonTimeEnd,
+    },
+    sort: [
+      {
+        name: $dashboardStore.leaderboardMeasureName,
+        desc: $dashboardStore.sortDirection === SortDirection.DESCENDING,
+        type: getQuerySortType($dashboardStore.dashboardSortType),
+      },
+    ],
+    filter: $dashboardStore.filters,
+    offset: "0",
+  })}
   open={showScheduledReportDialog}
   on:close={() => (showScheduledReportDialog = false)}
-  {metricViewName}
 />
