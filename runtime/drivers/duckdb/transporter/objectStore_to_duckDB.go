@@ -140,26 +140,14 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 	a := newAppender(t.to, dbSink, srcCfg.AllowSchemaRelaxation, t.logger, func(files []string) (string, error) {
 		return rewriteSQL(ast, files)
 	})
-	// if ingesting all batches in one go, we need to keep the files so that iterator doesn't delete in next iteration
-	iterator.KeepFilesUntilClose(srcCfg.BatchSizeBytes == -1)
 	appendToTable := false
 	for {
-		files := make([]string, 0)
-		for {
-			batch, err := iterator.Next()
-			if err != nil {
-				if errors.Is(err, io.EOF) {
-					break
-				}
-				return err
-			}
-			files = append(files, batch...)
-			if srcCfg.BatchSizeBytes != -1 { // ingest only one batch so exit loop
+		files, err := iterator.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
 				break
 			}
-		}
-		if len(files) == 0 { // no more files to process
-			return nil
+			return err
 		}
 
 		st := time.Now()
@@ -185,6 +173,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 		opts.Progress.Observe(size, drivers.ProgressUnitByte)
 		appendToTable = true
 	}
+	return nil
 }
 
 type appender struct {

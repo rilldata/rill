@@ -149,7 +149,7 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.
 
 	// For cases where there's only one file, we want to prefetch it to return the error early (from NewIterator instead of Next)
 	if len(objects) == 1 {
-		it.KeepFilesUntilClose(true)
+		it.opts.KeepFilesUntilClose = true
 		batch, err := it.Next()
 		if err != nil {
 			it.Close()
@@ -159,10 +159,6 @@ func NewIterator(ctx context.Context, bucket *blob.Bucket, opts Options, l *zap.
 	}
 
 	return it, nil
-}
-
-func (it *blobIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
-	it.opts.KeepFilesUntilClose = keepFilesUntilClose
 }
 
 func (it *blobIterator) Close() error {
@@ -447,10 +443,6 @@ type prefetchedIterator struct {
 	batch      []string
 	done       bool
 	underlying *blobIterator
-}
-
-func (it *prefetchedIterator) KeepFilesUntilClose(keep bool) {
-	// Nothing to do – already set on the underlying iterator
 }
 
 func (it *prefetchedIterator) Close() error {

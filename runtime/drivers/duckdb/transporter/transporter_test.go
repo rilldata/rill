@@ -45,9 +45,6 @@ func (m *mockIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
 	return 0, false
 }
 
-func (m *mockIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
-}
-
 func (m *mockIterator) Format() string {
 	return ""
 }
