@@ -6,12 +6,17 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 type MetricsViewComparison struct {
@@ -216,25 +221,6 @@ func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, ol
 	return nil
 }
 
-func timeRangeClause(timeRange *runtimev1.TimeRange, td string, args *[]any) string {
-	var clause string
-	if timeRange == nil {
-		return clause
-	}
-
-	if timeRange.Start != nil {
-		clause += fmt.Sprintf(" AND %s >= ?", td)
-		*args = append(*args, timeRange.Start.AsTime())
-	}
-
-	if timeRange.End != nil {
-		clause += fmt.Sprintf(" AND %s < ?", td)
-		*args = append(*args, timeRange.End.AsTime())
-	}
-
-	return clause
-}
-
 func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
 	if err != nil {
@@ -273,7 +259,12 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	args := []any{}
 	td := safeName(mv.TimeDimension)
 
-	baseWhereClause += timeRangeClause(q.TimeRange, td, &args)
+	trc, err := timeRangeClause(q.TimeRange, dialect, td, &args)
+	if err != nil {
+		return "", nil, err
+	}
+	baseWhereClause += trc
+
 	if q.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
@@ -395,7 +386,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	td := safeName(mv.TimeDimension)
 
-	baseWhereClause += timeRangeClause(q.TimeRange, td, &args)
+	trc, err := timeRangeClause(q.TimeRange, dialect, td, &args)
+	if err != nil {
+		return "", nil, err
+	}
+	baseWhereClause += trc
+
 	if q.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
@@ -406,7 +402,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		args = append(args, clauseArgs...)
 	}
 
-	comparisonWhereClause += timeRangeClause(q.ComparisonTimeRange, td, &args)
+	trc, err = timeRangeClause(q.ComparisonTimeRange, dialect, td, &args)
+	if err != nil {
+		return "", nil, err
+	}
+	comparisonWhereClause += trc
+
 	if q.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
@@ -795,6 +796,77 @@ func (q *MetricsViewComparison) generateFilename() string {
 		filename += "_filtered"
 	}
 	return filename
+}
+
+// TODO: a) Ensure correct time zone handling, b) Implement support for tr.RoundToGrain
+// (Maybe consider pushing all this logic into the SQL instead?)
+func timeRangeClause(tr *runtimev1.TimeRange, dialect drivers.Dialect, timeCol string, args *[]any) (string, error) {
+	var clause string
+	if isTimeRangeNil(tr) {
+		return clause, nil
+	}
+
+	tz := time.UTC
+	if tr.TimeZone != "" {
+		var err error
+		tz, err = time.LoadLocation(tr.TimeZone)
+		if err != nil {
+			return "", fmt.Errorf("invalid time_range.time_zone %q: %w", tr.TimeZone, err)
+		}
+	}
+
+	var start, end time.Time
+	if tr.Start != nil {
+		start = tr.Start.AsTime().In(tz)
+	}
+	if tr.End != nil {
+		end = tr.End.AsTime().In(tz)
+	}
+
+	if tr.IsoDuration != "" {
+		if !start.IsZero() && !end.IsZero() {
+			return "", fmt.Errorf("only two of time_range.{start,end,iso_duration} can be specified")
+		}
+
+		d, err := duration.ParseISO8601(tr.IsoDuration)
+		if err != nil {
+			return "", fmt.Errorf("invalid iso_duration %q: %w", tr.IsoDuration, err)
+		}
+
+		if !start.IsZero() {
+			end = d.Add(start)
+		} else if !end.IsZero() {
+			start = d.Sub(end)
+		} else {
+			return "", fmt.Errorf("one of time_range.{start,end} must be specified with time_range.iso_duration")
+		}
+	}
+
+	if tr.IsoOffset != "" {
+		d, err := duration.ParseISO8601(tr.IsoOffset)
+		if err != nil {
+			return "", fmt.Errorf("invalid iso_offset %q: %w", tr.IsoOffset, err)
+		}
+
+		if !start.IsZero() {
+			start = d.Add(start)
+		}
+		if !end.IsZero() {
+			end = d.Add(end)
+		}
+	}
+
+	if !start.IsZero() {
+		clause += fmt.Sprintf(" AND %s >= ?", timeCol)
+		*args = append(*args, start)
+	}
+
+	if !end.IsZero() {
+		clause += fmt.Sprintf(" AND %s < ?", timeCol)
+		*args = append(*args, end)
+	}
+
+	return clause, nil
 }
 
 func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {

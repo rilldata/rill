@@ -72,7 +72,7 @@
     const cellBgColor = getClassForCell(
       isScrubbed ? "scrubbed" : "default",
       rowIdxHover,
-      colIdxHover || highlightedCol,
+      colIdxHover ?? highlightedCol,
       data.y,
       data.x
     );
@@ -154,7 +154,7 @@
     const cellBgColor = getClassForCell(
       "fixed",
       rowIdxHover,
-      colIdxHover || highlightedCol,
+      colIdxHover ?? highlightedCol,
       y,
       x - data?.fixedColCount
     );
@@ -269,12 +269,19 @@
       setTimeout(pivot.draw, 0);
     }
   }
+
+  // Add a CSS variable to control the cursor style as table element is not
+  // directly available
+  $: cssVarStyles = `--cursor: ${
+    comparing === "dimension" ? "pointer" : "default"
+  }`;
 </script>
 
 <div
   on:mouseleave={resetHighlight}
   style:height={comparing === "none" ? "120px" : "calc(100% - 50px)"}
-  class="w-full relative {comparing === 'dimension' && 'cursor-pointer'}"
+  style={cssVarStyles}
+  class="w-full relative"
 >
   <Pivot
     bind:this={pivot}
@@ -298,10 +305,13 @@
 </div>
 
 <style>
+  /* Define cursor styles */
+  :global(regular-table table) {
+    cursor: var(--cursor, default);
+  }
   :global(regular-table table tbody tr:first-child, regular-table thead) {
     cursor: default;
   }
-
   :global(regular-table div[sortable="true"]) {
     cursor: pointer;
   }

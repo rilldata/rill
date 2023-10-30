@@ -902,7 +902,6 @@ refresh:
 
 query:
   name: MetricsViewToplist
-  time_range: P2W
   args:
     metrics_view: mv1
 
@@ -913,6 +912,9 @@ export:
 email:
   recipients:
     - benjamin@example.com
+
+annotations:
+  foo: bar
 `,
 	})
 
@@ -928,10 +930,10 @@ email:
 				},
 				QueryName:       "MetricsViewToplist",
 				QueryArgsJson:   `{"metrics_view":"mv1"}`,
-				QueryTimeRange:  "P2W",
 				ExportFormat:    runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 				ExportLimit:     10000,
 				EmailRecipients: []string{"jane@example.com"},
+				Annotations:     map[string]string{"foo": "bar"},
 			},
 		},
 	}

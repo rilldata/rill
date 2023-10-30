@@ -1466,27 +1466,22 @@ export class ReportSpec extends Message<ReportSpec> {
   queryArgsJson = "";
 
   /**
-   * @generated from field: string query_time_range = 7;
-   */
-  queryTimeRange = "";
-
-  /**
-   * @generated from field: uint64 export_limit = 8;
+   * @generated from field: uint64 export_limit = 7;
    */
   exportLimit = protoInt64.zero;
 
   /**
-   * @generated from field: rill.runtime.v1.ExportFormat export_format = 9;
+   * @generated from field: rill.runtime.v1.ExportFormat export_format = 8;
    */
   exportFormat = ExportFormat.UNSPECIFIED;
 
   /**
-   * @generated from field: repeated string email_recipients = 10;
+   * @generated from field: repeated string email_recipients = 9;
    */
   emailRecipients: string[] = [];
 
   /**
-   * @generated from field: map<string, string> annotations = 11;
+   * @generated from field: map<string, string> annotations = 10;
    */
   annotations: { [key: string]: string } = {};
 
@@ -1504,11 +1499,10 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 4, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "query_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
-    { no: 9, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
-    { no: 10, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 11, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 7, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
+    { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
+    { no: 9, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {

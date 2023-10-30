@@ -31,6 +31,7 @@
   export let status: EntityStatus;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
+  export let hoveredMeasure: string | undefined = undefined;
 
   const dispatch = createEventDispatcher();
 
@@ -68,6 +69,8 @@
 </script>
 
 <button
+  on:mouseenter={() => (hoveredMeasure = measure?.name)}
+  on:mouseleave={() => (hoveredMeasure = undefined)}
   on:click={() => dispatch("expand-measure")}
   class="big-number flex flex-col px-2 text-left rounded
   {isMeasureExpanded ? 'pointer-events-none' : 'hover:bg-gray-100'}
@@ -179,9 +182,3 @@
     </div>
   </div>
 </button>
-
-<style>
-  :global(.big-number:hover + .time-series-body) {
-    border-top: 1px solid var(--color-gray-200);
-  }
-</style>
