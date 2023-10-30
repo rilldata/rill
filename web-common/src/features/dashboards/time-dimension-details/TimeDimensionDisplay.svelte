@@ -6,6 +6,7 @@
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import {
     chartInteractionColumn,
     tableInteractionStore,
@@ -114,4 +115,19 @@
       metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE)}
     on:highlight={highlightCell}
   />
+{/if}
+
+{#if $timeDimensionDataStore?.comparing === "none"}
+  <!-- Get height by subtracting table and header heights -->
+  <div class="w-full" style:height="calc(100% - 200px)">
+    <div class="flex flex-col items-center justify-center h-full text-sm">
+      <Compare size="32px" />
+      <div class="font-semibold text-gray-600 mt-1">
+        No comparison dimension selected
+      </div>
+      <div class="text-gray-600">
+        To see more values, select a comparison dimension above.
+      </div>
+    </div>
+  </div>
 {/if}

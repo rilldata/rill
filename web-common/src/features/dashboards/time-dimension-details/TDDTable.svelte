@@ -273,7 +273,7 @@
 
 <div
   on:mouseleave={resetHighlight}
-  style:height="calc(100% - 50px)"
+  style:height={comparing === "none" ? "120px" : "calc(100% - 50px)"}
   class="w-full relative {comparing === 'dimension' && 'cursor-pointer'}"
 >
   <Pivot
