@@ -50,8 +50,9 @@
   }
 </script>
 
-<div>
-  <label for={id} class="text-gray-600">{label ?? ""}</label>
+<div class="flex flex-col gap-y-2">
+  <label for={id} class="text-gray-800 text-sm font-medium">{label ?? ""}</label
+  >
   <Menu>
     <MenuButton
       className="w-full border px-3 py-1 h-8 flex gap-x-2 justify-between items-center"
