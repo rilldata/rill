@@ -58,9 +58,10 @@ function prepareDimensionData(
   const measureName = measure?.name;
   const validPercentOfTotal = measure?.validPercentOfTotal;
 
-  const columnHeaderData = (
-    isAllTime ? totalsData?.slice(1) : totalsData?.slice(1, -1)
-  )?.map((v) => [{ value: v.ts }]);
+  const totalsTableData = isAllTime
+    ? totalsData?.slice(1)
+    : totalsData?.slice(1, -1);
+  const columnHeaderData = totalsTableData?.map((v) => [{ value: v.ts }]);
 
   const columnCount = columnHeaderData?.length;
 
@@ -71,7 +72,7 @@ function prepareDimensionData(
     { value: "Total" },
     {
       value: formatter(total),
-      spark: createSparkline(totalsData, (v) => v[measureName]),
+      spark: createSparkline(totalsTableData, (v) => v[measureName]),
     },
   ];
 
@@ -110,7 +111,7 @@ function prepareDimensionData(
   );
 
   let body = [
-    (isAllTime ? totalsData?.slice(1) : totalsData?.slice(1, -1))?.map((v) =>
+    totalsTableData?.map((v) =>
       v[measureName] ? formatter(v[measureName]) : null
     ) || [],
   ];
@@ -159,28 +160,26 @@ function prepareTimeData(
   if (!data) return;
 
   const formatter = safeFormatter(createMeasureValueFormatter(measure));
-  const measureName = measure?.name;
+  const measureName = measure?.name ?? "";
 
-  const columnHeaderData = (
-    isAllTime ? data?.slice(1) : data?.slice(1, -1)
-  )?.map((v) => [{ value: v.ts }]);
+  /** Strip out data points out of chart view */
+  const tableData = isAllTime ? data?.slice(1) : data?.slice(1, -1);
+  const columnHeaderData = tableData?.map((v) => [{ value: v.ts }]);
 
   const columnCount = columnHeaderData?.length;
 
-  let rowHeaderData = [];
+  let rowHeaderData: unknown[] = [];
   rowHeaderData.push([
     { value: "Total" },
     {
       value: formatter(total),
-      spark: createSparkline(data, (v) => v[measureName]),
+      spark: createSparkline(tableData, (v) => v[measureName]),
     },
   ]);
 
-  const body = [];
+  const body: unknown[] = [];
   body.push(
-    (isAllTime ? data?.slice(1) : data?.slice(1, -1))?.map((v) =>
-      v[measureName] ? formatter(v[measureName]) : null
-    )
+    tableData?.map((v) => (v[measureName] ? formatter(v[measureName]) : null))
   );
 
   if (hasTimeComparison) {
@@ -189,14 +188,17 @@ function prepareTimeData(
         { value: currentLabel },
         {
           value: formatter(total),
-          spark: createSparkline(data, (v) => v[measureName]),
+          spark: createSparkline(tableData, (v) => v[measureName]),
         },
       ],
       [
         { value: comparisonLabel },
         {
           value: formatter(comparisonTotal),
-          spark: createSparkline(data, (v) => v[`comparison.${measureName}`]),
+          spark: createSparkline(
+            tableData,
+            (v) => v[`comparison.${measureName}`]
+          ),
         },
       ],
       [{ value: "Percentage Change" }],
@@ -205,13 +207,11 @@ function prepareTimeData(
 
     // Push current range
     body.push(
-      (isAllTime ? data?.slice(1) : data?.slice(1, -1))?.map((v) =>
-        v[measureName] ? formatter(v[measureName]) : null
-      )
+      tableData?.map((v) => (v[measureName] ? formatter(v[measureName]) : null))
     );
 
     body.push(
-      data?.map((v) =>
+      tableData?.map((v) =>
         v[`comparison.${measureName}`]
           ? formatter(v[`comparison.${measureName}`])
           : null
@@ -220,13 +220,14 @@ function prepareTimeData(
 
     // Push percentage change
     body.push(
-      data?.map((v) => {
+      tableData?.map((v) => {
         const comparisonValue = v[`comparison.${measureName}`];
         const currentValue = v[measureName];
         const comparisonPercChange =
           comparisonValue && currentValue !== undefined && currentValue !== null
             ? (currentValue - comparisonValue) / comparisonValue
-            : undefined;
+            : null;
+        if (comparisonPercChange === null) return null;
         return numberPartsToString(
           formatMeasurePercentageDifference(comparisonPercChange)
         );
@@ -235,14 +236,15 @@ function prepareTimeData(
 
     // Push absolute change
     body.push(
-      data?.map((v) => {
+      tableData?.map((v, i) => {
         const comparisonValue = v[`comparison.${measureName}`];
         const currentValue = v[measureName];
         const change =
           comparisonValue && currentValue !== undefined && currentValue !== null
             ? currentValue - comparisonValue
-            : undefined;
+            : null;
 
+        if (change === null) return null;
         return formatter(change);
       })
     );
