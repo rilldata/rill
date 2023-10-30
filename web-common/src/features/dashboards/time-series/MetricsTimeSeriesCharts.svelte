@@ -29,6 +29,10 @@
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -69,6 +73,9 @@
 
   $: totals = $timeSeriesDataStore.total;
   $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
+
+  // Track the big number currently being hovered
+  let hoveredMeasure;
 
   let scrubStart;
   let scrubEnd;
@@ -234,12 +241,14 @@
     {#each renderedMeasures as measure (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = totals?.[measure.name] ?? 0}
+      {@const isBeingHovered = hoveredMeasure === measure.name}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
       {@const comparisonPercChange =
         comparisonValue && bigNum !== undefined && bigNum !== null
           ? (bigNum - comparisonValue) / comparisonValue
           : undefined}
       <MeasureBigNumber
+        bind:hoveredMeasure
         {measure}
         value={bigNum}
         isMeasureExpanded={!!expandedMeasureName}
@@ -259,7 +268,7 @@
       />
 
       <div
-        class="time-series-body rounded peer-hover:bg-gray-100"
+        class="time-series-body rounded {isBeingHovered ? 'bg-gray-100' : ''}"
         style:height="125px"
       >
         {#if $timeSeriesDataStore?.isError}
@@ -291,12 +300,21 @@
                 );
               }}
             />
-            <div
-              style="display: var(--expand, none)"
-              class="absolute right-0 top-0 p-2"
-            >
-              <Expand />
-            </div>
+
+            {#if isBeingHovered}
+              <Tooltip active={isBeingHovered} distance={4} location="right">
+                <TooltipContent slot="tooltip-content" maxWidth="280px">
+                  <TooltipShortcutContainer>
+                    <div>Expand Measure</div>
+                    <Shortcut>Click</Shortcut>
+                  </TooltipShortcutContainer>
+                </TooltipContent>
+
+                <div class="absolute right-0 top-0 p-2">
+                  <Expand />
+                </div>
+              </Tooltip>
+            {/if}
           </div>
         {:else}
           <div class="flex items-center justify-center w-24">
@@ -307,10 +325,3 @@
     {/each}
   {/if}
 </TimeSeriesChartContainer>
-
-<style>
-  :global(.big-number:hover + .time-series-body) {
-    background-color: rgb(243 244 246);
-    --expand: "block";
-  }
-</style>
