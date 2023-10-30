@@ -72,7 +72,7 @@
     const cellBgColor = getClassForCell(
       isScrubbed ? "scrubbed" : "default",
       rowIdxHover,
-      colIdxHover === undefined ? highlightedCol : colIdxHover,
+      colIdxHover ?? highlightedCol,
       data.y,
       data.x
     );
@@ -154,7 +154,7 @@
     const cellBgColor = getClassForCell(
       "fixed",
       rowIdxHover,
-      colIdxHover === undefined ? highlightedCol : colIdxHover,
+      colIdxHover ?? highlightedCol,
       y,
       x - data?.fixedColCount
     );
@@ -269,6 +269,9 @@
       setTimeout(pivot.draw, 0);
     }
   }
+
+  // Add a CSS variable to control the cursor style as table element is not
+  // directly available
   $: cssVarStyles = `--cursor: ${
     comparing === "dimension" ? "pointer" : "default"
   }`;
