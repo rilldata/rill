@@ -153,6 +153,17 @@ message MetricsViewSpec {
     repeated FieldConditionV2 include = 3;
     repeated FieldConditionV2 exclude = 4;
   }
+  enum DefaultComparisonMode {
+    DEFAULT_COMPARISON_MODE_UNSPECIFIED = 0;
+    DEFAULT_COMPARISON_MODE_NONE = 1;
+    DEFAULT_COMPARISON_MODE_TIME = 2;
+    DEFAULT_COMPARISON_MODE_DIMENSION = 3;
+  }
+  // DefaultComparison settings for comparison controls.
+  message DefaultComparison {
+    DefaultComparisonMode mode = 1;
+    string dimension = 2;
+  }
   // Connector containing the table
   string connector = 1;
   // Name of the table the metrics view is based on
@@ -179,6 +190,7 @@ message MetricsViewSpec {
   uint32 first_day_of_week = 12;
   // Month number to use as the base for time aggregations by year. Defaults to 1 (January).
   uint32 first_month_of_year = 13;
+  optional DefaultComparison default_comparison = 14;
 }
 
 message MetricsViewState {

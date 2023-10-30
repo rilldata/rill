@@ -942,6 +942,11 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   firstMonthOfYear = 0;
 
+  /**
+   * @generated from field: optional rill.runtime.v1.MetricsViewSpec.DefaultComparison default_comparison = 14;
+   */
+  defaultComparison?: MetricsViewSpec_DefaultComparison;
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -963,6 +968,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 11, name: "security", kind: "message", T: MetricsViewSpec_SecurityV2 },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 14, name: "default_comparison", kind: "message", T: MetricsViewSpec_DefaultComparison, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {
@@ -981,6 +987,38 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     return proto3.util.equals(MetricsViewSpec, a, b);
   }
 }
+
+/**
+ * @generated from enum rill.runtime.v1.MetricsViewSpec.DefaultComparisonMode
+ */
+export enum MetricsViewSpec_DefaultComparisonMode {
+  /**
+   * @generated from enum value: DEFAULT_COMPARISON_MODE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: DEFAULT_COMPARISON_MODE_NONE = 1;
+   */
+  NONE = 1,
+
+  /**
+   * @generated from enum value: DEFAULT_COMPARISON_MODE_TIME = 2;
+   */
+  TIME = 2,
+
+  /**
+   * @generated from enum value: DEFAULT_COMPARISON_MODE_DIMENSION = 3;
+   */
+  DIMENSION = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(MetricsViewSpec_DefaultComparisonMode)
+proto3.util.setEnumType(MetricsViewSpec_DefaultComparisonMode, "rill.runtime.v1.MetricsViewSpec.DefaultComparisonMode", [
+  { no: 0, name: "DEFAULT_COMPARISON_MODE_UNSPECIFIED" },
+  { no: 1, name: "DEFAULT_COMPARISON_MODE_NONE" },
+  { no: 2, name: "DEFAULT_COMPARISON_MODE_TIME" },
+  { no: 3, name: "DEFAULT_COMPARISON_MODE_DIMENSION" },
+]);
 
 /**
  * Dimensions are columns to filter and group by
@@ -1219,6 +1257,51 @@ export class MetricsViewSpec_SecurityV2_FieldConditionV2 extends Message<Metrics
 
   static equals(a: MetricsViewSpec_SecurityV2_FieldConditionV2 | PlainMessage<MetricsViewSpec_SecurityV2_FieldConditionV2> | undefined, b: MetricsViewSpec_SecurityV2_FieldConditionV2 | PlainMessage<MetricsViewSpec_SecurityV2_FieldConditionV2> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_SecurityV2_FieldConditionV2, a, b);
+  }
+}
+
+/**
+ * DefaultComparison settings for comparison controls.
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.DefaultComparison
+ */
+export class MetricsViewSpec_DefaultComparison extends Message<MetricsViewSpec_DefaultComparison> {
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewSpec.DefaultComparisonMode mode = 1;
+   */
+  mode = MetricsViewSpec_DefaultComparisonMode.UNSPECIFIED;
+
+  /**
+   * @generated from field: string dimension = 2;
+   */
+  dimension = "";
+
+  constructor(data?: PartialMessage<MetricsViewSpec_DefaultComparison>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.DefaultComparison";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "mode", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_DefaultComparisonMode) },
+    { no: 2, name: "dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_DefaultComparison {
+    return new MetricsViewSpec_DefaultComparison().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_DefaultComparison {
+    return new MetricsViewSpec_DefaultComparison().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_DefaultComparison {
+    return new MetricsViewSpec_DefaultComparison().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_DefaultComparison | PlainMessage<MetricsViewSpec_DefaultComparison> | undefined, b: MetricsViewSpec_DefaultComparison | PlainMessage<MetricsViewSpec_DefaultComparison> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_DefaultComparison, a, b);
   }
 }
 

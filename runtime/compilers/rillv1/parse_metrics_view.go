@@ -6,29 +6,29 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	// Load IANA time zone data
+	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
+	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
 )
 
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
 	commonYAML         `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title              string           `yaml:"title"`
-	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
-	Description        string           `yaml:"description"`
-	Model              string           `yaml:"model"`
-	Table              string           `yaml:"table"`
-	TimeDimension      string           `yaml:"timeseries"`
-	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
-	DefaultTimeRange   string           `yaml:"default_time_range"`
-	AvailableTimeZones []string         `yaml:"available_time_zones"`
-	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
-	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
+	Title              string   `yaml:"title"`
+	DisplayName        string   `yaml:"display_name"` // Backwards compatibility
+	Description        string   `yaml:"description"`
+	Model              string   `yaml:"model"`
+	Table              string   `yaml:"table"`
+	TimeDimension      string   `yaml:"timeseries"`
+	SmallestTimeGrain  string   `yaml:"smallest_time_grain"`
+	DefaultTimeRange   string   `yaml:"default_time_range"`
+	AvailableTimeZones []string `yaml:"available_time_zones"`
+	FirstDayOfWeek     uint32   `yaml:"first_day_of_week"`
+	FirstMonthOfYear   uint32   `yaml:"first_month_of_year"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string
@@ -59,6 +59,16 @@ type MetricsViewYAML struct {
 			Condition string `yaml:"if"`
 		}
 	}
+	DefaultComparison *struct {
+		Mode      string `yaml:"mode"`
+		Dimension string `yaml:"dimension"`
+	} `yaml:"default_comparison"`
+}
+
+var validComparisonModes = map[string]runtimev1.MetricsViewSpec_DefaultComparisonMode{
+	"none":      runtimev1.MetricsViewSpec_DEFAULT_COMPARISON_MODE_NONE,
+	"time":      runtimev1.MetricsViewSpec_DEFAULT_COMPARISON_MODE_TIME,
+	"dimension": runtimev1.MetricsViewSpec_DEFAULT_COMPARISON_MODE_DIMENSION,
 }
 
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
@@ -178,6 +188,24 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 	if measureCount == 0 {
 		return fmt.Errorf("must define at least one measure")
+	}
+
+	if tmp.DefaultComparison != nil {
+		if tmp.DefaultComparison.Mode == "" {
+			tmp.DefaultComparison.Mode = "none"
+		} else {
+			tmp.DefaultComparison.Mode = strings.ToLower(tmp.DefaultComparison.Mode)
+			if _, ok := validComparisonModes[tmp.DefaultComparison.Mode]; !ok {
+				return fmt.Errorf("invalid mode: %s. allowed values: %s",
+					tmp.DefaultComparison.Mode, strings.Join(maps.Keys(validComparisonModes), ","))
+			}
+		}
+
+		if tmp.DefaultComparison.Dimension != "" {
+			if ok := names[tmp.DefaultComparison.Dimension]; !ok {
+				return fmt.Errorf("default comparison dimension %s doesnt exist", tmp.DefaultComparison.Dimension)
+			}
+		}
 	}
 
 	if tmp.Security != nil {
@@ -309,6 +337,15 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			FormatD3:            measure.FormatD3,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
+	}
+
+	if tmp.DefaultComparison != nil {
+		spec.DefaultComparison = &runtimev1.MetricsViewSpec_DefaultComparison{
+			Mode: validComparisonModes[tmp.DefaultComparison.Mode],
+		}
+		if tmp.DefaultComparison.Dimension != "" {
+			spec.DefaultComparison.Dimension = tmp.DefaultComparison.Dimension
+		}
 	}
 
 	if tmp.Security != nil {

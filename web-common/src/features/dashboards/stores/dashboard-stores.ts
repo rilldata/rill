@@ -191,6 +191,14 @@ const metricViewReducers = {
       for (const key in partial) {
         metricsExplorer[key] = partial[key];
       }
+      // this hack is needed since what is shown for comparison is not a single source
+      // TODO: use an enum and get rid of this
+      if (!partial.showTimeComparison) {
+        metricsExplorer.showTimeComparison = false;
+      }
+      if (!partial.selectedComparisonDimension) {
+        metricsExplorer.selectedComparisonDimension = undefined;
+      }
       metricsExplorer.dimensionFilterExcludeMode =
         includeExcludeModeFromFilters(partial.filters);
     });

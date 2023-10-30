@@ -13,12 +13,13 @@ import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges
 import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type {
   V1ColumnTimeRangeResponse,
-  V1MetricsView,
+  V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import { MetricsViewSpecDefaultComparisonMode } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
 export function setDefaultTimeRange(
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
   fullTimeRange: V1ColumnTimeRangeResponse | undefined
 ) {
@@ -42,11 +43,33 @@ export function setDefaultTimeRange(
   // TODO: refactor all sub methods and call setSelectedScrubRange here
   metricsExplorer.selectedScrubRange = undefined;
   metricsExplorer.lastDefinedScrubRange = undefined;
-  setDefaultComparisonTimeRange(metricsView, metricsExplorer, fullTimeRange);
+}
+
+function setDefaultComparison(
+  metricsView: V1MetricsViewSpec,
+  metricsExplorer: MetricsExplorerEntity,
+  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+) {
+  if (!metricsView.defaultComparison) return;
+
+  switch (metricsView.defaultComparison.mode) {
+    case MetricsViewSpecDefaultComparisonMode.DEFAULT_COMPARISON_MODE_DIMENSION:
+      metricsExplorer.selectedComparisonDimension =
+        metricsView.defaultComparison.dimension;
+      break;
+
+    case MetricsViewSpecDefaultComparisonMode.DEFAULT_COMPARISON_MODE_TIME:
+      setDefaultComparisonTimeRange(
+        metricsView,
+        metricsExplorer,
+        fullTimeRange
+      );
+      break;
+  }
 }
 
 function setDefaultComparisonTimeRange(
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
   fullTimeRange: V1ColumnTimeRangeResponse | undefined
 ) {
@@ -78,7 +101,7 @@ function setDefaultComparisonTimeRange(
 
 export function getDefaultMetricsExplorerEntity(
   name: string,
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
   fullTimeRange: V1ColumnTimeRangeResponse | undefined
 ) {
   const metricsExplorer: MetricsExplorerEntity = {
@@ -108,5 +131,6 @@ export function getDefaultMetricsExplorerEntity(
   };
   // set time range related stuff
   setDefaultTimeRange(metricsView, metricsExplorer, fullTimeRange);
+  setDefaultComparison(metricsView, metricsExplorer, fullTimeRange);
   return metricsExplorer;
 }

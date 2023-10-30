@@ -477,12 +477,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -510,6 +504,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -686,6 +686,19 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+}
+
 export interface V1ReportState {
   nextRunOn?: string;
   currentExecution?: V1ReportExecution;
@@ -719,19 +732,6 @@ export interface V1ReportExecution {
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
-}
-
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
 }
 
 export interface V1RenameFileResponse {
@@ -799,16 +799,6 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
 
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 /**
  * - CODE_UNSPECIFIED: Unspecified error
  - CODE_SYNTAX: Code artifact failed to parse
@@ -851,6 +841,16 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
+}
+
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1QueryResult {
@@ -950,12 +950,6 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  watching?: boolean;
-}
-
 export interface V1ProjectParserSpec {
   [key: string]: any;
 }
@@ -981,6 +975,12 @@ export interface V1ParseError {
   filePath?: string;
   startLocation?: Runtimev1CharLocation;
   external?: boolean;
+}
+
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  watching?: boolean;
 }
 
 export type V1ObjectType = (typeof V1ObjectType)[keyof typeof V1ObjectType];
@@ -1074,11 +1074,6 @@ export interface V1Migration {
   state?: V1MigrationState;
 }
 
-export interface V1MetricsViewV2 {
-  spec?: V1MetricsViewSpec;
-  state?: V1MetricsViewState;
-}
-
 export type V1MetricsViewTotalsResponseData = { [key: string]: any };
 
 export interface V1MetricsViewTotalsResponse {
@@ -1104,37 +1099,9 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  filter?: V1MetricsViewFilter;
-  priority?: number;
-}
-
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
-}
-
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  filter?: V1MetricsViewFilter;
-  timeZone?: string;
-  priority?: number;
 }
 
 export interface V1MetricsViewTimeRangeResponse {
@@ -1158,10 +1125,16 @@ export interface V1MetricsViewSpec {
   firstDayOfWeek?: number;
   /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
   firstMonthOfYear?: number;
+  defaultComparison?: MetricsViewSpecDefaultComparison;
 }
 
 export interface V1MetricsViewState {
   validSpec?: V1MetricsViewSpec;
+}
+
+export interface V1MetricsViewV2 {
+  spec?: V1MetricsViewSpec;
+  state?: V1MetricsViewState;
 }
 
 export interface V1MetricsViewSort {
@@ -1179,6 +1152,34 @@ export interface V1MetricsViewRowsResponse {
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
+}
+
+export interface V1MetricsViewTimeSeriesRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  filter?: V1MetricsViewFilter;
+  timeZone?: string;
+  priority?: number;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1865,6 +1866,25 @@ export interface MetricsViewSpecDimensionV2 {
   column?: string;
   label?: string;
   description?: string;
+}
+
+export type MetricsViewSpecDefaultComparisonMode =
+  (typeof MetricsViewSpecDefaultComparisonMode)[keyof typeof MetricsViewSpecDefaultComparisonMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MetricsViewSpecDefaultComparisonMode = {
+  DEFAULT_COMPARISON_MODE_UNSPECIFIED: "DEFAULT_COMPARISON_MODE_UNSPECIFIED",
+  DEFAULT_COMPARISON_MODE_NONE: "DEFAULT_COMPARISON_MODE_NONE",
+  DEFAULT_COMPARISON_MODE_TIME: "DEFAULT_COMPARISON_MODE_TIME",
+  DEFAULT_COMPARISON_MODE_DIMENSION: "DEFAULT_COMPARISON_MODE_DIMENSION",
+} as const;
+
+/**
+ * DefaultComparison settings for comparison controls.
+ */
+export interface MetricsViewSpecDefaultComparison {
+  mode?: MetricsViewSpecDefaultComparisonMode;
+  dimension?: string;
 }
 
 export interface MetricsViewSecurity {
