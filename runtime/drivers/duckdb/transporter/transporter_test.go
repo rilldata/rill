@@ -156,8 +156,8 @@ mum,8.2`)
 	tests = append(tests, queryTests...)
 
 	mockConnector := &mockObjectStore{}
-	for i, test := range tests {
-		t.Run(fmt.Sprintf("%d - query=%v", i, test.query), func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%s - query=%v", test.name, test.query), func(t *testing.T) {
 			mockConnector.mockIterator = &mockIterator{batches: test.files}
 			olap := runOLAPStore(t)
 			ctx := context.Background()
@@ -165,7 +165,7 @@ mum,8.2`)
 
 			var src map[string]any
 			if test.query {
-				src = map[string]any{"sql": "select * from read_csv_auto('path',union_by_name=true,sample_size=200000)"}
+				src = map[string]any{"sql": "select * from read_csv_auto('path',union_by_name=true,sample_size=200000)", "allow_schema_relaxation": true}
 			} else {
 				src = map[string]any{"allow_schema_relaxation": true}
 			}
@@ -409,7 +409,7 @@ func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
 
 			var src map[string]any
 			if test.query {
-				src = map[string]any{"sql": "select * from read_parquet('path',union_by_name=true,hive_partitioning=true)"}
+				src = map[string]any{"sql": "select * from read_parquet('path',union_by_name=true,hive_partitioning=true)", "allow_schema_relaxation": true}
 			} else {
 				src = map[string]any{"allow_schema_relaxation": true}
 			}
@@ -541,8 +541,8 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 	tests = append(tests, queryTests...)
 
 	mockConnector := &mockObjectStore{}
-	for i, test := range tests {
-		t.Run(fmt.Sprintf("%d - query=%v", i, test.query), func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%s - query=%v", test.name, test.query), func(t *testing.T) {
 			mockConnector.mockIterator = &mockIterator{batches: test.files}
 			olap := runOLAPStore(t)
 			ctx := context.Background()
@@ -550,7 +550,7 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 
 			var src map[string]any
 			if test.query {
-				src = map[string]any{"sql": "select * from read_json('path',format='auto',union_by_name=true,auto_detect=true,sample_size=200000)"}
+				src = map[string]any{"sql": "select * from read_json('path',format='auto',union_by_name=true,auto_detect=true,sample_size=200000)", "batch_size": "-1"}
 			} else {
 				src = map[string]any{"allow_schema_relaxation": true}
 			}

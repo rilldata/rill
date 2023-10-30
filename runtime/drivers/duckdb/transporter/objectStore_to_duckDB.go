@@ -70,7 +70,13 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		srcCfg.DuckDB["union_by_name"] = true
 	}
 
-	a := newAppender(t.to, sinkCfg, srcCfg.DuckDB, srcCfg.AllowSchemaRelaxation, t.logger)
+	a := newAppender(t.to, sinkCfg, srcCfg.AllowSchemaRelaxation, t.logger, func(files []string) (string, error) {
+		from, err := sourceReader(files, format, srcCfg.DuckDB)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("SELECT * FROM %s", from), nil
+	})
 
 	for {
 		files, err := iterator.Next()
@@ -88,7 +94,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		st := time.Now()
 		t.logger.Info("ingesting files", zap.Strings("files", files), observability.ZapCtx(ctx))
 		if appendToTable {
-			if err := a.appendData(ctx, files, format); err != nil {
+			if err := a.appendData(ctx, files); err != nil {
 				return err
 			}
 		} else {
@@ -111,57 +117,127 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 	return nil
 }
 
-type appender struct {
-	to                    drivers.OLAPStore
-	sink                  *sinkProperties
-	ingestionProps        map[string]any
-	allowSchemaRelaxation bool
-	tableSchema           map[string]string
-	logger                *zap.Logger
-}
-
-func newAppender(to drivers.OLAPStore, sink *sinkProperties, ingestionProps map[string]any, allowSchemaRelaxation bool, logger *zap.Logger) *appender {
-	return &appender{
-		to:                    to,
-		sink:                  sink,
-		ingestionProps:        ingestionProps,
-		allowSchemaRelaxation: allowSchemaRelaxation,
-		logger:                logger,
-		tableSchema:           nil,
-	}
-}
-
-func (a *appender) appendData(ctx context.Context, files []string, format string) error {
-	from, err := sourceReader(files, format, a.ingestionProps)
+func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL string, iterator drivers.FileIterator, srcCfg *fileSourceProperties, dbSink *sinkProperties, opts *drivers.TransferOptions) error {
+	ast, err := duckdbsql.Parse(originalSQL)
 	if err != nil {
 		return err
 	}
 
-	err = a.to.InsertTableAsSelect(ctx, a.sink.Table, a.allowSchemaRelaxation, fmt.Sprintf("SELECT * FROM %s", from))
+	// Validate the sql is supported for sources
+	// TODO: find a good common place for this validation and avoid code duplication here and in sources packages as well
+	refs := ast.GetTableRefs()
+	if len(refs) != 1 {
+		return errors.New("sql source should have exactly one table reference")
+	}
+	ref := refs[0]
+
+	if len(ref.Paths) == 0 {
+		return errors.New("only read_* functions with a single path is supported")
+	}
+	if len(ref.Paths) > 1 {
+		return errors.New("invalid source, only a single path for source is supported")
+	}
+	a := newAppender(t.to, dbSink, srcCfg.AllowSchemaRelaxation, t.logger, func(files []string) (string, error) {
+		return rewriteSQL(ast, files)
+	})
+	// if ingesting all batches in one go, we need to keep the files so that iterator doesn't delete in next iteration
+	iterator.KeepFilesUntilClose(srcCfg.BatchSizeBytes == -1)
+	appendToTable := false
+	for {
+		files := make([]string, 0)
+		for {
+			batch, err := iterator.Next()
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				return err
+			}
+			files = append(files, batch...)
+			if srcCfg.BatchSizeBytes != -1 { // ingest only one batch so exit loop
+				break
+			}
+		}
+		if len(files) == 0 { // no more files to process
+			return nil
+		}
+
+		st := time.Now()
+		t.logger.Info("ingesting files", zap.Strings("files", files), observability.ZapCtx(ctx))
+		if appendToTable {
+			if err := a.appendData(ctx, files); err != nil {
+				return err
+			}
+		} else {
+			sql, err := rewriteSQL(ast, files)
+			if err != nil {
+				return err
+			}
+
+			err = t.to.CreateTableAsSelect(ctx, dbSink.Table, false, sql)
+			if err != nil {
+				return err
+			}
+		}
+
+		size := fileSize(files)
+		t.logger.Info("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
+		opts.Progress.Observe(size, drivers.ProgressUnitByte)
+		appendToTable = true
+	}
+}
+
+type appender struct {
+	to                    drivers.OLAPStore
+	sink                  *sinkProperties
+	allowSchemaRelaxation bool
+	tableSchema           map[string]string
+	logger                *zap.Logger
+	sqlFunc               func([]string) (string, error)
+}
+
+func newAppender(to drivers.OLAPStore, sink *sinkProperties, allowSchemaRelaxation bool, logger *zap.Logger, sqlFunc func([]string) (string, error)) *appender {
+	return &appender{
+		to:                    to,
+		sink:                  sink,
+		allowSchemaRelaxation: allowSchemaRelaxation,
+		logger:                logger,
+		tableSchema:           nil,
+		sqlFunc:               sqlFunc,
+	}
+}
+
+func (a *appender) appendData(ctx context.Context, files []string) error {
+	sql, err := a.sqlFunc(files)
+	if err != nil {
+		return err
+	}
+
+	err = a.to.InsertTableAsSelect(ctx, a.sink.Table, a.allowSchemaRelaxation, sql)
 	if err == nil || !a.allowSchemaRelaxation || !containsAny(err.Error(), []string{"binder error", "conversion error"}) {
 		return err
 	}
 
 	// error is of type binder error (more or less columns than current table schema)
 	// or of type conversion error (datatype changed or column sequence changed)
-	err = a.updateSchema(ctx, from, files)
+	err = a.updateSchema(ctx, sql, files)
 	if err != nil {
 		return fmt.Errorf("failed to update schema %w", err)
 	}
-	return a.to.InsertTableAsSelect(ctx, a.sink.Table, true, fmt.Sprintf("SELECT * FROM %s", from))
+	return a.to.InsertTableAsSelect(ctx, a.sink.Table, true, sql)
 }
 
 // updateSchema updates the schema of the table in case new file adds a new column or
 // updates the datatypes of an existing columns with a wider datatype.
-func (a *appender) updateSchema(ctx context.Context, from string, fileNames []string) error {
+func (a *appender) updateSchema(ctx context.Context, sql string, fileNames []string) error {
 	// schema of new files
-	srcSchema, err := a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE (SELECT * FROM %s LIMIT 0);", from))
+	srcSchema, err := a.scanSchemaFromQuery(ctx, fmt.Sprintf("DESCRIBE (%s);", sql))
 	if err != nil {
 		return err
 	}
 
 	// combined schema
-	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s limit 0) UNION ALL BY NAME (SELECT * FROM %s limit 0));", safeName(a.sink.Table), from)
+	qry := fmt.Sprintf("DESCRIBE ((SELECT * FROM %s LIMIT 0) UNION ALL BY NAME (%s));", safeName(a.sink.Table), sql)
 	unionSchema, err := a.scanSchemaFromQuery(ctx, qry)
 	if err != nil {
 		return err
@@ -246,41 +322,8 @@ func (a *appender) scanSchemaFromQuery(ctx context.Context, qry string) (map[str
 	return schema, nil
 }
 
-func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL string, iterator drivers.FileIterator, srcCfg *fileSourceProperties, dbSink *sinkProperties, opts *drivers.TransferOptions) error {
-	iterator.KeepFilesUntilClose(true)
-	allFiles := make([]string, 0)
-	for {
-		files, err := iterator.Next()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return err
-		}
-		allFiles = append(allFiles, files...)
-	}
-
-	ast, err := duckdbsql.Parse(originalSQL)
-	if err != nil {
-		return err
-	}
-
-	// Validate the sql is supported for sources
-	// TODO: find a good common place for this validation and avoid code duplication here and in sources packages as well
-	refs := ast.GetTableRefs()
-	if len(refs) != 1 {
-		return errors.New("sql source should have exactly one table reference")
-	}
-	ref := refs[0]
-
-	if len(ref.Paths) == 0 {
-		return errors.New("only read_* functions with a single path is supported")
-	}
-	if len(ref.Paths) > 1 {
-		return errors.New("invalid source, only a single path for source is supported")
-	}
-
-	err = ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
+func rewriteSQL(ast *duckdbsql.AST, allFiles []string) (string, error) {
+	err := ast.RewriteTableRefs(func(table *duckdbsql.TableRef) (*duckdbsql.TableRef, bool) {
 		return &duckdbsql.TableRef{
 			Paths:      allFiles,
 			Function:   table.Function,
@@ -289,21 +332,11 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 		}, true
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 	sql, err := ast.Format()
 	if err != nil {
-		return err
+		return "", err
 	}
-
-	st := time.Now()
-	err = t.to.CreateTableAsSelect(ctx, dbSink.Table, false, sql)
-	if err != nil {
-		return err
-	}
-
-	size := fileSize(allFiles)
-	t.logger.Info("ingested files", zap.Strings("files", allFiles), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
-	opts.Progress.Observe(size, drivers.ProgressUnitByte)
-	return nil
+	return sql, nil
 }

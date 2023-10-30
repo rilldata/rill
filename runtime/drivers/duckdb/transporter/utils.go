@@ -109,11 +109,15 @@ func parseFileSourceProperties(props map[string]any) (*fileSourceProperties, err
 	}
 
 	if cfg.BatchSize != "" {
-		b, err := datasize.ParseString(cfg.BatchSize)
-		if err != nil {
-			return nil, err
+		if cfg.BatchSize == "-1" { // special placeholder for disabling batching
+			cfg.BatchSizeBytes = -1
+		} else {
+			b, err := datasize.ParseString(cfg.BatchSize)
+			if err != nil {
+				return nil, err
+			}
+			cfg.BatchSizeBytes = int64(b.Bytes())
 		}
-		cfg.BatchSizeBytes = int64(b.Bytes())
 	}
 
 	return cfg, nil
