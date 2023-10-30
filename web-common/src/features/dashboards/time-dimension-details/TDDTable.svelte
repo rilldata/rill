@@ -184,7 +184,9 @@
     if (data.x === 0)
       return `<div class="truncate font-medium text-gray-700 text-left">${dimensionLabel}</div>`;
     if (data.x === 1)
-      return `<div class="truncate text-right font-medium text-gray-700" sortable="true">${measureLabel}</div>`;
+      return `<div class="truncate text-right font-medium text-gray-700 flex items-center" sortable="true">${measureLabel} ${MeasureArrow(
+        sortDirection
+      )}</div>`;
     if (data.x === 2)
       return `<div class="flex items-center justify-end text-gray-700" sortable="true">${PieChart} % ${MeasureArrow(
         sortDirection
