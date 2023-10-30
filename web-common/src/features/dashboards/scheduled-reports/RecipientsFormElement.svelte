@@ -6,6 +6,7 @@
   export let organization: string;
   export let project: string;
   export let recipients: string[];
+  export let error: string;
 
   $: projectMembersQuery = createAdminServiceListProjectMembers(
     organization,
@@ -23,6 +24,7 @@
     bind:selectedValues={recipients}
     id="recipients"
     label="Recipients"
+    {error}
     placeholder="Search emails"
     options={projectMembers.map((member) => member.userEmail)}
   />

@@ -2,14 +2,27 @@
   import { page } from "$app/stores";
   import { createAdminServiceCreateReport } from "@rilldata/web-admin/client";
   import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
+  import FormItemTimePicker from "@rilldata/web-common/components/forms/FormItemTimePicker.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
-  import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
+  import {
+    getRuntimeServiceListResourcesQueryKey,
+    V1ExportFormat,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
+  import * as yup from "yup";
   import { Button } from "../../../components/button";
   import FormItemInput from "../../../components/forms/FormItemInput.svelte";
   import FormItemSelect from "../../../components/forms/FormItemSelect.svelte";
   import RecipientsFormElement from "./RecipientsFormElement.svelte";
+  import {
+    convertToCron,
+    getNextQuarterHour,
+    getTimeIn24FormatFromDate,
+    getTodaysDayOfWeek,
+  } from "./time-utils";
 
   export let queryName: string;
   export let queryArgsJson: string;
@@ -20,28 +33,30 @@
 
   const createReport = createAdminServiceCreateReport();
   const dispatch = createEventDispatcher();
+  const queryClient = useQueryClient();
+  const queryArgs = JSON.parse(queryArgsJson);
+  // console.log("queryArgs", queryArgs);
 
   const { form, errors, handleSubmit, isSubmitting } = createForm({
     initialValues: {
       title: "",
-      // firstRunAtDate: new Date().toISOString().split("T")[0], // Today's date
-      // firstRunAtTime: formatTime(getNextQuarterHour()), // Next quarter hour
-      // firstRunAtTimezone: "UTC",
-      refreshCron: "* * * * *",
+      frequency: "Weekly",
+      dayOfWeek: getTodaysDayOfWeek(),
+      timeOfDay: getTimeIn24FormatFromDate(getNextQuarterHour()),
       exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
       exportLimit: "",
       recipients: [],
     },
-    // This isn't showing issues
-    // validationSchema: yup.object({
-    //   title: yup.string().required("Required"),
-    //   firstRunAtDate: yup.string().required("Required"),
-    //   firstRunAtTime: yup.string().required("Required"),
-    //   firstRunAtTimezone: yup.string().required("Required"),
-    //   refreshCron: yup.string().required("Required"),
-    //   recipients: yup.string().required("Required"),
-    // }),
+    validationSchema: yup.object({
+      title: yup.string().required("Required"),
+      recipients: yup.array().of(yup.string()).min(1, "Required"),
+    }),
     onSubmit: async (values) => {
+      const refreshCron = convertToCron(
+        values.frequency,
+        values.dayOfWeek,
+        values.timeOfDay
+      );
       try {
         await $createReport.mutateAsync({
           organization,
@@ -49,16 +64,19 @@
           data: {
             options: {
               title: values.title,
-              refreshCron: values.refreshCron,
+              refreshCron: refreshCron, // for testing: "* * * * *"
               queryName: queryName,
               queryArgsJson: queryArgsJson,
               exportLimit: values.exportLimit || undefined,
               exportFormat: values.exportFormat,
-              openProjectSubpath: "/-/reports", // It'd be nice for this to be the specific report's path, but we don't have that data at request time
+              openProjectSubpath: `/${queryArgs.metricsViewName}`, // TODO: serialize the report parameters into the `?state` URL param
               recipients: values.recipients,
             },
           },
         });
+        queryClient.invalidateQueries(
+          getRuntimeServiceListResourcesQueryKey($runtime.instanceId)
+        );
         dispatch("close");
         notifications.send({
           message: "Report created",
@@ -88,31 +106,35 @@
       label="Report title"
       placeholder="My report"
     />
-    <!-- Hide while backend doesn't support a "firstRunAt" time -->
-    <!-- <div class="flex items-end gap-x-2 w-full">
-      <FormItemDatePicker
-        bind:value={$form["firstRunAtDate"]}
-        id="firstRunAtDate"
-        label="First run at"
-      />
-      <FormItemTimePicker
-        bind:value={$form["firstRunAtTime"]}
-        id="firstRunAtTime"
-        label=""
-      />
+    <div class="flex gap-x-2">
       <FormItemSelect
-        bind:value={$form["firstRunAtTimezone"]}
-        id="firstRunAtTimezone"
-        label=""
-        options={["UTC"]}
+        bind:value={$form["frequency"]}
+        id="frequency"
+        label="Frequency"
+        options={["Daily", "Weekdays", "Weekly"]}
       />
-    </div> -->
-    <FormItemSelect
-      bind:value={$form["refreshCron"]}
-      id="refreshCron"
-      label="Frequency"
-      options={["Daily", "Weekdays", "Weekly", "Monthly"]}
-    />
+      {#if $form["frequency"] === "Weekly"}
+        <FormItemSelect
+          bind:value={$form["dayOfWeek"]}
+          id="dayOfWeek"
+          label="Day of week"
+          options={[
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+          ]}
+        />
+      {/if}
+      <FormItemTimePicker
+        bind:value={$form["timeOfDay"]}
+        id="timeOfDay"
+        label="Time of day"
+      />
+    </div>
     <FormItemSelect
       bind:value={$form["exportFormat"]}
       id="exportFormat"
@@ -133,6 +155,7 @@
     />
     <RecipientsFormElement
       bind:recipients={$form["recipients"]}
+      error={$errors["recipients"]}
       {organization}
       {project}
     />
@@ -143,7 +166,8 @@
         <div class="text-red-500">{$createReport.error.message}</div>
       {/if}
       <div class="grow" />
-      <Button type="secondary" on:click={close}>Cancel</Button>
+      <Button type="secondary" on:click={() => dispatch("close")}>Cancel</Button
+      >
       <Button
         type="primary"
         submitForm

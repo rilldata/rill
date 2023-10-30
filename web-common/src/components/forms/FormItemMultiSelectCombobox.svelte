@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { slide } from "svelte/transition";
   import Menu from "../menu-v2/Menu.svelte";
   import MenuButton from "../menu-v2/MenuButton.svelte";
   import MenuItem from "../menu-v2/MenuItem.svelte";
@@ -6,6 +7,7 @@
 
   export let id = "";
   export let label = "";
+  export let error: string;
   export let placeholder = "";
   export let options: string[] = [];
   export let selectedValues: string[] = [];
@@ -44,7 +46,8 @@
         name={id}
         {placeholder}
         type="text"
-        class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs"
+        class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {error &&
+          'border-red-500'}"
         value={selectedValue}
         on:input={(e) => {
           selectedValue = e.target.value;
@@ -60,4 +63,9 @@
       {/each}
     </MenuItems>
   </Menu>
+  {#if error}
+    <div in:slide|local={{ duration: 200 }} class="text-red-500 text-sm py-px">
+      {error}
+    </div>
+  {/if}
 </div>
