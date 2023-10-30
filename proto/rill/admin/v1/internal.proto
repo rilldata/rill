@@ -1,6 +1,13 @@
 syntax = "proto3";
 package rill.admin.v1;
 
+import "google/protobuf/timestamp.proto";
+
 message StringPageToken {
     string val = 1;
+}
+
+message StringTimestampPageToken {
+    string str = 1;
+    google.protobuf.Timestamp ts = 2;
 }

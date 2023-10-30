@@ -587,6 +587,199 @@ paths:
                 type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/projects/{project}/reports:
+    post:
+      summary: CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
+      operationId: AdminService_CreateReport
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateReportResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              options:
+                $ref: '#/definitions/v1ReportOptions'
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/reports/-/yaml:
+    post:
+      summary: GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
+      operationId: AdminService_GenerateReportYAML
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GenerateReportYAMLResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              options:
+                $ref: '#/definitions/v1ReportOptions'
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/reports/{name}:
+    delete:
+      summary: DeleteReport deletes the virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be deleted in the runtime
+      operationId: AdminService_DeleteReport
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteReportResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    put:
+      summary: EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
+      operationId: AdminService_EditReport
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditReportResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              options:
+                $ref: '#/definitions/v1ReportOptions'
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/reports/{name}/trigger:
+    post:
+      summary: TriggerReport triggers an ad-hoc report run
+      operationId: AdminService_TriggerReport
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TriggerReportResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/reports/{name}/unsubscribe:
+    post:
+      summary: UnsubscribeReport removes the calling user from a reports recipients list
+      operationId: AdminService_UnsubscribeReport
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UnsubscribeReportResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/users/search:
     get:
       summary: SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -1113,6 +1306,96 @@ paths:
             $ref: '#/definitions/v1TriggerRedeployRequest'
       tags:
         - AdminService
+  /v1/projects/{projectId}/repo/meta:
+    get:
+      summary: GetRepoMeta returns credentials and other metadata for accessing a project's repo
+      operationId: AdminService_GetRepoMeta
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetRepoMetaResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: branch
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/projects/{projectId}/repo/virtual:
+    get:
+      summary: PullVirtualRepo fetches files from a project's virtual repo
+      operationId: AdminService_PullVirtualRepo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1PullVirtualRepoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: branch
+          in: query
+          required: false
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/projects/{projectId}/reports/meta:
+    get:
+      summary: GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
+      operationId: AdminService_GetReportMeta
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetReportMetaResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: branch
+          in: query
+          required: false
+          type: string
+        - name: report
+          in: query
+          required: false
+          type: string
+        - name: annotations
+          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/services/tokens/{tokenId}:
     delete:
       summary: RevokeServiceAuthToken revoke the service auth token
@@ -1573,6 +1856,11 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1CreateReportResponse:
+    type: object
+    properties:
+      name:
+        type: string
   v1CreateServiceResponse:
     type: object
     properties:
@@ -1583,6 +1871,8 @@ definitions:
   v1DeleteOrganizationResponse:
     type: object
   v1DeleteProjectResponse:
+    type: object
+  v1DeleteReportResponse:
     type: object
   v1DeleteServiceResponse:
     type: object
@@ -1623,6 +1913,21 @@ definitions:
       - DEPLOYMENT_STATUS_OK
       - DEPLOYMENT_STATUS_ERROR
     default: DEPLOYMENT_STATUS_UNSPECIFIED
+  v1EditReportResponse:
+    type: object
+  v1ExportFormat:
+    type: string
+    enum:
+      - EXPORT_FORMAT_UNSPECIFIED
+      - EXPORT_FORMAT_CSV
+      - EXPORT_FORMAT_XLSX
+      - EXPORT_FORMAT_PARQUET
+    default: EXPORT_FORMAT_UNSPECIFIED
+  v1GenerateReportYAMLResponse:
+    type: object
+    properties:
+      yaml:
+        type: string
   v1GetBookmarkResponse:
     type: object
     properties:
@@ -1691,6 +1996,25 @@ definitions:
         type: object
         additionalProperties:
           type: string
+  v1GetRepoMetaResponse:
+    type: object
+    properties:
+      gitUrl:
+        type: string
+      gitUrlExpiresOn:
+        type: string
+        format: date-time
+      gitSubpath:
+        type: string
+  v1GetReportMetaResponse:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      exportUrl:
+        type: string
+      editUrl:
+        type: string
   v1GetUserResponse:
     type: object
     properties:
@@ -1961,6 +2285,20 @@ definitions:
         type: boolean
       manageProjectMembers:
         type: boolean
+      createReports:
+        type: boolean
+      manageReports:
+        type: boolean
+  v1PullVirtualRepoResponse:
+    type: object
+    properties:
+      files:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1VirtualFile'
+      nextPageToken:
+        type: string
   v1RemoveBookmarkResponse:
     type: object
   v1RemoveOrganizationMemberResponse:
@@ -1969,6 +2307,28 @@ definitions:
     type: object
   v1RemoveWhitelistedDomainResponse:
     type: object
+  v1ReportOptions:
+    type: object
+    properties:
+      title:
+        type: string
+      refreshCron:
+        type: string
+      queryName:
+        type: string
+      queryArgsJson:
+        type: string
+      exportLimit:
+        type: string
+        format: uint64
+      exportFormat:
+        $ref: '#/definitions/v1ExportFormat'
+      openProjectSubpath:
+        type: string
+      recipients:
+        type: array
+        items:
+          type: string
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:
@@ -2115,6 +2475,10 @@ definitions:
     type: object
   v1TriggerRefreshSourcesResponse:
     type: object
+  v1TriggerReportResponse:
+    type: object
+  v1UnsubscribeReportResponse:
+    type: object
   v1UpdateOrganizationResponse:
     type: object
     properties:
@@ -2186,6 +2550,19 @@ definitions:
       singleuserOrgs:
         type: integer
         format: int64
+  v1VirtualFile:
+    type: object
+    properties:
+      path:
+        type: string
+      data:
+        type: string
+        format: byte
+      deleted:
+        type: boolean
+      updatedOn:
+        type: string
+        format: date-time
   v1WhitelistedDomain:
     type: object
     properties:

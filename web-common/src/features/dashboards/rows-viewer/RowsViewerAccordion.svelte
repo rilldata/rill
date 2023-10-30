@@ -93,8 +93,8 @@
   $: {
     if ($totalsQuery.data && $filteredTotalsQuery.data) {
       label = `${formatCompactInteger(
-        $filteredTotalsQuery.data.data.count
-      )} of ${formatCompactInteger($totalsQuery.data.data.count)} rows`;
+        $filteredTotalsQuery.data.data?.count
+      )} of ${formatCompactInteger($totalsQuery.data.data?.count)} rows`;
     }
   }
 

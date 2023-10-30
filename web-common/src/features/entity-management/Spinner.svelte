@@ -46,10 +46,6 @@
     content: " ";
   }
 
-  .running {
-    /* border-radius: 0px; */
-  }
-
   .running::before {
     content: " ";
     display: block;

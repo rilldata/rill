@@ -185,6 +185,11 @@ type DB interface {
 	DeleteBookmark(ctx context.Context, bookmarkID string) error
 
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
+
+	FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
+	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
+	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
+	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -557,6 +562,8 @@ type ProjectRole struct {
 	ManageDev            bool `db:"manage_dev"`
 	ReadProjectMembers   bool `db:"read_project_members"`
 	ManageProjectMembers bool `db:"manage_project_members"`
+	CreateReports        bool `db:"create_reports"`
+	ManageReports        bool `db:"manage_reports"`
 }
 
 // Member is a convenience type used for display-friendly representation of an org or project member.
@@ -663,4 +670,20 @@ type InsertBookmarkOptions struct {
 	DashboardName string `json:"dashboard_name"`
 	ProjectID     string `json:"project_id"`
 	UserID        string `json:"user_id"`
+}
+
+// VirtualFile represents an ad-hoc file for a project (not managed in Git)
+type VirtualFile struct {
+	Path      string    `db:"path"`
+	Data      []byte    `db:"data"`
+	Deleted   bool      `db:"deleted"`
+	UpdatedOn time.Time `db:"updated_on"`
+}
+
+// InsertVirtualFileOptions defines options for inserting a VirtualFile
+type InsertVirtualFileOptions struct {
+	ProjectID string
+	Branch    string
+	Path      string `validate:"required"`
+	Data      []byte `validate:"max=8192"` // 8kb
 }

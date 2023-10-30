@@ -103,19 +103,23 @@ type Handle interface {
 	// Close closes the connection
 	Close() error
 
-	// AsRegistry returns a AsRegistry if the driver can serve as such, otherwise returns false.
+	// AsRegistry returns a Registry if the driver can serve as such, otherwise returns false.
 	// The registry is responsible for tracking instances and repos.
 	AsRegistry() (RegistryStore, bool)
 
-	// AsCatalogStore returns a AsCatalogStore if the driver can serve as such, otherwise returns false.
+	// AsCatalogStore returns a CatalogStore if the driver can serve as such, otherwise returns false.
 	// A catalog is used to store state about migrated/deployed objects (such as sources and metrics views).
 	AsCatalogStore(instanceID string) (CatalogStore, bool)
 
-	// AsRepoStore returns a AsRepoStore if the driver can serve as such, otherwise returns false.
+	// AsRepoStore returns a RepoStore if the driver can serve as such, otherwise returns false.
 	// A repo stores file artifacts (either in a folder or virtualized in a database).
 	AsRepoStore(instanceID string) (RepoStore, bool)
 
-	// AsOLAP returns an AsOLAP if the driver can serve as such, otherwise returns false.
+	// AsAdmin returns an AdminService if the driver can serve as such, otherwise returns false.
+	// An admin store enables an instance to request contextual information from the admin service that deployed it.
+	AsAdmin(instanceID string) (AdminService, bool)
+
+	// AsOLAP returns an OLAP if the driver can serve as such, otherwise returns false.
 	// OLAP stores are where we actually store, transform, and query users' data.
 	AsOLAP(instanceID string) (OLAPStore, bool)
 

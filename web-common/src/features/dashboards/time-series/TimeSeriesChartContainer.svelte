@@ -8,22 +8,26 @@ A container GraphicContext for the time series in a metrics dashboard.
   export let end: Date;
   export let workspaceWidth: number;
   export let enableFullWidth = false;
+
+  const paddingForFullWidth = 80;
 </script>
 
 <div
-  class="grid w-max"
+  class="grid w-max pr-2"
   style:grid-template-columns="{MEASURE_CONFIG.bigNumber.widthWithChart}px
   max-content"
 >
   <GraphicContext
     bottom={4}
-    height={MEASURE_CONFIG.chart.height}
+    height={enableFullWidth
+      ? MEASURE_CONFIG.chart.fullHeight
+      : MEASURE_CONFIG.chart.height}
     left={0}
     right={50}
     fontSize={11}
     top={4}
     width={(enableFullWidth
-      ? workspaceWidth
+      ? workspaceWidth - paddingForFullWidth
       : workspaceWidth >= MEASURE_CONFIG.breakpoint
       ? MEASURE_CONFIG.container.width.full
       : MEASURE_CONFIG.container.width.breakpoint) -

@@ -5,11 +5,10 @@ This component will draw an axis on the specified side.
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { IntTimesPowerOfTenFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/IntTimesPowerOfTen";
   import { formatMsInterval } from "@rilldata/web-common/lib/number-formatting/strategies/intervals";
-  import { timeFormat } from "d3-time-format";
   import { getContext } from "svelte";
   import { contexts } from "../constants";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
-  import { getTicks } from "../utils";
+  import { createTimeFormat, getTicks } from "../utils";
   import type { AxisSide } from "./types";
 
   export let side: AxisSide = "left";
@@ -129,32 +128,6 @@ This component will draw an axis on the specified side.
     };
   }
 
-  function createTimeFormat(scaleDomain) {
-    const diff = Math.abs(scaleDomain[1] - scaleDomain[0]) / 1000;
-
-    const millisecondDiff = diff < 1;
-    const secondDiff = diff < 60;
-    const twoDayDiff = diff / (60 * 60) < 48;
-    const threeDaysDiff = diff / (60 * 60) < 24 * 3;
-    const fourDaysDiff = diff / (60 * 60) < 24 * 4;
-    const manyDaysDiff = diff / (60 * 60 * 24) < 60;
-    const manyMonthsDiff = diff / (60 * 60 * 24) < 3 * 365;
-
-    if (millisecondDiff) {
-      return [timeFormat("%M:%S.%L"), timeFormat("%H %d %b %Y")];
-    } else if (secondDiff) {
-      return [timeFormat("%M:%S"), timeFormat("%H %d %b %Y")];
-    } else if (twoDayDiff || threeDaysDiff) {
-      return [timeFormat("%H:%M"), timeFormat("%d %b %Y")];
-    } else if (fourDaysDiff || manyDaysDiff) {
-      return [timeFormat("%b %d"), timeFormat("%Y")];
-    } else if (manyMonthsDiff) {
-      return [timeFormat("%b"), timeFormat("%Y")];
-    } else {
-      return [timeFormat("%Y"), undefined];
-    }
-  }
-
   function shouldPlaceSuperLabel(currentDate, i) {
     if ((side === "top" || side === "bottom") && superlabel) {
       if (i === 0 || currentDate !== superlabelDate) {
@@ -164,12 +137,27 @@ This component will draw an axis on the specified side.
     }
   }
 
+  let axisLength;
+  let ticks = [];
+  $: if ($plotConfig) {
+    if (xOrY === "x") axisLength = $plotConfig.graphicWidth;
+    else axisLength = $plotConfig.graphicHeight;
+
+    ticks = getTicks(
+      xOrY,
+      scale,
+      axisLength,
+      $plotConfig[`${xOrY}Type`] === "date"
+    );
+  }
+
   let formatterFunction;
   let superLabelFormatter;
 
   $: if ($plotConfig[`${xOrY}Type`] === "date") {
     [formatterFunction, superLabelFormatter] = createTimeFormat(
-      $mainScale.domain()
+      $mainScale.domain() as [Date, Date],
+      ticks?.length
     );
   } else {
     superlabel = false;
@@ -187,20 +175,6 @@ This component will draw an axis on the specified side.
       numberKind === "INTERVAL"
         ? formatMsInterval(x)
         : formatter.stringFormat(x);
-  }
-
-  let axisLength;
-  let ticks = [];
-  $: if ($plotConfig) {
-    if (xOrY === "x") axisLength = $plotConfig.graphicWidth;
-    else axisLength = $plotConfig.graphicHeight;
-
-    ticks = getTicks(
-      xOrY,
-      scale,
-      axisLength,
-      $plotConfig[`${xOrY}Type`] === "date"
-    );
   }
 </script>
 
