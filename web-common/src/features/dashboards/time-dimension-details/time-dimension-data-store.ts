@@ -236,7 +236,7 @@ function prepareTimeData(
 
     // Push absolute change
     body.push(
-      tableData?.map((v, i) => {
+      tableData?.map((v) => {
         const comparisonValue = v[`comparison.${measureName}`];
         const currentValue = v[measureName];
         const change =
