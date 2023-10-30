@@ -8,7 +8,13 @@
   export let value: string;
   export let id: string;
   export let label: string;
-  export let options: string[];
+  export let options: { value: string; label?: string }[];
+
+  let displayValue: string;
+  $: {
+    const foundOption = options.find((option) => option.value === value);
+    displayValue = foundOption?.label ?? value;
+  }
 </script>
 
 <div class="flex flex-col gap-y-2">
@@ -17,12 +23,14 @@
     <MenuButton
       className="w-full border px-3 py-1 h-8 flex gap-x-2 justify-between items-center"
     >
-      {value}
+      {displayValue}
       <CaretDownIcon />
     </MenuButton>
     <MenuItems>
       {#each options as option}
-        <MenuItem on:click={() => (value = option)}>{option}</MenuItem>
+        <MenuItem on:click={() => (value = option.value)}>
+          {option?.label ?? option.value}
+        </MenuItem>
       {/each}
     </MenuItems>
   </Menu>

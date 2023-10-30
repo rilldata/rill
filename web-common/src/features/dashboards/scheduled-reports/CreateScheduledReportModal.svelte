@@ -111,7 +111,9 @@
         bind:value={$form["frequency"]}
         id="frequency"
         label="Frequency"
-        options={["Daily", "Weekdays", "Weekly"]}
+        options={["Daily", "Weekdays", "Weekly"].map((frequency) => ({
+          value: frequency,
+        }))}
       />
       {#if $form["frequency"] === "Weekly"}
         <FormItemSelect
@@ -126,7 +128,9 @@
             "Friday",
             "Saturday",
             "Sunday",
-          ]}
+          ].map((day) => ({
+            value: day,
+          }))}
         />
       {/if}
       <FormItemTimePicker
@@ -140,9 +144,9 @@
       id="exportFormat"
       label="Format"
       options={[
-        V1ExportFormat.EXPORT_FORMAT_CSV,
-        V1ExportFormat.EXPORT_FORMAT_PARQUET,
-        V1ExportFormat.EXPORT_FORMAT_XLSX,
+        { value: V1ExportFormat.EXPORT_FORMAT_CSV, label: "CSV" },
+        { value: V1ExportFormat.EXPORT_FORMAT_PARQUET, label: "Parquet" },
+        { value: V1ExportFormat.EXPORT_FORMAT_XLSX, label: "Excel" },
       ]}
     />
     <FormItemInput
