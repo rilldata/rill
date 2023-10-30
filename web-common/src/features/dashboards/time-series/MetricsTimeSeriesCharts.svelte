@@ -2,6 +2,7 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import Expand from "@rilldata/web-common/components/icons/Expand.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
   import {
     metricsExplorerStore,
@@ -28,6 +29,10 @@
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -68,6 +73,9 @@
 
   $: totals = $timeSeriesDataStore.total;
   $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
+
+  // Track the big number currently being hovered
+  let hoveredMeasure;
 
   let scrubStart;
   let scrubEnd;
@@ -233,12 +241,14 @@
     {#each renderedMeasures as measure (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = totals?.[measure.name] ?? 0}
+      {@const isBeingHovered = hoveredMeasure === measure.name}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
       {@const comparisonPercChange =
         comparisonValue && bigNum !== undefined && bigNum !== null
           ? (bigNum - comparisonValue) / comparisonValue
           : undefined}
       <MeasureBigNumber
+        bind:hoveredMeasure
         {measure}
         value={bigNum}
         isMeasureExpanded={!!expandedMeasureName}
@@ -258,37 +268,54 @@
       />
 
       <div
-        class="time-series-body rounded peer-hover:bg-gray-100"
+        class="time-series-body rounded {isBeingHovered ? 'bg-gray-100' : ''}"
         style:height="125px"
       >
         {#if $timeSeriesDataStore?.isError}
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
-          <MeasureChart
-            bind:mouseoverValue
-            {measure}
-            {isScrubbing}
-            {scrubStart}
-            {scrubEnd}
-            {metricViewName}
-            data={formattedData}
-            {dimensionData}
-            zone={$dashboardStore?.selectedTimezone}
-            xAccessor="ts_position"
-            labelAccessor="ts"
-            timeGrain={interval}
-            yAccessor={measure.name}
-            xMin={startValue}
-            xMax={endValue}
-            {showComparison}
-            mouseoverTimeFormat={(value) => {
-              /** format the date according to the time grain */
-              return new Date(value).toLocaleDateString(
-                undefined,
-                TIME_GRAIN[interval].formatDate
-              );
-            }}
-          />
+          <div class="relative">
+            <MeasureChart
+              bind:mouseoverValue
+              {measure}
+              {isScrubbing}
+              {scrubStart}
+              {scrubEnd}
+              {metricViewName}
+              data={formattedData}
+              {dimensionData}
+              zone={$dashboardStore?.selectedTimezone}
+              xAccessor="ts_position"
+              labelAccessor="ts"
+              timeGrain={interval}
+              yAccessor={measure.name}
+              xMin={startValue}
+              xMax={endValue}
+              {showComparison}
+              mouseoverTimeFormat={(value) => {
+                /** format the date according to the time grain */
+                return new Date(value).toLocaleDateString(
+                  undefined,
+                  TIME_GRAIN[interval].formatDate
+                );
+              }}
+            />
+
+            {#if isBeingHovered}
+              <Tooltip active={isBeingHovered} distance={4} location="right">
+                <TooltipContent slot="tooltip-content" maxWidth="280px">
+                  <TooltipShortcutContainer>
+                    <div>Expand Measure</div>
+                    <Shortcut>Click</Shortcut>
+                  </TooltipShortcutContainer>
+                </TooltipContent>
+
+                <div class="absolute right-0 top-0 p-2">
+                  <Expand />
+                </div>
+              </Tooltip>
+            {/if}
+          </div>
         {:else}
           <div class="flex items-center justify-center w-24">
             <Spinner status={EntityStatus.Running} />
@@ -298,9 +325,3 @@
     {/each}
   {/if}
 </TimeSeriesChartContainer>
-
-<style>
-  :global(.big-number:hover + .time-series-body) {
-    background-color: rgb(243 244 246);
-  }
-</style>
