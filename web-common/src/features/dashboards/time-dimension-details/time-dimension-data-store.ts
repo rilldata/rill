@@ -91,11 +91,12 @@ function prepareDimensionData(
 
   rowHeaderData = rowHeaderData.concat(
     data?.map((row) => {
+      const rowData = isAllTime ? row?.data?.slice(1) : row?.data?.slice(1, -1);
       const dataRow = [
         { value: row?.value },
         {
           value: row?.total ? formatter(row?.total) : null,
-          spark: createSparkline(row?.data, (v) => v[measureName]),
+          spark: createSparkline(rowData, (v) => v[measureName]),
         },
       ];
       if (validPercentOfTotal) {
@@ -119,7 +120,8 @@ function prepareDimensionData(
   body = body?.concat(
     data?.map((v) => {
       if (v.isFetching) return new Array(columnCount).fill(undefined);
-      return (isAllTime ? v?.data?.slice(1) : v?.data?.slice(1, -1))?.map((v) =>
+      const dimData = isAllTime ? v?.data?.slice(1) : v?.data?.slice(1, -1);
+      return dimData?.map((v) =>
         v[measureName] ? formatter(v[measureName]) : null
       );
     })
