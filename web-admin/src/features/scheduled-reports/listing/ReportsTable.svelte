@@ -12,6 +12,9 @@
   import ReportsTableEmpty from "./ReportsTableEmpty.svelte";
   import ReportsTableHeader from "./ReportsTableHeader.svelte";
 
+  export let organization: string;
+  export let project: string;
+
   $: reports = useReports($runtime.instanceId);
 
   /**
@@ -29,16 +32,17 @@
       id: "composite",
       cell: (info) =>
         flexRender(ReportsTableCompositeCell, {
+          organization: organization,
+          project: project,
           id: info.row.original.meta.name.name,
-          reportName: info.row.original.report.spec.title,
+          title: info.row.original.report.spec.title,
           lastRun:
             info.row.original.report.state.executionHistory[0]?.reportTime,
           frequency: info.row.original.report.spec.refreshSchedule.cron,
-          owner:
-            info.row.original.report.spec.annotations["admin_owner_user_id"] ??
-            "a project admin",
-          currentExecutionErrorMessage:
-            info.row.original.report.state.currentExecution?.errorMessage,
+          ownerId:
+            info.row.original.report.spec.annotations["admin_owner_user_id"],
+          lastRunErrorMessage:
+            info.row.original.report.state.executionHistory[0]?.errorMessage,
         }),
     },
     {
@@ -57,7 +61,7 @@
     //   id: "actions",
     //   cell: ({ row }) =>
     //     flexRender(ReportsTableActionCell, {
-    //       reportName: row.original.name,
+    //       title: row.original.name,
     //     }),
     // },
   ];

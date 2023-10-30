@@ -1,13 +1,22 @@
 <script lang="ts">
-  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
+  import { goto } from "$app/navigation";
+  import { Button } from "@rilldata/web-common/components/button";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import cronstrue from "cronstrue";
+  import {
+    createAdminServiceDeleteReport,
+    createAdminServiceListProjectMembers,
+  } from "../../../client";
   import { useReport } from "../selectors";
   import MetadataLabel from "./MetadataLabel.svelte";
   import MetadataValue from "./MetadataValue.svelte";
   import { exportFormatToPrettyString } from "./utils";
 
+  export let organization: string;
+  export let project: string;
   export let report: string;
 
   $: reportQuery = useReport($runtime.instanceId, report);
@@ -27,7 +36,38 @@
     cronstrue.toString(
       $reportQuery.data.resource.report.spec.refreshSchedule.cron,
       { verbose: true }
-    ) + " (UTC)";
+    );
+
+  // Get owner's name
+  const membersQuery = createAdminServiceListProjectMembers(
+    organization,
+    project
+  );
+  $: owner =
+    $reportQuery.data &&
+    $membersQuery.data &&
+    $membersQuery.data.members.find(
+      (member) =>
+        member.userId ===
+        $reportQuery.data.resource.report.spec.annotations[
+          "admin_owner_user_id"
+        ]
+    );
+
+  // Actions
+  const queryClient = useQueryClient();
+  const deleteReport = createAdminServiceDeleteReport();
+  async function handleDeleteReport() {
+    await $deleteReport.mutateAsync({
+      organization,
+      project,
+      name: $reportQuery.data.resource.meta.name.name,
+    });
+    queryClient.invalidateQueries(
+      getRuntimeServiceListResourcesQueryKey($runtime.instanceId)
+    );
+    goto(`/${organization}/${project}/-/reports`);
+  }
 </script>
 
 {#if $reportQuery.data}
@@ -35,12 +75,18 @@
     <div class="flex flex-col gap-y-2">
       <div class="flex gap-x-2 items-center">
         <h1 class="text-gray-800 text-base font-medium leading-none">
-          {$reportQuery.data.resource.meta.name.name}
+          {$reportQuery.data.resource.report.spec.title}
         </h1>
-        <Tag>Report</Tag>
         <div class="grow" />
-        <!-- TODO -->
-        <!-- <Button type="primary" on:click={handleExportNow}>Export now</Button> -->
+        <!-- TODO: add more buttons & put delete report into a "..." icon button menu -->
+        <!-- TODO: add an "are you sure?" confirmation dialog -->
+        <Button
+          type="secondary"
+          on:click={handleDeleteReport}
+          disabled={$deleteReport.isLoading}
+        >
+          Delete report
+        </Button>
       </div>
     </div>
 
@@ -56,9 +102,7 @@
         <!-- Creator -->
         <MetadataLabel>Creator</MetadataLabel>
         <MetadataValue>
-          {$reportQuery.data.resource.report.spec.annotations[
-            "admin_owner_user_id"
-          ] ?? "A project admin"}
+          {owner?.userName || "a project admin"}
         </MetadataValue>
         <!-- Recipients -->
         <MetadataLabel>Recipients</MetadataLabel>
