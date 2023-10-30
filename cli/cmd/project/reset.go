@@ -11,6 +11,7 @@ import (
 
 func ResetCmd(cfg *config.Config) *cobra.Command {
 	var project, path string
+	var force bool
 
 	resetCmd := &cobra.Command{
 		Use:               "reset [<project-name>]",
@@ -38,6 +39,13 @@ func ResetCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
+			if !force {
+				msg := "This will create a new deployment, causing downtime as data sources are reloaded from scratch. If you just need to refresh data, use `rill project refresh`. Do you want to continue?"
+				if !cmdutil.ConfirmPrompt(msg, "", false) {
+					return nil
+				}
+			}
+
 			_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: cfg.Org, Project: project})
 			if err != nil {
 				return err
@@ -52,6 +60,6 @@ func ResetCmd(cfg *config.Config) *cobra.Command {
 	resetCmd.Flags().SortFlags = false
 	resetCmd.Flags().StringVar(&project, "project", "", "Project name")
 	resetCmd.Flags().StringVar(&path, "path", ".", "Project directory")
-
+	resetCmd.Flags().BoolVar(&force, "force", false, "Force reset even if project is already deployed")
 	return resetCmd
 }

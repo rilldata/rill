@@ -11,7 +11,7 @@ import (
 
 func RefreshCmd(cfg *config.Config) *cobra.Command {
 	var project, path string
-	var refreshSources []string
+	var source []string
 
 	refreshCmd := &cobra.Command{
 		Use:               "refresh [<project-name>]",
@@ -47,9 +47,9 @@ func RefreshCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			_, err = client.TriggerRefreshSources(ctx, &adminv1.TriggerRefreshSourcesRequest{DeploymentId: resp.ProdDeployment.Id, Sources: refreshSources})
+			_, err = client.TriggerRefreshSources(ctx, &adminv1.TriggerRefreshSourcesRequest{DeploymentId: resp.ProdDeployment.Id, Sources: source})
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to trigger refresh: %w", err)
 			}
 
 			fmt.Printf("Triggered refresh. To see status, run `rill project status --project %s`.\n", project)
@@ -61,7 +61,7 @@ func RefreshCmd(cfg *config.Config) *cobra.Command {
 	refreshCmd.Flags().SortFlags = false
 	refreshCmd.Flags().StringVar(&project, "project", "", "Project name")
 	refreshCmd.Flags().StringVar(&path, "path", ".", "Project directory")
-	refreshCmd.Flags().StringSliceVar(&refreshSources, "refresh-source", nil, "Refresh specific source(s)")
+	refreshCmd.Flags().StringSliceVar(&source, "source", nil, "Refresh specific source(s)")
 
 	return refreshCmd
 }
