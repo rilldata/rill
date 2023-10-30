@@ -54,7 +54,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 	match := selectQueryRegex.FindStringSubmatch(srcProps.SQL)
 	if match != nil {
 		// "SELECT * FROM `project_id.dataset.table`" statement so storage api might be used
-		// project_id, dataset, backticks are optional
+		// project_id and backticks are optional
 		fullTableName := match[1]
 		fullTableName = strings.Trim(fullTableName, "`")
 
