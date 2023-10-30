@@ -222,6 +222,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
   timeStart?: string;
   timeEnd?: string;
   filter?: V1MetricsViewFilter;
@@ -476,6 +477,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -486,11 +493,6 @@ export interface V1TimeRangeSummary {
   min?: string;
   max?: string;
   interval?: TimeRangeSummaryInterval;
-}
-
-export interface V1TimeRange {
-  start?: string;
-  end?: string;
 }
 
 export type V1TimeGrain = (typeof V1TimeGrain)[keyof typeof V1TimeGrain];
@@ -509,10 +511,13 @@ export const V1TimeGrain = {
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
 
-export interface V1TimeSeriesTimeRange {
+export interface V1TimeRange {
   start?: string;
   end?: string;
-  interval?: V1TimeGrain;
+  isoDuration?: string;
+  isoOffset?: string;
+  roundToGrain?: V1TimeGrain;
+  timeZone?: string;
 }
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
@@ -697,7 +702,6 @@ export interface V1ReportSpec {
   timeoutSeconds?: number;
   queryName?: string;
   queryArgsJson?: string;
-  queryTimeRange?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   emailRecipients?: string[];
@@ -1282,6 +1286,7 @@ export interface V1MetricsViewAggregationRequest {
   dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
   timeStart?: string;
   timeEnd?: string;
   filter?: V1MetricsViewFilter;

@@ -61,13 +61,20 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		}
 	}
 
+	tr := req.TimeRange
+	if req.TimeStart != nil || req.TimeEnd != nil {
+		tr = &runtimev1.TimeRange{
+			Start: req.TimeStart,
+			End:   req.TimeEnd,
+		}
+	}
+
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName:    req.MetricsView,
 		Dimensions:         req.Dimensions,
 		Measures:           req.Measures,
 		Sort:               req.Sort,
-		TimeStart:          req.TimeStart,
-		TimeEnd:            req.TimeEnd,
+		TimeRange:          tr,
 		Filter:             req.Filter,
 		Limit:              &req.Limit,
 		Offset:             req.Offset,
