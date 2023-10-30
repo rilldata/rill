@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -341,35 +342,35 @@ func (it *blobIterator) downloadFiles() {
 		// Download the file and send it on downloadsCh.
 		// NOTE: Errors returned here will be assigned to it.downloadErr after the loop.
 		g.Go(func() error {
-			file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, os.ModePerm)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-
 			ext := filepath.Ext(obj.obj.Key)
 			partialReader, isPartialDownloadSupported := _partialDownloadReaders[ext]
 			downloadFull := obj.full || !isPartialDownloadSupported
 
 			startTime := time.Now()
+			var file *os.File
+			err := retry(5, 10*time.Second, func() error {
+				file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+				if err != nil {
+					return err
+				}
+				defer file.Close()
 
-			if downloadFull {
-				err = downloadObject(ctx, it.bucket, obj.obj.Key, file)
-			} else {
+				if downloadFull {
+					return downloadObject(ctx, it.bucket, obj.obj.Key, file)
+				}
 				// download partial file
 				switch partialReader {
 				case "parquet":
-					err = downloadParquet(ctx, it.bucket, obj.obj, obj.extractOption, file)
+					return downloadParquet(ctx, it.bucket, obj.obj, obj.extractOption, file)
 				case "csv":
-					err = downloadText(ctx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: true}, file)
+					return downloadText(ctx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: true}, file)
 				case "json":
-					err = downloadText(ctx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: false}, file)
+					return downloadText(ctx, it.bucket, obj.obj, &textExtractOption{extractOption: obj.extractOption, hasCSVHeader: false}, file)
 				default:
 					// should not reach here
 					panic(fmt.Errorf("partial download not supported for extension: %q", ext))
 				}
-			}
-
+			})
 			// Returning the err will cancel the errgroup and propagate the error to it.downloadErr
 			if err != nil {
 				return err
@@ -504,5 +505,20 @@ func downloadObject(ctx context.Context, bucket *blob.Bucket, objpath string, fi
 	defer rc.Close()
 
 	_, err = io.Copy(file, rc)
+	return err
+}
+
+func retry(maxRetries int, delay time.Duration, fn func() error) error {
+	var err error
+	for i := 0; i < maxRetries; i++ {
+		err = fn()
+		if err == nil {
+			return nil // success
+		} else if strings.Contains(err.Error(), "stream error: stream ID") {
+			time.Sleep(delay) // retry
+		} else {
+			break // return error
+		}
+	}
 	return err
 }
