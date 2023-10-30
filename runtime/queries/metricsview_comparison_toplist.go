@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"google.golang.org/genproto/googleapis/api/label"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	// Load IANA time zone data
@@ -221,13 +222,21 @@ func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, ol
 	return nil
 }
 
-func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, export bool) (string, []any, error) {
 	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
 
 	selectCols := []string{colName}
+	labelCols := []string{colName}
+	labelMap := make(map[string]string, len(mv.Measures))
+	for _, m := range mv.Measures {
+		labelMap[m.Name] = m.Name
+		if m.Label != "" {
+			labelMap[m.Name] = m.Label
+		}
+	}
 
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
@@ -237,8 +246,10 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 				return "", nil, err
 			}
 			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+			labelCols = append(labelCols, fmt.Sprintf("%s as %s", safeName(m.Name), labelMap[m.Name]))
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
 			selectCols = append(selectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
+			labelCols = append(labelCols, fmt.Sprintf("%s as %s", safeName(m.Name), labelMap[m.Name]))
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
 			if len(m.BuiltinMeasureArgs) != 1 {
 				return "", nil, fmt.Errorf("builtin measure '%s' expects 1 argument", m.BuiltinMeasure.String())
@@ -248,6 +259,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 				return "", nil, fmt.Errorf("builtin measure '%s' expects non-empty string argument, got '%v'", m.BuiltinMeasure.String(), m.BuiltinMeasureArgs[0])
 			}
 			selectCols = append(selectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
+			labelCols = append(labelCols, fmt.Sprintf("%s as %s", safeName(m.Name), labelMap[m.Name]))
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
@@ -302,27 +314,50 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
 	}
 
-	sql := fmt.Sprintf(
-		`SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d`,
-		selectClause,    // 1
-		colName,         // 2
-		mv.Table,        // 3
-		baseWhereClause, // 4
-		orderClause,     // 5
-		limitClause,     // 6
-		q.Offset,        // 7
-	)
+	var sql string
+	if export {
+		labelSelectClause := strings.Join(labelCols, ", ")
+		sql = fmt.Sprintf(
+			`SELECT %[8]s FROM (SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d)`,
+			selectClause,      // 1
+			colName,           // 2
+			mv.Table,          // 3
+			baseWhereClause,   // 4
+			orderClause,       // 5
+			limitClause,       // 6
+			q.Offset,          // 7
+			labelSelectClause, // 8
+		)
+	} else {
+		sql = fmt.Sprintf(
+			`SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d`,
+			selectClause,    // 1
+			colName,         // 2
+			mv.Table,        // 3
+			baseWhereClause, // 4
+			orderClause,     // 5
+			limitClause,     // 6
+			q.Offset,        // 7
+		)
+	}
 
 	return sql, args, nil
 }
 
-func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, export bool) (string, []any, error) {
 	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
 
 	selectCols := []string{colName}
+	labelMap := make(map[string]string, len(mv.Measures))
+	for _, m := range mv.Measures {
+		labelMap[m.Name] = m.Name
+		if m.Label != "" {
+			labelMap[m.Name] = m.Label
+		}
+	}
 
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
@@ -349,10 +384,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 
 	finalSelectCols := []string{}
+	labelCols := []string{}
 	measureMap := make(map[string]int)
 	for i, m := range q.Measures {
 		measureMap[m.Name] = i
 		var columnsTuple string
+		var labelTuple string
 		if dialect != drivers.DialectDruid {
 			columnsTuple = fmt.Sprintf(
 				"base.%[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
@@ -361,20 +398,41 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				safeName(m.Name+"__delta_abs"),
 				safeName(m.Name+"__delta_rel"),
 			)
+			labelTuple = fmt.Sprintf(
+				"base.%[1]s AS %[5]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
+				safeName(m.Name),
+				labelMap[m.Name]+" (prev)",
+				labelMap[m.Name]+" (Δ)",
+				labelMap[m.Name]+" (Δ%)",
+				labelMap[m.Name],
+			)
 		} else {
 			columnsTuple = fmt.Sprintf(
 				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE)))",
 				safeName(m.Name),
+			)
+			labelTuple = fmt.Sprintf(
+				"ANY_VALUE(base.%[1]s) AS %[2]s, ANY_VALUE(comparison.%[1]s) AS %[3]s, ANY_VALUE(base.%[1]s - comparison.%[1]s) AS %[4]s, ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[5]s",
+				safeName(m.Name),
+				labelMap[m.Name],
+				labelMap[m.Name]+" (prev)",
+				labelMap[m.Name]+" (Δ)",
+				labelMap[m.Name]+" (Δ%)",
 			)
 		}
 		finalSelectCols = append(
 			finalSelectCols,
 			columnsTuple,
 		)
+		labelCols = append(labelCols, labelTuple)
 	}
 
 	subSelectClause := strings.Join(selectCols, ", ")
 	finalSelectClause := strings.Join(finalSelectCols, ", ")
+	labelSelectClause := strings.Join(labelCols, ", ")
+	if export {
+		finalSelectClause = labelSelectClause
+	}
 
 	baseWhereClause := "1=1"
 	comparisonWhereClause := "1=1"
@@ -654,12 +712,12 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 			var sql string
 			var args []any
 			if !isTimeRangeNil(q.ComparisonTimeRange) {
-				sql, args, err = q.buildMetricsComparisonTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
+				sql, args, err = q.buildMetricsComparisonTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity, true)
 				if err != nil {
 					return fmt.Errorf("error building query: %w", err)
 				}
 			} else {
-				sql, args, err = q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
+				sql, args, err = q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity, true)
 				if err != nil {
 					return fmt.Errorf("error building query: %w", err)
 				}
@@ -698,8 +756,16 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 		}
 	}
 
+	measureMap := make(map[string]string, len(mv.Measures))
+	for _, m := range mv.Measures {
+		measureMap[m.Name] = m.Name
+		if m.Label != "" {
+			measureMap[m.Name] = m.Label
+		}
+	}
 	var metaLen int
-	if !isTimeRangeNil(q.ComparisonTimeRange) {
+	comparison := !isTimeRangeNil(q.ComparisonTimeRange)
+	if comparison {
 		metaLen = len(q.Result.Rows[0].MeasureValues) * 4
 	} else {
 		metaLen = len(q.Result.Rows[0].MeasureValues)
@@ -708,25 +774,25 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 	meta[0] = &runtimev1.MetricsViewColumn{
 		Name: q.DimensionName,
 	}
-	if !isTimeRangeNil(q.ComparisonTimeRange) {
+	if comparison {
 		for i, m := range q.Result.Rows[0].MeasureValues {
 			meta[1+i*4] = &runtimev1.MetricsViewColumn{
-				Name: m.MeasureName,
+				Name: measureMap[m.MeasureName],
 			}
 			meta[2+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s__previous", m.MeasureName),
+				Name: fmt.Sprintf("%s (prev)", measureMap[m.MeasureName]),
 			}
 			meta[3+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s__delta_abs", m.MeasureName),
+				Name: fmt.Sprintf("%s (Δ)", measureMap[m.MeasureName]),
 			}
 			meta[4+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s__delta_rel", m.MeasureName),
+				Name: fmt.Sprintf("%s (Δ%)", measureMap[m.MeasureName]),
 			}
 		}
 	} else {
 		for i, m := range q.Result.Rows[0].MeasureValues {
 			meta[1+i] = &runtimev1.MetricsViewColumn{
-				Name: m.MeasureName,
+				Name: measureMap[m.MeasureName],
 			}
 		}
 	}
@@ -742,7 +808,6 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 				},
 			},
 		}
-		comparison := !isTimeRangeNil(q.ComparisonTimeRange)
 		for _, m := range row.MeasureValues {
 			if comparison {
 				data[i].Fields[m.MeasureName] = &structpb.Value{
