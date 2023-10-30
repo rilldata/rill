@@ -60,12 +60,13 @@ export const useCreateDashboardFromSource = <
   > = async (props) => {
     const { data } = props ?? {};
     const sourceName = data.sourceResource?.meta?.name?.name;
-    if (!sourceName) throw new Error("Source name is missing");
+    if (!sourceName)
+      throw new Error("Failed to create dashboard: Source name is missing");
     if (
       !data.sourceResource.source.state.connector ||
       !data.sourceResource.source.state.table
     )
-      throw new Error("Source is not ready");
+      throw new Error("Failed to create dashboard: Source is not ready");
 
     // first, create model from source
 
@@ -165,9 +166,12 @@ export function useCreateDashboardFromSourceUIAction(
         get(appScreen)?.type,
         MetricsEventScreenName.Dashboard
       );
+      overlay.set(null);
     } catch (err) {
-      // no-op
+      overlay.set({
+        title: "Failed to create a dashboard for " + sourceName,
+        message: err.response?.data?.message ?? err.message,
+      });
     }
-    overlay.set(null);
   };
 }

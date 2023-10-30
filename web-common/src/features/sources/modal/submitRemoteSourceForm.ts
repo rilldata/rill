@@ -72,11 +72,6 @@ export async function submitRemoteSourceForm(
   );
   const yaml = compileCreateSourceYAML(formValues, connectorName);
 
-  checkSourceImported(
-    queryClient,
-    values.sourceName,
-    getFilePathFromNameAndType(values.sourceName, EntityType.Table)
-  );
   // Attempt to create & import the source
   await runtimeServicePutFile(
     instanceId,
@@ -86,6 +81,11 @@ export async function submitRemoteSourceForm(
       create: true,
       createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
     }
+  );
+  checkSourceImported(
+    queryClient,
+    values.sourceName,
+    getFilePathFromNameAndType(values.sourceName, EntityType.Table)
   );
 
   // TODO: telemetry

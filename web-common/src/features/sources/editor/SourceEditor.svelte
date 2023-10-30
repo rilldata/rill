@@ -66,8 +66,8 @@
     // Save the source, if it's unsaved
     if (!isSourceUnsaved) return;
     overlay.set({ title: `Importing ${sourceName}.yaml` });
-    checkSourceImported(queryClient, sourceName, filePath);
     await saveAndRefresh(sourceName, $sourceStore.clientYAML);
+    checkSourceImported(queryClient, sourceName, filePath);
     overlay.set(null);
   }
 </script>

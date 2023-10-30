@@ -117,8 +117,8 @@
 
   const onSaveAndRefreshClick = async (tableName: string) => {
     overlay.set({ title: `Importing ${tableName}.yaml` });
-    checkSourceImported(queryClient, sourceName, filePath);
     await saveAndRefresh(tableName, $sourceStore.clientYAML);
+    checkSourceImported(queryClient, sourceName, filePath);
     overlay.set(null);
   };
 

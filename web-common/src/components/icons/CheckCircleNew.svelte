@@ -1,6 +1,7 @@
 <script lang="ts">
   /**
    * Slightly different that CheckCircle.svelte. This matches more with our design.
+   * TODO: use this icon everywhere.
    */
   export let size = "1em";
   export let color = "currentColor";

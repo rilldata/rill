@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -62,21 +61,18 @@
           "local_file"
         );
 
+        await createSource(runtimeInstanceId, tableName, yaml);
         checkSourceImported(
           queryClient,
           tableName,
           getFilePathFromNameAndType(tableName, EntityType.Table)
         );
-        await createSource(runtimeInstanceId, tableName, yaml);
       } catch (err) {
-        // no-op
+        console.error(err);
       }
 
       overlay.set(null);
       dispatch("close");
-
-      // Navigate to source page
-      goto(`/source/${tableName}`);
     }
   }
 </script>
