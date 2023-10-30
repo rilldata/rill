@@ -5,6 +5,8 @@
   import ReportHistoryTable from "../../../../../../features/scheduled-reports/history/ReportHistoryTable.svelte";
   import ReportMetadata from "../../../../../../features/scheduled-reports/metadata/ReportMetadata.svelte";
 
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
   $: report = $page.params.report;
 </script>
 
@@ -12,7 +14,7 @@
   <ContentContainer>
     <div class="flex justify-center">
       <div class="w-[960px] flex flex-col items-start gap-y-16">
-        <ReportMetadata {report} />
+        <ReportMetadata {organization} {project} {report} />
         <ReportHistoryTable {report} />
       </div>
     </div>
