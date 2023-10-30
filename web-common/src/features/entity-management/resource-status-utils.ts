@@ -4,10 +4,8 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   getAllErrorsForFile,
-  getLastStateVersion,
   getLastStateVersionByKindAndName,
   getResourceNameForFile,
-  useLastStateVersion,
   useResourceForFile,
 } from "@rilldata/web-common/features/entity-management/resources-store";
 import {
@@ -95,7 +93,10 @@ export function resourceStatusStore(
     ],
     ([res, errors]) => {
       if (res.isFetching) return { status: ResourceStatus.Busy };
-      if (res.isError || errors.length > 0)
+      if (
+        (res.isError && (res.error as any).response.status !== 404) ||
+        errors.length > 0
+      )
         return { status: ResourceStatus.Errored, changed: false };
       if (!version) return { status: ResourceStatus.Idle };
 
