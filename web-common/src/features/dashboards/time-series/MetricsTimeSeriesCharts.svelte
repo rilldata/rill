@@ -241,7 +241,8 @@
     {#each renderedMeasures as measure (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
       {@const bigNum = totals?.[measure.name] ?? 0}
-      {@const isBeingHovered = hoveredMeasure === measure.name}
+      {@const isBeingHovered =
+        !expandedMeasureName && hoveredMeasure === measure.name}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
       {@const comparisonPercChange =
         comparisonValue && bigNum !== undefined && bigNum !== null
