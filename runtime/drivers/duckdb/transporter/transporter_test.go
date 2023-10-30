@@ -540,13 +540,19 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 	mockConnector := &mockObjectStore{}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%s - query=%v", test.name, test.query), func(t *testing.T) {
-			mockConnector.mockIterator = &mockIterator{batches: test.files}
+			m := &mockIterator{batches: test.files}
+			mockConnector.mockIterator = m
 			olap := runOLAPStore(t)
 			ctx := context.Background()
 			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
 			var src map[string]any
 			if test.query {
+				files := make([]string, 0)
+				for _, f := range test.files {
+					files = append(files, f...)
+				}
+				m.batches = [][]string{files}
 				src = map[string]any{"sql": "select * from read_json('path',format='auto',union_by_name=true,auto_detect=true,sample_size=200000)", "batch_size": "-1"}
 			} else {
 				src = map[string]any{"allow_schema_relaxation": true}
