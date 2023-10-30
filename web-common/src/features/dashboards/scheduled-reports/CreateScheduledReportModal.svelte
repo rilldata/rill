@@ -49,7 +49,8 @@
     },
     validationSchema: yup.object({
       title: yup.string().required("Required"),
-      recipients: yup.array().of(yup.string()).min(1, "Required"),
+      // TODO: uncomment and fix this validation
+      // recipients: yup.array().of(yup.string()).min(1, "Required"),
     }),
     onSubmit: async (values) => {
       const refreshCron = convertToCron(
@@ -176,7 +177,7 @@
         type="primary"
         submitForm
         form="create-scheduled-report-form"
-        disabled={$isSubmitting}
+        disabled={$isSubmitting || $form["recipients"].length === 0}
       >
         Create
       </Button>
