@@ -119,7 +119,7 @@
         <FormItemSelect
           bind:value={$form["dayOfWeek"]}
           id="dayOfWeek"
-          label="Day of week"
+          label="Day"
           options={[
             "Monday",
             "Tuesday",
@@ -136,7 +136,7 @@
       <FormItemTimePicker
         bind:value={$form["timeOfDay"]}
         id="timeOfDay"
-        label="Time of day"
+        label="Time"
       />
     </div>
     <FormItemSelect
