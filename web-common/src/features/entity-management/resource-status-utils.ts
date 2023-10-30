@@ -98,7 +98,6 @@ export function resourceStatusStore(
         errors.length > 0
       )
         return { status: ResourceStatus.Errored, changed: false };
-      if (!version) return { status: ResourceStatus.Idle };
 
       if (
         res.data?.meta?.reconcileStatus !==
@@ -110,7 +109,7 @@ export function resourceStatusStore(
         status: !res.data?.meta?.reconcileError
           ? ResourceStatus.Idle
           : ResourceStatus.Errored,
-        changed: res.data?.meta?.stateUpdatedOn > version,
+        changed: !version || res.data?.meta?.stateUpdatedOn > version,
       };
     }
   );

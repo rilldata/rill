@@ -17,7 +17,6 @@ export function checkSourceImported(
     ResourceKind.Source,
     sourceName
   ).then((success) => {
-    console.log("checkSourceImported", success);
     if (!success) return;
     sourceImportedName.set(sourceName);
     // TODO: telemetry
