@@ -1,5 +1,7 @@
 <script lang="ts">
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { formatDateToCustomString } from "../tableUtils";
 
   export let reportTime: string;
@@ -13,6 +15,11 @@
   {#if errorMessage === ""}
     <Tag color="blue">Email sent</Tag>
   {:else}
-    <Tag color="red">Failed</Tag>
+    <Tooltip>
+      <Tag color="red">Failed</Tag>
+      <TooltipContent slot="tooltip-content">
+        {errorMessage}
+      </TooltipContent>
+    </Tooltip>
   {/if}
 </div>
