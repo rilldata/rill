@@ -106,7 +106,9 @@
     dimension: {
       name: $dashboardStore.selectedDimensionName,
     },
-    measures: $dashboardStore.selectedMeasureNames, // this is wrong; match dimension format
+    measures: $dashboardStore.selectedMeasureNames.map((name) => ({
+      name: name,
+    })),
     timeRange: {
       start: $timeControlStore.timeStart,
       end: $timeControlStore.timeEnd,
