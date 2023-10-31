@@ -14,6 +14,7 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
@@ -117,6 +118,7 @@
   const onSaveAndRefreshClick = async (tableName: string) => {
     overlay.set({ title: `Importing ${tableName}.yaml` });
     await saveAndRefresh(tableName, $sourceStore.clientYAML);
+    checkSourceImported(queryClient, sourceName, filePath);
     overlay.set(null);
   };
 
