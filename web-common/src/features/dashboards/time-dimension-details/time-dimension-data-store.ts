@@ -1,8 +1,6 @@
 import { derived, writable, type Readable } from "svelte/store";
-import {
-  StateManagers,
-  memoizeMetricsStore,
-} from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";

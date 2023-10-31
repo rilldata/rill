@@ -1,0 +1,23 @@
+import { Readable, derived } from "svelte/store";
+import type { StateManagers } from "./state-managers";
+
+/**
+ * Higher order function to create a memoized store based on metrics view name
+ */
+export function memoizeMetricsStore<Store extends Readable<any>>(
+  storeGetter: (ctx: StateManagers) => Store
+) {
+  const cache = new Map<string, Store>();
+  return (ctx: StateManagers): Store => {
+    return derived([ctx.metricsViewName], ([name], set) => {
+      let store: Store;
+      if (cache.has(name)) {
+        store = cache.get(name);
+      } else {
+        store = storeGetter(ctx);
+        cache.set(name, store);
+      }
+      return store.subscribe(set);
+    }) as Store;
+  };
+}
