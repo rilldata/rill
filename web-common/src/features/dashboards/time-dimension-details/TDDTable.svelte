@@ -279,7 +279,7 @@
 
 <div
   on:mouseleave={resetHighlight}
-  style:height={comparing === "none" ? "120px" : "calc(100% - 50px)"}
+  style:height={comparing === "none" ? "80px" : "calc(100% - 50px)"}
   style={cssVarStyles}
   class="w-full relative"
 >
