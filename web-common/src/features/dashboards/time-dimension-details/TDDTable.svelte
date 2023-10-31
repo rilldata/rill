@@ -222,7 +222,7 @@
    * from container width along with extra 50px for padding
    */
   $: colWidth = Math.floor(
-    (containerWidth - 250 - 130 - 50 - 50) / data?.columnCount
+    (containerWidth - 250 - 130 - 50 - 50) / tableData?.columnCount
   );
 
   const getColumnWidth = () => {
@@ -237,7 +237,7 @@
   const getRowHeaderWidth = (x: number) => {
     if (colWidth > 160) {
       if (x === 0) {
-        const dimWidth = 220 + data?.columnCount * (colWidth - 150);
+        const dimWidth = 220 + tableData?.columnCount * (colWidth - 150);
         return Math.min(dimWidth, 500);
       } else if (x === 1) {
         return 160;
