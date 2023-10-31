@@ -418,7 +418,6 @@ func generateNullRecords(schema *runtimev1.StructType) *structpb.Struct {
 
 func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, tg runtimev1.TimeGrain, tz *time.Location) []*runtimev1.TimeSeriesValue {
 	for start.Before(end) {
-		start = start.Add(11 * time.Second)
 		data = append(data, &runtimev1.TimeSeriesValue{
 			Ts:      timestamppb.New(start),
 			Records: nullRecords,
