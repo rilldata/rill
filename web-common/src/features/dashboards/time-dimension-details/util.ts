@@ -20,6 +20,8 @@ export function safeFormatter(formatter) {
   return (value) => {
     if (value === undefined) {
       return undefined;
+    } else if (value === null) {
+      return null;
     } else {
       return formatter(value);
     }
