@@ -26,7 +26,7 @@
   export let highlightedCol: number;
   export let scrubPos: { start: number; end: number };
   export let comparing: TDDComparison;
-  export let data: TableData;
+  export let tableData: TableData;
 
   /** Formatter for the time axis in the table*/
   export let timeFormatter: (date: Date) => string;
@@ -39,17 +39,17 @@
   let colIdxHover: number | undefined;
 
   function getBodyData(pos: PivotPos) {
-    return data?.body
+    return tableData?.body
       ?.slice(pos.x0, pos.x1)
       .map((row) => row.slice(pos.y0, pos.y1));
   }
 
   export function getRowHeaderData(pos: PivotPos) {
-    return data?.rowHeaderData?.slice(pos.y0, pos.y1);
+    return tableData?.rowHeaderData?.slice(pos.y0, pos.y1);
   }
 
   export function getColumnHeaderData(pos: PivotPos) {
-    return data?.columnHeaderData?.slice(pos.x0, pos.x1);
+    return tableData?.columnHeaderData?.slice(pos.x0, pos.x1);
   }
 
   const renderCell: PivotRenderCallback = (data) => {
@@ -106,7 +106,7 @@
   const toggleVisible = (n) => {
     n = parseInt(n);
     if (comparing != "dimension" || n == 0) return;
-    const label = data?.rowHeaderData[n][0].value;
+    const label = tableData?.rowHeaderData[n][0].value;
     metricsExplorerStore.toggleFilter(metricViewName, dimensionName, label);
   };
 
@@ -114,7 +114,7 @@
   $: {
     scrubPos;
     highlightedCol;
-    data?.selectedValues;
+    tableData?.selectedValues;
     pivot?.draw();
   }
 
@@ -124,7 +124,7 @@
       noSelectionMarkerCount = 0;
       return ``;
     }
-    const visibleIdx = data?.selectedValues.indexOf(value.value);
+    const visibleIdx = tableData?.selectedValues.indexOf(value.value);
 
     if (comparing === "time") {
       if (y == 1) return SelectedCheckmark("fill-blue-500");
@@ -141,7 +141,7 @@
             (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300")
         );
     } else if (noSelectionMarkerCount < 3) {
-      if (excludeMode || !data?.selectedValues.length) {
+      if (excludeMode || !tableData?.selectedValues.length) {
         noSelectionMarkerCount += 1;
         return `<div class="rounded-full bg-${
           CHECKMARK_COLORS[noSelectionMarkerCount - 1]
@@ -166,7 +166,7 @@
       rowIdxHover,
       colIdxHover ?? highlightedCol,
       y,
-      x - data?.fixedColCount
+      x - tableData?.fixedColCount
     );
     if (x > 0) {
       element.classList.remove(
@@ -201,7 +201,7 @@
       return `<div class="text-right font-medium text-gray-700 flex items-center" sortable="true">
         <span class="truncate">${measureLabel} </span>
         ${
-          comparing === "dimension"
+          comparing === "dimension" && tableData?.fixedColCount === 2
             ? `<span>${MeasureArrow(sortDirection)}</span>`
             : ``
         }
@@ -309,8 +309,8 @@
     {getRowHeaderData}
     {getColumnHeaderData}
     {getBodyData}
-    rowCount={data?.rowCount}
-    columnCount={data?.columnCount}
+    rowCount={tableData?.rowCount}
+    columnCount={tableData?.columnCount}
     rowHeaderDepth={4}
     columnHeaderDepth={1}
     {renderCell}
