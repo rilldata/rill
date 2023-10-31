@@ -4,7 +4,7 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   getAllErrorsForFile,
-  getLastStateVersionByKindAndName,
+  getLastStateUpdatedOnByKindAndName,
   getResourceNameForFile,
   useResourceForFile,
 } from "@rilldata/web-common/features/entity-management/resources-store";
@@ -85,7 +85,7 @@ export function resourceStatusStore(
   kind: ResourceKind,
   name: string
 ) {
-  const version = getLastStateVersionByKindAndName(kind, name);
+  const lastUpdatedOn = getLastStateUpdatedOnByKindAndName(kind, name);
   return derived(
     [
       useResourceForFile(queryClient, instanceId, filePath),
@@ -109,7 +109,8 @@ export function resourceStatusStore(
         status: !res.data?.meta?.reconcileError
           ? ResourceStatus.Idle
           : ResourceStatus.Errored,
-        changed: !version || res.data?.meta?.stateUpdatedOn > version,
+        changed:
+          !lastUpdatedOn || res.data?.meta?.stateUpdatedOn > lastUpdatedOn,
       };
     }
   );

@@ -1,6 +1,6 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
-  getLastStateVersion,
+  getLastStateUpdatedOn,
   resourcesStore,
 } from "@rilldata/web-common/features/entity-management/resources-store";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
@@ -81,7 +81,7 @@ async function invalidateResource(
 ) {
   refreshResource(queryClient, instanceId, resource);
 
-  const lastStateUpdatedOn = getLastStateVersion(resource);
+  const lastStateUpdatedOn = getLastStateUpdatedOn(resource);
   if (
     resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE ||
     lastStateUpdatedOn === resource.meta.stateUpdatedOn
@@ -121,6 +121,7 @@ async function invalidateRemovedResource(
       "name.kind": resource.meta.name.kind,
     })
   );
+  resourcesStore.deleteResource(resource);
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:

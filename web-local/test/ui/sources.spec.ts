@@ -82,8 +82,6 @@ path: ${TestDataPath}/non_existent_file.csv`;
 path: ${TestDataPath}/AdImpressions.tsv`;
     await updateCodeEditor(page, adImpressionsSource);
     await page.getByRole("button", { name: "Save and refresh" }).click();
-    // Close the imported modal
-    await page.getByText("View this source").click();
 
     // Check that the source data is updated
     // (The column "user_id" exists in AdImpressions, but not in AdBids)

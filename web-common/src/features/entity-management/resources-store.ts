@@ -30,13 +30,13 @@ export type ResourcesState = {
   currentlyReconciling: Record<string, V1ResourceName>;
   // last time the state of the resource `kind/name` was updated
   // used to make sure we do not have unnecessary refreshes
-  lastStateVersion: Record<string, string>;
+  lastStateUpdatedOn: Record<string, string>;
 };
 
 const { update, subscribe } = writable<ResourcesState>({
   resources: {},
   currentlyReconciling: {},
-  lastStateVersion: {},
+  lastStateUpdatedOn: {},
 });
 
 const resourcesStoreReducers = {
@@ -103,8 +103,15 @@ const resourcesStoreReducers = {
 
   setVersion(resource: V1Resource) {
     update((state) => {
-      state.lastStateVersion[getKeyForResource(resource)] =
+      state.lastStateUpdatedOn[getKeyForResource(resource)] =
         resource.meta.stateUpdatedOn;
+      return state;
+    });
+  },
+
+  deleteResource(resource: V1Resource) {
+    update((state) => {
+      delete state.lastStateUpdatedOn[getKeyForResource(resource)];
       return state;
     });
   },
@@ -196,22 +203,15 @@ export function getReconcilingItems() {
   });
 }
 
-export function getLastStateVersion(resource: V1Resource) {
-  return get(resourcesStore).lastStateVersion[getKeyForResource(resource)];
+export function getLastStateUpdatedOn(resource: V1Resource) {
+  return get(resourcesStore).lastStateUpdatedOn[getKeyForResource(resource)];
 }
 
-export function getLastStateVersionByKindAndName(
+export function getLastStateUpdatedOnByKindAndName(
   kind: ResourceKind,
   name: string
 ) {
-  return get(resourcesStore).lastStateVersion[`${kind}/${name}`];
-}
-
-export function useLastStateVersion(kind: ResourceKind, name: string) {
-  return derived(
-    [resourcesStore],
-    ([state]) => state.lastStateVersion[`${kind}/${name}`]
-  );
+  return get(resourcesStore).lastStateUpdatedOn[`${kind}/${name}`];
 }
 
 function getKeyForResource(resource: V1Resource) {
