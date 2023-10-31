@@ -35,9 +35,9 @@ export function getClassForCell(
 ) {
   const bgColors = {
     fixed: {
-      base: "bg-slate-50",
-      highlighted: "bg-slate-100",
-      doubleHighlighted: "bg-slate-200",
+      base: "!bg-slate-50",
+      highlighted: "!bg-slate-100",
+      doubleHighlighted: "!bg-slate-200",
     },
     scrubbed: {
       base: "!bg-blue-50",
