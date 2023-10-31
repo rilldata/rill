@@ -79,8 +79,11 @@
       data.x >= scrubPos.start &&
       data.x <= scrubPos.end - 1;
 
-    const palette =
-      data.y === 0 ? "fixed" : isScrubbed ? "scrubbed" : "default";
+    const palette = isScrubbed
+      ? "scrubbed"
+      : data.y === 0
+      ? "fixed"
+      : "default";
 
     classesToAdd.push(
       getClassForCell(
