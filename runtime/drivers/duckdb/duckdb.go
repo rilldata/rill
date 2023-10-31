@@ -314,6 +314,8 @@ func (c *connection) Config() map[string]any {
 func (c *connection) Close() error {
 	c.cancel()
 	_ = c.registration.Unregister()
+	// detach all attached DBs otherwise duckdb leaks memory
+	c.detachAllDBs()
 	return c.db.Close()
 }
 
@@ -393,6 +395,8 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 func (c *connection) reopenDB() error {
 	// If c.db is already open, close it first
 	if c.db != nil {
+		// detach all attached DBs otherwise duckdb leaks memory
+		c.detachAllDBs()
 		err := c.db.Close()
 		if err != nil {
 			return err
@@ -750,6 +754,36 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 		case <-c.ctx.Done():
 			statTicker.Stop()
 			return
+		}
+	}
+}
+
+// detachAllDBs detaches all attached dbs if external_table_storage config is true
+func (c *connection) detachAllDBs() {
+	if !c.config.ExtTableStorage {
+		return
+	}
+	entries, err := os.ReadDir(c.config.ExtStoragePath)
+	if err != nil {
+		c.logger.Error("unable to read ExtStoragePath", zap.String("path", c.config.ExtStoragePath), zap.Error(err))
+		return
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		version, exist, err := c.tableVersion(entry.Name())
+		if err != nil {
+			continue
+		}
+		if !exist {
+			continue
+		}
+
+		db := dbName(entry.Name(), version)
+		_, err = c.db.ExecContext(context.Background(), fmt.Sprintf("DETACH %s", safeSQLName(db)))
+		if err != nil {
+			c.logger.Error("detach failed", zap.String("db", db), zap.Error(err))
 		}
 	}
 }
