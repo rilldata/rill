@@ -53,7 +53,8 @@ function setDefaultComparison(
   switch (metricsView.defaultComparisonMode) {
     case MetricsViewSpecDefaultComparisonMode.DEFAULT_COMPARISON_MODE_DIMENSION:
       metricsExplorer.selectedComparisonDimension =
-        metricsView.defaultComparisonDimension;
+        metricsView.defaultComparisonDimension ??
+        metricsView.dimensions?.[0]?.name;
       break;
 
     // if default_comparison is not specified it defaults to time comparison

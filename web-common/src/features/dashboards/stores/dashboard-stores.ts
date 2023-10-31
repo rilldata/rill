@@ -19,6 +19,7 @@ import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
   V1MetricsViewFilter,
+  V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { derived, Readable, writable } from "svelte/store";
@@ -163,7 +164,7 @@ function syncDimensions(
 const metricViewReducers = {
   init(
     name: string,
-    metricsView: V1MetricsView,
+    metricsView: V1MetricsViewSpec,
     fullTimeRange: V1ColumnTimeRangeResponse | undefined
   ) {
     update((state) => {
