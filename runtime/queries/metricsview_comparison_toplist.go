@@ -785,7 +785,7 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 				Name: fmt.Sprintf("%s (Δ)", measureMap[m.MeasureName]),
 			}
 			meta[4+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s (Δ%)", measureMap[m.MeasureName]),
+				Name: fmt.Sprintf("%s (Δ%%)", measureMap[m.MeasureName]),
 			}
 		}
 	} else {
