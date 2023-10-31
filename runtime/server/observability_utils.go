@@ -74,7 +74,7 @@ func marshalMetricsViewComparisonSort(ms []*runtimev1.MetricsViewComparisonSort)
 
 	names := make([]string, len(ms))
 	for i := 0; i < len(ms); i++ {
-		names[i] = ms[i].MeasureName
+		names[i] = ms[i].Name
 	}
 	return nil
 }

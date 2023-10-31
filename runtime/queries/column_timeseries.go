@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"slices"
 	"strconv"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -221,8 +221,8 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 
 		var data []*runtimev1.TimeSeriesValue
+		rowMap := make(map[string]any)
 		for rows.Next() {
-			rowMap := make(map[string]any)
 			err := rows.MapScan(rowMap)
 			if err != nil {
 				rows.Close()

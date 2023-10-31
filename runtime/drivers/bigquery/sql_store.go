@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -19,12 +20,16 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
 )
 
 // recommended size is 512MB - 1GB, entire data is buffered in memory before its written to disk
 const rowGroupBufferSize = int64(datasize.MB) * 512
 
 const _jsonDownloadLimitBytes = 100 * int64(datasize.MB)
+
+// Regex to parse BigQuery SELECT ALL statement: SELECT * FROM `project_id.dataset.table`
+var selectQueryRegex = regexp.MustCompile("(?i)^\\s*SELECT\\s+\\*\\s+FROM\\s+(`?[a-zA-Z0-9_.-]+`?)\\s*$")
 
 // Query implements drivers.SQLStore
 func (c *Connection) Query(ctx context.Context, props map[string]any) (drivers.RowIterator, error) {
@@ -43,42 +48,85 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		return nil, err
 	}
 
-	client, err := bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
-	if err != nil {
-		if strings.Contains(err.Error(), "unable to detect projectID") {
-			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
+	var client *bigquery.Client
+	var it *bigquery.RowIterator
+
+	match := selectQueryRegex.FindStringSubmatch(srcProps.SQL)
+	if match != nil {
+		// "SELECT * FROM `project_id.dataset.table`" statement so storage api might be used
+		// project_id and backticks are optional
+		fullTableName := match[1]
+		fullTableName = strings.Trim(fullTableName, "`")
+
+		var projectID, dataset, tableID string
+
+		parts := strings.Split(fullTableName, ".")
+		switch len(parts) {
+		case 2:
+			dataset, tableID = parts[0], parts[1]
+			projectID = srcProps.ProjectID
+		case 3:
+			projectID, dataset, tableID = parts[0], parts[1], parts[2]
+		default:
+			return nil, fmt.Errorf("invalid table format, `project_id.dataset.table` is expected")
 		}
-		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
-	}
 
-	if err := client.EnableStorageReadClient(ctx, opts...); err != nil {
-		client.Close()
-		return nil, err
-	}
-
-	now := time.Now()
-	q := client.Query(srcProps.SQL)
-	it, err := q.Read(ctx)
-	if err != nil && !strings.Contains(err.Error(), "Syntax error") {
-		// close the read storage API client
-		client.Close()
-		c.logger.Info("query failed, retrying without storage api", zap.Error(err))
-		// the query results are always cached in a temporary table that storage api can use
-		// there are some exceptions when results aren't cached
-		// so we also try without storage api
-		client, err = bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
+		client, err = createClient(ctx, srcProps.ProjectID, opts)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create bigquery client: %w", err)
+			return nil, err
+		}
+
+		if err = client.EnableStorageReadClient(ctx, opts...); err != nil {
+			client.Close()
+			return nil, err
+		}
+
+		it = client.DatasetInProject(projectID, dataset).Table(tableID).Read(ctx)
+	} else {
+		now := time.Now()
+
+		client, err = createClient(ctx, srcProps.ProjectID, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := client.EnableStorageReadClient(ctx, opts...); err != nil {
+			client.Close()
+			return nil, err
 		}
 
 		q := client.Query(srcProps.SQL)
 		it, err = q.Read(ctx)
+
+		if err != nil && !strings.Contains(err.Error(), "Response too large to return") {
+			// https://cloud.google.com/knowledge/kb/bigquery-response-too-large-to-return-consider-setting-allowlargeresults-to-true-in-your-job-configuration-000004266
+			client.Close()
+			return nil, fmt.Errorf("response too large, consider ingesting the entire table with 'select * from `project_id.dataset.tablename`'")
+		}
+
+		if err != nil && !strings.Contains(err.Error(), "Syntax error") {
+			// close the read storage API client
+			client.Close()
+			c.logger.Info("query failed, retrying without storage api", zap.Error(err))
+			// the query results are always cached in a temporary table that storage api can use
+			// there are some exceptions when results aren't cached
+			// so we also try without storage api
+			client, err = bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create bigquery client: %w", err)
+			}
+
+			q := client.Query(srcProps.SQL)
+			it, err = q.Read(ctx)
+		}
+
+		if err != nil {
+			client.Close()
+			return nil, err
+		}
+
+		c.logger.Info("query took", zap.Duration("duration", time.Since(now)), observability.ZapCtx(ctx))
 	}
-	if err != nil {
-		client.Close()
-		return nil, err
-	}
-	c.logger.Info("query took", zap.Duration("duration", time.Since(now)), observability.ZapCtx(ctx))
 
 	p.Target(int64(it.TotalRows), drivers.ProgressUnitRecord)
 	return &fileIterator{
@@ -90,6 +138,17 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		totalRecords: int64(it.TotalRows),
 		ctx:          ctx,
 	}, nil
+}
+
+func createClient(ctx context.Context, projectID string, opts []option.ClientOption) (*bigquery.Client, error) {
+	client, err := bigquery.NewClient(ctx, projectID, opts...)
+	if err != nil {
+		if strings.Contains(err.Error(), "unable to detect projectID") {
+			return nil, fmt.Errorf("projectID not detected in credentials. Please set `project_id` in source yaml")
+		}
+		return nil, fmt.Errorf("failed to create bigquery client: %w", err)
+	}
+	return client, nil
 }
 
 type fileIterator struct {
@@ -109,10 +168,6 @@ type fileIterator struct {
 // Close implements drivers.FileIterator.
 func (f *fileIterator) Close() error {
 	return os.Remove(f.tempFilePath)
-}
-
-// KeepFilesUntilClose implements drivers.FileIterator.
-func (f *fileIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
 }
 
 // Next implements drivers.FileIterator.

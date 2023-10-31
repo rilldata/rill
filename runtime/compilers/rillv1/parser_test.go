@@ -3,6 +3,8 @@ package rillv1
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 
@@ -11,8 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -902,7 +902,6 @@ refresh:
 
 query:
   name: MetricsViewToplist
-  time_range: P2W
   args:
     metrics_view: mv1
 
@@ -913,10 +912,9 @@ export:
 email:
   recipients:
     - benjamin@example.com
-  template:
-    open_url: https://example.com/open
-    edit_url: https://example.com/edit
-    export_url: https://example.com/export
+
+annotations:
+  foo: bar
 `,
 	})
 
@@ -932,13 +930,10 @@ email:
 				},
 				QueryName:       "MetricsViewToplist",
 				QueryArgsJson:   `{"metrics_view":"mv1"}`,
-				QueryTimeRange:  "P2W",
 				ExportFormat:    runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
 				ExportLimit:     10000,
 				EmailRecipients: []string{"jane@example.com"},
-				EmailOpenUrl:    "https://example.com/open",
-				EmailEditUrl:    "https://example.com/edit",
-				EmailExportUrl:  "https://example.com/export",
+				Annotations:     map[string]string{"foo": "bar"},
 			},
 		},
 	}

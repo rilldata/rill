@@ -75,7 +75,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	release()
 
 	// Get dependency cache keys
-	ctrl, err := r.Controller(instanceID)
+	ctrl, err := r.Controller(ctx, instanceID)
 	if err != nil {
 		return err
 	}

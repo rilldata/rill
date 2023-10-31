@@ -10,21 +10,19 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/pkg/duration"
 	"gopkg.in/yaml.v3"
 )
 
-// reportYAML is the raw structure of a Report resource defined in YAML (does not include common fields)
-type reportYAML struct {
+// ReportYAML is the raw structure of a Report resource defined in YAML (does not include common fields)
+type ReportYAML struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title      string           `yaml:"title"`
-	Refresh    *scheduleYAML    `yaml:"refresh"`
+	Refresh    *ScheduleYAML    `yaml:"refresh"`
 	Timeout    string           `yaml:"timeout"`
 	Query      struct {
-		Name      string         `yaml:"name"`
-		TimeRange string         `yaml:"time_range"`
-		Args      map[string]any `yaml:"args"`
-		ArgsJSON  string         `yaml:"args_json"`
+		Name     string         `yaml:"name"`
+		Args     map[string]any `yaml:"args"`
+		ArgsJSON string         `yaml:"args_json"`
 	} `yaml:"query"`
 	Export struct {
 		Format string `yaml:"format"`
@@ -32,18 +30,14 @@ type reportYAML struct {
 	} `yaml:"export"`
 	Email struct {
 		Recipients []string `yaml:"recipients"`
-		Template   struct {
-			OpenURL   string `yaml:"open_url"`
-			EditURL   string `yaml:"edit_url"`
-			ExportURL string `yaml:"export_url"`
-		} `yaml:"template"`
 	} `yaml:"email"`
+	Annotations map[string]string `yaml:"annotations"`
 }
 
 // parseReport parses a report definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 	// Parse YAML
-	tmp := &reportYAML{}
+	tmp := &ReportYAML{}
 	if node.YAMLRaw != "" {
 		// Can't use node.YAML because we want to set KnownFields for reports
 		dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
@@ -99,14 +93,6 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 		return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
 	}
 
-	// Query time range
-	if tmp.Query.TimeRange != "" {
-		_, err := duration.ParseISO8601(tmp.Query.TimeRange)
-		if err != nil {
-			return fmt.Errorf(`invalid "query.time_range": %w`, err)
-		}
-	}
-
 	// Parse export format
 	exportFormat, err := parseExportFormat(tmp.Export.Format)
 	if err != nil {
@@ -143,13 +129,10 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 	}
 	r.ReportSpec.QueryName = tmp.Query.Name
 	r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
-	r.ReportSpec.QueryTimeRange = tmp.Query.TimeRange
 	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
 	r.ReportSpec.EmailRecipients = tmp.Email.Recipients
-	r.ReportSpec.EmailOpenUrl = tmp.Email.Template.OpenURL
-	r.ReportSpec.EmailEditUrl = tmp.Email.Template.EditURL
-	r.ReportSpec.EmailExportUrl = tmp.Email.Template.ExportURL
+	r.ReportSpec.Annotations = tmp.Annotations
 
 	return nil
 }
@@ -165,6 +148,9 @@ func parseExportFormat(s string) (runtimev1.ExportFormat, error) {
 	case "parquet":
 		return runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET, nil
 	default:
+		if val, ok := runtimev1.ExportFormat_value[s]; ok {
+			return runtimev1.ExportFormat(val), nil
+		}
 		return runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED, fmt.Errorf("invalid export format %q", s)
 	}
 }

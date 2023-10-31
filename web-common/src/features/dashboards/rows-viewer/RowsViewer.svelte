@@ -23,10 +23,10 @@
   $: modelName = useMetaQuery<string>(
     $runtime.instanceId,
     metricViewName,
-    (data) => data.table
+    (data) => data.table ?? ""
   );
 
-  $: name = $modelName?.data as string | undefined;
+  $: name = $modelName?.data ?? "";
 
   let limit = writable(SAMPLE_SIZE);
 

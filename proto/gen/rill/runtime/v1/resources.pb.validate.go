@@ -3409,17 +3409,11 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for QueryArgsJson
 
-	// no validation rules for QueryTimeRange
-
 	// no validation rules for ExportLimit
 
 	// no validation rules for ExportFormat
 
-	// no validation rules for EmailOpenUrl
-
-	// no validation rules for EmailEditUrl
-
-	// no validation rules for EmailExportUrl
+	// no validation rules for Annotations
 
 	if len(errors) > 0 {
 		return ReportSpecMultiError(errors)

@@ -70,7 +70,7 @@ func (s *Server) GetCatalogEntry(ctx context.Context, req *runtimev1.GetCatalogE
 		return nil, ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -120,7 +120,7 @@ func (s *Server) Reconcile(ctx context.Context, req *runtimev1.ReconcileRequest)
 		return nil, ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -159,7 +159,7 @@ func (s *Server) PutFileAndReconcile(ctx context.Context, req *runtimev1.PutFile
 		return nil, ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -206,7 +206,7 @@ func (s *Server) RenameFileAndReconcile(ctx context.Context, req *runtimev1.Rena
 		return nil, ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -253,7 +253,7 @@ func (s *Server) DeleteFileAndReconcile(ctx context.Context, req *runtimev1.Dele
 		return nil, ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -292,7 +292,7 @@ func (s *Server) RefreshAndReconcile(ctx context.Context, req *runtimev1.Refresh
 		return nil, ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -358,7 +358,7 @@ func (s *Server) TriggerRefresh(ctx context.Context, req *runtimev1.TriggerRefre
 		return nil, ErrForbidden
 	}
 
-	ctrl, err := s.runtime.Controller(req.InstanceId)
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

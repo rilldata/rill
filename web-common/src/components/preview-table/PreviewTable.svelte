@@ -43,7 +43,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   let rowVirtualizer;
   let columnVirtualizer;
   let container;
-  let pinnedColumns = [];
+  let pinnedColumns: VirtualizedTableColumns[] = [];
   let virtualRows;
   let virtualColumns;
   let virtualWidth;
@@ -123,10 +123,11 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
         /** if we are inferring column widths from the data,
          * let's utilize columnWidths, calculated above.
          */
+
+        const colWidth = columnWidths[column.name];
+        const colLargestStringLength = column?.largestStringLength ?? colWidth;
         const largestStringLength =
-          (inferColumnWidthFromData
-            ? columnWidths[column.name]
-            : column?.largestStringLength) *
+          (inferColumnWidthFromData ? colWidth : colLargestStringLength) *
             CHARACTER_WIDTH +
           CHARACTER_X_PAD;
 
@@ -215,7 +216,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
 
   /** pinning functionality */
   function handlePin(event) {
-    const column = event.detail;
+    const column = event.detail as VirtualizedTableColumns;
     if (pinnedColumns.some((p) => p.name === column.name)) {
       pinnedColumns = [...pinnedColumns.filter((c) => c.name !== column.name)];
     } else {

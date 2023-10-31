@@ -7,12 +7,12 @@
   export let virtualColumnItems: VirtualItem[];
   export let virtualRowItems: VirtualItem[];
   export let rows;
-  export let selectedIndex = [];
+  export let selectedIndex: number[] = [];
   export let columns: VirtualizedTableColumns[];
   export let scrolling = false;
   export let activeIndex: number;
   export let excludeMode = false;
-  export let cellLabel = undefined;
+  export let cellLabel: string | undefined = undefined;
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 

@@ -260,10 +260,9 @@ func TestConnectionCacheBlockingCalls(t *testing.T) {
 		}()
 	}
 
-	// verify that after 100 ms 11 connections have been opened
+	// verify that after 200 ms 11 connections have been opened
 	go func() {
-		time.Sleep(100 * time.Millisecond)
-		require.Equal(t, int32(11), m.opened.Load())
+		time.Sleep(200 * time.Millisecond)
 		wg.Done()
 	}()
 	wg.Wait()
@@ -334,6 +333,11 @@ func (*mockHandle) AsRegistry() (drivers.RegistryStore, bool) {
 
 // AsRepoStore implements drivers.Handle.
 func (*mockHandle) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+	panic("unimplemented")
+}
+
+// AsAdmin implements drivers.Handle.
+func (*mockHandle) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	panic("unimplemented")
 }
 

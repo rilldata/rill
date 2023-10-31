@@ -66,6 +66,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.olap_connector", req.OlapConnector),
 		attribute.String("args.repo_connector", req.RepoConnector),
+		attribute.String("args.admin_connector", req.AdminConnector),
 		attribute.StringSlice("args.connectors", toString(req.Connectors)),
 	)
 
@@ -77,6 +78,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 		ID:                           req.InstanceId,
 		OLAPConnector:                req.OlapConnector,
 		RepoConnector:                req.RepoConnector,
+		AdminConnector:               req.AdminConnector,
 		Connectors:                   req.Connectors,
 		Variables:                    req.Variables,
 		Annotations:                  req.Annotations,
@@ -106,6 +108,9 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 	}
 	if req.RepoConnector != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.repo_connector", *req.RepoConnector))
+	}
+	if req.AdminConnector != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.admin_connector", *req.AdminConnector))
 	}
 	if len(req.Connectors) > 0 {
 		observability.AddRequestAttributes(ctx, attribute.StringSlice("args.connectors", toString(req.Connectors)))
@@ -139,6 +144,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 		ID:                           req.InstanceId,
 		OLAPConnector:                valOrDefault(req.OlapConnector, oldInst.OLAPConnector),
 		RepoConnector:                valOrDefault(req.RepoConnector, oldInst.RepoConnector),
+		AdminConnector:               valOrDefault(req.AdminConnector, oldInst.AdminConnector),
 		Connectors:                   connectors,
 		ProjectConnectors:            oldInst.ProjectConnectors,
 		Variables:                    variables,
@@ -187,6 +193,7 @@ func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
 		InstanceId:                   inst.ID,
 		OlapConnector:                inst.OLAPConnector,
 		RepoConnector:                inst.RepoConnector,
+		AdminConnector:               inst.AdminConnector,
 		CreatedOn:                    timestamppb.New(inst.CreatedOn),
 		UpdatedOn:                    timestamppb.New(inst.UpdatedOn),
 		Connectors:                   inst.Connectors,

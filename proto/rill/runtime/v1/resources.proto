@@ -212,13 +212,10 @@ message ReportSpec {
   uint32 timeout_seconds = 4;
   string query_name = 5;
   string query_args_json = 6;
-  string query_time_range = 7;
-  uint64 export_limit = 8;
-  ExportFormat export_format = 9;
-  repeated string email_recipients = 10;
-  string email_open_url = 11;
-  string email_edit_url = 12;
-  string email_export_url = 13;
+  uint64 export_limit = 7;
+  ExportFormat export_format = 8;
+  repeated string email_recipients = 9;
+  map<string, string> annotations = 10;
 }
 
 message ReportState {

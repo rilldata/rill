@@ -7,7 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var _reservedConnectorNames = map[string]bool{"repo": true, "metastore": true}
+var _reservedConnectorNames = map[string]bool{"admin": true, "repo": true, "metastore": true}
 
 // RillYAML is the parsed contents of rill.yaml
 type RillYAML struct {
@@ -69,22 +69,22 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 
 	// Validate resource defaults
 	if !tmp.Sources.IsZero() {
-		if err := tmp.Sources.Decode(&sourceYAML{}); err != nil {
+		if err := tmp.Sources.Decode(&SourceYAML{}); err != nil {
 			return newYAMLError(err)
 		}
 	}
 	if !tmp.Models.IsZero() {
-		if err := tmp.Models.Decode(&modelYAML{}); err != nil {
+		if err := tmp.Models.Decode(&ModelYAML{}); err != nil {
 			return newYAMLError(err)
 		}
 	}
 	if !tmp.Dashboards.IsZero() {
-		if err := tmp.Dashboards.Decode(&metricsViewYAML{}); err != nil {
+		if err := tmp.Dashboards.Decode(&MetricsViewYAML{}); err != nil {
 			return newYAMLError(err)
 		}
 	}
 	if !tmp.Migrations.IsZero() {
-		if err := tmp.Migrations.Decode(&migrationYAML{}); err != nil {
+		if err := tmp.Migrations.Decode(&MigrationYAML{}); err != nil {
 			return newYAMLError(err)
 		}
 	}

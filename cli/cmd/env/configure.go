@@ -84,7 +84,7 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			variables, err := VariablesFlow(ctx, fullProjectPath, nil)
 			if err != nil {
-				return fmt.Errorf("failed to get variables %w", err)
+				return fmt.Errorf("failed to get variables: %w", err)
 			}
 
 			// get existing variables
@@ -150,7 +150,7 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 	repo, _ := repoHandle.AsRepoStore(instanceID)
 
 	// Parse the project's connectors
-	parser, err := rillv1.Parse(ctx, repo, instanceID, "", nil)
+	parser, err := rillv1.Parse(ctx, repo, instanceID, "duckdb", []string{"duckdb"})
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project: %w", err)
 	}
@@ -231,7 +231,7 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 
 			answer := ""
 			if err := survey.Ask([]*survey.Question{question}, &answer); err != nil {
-				return nil, fmt.Errorf("variables prompt failed with error %w", err)
+				return nil, fmt.Errorf("variables prompt failed with error: %w", err)
 			}
 
 			if answer != "" {

@@ -46,6 +46,9 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
 **`workgroup`**
 - Optionally sets a workgroup for Athena connector. The workgroup is also used to determine an output location. A workgroup may override `output_location` if [Override client-side settings](https://docs.aws.amazon.com/athena/latest/ug/workgroups-settings-override.html) is turned on for the workgroup.  
 
+**`project_id`**
+- Sets a project id to be used to run BigQuery [jobs](https://cloud.google.com/bigquery/docs/jobs-overview) (mandatory for BiqQuery connection)
+
 **`glob.max_total_size`**
  — Applicable if the URI is a glob pattern. The max allowed total size (in bytes) of all objects matching the glob pattern.
   - default value is _`10737418240 (10GB)`_
@@ -60,6 +63,10 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
 
 **`timeout`**
  — The maximum time to wait for souce ingestion.
+
+**`refresh`** - Optionally specify a schedule after which Rill should re-ingest the source
+  - **`cron`** - a cron schedule expression (optional)
+  - **`every`** - a Go duration string, such as `24h` ([docs](https://pkg.go.dev/time#ParseDuration)) (optional)
 
 **`extract`** - Optionally limit the data ingested from remote sources (S3/GCS only)
   - **`rows`** - limits the size of data fetched

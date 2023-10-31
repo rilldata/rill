@@ -9,7 +9,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-const cpuThreadRatio float64 = 0.5
+// We need to give one thread 1GB memory to operate on.
+const memoryThreadRatio = 1
 
 // config represents the DuckDB driver config
 type config struct {
@@ -27,6 +28,8 @@ type config struct {
 	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
 	// CPU is the limit on cpu which determines number of threads based on cpuThreadRatio constant
 	CPU int `mapstructure:"cpu"`
+	// DisableThreadLimit disables any thread limit on duckdb
+	DisableThreadLimit bool `mapstructure:"disable_thread_limit"`
 	// StorageLimitBytes is the maximum size of all database files
 	StorageLimitBytes int64 `mapstructure:"storage_limit_bytes"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
@@ -37,7 +40,8 @@ type config struct {
 
 func newConfig(cfgMap map[string]any) (*config, error) {
 	cfg := &config{
-		PoolSize: 2, // Default value
+		PoolSize:           2, // Default value
+		DisableThreadLimit: false,
 	}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
@@ -71,15 +75,15 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		// Remove from query string (so not passed into DuckDB config)
 		qry.Del("rill_pool_size")
 	}
+	threads := 0
 	if cfg.MemoryLimitGB > 0 {
 		qry.Add("max_memory", fmt.Sprintf("%dGB", cfg.MemoryLimitGB))
+		threads = memoryThreadRatio * cfg.MemoryLimitGB
+		if !cfg.DisableThreadLimit {
+			qry.Add("threads", strconv.Itoa(threads))
+		}
 	}
 	if cfg.CPU > 0 {
-		threads := int(cpuThreadRatio * float64(cfg.CPU))
-		if threads <= 0 {
-			threads = 1
-		}
-		qry.Add("threads", strconv.Itoa(threads))
 		cfg.PoolSize = max(2, min(cfg.CPU, threads))
 	}
 

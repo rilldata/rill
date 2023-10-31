@@ -30,8 +30,7 @@ export async function assertLeaderboards(
     await expect(leaderboardBlock).toBeVisible();
 
     const actualValues = await leaderboardBlock
-      .locator(".leaderboard-entry")
-      .locator(".leaderboard-label")
+      .locator(".leaderboard-entry > div:first-child")
       .allInnerTexts();
     expect(actualValues).toEqual(values);
   }
@@ -112,7 +111,7 @@ export async function waitForComparisonTopLists(
       page.waitForResponse(
         (response) =>
           topListUrlRegex.test(response.url()) &&
-          response.request().postDataJSON().dimensionName === dimension &&
+          response.request().postDataJSON().dimension.name === dimension &&
           (filterMatcher ? filterMatcher(response) : true)
       )
     )

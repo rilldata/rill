@@ -205,13 +205,12 @@ export type QueryServiceMetricsViewRowsBody = {
   timeZone?: string;
 };
 
-export type QueryServiceMetricsViewComparisonToplistBody = {
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
+export type QueryServiceMetricsViewComparisonBody = {
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
   filter?: V1MetricsViewFilter;
   limit?: string;
   offset?: string;
@@ -223,6 +222,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
   timeStart?: string;
   timeEnd?: string;
   filter?: V1MetricsViewFilter;
@@ -259,10 +259,12 @@ export type RuntimeServiceWatchLogs200 = {
 
 export type RuntimeServiceWatchLogsParams = {
   replay?: boolean;
+  replayLimit?: number;
 };
 
 export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;
+  limit?: number;
 };
 
 export type RuntimeServiceWatchFiles200 = {
@@ -330,6 +332,7 @@ See message Instance for field descriptions.
 export type RuntimeServiceEditInstanceBody = {
   olapConnector?: string;
   repoConnector?: string;
+  adminConnector?: string;
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
@@ -411,7 +414,7 @@ export interface V1WatchResourcesResponse {
 }
 
 export interface V1WatchLogsResponse {
-  logs?: V1Log[];
+  log?: V1Log;
 }
 
 export interface V1WatchFilesResponse {
@@ -474,6 +477,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -484,11 +493,6 @@ export interface V1TimeRangeSummary {
   min?: string;
   max?: string;
   interval?: TimeRangeSummaryInterval;
-}
-
-export interface V1TimeRange {
-  start?: string;
-  end?: string;
 }
 
 export type V1TimeGrain = (typeof V1TimeGrain)[keyof typeof V1TimeGrain];
@@ -507,10 +511,13 @@ export const V1TimeGrain = {
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
 
-export interface V1TimeSeriesTimeRange {
+export interface V1TimeRange {
   start?: string;
   end?: string;
-  interval?: V1TimeGrain;
+  isoDuration?: string;
+  isoOffset?: string;
+  roundToGrain?: V1TimeGrain;
+  timeZone?: string;
 }
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
@@ -679,25 +686,14 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-}
-
 export interface V1ReportState {
   nextRunOn?: string;
   currentExecution?: V1ReportExecution;
   executionHistory?: V1ReportExecution[];
   executionCount?: number;
 }
+
+export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
   trigger?: boolean;
@@ -706,13 +702,10 @@ export interface V1ReportSpec {
   timeoutSeconds?: number;
   queryName?: string;
   queryArgsJson?: string;
-  queryTimeRange?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   emailRecipients?: string[];
-  emailOpenUrl?: string;
-  emailEditUrl?: string;
-  emailExportUrl?: string;
+  annotations?: V1ReportSpecAnnotations;
 }
 
 export interface V1ReportExecution {
@@ -726,6 +719,19 @@ export interface V1ReportExecution {
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
 }
 
 export interface V1RenameFileResponse {
@@ -762,22 +768,6 @@ export interface V1RefreshTriggerSpec {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
-}
-
-/**
- * ReconcileError represents an error encountered while running Reconcile.
- */
-export interface V1ReconcileError {
-  code?: V1ReconcileErrorCode;
-  message?: string;
-  filePath?: string;
-  /** Property path of the error in the code artifact (if any).
-It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
-It only applies to structured code artifacts (i.e. YAML).
-Only applicable if file_path is set. */
-  propertyPath?: string[];
-  startLocation?: V1ReconcileErrorCharLocation;
-  endLocation?: V1ReconcileErrorCharLocation;
 }
 
 export interface V1RefreshAndReconcileResponse {
@@ -847,10 +837,26 @@ export interface V1ReconcileErrorCharLocation {
   column?: number;
 }
 
+/**
+ * ReconcileError represents an error encountered while running Reconcile.
+ */
+export interface V1ReconcileError {
+  code?: V1ReconcileErrorCode;
+  message?: string;
+  filePath?: string;
+  /** Property path of the error in the code artifact (if any).
+It's represented as a JS-style property path, e.g. "key0.key1[index2].key3".
+It only applies to structured code artifacts (i.e. YAML).
+Only applicable if file_path is set. */
+  propertyPath?: string[];
+  startLocation?: V1ReconcileErrorCharLocation;
+  endLocation?: V1ReconcileErrorCharLocation;
+}
+
 export interface V1QueryResult {
   metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
   metricsViewToplistResponse?: V1MetricsViewToplistResponse;
-  metricsViewComparisonToplistResponse?: V1MetricsViewComparisonToplistResponse;
+  metricsViewComparisonResponse?: V1MetricsViewComparisonResponse;
   metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
   metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
   metricsViewRowsResponse?: V1MetricsViewRowsResponse;
@@ -885,7 +891,7 @@ export interface V1QueryBatchResponse {
 export interface V1Query {
   metricsViewAggregationRequest?: V1MetricsViewAggregationRequest;
   metricsViewToplistRequest?: V1MetricsViewToplistRequest;
-  metricsViewComparisonToplistRequest?: V1MetricsViewComparisonToplistRequest;
+  metricsViewComparisonRequest?: V1MetricsViewComparisonRequest;
   metricsViewTimeSeriesRequest?: V1MetricsViewTimeSeriesRequest;
   metricsViewTotalsRequest?: V1MetricsViewTotalsRequest;
   metricsViewRowsRequest?: V1MetricsViewRowsRequest;
@@ -1098,6 +1104,26 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
+}
+
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
+}
+
 export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1155,21 +1181,6 @@ export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  filter?: V1MetricsViewFilter;
-  priority?: number;
-}
-
 export interface V1MetricsViewRowsRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1192,10 +1203,6 @@ export interface V1MetricsViewComparisonValue {
   deltaRel?: unknown;
 }
 
-export interface V1MetricsViewComparisonToplistResponse {
-  rows?: V1MetricsViewComparisonRow[];
-}
-
 export type V1MetricsViewComparisonSortType =
   (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
 
@@ -1214,25 +1221,9 @@ export const V1MetricsViewComparisonSortType = {
 } as const;
 
 export interface V1MetricsViewComparisonSort {
-  measureName?: string;
-  ascending?: boolean;
+  name?: string;
+  desc?: boolean;
   type?: V1MetricsViewComparisonSortType;
-}
-
-export interface V1MetricsViewComparisonToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  baseTimeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  sort?: V1MetricsViewComparisonSort[];
-  filter?: V1MetricsViewFilter;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
 }
 
 export interface V1MetricsViewComparisonRow {
@@ -1240,15 +1231,29 @@ export interface V1MetricsViewComparisonRow {
   measureValues?: V1MetricsViewComparisonValue[];
 }
 
+export interface V1MetricsViewComparisonResponse {
+  rows?: V1MetricsViewComparisonRow[];
+}
+
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
-}
-
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
 }
 
 export interface V1MetricsViewAggregationSort {
@@ -1281,6 +1286,7 @@ export interface V1MetricsViewAggregationRequest {
   dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
   timeStart?: string;
   timeEnd?: string;
   filter?: V1MetricsViewFilter;
@@ -1323,13 +1329,11 @@ export const V1LogLevel = {
   LOG_LEVEL_ERROR: "LOG_LEVEL_ERROR",
 } as const;
 
-export type V1LogPayload = { [key: string]: any };
-
 export interface V1Log {
   level?: V1LogLevel;
   time?: string;
   message?: string;
-  payload?: V1LogPayload;
+  jsonPayload?: string;
 }
 
 export interface V1ListResourcesResponse {
@@ -1379,6 +1383,7 @@ export interface V1Instance {
   instanceId?: string;
   olapConnector?: string;
   repoConnector?: string;
+  adminConnector?: string;
   createdOn?: string;
   updatedOn?: string;
   connectors?: V1Connector[];
@@ -1537,6 +1542,7 @@ export interface V1CreateInstanceRequest {
   instanceId?: string;
   olapConnector?: string;
   repoConnector?: string;
+  adminConnector?: string;
   connectors?: V1Connector[];
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;

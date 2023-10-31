@@ -12,7 +12,9 @@ type Codec struct {
 func NewCodec(keyPairs [][]byte) *Codec {
 	codecs := securecookie.CodecsFromPairs(keyPairs...)
 	for _, c := range codecs {
-		c.(*securecookie.SecureCookie).SetSerializer(securecookie.JSONEncoder{})
+		sc := c.(*securecookie.SecureCookie)
+		sc.MaxLength(0)
+		sc.SetSerializer(securecookie.JSONEncoder{})
 	}
 	return &Codec{codecs: codecs}
 }

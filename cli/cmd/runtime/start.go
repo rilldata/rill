@@ -25,6 +25,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	// Load connectors and reconcilers for runtime
+	_ "github.com/rilldata/rill/runtime/drivers/admin"
 	_ "github.com/rilldata/rill/runtime/drivers/athena"
 	_ "github.com/rilldata/rill/runtime/drivers/azure"
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
@@ -68,6 +69,8 @@ type Config struct {
 	ConnectionCacheSize     int                    `default:"100" split_words:"true"`
 	QueryCacheSizeBytes     int64                  `default:"104857600" split_words:"true"` // 100MB by default
 	SecurityEngineCacheSize int                    `default:"1000" split_words:"true"`
+	LogBufferCapacity       int                    `default:"10000" split_words:"true"`    // 10k log lines
+	LogBufferSizeBytes      int64                  `default:"16777216" split_words:"true"` // 16MB by default
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
@@ -189,12 +192,14 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init runtime
 			opts := &runtime.Options{
-				ConnectionCacheSize:     conf.ConnectionCacheSize,
-				MetastoreConnector:      "metastore",
-				QueryCacheSizeBytes:     conf.QueryCacheSizeBytes,
-				SecurityEngineCacheSize: conf.SecurityEngineCacheSize,
-				AllowHostAccess:         conf.AllowHostAccess,
-				SafeSourceRefresh:       conf.SafeSourceRefresh,
+				ConnectionCacheSize:          conf.ConnectionCacheSize,
+				MetastoreConnector:           "metastore",
+				QueryCacheSizeBytes:          conf.QueryCacheSizeBytes,
+				SecurityEngineCacheSize:      conf.SecurityEngineCacheSize,
+				ControllerLogBufferCapacity:  conf.LogBufferCapacity,
+				ControllerLogBufferSizeBytes: conf.LogBufferSizeBytes,
+				AllowHostAccess:              conf.AllowHostAccess,
+				SafeSourceRefresh:            conf.SafeSourceRefresh,
 				SystemConnectors: []*runtimev1.Connector{
 					{
 						Type:   conf.MetastoreDriver,

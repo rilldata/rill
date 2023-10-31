@@ -16,7 +16,10 @@ The main feature-set component for dashboard filters
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
   import { useMetaQuery, getFilterSearchList } from "../selectors/index";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
+  import type {
+    MetricsViewSpecDimensionV2,
+    V1MetricsViewFilter,
+  } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import { getDisplayName } from "./getDisplayName";
@@ -40,7 +43,7 @@ The main feature-set component for dashboard filters
   $: dimensions = $metaQuery.data?.dimensions ?? [];
 
   function isFiltered(filters: V1MetricsViewFilter): boolean {
-    if (!filters) return false;
+    if (!filters || !filters.include || !filters.exclude) return false;
     return filters.include.length > 0 || filters.exclude.length > 0;
   }
 
@@ -80,28 +83,39 @@ The main feature-set component for dashboard filters
       dimensions,
       (dimension) => dimension.name
     );
-    const currentDimensionIncludeFilters = $dashboardStore.filters.include.map(
-      (dimensionValues) => ({
-        name: dimensionValues.name,
-        label: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
-        selectedValues: dimensionValues.in,
-        filterType: "include",
-        isHidden: !$dashboardStore?.visibleDimensionKeys.has(
-          dimensionValues.name
-        ),
-      })
-    );
-    const currentDimensionExcludeFilters = $dashboardStore.filters.exclude.map(
-      (dimensionValues) => ({
-        name: dimensionValues.name,
-        label: getDisplayName(dimensionIdMap.get(dimensionValues.name)),
-        selectedValues: dimensionValues.in,
-        filterType: "exclude",
-        isHidden: !$dashboardStore?.visibleDimensionKeys.has(
-          dimensionValues.name
-        ),
-      })
-    );
+
+    const currentDimensionIncludeFilters =
+      $dashboardStore?.filters?.include
+        ?.filter((dimensionValues) => dimensionValues.name !== undefined)
+        .map((dimensionValues) => {
+          const name = dimensionValues.name as string;
+          return {
+            name,
+            label: getDisplayName(
+              dimensionIdMap.get(name) as MetricsViewSpecDimensionV2
+            ),
+            selectedValues: dimensionValues.in as any[],
+            filterType: "include",
+            isHidden: !$dashboardStore?.visibleDimensionKeys.has(name),
+          };
+        }) ?? [];
+
+    const currentDimensionExcludeFilters =
+      $dashboardStore?.filters?.exclude
+        ?.filter((dimensionValues) => dimensionValues.name !== undefined)
+        .map((dimensionValues) => {
+          const name = dimensionValues.name as string;
+          return {
+            name,
+            label: getDisplayName(
+              dimensionIdMap.get(name) as MetricsViewSpecDimensionV2
+            ),
+            selectedValues: dimensionValues.in as any[],
+            filterType: "exclude",
+            isHidden: !$dashboardStore?.visibleDimensionKeys.has(name),
+          };
+        }) ?? [];
+
     currentDimensionFilters = [
       ...currentDimensionIncludeFilters,
       ...currentDimensionExcludeFilters,

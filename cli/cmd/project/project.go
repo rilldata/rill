@@ -12,21 +12,27 @@ import (
 )
 
 func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
+	cfg := ch.Config
 	projectCmd := &cobra.Command{
 		Use:               "project",
 		Short:             "Manage projects",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch.Config), cmdutil.CheckOrganization(ch.Config)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 	}
 
-	projectCmd.PersistentFlags().StringVar(&ch.Config.Org, "org", ch.Config.Org, "Organization Name")
+	projectCmd.PersistentFlags().StringVar(&cfg.Org, "org", cfg.Org, "Organization Name")
 	projectCmd.AddCommand(ShowCmd(ch))
 	projectCmd.AddCommand(StatusCmd(ch))
+	projectCmd.AddCommand(DescribeCmd(ch))
 	projectCmd.AddCommand(EditCmd(ch))
 	projectCmd.AddCommand(DeleteCmd(ch))
 	projectCmd.AddCommand(ListCmd(ch))
 	projectCmd.AddCommand(ReconcileCmd(ch))
+	projectCmd.AddCommand(RefreshCmd(ch))
+	projectCmd.AddCommand(ResetCmd(ch))
 	projectCmd.AddCommand(JwtCmd(ch))
 	projectCmd.AddCommand(RenameCmd(ch))
+	projectCmd.AddCommand(LogsCmd(ch))
+
 	return projectCmd
 }
 

@@ -28,26 +28,30 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
 	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(t, err)
 	mv := r.GetMetricsView().Spec
 
-	q := &queries.MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
-		MeasureNames:    []string{"measure_1"},
-		MetricsView:     mv,
-		BaseTimeRange: &runtimev1.TimeRange{
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		MetricsView: mv,
+		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "dom",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
-				Ascending:   true,
+				Name: "dom",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
+				Desc: false,
 			},
 		},
 		Limit: 10,
@@ -68,12 +72,16 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 		dims = append(dims, r.DimensionValue.GetStringValue())
 	}
 
-	q = &queries.MetricsViewComparisonToplist{
+	q = &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
-		MeasureNames:    []string{"measure_1"},
-		MetricsView:     mv,
-		BaseTimeRange: &runtimev1.TimeRange{
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		MetricsView: mv,
+		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
 		},
@@ -83,9 +91,9 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "dom",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Ascending:   true,
+				Name: "dom",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Desc: false,
 			},
 		},
 		Limit: 10,
@@ -116,18 +124,22 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
 	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
-	q := &queries.MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
-		MeasureNames:    []string{"measure_1"},
-		MetricsView:     mv.Spec,
-		BaseTimeRange: &runtimev1.TimeRange{
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		MetricsView: mv.Spec,
+		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
 		},
@@ -137,9 +149,9 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "dom",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
-				Ascending:   false,
+				Name: "dom",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
+				Desc: true,
 			},
 		},
 		Limit: 250,
@@ -164,18 +176,22 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(instanceID)
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
 	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
-	q := &queries.MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
-		MeasureNames:    []string{"measure_1"},
-		MetricsView:     mv.Spec,
-		BaseTimeRange: &runtimev1.TimeRange{
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		MetricsView: mv.Spec,
+		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
 		},
@@ -185,9 +201,9 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				MeasureName: "measure_1",
-				Type:        runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
-				Ascending:   false,
+				Name: "measure_1",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Desc: true,
 			},
 		},
 		Limit: 250,

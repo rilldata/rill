@@ -9,6 +9,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
+var ErrAdminNotConfigured = fmt.Errorf("an admin store is not configured for this instance")
+
 func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
 	for _, c := range r.opts.SystemConnectors {
 		if c.Name == connector {
@@ -28,6 +30,11 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 	driver, cfg, err := r.connectorConfig(ctx, instanceID, connector)
 	if err != nil {
 		return nil, nil, err
+	}
+	if ctx.Err() != nil {
+		// Many code paths around connection acquisition leverage caches that won't actually touch the ctx.
+		// So we take this moment to make sure the ctx gets checked for cancellation at least every once in a while.
+		return nil, nil, ctx.Err()
 	}
 	return r.connCache.get(ctx, instanceID, driver, cfg, false)
 }
@@ -50,6 +57,31 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 	}
 
 	return repo, release, nil
+}
+
+func (r *Runtime) Admin(ctx context.Context, instanceID string) (drivers.AdminService, func(), error) {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// The admin connector is optional
+	if inst.AdminConnector == "" {
+		return nil, nil, ErrAdminNotConfigured
+	}
+
+	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.AdminConnector)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	admin, ok := conn.AsAdmin(instanceID)
+	if !ok {
+		release()
+		return nil, nil, fmt.Errorf("connector %q is not a valid admin store", inst.AdminConnector)
+	}
+
+	return admin, release, nil
 }
 
 func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStore, func(), error) {

@@ -67,6 +67,8 @@ func (s *Service) ProjectPermissionsForUser(ctx context.Context, projectID, user
 			ManageDev:            true,
 			ReadProjectMembers:   true,
 			ManageProjectMembers: true,
+			CreateReports:        true,
+			ManageReports:        true,
 		}, nil
 	}
 
@@ -98,6 +100,8 @@ func (s *Service) ProjectPermissionsForService(ctx context.Context, projectID, s
 			ManageDev:            true,
 			ReadProjectMembers:   true,
 			ManageProjectMembers: true,
+			CreateReports:        true,
+			ManageReports:        true,
 		}, nil
 	}
 
@@ -125,6 +129,8 @@ func (s *Service) ProjectPermissionsForDeployment(ctx context.Context, projectID
 			ManageDev:            false,
 			ReadProjectMembers:   true,
 			ManageProjectMembers: false,
+			CreateReports:        false,
+			ManageReports:        false,
 		}, nil
 	}
 
@@ -155,5 +161,7 @@ func unionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *
 		ManageDev:            a.ManageDev || b.ManageDev,
 		ReadProjectMembers:   a.ReadProjectMembers || b.ReadProjectMembers,
 		ManageProjectMembers: a.ManageProjectMembers || b.ManageProjectMembers,
+		CreateReports:        a.CreateReports || b.CreateReports,
+		ManageReports:        a.ManageReports || b.ManageReports,
 	}
 }

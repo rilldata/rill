@@ -5,8 +5,8 @@
   import InfoCircle from "../../icons/InfoCircle.svelte";
   import WarningIcon from "../../icons/WarningIcon.svelte";
 
-  export let level: "error" | "warning" | "info" = undefined;
-  export let message: string = undefined;
+  export let level: "error" | "warning" | "info" | undefined = undefined;
+  export let message: string | undefined = undefined;
   export let active = false;
 </script>
 
