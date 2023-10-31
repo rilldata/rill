@@ -170,10 +170,6 @@ func (f *fileIterator) Close() error {
 	return os.Remove(f.tempFilePath)
 }
 
-// KeepFilesUntilClose implements drivers.FileIterator.
-func (f *fileIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
-}
-
 // Next implements drivers.FileIterator.
 // TODO :: currently it downloads all records in a single file. Need to check if it is efficient to ingest a single file with size in tens of GBs or more.
 func (f *fileIterator) Next() ([]string, error) {
