@@ -113,7 +113,7 @@ function prepareDimensionData(
 
   let body = [
     totalsTableData?.map((v) =>
-      v[measureName] ? formatter(v[measureName]) : null
+      v[measureName] !== null ? formatter(v[measureName]) : null
     ) || [],
   ];
 
@@ -122,7 +122,7 @@ function prepareDimensionData(
       if (v.isFetching) return new Array(columnCount).fill(undefined);
       const dimData = isAllTime ? v?.data?.slice(1) : v?.data?.slice(1, -1);
       return dimData?.map((v) =>
-        v[measureName] ? formatter(v[measureName]) : null
+        v[measureName] !== null ? formatter(v[measureName]) : null
       );
     })
   );
@@ -209,12 +209,14 @@ function prepareTimeData(
 
     // Push current range
     body.push(
-      tableData?.map((v) => (v[measureName] ? formatter(v[measureName]) : null))
+      tableData?.map((v) =>
+        v[measureName] !== null ? formatter(v[measureName]) : null
+      )
     );
 
     body.push(
       tableData?.map((v) =>
-        v[`comparison.${measureName}`]
+        v[`comparison.${measureName}`] !== null
           ? formatter(v[`comparison.${measureName}`])
           : null
       )
