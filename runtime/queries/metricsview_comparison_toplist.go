@@ -13,7 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"google.golang.org/genproto/googleapis/api/label"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	// Load IANA time zone data
@@ -97,7 +96,7 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 }
 
 func (q *MetricsViewComparison) executeToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
-	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect(), policy)
+	sql, args, err := q.buildMetricsTopListSQL(mv, olap.Dialect(), policy, false)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -151,7 +150,7 @@ func (q *MetricsViewComparison) executeToplist(ctx context.Context, olap drivers
 }
 
 func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
-	sql, args, err := q.buildMetricsComparisonTopListSQL(mv, olap.Dialect(), policy)
+	sql, args, err := q.buildMetricsComparisonTopListSQL(mv, olap.Dialect(), policy, false)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
