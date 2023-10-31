@@ -108,7 +108,7 @@
     sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
     comparing={$timeDimensionDataStore?.comparing}
     {timeFormatter}
-    data={formattedData}
+    tableData={formattedData}
     highlightedCol={$chartInteractionColumn?.hover}
     on:toggle-sort={() =>
       metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE)}

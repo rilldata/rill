@@ -26,7 +26,7 @@
   export let highlightedCol: number;
   export let scrubPos: { start: number; end: number };
   export let comparing: TDDComparison;
-  export let data: TableData;
+  export let tableData: TableData;
 
   /** Formatter for the time axis in the table*/
   export let timeFormatter: (date: Date) => string;
@@ -39,52 +39,65 @@
   let colIdxHover: number | undefined;
 
   function getBodyData(pos: PivotPos) {
-    return data?.body
+    return tableData?.body
       ?.slice(pos.x0, pos.x1)
       .map((row) => row.slice(pos.y0, pos.y1));
   }
 
   export function getRowHeaderData(pos: PivotPos) {
-    return data?.rowHeaderData?.slice(pos.y0, pos.y1);
+    return tableData?.rowHeaderData?.slice(pos.y0, pos.y1);
   }
 
   export function getColumnHeaderData(pos: PivotPos) {
-    return data?.columnHeaderData?.slice(pos.x0, pos.x1);
+    return tableData?.columnHeaderData?.slice(pos.x0, pos.x1);
   }
 
   const renderCell: PivotRenderCallback = (data) => {
-    data.element.classList.toggle("font-semibold", Boolean(data.y == 0));
-    data.element.classList.add("text-right");
-
-    if (data.y === 2) {
-      if (comparing === "time")
-        data.element.classList.add("border-b", "border-gray-200");
-      else {
-        data.element.classList.remove("border-b", "border-gray-200");
-      }
-    }
-
-    const isScrubbed =
-      scrubPos?.start !== undefined &&
-      data.x >= scrubPos?.start &&
-      data.x <= scrubPos?.end - 1;
-
-    const cellBgColor = getClassForCell(
-      isScrubbed ? "scrubbed" : "default",
-      rowIdxHover,
-      colIdxHover ?? highlightedCol,
-      data.y,
-      data.x
-    );
-    data.element.classList.remove(
+    const classesToAdd = ["text-right"];
+    const classesToRemove = [
       "!bg-white",
       "!bg-gray-100",
       "!bg-gray-200",
       "!bg-blue-50",
       "!bg-blue-100",
-      "!bg-blue-200"
+      "!bg-blue-200",
+      "!bg-slate-50",
+      "!bg-slate-100",
+      "!bg-slate-200",
+    ];
+
+    if (data.y === 2) {
+      if (comparing === "time") {
+        classesToAdd.push("border-b", "border-gray-200");
+      } else {
+        classesToRemove.push("border-b", "border-gray-200");
+      }
+    }
+
+    const isScrubbed =
+      scrubPos?.start !== undefined &&
+      data.x >= scrubPos.start &&
+      data.x <= scrubPos.end - 1;
+
+    const palette = isScrubbed
+      ? "scrubbed"
+      : data.y === 0
+      ? "fixed"
+      : "default";
+
+    classesToAdd.push(
+      getClassForCell(
+        palette,
+        rowIdxHover,
+        colIdxHover ?? highlightedCol,
+        data.y,
+        data.x
+      )
     );
-    data.element.classList.add(cellBgColor);
+    // Update DOM with consolidated class operations
+    data.element.classList.toggle("font-semibold", Boolean(data.y == 0));
+    data.element.classList.remove(...classesToRemove);
+    data.element.classList.add(...classesToAdd);
   };
 
   const renderColumnHeader: PivotRenderCallback = (data) => {
@@ -96,7 +109,7 @@
   const toggleVisible = (n) => {
     n = parseInt(n);
     if (comparing != "dimension" || n == 0) return;
-    const label = data?.rowHeaderData[n][0].value;
+    const label = tableData?.rowHeaderData[n][0].value;
     metricsExplorerStore.toggleFilter(metricViewName, dimensionName, label);
   };
 
@@ -104,7 +117,7 @@
   $: {
     scrubPos;
     highlightedCol;
-    data?.selectedValues;
+    tableData?.selectedValues;
     pivot?.draw();
   }
 
@@ -114,7 +127,7 @@
       noSelectionMarkerCount = 0;
       return ``;
     }
-    const visibleIdx = data?.selectedValues.indexOf(value.value);
+    const visibleIdx = tableData?.selectedValues.indexOf(value.value);
 
     if (comparing === "time") {
       if (y == 1) return SelectedCheckmark("fill-blue-500");
@@ -131,7 +144,7 @@
             (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300")
         );
     } else if (noSelectionMarkerCount < 3) {
-      if (excludeMode || !data?.selectedValues.length) {
+      if (excludeMode || !tableData?.selectedValues.length) {
         noSelectionMarkerCount += 1;
         return `<div class="rounded-full bg-${
           CHECKMARK_COLORS[noSelectionMarkerCount - 1]
@@ -156,10 +169,14 @@
       rowIdxHover,
       colIdxHover ?? highlightedCol,
       y,
-      x - data?.fixedColCount
+      x - tableData?.fixedColCount
     );
     if (x > 0) {
-      element.classList.remove("bg-slate-50", "bg-slate-100", "bg-slate-200");
+      element.classList.remove(
+        "!bg-slate-50",
+        "!bg-slate-100",
+        "!bg-slate-200"
+      );
       element.classList.add(cellBgColor);
     }
     if (x === 0) {
@@ -187,7 +204,7 @@
       return `<div class="text-right font-medium text-gray-700 flex items-center" sortable="true">
         <span class="truncate">${measureLabel} </span>
         ${
-          comparing === "dimension"
+          comparing === "dimension" && tableData?.fixedColCount === 2
             ? `<span>${MeasureArrow(sortDirection)}</span>`
             : ``
         }
@@ -295,8 +312,8 @@
     {getRowHeaderData}
     {getColumnHeaderData}
     {getBodyData}
-    rowCount={data?.rowCount}
-    columnCount={data?.columnCount}
+    rowCount={tableData?.rowCount}
+    columnCount={tableData?.columnCount}
     rowHeaderDepth={4}
     columnHeaderDepth={1}
     {renderCell}
