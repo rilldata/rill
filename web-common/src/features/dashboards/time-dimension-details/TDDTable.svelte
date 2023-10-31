@@ -218,10 +218,13 @@
   };
 
   const getRowHeaderWidth = (x: number) => {
-    if (x == 0 && colWidth > 150) {
-      const dimWidth = 220 + data?.columnCount * (colWidth - 150);
-
-      return Math.min(dimWidth, 500);
+    if (colWidth > 160) {
+      if (x === 0) {
+        const dimWidth = 220 + data?.columnCount * (colWidth - 150);
+        return Math.min(dimWidth, 500);
+      } else if (x === 1) {
+        return 160;
+      }
     }
     return [250, 130, 50][x];
   };
