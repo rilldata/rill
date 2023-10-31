@@ -263,7 +263,6 @@ type connection struct {
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
 	driverName   string
-	instanceID   string // populated after call to AsOLAP
 	// config is parsed configs
 	config   *config
 	logger   *zap.Logger
@@ -347,12 +346,6 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 		// duckdb olap is instance specific
 		return nil, false
 	}
-	// TODO Add this back once every call passes instanceID correctly.
-	// Example incorrect usage : runtime/services/catalog/migrator/sources/sources.go
-	// if c.instanceID != "" && c.instanceID != instanceID {
-	// 	return nil, false
-	// }
-	c.instanceID = instanceID
 	return c, true
 }
 
@@ -369,7 +362,7 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	olap, _ := to.AsOLAP(c.instanceID) // if c == to, connection is instance specific
+	olap, _ := to.(*connection)
 	if c == to {
 		if from == to {
 			return transporter.NewDuckDBToDuckDB(olap, c.logger), true
