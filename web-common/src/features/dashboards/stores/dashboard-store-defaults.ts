@@ -50,14 +50,14 @@ function setDefaultComparison(
   metricsExplorer: MetricsExplorerEntity,
   fullTimeRange: V1ColumnTimeRangeResponse | undefined
 ) {
-  if (!metricsView.defaultComparison) return;
-
-  switch (metricsView.defaultComparison.mode) {
+  switch (metricsView.defaultComparisonMode) {
     case MetricsViewSpecDefaultComparisonMode.DEFAULT_COMPARISON_MODE_DIMENSION:
       metricsExplorer.selectedComparisonDimension =
-        metricsView.defaultComparison.dimension;
+        metricsView.defaultComparisonDimension;
       break;
 
+    // if default_comparison is not specified it defaults to time comparison
+    case MetricsViewSpecDefaultComparisonMode.DEFAULT_COMPARISON_MODE_UNSPECIFIED:
     case MetricsViewSpecDefaultComparisonMode.DEFAULT_COMPARISON_MODE_TIME:
       setDefaultComparisonTimeRange(
         metricsView,

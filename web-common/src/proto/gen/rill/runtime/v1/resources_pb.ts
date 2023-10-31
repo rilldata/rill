@@ -943,9 +943,18 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   firstMonthOfYear = 0;
 
   /**
-   * @generated from field: optional rill.runtime.v1.MetricsViewSpec.DefaultComparison default_comparison = 14;
+   * Selected default comparison mode.
+   *
+   * @generated from field: rill.runtime.v1.MetricsViewSpec.DefaultComparisonMode default_comparison_mode = 14;
    */
-  defaultComparison?: MetricsViewSpec_DefaultComparison;
+  defaultComparisonMode = MetricsViewSpec_DefaultComparisonMode.UNSPECIFIED;
+
+  /**
+   * If comparison mode is dimension then this determines which is the default dimension
+   *
+   * @generated from field: string default_comparison_dimension = 15;
+   */
+  defaultComparisonDimension = "";
 
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
@@ -968,7 +977,8 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 11, name: "security", kind: "message", T: MetricsViewSpec_SecurityV2 },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 14, name: "default_comparison", kind: "message", T: MetricsViewSpec_DefaultComparison, opt: true },
+    { no: 14, name: "default_comparison_mode", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_DefaultComparisonMode) },
+    { no: 15, name: "default_comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {

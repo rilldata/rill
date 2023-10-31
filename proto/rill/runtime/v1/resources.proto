@@ -190,7 +190,10 @@ message MetricsViewSpec {
   uint32 first_day_of_week = 12;
   // Month number to use as the base for time aggregations by year. Defaults to 1 (January).
   uint32 first_month_of_year = 13;
-  optional DefaultComparison default_comparison = 14;
+  // Selected default comparison mode.
+  DefaultComparisonMode default_comparison_mode = 14;
+  // If comparison mode is dimension then this determines which is the default dimension
+  string default_comparison_dimension = 15;
 }
 
 message MetricsViewState {
