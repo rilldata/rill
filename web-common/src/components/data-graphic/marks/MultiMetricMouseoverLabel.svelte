@@ -11,7 +11,7 @@ It is probably not the most up to date code; but it works very well in practice.
   import { preventVerticalOverlap } from "./prevent-vertical-overlap";
   import DelayedLabel from "@rilldata/web-common/components/data-graphic/marks/DelayedLabel.svelte";
 
-  const DIMENSION_HOVER_DURATION = 250;
+  const DIMENSION_HOVER_DURATION = 350;
   interface Point {
     x: number;
     y: number;
