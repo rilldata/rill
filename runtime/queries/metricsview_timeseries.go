@@ -161,21 +161,21 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 
 		if zeroTime.Equal(start) {
 			if q.TimeStart != nil {
-				start = truncateTime(q.TimeStart.AsTime(), q.TimeGranularity, tz, int(fdow), int(fmoy))
-				data = addNulls(data, nullRecords, start, t, q.TimeGranularity)
+				start = TruncateTime(q.TimeStart.AsTime(), q.TimeGranularity, tz, int(fdow), int(fmoy))
+				data = addNulls(data, nullRecords, start, t, q.TimeGranularity, tz)
 			}
 		} else {
-			data = addNulls(data, nullRecords, start, t, q.TimeGranularity)
+			data = addNulls(data, nullRecords, start, t, q.TimeGranularity, tz)
 		}
 
 		data = append(data, &runtimev1.TimeSeriesValue{
 			Ts:      timestamppb.New(t),
 			Records: records,
 		})
-		start = addTo(t, q.TimeGranularity)
+		start = addTo(t, q.TimeGranularity, tz)
 	}
 	if q.TimeEnd != nil && nullRecords != nil {
-		data = addNulls(data, nullRecords, start, q.TimeEnd.AsTime(), q.TimeGranularity)
+		data = addNulls(data, nullRecords, start, q.TimeEnd.AsTime(), q.TimeGranularity, tz)
 	}
 
 	meta := structTypeToMetricsViewColumn(rows.Schema)
@@ -347,7 +347,7 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(args []any, mv *runtimev1.Metrics
 	return sql
 }
 
-func truncateTime(start time.Time, tg runtimev1.TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
+func TruncateTime(start time.Time, tg runtimev1.TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
 	switch tg {
 	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
 		return start.Truncate(time.Millisecond)
@@ -416,18 +416,18 @@ func generateNullRecords(schema *runtimev1.StructType) *structpb.Struct {
 	return &nullStruct
 }
 
-func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, tg runtimev1.TimeGrain) []*runtimev1.TimeSeriesValue {
+func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, tg runtimev1.TimeGrain, tz *time.Location) []*runtimev1.TimeSeriesValue {
 	for start.Before(end) {
 		data = append(data, &runtimev1.TimeSeriesValue{
 			Ts:      timestamppb.New(start),
 			Records: nullRecords,
 		})
-		start = addTo(start, tg)
+		start = addTo(start, tg, tz)
 	}
 	return data
 }
 
-func addTo(start time.Time, tg runtimev1.TimeGrain) time.Time {
+func addTo(start time.Time, tg runtimev1.TimeGrain, tz *time.Location) time.Time {
 	switch tg {
 	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
 		return start.Add(time.Millisecond)
@@ -442,9 +442,13 @@ func addTo(start time.Time, tg runtimev1.TimeGrain) time.Time {
 	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
 		return start.AddDate(0, 0, 7)
 	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		return start.AddDate(0, 1, 0)
+		start = start.In(tz)
+		start = start.AddDate(0, 1, 0)
+		return start.In(time.UTC)
 	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		return start.AddDate(0, 3, 0)
+		start = start.In(tz)
+		start = start.AddDate(0, 3, 0)
+		return start.In(time.UTC)
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
 		return start.AddDate(1, 0, 0)
 	}
