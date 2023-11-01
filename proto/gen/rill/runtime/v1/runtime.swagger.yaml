@@ -2359,14 +2359,14 @@ definitions:
           type: object
           $ref: '#/definitions/SecurityFieldCondition'
     title: Security for the metrics view
-  MetricsViewSpecDefaultComparisonMode:
+  MetricsViewSpecComparisonMode:
     type: string
     enum:
-      - DEFAULT_COMPARISON_MODE_UNSPECIFIED
-      - DEFAULT_COMPARISON_MODE_NONE
-      - DEFAULT_COMPARISON_MODE_TIME
-      - DEFAULT_COMPARISON_MODE_DIMENSION
-    default: DEFAULT_COMPARISON_MODE_UNSPECIFIED
+      - COMPARISON_MODE_UNSPECIFIED
+      - COMPARISON_MODE_NONE
+      - COMPARISON_MODE_TIME
+      - COMPARISON_MODE_DIMENSION
+    default: COMPARISON_MODE_UNSPECIFIED
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -3596,7 +3596,7 @@ definitions:
         format: int64
         description: Month number to use as the base for time aggregations by year. Defaults to 1 (January).
       defaultComparisonMode:
-        $ref: '#/definitions/MetricsViewSpecDefaultComparisonMode'
+        $ref: '#/definitions/MetricsViewSpecComparisonMode'
         description: Selected default comparison mode.
       defaultComparisonDimension:
         type: string

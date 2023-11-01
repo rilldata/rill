@@ -1158,7 +1158,7 @@ export interface V1MetricsViewSpec {
   firstDayOfWeek?: number;
   /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
   firstMonthOfYear?: number;
-  defaultComparisonMode?: MetricsViewSpecDefaultComparisonMode;
+  defaultComparisonMode?: MetricsViewSpecComparisonMode;
   defaultComparisonDimension?: string;
 }
 
@@ -1869,15 +1869,15 @@ export interface MetricsViewSpecDimensionV2 {
   description?: string;
 }
 
-export type MetricsViewSpecDefaultComparisonMode =
-  (typeof MetricsViewSpecDefaultComparisonMode)[keyof typeof MetricsViewSpecDefaultComparisonMode];
+export type MetricsViewSpecComparisonMode =
+  (typeof MetricsViewSpecComparisonMode)[keyof typeof MetricsViewSpecComparisonMode];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const MetricsViewSpecDefaultComparisonMode = {
-  DEFAULT_COMPARISON_MODE_UNSPECIFIED: "DEFAULT_COMPARISON_MODE_UNSPECIFIED",
-  DEFAULT_COMPARISON_MODE_NONE: "DEFAULT_COMPARISON_MODE_NONE",
-  DEFAULT_COMPARISON_MODE_TIME: "DEFAULT_COMPARISON_MODE_TIME",
-  DEFAULT_COMPARISON_MODE_DIMENSION: "DEFAULT_COMPARISON_MODE_DIMENSION",
+export const MetricsViewSpecComparisonMode = {
+  COMPARISON_MODE_UNSPECIFIED: "COMPARISON_MODE_UNSPECIFIED",
+  COMPARISON_MODE_NONE: "COMPARISON_MODE_NONE",
+  COMPARISON_MODE_TIME: "COMPARISON_MODE_TIME",
+  COMPARISON_MODE_DIMENSION: "COMPARISON_MODE_DIMENSION",
 } as const;
 
 export interface MetricsViewSecurity {

@@ -15,7 +15,7 @@ import type {
   V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
-import { MetricsViewSpecDefaultComparisonMode } from "@rilldata/web-common/runtime-client";
+import { MetricsViewSpecComparisonMode } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
 export function setDefaultTimeRange(
@@ -51,15 +51,15 @@ function setDefaultComparison(
   fullTimeRange: V1ColumnTimeRangeResponse | undefined
 ) {
   switch (metricsView.defaultComparisonMode) {
-    case MetricsViewSpecDefaultComparisonMode.DEFAULT_COMPARISON_MODE_DIMENSION:
+    case MetricsViewSpecComparisonMode.COMPARISON_MODE_DIMENSION:
       metricsExplorer.selectedComparisonDimension =
         metricsView.defaultComparisonDimension ||
         metricsView.dimensions?.[0]?.name;
       break;
 
     // if default_comparison is not specified it defaults to time comparison
-    case MetricsViewSpecDefaultComparisonMode.DEFAULT_COMPARISON_MODE_UNSPECIFIED:
-    case MetricsViewSpecDefaultComparisonMode.DEFAULT_COMPARISON_MODE_TIME:
+    case MetricsViewSpecComparisonMode.COMPARISON_MODE_UNSPECIFIED:
+    case MetricsViewSpecComparisonMode.COMPARISON_MODE_TIME:
       setDefaultComparisonTimeRange(
         metricsView,
         metricsExplorer,

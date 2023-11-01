@@ -65,11 +65,11 @@ type MetricsViewYAML struct {
 	} `yaml:"default_comparison"`
 }
 
-var comparisonModesMap = map[string]runtimev1.MetricsViewSpec_DefaultComparisonMode{
-	"":          runtimev1.MetricsViewSpec_DEFAULT_COMPARISON_MODE_UNSPECIFIED,
-	"none":      runtimev1.MetricsViewSpec_DEFAULT_COMPARISON_MODE_NONE,
-	"time":      runtimev1.MetricsViewSpec_DEFAULT_COMPARISON_MODE_TIME,
-	"dimension": runtimev1.MetricsViewSpec_DEFAULT_COMPARISON_MODE_DIMENSION,
+var comparisonModesMap = map[string]runtimev1.MetricsViewSpec_ComparisonMode{
+	"":          runtimev1.MetricsViewSpec_COMPARISON_MODE_UNSPECIFIED,
+	"none":      runtimev1.MetricsViewSpec_COMPARISON_MODE_NONE,
+	"time":      runtimev1.MetricsViewSpec_COMPARISON_MODE_TIME,
+	"dimension": runtimev1.MetricsViewSpec_COMPARISON_MODE_DIMENSION,
 }
 var validComparisonModes = []string{"none", "time", "dimension"}
 
@@ -194,8 +194,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 	tmp.DefaultComparison.Mode = strings.ToLower(tmp.DefaultComparison.Mode)
 	if _, ok := comparisonModesMap[tmp.DefaultComparison.Mode]; !ok {
-		return fmt.Errorf("invalid mode: %q. allowed values: %s",
-			tmp.DefaultComparison.Mode, strings.Join(validComparisonModes, ","))
+		return fmt.Errorf("invalid mode: %q. allowed values: %s", tmp.DefaultComparison.Mode, strings.Join(validComparisonModes, ","))
 	}
 	if tmp.DefaultComparison.Dimension != "" {
 		if ok := names[tmp.DefaultComparison.Dimension]; !ok {

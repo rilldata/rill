@@ -25,7 +25,7 @@ import {
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
-  MetricsViewSpecDefaultComparisonMode,
+  MetricsViewSpecComparisonMode,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
@@ -220,7 +220,7 @@ describe("dashboard-stores", () => {
         ...AD_BIDS_INIT,
         defaultTimeRange: "PT6H",
         defaultComparisonMode:
-          MetricsViewSpecDefaultComparisonMode.DEFAULT_COMPARISON_MODE_UNSPECIFIED,
+          MetricsViewSpecComparisonMode.COMPARISON_MODE_UNSPECIFIED,
       },
       {
         timeRangeSummary: {
@@ -250,7 +250,7 @@ describe("dashboard-stores", () => {
         ...AD_BIDS_INIT,
         defaultTimeRange: "PT6H",
         defaultComparisonMode:
-          MetricsViewSpecDefaultComparisonMode.DEFAULT_COMPARISON_MODE_DIMENSION,
+          MetricsViewSpecComparisonMode.COMPARISON_MODE_DIMENSION,
       },
       {
         timeRangeSummary: {
@@ -274,7 +274,7 @@ describe("dashboard-stores", () => {
         ...AD_BIDS_INIT,
         defaultTimeRange: "PT6H",
         defaultComparisonMode:
-          MetricsViewSpecDefaultComparisonMode.DEFAULT_COMPARISON_MODE_DIMENSION,
+          MetricsViewSpecComparisonMode.COMPARISON_MODE_DIMENSION,
         defaultComparisonDimension: AD_BIDS_DOMAIN_DIMENSION,
       },
       {
