@@ -10,10 +10,8 @@ export function memoizeMetricsStore<Store extends Readable<any>>(
   const cache = new Map<string, Store>();
   return (ctx: StateManagers): Store => {
     return derived([ctx.metricsViewName], ([name], set) => {
-      let store: Store;
-      if (cache.has(name)) {
-        store = cache.get(name);
-      } else {
+      let store = cache.get(name);
+      if (!store) {
         store = storeGetter(ctx);
         cache.set(name, store);
       }
