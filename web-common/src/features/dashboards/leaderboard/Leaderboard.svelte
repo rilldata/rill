@@ -30,8 +30,6 @@
 
   let slice = 7;
 
-  const stateManagers = getStateManagers();
-
   const {
     selectors: {
       activeMeasure: { activeMeasureName },
@@ -48,7 +46,7 @@
     },
     metricsViewName,
     runtime,
-  } = stateManagers;
+  } = getStateManagers();
 
   $: sortedQuery = createQueryServiceMetricsViewComparison(
     $runtime.instanceId,

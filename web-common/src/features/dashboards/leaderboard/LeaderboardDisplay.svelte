@@ -1,60 +1,46 @@
 <script lang="ts">
   import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
-  import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { onDestroy, onMount } from "svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
 
-  export let metricViewName: string;
-
-  $: dashboardStore = useDashboardStore(metricViewName);
-
-  // query the `/meta` endpoint to get the metric's measures and dimensions
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
-  $: dimensions = $metaQuery.data?.dimensions;
-  $: measures = $metaQuery.data?.measures;
-
-  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
-
-  $: activeMeasure =
-    measures &&
-    measures.find(
-      (measure) => measure.name === $dashboardStore?.leaderboardMeasureName
-    );
-
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const {
+    selectors: {
+      activeMeasure: { activeMeasureName, selectedMeasureNames },
+      dimensions: { visibleDimensions },
+      dimensionFilters: { getAllFilters },
+      timeRangeSelectors: { isTimeControlReady, timeControlsState },
+    },
+    metricsViewName,
+    runtime,
+  } = getStateManagers();
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
-    metricViewName,
+    $metricsViewName,
     {
-      measureNames: selectedMeasureNames,
-      timeStart: $timeControlsStore.timeStart,
-      timeEnd: $timeControlsStore.timeEnd,
-      filter: $dashboardStore?.filters,
+      measureNames: $selectedMeasureNames,
+      timeStart: $timeControlsState.timeStart,
+      timeEnd: $timeControlsState.timeEnd,
+      filter: $getAllFilters,
     },
     {
       query: {
         enabled:
-          selectedMeasureNames?.length > 0 &&
-          $timeControlsStore.ready &&
-          !!$dashboardStore?.filters,
+          $selectedMeasureNames?.length > 0 &&
+          $isTimeControlReady &&
+          !!$getAllFilters,
       },
     }
   );
 
   let referenceValue: number;
-  $: if (activeMeasure?.name && $totalsQuery?.data?.data) {
-    referenceValue = $totalsQuery.data.data?.[activeMeasure.name];
+  $: if ($totalsQuery?.data?.data) {
+    referenceValue = $totalsQuery.data.data?.[$activeMeasureName];
   }
-
-  let leaderboardExpanded;
 
   /** Functionality for resizing the virtual leaderboard */
   let columns = 3;
@@ -79,14 +65,6 @@
   onDestroy(() => {
     observer?.disconnect();
   });
-
-  $: showHideDimensions = createShowHideDimensionsStore(
-    metricViewName,
-    metaQuery
-  );
-
-  $: dimensionsShown =
-    dimensions?.filter((_, i) => $showHideDimensions.selectedItems[i]) ?? [];
 </script>
 
 <svelte:window on:resize={onResize} />
@@ -100,21 +78,19 @@
   <div
     class="grid grid-auto-cols justify-between grid-flow-col items-center pl-1 pb-3 flex-grow-0"
   >
-    <LeaderboardControls {metricViewName} />
+    <LeaderboardControls metricViewName={$metricsViewName} />
   </div>
   <div class="grow overflow-hidden">
-    {#if $dashboardStore}
-      <VirtualizedGrid {columns} height="100%" items={dimensionsShown} let:item>
+    {#if $visibleDimensions.length > 0}
+      <VirtualizedGrid
+        {columns}
+        height="100%"
+        items={$visibleDimensions}
+        let:item
+      >
         <!-- the single virtual element -->
         <Leaderboard
           dimensionName={item.name}
-          on:expand={() => {
-            if (leaderboardExpanded === item.name) {
-              leaderboardExpanded = undefined;
-            } else {
-              leaderboardExpanded = item.name;
-            }
-          }}
           referenceValue={referenceValue || 0}
         />
       </VirtualizedGrid>

@@ -33,6 +33,10 @@ export const selectedDimensionValues = (
   };
 };
 
+export const getAllFilters = (
+  dashData: DashboardDataSources
+): V1MetricsViewFilter => dashData.dashboard.filters;
+
 export const atLeastOneSelection = (
   dashData: DashboardDataSources
 ): ((dimName: string) => boolean) => {
@@ -55,6 +59,10 @@ const filterModeKey = (
 };
 
 export const dimensionFilterSelectors = {
+  /**
+   * Gets all dimension filters for every dimension in the dashboard.
+   */
+  getAllFilters,
   /**
    * Returns a function that can be used to get
    * a copy of the dashboard's V1MetricsViewFilter that does not include

@@ -7,6 +7,17 @@ export const allDimensions = ({
   return metricsSpecQueryResult.data?.dimensions;
 };
 
+export const visibleDimensions = ({
+  metricsSpecQueryResult,
+  dashboard,
+}: DashboardDataSources): MetricsViewSpecDimensionV2[] => {
+  // dashboard.visibleDimensionKeys;
+  const dimensions = metricsSpecQueryResult.data?.dimensions?.filter(
+    (d) => d.name && dashboard.visibleDimensionKeys.has(d.name)
+  );
+  return dimensions === undefined ? [] : dimensions;
+};
+
 export const getDimensionByName = (
   dashData: DashboardDataSources
 ): ((name: string) => MetricsViewSpecDimensionV2 | undefined) => {
@@ -40,6 +51,12 @@ export const dimensionSelectors = {
    * Gets all dimensions for the dashboard, or undefined if there are none.
    */
   allDimensions,
+
+  /**
+   * Gets all visible dimensions in the dashboard.
+   */
+  visibleDimensions,
+
   /**
    * Returns a function that can be used to get a MetricsViewSpecDimensionV2
    * by name; this fn returns undefined if the dashboard has no dimension with that name.
