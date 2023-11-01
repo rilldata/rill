@@ -95,7 +95,7 @@ function prepareDimensionData(
       const dataRow = [
         { value: row?.value },
         {
-          value: row?.total ? formatter(row?.total) : null,
+          value: formatter(row?.total),
           spark: createSparkline(rowData, (v) => v[measureName]),
         },
       ];
@@ -111,19 +111,13 @@ function prepareDimensionData(
     })
   );
 
-  let body = [
-    totalsTableData?.map((v) =>
-      v[measureName] ? formatter(v[measureName]) : null
-    ) || [],
-  ];
+  let body = [totalsTableData?.map((v) => formatter(v[measureName])) || []];
 
   body = body?.concat(
     data?.map((v) => {
       if (v.isFetching) return new Array(columnCount).fill(undefined);
       const dimData = isAllTime ? v?.data?.slice(1) : v?.data?.slice(1, -1);
-      return dimData?.map((v) =>
-        v[measureName] ? formatter(v[measureName]) : null
-      );
+      return dimData?.map((v) => formatter(v[measureName]));
     })
   );
   /* 
@@ -180,9 +174,7 @@ function prepareTimeData(
   ]);
 
   const body: unknown[] = [];
-  body.push(
-    tableData?.map((v) => (v[measureName] ? formatter(v[measureName]) : null))
-  );
+  body.push(tableData?.map((v) => formatter(v[measureName])));
 
   if (hasTimeComparison) {
     rowHeaderData = rowHeaderData.concat([
@@ -208,17 +200,9 @@ function prepareTimeData(
     ]);
 
     // Push current range
-    body.push(
-      tableData?.map((v) => (v[measureName] ? formatter(v[measureName]) : null))
-    );
+    body.push(tableData?.map((v) => formatter(v[measureName])));
 
-    body.push(
-      tableData?.map((v) =>
-        v[`comparison.${measureName}`]
-          ? formatter(v[`comparison.${measureName}`])
-          : null
-      )
-    );
+    body.push(tableData?.map((v) => formatter(v[`comparison.${measureName}`])));
 
     // Push percentage change
     body.push(
