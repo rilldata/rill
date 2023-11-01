@@ -16,7 +16,7 @@ import { dimensionFilterActions } from "./dimension-filters";
 export type StateManagerActions = ReturnType<typeof createStateManagerActions>;
 
 /**
- * DashboardConnectedMutators object contains are functions that
+ * DashboardConnectedMutators object contains functions that
  * are closed over references connected to the live dashboard,
  * so calling these functions will actually update the dashboard.
  */
