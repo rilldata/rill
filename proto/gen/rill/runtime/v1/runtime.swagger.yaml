@@ -2370,6 +2370,8 @@ definitions:
         type: string
       description:
         type: string
+      unnest:
+        type: boolean
     title: Dimensions are columns to filter and group by
   MetricsViewSpecMeasureV2:
     type: object

@@ -268,7 +268,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, drivers.DialectDruid, policy)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, olap.Dialect(), policy)
 		if err != nil {
 			return "", "", nil, err
 		}
@@ -310,11 +310,11 @@ func (q *MetricsViewTimeSeries) buildDruidSQL(args []any, mv *runtimev1.MetricsV
 	}
 
 	sql := fmt.Sprintf(
-		`SELECT %s AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
+		`SELECT %s AS %s, %s FROM %s WHERE %s GROUP BY 1 ORDER BY 1`,
 		timeClause,
 		tsAlias,
 		strings.Join(selectCols, ", "),
-		mv.Table,
+		safeName(mv.Table),
 		whereClause,
 	)
 
@@ -334,12 +334,12 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(args []any, mv *runtimev1.Metrics
 	}
 
 	sql := fmt.Sprintf(
-		`SELECT timezone(?, date_trunc('%[1]s', timezone(?, %[2]s::TIMESTAMPTZ) + INTERVAL %[7]s) - INTERVAL %[7]s) as %[3]s, %[4]s FROM %[5]q WHERE %[6]s GROUP BY 1 ORDER BY 1`,
+		`SELECT timezone(?, date_trunc('%[1]s', timezone(?, %[2]s::TIMESTAMPTZ) + INTERVAL %[7]s) - INTERVAL %[7]s) as %[3]s, %[4]s FROM %[5]s WHERE %[6]s GROUP BY 1 ORDER BY 1`,
 		dateTruncSpecifier,             // 1
 		safeName(mv.TimeDimension),     // 2
 		tsAlias,                        // 3
 		strings.Join(selectCols, ", "), // 4
-		mv.Table,                       // 5
+		safeName(mv.Table),             // 5
 		whereClause,                    // 6
 		shift,                          // 7
 	)
