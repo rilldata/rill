@@ -6,6 +6,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestTruncateTime(t *testing.T) {
@@ -126,6 +127,44 @@ func TestCeilTime_Kathmandu_first_month(t *testing.T) {
 	require.Equal(t, parseTestTime(t, "2023-02-28T18:15:00Z"), CeilTime(parseTestTime(t, "2023-03-02T00:20:00Z"), runtimev1.TimeGrain_TIME_GRAIN_YEAR, tz, 2, 3))
 	require.Equal(t, parseTestTime(t, "2022-11-30T18:15:00Z"), CeilTime(parseTestTime(t, "2023-10-02T00:20:00Z"), runtimev1.TimeGrain_TIME_GRAIN_YEAR, tz, 2, 12))
 	require.Equal(t, parseTestTime(t, "2022-12-31T18:15:00Z"), CeilTime(parseTestTime(t, "2023-01-02T00:20:00Z"), runtimev1.TimeGrain_TIME_GRAIN_YEAR, tz, 2, 1))
+}
+
+func TestStartTimeForRange(t *testing.T) {
+	cases := []struct {
+		title      string
+		tr         *runtimev1.TimeRange
+		start, end string
+	}{
+		{
+			"day light savings start US/Canada",
+			&runtimev1.TimeRange{End: timeToPB("2023-03-12T12:00:00Z"), IsoDuration: "PT4H", TimeZone: "America/Los_Angeles"},
+			"2023-03-12 00:00:00 -0800 PST",
+			"2023-03-12 05:00:00 -0700 PDT",
+		},
+		{
+			"day light savings end US/Canada",
+			&runtimev1.TimeRange{Start: timeToPB("2023-11-05T08:00:00.000Z"), IsoDuration: "PT4H", TimeZone: "America/Los_Angeles"},
+			"2023-11-05 01:00:00 -0700 PDT",
+			"2023-11-05 04:00:00 -0800 PST",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.title, func(t *testing.T) {
+			start, end, err := StartTimeForRange(tc.tr, &runtimev1.MetricsViewSpec{
+				FirstDayOfWeek:   1,
+				FirstMonthOfYear: 1,
+			})
+			require.NoError(t, err)
+			require.Equal(t, tc.start, start.String())
+			require.Equal(t, tc.end, end.String())
+		})
+	}
+}
+
+func timeToPB(t string) *timestamppb.Timestamp {
+	ts, _ := time.Parse(time.RFC3339, t)
+	return timestamppb.New(ts)
 }
 
 func parseTestTime(tst *testing.T, t string) time.Time {
