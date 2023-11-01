@@ -38,21 +38,6 @@ export function dimensionTableSortedQueryBody(
   );
 }
 
-export function dimensionTableSortedQueryOptions(
-  dashData: DashboardDataSources
-): (dimensionName: string) => { query: { enabled: boolean } } {
-  return (dimensionName: string) => {
-    const sortedQueryEnabled =
-      timeControlsState(dashData).ready === true &&
-      !!getFiltersForOtherDimensions(dashData)(dimensionName);
-    return {
-      query: {
-        enabled: sortedQueryEnabled,
-      },
-    };
-  };
-}
-
 export function dimensionTableTotalQueryBody(
   dashData: DashboardDataSources
 ): QueryServiceMetricsViewTotalsBody {
@@ -128,12 +113,6 @@ export const leaderboardQuerySelectors = {
    * Readable containing the sorted query body for the dimension table.
    */
   dimensionTableSortedQueryBody,
-
-  /**
-   * Readable containg a function that will return
-   * the sorted query options for the dimension table for the given dimension.
-   */
-  dimensionTableSortedQueryOptions,
 
   /**
    * Readable containing the totals query body for the dimension table.

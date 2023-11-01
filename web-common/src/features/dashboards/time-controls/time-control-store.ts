@@ -166,67 +166,8 @@ export const timeControlStateSelector = ([
 export function createTimeControlStore(ctx: StateManagers) {
   return derived(
     [useMetaQuery(ctx), createTimeRangeSummary(ctx), ctx.dashboardStore],
-    ([metricsView, timeRangeResponse, metricsExplorer]) => {
-      const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
-      if (
-        !metricsView.data ||
-        !metricsExplorer ||
-        !metricsView.data ||
-        !timeRangeResponse ||
-        !timeRangeResponse.isSuccess
-      ) {
-        return {
-          isFetching: metricsView.isFetching || timeRangeResponse.isRefetching,
-          ready: !metricsExplorer || !hasTimeSeries,
-        } as TimeControlState;
-      }
-
-      const allTimeRange = {
-        name: TimeRangePreset.ALL_TIME,
-        start: new Date(timeRangeResponse.data.timeRangeSummary.min),
-        end: new Date(timeRangeResponse.data.timeRangeSummary.max),
-      };
-      const minTimeGrain =
-        (metricsView.data.smallestTimeGrain as V1TimeGrain) ||
-        V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
-      const defaultTimeRange = isoDurationToFullTimeRange(
-        metricsView.data.defaultTimeRange,
-        allTimeRange.start,
-        allTimeRange.end,
-        metricsExplorer.selectedTimezone
-      );
-
-      const timeRangeState = calculateTimeRangePartial(
-        metricsExplorer,
-        allTimeRange,
-        defaultTimeRange,
-        minTimeGrain
-      );
-      if (!timeRangeState) {
-        return {
-          ready: false,
-        };
-      }
-
-      const comparisonTimeRangeState = calculateComparisonTimeRangePartial(
-        metricsExplorer,
-        allTimeRange,
-        timeRangeState
-      );
-
-      return {
-        isFetching: false,
-        minTimeGrain,
-        allTimeRange,
-        defaultTimeRange,
-        ready: true,
-
-        ...timeRangeState,
-
-        ...comparisonTimeRangeState,
-      } as TimeControlState;
-    }
-  ) as TimeControlStore;
+    timeControlStateSelector
+  );
 }
 
 /**
