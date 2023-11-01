@@ -72,27 +72,6 @@ export type TimeControlState = {
   ComparisonTimeRangeState;
 export type TimeControlStore = Readable<TimeControlState>;
 
-export const createTimeRangeSummaryInnerCallback = (
-  [runtime, metricsView]: [
-    Runtime,
-    QueryObserverResult<V1MetricsViewSpec, RpcStatus>
-  ],
-  set: (value: QueryObserverResult<V1ColumnTimeRangeResponse, unknown>) => void
-) =>
-  createQueryServiceColumnTimeRange(
-    runtime.instanceId,
-    metricsView.data?.table,
-    {
-      columnName: metricsView.data?.timeDimension,
-    },
-    {
-      query: {
-        enabled: !!metricsView.data?.timeDimension,
-        queryClient: ctx.queryClient,
-      },
-    }
-  ).subscribe(set);
-
 function createTimeRangeSummary(
   ctx: StateManagers
 ): CreateQueryResult<V1ColumnTimeRangeResponse> {
