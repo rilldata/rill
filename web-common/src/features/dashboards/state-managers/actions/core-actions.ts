@@ -1,8 +1,8 @@
-import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { DashboardMutatorFnGeneralArgs } from "./types";
 
 export const setLeaderboardMeasureName = (
-  dash: MetricsExplorerEntity,
+  { dashboard }: DashboardMutatorFnGeneralArgs,
   name: string
 ) => {
-  dash.leaderboardMeasureName = name;
+  dashboard.leaderboardMeasureName = name;
 };

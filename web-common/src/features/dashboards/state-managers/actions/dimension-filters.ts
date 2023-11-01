@@ -1,23 +1,27 @@
 import { removeIfExists } from "@rilldata/web-common/lib/arrayUtils";
-import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { DashboardMutatorFnGeneralArgs } from "./types";
 
 export function toggleDimensionFilter(
-  metricsExplorer: MetricsExplorerEntity,
+  { dashboard, cancelQueries }: DashboardMutatorFnGeneralArgs,
   dimensionName: string,
   dimensionValue: string
 ) {
-  const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
+  const relevantFilterKey = dashboard.dimensionFilterExcludeMode.get(
     dimensionName
   )
     ? "exclude"
     : "include";
 
-  const filters = metricsExplorer?.filters[relevantFilterKey];
+  const filters = dashboard.filters[relevantFilterKey];
 
   // if there are no filters at this point we cannot update anything.
   if (filters === undefined) {
     return;
   }
+
+  // if we are able to update the filters, we must cancel any queries
+  // that are currently running.
+  cancelQueries();
 
   const dimensionEntryIndex =
     filters.findIndex((filter) => filter.name === dimensionName) ?? -1;

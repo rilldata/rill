@@ -1,27 +1,18 @@
 <script lang="ts">
   import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import {
-    createQueryServiceMetricsViewTotals,
-    MetricsViewDimension,
-  } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { onDestroy, onMount } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
 
   export let metricViewName: string;
-
-  const queryClient = useQueryClient();
 
   $: dashboardStore = useDashboardStore(metricViewName);
 

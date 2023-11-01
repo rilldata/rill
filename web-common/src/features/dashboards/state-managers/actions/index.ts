@@ -15,42 +15,63 @@ import { dimensionFilterActions } from "./dimension-filters";
 
 export type StateManagerActions = ReturnType<typeof createStateManagerActions>;
 
+/**
+ * DashboardConnectedMutators object contains are functions that
+ * are closed over references connected to the live dashboard,
+ * so calling these functions will actually update the dashboard.
+ */
+type DashboardConnectedMutators = {
+  /**
+   * Used to update the dashboard.
+   */
+  updateDashboard: DashboardCallbackExecutor;
+  /**
+   * A callback that can be used to cancel queries if needed.
+   *
+   * FIXME: can we move this out to the query layer, so that
+   * individual dashboard muations don't need to know about
+   * the query layer, and don't need to take responsibility
+   * for cancelling queries?
+   */
+  cancelQueries: () => void;
+};
+
 export const createStateManagerActions = (
-  updateDashboard: DashboardCallbackExecutor
+  actionArgs: DashboardConnectedMutators
 ) => {
   return {
     /**
      * Actions related to the sorting state of the dashboard.
      */
-    sorting: createDashboardUpdaters(updateDashboard, sortActions),
+    sorting: createDashboardUpdaters(actionArgs, sortActions),
 
     /**
      * Actions related to the dashboard comparison state.
      */
-    comparison: createDashboardUpdaters(updateDashboard, comparisonActions),
+    comparison: createDashboardUpdaters(actionArgs, comparisonActions),
 
     /**
      * Actions related to the dashboard context columns.
      */
-    contextCol: createDashboardUpdaters(updateDashboard, contextColActions),
+    contextCol: createDashboardUpdaters(actionArgs, contextColActions),
 
     /**
      * Actions related to dimensions.
      */
-    dimensions: createDashboardUpdaters(updateDashboard, dimensionActions),
+    dimensions: createDashboardUpdaters(actionArgs, dimensionActions),
 
     /**
      * Actions related to dimensions filters
      */
     dimensionsFilter: createDashboardUpdaters(
-      updateDashboard,
+      actionArgs,
       dimensionFilterActions
     ),
 
     /**
      * Actions related to the dimension table.
      */
-    dimTable: createDashboardUpdaters(updateDashboard, dimTableActions),
+    dimTable: createDashboardUpdaters(actionArgs, dimTableActions),
 
     // Note: for now, some core actions are kept in the root of the
     // actions object. Can revisit that later if we want to move them.
@@ -58,24 +79,28 @@ export const createStateManagerActions = (
      * sets the main measure name for the dashboard.
      */
     setLeaderboardMeasureName: dashboardMutatorToUpdater(
-      updateDashboard,
+      actionArgs,
       setLeaderboardMeasureName
     ),
   };
 };
 
 /**
- * `dashboardMutatorToUpdater` take a DashboardCallbackExecutor
- * and returns a DashboardMutatorFn that directly updates the dashboard
- * by calling the DashboardCallbackExecutor.
+ * `dashboardMutatorToUpdater` takes a DashboardConnectedMutators
+ * object, and returns a DashboardMutatorFn that directly updates
+ * the dashboard by calling the included DashboardCallbackExecutor.
  **/
 function dashboardMutatorToUpdater<T extends unknown[]>(
-  updateDashboard: DashboardCallbackExecutor,
+  connectedMutators: DashboardConnectedMutators,
   mutator: DashboardMutatorFn<T>
 ): (...params: T) => void {
   return (...x) => {
-    const callback = (dash: MetricsExplorerEntity) => mutator(dash, ...x);
-    updateDashboard(callback);
+    const callback = (dash: MetricsExplorerEntity) =>
+      mutator(
+        { dashboard: dash, cancelQueries: connectedMutators.cancelQueries },
+        ...x
+      );
+    connectedMutators.updateDashboard(callback);
   };
 }
 
@@ -84,13 +109,13 @@ function dashboardMutatorToUpdater<T extends unknown[]>(
  * and returns an object of functions that directly update the dashboard.
  */
 function createDashboardUpdaters<T extends DashboardMutatorFns>(
-  updateDashboard: DashboardCallbackExecutor,
+  connectedMutators: DashboardConnectedMutators,
   mutators: T
 ): DashboardUpdaters<T> {
   return Object.fromEntries(
     Object.entries(mutators).map(([key, mutator]) => [
       key,
-      dashboardMutatorToUpdater(updateDashboard, mutator),
+      dashboardMutatorToUpdater(connectedMutators, mutator),
     ])
   ) as DashboardUpdaters<T>;
 }

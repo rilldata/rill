@@ -25,14 +25,14 @@ export function getLabeledComparisonFromComparisonRow(
     );
   }
   return {
-    dimensionValue: row.dimensionValue as string | number,
+    dimensionValue: row.dimensionValue as string,
     ...measure,
   };
 }
 
 export type LeaderboardItemData = {
   // The dimension value label to be shown in the leaderboard
-  dimensionValue: string | number;
+  dimensionValue: string;
 
   // main value to be shown in the leaderboard
   value: number | null;
@@ -100,7 +100,7 @@ function cleanUpComparisonValue(
  * value that it corresponds to.
  */
 type ComparisonValueWithLabel = V1MetricsViewComparisonValue & {
-  dimensionValue: string | number;
+  dimensionValue: string;
 };
 
 /**
@@ -114,7 +114,7 @@ type ComparisonValueWithLabel = V1MetricsViewComparisonValue & {
 export function prepareLeaderboardItemData(
   values: ComparisonValueWithLabel[],
   numberAboveTheFold: number,
-  selectedValues: (string | number)[],
+  selectedValues: string[],
   total: number | null,
   excludeMode: boolean
 ): {
@@ -138,7 +138,7 @@ export function prepareLeaderboardItemData(
   // selected values that _are_ in the API results.
   //
   // We also need to retain the original selection indices
-  const selectedButNotInAPIResults = new Map<string | number, number>();
+  const selectedButNotInAPIResults = new Map<string, number>();
   selectedValues.map((v, i) => selectedButNotInAPIResults.set(v, i));
 
   values.forEach((v, i) => {

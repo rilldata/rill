@@ -131,6 +131,11 @@ export function createStateManagers({
     /**
      * A collection of functions that update the dashboard data model.
      */
-    actions: createStateManagerActions(updateDashboard),
+    actions: createStateManagerActions({
+      updateDashboard,
+      cancelQueries: () => {
+        queryClient.cancelQueries();
+      },
+    }),
   };
 }

@@ -1,16 +1,16 @@
 import { setDisplayComparison } from "../../stores/dashboard-stores";
-import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { DashboardMutatorFnGeneralArgs } from "./types";
 
 export const setComparisonDimension = (
-  dash: MetricsExplorerEntity,
+  { dashboard }: DashboardMutatorFnGeneralArgs,
   dimensionName: string | undefined
 ) => {
   if (dimensionName === undefined) {
-    setDisplayComparison(dash, true);
+    setDisplayComparison(dashboard, true);
   } else {
-    setDisplayComparison(dash, false);
+    setDisplayComparison(dashboard, false);
   }
-  dash.selectedComparisonDimension = dimensionName;
+  dashboard.selectedComparisonDimension = dimensionName;
 };
 
 export const comparisonActions = {

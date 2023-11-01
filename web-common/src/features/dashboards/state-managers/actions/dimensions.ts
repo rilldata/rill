@@ -1,10 +1,11 @@
-import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { DashboardMutatorFnGeneralArgs } from "./types";
 
 export const setPrimaryDimension = (
-  dash: MetricsExplorerEntity,
+  { dashboard }: DashboardMutatorFnGeneralArgs,
+
   dimensionName: string | undefined
 ) => {
-  dash.selectedDimensionName = dimensionName;
+  dashboard.selectedDimensionName = dimensionName;
 };
 
 export const dimensionActions = {

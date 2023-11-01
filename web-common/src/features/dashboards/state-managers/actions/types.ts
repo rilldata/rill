@@ -27,13 +27,24 @@ export type DashboardCallbackExecutor = (
 ) => void;
 
 /**
+ * DashboardMutatorFnGeneralArgs are the arguments that are passed
+ * to all DashboardMutatorFn functions. This includes a reference
+ * to the live dashboard, and a callback that can be used to cancel
+ * queries if needed.
+ */
+export type DashboardMutatorFnGeneralArgs = {
+  dashboard: MetricsExplorerEntity;
+  cancelQueries: () => void;
+};
+
+/**
  * A DashboardMutatorFn is a function mutates the data
  * model of a single dashboard.
- * It takes a reference to a dashboard as its first parameter,
+ * It takes a DashboardMutatorFnGeneralArgs object as its first parameter,
  * and may take any number of additional parameters relevant to the mutation.
  */
 export type DashboardMutatorFn<T extends unknown[]> = (
-  dash: MetricsExplorerEntity,
+  outerArgs: DashboardMutatorFnGeneralArgs,
   ...params: T
 ) => void;
 
