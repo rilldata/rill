@@ -26,6 +26,15 @@ export const getDimensionDisplayName = (
   };
 };
 
+export const getDimensionDescription = (
+  dashData: DashboardDataSources
+): ((name: string) => string) => {
+  return (name: string) => {
+    const dim = getDimensionByName(dashData)(name);
+    return dim?.description || "";
+  };
+};
+
 export const dimensionSelectors = {
   /**
    * Gets all dimensions for the dashboard, or undefined if there are none.
@@ -41,4 +50,9 @@ export const dimensionSelectors = {
    * given its "key" name.
    */
   getDimensionDisplayName,
+  /**
+   * Returns a function that can be used to get a dimension's description
+   * given its "key" name. Returns an empty string if the dimension has no description.
+   */
+  getDimensionDescription,
 };

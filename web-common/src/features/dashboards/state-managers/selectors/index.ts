@@ -15,8 +15,9 @@ import { dimensionSelectors } from "./dimensions";
 import { dimensionFilterSelectors } from "./dimension-filters";
 import { timeRangeSelectors } from "./time-range";
 import { leaderboardQuerySelectors } from "./leaderboard-query";
+import { comparisonSelectors } from "./comparisons";
 
-type DashboardDataReadables = {
+export type DashboardDataReadables = {
   dashboardStore: Readable<MetricsExplorerEntity>;
   metricsSpecQueryResultStore: Readable<
     QueryObserverResult<V1MetricsViewSpec, RpcStatus>
@@ -92,6 +93,14 @@ export const createStateManagerReadables = (
      */
     timeRangeSelectors: createReadablesFromSelectors(
       timeRangeSelectors,
+      dashboardDataReadables
+    ),
+
+    /**
+     * Readables related to the dashboard comparison state
+     */
+    comparison: createReadablesFromSelectors(
+      comparisonSelectors,
       dashboardDataReadables
     ),
 

@@ -27,7 +27,6 @@
 
   // query the `/meta` endpoint to get the metric's measures and dimensions
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
-  let dimensions: Array<MetricsViewDimension>;
   $: dimensions = $metaQuery.data?.dimensions;
   $: measures = $metaQuery.data?.measures;
 
@@ -65,36 +64,7 @@
     referenceValue = $totalsQuery.data.data?.[activeMeasure.name];
   }
 
-  $: unfilteredTotalsQuery = createQueryServiceMetricsViewTotals(
-    $runtime.instanceId,
-    metricViewName,
-    {
-      measureNames: selectedMeasureNames,
-      timeStart: $timeControlsStore.timeStart,
-      timeEnd: $timeControlsStore.timeEnd,
-    },
-    {
-      query: {
-        enabled: $timeControlsStore.ready,
-      },
-    }
-  );
-
-  let unfilteredTotal: number;
-  $: if (activeMeasure?.name) {
-    unfilteredTotal = $unfilteredTotalsQuery.data?.data?.[activeMeasure.name];
-  }
-
   let leaderboardExpanded;
-
-  function onSelectItem(event, item: MetricsViewDimension) {
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilter(
-      metricViewName,
-      item.name,
-      event.detail.label
-    );
-  }
 
   /** Functionality for resizing the virtual leaderboard */
   let columns = 3;
@@ -147,7 +117,6 @@
       <VirtualizedGrid {columns} height="100%" items={dimensionsShown} let:item>
         <!-- the single virtual element -->
         <Leaderboard
-          {metricViewName}
           dimensionName={item.name}
           on:expand={() => {
             if (leaderboardExpanded === item.name) {
@@ -156,9 +125,7 @@
               leaderboardExpanded = item.name;
             }
           }}
-          on:select-item={(event) => onSelectItem(event, item)}
           referenceValue={referenceValue || 0}
-          {unfilteredTotal}
         />
       </VirtualizedGrid>
     {/if}

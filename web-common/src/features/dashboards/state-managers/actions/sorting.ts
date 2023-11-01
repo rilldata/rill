@@ -1,3 +1,4 @@
+import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { SortDirection, SortType } from "../../proto-state/derived-types";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 
@@ -25,11 +26,31 @@ export const toggleSort = (
   }
 };
 
+const contextColumnToSortType = {
+  [LeaderboardContextColumn.DELTA_PERCENT]: SortType.DELTA_PERCENT,
+  [LeaderboardContextColumn.DELTA_ABSOLUTE]: SortType.DELTA_ABSOLUTE,
+  [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
+};
+
+export const toggleSortByActiveContextColumn = (
+  metricsExplorer: MetricsExplorerEntity
+) => {
+  const contextColumnSortType =
+    contextColumnToSortType[metricsExplorer.dashboardSortType];
+  toggleSort(metricsExplorer, contextColumnSortType);
+};
+
 export const sortActions = {
   /**
    * Sets the sort type for the dashboard (value, percent, delta, etc.)
    */
   toggleSort,
+
+  /**
+   * Toggles the sort type according to the active context column.
+   */
+  toggleSortByActiveContextColumn,
+
   /**
    * Sets the dashboard to be sorted by dimension value.
    * Note that this should only be used in the dimension table

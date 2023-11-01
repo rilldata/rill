@@ -8,9 +8,17 @@ export const timeControlsState = (dashData: DashboardDataSources) =>
     dashData.dashboard,
   ]);
 
+export const isTimeControlReady = (dashData: DashboardDataSources): boolean =>
+  timeControlsState(dashData).ready === true;
+
 export const timeRangeSelectors = {
   /**
    * Readable containing the current state of the dashboard's time controls.
    */
   timeControlsState,
+
+  /**
+   * Is the time control ready?
+   */
+  isTimeControlReady,
 };

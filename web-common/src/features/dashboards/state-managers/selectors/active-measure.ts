@@ -20,6 +20,18 @@ export const activeMeasureName = (dashData: DashboardDataSources): string => {
   return dashData.dashboard.leaderboardMeasureName;
 };
 
+export const selectedMeasureNames = (
+  dashData: DashboardDataSources
+): string[] => {
+  return dashData.dashboard.selectedMeasureNames;
+};
+
+export const isAnyMeasureSelected = (
+  dashData: DashboardDataSources
+): boolean => {
+  return selectedMeasureNames(dashData).length > 0;
+};
+
 export const activeMeasureSelectors = {
   /**
    * Gets the MetricsViewSpecMeasureV2 of the primary
@@ -37,4 +49,14 @@ export const activeMeasureSelectors = {
     const measure = activeMeasure(args);
     return measure ? isSummableMeasure(measure) : false;
   },
+
+  /**
+   * names of the currently selected measures
+   */
+  selectedMeasureNames,
+
+  /**
+   * Whether any measure is currently selected
+   */
+  isAnyMeasureSelected,
 };
