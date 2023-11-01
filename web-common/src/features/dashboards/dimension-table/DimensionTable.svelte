@@ -87,7 +87,11 @@ TableCells – the cell contents.
   let estimateColumnSize: number[] = [];
 
   /* Separate out dimension column */
-  $: dimensionColumn = columns?.find((c) => c.name == dimensionName);
+  // SAFETY: cast should be safe because if dimensionName is undefined,
+  // we should not be in a dimension table sub-component
+  $: dimensionColumn = columns?.find(
+    (c) => c.name == dimensionName
+  ) as VirtualizedTableColumns;
   $: measureColumns = columns?.filter((c) => c.name !== dimensionName) ?? [];
 
   let horizontalScrolling = false;
