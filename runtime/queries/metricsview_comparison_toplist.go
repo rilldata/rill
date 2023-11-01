@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 	"time"
+	// Load IANA time zone data
+	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -14,9 +16,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
 )
 
 type MetricsViewComparison struct {
@@ -259,7 +258,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	args := []any{}
 	td := safeName(mv.TimeDimension)
 
-	trc, err := timeRangeClause(q.TimeRange, dialect, td, &args)
+	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
@@ -386,7 +385,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	td := safeName(mv.TimeDimension)
 
-	trc, err := timeRangeClause(q.TimeRange, dialect, td, &args)
+	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
@@ -402,7 +401,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		args = append(args, clauseArgs...)
 	}
 
-	trc, err = timeRangeClause(q.ComparisonTimeRange, dialect, td, &args)
+	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, dialect, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
@@ -800,7 +799,7 @@ func (q *MetricsViewComparison) generateFilename() string {
 
 // TODO: a) Ensure correct time zone handling, b) Implement support for tr.RoundToGrain
 // (Maybe consider pushing all this logic into the SQL instead?)
-func timeRangeClause(tr *runtimev1.TimeRange, dialect drivers.Dialect, timeCol string, args *[]any) (string, error) {
+func timeRangeClause(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, timeCol string, args *[]any) (string, error) {
 	var clause string
 	if isTimeRangeNil(tr) {
 		return clause, nil
@@ -823,6 +822,8 @@ func timeRangeClause(tr *runtimev1.TimeRange, dialect drivers.Dialect, timeCol s
 		end = tr.End.AsTime().In(tz)
 	}
 
+	isISO := false
+
 	if tr.IsoDuration != "" {
 		if !start.IsZero() && !end.IsZero() {
 			return "", fmt.Errorf("only two of time_range.{start,end,iso_duration} can be specified")
@@ -840,6 +841,8 @@ func timeRangeClause(tr *runtimev1.TimeRange, dialect drivers.Dialect, timeCol s
 		} else {
 			return "", fmt.Errorf("one of time_range.{start,end} must be specified with time_range.iso_duration")
 		}
+
+		isISO = true
 	}
 
 	if tr.IsoOffset != "" {
@@ -854,6 +857,23 @@ func timeRangeClause(tr *runtimev1.TimeRange, dialect drivers.Dialect, timeCol s
 		if !end.IsZero() {
 			end = d.Add(end)
 		}
+
+		isISO = true
+	}
+
+	// Only modify the start and end if ISO duration or offset was sent.
+	// This is to maintain backwards compatibility for calls from the UI.
+	if isISO {
+		fdow := int(mv.FirstDayOfWeek)
+		if mv.FirstDayOfWeek > 7 || mv.FirstDayOfWeek <= 0 {
+			fdow = 1
+		}
+		fmoy := int(mv.FirstMonthOfYear)
+		if mv.FirstMonthOfYear > 12 || mv.FirstMonthOfYear <= 0 {
+			fmoy = 1
+		}
+		start = TruncateTime(start, tr.RoundToGrain, tz, fdow, fmoy)
+		end = CeilTime(start, tr.RoundToGrain, tz, fdow, fmoy)
 	}
 
 	if !start.IsZero() {
