@@ -21,7 +21,6 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import { SortType } from "../proto-state/derived-types";
 
-  export let metricViewName: string;
   export let dimensionName: string;
   export let isFetching: boolean;
   export let excludeMode = false;
@@ -34,6 +33,7 @@
     actions: {
       sorting: { toggleSort },
     },
+    metricsViewName,
   } = stateManagers;
 
   const queryClient = useQueryClient();
@@ -57,14 +57,14 @@
   }
 
   const goBackToLeaderboard = () => {
-    metricsExplorerStore.setMetricDimensionName(metricViewName, null);
+    metricsExplorerStore.setMetricDimensionName($metricsViewName, null);
     if ($sortedByDimensionValue) {
       toggleSort(SortType.VALUE);
     }
   };
   function toggleFilterMode() {
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
+    cancelDashboardQueries(queryClient, $metricsViewName);
+    metricsExplorerStore.toggleFilterMode($metricsViewName, dimensionName);
   }
 </script>
 
@@ -124,6 +124,6 @@
       </div>
     {/if}
 
-    <ExportDimensionTableDataButton {metricViewName} />
+    <ExportDimensionTableDataButton metricViewName={$metricsViewName} />
   </div>
 </div>

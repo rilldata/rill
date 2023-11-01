@@ -34,7 +34,7 @@
     selectors: {
       activeMeasure: { activeMeasureName },
       dimensionFilters: { selectedDimensionValues, isFilterExcludeMode },
-      leaderboardQueries: {
+      dashboardQueries: {
         leaderboardSortedQueryBody,
         leaderboardSortedQueryOptions,
         leaderboardDimensionTotalQueryBody,

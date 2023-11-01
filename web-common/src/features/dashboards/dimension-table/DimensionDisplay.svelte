@@ -8,7 +8,6 @@
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
     useMetaDimension,
-    useMetaMeasure,
     useMetaQuery,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -17,26 +16,34 @@
     createQueryServiceMetricsViewComparison,
     createQueryServiceMetricsViewTotals,
     MetricsViewDimension,
-    MetricsViewSpecMeasureV2,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import {
     getDimensionFilterWithSearch,
     prepareDimensionTableRows,
-    prepareVirtualizedDimTableColumns,
   } from "./dimension-table-utils";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
-  import {
-    getDimensionColumn,
-    isSummableMeasure,
-    prepareSortedQueryBody,
-  } from "../dashboard-utils";
+  import { getDimensionColumn } from "../dashboard-utils";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
 
-  export let metricViewName: string;
-  export let dimensionName: string;
+  const stateManagers = getStateManagers();
+  const {
+    dashboardStore,
+    selectors: {
+      dashboardQueries: { dimensionTableSortedQueryBody },
+      activeMeasure: { isValidPercentOfTotal },
+      comparison: { isBeingCompared },
+      dimensions: { dimensionTableDimName },
+      dimensionTable: { virtualizedTableColumns },
+    },
+    metricsViewName,
+  } = stateManagers;
+
+  // cast is safe because dimensionTableDimName must be defined
+  // for the dimension table to be open
+  $: dimensionName = $dimensionTableDimName as string;
 
   let searchText = "";
 
@@ -44,40 +51,20 @@
 
   $: instanceId = $runtime.instanceId;
 
-  $: metaQuery = useMetaQuery(instanceId, metricViewName);
+  $: metaQuery = useMetaQuery(instanceId, $metricsViewName);
 
   $: dimensionQuery = useMetaDimension(
     instanceId,
-    metricViewName,
+    $metricsViewName,
     dimensionName
   );
 
   let dimension: MetricsViewDimension;
   $: dimension = $dimensionQuery?.data as MetricsViewDimension;
   $: dimensionColumn = getDimensionColumn(dimension);
-  const stateManagers = getStateManagers();
   const timeControlsStore = useTimeControlStore(stateManagers);
 
-  const {
-    dashboardStore,
-    selectors: {
-      sorting: { sortedAscending },
-    },
-  } = stateManagers;
-
   $: leaderboardMeasureName = $dashboardStore?.leaderboardMeasureName;
-  $: isBeingCompared =
-    $dashboardStore?.selectedComparisonDimension === dimensionName;
-
-  $: leaderboardMeasureQuery = useMetaMeasure(
-    instanceId,
-    metricViewName,
-    leaderboardMeasureName
-  );
-
-  $: validPercentOfTotal = (
-    $leaderboardMeasureQuery?.data as MetricsViewSpecMeasureV2
-  )?.validPercentOfTotal;
 
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
@@ -95,14 +82,9 @@
       : $dashboardStore?.filters?.include?.find((d) => d.name === dimensionName)
           ?.in) ?? [];
 
-  $: visibleMeasures =
-    $metaQuery.data?.measures?.filter((m) =>
-      $dashboardStore?.visibleMeasureKeys.has(m.name ?? "")
-    ) ?? [];
-
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
-    metricViewName,
+    $metricsViewName,
     {
       measureNames: $dashboardStore?.selectedMeasureNames,
       timeStart: $timeControlsStore.timeStart,
@@ -117,38 +99,12 @@
 
   $: unfilteredTotal = $totalsQuery?.data?.data?.[leaderboardMeasureName] ?? 0;
 
-  let referenceValues: { [key: string]: number } = {};
-  $: if ($totalsQuery?.data?.data) {
-    visibleMeasures.map((m) => {
-      if (m.name && isSummableMeasure(m)) {
-        referenceValues[m.name] = $totalsQuery.data?.data?.[m.name];
-      }
-    });
-  }
-
-  $: columns = prepareVirtualizedDimTableColumns(
-    $dashboardStore,
-    visibleMeasures,
-    referenceValues,
-    dimension,
-    $timeControlsStore?.showComparison ?? false,
-    validPercentOfTotal ?? false
-  );
-
-  $: sortedQueryBody = prepareSortedQueryBody(
-    dimensionName,
-    $dashboardStore?.selectedMeasureNames,
-    $timeControlsStore,
-    leaderboardMeasureName,
-    $dashboardStore.dashboardSortType,
-    $sortedAscending,
-    filterSet
-  );
+  $: columns = $virtualizedTableColumns($totalsQuery);
 
   $: sortedQuery = createQueryServiceMetricsViewComparison(
     $runtime.instanceId,
-    metricViewName,
-    sortedQueryBody,
+    $metricsViewName,
+    $dimensionTableSortedQueryBody,
     {
       query: {
         enabled: $timeControlsStore.ready && !!filterSet,
@@ -162,19 +118,19 @@
     leaderboardMeasureName,
     dimensionColumn,
     $timeControlsStore.showComparison ?? false,
-    validPercentOfTotal ?? false,
+    $isValidPercentOfTotal,
     unfilteredTotal
   );
 
   function onSelectItem(event) {
     const label = tableRows[event.detail][dimensionColumn] as string;
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilter(metricViewName, dimensionName, label);
+    cancelDashboardQueries(queryClient, $metricsViewName);
+    metricsExplorerStore.toggleFilter($metricsViewName, dimensionName, label);
   }
 
   function toggleComparisonDimension(dimensionName, isBeingCompared) {
     metricsExplorerStore.setComparisonDimension(
-      metricViewName,
+      $metricsViewName,
       isBeingCompared ? undefined : dimensionName
     );
   }
@@ -184,7 +140,6 @@
   <div class="h-full flex flex-col" style:min-width="365px">
     <div class="flex-none" style:height="50px">
       <DimensionHeader
-        {metricViewName}
         {dimensionName}
         {excludeMode}
         isFetching={$sortedQuery?.isFetching}
@@ -202,7 +157,6 @@
             toggleComparisonDimension(dimensionName, isBeingCompared)}
           isFetching={$sortedQuery?.isFetching}
           dimensionName={dimensionColumn}
-          {isBeingCompared}
           {columns}
           {selectedValues}
           rows={tableRows}

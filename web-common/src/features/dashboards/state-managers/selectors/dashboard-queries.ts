@@ -4,10 +4,54 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 import { prepareSortedQueryBody } from "../../dashboard-utils";
-import { activeMeasureName, isAnyMeasureSelected } from "./active-measure";
+import {
+  activeMeasureName,
+  isAnyMeasureSelected,
+  selectedMeasureNames,
+} from "./active-measure";
 import { sortingSelectors } from "./sorting";
 import { isTimeControlReady, timeControlsState } from "./time-range";
 import { getFiltersForOtherDimensions } from "./dimension-filters";
+
+/**
+ * Returns the sorted query body for the dimension table for the
+ * active dimension.
+ *
+ * Safety: this readable should ONLY be used when the active dimension
+ * is not undefined, ie then the dimension table is visible.
+ */
+export function dimensionTableSortedQueryBody(
+  dashData: DashboardDataSources
+): QueryServiceMetricsViewComparisonBody {
+  const dimensionName = dashData.dashboard.selectedDimensionName;
+  if (!dimensionName) {
+    return {};
+  }
+  return prepareSortedQueryBody(
+    dimensionName,
+    selectedMeasureNames(dashData),
+    timeControlsState(dashData),
+    sortingSelectors.sortMeasure(dashData),
+    sortingSelectors.sortType(dashData),
+    sortingSelectors.sortedAscending(dashData),
+    getFiltersForOtherDimensions(dashData)(dimensionName)
+  );
+}
+
+export function dimensionTableSortedQueryOptions(
+  dashData: DashboardDataSources
+): (dimensionName: string) => { query: { enabled: boolean } } {
+  return (dimensionName: string) => {
+    const sortedQueryEnabled =
+      timeControlsState(dashData).ready === true &&
+      !!getFiltersForOtherDimensions(dashData)(dimensionName);
+    return {
+      query: {
+        enabled: sortedQueryEnabled,
+      },
+    };
+  };
+}
 
 /**
  * Returns a function that can be used to get the sorted query body
@@ -70,6 +114,18 @@ export function leaderboardDimensionTotalQueryOptions(
 }
 
 export const leaderboardQuerySelectors = {
+  /**
+   * Readable containg a function that will return
+   * the sorted query body for the dimension table for a given dimension.
+   */
+  dimensionTableSortedQueryBody,
+
+  /**
+   * Readable containg a function that will return
+   * the sorted query options for the dimension table for the given dimension.
+   */
+  dimensionTableSortedQueryOptions,
+
   /**
    * Readable containg a function that will return
    * the sorted query body for a leaderboard for the given dimension.

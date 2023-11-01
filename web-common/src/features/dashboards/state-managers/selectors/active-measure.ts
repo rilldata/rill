@@ -32,6 +32,12 @@ export const isAnyMeasureSelected = (
   return selectedMeasureNames(dashData).length > 0;
 };
 
+export const isValidPercentOfTotal = (
+  dashData: DashboardDataSources
+): boolean => {
+  return activeMeasure(dashData)?.validPercentOfTotal ?? false;
+};
+
 export const activeMeasureSelectors = {
   /**
    * Gets the MetricsViewSpecMeasureV2 of the primary
@@ -59,4 +65,10 @@ export const activeMeasureSelectors = {
    * Whether any measure is currently selected
    */
   isAnyMeasureSelected,
+
+  /**
+   * Does the currently active measure have `valid_percent_of_total: true`
+   * in its measure definition?
+   */
+  isValidPercentOfTotal,
 };

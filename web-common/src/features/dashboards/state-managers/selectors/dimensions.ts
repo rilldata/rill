@@ -18,6 +18,12 @@ export const visibleDimensions = ({
   return dimensions === undefined ? [] : dimensions;
 };
 
+export const dimensionTableDimName = ({
+  dashboard,
+}: DashboardDataSources): string | undefined => {
+  return dashboard.selectedDimensionName;
+};
+
 export const getDimensionByName = (
   dashData: DashboardDataSources
 ): ((name: string) => MetricsViewSpecDimensionV2 | undefined) => {
@@ -72,4 +78,11 @@ export const dimensionSelectors = {
    * given its "key" name. Returns an empty string if the dimension has no description.
    */
   getDimensionDescription,
+
+  /**
+   * Gets the name of the dimension that is currently selected in the dimension table.
+   * Returns undefined if no dimension is selected, in which case the dimension table
+   * is not shown.
+   */
+  dimensionTableDimName,
 };

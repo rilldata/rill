@@ -14,8 +14,10 @@ import { activeMeasureSelectors } from "./active-measure";
 import { dimensionSelectors } from "./dimensions";
 import { dimensionFilterSelectors } from "./dimension-filters";
 import { timeRangeSelectors } from "./time-range";
-import { leaderboardQuerySelectors } from "./leaderboard-query";
+import { leaderboardQuerySelectors } from "./dashboard-queries";
 import { comparisonSelectors } from "./comparisons";
+import { dimensionTableSelectors } from "./dimension-table";
+import { measureSelectors } from "./measures";
 
 export type DashboardDataReadables = {
   dashboardStore: Readable<MetricsExplorerEntity>;
@@ -78,6 +80,16 @@ export const createStateManagerReadables = (
     ),
 
     /**
+     * Readables related to the dimension dimension table,
+     * and only guaranteed to be valid when the dimension
+     * table is visible.
+     */
+    dimensionTable: createReadablesFromSelectors(
+      dimensionTableSelectors,
+      dashboardDataReadables
+    ),
+
+    /**
      * Readables related to selected (aka "filtered)
      * dimension values in the leaderboard, including
      * whether or not a dimension is in include or exclude mode.
@@ -107,8 +119,16 @@ export const createStateManagerReadables = (
     /**
      * Readables for query construction
      */
-    leaderboardQueries: createReadablesFromSelectors(
+    dashboardQueries: createReadablesFromSelectors(
       leaderboardQuerySelectors,
+      dashboardDataReadables
+    ),
+
+    /**
+     * Readables related to dashboard measures
+     */
+    measures: createReadablesFromSelectors(
+      measureSelectors,
       dashboardDataReadables
     ),
   };

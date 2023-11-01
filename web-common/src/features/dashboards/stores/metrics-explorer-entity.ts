@@ -120,7 +120,9 @@ export interface MetricsExplorerEntity {
   leaderboardContextColumn: LeaderboardContextColumn;
 
   /**
-   * User selected dimension. Null if no dimension is selected.
+   * The name of the dimension that is currently shown in the dimension
+   * detail table. If this is undefined, then the dimension detail table
+   * is not shown.
    */
   selectedDimensionName?: string;
 
