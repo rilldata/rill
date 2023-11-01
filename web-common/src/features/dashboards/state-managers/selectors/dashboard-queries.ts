@@ -53,6 +53,16 @@ export function dimensionTableSortedQueryOptions(
   };
 }
 
+export function dimensionTableTotalQueryBody(
+  dashData: DashboardDataSources
+): QueryServiceMetricsViewTotalsBody {
+  const dimensionName = dashData.dashboard.selectedDimensionName;
+  if (!dimensionName) {
+    return {};
+  }
+  return leaderboardDimensionTotalQueryBody(dashData)(dimensionName);
+}
+
 /**
  * Returns a function that can be used to get the sorted query body
  * for a leaderboard for the given dimension.
@@ -115,8 +125,7 @@ export function leaderboardDimensionTotalQueryOptions(
 
 export const leaderboardQuerySelectors = {
   /**
-   * Readable containg a function that will return
-   * the sorted query body for the dimension table for a given dimension.
+   * Readable containing the sorted query body for the dimension table.
    */
   dimensionTableSortedQueryBody,
 
@@ -125,6 +134,11 @@ export const leaderboardQuerySelectors = {
    * the sorted query options for the dimension table for the given dimension.
    */
   dimensionTableSortedQueryOptions,
+
+  /**
+   * Readable containing the totals query body for the dimension table.
+   */
+  dimensionTableTotalQueryBody,
 
   /**
    * Readable containg a function that will return

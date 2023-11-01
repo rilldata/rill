@@ -80,9 +80,10 @@ export const createStateManagerReadables = (
     ),
 
     /**
-     * Readables related to the dimension dimension table,
-     * and only guaranteed to be valid when the dimension
-     * table is visible.
+     * Readables related to the dimension dimension.
+     *
+     * These are valid when the dimension table is visible, and
+     * should only be used from within dimension table components.
      */
     dimensionTable: createReadablesFromSelectors(
       dimensionTableSelectors,
