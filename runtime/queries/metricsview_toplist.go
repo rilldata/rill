@@ -249,9 +249,9 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		groupByCol = unnestColName
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %q %s WHERE %s GROUP BY %s %s %s OFFSET %d",
+	sql := fmt.Sprintf("SELECT %s FROM %s %s WHERE %s GROUP BY %s %s %s OFFSET %d",
 		strings.Join(selectCols, ", "),
-		mv.Table,
+		safeName(mv.Table),
 		unnestClause,
 		whereClause,
 		groupByCol,

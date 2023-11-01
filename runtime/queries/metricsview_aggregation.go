@@ -154,7 +154,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 				// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
 				unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
 				selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, col))
-				unnestClauses = append(unnestClauses, fmt.Sprintf(`, LATERAL UNNEST(%q.%s) tbl(%s)`, mv.Table, col, unnestColName))
+				unnestClauses = append(unnestClauses, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), col, unnestColName))
 			} else {
 				selectCols = append(selectCols, fmt.Sprintf("%s as %s", col, safeName(d.Name)))
 				groupCols = append(groupCols, col)
