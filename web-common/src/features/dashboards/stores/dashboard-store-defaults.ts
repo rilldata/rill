@@ -74,6 +74,8 @@ function setDefaultComparisonTimeRange(
   metricsExplorer: MetricsExplorerEntity,
   fullTimeRange: V1ColumnTimeRangeResponse | undefined
 ) {
+  if (!fullTimeRange) return;
+
   const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
   const comparisonOption = DEFAULT_TIME_RANGES[preset]
     ?.defaultComparison as TimeComparisonOption;
