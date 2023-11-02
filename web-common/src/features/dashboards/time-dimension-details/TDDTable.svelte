@@ -16,8 +16,6 @@
   import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
   import { lastKnownPosition } from "./time-dimension-data-store";
 
-  export let metricViewName: string;
-  export let dimensionName: string;
   export let dimensionLabel: string;
   export let measureLabel: string;
   export let excludeMode: boolean;
