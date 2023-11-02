@@ -408,6 +408,60 @@ const metricViewReducers = {
     });
   },
 
+  selectItemsInFilter(name: string, dimensionName: string, values: string[]) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
+        dimensionName
+      )
+        ? "exclude"
+        : "include";
+
+      const dimensionEntryIndex = metricsExplorer.filters[
+        relevantFilterKey
+      ].findIndex((filter) => filter.name === dimensionName);
+
+      if (dimensionEntryIndex >= 0) {
+        // preserve old selections and add only new ones
+        const oldValues = metricsExplorer.filters[relevantFilterKey][
+          dimensionEntryIndex
+        ].in as string[];
+        const newValues = values.filter((v) => !oldValues.includes(v));
+        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in.push(
+          ...newValues
+        );
+      } else {
+        metricsExplorer.filters[relevantFilterKey].push({
+          name: dimensionName,
+          in: values,
+        });
+      }
+    });
+  },
+
+  deselectItemsInFilter(name: string, dimensionName: string, values: string[]) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
+        dimensionName
+      )
+        ? "exclude"
+        : "include";
+
+      const dimensionEntryIndex = metricsExplorer.filters[
+        relevantFilterKey
+      ].findIndex((filter) => filter.name === dimensionName);
+
+      if (dimensionEntryIndex >= 0) {
+        // remove only deselected values
+        const oldValues = metricsExplorer.filters[relevantFilterKey][
+          dimensionEntryIndex
+        ].in as string[];
+        const newValues = oldValues.filter((v) => !values.includes(v));
+        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in =
+          newValues;
+      }
+    });
+  },
+
   toggleFilter(name: string, dimensionName: string, dimensionValue: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(

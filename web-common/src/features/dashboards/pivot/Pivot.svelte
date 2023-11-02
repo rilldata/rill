@@ -33,7 +33,7 @@
   let table: RegularTableElement;
   let initialized = false;
   export function draw() {
-    if (initialized) table.draw();
+    if (initialized && table) table.draw();
   }
   export const isInitialized = () => initialized;
 

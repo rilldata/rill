@@ -19,10 +19,15 @@
   import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import type { TableData } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let metricViewName;
 
+  const queryClient = useQueryClient();
+
   const timeDimensionDataStore = useTimeDimensionDataStore(getStateManagers());
+
   $: metaQuery = useMetaQuery(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
@@ -57,6 +62,13 @@
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
 
+  $: rowHeaderLabels =
+    formattedData?.rowHeaderData?.slice(1)?.map((row) => row[0]?.value) ?? [];
+
+  $: areAllTableRowsSelected = rowHeaderLabels?.every((val) =>
+    formattedData?.selectedValues?.includes(val)
+  );
+
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
 
   // Create a time formatter for the column headers
@@ -83,6 +95,28 @@
       time: time,
     });
   }
+
+  function toggleFilter(e) {
+    cancelDashboardQueries(queryClient, metricViewName);
+    metricsExplorerStore.toggleFilter(metricViewName, dimensionName, e.detail);
+  }
+  function toggleAllSearchItems() {
+    cancelDashboardQueries(queryClient, metricViewName);
+    if (areAllTableRowsSelected) {
+      metricsExplorerStore.deselectItemsInFilter(
+        metricViewName,
+        dimensionName,
+        rowHeaderLabels
+      );
+      return;
+    } else {
+      metricsExplorerStore.selectItemsInFilter(
+        metricViewName,
+        dimensionName,
+        rowHeaderLabels
+      );
+    }
+  }
 </script>
 
 <TDDHeader
@@ -90,9 +124,13 @@
   {metricViewName}
   isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
   comparing={$timeDimensionDataStore?.comparing}
+  {areAllTableRowsSelected}
+  isRowsEmpty={!rowHeaderLabels.length}
   on:search={(e) => {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setSearchText(metricViewName, e.detail);
   }}
+  on:toggle-all-search-items={() => toggleAllSearchItems()}
 />
 
 {#if formattedData}
@@ -111,8 +149,11 @@
     {timeFormatter}
     tableData={formattedData}
     highlightedCol={$chartInteractionColumn?.hover}
-    on:toggle-sort={() =>
-      metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE)}
+    on:toggle-filter={toggleFilter}
+    on:toggle-sort={() => {
+      cancelDashboardQueries(queryClient, metricViewName);
+      metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE);
+    }}
     on:highlight={highlightCell}
   />
 {/if}
