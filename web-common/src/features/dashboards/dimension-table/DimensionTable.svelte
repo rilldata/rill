@@ -32,7 +32,7 @@ TableCells – the cell contents.
   export let isFetching: boolean;
 
   const {
-    actions: { dimTable },
+    actions: { dimensionTable },
     selectors: {
       sorting: { sortMeasure },
     },
@@ -183,7 +183,7 @@ TableCells – the cell contents.
   async function handleColumnHeaderClick(event) {
     colScrollOffset = $columnVirtualizer.scrollOffset;
     const columnName = event.detail;
-    dimTable.handleMeasureColumnHeaderClick(columnName);
+    dimensionTable.handleMeasureColumnHeaderClick(columnName);
   }
 
   async function handleResizeDimensionColumn(event) {

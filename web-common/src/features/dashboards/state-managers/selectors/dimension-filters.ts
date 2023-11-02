@@ -1,9 +1,13 @@
-import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
+import type {
+  MetricsViewFilterCond,
+  V1MetricsViewFilter,
+} from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 import { getFiltersForOtherDimensions as getFiltersForOtherDimensionsUnconnected } from "../../selectors";
+import type { AtLeast } from "../types";
 
 export const getFiltersForOtherDimensions = (
-  dashData: DashboardDataSources
+  dashData: AtLeast<DashboardDataSources, "dashboard">
 ): ((dimName: string) => V1MetricsViewFilter) => {
   return (dimName: string) =>
     getFiltersForOtherDimensionsUnconnected(
@@ -13,7 +17,7 @@ export const getFiltersForOtherDimensions = (
 };
 
 export const selectedDimensionValues = (
-  dashData: DashboardDataSources
+  dashData: AtLeast<DashboardDataSources, "dashboard">
 ): ((dimName: string) => string[]) => {
   return (dimName: string) => {
     const filterKey = filterModeKey(dashData)(dimName);
@@ -34,28 +38,35 @@ export const selectedDimensionValues = (
 };
 
 export const getAllFilters = (
-  dashData: DashboardDataSources
+  dashData: AtLeast<DashboardDataSources, "dashboard">
 ): V1MetricsViewFilter => dashData.dashboard.filters;
 
 export const atLeastOneSelection = (
-  dashData: DashboardDataSources
+  dashData: AtLeast<DashboardDataSources, "dashboard">
 ): ((dimName: string) => boolean) => {
   return (dimName: string) =>
     selectedDimensionValues(dashData)(dimName).length > 0;
 };
 
 export const isFilterExcludeMode = (
-  dashData: DashboardDataSources
+  dashData: AtLeast<DashboardDataSources, "dashboard">
 ): ((dimName: string) => boolean) => {
   return (dimName: string) =>
     dashData.dashboard.dimensionFilterExcludeMode.get(dimName) ?? false;
 };
 
 const filterModeKey = (
-  dashData: DashboardDataSources
+  dashData: AtLeast<DashboardDataSources, "dashboard">
 ): ((dimName: string) => "exclude" | "include") => {
   return (dimName: string) =>
     isFilterExcludeMode(dashData)(dimName) ? "exclude" : "include";
+};
+
+export const filtersForCurrentExcludeMode = (
+  dashData: AtLeast<DashboardDataSources, "dashboard">
+): ((dimName: string) => MetricsViewFilterCond[] | undefined) => {
+  return (dimName: string) =>
+    dashData.dashboard.filters[filterModeKey(dashData)(dimName)];
 };
 
 export const dimensionFilterSelectors = {

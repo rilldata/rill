@@ -39,7 +39,7 @@
       comparison: { isBeingCompared: isBeingComparedReadable },
     },
     actions: {
-      dimensionsFilter: { toggleDimensionFilter },
+      dimensionsFilter: { toggleDimensionValueSelection },
     },
   } = getStateManagers();
 
@@ -110,7 +110,7 @@
     on:blur={onLeave}
     on:click={(e) => {
       if (e.shiftKey) return;
-      toggleDimensionFilter(dimensionName, label);
+      toggleDimensionValueSelection(dimensionName, label);
     }}
     on:focus={onHover}
     on:keydown

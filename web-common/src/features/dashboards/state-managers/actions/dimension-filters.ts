@@ -1,19 +1,13 @@
 import { removeIfExists } from "@rilldata/web-common/lib/arrayUtils";
 import type { DashboardMutatorFnGeneralArgs } from "./types";
+import { filtersForCurrentExcludeMode } from "../selectors/dimension-filters";
 
-export function toggleDimensionFilter(
+export function toggleDimensionValueSelection(
   { dashboard, cancelQueries }: DashboardMutatorFnGeneralArgs,
   dimensionName: string,
   dimensionValue: string
 ) {
-  const relevantFilterKey = dashboard.dimensionFilterExcludeMode.get(
-    dimensionName
-  )
-    ? "exclude"
-    : "include";
-
-  const filters = dashboard.filters[relevantFilterKey];
-
+  const filters = filtersForCurrentExcludeMode({ dashboard })(dimensionName);
   // if there are no filters at this point we cannot update anything.
   if (filters === undefined) {
     return;
@@ -46,7 +40,12 @@ export function toggleDimensionFilter(
 
 export const dimensionFilterActions = {
   /**
-   * Toggles the filter of the given dimension value.
+   * Toggles whether the given dimension value is selected in the
+   * dimension filter for the given dimension.
+   *
+   * Note that this is different than the include/exclude mode for
+   * dimension filters. This is a toggle for a specific value, whereas
+   * the include/exclude mode is a toggle for the entire dimension.
    */
-  toggleDimensionFilter,
+  toggleDimensionValueSelection,
 };

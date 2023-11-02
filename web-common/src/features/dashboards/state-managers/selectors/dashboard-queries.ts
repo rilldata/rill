@@ -12,6 +12,8 @@ import {
 import { sortingSelectors } from "./sorting";
 import { isTimeControlReady, timeControlsState } from "./time-range";
 import { getFiltersForOtherDimensions } from "./dimension-filters";
+import { updateFilterOnSearch } from "../../dimension-table/dimension-table-utils";
+import { dimensionTableSearchString } from "./dimension-table";
 
 /**
  * Returns the sorted query body for the dimension table for the
@@ -27,6 +29,12 @@ export function dimensionTableSortedQueryBody(
   if (!dimensionName) {
     return {};
   }
+  let filters = getFiltersForOtherDimensions(dashData)(dimensionName);
+  const searchString = dimensionTableSearchString(dashData);
+  if (searchString !== undefined) {
+    filters = updateFilterOnSearch(filters, searchString, dimensionName);
+  }
+
   return prepareSortedQueryBody(
     dimensionName,
     selectedMeasureNames(dashData),
@@ -34,7 +42,7 @@ export function dimensionTableSortedQueryBody(
     sortingSelectors.sortMeasure(dashData),
     sortingSelectors.sortType(dashData),
     sortingSelectors.sortedAscending(dashData),
-    getFiltersForOtherDimensions(dashData)(dimensionName)
+    filters
   );
 }
 

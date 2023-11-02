@@ -29,6 +29,33 @@ export const handleMeasureColumnHeaderClick = (
   }
 };
 
-export const dimTableActions = {
+export const setDimensionTableSearchString = (
+  generalArgs: DashboardMutatorFnGeneralArgs,
+  searchString: string | undefined
+) => {
+  generalArgs.dashboard.dimensionSearchText = searchString;
+};
+
+export const dimensionTableActions = {
+  /**
+   * handles clicking on a measure column header in the dimension
+   * table, including the delta, delta percent, and percent of total
+   * columns. This will set the active measure and sort the leaderboard
+   * by the selected measure (or context column).
+   */
   handleMeasureColumnHeaderClick,
+
+  /**
+   * Sets the dimension table search string
+   */
+  setDimensionTableSearchString,
+
+  /**
+   * Clears the dimension table search string
+   */
+  clearDimensionTableSearchString: (
+    generalArgs: DashboardMutatorFnGeneralArgs
+  ) => {
+    setDimensionTableSearchString(generalArgs, undefined);
+  },
 };

@@ -2,7 +2,7 @@ import { sortActions } from "./sorting";
 import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 import { setLeaderboardMeasureName } from "./core-actions";
-import { dimTableActions } from "./dimension-table";
+import { dimensionTableActions } from "./dimension-table";
 import type {
   DashboardCallbackExecutor,
   DashboardMutatorFn,
@@ -71,7 +71,7 @@ export const createStateManagerActions = (
     /**
      * Actions related to the dimension table.
      */
-    dimTable: createDashboardUpdaters(actionArgs, dimTableActions),
+    dimensionTable: createDashboardUpdaters(actionArgs, dimensionTableActions),
 
     // Note: for now, some core actions are kept in the root of the
     // actions object. Can revisit that later if we want to move them.

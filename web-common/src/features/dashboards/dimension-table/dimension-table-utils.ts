@@ -27,10 +27,10 @@ import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/numb
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
-  filterForDimension,
-  searchText,
-  dimensionName
-) {
+  filterForDimension: V1MetricsViewFilter,
+  searchText: string,
+  dimensionName: string
+): V1MetricsViewFilter {
   const filterSet = JSON.parse(JSON.stringify(filterForDimension));
   const addNull = "null".includes(searchText);
   if (searchText !== "") {

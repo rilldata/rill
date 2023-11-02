@@ -13,7 +13,6 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
@@ -29,9 +28,15 @@
   const {
     selectors: {
       sorting: { sortedByDimensionValue },
+      dimensionTable: { dimensionTableSearchString },
     },
     actions: {
       sorting: { toggleSort },
+      dimensionTable: {
+        setDimensionTableSearchString,
+        clearDimensionTableSearchString,
+      },
+      dimensions: { setPrimaryDimension },
     },
     metricsViewName,
   } = stateManagers;
@@ -41,26 +46,28 @@
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
 
-  let searchToggle = false;
+  let searchBarOpen = false;
 
-  const dispatch = createEventDispatcher();
-
-  let searchText = "";
+  // FIXME: this extra `searchText` variable should be eliminated,
+  // but there is no way to make the <Search> component a fully
+  // "controlled" component for now, so we have to go through the
+  // `value` binding it exposes.
+  let searchText: string | undefined = undefined;
+  $: searchText = $dimensionTableSearchString;
   function onSearch() {
-    dispatch("search", searchText);
+    setDimensionTableSearchString(searchText);
   }
 
   function closeSearchBar() {
-    searchText = "";
-    searchToggle = !searchToggle;
-    onSearch();
+    clearDimensionTableSearchString();
+    searchBarOpen = false;
   }
 
   const goBackToLeaderboard = () => {
-    metricsExplorerStore.setMetricDimensionName($metricsViewName, null);
     if ($sortedByDimensionValue) {
       toggleSort(SortType.VALUE);
     }
+    setPrimaryDimension(undefined);
   };
   function toggleFilterMode() {
     cancelDashboardQueries(queryClient, $metricsViewName);
@@ -103,11 +110,11 @@
       </TooltipContent>
     </Tooltip>
 
-    {#if !searchToggle}
+    {#if !searchBarOpen}
       <button
         class="flex items-center gap-x-1 text-gray-700"
         in:fly={{ x: 10, duration: 300 }}
-        on:click={() => (searchToggle = !searchToggle)}
+        on:click={() => (searchBarOpen = !searchBarOpen)}
       >
         <SearchIcon size="16px" />
         <span>Search</span>
