@@ -33,7 +33,6 @@ import {
   V1TimeGrain,
   createQueryServiceColumnTimeRange,
 } from "@rilldata/web-common/runtime-client";
-import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type {
   CreateQueryResult,
   QueryObserverResult,
