@@ -15,6 +15,7 @@
   } from "@rilldata/web-common/lib/time/config";
   import {
     getChildTimeRanges,
+    getTimeRangesFromMeta,
     prettyFormatTimeRange,
   } from "@rilldata/web-common/lib/time/ranges";
   import {
@@ -65,10 +66,13 @@
 
   // get the available latest-window time ranges
   $: if (boundaryStart && boundaryEnd) {
+    const timeRanges = $metaQuery.data?.availableTimeRanges
+      ? getTimeRangesFromMeta($metaQuery.data?.availableTimeRanges)
+      : LATEST_WINDOW_TIME_RANGES;
     latestWindowTimeRanges = getChildTimeRanges(
       boundaryStart,
       boundaryEnd,
-      LATEST_WINDOW_TIME_RANGES,
+      timeRanges,
       minTimeGrain,
       $dashboardStore?.selectedTimezone
     );

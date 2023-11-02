@@ -5,9 +5,19 @@
  * - there's some legacy stuff that needs to get deprecated out of this.
  * - we need tests for this.
  */
-import { getSmallestTimeGrain } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { DEFAULT_TIME_RANGES, TIME_GRAIN } from "../config";
+import {
+  getSmallestTimeGrain,
+  ISODurationToTimeRangePreset,
+} from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import type {
+  MetricsViewSpecAvailableTimeRange,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
+import {
+  DEFAULT_TIME_RANGES,
+  LATEST_WINDOW_TIME_RANGES,
+  TIME_GRAIN,
+} from "../config";
 import {
   durationToMillis,
   getAllowedTimeGrains,
@@ -99,6 +109,30 @@ export function getChildTimeRanges(
   }
 
   return timeRanges;
+}
+
+export function getTimeRangesFromMeta(
+  availableTimeRanges: Array<MetricsViewSpecAvailableTimeRange>
+) {
+  const ranges: Record<string, TimeRangeMeta> = {};
+
+  for (const availableTimeRange of availableTimeRanges) {
+    console.log(
+      availableTimeRange,
+      ISODurationToTimeRangePreset[availableTimeRange.range]
+    );
+    if (availableTimeRange.range in ISODurationToTimeRangePreset) {
+      ranges[ISODurationToTimeRangePreset[availableTimeRange.range]] =
+        LATEST_WINDOW_TIME_RANGES[
+          ISODurationToTimeRangePreset[availableTimeRange.range]
+        ];
+    } else {
+      // TODO
+    }
+    // TODO: comparison ranges
+  }
+
+  return ranges;
 }
 
 // TODO: investigate whether we need this after we've removed the need

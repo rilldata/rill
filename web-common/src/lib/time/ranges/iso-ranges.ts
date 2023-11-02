@@ -48,6 +48,7 @@ export const ISODurationToTimeRangePreset: Record<
   P1D: TimeRangePreset.LAST_24_HOURS,
   P7D: TimeRangePreset.LAST_7_DAYS,
   P14D: TimeRangePreset.LAST_14_DAYS,
+  P2W: TimeRangePreset.LAST_14_DAYS,
   P4W: TimeRangePreset.LAST_4_WEEKS,
   inf: TimeRangePreset.ALL_TIME,
 };
