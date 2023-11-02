@@ -1,9 +1,9 @@
 import { removeIfExists } from "@rilldata/web-common/lib/arrayUtils";
-import type { DashboardMutatorFnGeneralArgs } from "./types";
+import type { DashboardMutables } from "./types";
 import { filtersForCurrentExcludeMode } from "../selectors/dimension-filters";
 
 export function toggleDimensionValueSelection(
-  { dashboard, cancelQueries }: DashboardMutatorFnGeneralArgs,
+  { dashboard, cancelQueries }: DashboardMutables,
   dimensionName: string,
   dimensionValue: string
 ) {

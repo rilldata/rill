@@ -1,9 +1,9 @@
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { SortDirection, SortType } from "../../proto-state/derived-types";
-import type { DashboardMutatorFnGeneralArgs } from "./types";
+import type { DashboardMutables } from "./types";
 
 export const toggleSort = (
-  { dashboard }: DashboardMutatorFnGeneralArgs,
+  { dashboard }: DashboardMutables,
   sortType: SortType
 ) => {
   // if sortType is not provided,  or if it is provided
@@ -29,9 +29,7 @@ const contextColumnToSortType = {
   [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
 };
 
-export const toggleSortByActiveContextColumn = (
-  args: DashboardMutatorFnGeneralArgs
-) => {
+export const toggleSortByActiveContextColumn = (args: DashboardMutables) => {
   args.cancelQueries();
   const contextColumnSortType =
     contextColumnToSortType[args.dashboard.leaderboardContextColumn];
@@ -53,13 +51,13 @@ export const sortActions = {
    * Sets the dashboard to be sorted by dimension value.
    * Note that this should only be used in the dimension table
    */
-  sortByDimensionValue: (mutatorArgs: DashboardMutatorFnGeneralArgs) =>
+  sortByDimensionValue: (mutatorArgs: DashboardMutables) =>
     toggleSort(mutatorArgs, SortType.DIMENSION),
 
   /**
    * Sets the sort direction to descending.
    */
-  setSortDescending: ({ dashboard }: DashboardMutatorFnGeneralArgs) => {
+  setSortDescending: ({ dashboard }: DashboardMutables) => {
     dashboard.sortDirection = SortDirection.DESCENDING;
   },
 };

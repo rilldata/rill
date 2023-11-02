@@ -1,7 +1,7 @@
-import type { DashboardMutatorFnGeneralArgs } from "./types";
+import type { DashboardMutables } from "./types";
 
 export const setPrimaryDimension = (
-  { dashboard }: DashboardMutatorFnGeneralArgs,
+  { dashboard }: DashboardMutables,
 
   dimensionName: string | undefined
 ) => {

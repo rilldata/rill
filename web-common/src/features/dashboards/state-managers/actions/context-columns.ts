@@ -1,9 +1,9 @@
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { sortTypeForContextColumnType } from "../../stores/dashboard-stores";
-import type { DashboardMutatorFnGeneralArgs } from "./types";
+import type { DashboardMutables } from "./types";
 
 export const setContextColumn = (
-  { dashboard }: DashboardMutatorFnGeneralArgs,
+  { dashboard }: DashboardMutables,
 
   contextColumn: LeaderboardContextColumn
 ) => {

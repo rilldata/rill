@@ -3,10 +3,10 @@ import { toggleSort, sortActions } from "./sorting";
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { setContextColumn } from "./context-columns";
 import { setLeaderboardMeasureName } from "./core-actions";
-import type { DashboardMutatorFnGeneralArgs } from "./types";
+import type { DashboardMutables } from "./types";
 
 export const handleMeasureColumnHeaderClick = (
-  generalArgs: DashboardMutatorFnGeneralArgs,
+  generalArgs: DashboardMutables,
   measureName: string
 ) => {
   const { leaderboardMeasureName: name } = generalArgs.dashboard;
@@ -30,7 +30,7 @@ export const handleMeasureColumnHeaderClick = (
 };
 
 export const setDimensionTableSearchString = (
-  generalArgs: DashboardMutatorFnGeneralArgs,
+  generalArgs: DashboardMutables,
   searchString: string | undefined
 ) => {
   generalArgs.dashboard.dimensionSearchText = searchString;
@@ -53,9 +53,7 @@ export const dimensionTableActions = {
   /**
    * Clears the dimension table search string
    */
-  clearDimensionTableSearchString: (
-    generalArgs: DashboardMutatorFnGeneralArgs
-  ) => {
+  clearDimensionTableSearchString: (generalArgs: DashboardMutables) => {
     setDimensionTableSearchString(generalArgs, undefined);
   },
 };

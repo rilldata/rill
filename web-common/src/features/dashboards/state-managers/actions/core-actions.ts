@@ -1,7 +1,7 @@
-import type { DashboardMutatorFnGeneralArgs } from "./types";
+import type { DashboardMutables } from "./types";
 
 export const setLeaderboardMeasureName = (
-  { dashboard }: DashboardMutatorFnGeneralArgs,
+  { dashboard }: DashboardMutables,
   name: string
 ) => {
   dashboard.leaderboardMeasureName = name;

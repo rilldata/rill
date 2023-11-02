@@ -1,8 +1,8 @@
 import { setDisplayComparison } from "../../stores/dashboard-stores";
-import type { DashboardMutatorFnGeneralArgs } from "./types";
+import type { DashboardMutables } from "./types";
 
 export const setComparisonDimension = (
-  { dashboard }: DashboardMutatorFnGeneralArgs,
+  { dashboard }: DashboardMutables,
   dimensionName: string | undefined
 ) => {
   if (dimensionName === undefined) {
