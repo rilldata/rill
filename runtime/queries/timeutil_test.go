@@ -122,11 +122,11 @@ func TestCeilTime_UTC_first_month(t *testing.T) {
 func TestCeilTime_Kathmandu_first_month(t *testing.T) {
 	tz, err := time.LoadLocation("Asia/Kathmandu")
 	require.NoError(t, err)
-	require.Equal(t, parseTestTime(t, "2023-01-31T18:15:00Z"), CeilTime(parseTestTime(t, "2023-10-02T00:20:00Z"), runtimev1.TimeGrain_TIME_GRAIN_YEAR, tz, 2, 2))
-	require.Equal(t, parseTestTime(t, "2023-02-28T18:15:00Z"), CeilTime(parseTestTime(t, "2023-10-02T00:20:00Z"), runtimev1.TimeGrain_TIME_GRAIN_YEAR, tz, 2, 3))
-	require.Equal(t, parseTestTime(t, "2023-02-28T18:15:00Z"), CeilTime(parseTestTime(t, "2023-03-02T00:20:00Z"), runtimev1.TimeGrain_TIME_GRAIN_YEAR, tz, 2, 3))
-	require.Equal(t, parseTestTime(t, "2022-11-30T18:15:00Z"), CeilTime(parseTestTime(t, "2023-10-02T00:20:00Z"), runtimev1.TimeGrain_TIME_GRAIN_YEAR, tz, 2, 12))
-	require.Equal(t, parseTestTime(t, "2022-12-31T18:15:00Z"), CeilTime(parseTestTime(t, "2023-01-02T00:20:00Z"), runtimev1.TimeGrain_TIME_GRAIN_YEAR, tz, 2, 1))
+	require.Equal(t, parseTestTime(t, "2024-01-31T18:15:00Z"), CeilTime(parseTestTime(t, "2023-10-02T00:20:00Z"), runtimev1.TimeGrain_TIME_GRAIN_YEAR, tz, 2, 2))
+	require.Equal(t, parseTestTime(t, "2024-02-29T18:15:00Z"), CeilTime(parseTestTime(t, "2023-10-02T00:20:00Z"), runtimev1.TimeGrain_TIME_GRAIN_YEAR, tz, 2, 3))
+	require.Equal(t, parseTestTime(t, "2024-02-29T18:15:00Z"), CeilTime(parseTestTime(t, "2023-03-02T00:20:00Z"), runtimev1.TimeGrain_TIME_GRAIN_YEAR, tz, 2, 3))
+	require.Equal(t, parseTestTime(t, "2023-11-30T18:15:00Z"), CeilTime(parseTestTime(t, "2023-10-02T00:20:00Z"), runtimev1.TimeGrain_TIME_GRAIN_YEAR, tz, 2, 12))
+	require.Equal(t, parseTestTime(t, "2023-12-31T18:15:00Z"), CeilTime(parseTestTime(t, "2023-01-02T00:20:00Z"), runtimev1.TimeGrain_TIME_GRAIN_YEAR, tz, 2, 1))
 }
 
 func TestStartTimeForRange(t *testing.T) {
