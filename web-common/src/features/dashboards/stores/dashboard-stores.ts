@@ -19,6 +19,7 @@ import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
   V1MetricsViewFilter,
+  V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { derived, Readable, writable } from "svelte/store";
@@ -163,7 +164,7 @@ function syncDimensions(
 const metricViewReducers = {
   init(
     name: string,
-    metricsView: V1MetricsView,
+    metricsView: V1MetricsViewSpec,
     fullTimeRange: V1ColumnTimeRangeResponse | undefined
   ) {
     update((state) => {
@@ -190,6 +191,14 @@ const metricViewReducers = {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       for (const key in partial) {
         metricsExplorer[key] = partial[key];
+      }
+      // this hack is needed since what is shown for comparison is not a single source
+      // TODO: use an enum and get rid of this
+      if (!partial.showTimeComparison) {
+        metricsExplorer.showTimeComparison = false;
+      }
+      if (!partial.selectedComparisonDimension) {
+        metricsExplorer.selectedComparisonDimension = undefined;
       }
       metricsExplorer.dimensionFilterExcludeMode =
         includeExcludeModeFromFilters(partial.filters);

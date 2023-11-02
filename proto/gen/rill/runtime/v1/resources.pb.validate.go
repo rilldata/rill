@@ -2620,6 +2620,10 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for FirstMonthOfYear
 
+	// no validation rules for DefaultComparisonMode
+
+	// no validation rules for DefaultComparisonDimension
+
 	if len(errors) > 0 {
 		return MetricsViewSpecMultiError(errors)
 	}
