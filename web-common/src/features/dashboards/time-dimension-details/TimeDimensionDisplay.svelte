@@ -107,12 +107,16 @@
       end: $chartInteractionColumn?.scrubEnd,
     }}
     sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
+    sortType={$dashboardStore.dashboardSortType}
     comparing={$timeDimensionDataStore?.comparing}
     {timeFormatter}
     tableData={formattedData}
     highlightedCol={$chartInteractionColumn?.hover}
-    on:toggle-sort={() =>
-      metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE)}
+    on:toggle-sort={(e) =>
+      metricsExplorerStore.toggleSort(
+        metricViewName,
+        e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE
+      )}
     on:highlight={highlightCell}
   />
 {/if}
