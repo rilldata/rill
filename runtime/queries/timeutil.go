@@ -171,7 +171,7 @@ func StartTimeForRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (
 			start = TruncateTime(start, tr.RoundToGrain, tz, fdow, fmoy)
 		}
 		if !end.IsZero() {
-			end = CeilTime(end, tr.RoundToGrain, tz, fdow, fmoy)
+			end = TruncateTime(end, tr.RoundToGrain, tz, fdow, fmoy)
 		}
 	}
 

@@ -138,14 +138,20 @@ func TestStartTimeForRange(t *testing.T) {
 		{
 			"day light savings start US/Canada",
 			&runtimev1.TimeRange{End: timeToPB("2023-03-12T12:00:00Z"), IsoDuration: "PT4H", TimeZone: "America/Los_Angeles"},
-			"2023-03-12 00:00:00 -0800 PST",
-			"2023-03-12 05:00:00 -0700 PDT",
+			"2023-03-12T08:00:00Z",
+			"2023-03-12T12:00:00Z",
 		},
 		{
 			"day light savings end US/Canada",
 			&runtimev1.TimeRange{Start: timeToPB("2023-11-05T08:00:00.000Z"), IsoDuration: "PT4H", TimeZone: "America/Los_Angeles"},
-			"2023-11-05 01:00:00 -0700 PDT",
-			"2023-11-05 04:00:00 -0800 PST",
+			"2023-11-05T08:00:00Z",
+			"2023-11-05T12:00:00Z",
+		},
+		{
+			"going through feb",
+			&runtimev1.TimeRange{Start: timeToPB("2023-01-05T00:00:00Z"), IsoDuration: "P1M"},
+			"2023-01-05T00:00:00Z",
+			"2023-02-05T00:00:00Z",
 		},
 	}
 
@@ -156,8 +162,8 @@ func TestStartTimeForRange(t *testing.T) {
 				FirstMonthOfYear: 1,
 			})
 			require.NoError(t, err)
-			require.Equal(t, tc.start, start.String())
-			require.Equal(t, tc.end, end.String())
+			require.Equal(t, parseTestTime(t, tc.start), start.UTC())
+			require.Equal(t, parseTestTime(t, tc.end), end.UTC())
 		})
 	}
 }
