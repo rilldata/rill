@@ -5,7 +5,6 @@ import {
   V1TimeSeriesValue,
   createQueryServiceMetricsViewAggregation,
   createQueryServiceMetricsViewTimeSeries,
-  createQueryServiceMetricsViewToplist,
 } from "@rilldata/web-common/runtime-client";
 import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
 import {
