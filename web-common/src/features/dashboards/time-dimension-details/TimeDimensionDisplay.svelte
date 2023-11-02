@@ -135,8 +135,6 @@
 
 {#if formattedData}
   <TDDTable
-    {dimensionName}
-    {metricViewName}
     {excludeMode}
     {dimensionLabel}
     {measureLabel}
