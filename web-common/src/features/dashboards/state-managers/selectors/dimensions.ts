@@ -11,7 +11,6 @@ export const visibleDimensions = ({
   metricsSpecQueryResult,
   dashboard,
 }: DashboardDataSources): MetricsViewSpecDimensionV2[] => {
-  // dashboard.visibleDimensionKeys;
   const dimensions = metricsSpecQueryResult.data?.dimensions?.filter(
     (d) => d.name && dashboard.visibleDimensionKeys.has(d.name)
   );
