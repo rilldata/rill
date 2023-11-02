@@ -2359,6 +2359,15 @@ definitions:
           type: object
           $ref: '#/definitions/SecurityFieldCondition'
     title: Security for the metrics view
+  MetricsViewSpecAvailableTimeRange:
+    type: object
+    properties:
+      range:
+        type: string
+      comparisonRanges:
+        type: array
+        items:
+          type: string
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -3589,6 +3598,12 @@ definitions:
         type: integer
         format: int64
         description: Month number to use as the base for time aggregations by year. Defaults to 1 (January).
+      availableTimeRanges:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecAvailableTimeRange'
+        description: List of available time ranges with comparison ranges that would replace the default list.
   v1MetricsViewState:
     type: object
     properties:

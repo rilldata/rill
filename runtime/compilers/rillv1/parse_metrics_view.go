@@ -6,29 +6,28 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	// Load IANA time zone data
+	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"gopkg.in/yaml.v3"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
 )
 
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
 	commonYAML         `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title              string           `yaml:"title"`
-	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
-	Description        string           `yaml:"description"`
-	Model              string           `yaml:"model"`
-	Table              string           `yaml:"table"`
-	TimeDimension      string           `yaml:"timeseries"`
-	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
-	DefaultTimeRange   string           `yaml:"default_time_range"`
-	AvailableTimeZones []string         `yaml:"available_time_zones"`
-	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
-	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
+	Title              string   `yaml:"title"`
+	DisplayName        string   `yaml:"display_name"` // Backwards compatibility
+	Description        string   `yaml:"description"`
+	Model              string   `yaml:"model"`
+	Table              string   `yaml:"table"`
+	TimeDimension      string   `yaml:"timeseries"`
+	SmallestTimeGrain  string   `yaml:"smallest_time_grain"`
+	DefaultTimeRange   string   `yaml:"default_time_range"`
+	AvailableTimeZones []string `yaml:"available_time_zones"`
+	FirstDayOfWeek     uint32   `yaml:"first_day_of_week"`
+	FirstMonthOfYear   uint32   `yaml:"first_month_of_year"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string
@@ -60,6 +59,48 @@ type MetricsViewYAML struct {
 			Condition string `yaml:"if"`
 		}
 	}
+	AvailableTimeRanges []AvailableTimeRange `yaml:"available_time_ranges"`
+}
+
+type AvailableTimeRange struct {
+	Range            string
+	ComparisonRanges []string
+}
+type tmpAvailableTimeRange struct {
+	Range            string   `yaml:"range"`
+	ComparisonRanges []string `yaml:"comparison_ranges"`
+}
+
+func (t *AvailableTimeRange) UnmarshalYAML(v *yaml.Node) error {
+	// This adds support for mixed definition
+	// EG:
+	// available_time_ranges:
+	//   - P1W
+	//   - range: P4W
+	//     comparison_ranges ...
+	if v == nil {
+		return nil
+	}
+
+	switch v.Kind {
+	case yaml.ScalarNode:
+		t.Range = v.Value
+
+	case yaml.MappingNode:
+		// avoid infinite loop by using a separate struct
+		tmp := &tmpAvailableTimeRange{}
+		err := v.Decode(tmp)
+		if err != nil {
+			return err
+		}
+		t.Range = tmp.Range
+		t.ComparisonRanges = tmp.ComparisonRanges
+
+	default:
+		return fmt.Errorf("available_time_range entry should be either a string or an object")
+	}
+
+	return nil
 }
 
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
@@ -335,6 +376,15 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 					Names:     exclude.Names,
 				})
 			}
+		}
+	}
+
+	if tmp.AvailableTimeRanges != nil {
+		for _, r := range tmp.AvailableTimeRanges {
+			spec.AvailableTimeRanges = append(spec.AvailableTimeRanges, &runtimev1.MetricsViewSpec_AvailableTimeRange{
+				Range:            r.Range,
+				ComparisonRanges: r.ComparisonRanges,
+			})
 		}
 	}
 

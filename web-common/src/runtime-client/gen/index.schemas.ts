@@ -1158,6 +1158,8 @@ export interface V1MetricsViewSpec {
   firstDayOfWeek?: number;
   /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
   firstMonthOfYear?: number;
+  /** List of available time ranges with comparison ranges that would replace the default list. */
+  availableTimeRanges?: MetricsViewSpecAvailableTimeRange[];
 }
 
 export interface V1MetricsViewState {
@@ -1866,6 +1868,11 @@ export interface MetricsViewSpecDimensionV2 {
   label?: string;
   description?: string;
   unnest?: boolean;
+}
+
+export interface MetricsViewSpecAvailableTimeRange {
+  range?: string;
+  comparisonRanges?: string[];
 }
 
 export interface MetricsViewSecurity {
