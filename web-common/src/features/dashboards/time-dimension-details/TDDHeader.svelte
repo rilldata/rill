@@ -114,13 +114,11 @@
       />
     </div>
 
-    <span> | </span>
-
+    <!-- Revisit after Pivot table lands -->
+    <!-- <span> | </span>
     <div>Time</div>
-
     <span> : </span>
-
-    <div>{selectedMeasureLabel}</div>
+    <div>{selectedMeasureLabel}</div> -->
 
     {#if isFetching}
       <Spinner size="18px" status={EntityStatus.Running} />

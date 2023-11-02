@@ -402,6 +402,13 @@ export function getAdjustedChartTime(
     if (isGrainBigger(interval, smallestTimeGrain)) {
       adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration, zone);
     }
+  } else {
+    // Make sure end is always at the end of the period
+    adjustedEnd = getEndOfPeriod(
+      new Date(adjustedEnd.getTime() - 1),
+      grainDuration,
+      zone
+    );
   }
 
   adjustedEnd = getOffset(adjustedEnd, offsetDuration, TimeOffsetType.SUBTRACT);

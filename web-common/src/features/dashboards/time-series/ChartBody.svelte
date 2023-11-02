@@ -72,7 +72,7 @@
       {@const isHighlighted = d?.value === dimensionValue}
       <g
         class="transition-opacity"
-        class:opacity-10={isDimValueHiglighted && !isHighlighted}
+        class:opacity-20={isDimValueHiglighted && !isHighlighted}
       >
         <ChunkedLine
           area={false}

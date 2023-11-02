@@ -127,6 +127,7 @@ message MetricsViewSpec {
     string column = 2;
     string label = 3;
     string description = 4;
+    bool unnest = 5;
   }
   // Measures are aggregated computed values
   message MeasureV2 {

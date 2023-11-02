@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"strings"
@@ -288,9 +289,14 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
 	}
 
-	batchSize, err := datasize.ParseString(conf.BatchSize)
-	if err != nil {
-		return nil, err
+	var batchSize datasize.ByteSize
+	if conf.BatchSize == "-1" {
+		batchSize = math.MaxInt64 // download everything in one batch
+	} else {
+		batchSize, err = datasize.ParseString(conf.BatchSize)
+		if err != nil {
+			return nil, err
+		}
 	}
 	// prepare fetch configs
 	opts := rillblob.Options{
@@ -301,6 +307,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		GlobPattern:           conf.url.Path,
 		ExtractPolicy:         conf.extractPolicy,
 		BatchSizeBytes:        int64(batchSize.Bytes()),
+		KeepFilesUntilClose:   conf.BatchSize == "-1",
 	}
 
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)

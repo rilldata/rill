@@ -1867,6 +1867,7 @@ export interface MetricsViewSpecDimensionV2 {
   column?: string;
   label?: string;
   description?: string;
+  unnest?: boolean;
 }
 
 export type MetricsViewSpecComparisonMode =

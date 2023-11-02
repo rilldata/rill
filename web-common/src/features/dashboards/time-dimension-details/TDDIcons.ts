@@ -16,8 +16,8 @@ export const PieChart = `<svg
   /></svg
 >`;
 export const MeasureArrow = (isAscending) => `<svg
-  width="1em"
-  height="1em"
+  width="12px"
+  height="12px"
   viewBox="0 0 24 24"
   fill="currentColor"
   transform="${isAscending ? "scale(1 -1)" : "scale(1 1)"}"

@@ -1,17 +1,18 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { setLineStatuses } from "../../../components/editor/line-status";
   import { overlay } from "../../../layout/overlay-store";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { mapParseErrorsToLines } from "../../metrics-views/errors";
   import { saveAndRefresh } from "../saveAndRefresh";
   import { useIsSourceUnsaved } from "../selectors";
   import { useSourceStore } from "../sources-store";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { mapParseErrorsToLines } from "../../metrics-views/errors";
 
   export let sourceName: string;
   export let yaml: string;
@@ -66,6 +67,7 @@
     if (!isSourceUnsaved) return;
     overlay.set({ title: `Importing ${sourceName}.yaml` });
     await saveAndRefresh(sourceName, $sourceStore.clientYAML);
+    checkSourceImported(queryClient, sourceName, filePath);
     overlay.set(null);
   }
 </script>

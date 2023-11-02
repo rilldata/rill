@@ -36,6 +36,7 @@ type MetricsViewYAML struct {
 		Property    string // For backwards compatibility
 		Description string
 		Ignore      bool `yaml:"ignore"`
+		Unnest      bool
 	}
 	Measures []*struct {
 		Name                string
@@ -314,6 +315,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			Column:      dim.Column,
 			Label:       dim.Label,
 			Description: dim.Description,
+			Unnest:      dim.Unnest,
 		})
 	}
 
