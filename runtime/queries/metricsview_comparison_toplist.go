@@ -245,10 +245,10 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 				return "", nil, err
 			}
 			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
-			labelCols = append(labelCols, fmt.Sprintf("%s as %s", safeName(m.Name), labelMap[m.Name]))
+			labelCols = append(labelCols, fmt.Sprintf("%s as %s", safeName(m.Name), safeName(labelMap[m.Name])))
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
 			selectCols = append(selectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
-			labelCols = append(labelCols, fmt.Sprintf("%s as %s", safeName(m.Name), labelMap[m.Name]))
+			labelCols = append(labelCols, fmt.Sprintf("%s as %s", safeName(m.Name), safeName(labelMap[m.Name])))
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
 			if len(m.BuiltinMeasureArgs) != 1 {
 				return "", nil, fmt.Errorf("builtin measure '%s' expects 1 argument", m.BuiltinMeasure.String())
@@ -258,7 +258,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 				return "", nil, fmt.Errorf("builtin measure '%s' expects non-empty string argument, got '%v'", m.BuiltinMeasure.String(), m.BuiltinMeasureArgs[0])
 			}
 			selectCols = append(selectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
-			labelCols = append(labelCols, fmt.Sprintf("%s as %s", safeName(m.Name), labelMap[m.Name]))
+			labelCols = append(labelCols, fmt.Sprintf("%s as %s", safeName(m.Name), safeName(labelMap[m.Name])))
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
@@ -400,10 +400,10 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			labelTuple = fmt.Sprintf(
 				"base.%[1]s AS %[5]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
 				safeName(m.Name),
-				labelMap[m.Name]+" (prev)",
-				labelMap[m.Name]+" (Δ)",
-				labelMap[m.Name]+" (Δ%)",
-				labelMap[m.Name],
+				safeName(labelMap[m.Name]+" (prev)"),
+				safeName(labelMap[m.Name]+" (Δ)"),
+				safeName(labelMap[m.Name]+" (Δ%)"),
+				safeName(labelMap[m.Name]),
 			)
 		} else {
 			columnsTuple = fmt.Sprintf(
@@ -413,10 +413,10 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			labelTuple = fmt.Sprintf(
 				"ANY_VALUE(base.%[1]s) AS %[2]s, ANY_VALUE(comparison.%[1]s) AS %[3]s, ANY_VALUE(base.%[1]s - comparison.%[1]s) AS %[4]s, ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[5]s",
 				safeName(m.Name),
-				labelMap[m.Name],
-				labelMap[m.Name]+" (prev)",
-				labelMap[m.Name]+" (Δ)",
-				labelMap[m.Name]+" (Δ%)",
+				safeName(labelMap[m.Name]),
+				safeName(labelMap[m.Name]+" (prev)"),
+				safeName(labelMap[m.Name]+" (Δ)"),
+				safeName(labelMap[m.Name]+" (Δ%)"),
 			)
 		}
 		finalSelectCols = append(
@@ -755,11 +755,11 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 		}
 	}
 
-	measureMap := make(map[string]string, len(mv.Measures))
+	labelMap := make(map[string]string, len(mv.Measures))
 	for _, m := range mv.Measures {
-		measureMap[m.Name] = m.Name
+		labelMap[m.Name] = m.Name
 		if m.Label != "" {
-			measureMap[m.Name] = m.Label
+			labelMap[m.Name] = m.Label
 		}
 	}
 	var metaLen int
@@ -776,22 +776,22 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 	if comparison {
 		for i, m := range q.Result.Rows[0].MeasureValues {
 			meta[1+i*4] = &runtimev1.MetricsViewColumn{
-				Name: measureMap[m.MeasureName],
+				Name: labelMap[m.MeasureName],
 			}
 			meta[2+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s (prev)", measureMap[m.MeasureName]),
+				Name: fmt.Sprintf("%s (prev)", labelMap[m.MeasureName]),
 			}
 			meta[3+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s (Δ)", measureMap[m.MeasureName]),
+				Name: fmt.Sprintf("%s (Δ)", labelMap[m.MeasureName]),
 			}
 			meta[4+i*4] = &runtimev1.MetricsViewColumn{
-				Name: fmt.Sprintf("%s (Δ%%)", measureMap[m.MeasureName]),
+				Name: fmt.Sprintf("%s (Δ%%)", labelMap[m.MeasureName]),
 			}
 		}
 	} else {
 		for i, m := range q.Result.Rows[0].MeasureValues {
 			meta[1+i] = &runtimev1.MetricsViewColumn{
-				Name: measureMap[m.MeasureName],
+				Name: labelMap[m.MeasureName],
 			}
 		}
 	}
