@@ -22,6 +22,7 @@ export function clearFilterForDimension(
         (dimensionValues) => dimensionValues.name === dimensionId
       );
     }
+    dashboard.pinIndex = -1;
   });
 }
 
@@ -36,6 +37,7 @@ export function clearAllFilters(ctx: StateManagers) {
       dashboard.filters.include = [];
       dashboard.filters.exclude = [];
       dashboard.dimensionFilterExcludeMode.clear();
+      dashboard.pinIndex = -1;
     });
   }
 }
@@ -72,6 +74,8 @@ export function toggleDimensionValue(
         ) {
           dashboard.filters[relevantFilterKey].splice(dimensionEntryIndex, 1);
         }
+        dashboard.pinIndex = dashboard.pinIndex - 1;
+
         return;
       }
 

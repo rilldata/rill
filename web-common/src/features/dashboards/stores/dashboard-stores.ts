@@ -506,6 +506,7 @@ const metricViewReducers = {
               1
             );
           }
+          metricsExplorer.pinIndex = metricsExplorer.pinIndex - 1;
           return;
         }
 
@@ -526,6 +527,7 @@ const metricViewReducers = {
       metricsExplorer.filters.include = [];
       metricsExplorer.filters.exclude = [];
       metricsExplorer.dimensionFilterExcludeMode.clear();
+      metricsExplorer.pinIndex = -1;
     });
   },
 
