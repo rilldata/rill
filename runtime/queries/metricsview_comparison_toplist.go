@@ -804,7 +804,7 @@ func timeRangeClause(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec, dia
 		return clause, nil
 	}
 
-	start, end, err := StartTimeForRange(tr, mv)
+	start, end, err := ResolveTimeRange(tr, mv)
 	if err != nil {
 		return "", err
 	}

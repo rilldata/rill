@@ -53,10 +53,10 @@ func TruncateTime(start time.Time, tg runtimev1.TimeGrain, tz *time.Location, fi
 		start = start.In(time.UTC)
 		return start
 	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		monthsToSubtract := 1 - int(start.Month())%3 // todo first month of year
+		monthsToSubtract := (3 + int(start.Month()) - firstMonth%3) % 3
 		start = start.In(tz)
 		start = time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, tz)
-		start = start.AddDate(0, monthsToSubtract, 0)
+		start = start.AddDate(0, -monthsToSubtract, 0)
 		return start.In(time.UTC)
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
 		start = start.In(tz)
@@ -72,35 +72,8 @@ func TruncateTime(start time.Time, tg runtimev1.TimeGrain, tz *time.Location, fi
 	return start
 }
 
-func CeilTime(start time.Time, tg runtimev1.TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
-	switch tg {
-	case runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED:
-		return start
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
-		start = start.Add(time.Millisecond)
-	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		start = start.Add(time.Second)
-	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		start = start.Add(time.Minute)
-	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		start = start.Add(time.Hour)
-	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		start = start.AddDate(0, 0, 1)
-	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		start = start.AddDate(0, 0, 7)
-	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		start = start.AddDate(0, 1, 0)
-	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		start = start.AddDate(0, 3, 0)
-	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		start = start.AddDate(1, 0, 0)
-	}
-	return TruncateTime(start, tg, tz, firstDay, firstMonth)
-}
-
-func StartTimeForRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (time.Time, time.Time, error) {
+func ResolveTimeRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (time.Time, time.Time, error) {
 	tz := time.UTC
-	tr.TimeZone = "America/Los_Angeles"
 
 	if tr.TimeZone != "" {
 		var err error
