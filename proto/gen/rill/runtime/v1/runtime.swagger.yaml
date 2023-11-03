@@ -1053,6 +1053,10 @@ paths:
                 title: Deprecated in favor of time_range
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
+              pivotOn:
+                type: array
+                items:
+                  type: string
               limit:
                 type: string
                 format: int64
@@ -3354,6 +3358,10 @@ definitions:
         title: Deprecated in favor of time_range
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
+      pivotOn:
+        type: array
+        items:
+          type: string
       limit:
         type: string
         format: int64

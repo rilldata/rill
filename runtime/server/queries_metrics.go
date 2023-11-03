@@ -80,6 +80,7 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Offset:             req.Offset,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
+		PivotOn:            req.PivotOn,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

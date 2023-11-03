@@ -280,6 +280,7 @@ message MetricsViewAggregationRequest {
   google.protobuf.Timestamp time_start = 6; // Deprecated in favor of time_range
   google.protobuf.Timestamp time_end = 7; // Deprecated in favor of time_range
   MetricsViewFilter filter = 8;
+  repeated string pivot_on = 13;
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   int32 priority = 11;

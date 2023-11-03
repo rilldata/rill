@@ -11,6 +11,22 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	duckdbolap "github.com/rilldata/rill/runtime/drivers/duckdb"
+
+	// "github.com/rilldata/rill/runtime/pkg/activity"
+	// "go.uber.org/zap"
+	databasesql "database/sql"
+	"database/sql/driver"
+	"sync"
+
+	"github.com/marcboeker/go-duckdb"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"google.golang.org/protobuf/types/known/structpb"
+)
+
+var (
+	dbOnce    sync.Once
+	connector driver.Connector
 )
 
 type MetricsViewAggregation struct {
@@ -25,6 +41,7 @@ type MetricsViewAggregation struct {
 	Offset             int64                                        `json:"offset,omitempty"`
 	MetricsView        *runtimev1.MetricsViewSpec                   `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity         `json:"security"`
+	PivotOn            []string                                     `json:"pviot_on,omitempty"`
 
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
@@ -76,14 +93,139 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsView)
 	}
 
-	// Build query
-	sql, args, err := q.buildMetricsAggregationSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
+	// execute druid query
+	sqlString, args, err := q.buildMetricsAggregationSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
 
-	// Execute
-	schema, data, err := olapQuery(ctx, olap, priority, sql, args)
+	schema, data, err := olapQuery(ctx, olap, priority, sqlString, args)
+	if err != nil {
+		return err
+	}
+
+	if len(q.PivotOn) == 0 {
+		q.Result = &runtimev1.MetricsViewAggregationResponse{
+			Schema: schema,
+			Data:   data,
+		}
+		return nil
+	}
+
+	dbOnce.Do(func() {
+		connector, err = duckdb.NewConnector("", func(conn driver.ExecerContext) error {
+			_, err := conn.ExecContext(context.Background(), "INSTALL 'json'; LOAD 'json';", nil)
+			// if err != nil {
+			// return err
+			// }
+			// _, err = conn.ExecContext(context.Background(), "SET enable_external_access=true", nil)
+			return err
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		// Set global
+		// db = databasesql.OpenDB(connector)
+		// db.SetMaxOpenConns(1)
+	})
+
+	conn, err := connector.Connect(context.Background())
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	db := databasesql.OpenDB(connector)
+	defer db.Close()
+
+	temporaryTableName := tempName("_for_pivot_")
+	qry, err := createTableQuery(schema, temporaryTableName)
+	if err != nil {
+		return err
+	}
+	_, err = db.ExecContext(ctx, qry)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_, _ = db.ExecContext(ctx, `DROP TABLE "`+temporaryTableName+`"`)
+	}()
+
+	appender, err := duckdb.NewAppenderFromConn(conn, "", temporaryTableName)
+	if err != nil {
+		return err
+	}
+	defer appender.Close()
+
+	batchSize := 10000
+	arr := make([]driver.Value, 0, len(schema.Fields))
+	count := 0
+	for _, row := range data {
+		for _, key := range schema.Fields {
+			arr = append(arr, row.Fields[key.Name].AsInterface())
+		}
+		err = appender.AppendRowArray(arr)
+		if err != nil {
+			return err
+		}
+		arr = arr[:0]
+		count++
+		if count >= batchSize {
+			appender.Flush()
+			count = 0
+		}
+	}
+	appender.Flush()
+
+	measureCols := make([]string, 0, len(q.Measures))
+	for _, m := range q.Measures {
+		sn := safeName(m.Name)
+		measureCols = append(measureCols, fmt.Sprintf("LAST(%s) as %s", sn, sn))
+	}
+	sortingCriteria := make([]string, 0, len(q.Sort))
+	for _, s := range q.Sort {
+		sortCriterion := safeName(s.Name)
+		if s.Desc {
+			sortCriterion += " DESC"
+		}
+		if olap.Dialect() == drivers.DialectDuckDB {
+			sortCriterion += " NULLS LAST"
+		}
+		sortingCriteria = append(sortingCriteria, sortCriterion)
+	}
+	orderClause := ""
+	if len(sortingCriteria) > 0 {
+		orderClause = "ORDER BY " + strings.Join(sortingCriteria, ", ")
+	}
+	var limitClause string
+	if q.Limit != nil {
+		if *q.Limit == 0 {
+			*q.Limit = 100
+		}
+		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
+	}
+
+	// execute duckdb pivot
+	//	PIVOT t ON year USING LAST(ap) ap;
+	pivotSQL := fmt.Sprintf("PIVOT %[1]s ON %[2]s USING %[3]s %[4]s %[5]s OFFSET %[6]d",
+		temporaryTableName,              // 1
+		strings.Join(q.PivotOn, ", "),   // 2
+		strings.Join(measureCols, ", "), // 3
+		orderClause,                     // 4
+		limitClause,                     // 5
+		q.Offset,                        // 6
+	)
+	r, err := db.QueryContext(ctx, pivotSQL)
+	if err != nil {
+		return err
+	}
+
+	schema, err = rowsToSchema(r)
+	if err != nil {
+		return err
+	}
+
+	data, err = rowsToData2(r, schema)
 	if err != nil {
 		return err
 	}
@@ -129,16 +271,47 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 
 	return nil
 }
+func RowsToSchema(r *databasesql.Rows) (*runtimev1.StructType, error) {
+	if r == nil {
+		return nil, nil
+	}
+
+	cts, err := r.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+
+	fields := make([]*runtimev1.StructType_Field, len(cts))
+	for i, ct := range cts {
+		nullable, ok := ct.Nullable()
+		if !ok {
+			nullable = true
+		}
+
+		t, err := duckdbolap.DatabaseTypeToPB(ct.DatabaseTypeName(), nullable)
+		if err != nil {
+			return nil, err
+		}
+
+		fields[i] = &runtimev1.StructType_Field{
+			Name: ct.Name(),
+			Type: t,
+		}
+	}
+
+	return &runtimev1.StructType{Fields: fields}, nil
+}
 
 func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
 		return "", nil, errors.New("no dimensions or measures specified")
 	}
 
-	selectCols := make([]string, 0, len(q.Dimensions)+len(q.Measures))
+	cols := len(q.Dimensions) + len(q.Measures)
+	selectCols := make([]string, 0, cols)
+
 	groupCols := make([]string, 0, len(q.Dimensions))
 	args := []any{}
-
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -163,13 +336,14 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	}
 
 	for _, m := range q.Measures {
+		sn := safeName(m.Name)
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
 			expr, err := metricsViewMeasureExpression(mv, m.Name)
 			if err != nil {
 				return "", nil, err
 			}
-			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, sn))
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
 			selectCols = append(selectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
@@ -235,16 +409,26 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
-
-	sql := fmt.Sprintf("SELECT %s FROM %s %s %s %s %s OFFSET %d",
-		strings.Join(selectCols, ", "),
-		safeName(mv.Table),
-		whereClause,
-		groupClause,
-		orderClause,
-		limitClause,
-		q.Offset,
-	)
+	var sql string
+	if q.PivotOn != nil {
+		// select m1, m2, d1, d2 from t where d1 = 'a' group by d1, d2
+		sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s %[4]s",
+			strings.Join(selectCols, ", "), // 1
+			safeName(mv.Table),             // 2
+			whereClause,                    // 3
+			groupClause,                    // 4
+		)
+	} else {
+		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s OFFSET %d",
+			strings.Join(selectCols, ", "),
+			safeName(mv.Table),
+			whereClause,
+			groupClause,
+			orderClause,
+			limitClause,
+			q.Offset,
+		)
+	}
 
 	return sql, args, nil
 }
@@ -275,4 +459,197 @@ func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAg
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", dialect)
 	}
+}
+
+func newConnector() (driver.Connector, error) {
+	bootQueries := []string{
+		"INSTALL 'json'",
+		"LOAD 'json'",
+		"INSTALL 'icu'",
+		"LOAD 'icu'",
+		"INSTALL 'parquet'",
+		"LOAD 'parquet'",
+		"INSTALL 'httpfs'",
+		"LOAD 'httpfs'",
+		"INSTALL 'sqlite'",
+		"LOAD 'sqlite'",
+		"SET max_expression_depth TO 250",
+		"SET timezone='UTC'",
+	}
+
+	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
+	// So we use go-duckdb's custom connector to pass a callback that it invokes for each new connection.
+	return duckdb.NewConnector("?access_mode=read_write", func(execer driver.ExecerContext) error {
+		for _, qry := range bootQueries {
+			_, err := execer.ExecContext(context.Background(), qry, nil)
+			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
+				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
+				_, err = execer.ExecContext(context.Background(), qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
+			}
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {
+	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s(", safeName(name))
+	for i, s := range schema.Fields {
+		i++
+		duckDBType, err := pbTypeToDuckDB(s.Type)
+		if err != nil {
+			return "", err
+		}
+		query += fmt.Sprintf("%s %s", safeName(s.Name), duckDBType)
+		if i != len(schema.Fields) {
+			query += ","
+		}
+	}
+	query += ")"
+	return query, nil
+}
+
+func pbTypeToDuckDB(t *runtimev1.Type) (string, error) {
+	code := t.Code
+	switch code {
+	case runtimev1.Type_CODE_UNSPECIFIED:
+		return "", fmt.Errorf("unspecified code")
+	case runtimev1.Type_CODE_BOOL:
+		return "BOOLEAN", nil
+	case runtimev1.Type_CODE_INT8:
+		return "TINYINT", nil
+	case runtimev1.Type_CODE_INT16:
+		return "SMALLINT", nil
+	case runtimev1.Type_CODE_INT32:
+		return "INTEGER", nil
+	case runtimev1.Type_CODE_INT64:
+		return "BIGINT", nil
+	case runtimev1.Type_CODE_INT128:
+		return "HUGEINT", nil
+	case runtimev1.Type_CODE_UINT8:
+		return "UTINYINT", nil
+	case runtimev1.Type_CODE_UINT16:
+		return "USMALLINT", nil
+	case runtimev1.Type_CODE_UINT32:
+		return "UINTEGER", nil
+	case runtimev1.Type_CODE_UINT64:
+		return "UBIGINT", nil
+	case runtimev1.Type_CODE_FLOAT32:
+		return "FLOAT", nil
+	case runtimev1.Type_CODE_FLOAT64:
+		return "DOUBLE", nil
+	case runtimev1.Type_CODE_TIMESTAMP:
+		return "TIMESTAMP", nil
+	case runtimev1.Type_CODE_DATE:
+		return "DATE", nil
+	case runtimev1.Type_CODE_TIME:
+		return "TIME", nil
+	case runtimev1.Type_CODE_STRING:
+		return "VARCHAR", nil
+	case runtimev1.Type_CODE_BYTES:
+		return "BLOB", nil
+	case runtimev1.Type_CODE_ARRAY:
+		return "", fmt.Errorf("array is not supported")
+	case runtimev1.Type_CODE_STRUCT:
+		return "", fmt.Errorf("struct is not supported")
+	case runtimev1.Type_CODE_MAP:
+		return "", fmt.Errorf("map is not supported")
+	case runtimev1.Type_CODE_DECIMAL:
+		return "DECIMAL", nil
+	case runtimev1.Type_CODE_JSON:
+		// keeping type as json but appending varchar using the appender API causes duckdb invalid vector error intermittently
+		return "VARCHAR", nil
+	case runtimev1.Type_CODE_UUID:
+		return "UUID", nil
+	default:
+		return "", fmt.Errorf("unknown type_code %s", code)
+	}
+}
+
+func rowsToData2(rows *databasesql.Rows, schema *runtimev1.StructType) ([]*structpb.Struct, error) {
+	var data []*structpb.Struct
+	for rows.Next() {
+		rowMap := make(map[string]any)
+		err := mapScan(rows, rowMap)
+		if err != nil {
+			return nil, err
+		}
+
+		rowStruct, err := pbutil.ToStruct(rowMap, schema)
+		if err != nil {
+			return nil, err
+		}
+
+		data = append(data, rowStruct)
+	}
+
+	err := rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+type ColScanner interface {
+	Columns() ([]string, error)
+	Scan(dest ...interface{}) error
+	Err() error
+}
+
+func mapScan(r ColScanner, dest map[string]interface{}) error {
+	// ignore r.started, since we needn't use reflect for anything.
+	columns, err := r.Columns()
+	if err != nil {
+		return err
+	}
+
+	values := make([]interface{}, len(columns))
+	for i := range values {
+		values[i] = new(interface{})
+	}
+
+	err = r.Scan(values...)
+	if err != nil {
+		return err
+	}
+
+	for i, column := range columns {
+		dest[column] = *(values[i].(*interface{}))
+	}
+
+	return r.Err()
+}
+
+func rowsToSchema(r *databasesql.Rows) (*runtimev1.StructType, error) {
+	if r == nil {
+		return nil, nil
+	}
+
+	cts, err := r.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+
+	fields := make([]*runtimev1.StructType_Field, len(cts))
+	for i, ct := range cts {
+		nullable, ok := ct.Nullable()
+		if !ok {
+			nullable = true
+		}
+
+		t, err := duckdbolap.DatabaseTypeToPB(ct.DatabaseTypeName(), nullable)
+		if err != nil {
+			return nil, err
+		}
+
+		fields[i] = &runtimev1.StructType_Field{
+			Name: ct.Name(),
+			Type: t,
+		}
+	}
+
+	return &runtimev1.StructType{Fields: fields}, nil
 }

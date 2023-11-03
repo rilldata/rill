@@ -791,6 +791,11 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   filter?: MetricsViewFilter;
 
   /**
+   * @generated from field: repeated string pivot_on = 13;
+   */
+  pivotOn: string[] = [];
+
+  /**
    * @generated from field: int64 limit = 9;
    */
   limit = protoInt64.zero;
@@ -822,6 +827,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 6, name: "time_start", kind: "message", T: Timestamp },
     { no: 7, name: "time_end", kind: "message", T: Timestamp },
     { no: 8, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 13, name: "pivot_on", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },

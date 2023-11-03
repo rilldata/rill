@@ -226,6 +226,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   timeStart?: string;
   timeEnd?: string;
   filter?: V1MetricsViewFilter;
+  pivotOn?: string[];
   limit?: string;
   offset?: string;
   priority?: number;
@@ -1290,6 +1291,7 @@ export interface V1MetricsViewAggregationRequest {
   timeStart?: string;
   timeEnd?: string;
   filter?: V1MetricsViewFilter;
+  pivotOn?: string[];
   limit?: string;
   offset?: string;
   priority?: number;

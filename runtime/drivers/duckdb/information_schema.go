@@ -129,7 +129,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		for idx, colName := range columnNames {
 			databaseType := columnTypes[idx].(string)
 			nullable := columnNullable[idx].(bool)
-			colType, err := databaseTypeToPB(databaseType, nullable)
+			colType, err := DatabaseTypeToPB(databaseType, nullable)
 			if err != nil {
 				return nil, err
 			}
@@ -150,7 +150,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	return res, nil
 }
 
-func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
+func DatabaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	t := &runtimev1.Type{Nullable: nullable}
 	match := true
 	switch dbt {
@@ -224,7 +224,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 
 	// Handle arrays. They have the format "type[]"
 	if strings.HasSuffix(dbt, "[]") {
-		at, err := databaseTypeToPB(dbt[0:len(dbt)-2], true)
+		at, err := DatabaseTypeToPB(dbt[0:len(dbt)-2], true)
 		if err != nil {
 			return nil, err
 		}
@@ -258,7 +258,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 			}
 
 			// Convert to type
-			fieldType, err := databaseTypeToPB(fieldTypeStr, true)
+			fieldType, err := DatabaseTypeToPB(fieldTypeStr, true)
 			if err != nil {
 				return nil, err
 			}
@@ -276,12 +276,12 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 			return nil, fmt.Errorf("encountered unsupported duckdb type '%s'", dbt)
 		}
 
-		keyType, err := databaseTypeToPB(fieldStrs[0], true)
+		keyType, err := DatabaseTypeToPB(fieldStrs[0], true)
 		if err != nil {
 			return nil, err
 		}
 
-		valType, err := databaseTypeToPB(fieldStrs[1], true)
+		valType, err := DatabaseTypeToPB(fieldStrs[1], true)
 		if err != nil {
 			return nil, err
 		}
