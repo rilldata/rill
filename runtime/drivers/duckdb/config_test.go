@@ -78,7 +78,7 @@ func TestConfig(t *testing.T) {
 	cfg, err = newConfig(map[string]any{"dsn": "duck.db", "memory_limit_gb": "4", "cpu": "2"})
 	require.NoError(t, err)
 	require.Equal(t, "duck.db", cfg.DBFilePath)
-	require.Equal(t, "duck.db?max_memory=4GB&threads=4", cfg.DSN)
+	require.Equal(t, "duck.db?max_memory=4GB&threads=1", cfg.DSN)
 	require.Equal(t, 2, cfg.PoolSize)
 
 	cfg, err = newConfig(map[string]any{"dsn": "duck.db?max_memory=2GB&rill_pool_size=4"})
@@ -98,7 +98,7 @@ func Test_specialCharInPath(t *testing.T) {
 	conn, err := Driver{}.Open(map[string]any{"dsn": dbFile, "memory_limit_gb": "4", "cpu": "2"}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	config := conn.(*connection).config
-	require.Equal(t, filepath.Join(path, "st@g3's.db?max_memory=4GB&threads=4"), config.DSN)
+	require.Equal(t, filepath.Join(path, "st@g3's.db?max_memory=4GB&threads=1"), config.DSN)
 	require.Equal(t, 2, config.PoolSize)
 
 	olap, ok := conn.AsOLAP("")

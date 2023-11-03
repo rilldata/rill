@@ -137,18 +137,28 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	selectCols := make([]string, 0, len(q.Dimensions)+len(q.Measures))
 	groupCols := make([]string, 0, len(q.Dimensions))
+	unnestClauses := make([]string, 0)
 	args := []any{}
 
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-			col, err := metricsViewDimensionToSafeColumn(mv, d.Name)
+			dim, err := metricsViewDimension(mv, d.Name)
 			if err != nil {
 				return "", nil, err
 			}
+			rawColName := metricsViewDimensionColumn(dim)
+			col := safeName(rawColName)
 
-			selectCols = append(selectCols, fmt.Sprintf("%s as %s", col, safeName(d.Name)))
-			groupCols = append(groupCols, col)
+			if dim.Unnest && dialect != drivers.DialectDruid {
+				// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
+				unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
+				selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, col))
+				unnestClauses = append(unnestClauses, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), col, unnestColName))
+			} else {
+				selectCols = append(selectCols, fmt.Sprintf("%s as %s", col, safeName(d.Name)))
+				groupCols = append(groupCols, col)
+			}
 			continue
 		}
 
@@ -236,9 +246,10 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %s %s %s %s %s OFFSET %d",
+	sql := fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s OFFSET %d",
 		strings.Join(selectCols, ", "),
 		safeName(mv.Table),
+		strings.Join(unnestClauses, ""),
 		whereClause,
 		groupClause,
 		orderClause,

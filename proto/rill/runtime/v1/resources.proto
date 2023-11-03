@@ -127,6 +127,7 @@ message MetricsViewSpec {
     string column = 2;
     string label = 3;
     string description = 4;
+    bool unnest = 5;
   }
   // Measures are aggregated computed values
   message MeasureV2 {
@@ -152,6 +153,12 @@ message MetricsViewSpec {
     // either one of include or exclude will be specified
     repeated FieldConditionV2 include = 3;
     repeated FieldConditionV2 exclude = 4;
+  }
+  enum ComparisonMode {
+    COMPARISON_MODE_UNSPECIFIED = 0;
+    COMPARISON_MODE_NONE = 1;
+    COMPARISON_MODE_TIME = 2;
+    COMPARISON_MODE_DIMENSION = 3;
   }
   // Connector containing the table
   string connector = 1;
@@ -179,6 +186,10 @@ message MetricsViewSpec {
   uint32 first_day_of_week = 12;
   // Month number to use as the base for time aggregations by year. Defaults to 1 (January).
   uint32 first_month_of_year = 13;
+  // Selected default comparison mode.
+  ComparisonMode default_comparison_mode = 14;
+  // If comparison mode is dimension then this determines which is the default dimension
+  string default_comparison_dimension = 15;
 }
 
 message MetricsViewState {

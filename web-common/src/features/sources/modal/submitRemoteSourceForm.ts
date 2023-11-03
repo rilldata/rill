@@ -1,3 +1,4 @@
+import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
 import type { QueryClient } from "@tanstack/query-core";
 import { get } from "svelte/store";
 import { appScreen } from "../../../layout/app-store";
@@ -12,7 +13,10 @@ import {
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
-import { getFileAPIPathFromNameAndType } from "../../entity-management/entity-mappers";
+import {
+  getFileAPIPathFromNameAndType,
+  getFilePathFromNameAndType,
+} from "../../entity-management/entity-mappers";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitializedV2 } from "../../welcome/is-project-initialized";
@@ -59,7 +63,6 @@ export async function submitRemoteSourceForm(
         case "account":
         case "output_location":
         case "workgroup":
-          return [key, value];
         case "database_url":
           return [key, value];
         default:
@@ -78,6 +81,11 @@ export async function submitRemoteSourceForm(
       create: true,
       createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
     }
+  );
+  checkSourceImported(
+    queryClient,
+    values.sourceName,
+    getFilePathFromNameAndType(values.sourceName, EntityType.Table)
   );
 
   // TODO: telemetry

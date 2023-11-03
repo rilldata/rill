@@ -88,12 +88,18 @@ export function getDashboardStateFromProto(
   }
   if (dashboard.selectedDimension) {
     entity.selectedDimensionName = dashboard.selectedDimension;
+  } else {
+    entity.selectedDimensionName = undefined;
   }
   if (dashboard.expandedMeasure) {
     entity.expandedMeasureName = dashboard.expandedMeasure;
+  } else {
+    entity.expandedMeasureName = undefined;
   }
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;
+  } else {
+    entity.selectedComparisonDimension = undefined;
   }
 
   if (dashboard.selectedTimezone) {

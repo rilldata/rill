@@ -1,14 +1,17 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
     openFileUploadDialog,
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/modal/file-upload";
   import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
+  import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
@@ -17,6 +20,7 @@
   import { createSource } from "./createSource";
 
   const dispatch = createEventDispatcher();
+  const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtime.instanceId;
 
@@ -58,15 +62,17 @@
         );
 
         await createSource(runtimeInstanceId, tableName, yaml);
+        checkSourceImported(
+          queryClient,
+          tableName,
+          getFilePathFromNameAndType(tableName, EntityType.Table)
+        );
       } catch (err) {
-        // no-op
+        console.error(err);
       }
 
       overlay.set(null);
       dispatch("close");
-
-      // Navigate to source page
-      goto(`/source/${tableName}`);
     }
   }
 </script>

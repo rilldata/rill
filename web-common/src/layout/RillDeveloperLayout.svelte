@@ -4,7 +4,11 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import DuplicateSource from "@rilldata/web-common/features/sources/modal/DuplicateSource.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
-  import { duplicateSourceName } from "@rilldata/web-common/features/sources/sources-store";
+  import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
+  import {
+    duplicateSourceName,
+    sourceImportedName,
+  } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
@@ -77,6 +81,7 @@
   {#if $duplicateSourceName !== null}
     <DuplicateSource />
   {/if}
+  <SourceImportedModal open={!!$sourceImportedName} />
 
   <div
     class="index-body absolute w-screen h-screen"
