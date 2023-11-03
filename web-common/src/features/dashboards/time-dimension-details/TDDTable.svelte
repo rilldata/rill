@@ -215,11 +215,34 @@
       )}</div>`;
   };
 
+  let containerWidth;
+
+  /**
+   * Compute available width for table columns by subtracting fixed widths
+   * from container width along with extra 50px for padding
+   */
+  $: colWidth = Math.floor(
+    (containerWidth - 250 - 130 - 50 - 50) / tableData?.columnCount
+  );
+
   const getColumnWidth = () => {
+    if (colWidth) {
+      if (colWidth < 75) return 75;
+      if (colWidth > 150) return 150;
+      else return colWidth;
+    }
     return 75;
   };
 
   const getRowHeaderWidth = (x: number) => {
+    if (colWidth > 160) {
+      if (x === 0) {
+        const dimWidth = 220 + tableData?.columnCount * (colWidth - 150);
+        return Math.min(dimWidth, 500);
+      } else if (x === 1) {
+        return 160;
+      }
+    }
     return [250, 130, 50][x];
   };
 
@@ -302,6 +325,7 @@
 </script>
 
 <div
+  bind:clientWidth={containerWidth}
   on:mouseleave={resetHighlight}
   style:height={comparing === "none" ? "80px" : "calc(100% - 50px)"}
   style={cssVarStyles}
