@@ -83,7 +83,9 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		}
 		qry.Add("threads", strconv.Itoa(threads))
 		// pool size between 2 and 10
-		cfg.PoolSize = min(10, max(2, min(cfg.CPU, threads)))
+		if _, ok := cfgMap["pool_size"]; !ok { // set only if not provided
+			cfg.PoolSize = min(10, max(2, min(cfg.CPU, threads)))
+		}
 	}
 
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
