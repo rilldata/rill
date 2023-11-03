@@ -137,7 +137,10 @@ func TestMetricsViewsTimeseries_quarter_grain_IST(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
+	require.Len(t, rows, 6)
 	i := 0
+	require.Equal(t, parseTime(t, "2022-10-31T18:30:00Z").AsTime(), rows[i].Ts.AsTime())
+	i++
 	require.Equal(t, parseTime(t, "2022-12-31T18:30:00Z").AsTime(), rows[i].Ts.AsTime())
 	i++
 	require.Equal(t, parseTime(t, "2023-03-31T18:30:00Z").AsTime(), rows[i].Ts.AsTime())
