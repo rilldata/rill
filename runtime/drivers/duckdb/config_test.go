@@ -39,11 +39,11 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "path/to/duck.db", cfg.DSN)
 	require.Equal(t, "path/to/duck.db", cfg.DBFilePath)
-	require.Equal(t, 10, cfg.PoolSize)
+	require.Equal(t, 5, cfg.PoolSize)
 
 	cfg, err = newConfig(map[string]any{"dsn": "path/to/duck.db", "pool_size": "10"})
 	require.NoError(t, err)
-	require.Equal(t, 10, cfg.PoolSize)
+	require.Equal(t, 5, cfg.PoolSize)
 
 	cfg, err = newConfig(map[string]any{"dsn": "path/to/duck.db?rill_pool_size=4", "pool_size": "10"})
 	require.NoError(t, err)

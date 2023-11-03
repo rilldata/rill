@@ -9,7 +9,10 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-const cpuThreadRatio float64 = 0.5
+const (
+	cpuThreadRatio float64 = 0.5
+	maxPoolSize    int     = 5
+)
 
 // config represents the DuckDB driver config
 type config struct {
@@ -45,6 +48,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not decode config: %w", err)
 	}
+	cfg.PoolSize = min(maxPoolSize, cfg.PoolSize)
 
 	// Parse DSN as URL
 	uri, err := url.Parse(cfg.DSN)
@@ -82,9 +86,9 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 			threads = 1
 		}
 		qry.Add("threads", strconv.Itoa(threads))
-		// pool size between 2 and 10
+		// pool size between 2 and `maxPoolSize`
 		if _, ok := cfgMap["pool_size"]; !ok { // set only if not provided
-			cfg.PoolSize = min(10, max(2, min(cfg.CPU, threads)))
+			cfg.PoolSize = min(maxPoolSize, max(2, min(cfg.CPU, threads)))
 		}
 	}
 
