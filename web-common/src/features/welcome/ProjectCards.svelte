@@ -31,11 +31,12 @@
       firstPage: "dashboard/auction",
     },
     {
-      name: "rill-311-ops",
-      title: "311 Call Center Operations",
-      description: "Citizen reports across US cities",
-      image: "bg-[url('$img/welcome-bg-311.png')] bg-no-repeat bg-cover",
-      firstPage: "dashboard/call_center_metrics",
+      name: "rill-github-analytics",
+      title: "Github Analytics",
+      description: "A Git project's commit activity",
+      image:
+        "bg-[url('$img/welcome-bg-github-analytics.png')] bg-no-repeat bg-cover",
+      firstPage: "dashboard/duckdb_commits",
     },
   ];
 
