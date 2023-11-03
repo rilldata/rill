@@ -55,6 +55,8 @@
   const renderCell: PivotRenderCallback = (data) => {
     const classesToAdd = ["text-right"];
     const classesToRemove = [
+      "border-b",
+      "border-gray-200",
       "!bg-white",
       "!bg-gray-100",
       "!bg-gray-200",
@@ -66,12 +68,12 @@
       "!bg-slate-200",
     ];
 
-    if (data.y === 2) {
-      if (comparing === "time") {
-        classesToAdd.push("border-b", "border-gray-200");
-      } else {
-        classesToRemove.push("border-b", "border-gray-200");
-      }
+    if (pinIndex > -1 && comparing === "dimension" && data.y === pinIndex + 1) {
+      classesToAdd.push("border-b", "border-gray-200");
+    }
+
+    if (comparing === "time" && data.y === 2) {
+      classesToAdd.push("border-b", "border-gray-200");
     }
 
     const isScrubbed =
@@ -150,12 +152,13 @@
   };
 
   const renderRowHeader: PivotRenderCallback = ({ value, x, y, element }) => {
-    if (y === 2) {
-      if (comparing === "time") {
-        element.classList.add("border-b", "border-gray-200");
-      } else {
-        element.classList.remove("border-b", "border-gray-200");
-      }
+    const showBorder =
+      (pinIndex > -1 && comparing === "dimension" && y === pinIndex + 1) ||
+      (comparing === "time" && y === 2);
+    if (showBorder) {
+      element.classList.add("border-b", "border-gray-200");
+    } else {
+      element.classList.remove("border-b", "border-gray-200");
     }
 
     const cellBgColor = getClassForCell(
