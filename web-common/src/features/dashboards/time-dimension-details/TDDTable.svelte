@@ -11,6 +11,8 @@
     ExcludeIcon,
     MeasureArrow,
     PieChart,
+    PinIcon,
+    PinUnsetIcon,
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDIcons";
   import type { TableData, TablePosition, TDDComparison } from "./types";
   import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
@@ -22,6 +24,7 @@
   export let sortDirection: boolean;
   export let highlightedCol: number;
   export let scrubPos: { start: number; end: number };
+  export let pinIndex: number;
   export let comparing: TDDComparison;
   export let tableData: TableData;
 
@@ -102,14 +105,6 @@
     return timeFormatter(data.value.value);
   };
 
-  // Visible line list
-  const toggleVisible = (n) => {
-    n = parseInt(n);
-    if (comparing != "dimension" || n == 0) return;
-    const label = tableData?.rowHeaderData[n][0].value;
-    dispatch("toggle-filter", label);
-  };
-
   // Any time visible line list changes, redraw the table
   $: {
     scrubPos;
@@ -122,7 +117,9 @@
   const getMarker = (value, y) => {
     if (y === 0) {
       noSelectionMarkerCount = 0;
-      return ``;
+
+      if (pinIndex === tableData?.selectedValues.length - 1) return PinIcon;
+      else return PinUnsetIcon;
     }
     const visibleIdx = tableData?.selectedValues.indexOf(value.value);
 
@@ -179,10 +176,10 @@
     if (x === 0) {
       element.classList.add("pl-0");
       const marker = getMarker(value, y);
-      const justifyTotal = y === 0 ? "justify-end" : "";
+      const pinClass = y === 0 ? "pin" : "";
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
-      return `<div class="flex items-center w-full h-full overflow-hidden pr-2 gap-1 ${justifyTotal}">
-        <div class="w-5 shrink-0 h-full flex items-center justify-center" toggle-visible="${y}">${marker}</div>
+      return `<div class="flex items-center w-full h-full overflow-hidden pr-2 gap-1">
+        <div class="${pinClass} w-5 shrink-0 h-full flex items-center justify-center" marker="${y}">${marker}</div>
         <div class="truncate text-xs ${fontWeight} text-gray-700">${value.value}</div></div>`;
     } else if (x === 1)
       return `<div class="text-xs font-semibold text-right text-gray-700 flex items-center justify-end gap-2" >${value.value}
@@ -243,6 +240,20 @@
     return [250, 130, 50][x];
   };
 
+  // Visible line list
+  const toggleVisible = (n) => {
+    n = parseInt(n);
+    if (comparing != "dimension" || n == 0) return;
+    const label = tableData?.rowHeaderData[n][0].value;
+    dispatch("toggle-filter", label);
+  };
+
+  const togglePin = (n) => {
+    n = parseInt(n);
+    if (n > 0) return;
+    dispatch("toggle-pin");
+  };
+
   const handleEvent = (evt, table, attribute, callback) => {
     let currentNode = evt.target;
 
@@ -260,6 +271,7 @@
   const handleMouseDown = (evt, table) => {
     handleEvent(evt, table, "__row", toggleVisible);
     handleEvent(evt, table, "sortable", () => dispatch("toggle-sort"));
+    handleEvent(evt, table, "marker", togglePin);
   };
 
   const handleMouseHover = (evt, table) => {
@@ -359,5 +371,10 @@
   }
   :global(regular-table div[sortable="true"]) {
     cursor: pointer;
+  }
+
+  :global(.pin) {
+    cursor: pointer;
+    margin-top: 2px;
   }
 </style>

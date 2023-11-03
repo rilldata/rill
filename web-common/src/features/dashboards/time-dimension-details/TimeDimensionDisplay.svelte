@@ -100,6 +100,7 @@
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilter(metricViewName, dimensionName, e.detail);
   }
+
   function toggleAllSearchItems() {
     cancelDashboardQueries(queryClient, metricViewName);
     if (areAllTableRowsSelected) {
@@ -116,6 +117,15 @@
         rowHeaderLabels
       );
     }
+  }
+
+  function togglePin() {
+    cancelDashboardQueries(queryClient, metricViewName);
+
+    const pinIndex = $dashboardStore?.pinIndex;
+    const newPinIndex =
+      pinIndex === -1 ? formattedData?.selectedValues?.length - 1 : -1;
+    metricsExplorerStore.setPinIndex(metricViewName, newPinIndex);
   }
 </script>
 
@@ -138,15 +148,17 @@
     {excludeMode}
     {dimensionLabel}
     {measureLabel}
-    scrubPos={{
-      start: $chartInteractionColumn?.scrubStart,
-      end: $chartInteractionColumn?.scrubEnd,
-    }}
     sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
     comparing={$timeDimensionDataStore?.comparing}
     {timeFormatter}
     tableData={formattedData}
     highlightedCol={$chartInteractionColumn?.hover}
+    pinIndex={$dashboardStore?.pinIndex}
+    scrubPos={{
+      start: $chartInteractionColumn?.scrubStart,
+      end: $chartInteractionColumn?.scrubEnd,
+    }}
+    on:toggle-pin={togglePin}
     on:toggle-filter={toggleFilter}
     on:toggle-sort={() => {
       cancelDashboardQueries(queryClient, metricViewName);

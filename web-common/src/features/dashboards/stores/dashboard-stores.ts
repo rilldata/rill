@@ -228,6 +228,12 @@ const metricViewReducers = {
     });
   },
 
+  setPinIndex(name: string, index: number) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pinIndex = index;
+    });
+  },
+
   setSortDescending(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.sortDirection = SortDirection.DESCENDING;
@@ -296,6 +302,7 @@ const metricViewReducers = {
         setDisplayComparison(metricsExplorer, false);
       }
       metricsExplorer.selectedComparisonDimension = dimensionName;
+      metricsExplorer.pinIndex = -1;
     });
   },
 
