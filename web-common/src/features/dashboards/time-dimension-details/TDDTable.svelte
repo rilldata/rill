@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import { CHECKMARK_COLORS } from "@rilldata/web-common/features/dashboards/config";
   import Pivot from "@rilldata/web-common/features/dashboards/pivot/Pivot.svelte";
   import type {
     PivotPos,
     PivotRenderCallback,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
     SelectedCheckmark,
     ExcludeIcon,
@@ -14,11 +14,8 @@
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDIcons";
   import type { TableData, TablePosition, TDDComparison } from "./types";
   import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
-  import { createEventDispatcher } from "svelte";
   import { lastKnownPosition } from "./time-dimension-data-store";
 
-  export let metricViewName: string;
-  export let dimensionName: string;
   export let dimensionLabel: string;
   export let measureLabel: string;
   export let excludeMode: boolean;
@@ -110,7 +107,7 @@
     n = parseInt(n);
     if (comparing != "dimension" || n == 0) return;
     const label = tableData?.rowHeaderData[n][0].value;
-    metricsExplorerStore.toggleFilter(metricViewName, dimensionName, label);
+    dispatch("toggle-filter", label);
   };
 
   // Any time visible line list changes, redraw the table
