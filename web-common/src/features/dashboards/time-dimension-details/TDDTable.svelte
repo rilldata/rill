@@ -380,4 +380,8 @@
     cursor: pointer;
     margin-top: 2px;
   }
+
+  :global(regular-table thead th:first-child div) {
+    margin-left: 20px; /* w-5 */
+  }
 </style>
