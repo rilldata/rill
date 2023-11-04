@@ -225,6 +225,15 @@ const metricViewReducers = {
   setExpandedMeasureName(name: string, measureName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.expandedMeasureName = measureName;
+
+      // If going into TDD view and already having a comparison dimension,
+      // then set the pinIndex
+      if (metricsExplorer.selectedComparisonDimension) {
+        metricsExplorer.pinIndex = getPinIndexForDimension(
+          metricsExplorer,
+          metricsExplorer.selectedComparisonDimension
+        );
+      }
     });
   },
 
@@ -302,7 +311,10 @@ const metricViewReducers = {
         setDisplayComparison(metricsExplorer, false);
       }
       metricsExplorer.selectedComparisonDimension = dimensionName;
-      metricsExplorer.pinIndex = -1;
+      metricsExplorer.pinIndex = getPinIndexForDimension(
+        metricsExplorer,
+        dimensionName
+      );
     });
   },
 
@@ -670,4 +682,28 @@ function setSelectedScrubRange(
   }
 
   metricsExplorer.selectedScrubRange = scrubRange;
+}
+
+function getPinIndexForDimension(
+  metricsExplorer: MetricsExplorerEntity,
+  dimensionName: string
+) {
+  const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
+    dimensionName
+  )
+    ? "exclude"
+    : "include";
+
+  const dimensionEntryIndex = metricsExplorer.filters[
+    relevantFilterKey
+  ].findIndex((filter) => filter.name === dimensionName);
+
+  if (dimensionEntryIndex >= 0) {
+    return (
+      metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex]?.in
+        ?.length - 1
+    );
+  }
+
+  return -1;
 }

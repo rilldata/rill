@@ -80,7 +80,8 @@ function prepareDimensionData(
   isAllTime: boolean,
   pinIndex: number
 ): TableData {
-  if (!data || !totalsData || !measure) return;
+  if (!data || !totalsData || !measure || data?.length < selectedValues.length)
+    return;
 
   const formatter = safeFormatter(createMeasureValueFormatter(measure));
   const measureName = measure?.name as string;
@@ -102,6 +103,9 @@ function prepareDimensionData(
       .slice(0, pinIndex + 1)
       .map((v) => data.findIndex((d) => d.value === v))
       .sort((a, b) => a - b);
+
+    // return if computing on old data
+    if (selectedValuesIndex.some((v) => v === -1)) return;
 
     orderedData = orderedData.concat(
       selectedValuesIndex?.map((i) => {

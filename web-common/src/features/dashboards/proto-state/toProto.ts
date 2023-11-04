@@ -82,6 +82,9 @@ export function getProtoFromDashboardState(
   if (metrics.expandedMeasureName) {
     state.expandedMeasure = metrics.expandedMeasureName;
   }
+  if (metrics.pinIndex !== undefined) {
+    state.pinIndex = metrics.pinIndex;
+  }
   if (metrics.selectedDimensionName && !state.showTimeComparison) {
     // TODO: we need an enum to decide what is being selected for comparison. This should be reflected in proto as well.
     state.selectedDimension = metrics.selectedDimensionName;
