@@ -491,12 +491,13 @@ const metricViewReducers = {
       ].findIndex((filter) => filter.name === dimensionName);
 
       if (dimensionEntryIndex >= 0) {
-        if (
-          removeIfExists(
-            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in,
-            (value) => value === dimensionValue
-          )
-        ) {
+        const index = metricsExplorer.filters[relevantFilterKey][
+          dimensionEntryIndex
+        ].in?.findIndex((value) => value === dimensionValue) as number;
+        if (index >= 0) {
+          metricsExplorer.filters[relevantFilterKey][
+            dimensionEntryIndex
+          ].in?.splice(index, 1);
           if (
             metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in
               .length === 0
@@ -506,7 +507,11 @@ const metricViewReducers = {
               1
             );
           }
-          metricsExplorer.pinIndex = metricsExplorer.pinIndex - 1;
+
+          // Only decrement pinIndex if the removed value was before the pinned value
+          if (metricsExplorer.pinIndex >= index) {
+            metricsExplorer.pinIndex--;
+          }
           return;
         }
 

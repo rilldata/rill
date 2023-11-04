@@ -120,8 +120,11 @@
     if (y === 0) {
       noSelectionMarkerCount = 0;
 
-      if (pinIndex === tableData?.selectedValues.length - 1) return PinIcon;
-      else return PinUnsetIcon;
+      if (comparing === "dimension") {
+        if (pinIndex === tableData?.selectedValues.length - 1) return PinIcon;
+        else return PinUnsetIcon;
+      }
+      return ``;
     }
     const visibleIdx = tableData?.selectedValues.indexOf(value.value);
 
