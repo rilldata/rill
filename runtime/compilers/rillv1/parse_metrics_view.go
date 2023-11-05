@@ -60,7 +60,19 @@ type MetricsViewYAML struct {
 			Condition string `yaml:"if"`
 		}
 	}
+	DefaultComparison struct {
+		Mode      string `yaml:"mode"`
+		Dimension string `yaml:"dimension"`
+	} `yaml:"default_comparison"`
 }
+
+var comparisonModesMap = map[string]runtimev1.MetricsViewSpec_ComparisonMode{
+	"":          runtimev1.MetricsViewSpec_COMPARISON_MODE_UNSPECIFIED,
+	"none":      runtimev1.MetricsViewSpec_COMPARISON_MODE_NONE,
+	"time":      runtimev1.MetricsViewSpec_COMPARISON_MODE_TIME,
+	"dimension": runtimev1.MetricsViewSpec_COMPARISON_MODE_DIMENSION,
+}
+var validComparisonModes = []string{"none", "time", "dimension"}
 
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
@@ -179,6 +191,16 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 	if measureCount == 0 {
 		return fmt.Errorf("must define at least one measure")
+	}
+
+	tmp.DefaultComparison.Mode = strings.ToLower(tmp.DefaultComparison.Mode)
+	if _, ok := comparisonModesMap[tmp.DefaultComparison.Mode]; !ok {
+		return fmt.Errorf("invalid mode: %q. allowed values: %s", tmp.DefaultComparison.Mode, strings.Join(validComparisonModes, ","))
+	}
+	if tmp.DefaultComparison.Dimension != "" {
+		if ok := names[tmp.DefaultComparison.Dimension]; !ok {
+			return fmt.Errorf("default comparison dimension %q doesn't exist", tmp.DefaultComparison.Dimension)
+		}
 	}
 
 	if tmp.Security != nil {
@@ -311,6 +333,11 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			FormatD3:            measure.FormatD3,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
+	}
+
+	spec.DefaultComparisonMode = comparisonModesMap[tmp.DefaultComparison.Mode]
+	if tmp.DefaultComparison.Dimension != "" {
+		spec.DefaultComparisonDimension = tmp.DefaultComparison.Dimension
 	}
 
 	if tmp.Security != nil {

@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import { CHECKMARK_COLORS } from "@rilldata/web-common/features/dashboards/config";
   import Pivot from "@rilldata/web-common/features/dashboards/pivot/Pivot.svelte";
   import type {
     PivotPos,
     PivotRenderCallback,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
     SelectedCheckmark,
     ExcludeIcon,
@@ -15,11 +15,8 @@
   import type { TableData, TablePosition, TDDComparison } from "./types";
   import { SortType } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
-  import { createEventDispatcher } from "svelte";
   import { lastKnownPosition } from "./time-dimension-data-store";
 
-  export let metricViewName: string;
-  export let dimensionName: string;
   export let dimensionLabel: string;
   export let measureLabel: string;
   export let excludeMode: boolean;
@@ -112,7 +109,7 @@
     n = parseInt(n);
     if (comparing != "dimension" || n == 0) return;
     const label = tableData?.rowHeaderData[n][0].value;
-    metricsExplorerStore.toggleFilter(metricViewName, dimensionName, label);
+    dispatch("toggle-filter", label);
   };
 
   // Any time visible line list changes, redraw the table
@@ -231,11 +228,34 @@
       </div>`;
   };
 
+  let containerWidth;
+
+  /**
+   * Compute available width for table columns by subtracting fixed widths
+   * from container width along with extra 50px for padding
+   */
+  $: colWidth = Math.floor(
+    (containerWidth - 250 - 130 - 50 - 50) / tableData?.columnCount
+  );
+
   const getColumnWidth = () => {
+    if (colWidth) {
+      if (colWidth < 75) return 75;
+      if (colWidth > 150) return 150;
+      else return colWidth;
+    }
     return 75;
   };
 
   const getRowHeaderWidth = (x: number) => {
+    if (colWidth > 160) {
+      if (x === 0) {
+        const dimWidth = 220 + tableData?.columnCount * (colWidth - 150);
+        return Math.min(dimWidth, 500);
+      } else if (x === 1) {
+        return 160;
+      }
+    }
     return [250, 130, 50][x];
   };
 
@@ -318,6 +338,7 @@
 </script>
 
 <div
+  bind:clientWidth={containerWidth}
   on:mouseleave={resetHighlight}
   style:height={comparing === "none" ? "80px" : "calc(100% - 50px)"}
   style={cssVarStyles}

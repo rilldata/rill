@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Switch } from "@rilldata/web-common/components/button";
+  import { Button, Switch } from "@rilldata/web-common/components/button";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
@@ -31,6 +31,8 @@
   export let dimensionName: string;
   export let isFetching = false;
   export let comparing: TDDComparison;
+  export let areAllTableRowsSelected = false;
+  export let isRowsEmpty = false;
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -126,11 +128,43 @@
   </div>
 
   {#if comparing === "dimension"}
-    <div
-      class="flex items-center mr-4"
-      style:cursor="pointer"
-      style:grid-column-gap=".4rem"
-    >
+    <div class="flex items-center mr-4 gap-x-3" style:cursor="pointer">
+      {#if searchText && !isRowsEmpty}
+        <Button
+          type="secondary"
+          compact={true}
+          on:click={() => dispatch("toggle-all-search-items")}
+        >
+          {areAllTableRowsSelected ? "Deselect all" : "Select all"}
+        </Button>
+      {/if}
+
+      {#if !searchToggle}
+        <button
+          class="flex items-center ui-copy-icon"
+          in:fly={{ x: 10, duration: 300 }}
+          style:grid-column-gap=".2rem"
+          on:click={() => (searchToggle = !searchToggle)}
+        >
+          <SearchIcon size="16px" />
+          <span> Search </span>
+        </button>
+      {:else}
+        <div
+          transition:slideRight|local={{ leftOffset: 8 }}
+          class="flex items-center gap-x-1"
+        >
+          <Search bind:value={searchText} on:input={onSearch} />
+          <button
+            class="ui-copy-icon"
+            style:cursor="pointer"
+            on:click={() => closeSearchBar()}
+          >
+            <Close />
+          </button>
+        </div>
+      {/if}
+
       <Tooltip distance={16} location="left">
         <div class="mr-3 ui-copy-icon" style:grid-column-gap=".4rem">
           <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
@@ -149,32 +183,6 @@
           </TooltipShortcutContainer>
         </TooltipContent>
       </Tooltip>
-
-      {#if !searchToggle}
-        <button
-          class="flex items-center ui-copy-icon"
-          in:fly={{ x: 10, duration: 300 }}
-          style:grid-column-gap=".2rem"
-          on:click={() => (searchToggle = !searchToggle)}
-        >
-          <SearchIcon size="16px" />
-          <span> Search </span>
-        </button>
-      {:else}
-        <div
-          transition:slideRight|local={{ leftOffset: 8 }}
-          class="flex items-center"
-        >
-          <Search bind:value={searchText} on:input={onSearch} />
-          <button
-            class="ui-copy-icon"
-            style:cursor="pointer"
-            on:click={() => closeSearchBar()}
-          >
-            <Close />
-          </button>
-        </div>
-      {/if}
     </div>
   {/if}
 </div>
