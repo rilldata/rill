@@ -121,6 +121,7 @@
       noSelectionMarkerCount = 0;
 
       if (comparing === "dimension") {
+        if (tableData?.selectedValues.length === 0) return ``;
         if (pinIndex === tableData?.selectedValues.length - 1) return PinIcon;
         else return PinUnsetIcon;
       }
