@@ -13,6 +13,7 @@
     PieChart,
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDIcons";
   import type { TableData, TablePosition, TDDComparison } from "./types";
+  import { SortType } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
   import { lastKnownPosition } from "./time-dimension-data-store";
 
@@ -20,6 +21,7 @@
   export let measureLabel: string;
   export let excludeMode: boolean;
   export let sortDirection: boolean;
+  export let sortType: SortType;
   export let highlightedCol: number;
   export let scrubPos: { start: number; end: number };
   export let comparing: TDDComparison;
@@ -196,20 +198,34 @@
   const renderRowCorner: PivotRenderCallback = (data) => {
     data.element.classList.add("bg-white", "z-10");
     if (data.x === 0)
-      return `<div class="truncate font-medium text-gray-700 text-left">${dimensionLabel}</div>`;
+      return `
+      <div class="flex items-center font-medium text-gray-700 text-left" sort="dimension">
+        <span class="truncate">${dimensionLabel} </span>
+        ${
+          comparing === "dimension" && sortType === SortType.DIMENSION
+            ? `<span>${MeasureArrow(sortDirection)}</span>`
+            : ``
+        }
+      </div>`;
     if (data.x === 1)
-      return `<div class="text-right font-medium text-gray-700 flex items-center" sortable="true">
+      return `<div class="text-right font-medium text-gray-700 flex items-center" sort="value">
         <span class="truncate">${measureLabel} </span>
         ${
-          comparing === "dimension" && tableData?.fixedColCount === 2
+          comparing === "dimension" &&
+          tableData?.fixedColCount === 2 &&
+          sortType === SortType.VALUE
             ? `<span>${MeasureArrow(sortDirection)}</span>`
             : ``
         }
       </div>`;
     if (data.x === 2)
-      return `<div class="flex items-center justify-end text-gray-700" sortable="true">${PieChart} % ${MeasureArrow(
-        sortDirection
-      )}</div>`;
+      return `<div class="flex items-center justify-end text-gray-700" sort="value">${PieChart} % 
+        ${
+          comparing === "dimension" && sortType === SortType.VALUE
+            ? MeasureArrow(sortDirection)
+            : ``
+        }
+      </div>`;
   };
 
   let containerWidth;
@@ -259,7 +275,7 @@
 
   const handleMouseDown = (evt, table) => {
     handleEvent(evt, table, "__row", toggleVisible);
-    handleEvent(evt, table, "sortable", () => dispatch("toggle-sort"));
+    handleEvent(evt, table, "sort", (type) => dispatch("toggle-sort", type));
   };
 
   const handleMouseHover = (evt, table) => {
@@ -351,13 +367,10 @@
 
 <style>
   /* Define cursor styles */
-  :global(regular-table table) {
+  :global(regular-table table, regular-table div[sort]) {
     cursor: var(--cursor, default);
   }
   :global(regular-table table tbody tr:first-child, regular-table thead) {
     cursor: default;
-  }
-  :global(regular-table div[sortable="true"]) {
-    cursor: pointer;
   }
 </style>
