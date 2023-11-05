@@ -174,7 +174,6 @@ function prepareTimeData(
   ]);
 
   const body: unknown[] = [];
-  body.push(tableData?.map((v) => formatter(v[measureName])));
 
   if (hasTimeComparison) {
     rowHeaderData = rowHeaderData.concat([
@@ -198,6 +197,15 @@ function prepareTimeData(
       [{ value: "Percentage Change" }],
       [{ value: "Absolute Change" }],
     ]);
+
+    // Push totals
+    body.push(
+      tableData?.map((v) => {
+        if (v[measureName] === null && v[`comparison.${measureName}`] === null)
+          return null;
+        return formatter(v[measureName] + v[`comparison.${measureName}`]);
+      })
+    );
 
     // Push current range
     body.push(tableData?.map((v) => formatter(v[measureName])));
@@ -234,6 +242,8 @@ function prepareTimeData(
         return formatter(change);
       })
     );
+  } else {
+    body.push(tableData?.map((v) => formatter(v[measureName])));
   }
 
   const rowCount = rowHeaderData.length;
