@@ -197,9 +197,6 @@ const metricViewReducers = {
       if (!partial.showTimeComparison) {
         metricsExplorer.showTimeComparison = false;
       }
-      if (!partial.selectedComparisonDimension) {
-        metricsExplorer.selectedComparisonDimension = undefined;
-      }
       metricsExplorer.dimensionFilterExcludeMode =
         includeExcludeModeFromFilters(partial.filters);
     });
