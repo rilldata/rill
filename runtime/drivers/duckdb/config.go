@@ -93,17 +93,18 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 
 	// Set pool size
 	poolSize := cfg.PoolSize
-	if poolSize == 0 && qry.Has("rill_pool_size") {
+	if qry.Has("rill_pool_size") {
 		// For backwards compatibility, we also support overriding the pool size via the DSN when "rill_pool_size" is a query argument.
 
+		// Remove from query string (so not passed into DuckDB config)
+		val := qry.Get("rill_pool_size")
+		qry.Del("rill_pool_size")
+
 		// Parse as integer
-		poolSize, err = strconv.Atoi(qry.Get("rill_pool_size"))
+		poolSize, err = strconv.Atoi(val)
 		if err != nil {
 			return nil, fmt.Errorf("could not parse dsn: 'rill_pool_size' is not an integer")
 		}
-
-		// Remove from query string (so not passed into DuckDB config)
-		qry.Del("rill_pool_size")
 	}
 	if poolSize == 0 && threads != 0 {
 		poolSize = threads
