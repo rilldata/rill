@@ -110,37 +110,33 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return nil
 	}
 
+	var connErr error
+	var db *databasesql.DB
 	dbOnce.Do(func() {
-		connector, err = duckdb.NewConnector("", func(conn driver.ExecerContext) error {
+		connector, connErr = duckdb.NewConnector("", func(conn driver.ExecerContext) error {
 			_, err := conn.ExecContext(context.Background(), "INSTALL 'json'; LOAD 'json';", nil)
-			// if err != nil {
-			// return err
-			// }
-			// _, err = conn.ExecContext(context.Background(), "SET enable_external_access=true", nil)
 			return err
 		})
-		if err != nil {
-			panic(err)
-		}
 
-		// Set global
-		// db = databasesql.OpenDB(connector)
-		// db.SetMaxOpenConns(1)
+		db = databasesql.OpenDB(connector)
+		db.SetMaxOpenConns(1)
 	})
+	if connErr != nil {
+		return connErr
+	}
 
-	conn, err := connector.Connect(context.Background())
+	conn, err := connector.Connect(ctx)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-	db := databasesql.OpenDB(connector)
-	defer db.Close()
 
 	temporaryTableName := tempName("_for_pivot_")
 	qry, err := createTableQuery(schema, temporaryTableName)
 	if err != nil {
 		return err
 	}
+
 	_, err = db.ExecContext(ctx, qry)
 	if err != nil {
 		return err
@@ -180,6 +176,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		sn := safeName(m.Name)
 		measureCols = append(measureCols, fmt.Sprintf("LAST(%s) as %s", sn, sn))
 	}
+
 	sortingCriteria := make([]string, 0, len(q.Sort))
 	for _, s := range q.Sort {
 		sortCriterion := safeName(s.Name)
@@ -191,10 +188,12 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		}
 		sortingCriteria = append(sortingCriteria, sortCriterion)
 	}
+
 	orderClause := ""
 	if len(sortingCriteria) > 0 {
 		orderClause = "ORDER BY " + strings.Join(sortingCriteria, ", ")
 	}
+
 	var limitClause string
 	if q.Limit != nil {
 		if *q.Limit == 0 {
@@ -223,7 +222,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return err
 	}
 
-	data, err = rowsToData2(r, schema)
+	data, err = sqlRowsToData(r, schema)
 	if err != nil {
 		return err
 	}
@@ -459,39 +458,6 @@ func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAg
 	}
 }
 
-func newConnector() (driver.Connector, error) {
-	bootQueries := []string{
-		"INSTALL 'json'",
-		"LOAD 'json'",
-		"INSTALL 'icu'",
-		"LOAD 'icu'",
-		"INSTALL 'parquet'",
-		"LOAD 'parquet'",
-		"INSTALL 'httpfs'",
-		"LOAD 'httpfs'",
-		"INSTALL 'sqlite'",
-		"LOAD 'sqlite'",
-		"SET max_expression_depth TO 250",
-		"SET timezone='UTC'",
-	}
-
-	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
-	// So we use go-duckdb's custom connector to pass a callback that it invokes for each new connection.
-	return duckdb.NewConnector("?access_mode=read_write", func(execer driver.ExecerContext) error {
-		for _, qry := range bootQueries {
-			_, err := execer.ExecContext(context.Background(), qry, nil)
-			if err != nil && strings.Contains(err.Error(), "Failed to download extension") {
-				// Retry using another mirror. Based on: https://github.com/duckdb/duckdb/issues/9378
-				_, err = execer.ExecContext(context.Background(), qry+" FROM 'http://nightly-extensions.duckdb.org'", nil)
-			}
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
-
 func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {
 	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s(", safeName(name))
 	for i, s := range schema.Fields {
@@ -566,7 +532,7 @@ func pbTypeToDuckDB(t *runtimev1.Type) (string, error) {
 	}
 }
 
-func rowsToData2(rows *databasesql.Rows, schema *runtimev1.StructType) ([]*structpb.Struct, error) {
+func sqlRowsToData(rows *databasesql.Rows, schema *runtimev1.StructType) ([]*structpb.Struct, error) {
 	var data []*structpb.Struct
 	for rows.Next() {
 		rowMap := make(map[string]any)
