@@ -222,6 +222,17 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		return fmt.Errorf("must define at least one measure")
 	}
 
+	if tmp.AvailableTimeRanges != nil {
+		for _, r := range tmp.AvailableTimeRanges {
+			_, err := duration.ParseISO8601(r.Range)
+			if err != nil {
+				return fmt.Errorf("invalid range in available_time_ranges: %v", r.Range)
+			}
+
+			// TODO: need to define the format before adding validation for comparison_ranges
+		}
+	}
+
 	if tmp.Security != nil {
 		templateData := TemplateData{User: map[string]interface{}{
 			"name":   "dummy",
@@ -354,6 +365,15 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		})
 	}
 
+	if tmp.AvailableTimeRanges != nil {
+		for _, r := range tmp.AvailableTimeRanges {
+			spec.AvailableTimeRanges = append(spec.AvailableTimeRanges, &runtimev1.MetricsViewSpec_AvailableTimeRange{
+				Range:            r.Range,
+				ComparisonRanges: r.ComparisonRanges,
+			})
+		}
+	}
+
 	if tmp.Security != nil {
 		if spec.Security == nil {
 			spec.Security = &runtimev1.MetricsViewSpec_SecurityV2{}
@@ -376,15 +396,6 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 					Names:     exclude.Names,
 				})
 			}
-		}
-	}
-
-	if tmp.AvailableTimeRanges != nil {
-		for _, r := range tmp.AvailableTimeRanges {
-			spec.AvailableTimeRanges = append(spec.AvailableTimeRanges, &runtimev1.MetricsViewSpec_AvailableTimeRange{
-				Range:            r.Range,
-				ComparisonRanges: r.ComparisonRanges,
-			})
 		}
 	}
 

@@ -117,10 +117,6 @@ export function getTimeRangesFromMeta(
   const ranges: Record<string, TimeRangeMeta> = {};
 
   for (const availableTimeRange of availableTimeRanges) {
-    console.log(
-      availableTimeRange,
-      ISODurationToTimeRangePreset[availableTimeRange.range]
-    );
     if (availableTimeRange.range in ISODurationToTimeRangePreset) {
       ranges[ISODurationToTimeRangePreset[availableTimeRange.range]] =
         LATEST_WINDOW_TIME_RANGES[
