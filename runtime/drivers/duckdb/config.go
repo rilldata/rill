@@ -11,8 +11,8 @@ import (
 
 const (
 	cpuThreadRatio float64 = 0.5
+	poolSizeMin    int     = 2
 	poolSizeMax    int     = 5
-	poolSizeMin            = 2
 )
 
 // config represents the DuckDB driver config
@@ -35,7 +35,7 @@ type config struct {
 	StorageLimitBytes int64 `mapstructure:"storage_limit_bytes"`
 	// MaxMemoryOverride sets a hard override for the "max_memory" DuckDB setting
 	MaxMemoryGBOverride int `mapstructure:"max_memory_gb_override"`
-	// ThreadsOverride sets a hard override for the "threads" DuckDB setting
+	// ThreadsOverride sets a hard override for the "threads" DuckDB setting. Set to -1 for unlimited threads.
 	ThreadsOverride int `mapstructure:"threads_override"`
 	// BootQueries is queries to run on boot. Use ; to separate multiple queries. Common use case is to provide project specific memory and threads ratios.
 	BootQueries string `mapstructure:"boot_queries"`
@@ -87,7 +87,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 			threads = 1
 		}
 	}
-	if threads != 0 {
+	if threads > 0 { // NOTE: threads=0 or threads=-1 means no limit
 		qry.Add("threads", strconv.Itoa(threads))
 	}
 
