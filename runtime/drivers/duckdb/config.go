@@ -97,7 +97,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		// For backwards compatibility, we also support overriding the pool size via the DSN when "rill_pool_size" is a query argument.
 
 		// Parse as integer
-		cfg.PoolSize, err = strconv.Atoi(qry.Get("rill_pool_size"))
+		poolSize, err = strconv.Atoi(qry.Get("rill_pool_size"))
 		if err != nil {
 			return nil, fmt.Errorf("could not parse dsn: 'rill_pool_size' is not an integer")
 		}
@@ -110,8 +110,9 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		if cfg.CPU != 0 && cfg.CPU < poolSize {
 			poolSize = cfg.CPU
 		}
+		poolSize = min(poolSizeMax, poolSize) // Only enforce max pool size when inferred from threads/CPU
 	}
-	poolSize = min(poolSizeMax, max(poolSizeMin, poolSize)) // Force poolSize to be between min and max values
+	poolSize = max(poolSizeMin, poolSize) // Always enforce min pool size
 	cfg.PoolSize = poolSize
 
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
