@@ -110,8 +110,8 @@ func Test_specialCharInPath(t *testing.T) {
 	require.NoError(t, conn.Close())
 }
 
-func TestBootQueries(t *testing.T) {
-	cfgMap := map[string]any{"dsn": "duck.db", "memory_limit_gb": "4", "cpu": "2", "boot_queries": "SET max_memory='2GB';SET threads=10"}
+func TestOverrides(t *testing.T) {
+	cfgMap := map[string]any{"dsn": "duck.db", "memory_limit_gb": "4", "cpu": "2", "max_memory_gb_override": "2", "threads_override": "10"}
 	handle, err := Driver{}.Open(cfgMap, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
