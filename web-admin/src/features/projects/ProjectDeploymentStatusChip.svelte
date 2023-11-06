@@ -136,7 +136,9 @@
       currentStatusDisplay =
         statusDisplays[
           $deploymentStatusFromDashboards?.data ??
-            V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED
+            ($deploymentStatusFromDashboards.isFetching
+              ? V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING
+              : V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED)
         ];
     }
   }
