@@ -13,8 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	duckdbolap "github.com/rilldata/rill/runtime/drivers/duckdb"
 
-	// "github.com/rilldata/rill/runtime/pkg/activity"
-	// "go.uber.org/zap"
 	databasesql "database/sql"
 	"database/sql/driver"
 	"sync"
