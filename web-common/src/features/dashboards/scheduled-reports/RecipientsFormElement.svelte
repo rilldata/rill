@@ -30,7 +30,7 @@
     hint="Recipients may receive different views based on their security policy."
   />
   <!-- Project members to invite -->
-  <ul class="py-5 flex flex-col gap-y-2">
+  <ul class="flex flex-col gap-y-2 my-5 max-h-[130px] overflow-y-auto">
     {#if recipients.length > 0}
       {#each recipients as recipient}
         <div class="flex items-center justify-between group">
