@@ -9,8 +9,8 @@ export interface TableData {
 }
 
 export interface HighlightedCell {
-  dimensionValue: string;
-  time: Date;
+  dimensionValue: string | undefined;
+  time: Date | undefined;
 }
 
 export interface ChartInteractionColumns {

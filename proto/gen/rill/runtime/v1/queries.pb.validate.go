@@ -2776,6 +2776,35 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 	}
 
 	if all {
+		switch v := interface{}(m.GetTimeRange()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewAggregationRequestValidationError{
+					field:  "TimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewAggregationRequestValidationError{
+					field:  "TimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeRange()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewAggregationRequestValidationError{
+				field:  "TimeRange",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
@@ -4506,6 +4535,14 @@ func (m *TimeRange) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for IsoDuration
+
+	// no validation rules for IsoOffset
+
+	// no validation rules for RoundToGrain
+
+	// no validation rules for TimeZone
 
 	if len(errors) > 0 {
 		return TimeRangeMultiError(errors)

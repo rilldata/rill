@@ -146,22 +146,27 @@ func (h *Handle) Close() error {
 	return nil
 }
 
-// Registry implements drivers.Handle.
+// AsRegistry implements drivers.Handle.
 func (h *Handle) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// Catalog implements drivers.Handle.
+// AsCatalogStore implements drivers.Handle.
 func (h *Handle) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-// Repo implements drivers.Handle.
+// AsRepoStore implements drivers.Handle.
 func (h *Handle) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return h, true
 }
 
-// OLAP implements drivers.Handle.
+// AsAdmin implements drivers.Handle.
+func (h *Handle) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return h, true
+}
+
+// AsOLAP implements drivers.Handle.
 func (h *Handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }

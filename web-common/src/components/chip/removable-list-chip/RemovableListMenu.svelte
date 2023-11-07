@@ -68,7 +68,7 @@
       bind:value={searchText}
       on:input={onSearch}
       label="Search list"
-      autofocus={false}
+      showBorderOnFocus={false}
     />
   </div>
 

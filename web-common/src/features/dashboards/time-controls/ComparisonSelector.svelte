@@ -144,7 +144,7 @@ This component needs to do the following:
       <Search
         placeholder="Search Dimension"
         bind:value={searchText}
-        autofocus={false}
+        showBorderOnFocus={false}
       />
     </div>
     <MenuItem
