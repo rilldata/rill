@@ -109,16 +109,7 @@
         {areAllTableRowsSelected ? "Deselect all" : "Select all"}
       </Button>
     {/if}
-    {#if !searchBarOpen}
-      <button
-        class="flex items-center gap-x-1 text-gray-700"
-        in:fly={{ x: 10, duration: 300 }}
-        on:click={() => (searchBarOpen = !searchBarOpen)}
-      >
-        <SearchIcon size="16px" />
-        <span>Search</span>
-      </button>
-    {:else}
+    {#if searchBarOpen || (searchText && searchText !== "")}
       <div
         transition:slideRight|local={{ leftOffset: 8 }}
         class="flex items-center gap-x-1"
@@ -128,6 +119,15 @@
           <Close />
         </button>
       </div>
+    {:else}
+      <button
+        class="flex items-center gap-x-1 text-gray-700"
+        in:fly={{ x: 10, duration: 300 }}
+        on:click={() => (searchBarOpen = !searchBarOpen)}
+      >
+        <SearchIcon size="16px" />
+        <span>Search</span>
+      </button>
     {/if}
 
     <Tooltip distance={16} location="left">

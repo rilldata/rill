@@ -52,9 +52,6 @@
 
   const timeControlsStore = useTimeControlStore(stateManagers);
 
-  $: excludeMode =
-    $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
-
   $: filterSet = getDimensionFilterWithSearch(
     $dashboardStore?.filters,
     searchText,
@@ -90,7 +87,7 @@
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
-    selectedValues.includes(row[dimensionColumn])
+    $selectedDimensionValueNames.includes(row[dimensionName] as string)
   );
 
   function onSelectItem(event) {
@@ -107,19 +104,19 @@
   }
 
   function toggleAllSearchItems() {
-    const labels = tableRows.map((row) => row[dimensionColumn] as string);
-    cancelDashboardQueries(queryClient, metricViewName);
+    const labels = tableRows.map((row) => row[dimensionName] as string);
+    cancelDashboardQueries(queryClient, $metricsViewName);
 
     if (areAllTableRowsSelected) {
       metricsExplorerStore.deselectItemsInFilter(
-        metricViewName,
+        $metricsViewName,
         dimensionName,
         labels
       );
       return;
     } else {
       metricsExplorerStore.selectItemsInFilter(
-        metricViewName,
+        $metricsViewName,
         dimensionName,
         labels
       );
@@ -132,7 +129,6 @@
     <div class="flex-none" style:height="50px">
       <DimensionHeader
         {dimensionName}
-        {excludeMode}
         {areAllTableRowsSelected}
         isRowsEmpty={!tableRows.length}
         isFetching={$sortedQuery?.isFetching}
@@ -154,7 +150,6 @@
           {columns}
           selectedValues={$selectedDimensionValueNames}
           rows={tableRows}
-          {excludeMode}
         />
       </div>
     {/if}

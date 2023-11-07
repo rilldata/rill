@@ -27,7 +27,6 @@ TableCells – the cell contents.
   export let selectedValues: string[];
 
   export let dimensionName: string;
-  export let excludeMode = false;
   export let isBeingCompared = false;
   export let isFetching: boolean;
 
@@ -35,8 +34,11 @@ TableCells – the cell contents.
     actions: { dimensionTable },
     selectors: {
       sorting: { sortMeasure },
+      dimensionFilters: { isFilterExcludeMode },
     },
   } = getStateManagers();
+
+  $: excludeMode = $isFilterExcludeMode(dimensionName);
 
   /** the overscan values tell us how much to render off-screen. These may be set by the consumer
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
