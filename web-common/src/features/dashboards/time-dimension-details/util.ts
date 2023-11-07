@@ -1,18 +1,67 @@
-// given area, return block to fetch
-export const getBlock = (blockSize: number, start: number, end: number) => {
-  // If distance is bigger than possible block, throw an error
-  if (end - start > blockSize) {
-    throw new Error("Range is too big");
-  }
-  // Calculate the nearest block to the start
-  let startBlock = Math.floor(start / blockSize) * blockSize;
-  // Calculate the end of that block
-  let endBlock = startBlock + blockSize;
+export function transposeArray(arr, rowCount, columnCount) {
+  const columnarBody = [];
 
-  // If end is not in this block, increment the block by 1/2
-  if (end > endBlock) {
-    startBlock += blockSize * 0.5;
-    endBlock = startBlock + blockSize;
+  for (let i = 0; i < columnCount; i++) {
+    const column = [];
+    for (let j = 0; j < rowCount; j++) {
+      column.push(arr[j][i]);
+    }
+    columnarBody.push(column);
   }
-  return [startBlock, endBlock];
-};
+
+  return columnarBody;
+}
+
+/**
+ * This formatter is less strict and
+ * returns undefined if the input is undefined
+ * */
+export function safeFormatter(formatter) {
+  return (value) => {
+    if (value === undefined) {
+      return undefined;
+    } else if (value === null) {
+      return null;
+    } else {
+      return formatter(value);
+    }
+  };
+}
+
+export function getClassForCell(
+  palette: "fixed" | "scrubbed" | "default",
+  highlightedRow,
+  highlightedCol,
+  rowIdx,
+  colIdx
+) {
+  const bgColors = {
+    fixed: {
+      base: "!bg-slate-50",
+      highlighted: "!bg-slate-100",
+      doubleHighlighted: "!bg-slate-200",
+    },
+    scrubbed: {
+      base: "!bg-blue-50",
+      highlighted: "!bg-blue-100",
+      doubleHighlighted: "!bg-blue-200",
+    },
+    default: {
+      base: "!bg-white",
+      highlighted: "!bg-gray-100",
+      doubleHighlighted: "!bg-gray-200",
+    },
+  };
+
+  // Determine background color based on store
+  const isRowHighlighted = highlightedRow === rowIdx;
+  const isColHighlighted = highlightedCol === colIdx;
+  const isHighlighted = isRowHighlighted || isColHighlighted;
+  const isDoubleHighlighted = isRowHighlighted && isColHighlighted;
+
+  let colorName = bgColors[palette].base;
+  if (isDoubleHighlighted) colorName = bgColors[palette].doubleHighlighted;
+  else if (isHighlighted) colorName = bgColors[palette].highlighted;
+
+  return colorName;
+}

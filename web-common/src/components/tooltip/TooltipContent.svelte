@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let maxWidth: string = undefined;
+  export let maxWidth: string | undefined = undefined;
 </script>
 
 <div

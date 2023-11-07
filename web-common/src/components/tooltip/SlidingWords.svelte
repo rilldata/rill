@@ -40,7 +40,7 @@
     node: Element,
     { delay = 0, easing = cubicOut, x = 0, y = 0, opacity = 0 }
   ) {
-    if (!mounted) return;
+    if (!mounted) return {};
     setDuration();
     const style = getComputedStyle(node);
     const target_opacity = +style.opacity;
@@ -61,6 +61,17 @@
       },
     };
   }
+
+  $: hackedLocalKeyFlyArgs = {
+    x:
+      direction === "horizontal"
+        ? 7.5 * (!active ? 1 : -1) * (reverse ? -1 : 1)
+        : 0,
+    y:
+      direction === "vertical"
+        ? 7.5 * (!active ? 1 : -1) * (reverse ? -1 : 1)
+        : 0,
+  };
 </script>
 
 <div class="relative flex gap-x-1">
@@ -73,10 +84,7 @@
       class="absolute"
       style:left="0"
       style:top="0px"
-      transition:hackedLocalKeyFly={{
-        [direction === "horizontal" ? "x" : "y"]:
-          7.5 * (!active ? 1 : -1) * (reverse ? -1 : 1),
-      }}
+      transition:hackedLocalKeyFly={hackedLocalKeyFlyArgs}
     >
       {active ? "Hide" : "Show"}
     </div>

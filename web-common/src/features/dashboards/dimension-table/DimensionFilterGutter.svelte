@@ -13,7 +13,7 @@
 
   export let totalHeight: number;
   export let virtualRowItems;
-  export let selectedIndex = [];
+  export let selectedIndex: number[] = [];
   export let excludeMode = false;
   export let isBeingCompared = false;
   export let atLeastOneActive = false;

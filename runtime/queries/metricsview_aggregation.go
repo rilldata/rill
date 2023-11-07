@@ -11,7 +11,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type MetricsViewAggregation struct {
@@ -19,8 +18,7 @@ type MetricsViewAggregation struct {
 	Dimensions         []*runtimev1.MetricsViewAggregationDimension `json:"dimensions,omitempty"`
 	Measures           []*runtimev1.MetricsViewAggregationMeasure   `json:"measures,omitempty"`
 	Sort               []*runtimev1.MetricsViewAggregationSort      `json:"sort,omitempty"`
-	TimeStart          *timestamppb.Timestamp                       `json:"time_start,omitempty"`
-	TimeEnd            *timestamppb.Timestamp                       `json:"time_end,omitempty"`
+	TimeRange          *runtimev1.TimeRange                         `json:"time_range,omitempty"`
 	Filter             *runtimev1.MetricsViewFilter                 `json:"filter,omitempty"`
 	Priority           int32                                        `json:"priority,omitempty"`
 	Limit              *int64                                       `json:"limit,omitempty"`
@@ -74,7 +72,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
+	if q.MetricsView.TimeDimension == "" && !isTimeRangeNil(q.TimeRange) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsView)
 	}
 
@@ -105,7 +103,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 
 	filename := strings.ReplaceAll(q.MetricsView.Table, `"`, `_`)
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+	if !isTimeRangeNil(q.TimeRange) || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
 		filename += "_filtered"
 	}
 
@@ -139,18 +137,28 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	selectCols := make([]string, 0, len(q.Dimensions)+len(q.Measures))
 	groupCols := make([]string, 0, len(q.Dimensions))
+	unnestClauses := make([]string, 0)
 	args := []any{}
 
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-			col, err := metricsViewDimensionToSafeColumn(mv, d.Name)
+			dim, err := metricsViewDimension(mv, d.Name)
 			if err != nil {
 				return "", nil, err
 			}
+			rawColName := metricsViewDimensionColumn(dim)
+			col := safeName(rawColName)
 
-			selectCols = append(selectCols, fmt.Sprintf("%s as %s", col, safeName(d.Name)))
-			groupCols = append(groupCols, col)
+			if dim.Unnest && dialect != drivers.DialectDruid {
+				// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
+				unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
+				selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, col))
+				unnestClauses = append(unnestClauses, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), col, unnestColName))
+			} else {
+				selectCols = append(selectCols, fmt.Sprintf("%s as %s", col, safeName(d.Name)))
+				groupCols = append(groupCols, col)
+			}
 			continue
 		}
 
@@ -195,14 +203,12 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	whereClause := ""
 	if mv.TimeDimension != "" {
-		if q.TimeStart != nil {
-			whereClause += fmt.Sprintf(" AND %s >= ?", safeName(mv.TimeDimension))
-			args = append(args, q.TimeStart.AsTime())
+		timeCol := safeName(mv.TimeDimension)
+		clause, err := timeRangeClause(q.TimeRange, mv, dialect, timeCol, &args)
+		if err != nil {
+			return "", nil, err
 		}
-		if q.TimeEnd != nil {
-			whereClause += fmt.Sprintf(" AND %s < ?", safeName(mv.TimeDimension))
-			args = append(args, q.TimeEnd.AsTime())
-		}
+		whereClause += clause
 	}
 	if q.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
@@ -240,9 +246,10 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %s %s %s %s %s OFFSET %d",
+	sql := fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s OFFSET %d",
 		strings.Join(selectCols, ", "),
 		safeName(mv.Table),
+		strings.Join(unnestClauses, ""),
 		whereClause,
 		groupClause,
 		orderClause,

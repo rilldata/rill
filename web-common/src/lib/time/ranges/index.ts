@@ -120,6 +120,8 @@ export function ISODurationToTimePreset(
       return TimeRangePreset.LAST_14_DAYS;
     case "P4W":
       return TimeRangePreset.LAST_4_WEEKS;
+    case "P2W":
+      return TimeRangePreset.LAST_14_DAYS;
     case "inf":
       return TimeRangePreset.ALL_TIME;
     default:
@@ -400,6 +402,13 @@ export function getAdjustedChartTime(
     if (isGrainBigger(interval, smallestTimeGrain)) {
       adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration, zone);
     }
+  } else {
+    // Make sure end is always at the end of the period
+    adjustedEnd = getEndOfPeriod(
+      new Date(adjustedEnd.getTime() - 1),
+      grainDuration,
+      zone
+    );
   }
 
   adjustedEnd = getOffset(adjustedEnd, offsetDuration, TimeOffsetType.SUBTRACT);

@@ -23,12 +23,55 @@ import (
 
 // GetLogs implements runtimev1.RuntimeServiceServer
 func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*runtimev1.GetLogsResponse, error) {
-	panic("not implemented")
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.ascending", req.Ascending),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		return nil, ErrForbidden
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	return &runtimev1.GetLogsResponse{Logs: ctrl.Logs.GetLogs(req.Ascending, int(req.Limit))}, nil
 }
 
 // WatchLogs implements runtimev1.RuntimeServiceServer
 func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.RuntimeService_WatchLogsServer) error {
-	panic("not implemented")
+	ctx := srv.Context()
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.replay", req.Replay),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		return ErrForbidden
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	if req.Replay {
+		for _, l := range ctrl.Logs.GetLogs(true, int(req.ReplayLimit)) {
+			err := srv.Send(&runtimev1.WatchLogsResponse{Log: l})
+			if err != nil {
+				return status.Error(codes.InvalidArgument, err.Error())
+			}
+		}
+	}
+
+	return ctrl.Logs.WatchLogs(srv.Context(), func(item *runtimev1.Log) {
+		err := srv.Send(&runtimev1.WatchLogsResponse{Log: item})
+		if err != nil {
+			s.logger.Info("failed to send log event", zap.Error(err))
+		}
+	})
 }
 
 // ListResources implements runtimev1.RuntimeServiceServer
@@ -233,12 +276,24 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 // applySecurityPolicy applies relevant security policies to the resource.
 // The input resource will not be modified in-place (so no need to set clone=true when obtaining it from the catalog).
 func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
-	ctx, span := tracer.Start(ctx, "applySecurityPolicy", trace.WithAttributes(attribute.String("instance_id", instID), attribute.String("kind", r.Meta.Name.Kind), attribute.String("name", r.Meta.Name.Name)))
+	switch r.Resource.(type) {
+	case *runtimev1.Resource_MetricsView:
+		return s.applySecurityPolicyMetricsView(ctx, instID, r)
+	case *runtimev1.Resource_Report:
+		return s.applySecurityPolicyReport(ctx, instID, r)
+	default:
+		return r, true, nil
+	}
+}
+
+// applySecurityPolicyMetricsView applies relevant security policies to a metrics view.
+func (s *Server) applySecurityPolicyMetricsView(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
+	ctx, span := tracer.Start(ctx, "applySecurityPolicyMetricsView", trace.WithAttributes(attribute.String("instance_id", instID), attribute.String("kind", r.Meta.Name.Kind), attribute.String("name", r.Meta.Name.Name)))
 	defer span.End()
 
 	mv := r.GetMetricsView()
-	if mv == nil || mv.State.ValidSpec == nil || mv.State.ValidSpec.Security == nil {
-		// Allow if it's not a metrics view or it doesn't have a valid security policy.
+	if mv.State.ValidSpec == nil || mv.State.ValidSpec.Security == nil {
+		// Allow if it doesn't have a valid security policy
 		return r, true, nil
 	}
 
@@ -248,10 +303,10 @@ func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runt
 	}
 
 	if !security.Access {
-		return nil, false, err
+		return nil, false, nil
 	}
 
-	mv, changed := s.applySecurityPolicyIncludesAndExcludes(mv, security)
+	mv, changed := s.applySecurityPolicyMetricsViewIncludesAndExcludes(mv, security)
 	if changed {
 		// We mustn't modify the resource in-place
 		r = &runtimev1.Resource{
@@ -264,7 +319,7 @@ func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runt
 }
 
 // applySecurityPolicyIncludesAndExcludes rewrites a metrics view based on the include/exclude conditions of a security policy.
-func (s *Server) applySecurityPolicyIncludesAndExcludes(mv *runtimev1.MetricsViewV2, policy *runtime.ResolvedMetricsViewSecurity) (*runtimev1.MetricsViewV2, bool) {
+func (s *Server) applySecurityPolicyMetricsViewIncludesAndExcludes(mv *runtimev1.MetricsViewV2, policy *runtime.ResolvedMetricsViewSecurity) (*runtimev1.MetricsViewV2, bool) {
 	if policy == nil || (len(policy.Include) == 0 && len(policy.Exclude) == 0) {
 		return mv, false
 	}
@@ -354,4 +409,39 @@ func (s *Server) applySecurityPolicyIncludesAndExcludes(mv *runtimev1.MetricsVie
 	}
 
 	return mv, true
+}
+
+// applySecurityPolicyReport applies security policies to a report.
+// TODO: This implementation is very specific to properties currently set by the admin server. Consider refactoring to a more generic implementation.
+func (s *Server) applySecurityPolicyReport(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
+	report := r.GetReport()
+	claims := auth.GetClaims(ctx)
+
+	// Allow if the owner is accessing the report
+	if report.Spec.Annotations != nil && claims.Subject() == report.Spec.Annotations["admin_owner_user_id"] {
+		return r, true, nil
+	}
+
+	// Extract admin attributes
+	var email string
+	admin := true // If no attributes are set, assume it's an admin
+	if attrs := claims.Attributes(); len(attrs) != 0 {
+		email, _ = attrs["email"].(string)
+		admin, _ = attrs["admin"].(bool)
+	}
+
+	// Allow if the user is an admin
+	if admin {
+		return r, true, nil
+	}
+
+	// Allow if the user is a recipient
+	for _, recipient := range report.Spec.EmailRecipients {
+		if recipient == email {
+			return r, true, nil
+		}
+	}
+
+	// Don't allow
+	return nil, false, nil
 }

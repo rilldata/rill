@@ -42,6 +42,7 @@ type Config struct {
 	MetricsExporter        observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter         observability.Exporter `default:"" split_words:"true"`
 	ExternalURL            string                 `default:"http://localhost:8080" split_words:"true"`
+	ExternalGRPCURL        string                 `envconfig:"external_grpc_url"`
 	FrontendURL            string                 `default:"http://localhost:3000" split_words:"true"`
 	SessionKeyPairs        []string               `split_words:"true"`
 	AllowedOrigins         []string               `default:"*" split_words:"true"`
@@ -94,6 +95,16 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				os.Exit(1)
 			}
 
+			// Let ExternalGRPCURL default to ExternalURL, unless ExternalURL is itself the default.
+			// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
+			if conf.ExternalGRPCURL == "" {
+				if conf.ExternalURL == "http://localhost:8080" {
+					conf.ExternalGRPCURL = "http://localhost:9090"
+				} else {
+					conf.ExternalGRPCURL = conf.ExternalURL
+				}
+			}
+
 			// Validate frontend and external URLs
 			_, err = url.Parse(conf.FrontendURL)
 			if err != nil {
@@ -103,6 +114,11 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			_, err = url.Parse(conf.ExternalURL)
 			if err != nil {
 				fmt.Printf("error: invalid external URL: %s\n", err.Error())
+				os.Exit(1)
+			}
+			_, err = url.Parse(conf.ExternalGRPCURL)
+			if err != nil {
+				fmt.Printf("error: invalid external grpc URL: %s\n", err.Error())
 				os.Exit(1)
 			}
 
@@ -163,6 +179,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				DatabaseDriver:  conf.DatabaseDriver,
 				DatabaseDSN:     conf.DatabaseURL,
 				ProvisionerSpec: conf.ProvisionerSpec,
+				ExternalURL:     conf.ExternalGRPCURL, // NOTE: using gRPC url
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh)
 			if err != nil {

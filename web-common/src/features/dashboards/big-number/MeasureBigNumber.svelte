@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
@@ -8,7 +9,12 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
-  import { crossfade, fly } from "svelte/transition";
+  import {
+    CrossfadeParams,
+    FlyParams,
+    crossfade,
+    fly,
+  } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
 
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
@@ -18,12 +24,16 @@
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number;
-  export let comparisonOption: TimeComparisonOption = undefined;
-  export let comparisonValue: number = undefined;
-  export let comparisonPercChange: number = undefined;
+  export let comparisonOption: TimeComparisonOption | undefined = undefined;
+  export let comparisonValue: number | undefined = undefined;
+  export let comparisonPercChange: number | undefined = undefined;
   export let showComparison = false;
   export let status: EntityStatus;
   export let withTimeseries = true;
+  export let isMeasureExpanded = false;
+  export let hoveredMeasure: string | undefined = undefined;
+
+  const dispatch = createEventDispatcher();
 
   $: description =
     measure?.description || measure?.label || measure?.expression;
@@ -38,7 +48,10 @@
 
   $: valueIsPresent = value !== undefined && value !== null;
 
-  const [send, receive] = crossfade({ fallback: fly });
+  const [send, receive] = crossfade({
+    fallback: (node: Element, params: CrossfadeParams) =>
+      fly(node, params as FlyParams),
+  });
 
   $: diff =
     valueIsPresent && comparisonValue !== undefined
@@ -56,9 +69,12 @@
 </script>
 
 <button
-  class="flex flex-col px-2 py-1 text-left {withTimeseries
-    ? 'my-2'
-    : 'justify-between'}"
+  on:mouseenter={() => (hoveredMeasure = measure?.name)}
+  on:mouseleave={() => (hoveredMeasure = undefined)}
+  on:click={() => dispatch("expand-measure")}
+  class="big-number flex flex-col px-2 text-left rounded
+  {isMeasureExpanded ? 'pointer-events-none' : 'hover:bg-gray-100'}
+  {withTimeseries ? 'py-3' : 'py-1 justify-between'}"
 >
   <Tooltip distance={16} location="top" alignment="start">
     <h2
@@ -93,7 +109,7 @@
             </TooltipDescription>
           </TooltipContent>
         </Tooltip>
-        {#if showComparison}
+        {#if showComparison && comparisonOption && comparisonValue}
           <Tooltip distance={8} location="bottom" alignment="start">
             <div class="flex items-baseline gap-x-3">
               {#if comparisonValue != null}
@@ -130,9 +146,6 @@
               {/if}
             </div>
             <TooltipContent slot="tooltip-content" maxWidth="300px">
-              {@const tooltipPercentage =
-                formatMeasurePercentageDifference(comparisonPercChange)}
-
               {#if noChange}
                 no change over {TIME_COMPARISON[comparisonOption].shorthand}
               {:else}
@@ -140,10 +153,11 @@
                 <span class="font-semibold">
                   {measureValueFormatter(comparisonValue)}
                 </span>
-                {#if !measureIsPercentage}
+                {#if !measureIsPercentage && comparisonPercChange}
                   <span class="text-gray-300">,</span>
                   <span
-                    >{tooltipPercentage.int}% {isComparisonPositive
+                    >{formatMeasurePercentageDifference(comparisonPercChange)
+                      .int}% {isComparisonPositive
                       ? "increase"
                       : "decrease"}</span
                   >

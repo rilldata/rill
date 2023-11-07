@@ -78,115 +78,18 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer release()
 
-	switch olap.Dialect() {
-	case drivers.DialectDuckDB:
-		return q.resolveDuckDB(ctx, rt, instanceID, q.MetricsView, priority, q.ResolvedMVSecurity)
-	case drivers.DialectDruid:
-		return q.resolveDruid(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
-	default:
-		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
-	}
-}
-
-func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
+	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
 		return err
 	}
 
-	if opts.PreWriteHook != nil {
-		err = opts.PreWriteHook(q.generateFilename(q.MetricsView))
-		if err != nil {
-			return err
-		}
-	}
-
-	tmp := make([]*structpb.Struct, 0, len(q.Result.Data))
-	meta := append([]*runtimev1.MetricsViewColumn{{
-		Name: q.MetricsView.TimeDimension,
-	}}, q.Result.Meta...)
-	for _, dt := range q.Result.Data {
-		dt.Records.Fields[q.MetricsView.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Format(time.RFC3339Nano))
-		tmp = append(tmp, dt.Records)
-	}
-
-	switch opts.Format {
-	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
-		return fmt.Errorf("unspecified format")
-	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		return writeCSV(meta, tmp, w)
-	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		return writeXLSX(meta, tmp, w)
-	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		return writeParquet(meta, tmp, w)
-	}
-
-	return nil
-}
-
-func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsViewSpec) string {
-	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
-		filename += "_filtered"
-	}
-	return filename
-}
-
-func (q *MetricsViewTimeSeries) resolveDuckDB(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
-	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
+	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: q.MetricsViewName}, false)
 	if err != nil {
 		return err
 	}
 
-	measures, err := toColumnTimeseriesMeasures(ms)
-	if err != nil {
-		return err
-	}
-
-	tsq := &ColumnTimeseries{
-		TableName:           mv.Table,
-		TimestampColumnName: mv.TimeDimension,
-		TimeRange: &runtimev1.TimeSeriesTimeRange{
-			Start:    q.TimeStart,
-			End:      q.TimeEnd,
-			Interval: q.TimeGranularity,
-		},
-		Measures:          measures,
-		MetricsView:       mv,
-		MetricsViewFilter: q.Filter,
-		TimeZone:          q.TimeZone,
-		MetricsViewPolicy: policy,
-		FirstDayOfWeek:    mv.FirstDayOfWeek,
-		FirstMonthOfYear:  mv.FirstMonthOfYear,
-	}
-	err = rt.Query(ctx, instanceID, tsq, priority)
-	if err != nil {
-		return err
-	}
-
-	r := tsq.Result
-
-	q.Result = &runtimev1.MetricsViewTimeSeriesResponse{
-		Meta: r.Meta,
-		Data: r.Results,
-	}
-
-	return nil
-}
-
-func toColumnTimeseriesMeasures(measures []*runtimev1.MetricsViewSpec_MeasureV2) ([]*runtimev1.ColumnTimeSeriesRequest_BasicMeasure, error) {
-	res := make([]*runtimev1.ColumnTimeSeriesRequest_BasicMeasure, len(measures))
-	for i, m := range measures {
-		res[i] = &runtimev1.ColumnTimeSeriesRequest_BasicMeasure{
-			SqlName:    m.Name,
-			Expression: m.Expression,
-		}
-	}
-	return res, nil
-}
-
-func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
-	sql, tsAlias, args, err := q.buildDruidMetricsTimeseriesSQL(mv, policy)
+	mv := r.GetMetricsView().Spec
+	sql, tsAlias, args, err := q.buildMetricsTimeseriesSQL(olap, mv, q.ResolvedMVSecurity)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -213,9 +116,30 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 		}
 	}
 
+	tz := time.UTC
+	if q.TimeZone != "" {
+		tz, err = time.LoadLocation(q.TimeZone)
+		if err != nil {
+			return fmt.Errorf("invalid timezone '%s': %w", q.TimeZone, err)
+		}
+	}
+
+	fdow := mv.FirstDayOfWeek
+	if mv.FirstDayOfWeek > 7 || mv.FirstDayOfWeek <= 0 {
+		fdow = 1
+	}
+
+	fmoy := mv.FirstMonthOfYear
+	if mv.FirstMonthOfYear > 12 || mv.FirstMonthOfYear <= 0 {
+		fmoy = 1
+	}
+
+	var start time.Time
+	var zeroTime time.Time
 	var data []*runtimev1.TimeSeriesValue
+	nullRecords := generateNullRecords(schema)
+	rowMap := make(map[string]any)
 	for rows.Next() {
-		rowMap := make(map[string]any)
 		err := rows.MapScan(rowMap)
 		if err != nil {
 			return err
@@ -235,10 +159,23 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 			return err
 		}
 
+		if zeroTime.Equal(start) {
+			if q.TimeStart != nil {
+				start = TruncateTime(q.TimeStart.AsTime(), q.TimeGranularity, tz, int(fdow), int(fmoy))
+				data = addNulls(data, nullRecords, start, t, q.TimeGranularity, tz)
+			}
+		} else {
+			data = addNulls(data, nullRecords, start, t, q.TimeGranularity, tz)
+		}
+
 		data = append(data, &runtimev1.TimeSeriesValue{
 			Ts:      timestamppb.New(t),
 			Records: records,
 		})
+		start = addTo(t, q.TimeGranularity, tz)
+	}
+	if q.TimeEnd != nil && nullRecords != nil {
+		data = addNulls(data, nullRecords, start, q.TimeEnd.AsTime(), q.TimeGranularity, tz)
 	}
 
 	meta := structTypeToMetricsViewColumn(rows.Schema)
@@ -251,7 +188,63 @@ func (q *MetricsViewTimeSeries) resolveDruid(ctx context.Context, olap drivers.O
 	return nil
 }
 
-func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.MetricsViewSpec, policy *runtime.ResolvedMetricsViewSecurity) (string, string, []any, error) {
+func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
+	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
+	if err != nil {
+		return err
+	}
+
+	ctrl, err := rt.Controller(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	r, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: q.MetricsViewName}, false)
+	if err != nil {
+		return err
+	}
+
+	mv := r.GetMetricsView().Spec
+
+	if opts.PreWriteHook != nil {
+		err = opts.PreWriteHook(q.generateFilename(mv))
+		if err != nil {
+			return err
+		}
+	}
+
+	tmp := make([]*structpb.Struct, 0, len(q.Result.Data))
+	meta := append([]*runtimev1.MetricsViewColumn{{
+		Name: mv.TimeDimension,
+	}}, q.Result.Meta...)
+	for _, dt := range q.Result.Data {
+		dt.Records.Fields[mv.TimeDimension] = structpb.NewStringValue(dt.Ts.AsTime().Format(time.RFC3339Nano))
+		tmp = append(tmp, dt.Records)
+	}
+
+	switch opts.Format {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
+		return fmt.Errorf("unspecified format")
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		return writeCSV(meta, tmp, w)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+		return writeXLSX(meta, tmp, w)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		return writeParquet(meta, tmp, w)
+	}
+
+	return nil
+}
+
+func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsViewSpec) string {
+	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+		filename += "_filtered"
+	}
+	return filename
+}
+
+func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, policy *runtime.ResolvedMetricsViewSecurity) (string, string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", "", nil, err
@@ -275,7 +268,7 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 	}
 
 	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, drivers.DialectDruid, policy)
+		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, olap.Dialect(), policy)
 		if err != nil {
 			return "", "", nil, err
 		}
@@ -284,6 +277,27 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 	}
 
 	tsAlias := tempName("_ts_")
+	timezone := "UTC"
+	if q.TimeZone != "" {
+		timezone = q.TimeZone
+	}
+
+	var sql string
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		args = append([]any{timezone, timezone}, args...)
+		sql = q.buildDuckDBSQL(args, mv, tsAlias, selectCols, whereClause)
+	case drivers.DialectDruid:
+		args = append([]any{timezone}, args...)
+		sql = q.buildDruidSQL(args, mv, tsAlias, selectCols, whereClause)
+	default:
+		return "", "", nil, fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
+	return sql, tsAlias, args, nil
+}
+
+func (q *MetricsViewTimeSeries) buildDruidSQL(args []any, mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause string) string {
 	tsSpecifier := convertToDruidTimeFloorSpecifier(q.TimeGranularity)
 
 	timeClause := fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR))", safeName(mv.TimeDimension), tsSpecifier)
@@ -295,20 +309,88 @@ func (q *MetricsViewTimeSeries) buildDruidMetricsTimeseriesSQL(mv *runtimev1.Met
 		timeClause = fmt.Sprintf("time_shift(time_floor(time_shift(%[1]s, 'P1M', %[3]d), '%[2]s', null, CAST(? AS VARCHAR)), 'P1M', -%[3]d)", safeName(mv.TimeDimension), tsSpecifier, monthOffset)
 	}
 
-	timezone := "UTC"
-	if q.TimeZone != "" {
-		timezone = q.TimeZone
-	}
-
-	args = append([]any{timezone}, args...)
 	sql := fmt.Sprintf(
-		`SELECT %s AS %s, %s FROM %q WHERE %s GROUP BY 1 ORDER BY 1`,
+		`SELECT %s AS %s, %s FROM %s WHERE %s GROUP BY 1 ORDER BY 1`,
 		timeClause,
 		tsAlias,
 		strings.Join(selectCols, ", "),
-		mv.Table,
+		safeName(mv.Table),
 		whereClause,
 	)
 
-	return sql, tsAlias, args, nil
+	return sql
+}
+
+func (q *MetricsViewTimeSeries) buildDuckDBSQL(args []any, mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause string) string {
+	dateTruncSpecifier := convertToDateTruncSpecifier(q.TimeGranularity)
+
+	shift := "0 DAY"
+	if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_WEEK && mv.FirstDayOfWeek > 1 {
+		offset := 8 - mv.FirstDayOfWeek
+		shift = fmt.Sprintf("%d DAY", offset)
+	} else if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_YEAR && mv.FirstMonthOfYear > 1 {
+		offset := 13 - mv.FirstMonthOfYear
+		shift = fmt.Sprintf("%d MONTH", offset)
+	}
+
+	sql := fmt.Sprintf(
+		`SELECT timezone(?, date_trunc('%[1]s', timezone(?, %[2]s::TIMESTAMPTZ) + INTERVAL %[7]s) - INTERVAL %[7]s) as %[3]s, %[4]s FROM %[5]s WHERE %[6]s GROUP BY 1 ORDER BY 1`,
+		dateTruncSpecifier,             // 1
+		safeName(mv.TimeDimension),     // 2
+		tsAlias,                        // 3
+		strings.Join(selectCols, ", "), // 4
+		safeName(mv.Table),             // 5
+		whereClause,                    // 6
+		shift,                          // 7
+	)
+
+	return sql
+}
+
+func generateNullRecords(schema *runtimev1.StructType) *structpb.Struct {
+	nullStruct := structpb.Struct{Fields: make(map[string]*structpb.Value, len(schema.Fields))}
+	for _, f := range schema.Fields {
+		nullStruct.Fields[f.Name] = structpb.NewNullValue()
+	}
+	return &nullStruct
+}
+
+func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, tg runtimev1.TimeGrain, tz *time.Location) []*runtimev1.TimeSeriesValue {
+	for start.Before(end) {
+		data = append(data, &runtimev1.TimeSeriesValue{
+			Ts:      timestamppb.New(start),
+			Records: nullRecords,
+		})
+		start = addTo(start, tg, tz)
+	}
+	return data
+}
+
+func addTo(start time.Time, tg runtimev1.TimeGrain, tz *time.Location) time.Time {
+	switch tg {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return start.Add(time.Millisecond)
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return start.Add(time.Second)
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return start.Add(time.Minute)
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return start.Add(time.Hour)
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return start.AddDate(0, 0, 1)
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return start.AddDate(0, 0, 7)
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		start = start.In(tz)
+		start = start.AddDate(0, 1, 0)
+		return start.In(time.UTC)
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		start = start.In(tz)
+		start = start.AddDate(0, 3, 0)
+		return start.In(time.UTC)
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return start.AddDate(1, 0, 0)
+	}
+
+	return start
 }

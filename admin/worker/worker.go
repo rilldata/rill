@@ -42,7 +42,9 @@ func (w *Worker) Run(ctx context.Context) error {
 	group.Go(func() error {
 		return w.schedule(ctx, "delete_expired_device_auth_codes", w.deleteExpiredDeviceAuthCodes, 6*time.Hour)
 	})
-
+	group.Go(func() error {
+		return w.schedule(ctx, "delete_expired_virtual_files", w.deleteExpiredVirtualFiles, 6*time.Hour)
+	})
 	group.Go(func() error {
 		return w.schedule(ctx, "hibernate_expired_deployments", w.hibernateExpiredDeployments, 15*time.Minute)
 	})
