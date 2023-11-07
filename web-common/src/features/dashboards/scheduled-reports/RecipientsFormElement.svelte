@@ -27,10 +27,8 @@
     {error}
     placeholder="Search emails"
     options={projectMembers.map((member) => member.userEmail)}
+    hint="Recipients may receive different views based on their security policy."
   />
-  <span class="text-gray-500 text-sm py-px leading-snug">
-    Recipients may receive different views based on their security policy.
-  </span>
   <!-- Project members to invite -->
   <ul class="py-5 flex flex-col gap-y-2">
     {#if recipients.length > 0}
