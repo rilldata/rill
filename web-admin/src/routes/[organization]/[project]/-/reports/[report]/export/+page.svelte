@@ -15,31 +15,37 @@
   $: limit = $page.url.searchParams.get("limit");
 
   const downloadReportMutation = createDownloadReportMutation();
-  let once = false;
+  let downloadOnce = false;
+
+  function triggerDownload() {
+    if (downloadOnce) return;
+    downloadOnce = true;
+    $downloadReportMutation.mutateAsync({
+      data: {
+        instanceId: $runtime.instanceId,
+        format: format as V1ExportFormat,
+        bakedQuery,
+        limit,
+      },
+    });
+    // TODO: redirect to report page once success once that is merged in
+  }
 
   $: if (reportId && format && bakedQuery && $runtime) {
-    if (!once) {
-      once = true;
-      $downloadReportMutation.mutateAsync({
-        data: {
-          instanceId: $runtime.instanceId,
-          format: format as V1ExportFormat,
-          bakedQuery,
-          limit,
-        },
-      });
-      // TODO: redirect to report page once success once that is merged in
-    }
+    triggerDownload();
   }
 
   let error: string;
-  $: if (!format) {
-    error = "format is required";
-  } else if (!bakedQuery) {
-    error = "query is required";
-  } else if ($downloadReportMutation.error) {
-    error =
-      $downloadReportMutation.error.response?.data?.message ?? "unknown error";
+  $: {
+    if (!format) {
+      error = "format is required";
+    } else if (!bakedQuery) {
+      error = "query is required";
+    } else if ($downloadReportMutation.error) {
+      error =
+        $downloadReportMutation.error.response?.data?.message ??
+        "unknown error";
+    }
   }
 </script>
 

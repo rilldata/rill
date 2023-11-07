@@ -10,7 +10,6 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime/pkg/duration"
 	"gopkg.in/yaml.v3"
 )
 
@@ -21,10 +20,9 @@ type ReportYAML struct {
 	Refresh    *ScheduleYAML    `yaml:"refresh"`
 	Timeout    string           `yaml:"timeout"`
 	Query      struct {
-		Name      string         `yaml:"name"`
-		TimeRange string         `yaml:"time_range"`
-		Args      map[string]any `yaml:"args"`
-		ArgsJSON  string         `yaml:"args_json"`
+		Name     string         `yaml:"name"`
+		Args     map[string]any `yaml:"args"`
+		ArgsJSON string         `yaml:"args_json"`
 	} `yaml:"query"`
 	Export struct {
 		Format string `yaml:"format"`
@@ -95,14 +93,6 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 		return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
 	}
 
-	// Query time range
-	if tmp.Query.TimeRange != "" {
-		_, err := duration.ParseISO8601(tmp.Query.TimeRange)
-		if err != nil {
-			return fmt.Errorf(`invalid "query.time_range": %w`, err)
-		}
-	}
-
 	// Parse export format
 	exportFormat, err := parseExportFormat(tmp.Export.Format)
 	if err != nil {
@@ -139,7 +129,6 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 	}
 	r.ReportSpec.QueryName = tmp.Query.Name
 	r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON
-	r.ReportSpec.QueryTimeRange = tmp.Query.TimeRange
 	r.ReportSpec.ExportLimit = uint64(tmp.Export.Limit)
 	r.ReportSpec.ExportFormat = exportFormat
 	r.ReportSpec.EmailRecipients = tmp.Email.Recipients

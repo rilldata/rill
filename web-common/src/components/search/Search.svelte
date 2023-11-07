@@ -4,6 +4,7 @@
 
   /* Autofocus search bar on mount */
   export let autofocus = true;
+  export let showBorderOnFocus = true;
   /* Input value being searched */
   export let value;
   /* Aria label for input */
@@ -34,7 +35,9 @@
     bind:this={ref}
     type="text"
     autocomplete="off"
-    class="bg-white border border-gray-200 focus:border-blue-400 outline-none rounded-sm block w-full pl-8 p-1"
+    class="bg-white border border-gray-200 {showBorderOnFocus
+      ? 'focus:border-blue-400'
+      : ''} outline-none rounded-sm block w-full pl-8 p-1"
     {placeholder}
     bind:value
     on:input

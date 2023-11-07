@@ -20,6 +20,8 @@ export function safeFormatter(formatter) {
   return (value) => {
     if (value === undefined) {
       return undefined;
+    } else if (value === null) {
+      return null;
     } else {
       return formatter(value);
     }
@@ -35,9 +37,9 @@ export function getClassForCell(
 ) {
   const bgColors = {
     fixed: {
-      base: "bg-slate-50",
-      highlighted: "bg-slate-100",
-      doubleHighlighted: "bg-slate-200",
+      base: "!bg-slate-50",
+      highlighted: "!bg-slate-100",
+      doubleHighlighted: "!bg-slate-200",
     },
     scrubbed: {
       base: "!bg-blue-50",

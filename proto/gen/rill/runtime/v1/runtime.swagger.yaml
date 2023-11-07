@@ -1041,12 +1041,16 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewAggregationSort'
+              timeRange:
+                $ref: '#/definitions/v1TimeRange'
               timeStart:
                 type: string
                 format: date-time
+                title: Deprecated in favor of time_range
               timeEnd:
                 type: string
                 format: date-time
+                title: Deprecated in favor of time_range
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
               limit:
@@ -2355,6 +2359,14 @@ definitions:
           type: object
           $ref: '#/definitions/SecurityFieldCondition'
     title: Security for the metrics view
+  MetricsViewSpecComparisonMode:
+    type: string
+    enum:
+      - COMPARISON_MODE_UNSPECIFIED
+      - COMPARISON_MODE_NONE
+      - COMPARISON_MODE_TIME
+      - COMPARISON_MODE_DIMENSION
+    default: COMPARISON_MODE_UNSPECIFIED
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -2366,6 +2378,8 @@ definitions:
         type: string
       description:
         type: string
+      unnest:
+        type: boolean
     title: Dimensions are columns to filter and group by
   MetricsViewSpecMeasureV2:
     type: object
@@ -3338,12 +3352,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewAggregationSort'
+      timeRange:
+        $ref: '#/definitions/v1TimeRange'
       timeStart:
         type: string
         format: date-time
+        title: Deprecated in favor of time_range
       timeEnd:
         type: string
         format: date-time
+        title: Deprecated in favor of time_range
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
       limit:
@@ -3579,6 +3597,12 @@ definitions:
         type: integer
         format: int64
         description: Month number to use as the base for time aggregations by year. Defaults to 1 (January).
+      defaultComparisonMode:
+        $ref: '#/definitions/MetricsViewSpecComparisonMode'
+        description: Selected default comparison mode.
+      defaultComparisonDimension:
+        type: string
+        title: If comparison mode is dimension then this determines which is the default dimension
   v1MetricsViewState:
     type: object
     properties:
@@ -4334,8 +4358,6 @@ definitions:
         type: string
       queryArgsJson:
         type: string
-      queryTimeRange:
-        type: string
       exportLimit:
         type: string
         format: uint64
@@ -4694,6 +4716,14 @@ definitions:
       end:
         type: string
         format: date-time
+      isoDuration:
+        type: string
+      isoOffset:
+        type: string
+      roundToGrain:
+        $ref: '#/definitions/v1TimeGrain'
+      timeZone:
+        type: string
   v1TimeRangeSummary:
     type: object
     properties:
