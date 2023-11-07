@@ -1,35 +1,35 @@
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { sortTypeForContextColumnType } from "../../stores/dashboard-stores";
-import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { DashboardMutables } from "./types";
 
 export const setContextColumn = (
-  metricsExplorer: MetricsExplorerEntity,
+  { dashboard }: DashboardMutables,
+
   contextColumn: LeaderboardContextColumn
 ) => {
   const initialSort = sortTypeForContextColumnType(
-    metricsExplorer.leaderboardContextColumn
+    dashboard.leaderboardContextColumn
   );
   switch (contextColumn) {
     case LeaderboardContextColumn.DELTA_ABSOLUTE:
     case LeaderboardContextColumn.DELTA_PERCENT: {
       // if there is no time comparison, then we can't show
       // these context columns, so return with no change
-      if (metricsExplorer.showTimeComparison === false) return;
+      if (dashboard.showTimeComparison === false) return;
 
-      metricsExplorer.leaderboardContextColumn = contextColumn;
+      dashboard.leaderboardContextColumn = contextColumn;
       break;
     }
     default:
-      metricsExplorer.leaderboardContextColumn = contextColumn;
+      dashboard.leaderboardContextColumn = contextColumn;
   }
 
   // if we have changed the context column, and the leaderboard is
   // sorted by the context column from before we made the change,
   // then we also need to change
   // the sort type to match the new context column
-  if (metricsExplorer.dashboardSortType === initialSort) {
-    metricsExplorer.dashboardSortType =
-      sortTypeForContextColumnType(contextColumn);
+  if (dashboard.dashboardSortType === initialSort) {
+    dashboard.dashboardSortType = sortTypeForContextColumnType(contextColumn);
   }
 };
 

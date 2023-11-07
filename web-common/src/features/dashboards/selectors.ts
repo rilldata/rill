@@ -107,27 +107,32 @@ export const useMetaDimension = (
   });
 
 /**
- * Returns a copy of the filter without the passed in dimension filters.
+ * Returns a copy of a V1MetricsViewFilter that does not include
+ * the filters for the specified dimension name.
  */
-export const getFilterForDimension = (
+export const getFiltersForOtherDimensions = (
   filters: V1MetricsViewFilter,
   dimensionName?: string
 ) => {
-  if (!filters) return undefined;
-  return {
-    include: filters.include
-      .filter((dimensionValues) => dimensionName !== dimensionValues.name)
-      .map((dimensionValues) => ({
-        name: dimensionValues.name,
-        in: dimensionValues.in,
-      })),
-    exclude: filters.exclude
-      .filter((dimensionValues) => dimensionName !== dimensionValues.name)
-      .map((dimensionValues) => ({
-        name: dimensionValues.name,
-        in: dimensionValues.in,
-      })),
+  if (!filters) return { include: [], exclude: [] };
+
+  const filter: V1MetricsViewFilter = {
+    include:
+      filters.include
+        ?.filter((dimensionValues) => dimensionName !== dimensionValues.name)
+        .map((dimensionValues) => ({
+          name: dimensionValues.name,
+          in: dimensionValues.in,
+        })) ?? [],
+    exclude:
+      filters.exclude
+        ?.filter((dimensionValues) => dimensionName !== dimensionValues.name)
+        .map((dimensionValues) => ({
+          name: dimensionValues.name,
+          in: dimensionValues.in,
+        })) ?? [],
   };
+  return filter;
 };
 
 export const useGetDashboardsForModel = (

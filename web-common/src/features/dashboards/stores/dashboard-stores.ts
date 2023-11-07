@@ -468,42 +468,41 @@ const metricViewReducers = {
     });
   },
 
-  toggleFilter(name: string, dimensionName: string, dimensionValue: string) {
+  toggleFilter(
+    name: string,
+    dimensionName: string | undefined,
+    dimensionValue: string
+  ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-        dimensionName
+        dimensionName ?? ""
       )
         ? "exclude"
         : "include";
 
-      const dimensionEntryIndex = metricsExplorer.filters[
-        relevantFilterKey
-      ].findIndex((filter) => filter.name === dimensionName);
+      const filters = metricsExplorer?.filters[relevantFilterKey];
+      // if there are no filters, or if the dimension name is not defined,
+      // there we cannot update anything.
+      if (filters === undefined || dimensionName === undefined) {
+        return;
+      }
+
+      const dimensionEntryIndex =
+        filters.findIndex((filter) => filter.name === dimensionName) ?? -1;
 
       if (dimensionEntryIndex >= 0) {
-        if (
-          removeIfExists(
-            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in,
-            (value) => value === dimensionValue
-          )
-        ) {
-          if (
-            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in
-              .length === 0
-          ) {
-            metricsExplorer.filters[relevantFilterKey].splice(
-              dimensionEntryIndex,
-              1
-            );
+        const filtersIn = filters[dimensionEntryIndex].in;
+        //
+        if (filtersIn === undefined) return;
+        if (removeIfExists(filtersIn, (value) => value === dimensionValue)) {
+          if (filtersIn.length === 0) {
+            filters.splice(dimensionEntryIndex, 1);
           }
           return;
         }
-
-        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in.push(
-          dimensionValue
-        );
+        filtersIn.push(dimensionValue);
       } else {
-        metricsExplorer.filters[relevantFilterKey].push({
+        filters.push({
           name: dimensionName,
           in: [dimensionValue],
         });
@@ -591,7 +590,7 @@ export function useDashboardStore(
   });
 }
 
-function setDisplayComparison(
+export function setDisplayComparison(
   metricsExplorer: MetricsExplorerEntity,
   showTimeComparison: boolean
 ) {
