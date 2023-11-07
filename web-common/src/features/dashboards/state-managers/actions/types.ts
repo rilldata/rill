@@ -27,13 +27,27 @@ export type DashboardCallbackExecutor = (
 ) => void;
 
 /**
+ * DashboardMutables is a collection of mutable
+ * references and callbacks to that are passed as the first
+ * argument to all DashboardMutatorFn functions.
+ *
+ * These mutables are closed over when creating DashboardUpdaters,
+ * which are the action functions that will be available in component
+ * code, so in components these mutables will be hidden.
+ */
+export type DashboardMutables = {
+  dashboard: MetricsExplorerEntity;
+  cancelQueries: () => void;
+};
+
+/**
  * A DashboardMutatorFn is a function mutates the data
  * model of a single dashboard.
- * It takes a reference to a dashboard as its first parameter,
+ * It takes a DashboardMutables object as its first parameter,
  * and may take any number of additional parameters relevant to the mutation.
  */
 export type DashboardMutatorFn<T extends unknown[]> = (
-  dash: MetricsExplorerEntity,
+  outerArgs: DashboardMutables,
   ...params: T
 ) => void;
 

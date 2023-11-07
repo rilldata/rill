@@ -3,23 +3,34 @@ import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type {
   RpcStatus,
+  V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 
 /**
- * Arguments to a selector function. By putting these in a tuple,
- * these become compatible with the svelte derived store function arguments.
+ * DashboardDataSources collects all the information about a dashboard
+ * that is needed to select data from it, including the local dashboard
+ * state and query reseults. This is the *instantaneous* state of the
+ * dashboard, after extracting the data from query results and other readables.
+ *
+ * Since this is a snapshot of the dashboard state, it is easier to build
+ * selectors that are pure functions of that instaneous dashboard state.
+ *
+ * These simple functions can be composed into more complex selectors
+ * outside of component code,
+ * and utimately wrapped in Readables for use in components.
  */
-export type SelectorFnArgs = {
+export type DashboardDataSources = {
   dashboard: MetricsExplorerEntity;
   metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, RpcStatus>;
+  timeRangeSummary: QueryObserverResult<V1ColumnTimeRangeResponse, unknown>;
 };
 
 /**
  * A SelectorFn is a pure function that takes dashboard data
- * (a MetricsExplorerEntity) and returns some derived value from it.
+ * (a DashboardDataSources object) and returns some derived value from it.
  */
-export type SelectorFn<T> = (args: SelectorFnArgs) => T;
+export type SelectorFn<T> = (args: DashboardDataSources) => T;
 
 /**
  * A SelectorFnsObj object is a collection of pure SelectorFn functions.

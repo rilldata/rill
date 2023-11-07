@@ -22,23 +22,31 @@
   import ContextColumnValue from "./ContextColumnValue.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
 
+  export let dimensionName: string;
+  export let referenceValue;
+
   export let itemData: LeaderboardItemData;
   $: label = itemData.dimensionValue;
   $: measureValue = itemData.value;
   $: selected = itemData.selectedIndex >= 0;
   $: comparisonValue = itemData.prevValue;
 
-  export let atLeastOneActive = false;
-  export let isBeingCompared = false;
-  export let filterExcludeMode;
-
   const {
-    numberFormat: { activeMeasureFormatter },
-    activeMeasure: { isSummableMeasure },
-  } = getStateManagers().selectors;
+    selectors: {
+      numberFormat: { activeMeasureFormatter },
+      activeMeasure: { isSummableMeasure },
+      dimensionFilters: { atLeastOneSelection, isFilterExcludeMode },
+      comparison: { isBeingCompared: isBeingComparedReadable },
+    },
+    actions: {
+      dimensionsFilter: { toggleDimensionValueSelection },
+    },
+  } = getStateManagers();
 
+  $: isBeingCompared = $isBeingComparedReadable(dimensionName);
+  $: filterExcludeMode = $isFilterExcludeMode(dimensionName);
+  $: atLeastOneActive = $atLeastOneSelection(dimensionName);
   /** for summable measures, this is the value we use to calculate the bar % to fill */
-  export let referenceValue;
 
   $: formattedValue = measureValue
     ? $activeMeasureFormatter(measureValue)
@@ -102,9 +110,7 @@
     on:blur={onLeave}
     on:click={(e) => {
       if (e.shiftKey) return;
-      dispatch("select-item", {
-        label,
-      });
+      toggleDimensionValueSelection(dimensionName, label);
     }}
     on:focus={onHover}
     on:keydown
