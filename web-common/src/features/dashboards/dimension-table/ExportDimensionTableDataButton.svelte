@@ -112,7 +112,8 @@
 </WithTogglableFloatingElement>
 
 {#if includeScheduledReport && CreateScheduledReportModal}
-  <CreateScheduledReportModal
+  <svelte:component
+    this={CreateScheduledReportModal}
     queryName="MetricsViewComparison"
     queryArgsJson={JSON.stringify({
       instanceId: get(runtime).instanceId,
