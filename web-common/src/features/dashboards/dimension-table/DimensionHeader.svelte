@@ -24,7 +24,6 @@
 
   export let dimensionName: string;
   export let isFetching: boolean;
-  // export let excludeMode = false;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = true;
 
@@ -150,6 +149,5 @@
     </Tooltip>
 
     <ExportDimensionTableDataButton metricViewName={$metricsViewName} />
-    <!-- >>>>>>> main -->
   </div>
 </div>

@@ -33,7 +33,6 @@
     actions: {
       sorting: { toggleSort, toggleSortByActiveContextColumn },
       dimensions: { setPrimaryDimension },
-      comparison: { setComparisonDimension },
     },
   } = getStateManagers();
 
@@ -42,10 +41,6 @@
   $: dimensionDescription = $getDimensionDescription(dimensionName);
 
   $: arrowTransform = $sortedAscending ? "scale(1 -1)" : "scale(1 1)";
-
-  function toggleComparisonDimension() {
-    setComparisonDimension(isBeingCompared ? undefined : dimensionName);
-  }
 </script>
 
 <div class="flex flex-row items-center">
@@ -55,10 +50,7 @@
     {:else if hovered || isBeingCompared}
       <div style="position:relative; height:100%; width:100%; ">
         <div style="position: absolute; ">
-          <DimensionCompareMenu
-            {isBeingCompared}
-            on:toggle-dimension-comparison={toggleComparisonDimension}
-          />
+          <DimensionCompareMenu {dimensionName} />
         </div>
       </div>
     {/if}
