@@ -279,9 +279,9 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dia
 		selectColumns = append([]string{rollup}, selectColumns...)
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s %s %s OFFSET %d",
+	sql := fmt.Sprintf("SELECT %s FROM %s WHERE %s %s %s OFFSET %d",
 		strings.Join(selectColumns, ","),
-		mv.Table,
+		safeName(mv.Table),
 		whereClause,
 		orderClause,
 		limitClause,

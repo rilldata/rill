@@ -228,6 +228,54 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	return handler, nil
 }
 
+func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
+	var limitKey string
+	method, ok := grpc.Method(ctx)
+	if !ok {
+		return ctx, fmt.Errorf("server context does not have a method")
+	}
+	if auth.GetClaims(ctx).OwnerType() == auth.OwnerTypeAnon {
+		limitKey = ratelimit.AnonLimitKey(method, observability.GrpcPeer(ctx))
+	} else {
+		limitKey = ratelimit.AuthLimitKey(method, auth.GetClaims(ctx).OwnerID())
+	}
+
+	if err := s.limiter.Limit(ctx, limitKey, ratelimit.Default); err != nil {
+		if errors.As(err, &ratelimit.QuotaExceededError{}) {
+			return ctx, status.Errorf(codes.ResourceExhausted, err.Error())
+		}
+		return ctx, err
+	}
+
+	return ctx, nil
+}
+
+func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string, projectPermissions *adminv1.ProjectPermissions) (map[string]any, error) {
+	user, err := s.admin.DB.FindUser(ctx, userID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	groups, err := s.admin.DB.FindUsergroupsForUser(ctx, user.ID, orgID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	groupNames := make([]string, len(groups))
+	for i, group := range groups {
+		groupNames[i] = group.Name
+	}
+
+	attr := map[string]any{
+		"name":   user.DisplayName,
+		"email":  user.Email,
+		"domain": user.Email[strings.LastIndex(user.Email, "@")+1:],
+		"groups": groupNames,
+		"admin":  projectPermissions.ManageProject,
+	}
+
+	return attr, nil
+}
+
 // HTTPErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
 // code) to HTTP status code 400 instead of 500.
 func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
@@ -315,6 +363,8 @@ func checkUserAgent(ctx context.Context) (context.Context, error) {
 }
 
 type externalURLs struct {
+	external              string
+	frontend              string
 	githubConnectUI       string
 	githubConnect         string
 	githubConnectRetry    string
@@ -329,6 +379,8 @@ type externalURLs struct {
 
 func newURLRegistry(opts *Options) *externalURLs {
 	return &externalURLs{
+		external:              opts.ExternalURL,
+		frontend:              opts.FrontendURL,
 		githubConnectUI:       urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect"),
 		githubConnect:         urlutil.MustJoinURL(opts.ExternalURL, "/github/connect"),
 		githubConnectRetry:    urlutil.MustJoinURL(opts.FrontendURL, "/-/github/connect/retry-install"),
@@ -342,50 +394,14 @@ func newURLRegistry(opts *Options) *externalURLs {
 	}
 }
 
-func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
-	var limitKey string
-	method, ok := grpc.Method(ctx)
-	if !ok {
-		return ctx, fmt.Errorf("server context does not have a method")
-	}
-	if auth.GetClaims(ctx).OwnerType() == auth.OwnerTypeAnon {
-		limitKey = ratelimit.AnonLimitKey(method, observability.GrpcPeer(ctx))
-	} else {
-		limitKey = ratelimit.AuthLimitKey(method, auth.GetClaims(ctx).OwnerID())
-	}
-
-	if err := s.limiter.Limit(ctx, limitKey, ratelimit.Default); err != nil {
-		if errors.As(err, &ratelimit.QuotaExceededError{}) {
-			return ctx, status.Errorf(codes.ResourceExhausted, err.Error())
-		}
-		return ctx, err
-	}
-
-	return ctx, nil
+func (u *externalURLs) reportOpen(org, project, projectSubpath string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, projectSubpath)
 }
 
-func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string, projectPermissions *adminv1.ProjectPermissions) (map[string]any, error) {
-	user, err := s.admin.DB.FindUser(ctx, userID)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
+func (u *externalURLs) reportExport(org, project, report string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report, "export")
+}
 
-	groups, err := s.admin.DB.FindUsergroupsForUser(ctx, user.ID, orgID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	groupNames := make([]string, len(groups))
-	for i, group := range groups {
-		groupNames[i] = group.Name
-	}
-
-	attr := map[string]any{
-		"name":   user.DisplayName,
-		"email":  user.Email,
-		"domain": user.Email[strings.LastIndex(user.Email, "@")+1:],
-		"groups": groupNames,
-		"admin":  projectPermissions.ManageProject,
-	}
-
-	return attr, nil
+func (u *externalURLs) reportEdit(org, project, report string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report)
 }

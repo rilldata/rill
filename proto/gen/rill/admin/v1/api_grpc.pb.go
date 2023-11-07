@@ -78,6 +78,7 @@ const (
 	AdminService_RemoveBookmark_FullMethodName               = "/rill.admin.v1.AdminService/RemoveBookmark"
 	AdminService_GetRepoMeta_FullMethodName                  = "/rill.admin.v1.AdminService/GetRepoMeta"
 	AdminService_PullVirtualRepo_FullMethodName              = "/rill.admin.v1.AdminService/PullVirtualRepo"
+	AdminService_GetReportMeta_FullMethodName                = "/rill.admin.v1.AdminService/GetReportMeta"
 	AdminService_CreateReport_FullMethodName                 = "/rill.admin.v1.AdminService/CreateReport"
 	AdminService_EditReport_FullMethodName                   = "/rill.admin.v1.AdminService/EditReport"
 	AdminService_UnsubscribeReport_FullMethodName            = "/rill.admin.v1.AdminService/UnsubscribeReport"
@@ -209,6 +210,8 @@ type AdminServiceClient interface {
 	GetRepoMeta(ctx context.Context, in *GetRepoMetaRequest, opts ...grpc.CallOption) (*GetRepoMetaResponse, error)
 	// PullVirtualRepo fetches files from a project's virtual repo
 	PullVirtualRepo(ctx context.Context, in *PullVirtualRepoRequest, opts ...grpc.CallOption) (*PullVirtualRepoResponse, error)
+	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
+	GetReportMeta(ctx context.Context, in *GetReportMetaRequest, opts ...grpc.CallOption) (*GetReportMetaResponse, error)
 	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
 	CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error)
 	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
@@ -762,6 +765,15 @@ func (c *adminServiceClient) PullVirtualRepo(ctx context.Context, in *PullVirtua
 	return out, nil
 }
 
+func (c *adminServiceClient) GetReportMeta(ctx context.Context, in *GetReportMetaRequest, opts ...grpc.CallOption) (*GetReportMetaResponse, error) {
+	out := new(GetReportMetaResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetReportMeta_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error) {
 	out := new(CreateReportResponse)
 	err := c.cc.Invoke(ctx, AdminService_CreateReport_FullMethodName, in, out, opts...)
@@ -939,6 +951,8 @@ type AdminServiceServer interface {
 	GetRepoMeta(context.Context, *GetRepoMetaRequest) (*GetRepoMetaResponse, error)
 	// PullVirtualRepo fetches files from a project's virtual repo
 	PullVirtualRepo(context.Context, *PullVirtualRepoRequest) (*PullVirtualRepoResponse, error)
+	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
+	GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error)
 	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
 	CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error)
 	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
@@ -1134,6 +1148,9 @@ func (UnimplementedAdminServiceServer) GetRepoMeta(context.Context, *GetRepoMeta
 }
 func (UnimplementedAdminServiceServer) PullVirtualRepo(context.Context, *PullVirtualRepoRequest) (*PullVirtualRepoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PullVirtualRepo not implemented")
+}
+func (UnimplementedAdminServiceServer) GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetReportMeta not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateReport not implemented")
@@ -2228,6 +2245,24 @@ func _AdminService_PullVirtualRepo_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetReportMeta_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetReportMetaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetReportMeta(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetReportMeta_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetReportMeta(ctx, req.(*GetReportMetaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_CreateReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateReportRequest)
 	if err := dec(in); err != nil {
@@ -2578,6 +2613,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PullVirtualRepo",
 			Handler:    _AdminService_PullVirtualRepo_Handler,
+		},
+		{
+			MethodName: "GetReportMeta",
+			Handler:    _AdminService_GetReportMeta_Handler,
 		},
 		{
 			MethodName: "CreateReport",

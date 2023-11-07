@@ -75,7 +75,10 @@ export async function createOrReplaceSource(
   } catch (err) {
     await uploadFile(page, file);
   }
-  await waitForEntity(page, TestEntityType.Source, name, true);
+  await Promise.all([
+    page.getByText("View this source").click(),
+    waitForEntity(page, TestEntityType.Source, name, true),
+  ]);
 }
 
 export async function waitForSource(
@@ -83,7 +86,8 @@ export async function waitForSource(
   name: string,
   columns: Array<string>
 ) {
-  return Promise.all([
+  await Promise.all([
+    page.getByText("View this source").click(),
     waitForEntity(page, TestEntityType.Source, name, true),
     waitForProfiling(page, name, columns),
   ]);

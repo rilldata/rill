@@ -64,7 +64,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		olapConfig["cpu"] = strconv.Itoa(alloc.CPU)
 		olapConfig["memory_limit_gb"] = strconv.Itoa(alloc.MemoryGB)
 		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
-		embedCatalog = true
+		embedCatalog = false
 	case "duckdb-ext-storage": // duckdb driver having capability to store table as view
 		if opts.ProdOLAPDSN != "" {
 			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb-ext-storage'")
@@ -79,7 +79,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		olapConfig["memory_limit_gb"] = strconv.Itoa(alloc.MemoryGB)
 		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
 		olapConfig["external_table_storage"] = strconv.FormatBool(true)
-		embedCatalog = true
+		embedCatalog = false
 	default:
 		olapConfig["dsn"] = opts.ProdOLAPDSN
 		embedCatalog = false
@@ -122,9 +122,10 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
-		InstanceId:    instanceID,
-		OlapConnector: olapDriver,
-		RepoConnector: "admin",
+		InstanceId:     instanceID,
+		OlapConnector:  olapDriver,
+		RepoConnector:  "admin",
+		AdminConnector: "admin",
 		Connectors: []*runtimev1.Connector{
 			{
 				Name:   olapDriver,

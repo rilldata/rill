@@ -106,6 +106,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       x={$xScale(singleton[xAccessor]) - 0.75}
       y={Math.min($yScale(0), $yScale(singleton[yAccessor]))}
       width="1.5"
+      class={lineClasses}
       height={Math.abs($yScale(0) - $yScale(singleton[yAccessor]))}
       fill="hsla(217,60%, 55%, .5)"
     />

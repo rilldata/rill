@@ -1,0 +1,21 @@
+model: timeseries_year_model
+display_name: Year time series
+description:
+
+timeseries: timestamp
+smallest_time_grain: 
+
+dimensions:
+  - name: device
+    column: device
+  - name: publisher
+    column: publisher
+  - name: country
+    column: country
+measures:
+  - name: max_clicks
+    expression: "max(clicks)"
+  - name: count
+    expression: "count(*)"
+  - name: sum_clicks
+    expression: "sum(clicks)"
