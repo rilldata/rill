@@ -2,9 +2,11 @@ import type { BeforeNavigate } from "@sveltejs/kit";
 import { writable } from "svelte/store";
 
 export type FeatureFlags = {
+  admin: boolean; // refers to the admin server and its UI
   readOnly: boolean;
 };
 export const featureFlags = writable<FeatureFlags>({
+  admin: undefined,
   readOnly: undefined,
 });
 

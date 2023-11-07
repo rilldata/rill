@@ -34,6 +34,7 @@
   });
 
   featureFlags.set({
+    admin: true,
     // Set read-only mode so that the user can't edit the dashboard
     readOnly: true,
   });
