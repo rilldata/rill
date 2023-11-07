@@ -45,7 +45,8 @@
   $: resourceStatusStore = getResourceStatusStore(
     queryClient,
     $runtime.instanceId,
-    filePath
+    filePath,
+    (res) => !!res?.metricsView?.state?.validSpec
   );
   let showErrorPage = false;
   $: if (metricViewName) {
