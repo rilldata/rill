@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createAdminServiceListProjectMembers } from "@rilldata/web-admin/client";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
-  import FormItemMultiselectCombobox from "../../../components/forms/FormItemMultiSelectCombobox.svelte";
+  import MultiselectCombobox from "../../../components/forms/MultiSelectCombobox.svelte";
 
   export let organization: string;
   export let project: string;
@@ -20,7 +20,7 @@
 </script>
 
 <div>
-  <FormItemMultiselectCombobox
+  <MultiselectCombobox
     bind:selectedValues={recipients}
     id="recipients"
     label="Recipients"

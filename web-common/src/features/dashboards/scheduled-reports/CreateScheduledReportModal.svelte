@@ -2,7 +2,7 @@
   import { page } from "$app/stores";
   import { createAdminServiceCreateReport } from "@rilldata/web-admin/client";
   import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
-  import FormItemTimePicker from "@rilldata/web-common/components/forms/FormItemTimePicker.svelte";
+  import TimePicker from "@rilldata/web-common/components/forms/TimePicker.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import {
     getRuntimeServiceListResourcesQueryKey,
@@ -14,8 +14,8 @@
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { Button } from "../../../components/button";
-  import FormItemInput from "../../../components/forms/FormItemInput.svelte";
-  import FormItemSelect from "../../../components/forms/FormItemSelect.svelte";
+  import InputV2 from "../../../components/forms/InputV2.svelte";
+  import Select from "../../../components/forms/Select.svelte";
   import RecipientsFormElement from "./RecipientsFormElement.svelte";
   import {
     convertToCron,
@@ -100,7 +100,7 @@
     slot="body"
   >
     <span>Email recurring exports to recipients.</span>
-    <FormItemInput
+    <InputV2
       bind:value={$form["title"]}
       error={$errors["title"]}
       id="title"
@@ -108,7 +108,7 @@
       placeholder="My report"
     />
     <div class="flex gap-x-2">
-      <FormItemSelect
+      <Select
         bind:value={$form["frequency"]}
         id="frequency"
         label="Frequency"
@@ -117,7 +117,7 @@
         }))}
       />
       {#if $form["frequency"] === "Weekly"}
-        <FormItemSelect
+        <Select
           bind:value={$form["dayOfWeek"]}
           id="dayOfWeek"
           label="Day"
@@ -134,13 +134,9 @@
           }))}
         />
       {/if}
-      <FormItemTimePicker
-        bind:value={$form["timeOfDay"]}
-        id="timeOfDay"
-        label="Time"
-      />
+      <TimePicker bind:value={$form["timeOfDay"]} id="timeOfDay" label="Time" />
     </div>
-    <FormItemSelect
+    <Select
       bind:value={$form["exportFormat"]}
       id="exportFormat"
       label="Format"
@@ -150,7 +146,7 @@
         { value: V1ExportFormat.EXPORT_FORMAT_XLSX, label: "Excel" },
       ]}
     />
-    <FormItemInput
+    <InputV2
       bind:value={$form["exportLimit"]}
       error={$errors["exportLimit"]}
       id="exportLimit"
