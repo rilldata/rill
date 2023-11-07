@@ -89,6 +89,10 @@
 
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
+  $: areAllTableRowsSelected = tableRows.every((row) =>
+    selectedValues.includes(row[dimensionColumn])
+  );
+
   function onSelectItem(event) {
     const label = tableRows[event.detail][dimensionName] as string;
     cancelDashboardQueries(queryClient, $metricsViewName);
@@ -101,6 +105,26 @@
       isBeingCompared ? undefined : dimensionName
     );
   }
+
+  function toggleAllSearchItems() {
+    const labels = tableRows.map((row) => row[dimensionColumn] as string);
+    cancelDashboardQueries(queryClient, metricViewName);
+
+    if (areAllTableRowsSelected) {
+      metricsExplorerStore.deselectItemsInFilter(
+        metricViewName,
+        dimensionName,
+        labels
+      );
+      return;
+    } else {
+      metricsExplorerStore.selectItemsInFilter(
+        metricViewName,
+        dimensionName,
+        labels
+      );
+    }
+  }
 </script>
 
 {#if sortedQuery}
@@ -109,10 +133,13 @@
       <DimensionHeader
         {dimensionName}
         {excludeMode}
+        {areAllTableRowsSelected}
+        isRowsEmpty={!tableRows.length}
         isFetching={$sortedQuery?.isFetching}
         on:search={(event) => {
           searchText = event.detail;
         }}
+        on:toggle-all-search-items={() => toggleAllSearchItems()}
       />
     </div>
 

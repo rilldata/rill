@@ -12,6 +12,9 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 type MetricsViewComparison struct {
@@ -216,32 +219,24 @@ func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, ol
 	return nil
 }
 
-func timeRangeClause(timeRange *runtimev1.TimeRange, td string, args *[]any) string {
-	var clause string
-	if timeRange == nil {
-		return clause
-	}
-
-	if timeRange.Start != nil {
-		clause += fmt.Sprintf(" AND %s >= ?", td)
-		*args = append(*args, timeRange.Start.AsTime())
-	}
-
-	if timeRange.End != nil {
-		clause += fmt.Sprintf(" AND %s < ?", td)
-		*args = append(*args, timeRange.End.AsTime())
-	}
-
-	return clause
-}
-
 func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
-	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
+	dim, err := metricsViewDimension(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
+	rawColName := metricsViewDimensionColumn(dim)
+	colName := safeName(rawColName)
+	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
 
-	selectCols := []string{colName}
+	var selectCols []string
+	unnestClause := ""
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
+		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
+		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
+	} else {
+		selectCols = append(selectCols, colName)
+	}
 
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
@@ -273,7 +268,12 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	args := []any{}
 	td := safeName(mv.TimeDimension)
 
-	baseWhereClause += timeRangeClause(q.TimeRange, td, &args)
+	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
+	if err != nil {
+		return "", nil, err
+	}
+	baseWhereClause += trc
+
 	if q.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
@@ -311,27 +311,44 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
 	}
 
+	groupByCol := colName
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		groupByCol = unnestColName
+	}
+
 	sql := fmt.Sprintf(
-		`SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d`,
-		selectClause,    // 1
-		colName,         // 2
-		mv.Table,        // 3
-		baseWhereClause, // 4
-		orderClause,     // 5
-		limitClause,     // 6
-		q.Offset,        // 7
+		`SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d`,
+		selectClause,       // 1
+		groupByCol,         // 2
+		safeName(mv.Table), // 3
+		baseWhereClause,    // 4
+		orderClause,        // 5
+		limitClause,        // 6
+		q.Offset,           // 7
+		unnestClause,       // 8
 	)
 
 	return sql, args, nil
 }
 
 func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
-	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
+	dim, err := metricsViewDimension(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
+	rawColName := metricsViewDimensionColumn(dim)
+	colName := safeName(rawColName)
+	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
 
-	selectCols := []string{colName}
+	var selectCols []string
+	unnestClause := ""
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
+		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
+		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
+	} else {
+		selectCols = append(selectCols, colName)
+	}
 
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
@@ -395,7 +412,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	td := safeName(mv.TimeDimension)
 
-	baseWhereClause += timeRangeClause(q.TimeRange, td, &args)
+	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
+	if err != nil {
+		return "", nil, err
+	}
+	baseWhereClause += trc
+
 	if q.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
@@ -406,7 +428,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		args = append(args, clauseArgs...)
 	}
 
-	comparisonWhereClause += timeRangeClause(q.ComparisonTimeRange, td, &args)
+	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, dialect, td, &args)
+	if err != nil {
+		return "", nil, err
+	}
+	comparisonWhereClause += trc
+
 	if q.Filter != nil {
 		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 		if err != nil {
@@ -524,16 +551,21 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		LIMIT 10
 		OFFSET 0
 	*/
+	groupByCol := colName
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		groupByCol = unnestColName
+	}
+
 	var sql string
 	if dialect != drivers.DialectDruid {
 		sql = fmt.Sprintf(`
 		SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
 			(
-				SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s %[12]s 
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY %[15]s %[12]s 
 			) base
 		%[11]s JOIN
 			(
-				SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s %[13]s 
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY %[15]s %[13]s 
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
@@ -545,7 +577,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		`,
 			subSelectClause,           // 1
 			colName,                   // 2
-			mv.Table,                  // 3
+			safeName(mv.Table),        // 3
 			baseWhereClause,           // 4
 			comparisonWhereClause,     // 5
 			orderClause,               // 6
@@ -555,7 +587,9 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			safeName(q.DimensionName), // 10
 			joinType,                  // 11
 			baseLimitClause,           // 12
-			comparisonLimitClause,     // 12
+			comparisonLimitClause,     // 13
+			unnestClause,              // 14
+			groupByCol,                // 15
 		)
 	} else {
 		/*
@@ -604,11 +638,11 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		sql = fmt.Sprintf(`
 				SELECT %[11]s.%[2]s, %[9]s FROM 
 					(
-						SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s %[10]s OFFSET %[8]d 
+						SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s %[10]s OFFSET %[8]d 
 					) %[11]s
 				LEFT OUTER JOIN
 					(
-						SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
+						SELECT %[1]s FROM %[3]s WHERE %[5]s GROUP BY %[2]s
 					) %[12]s
 				ON
 						base.%[2]s = comparison.%[2]s
@@ -623,7 +657,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 			subSelectClause,     // 1
 			colName,             // 2
-			mv.Table,            // 3
+			safeName(mv.Table),  // 3
 			leftWhereClause,     // 4
 			rightWhereClause,    // 5
 			orderClause,         // 6
@@ -795,6 +829,32 @@ func (q *MetricsViewComparison) generateFilename() string {
 		filename += "_filtered"
 	}
 	return filename
+}
+
+// TODO: a) Ensure correct time zone handling, b) Implement support for tr.RoundToGrain
+// (Maybe consider pushing all this logic into the SQL instead?)
+func timeRangeClause(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, timeCol string, args *[]any) (string, error) {
+	var clause string
+	if isTimeRangeNil(tr) {
+		return clause, nil
+	}
+
+	start, end, err := ResolveTimeRange(tr, mv)
+	if err != nil {
+		return "", err
+	}
+
+	if !start.IsZero() {
+		clause += fmt.Sprintf(" AND %s >= ?", timeCol)
+		*args = append(*args, start)
+	}
+
+	if !end.IsZero() {
+		clause += fmt.Sprintf(" AND %s < ?", timeCol)
+		*args = append(*args, end)
+	}
+
+	return clause, nil
 }
 
 func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {

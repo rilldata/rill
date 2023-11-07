@@ -76,7 +76,9 @@
   rounded={false}
 >
   <!-- the min-height is set to have about 3 entries in it -->
-  <Search bind:value={searchText} />
+  <div class="px-1 pb-1">
+    <Search bind:value={searchText} showBorderOnFocus={false} />
+  </div>
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
   <div class="flex flex-col flex-1 overflow-auto w-full pb-1">
     {#each menuItems as { name, label, selected, index }}

@@ -14,7 +14,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, Readable, writable } from "svelte/store";
+import { derived, get, Readable, writable } from "svelte/store";
 
 /**
  * Global resources store that maps file name to a resource.
@@ -28,11 +28,15 @@ export type ResourcesState = {
   // array of paths currently reconciling
   // we use path since parse error will only give us paths from ProjectParser
   currentlyReconciling: Record<string, V1ResourceName>;
+  // last time the state of the resource `kind/name` was updated
+  // used to make sure we do not have unnecessary refreshes
+  lastStateUpdatedOn: Record<string, string>;
 };
 
 const { update, subscribe } = writable<ResourcesState>({
   resources: {},
   currentlyReconciling: {},
+  lastStateUpdatedOn: {},
 });
 
 const resourcesStoreReducers = {
@@ -50,6 +54,7 @@ const resourcesStoreReducers = {
           ) {
             this.reconciling(resource);
           }
+          this.setVersion(resource);
           break;
       }
     }
@@ -92,6 +97,21 @@ const resourcesStoreReducers = {
           delete state.currentlyReconciling[filePath];
         }
       }
+      return state;
+    });
+  },
+
+  setVersion(resource: V1Resource) {
+    update((state) => {
+      state.lastStateUpdatedOn[getKeyForResource(resource)] =
+        resource.meta.stateUpdatedOn;
+      return state;
+    });
+  },
+
+  deleteResource(resource: V1Resource) {
+    update((state) => {
+      delete state.lastStateUpdatedOn[getKeyForResource(resource)];
       return state;
     });
   },
@@ -181,4 +201,19 @@ export function getReconcilingItems() {
     }
     return currentlyReconciling;
   });
+}
+
+export function getLastStateUpdatedOn(resource: V1Resource) {
+  return get(resourcesStore).lastStateUpdatedOn[getKeyForResource(resource)];
+}
+
+export function getLastStateUpdatedOnByKindAndName(
+  kind: ResourceKind,
+  name: string
+) {
+  return get(resourcesStore).lastStateUpdatedOn[`${kind}/${name}`];
+}
+
+function getKeyForResource(resource: V1Resource) {
+  return `${resource.meta.name.kind}/${resource.meta.name.name}`;
 }

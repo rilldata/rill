@@ -10,7 +10,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/server"
 	"golang.org/x/exp/slices"
@@ -254,6 +253,21 @@ func (r *ReportReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
 	r.C.Logger.Info("Sending report", "report", self.Meta.Name.Name, "report_time", t)
 
+	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
+	if err != nil {
+		if errors.Is(err, runtime.ErrAdminNotConfigured) {
+			r.C.Logger.Info("Skipped sending report because an admin service is not configured", "report", self.Meta.Name.Name)
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to get admin client: %w", err)
+	}
+	defer release()
+
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec.Annotations)
+	if err != nil {
+		return false, fmt.Errorf("failed to get report metadata: %w", err)
+	}
+
 	qry, err := buildQuery(rep, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to build export request: %w", err)
@@ -264,9 +278,9 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		return false, fmt.Errorf("failed to bake query of type %T: %w", qry, err)
 	}
 
-	exportURL, err := url.Parse(rep.Spec.EmailExportUrl)
+	exportURL, err := url.Parse(meta.ExportURL)
 	if err != nil {
-		return false, fmt.Errorf("failed to parse export URL %q: %w", rep.Spec.EmailExportUrl, err)
+		return false, fmt.Errorf("failed to parse export URL %q: %w", meta.ExportURL, err)
 	}
 
 	exportURLQry := exportURL.Query()
@@ -284,9 +298,9 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 			Title:          rep.Spec.Title,
 			ReportTime:     t,
 			DownloadFormat: formatExportFormat(rep.Spec.ExportFormat),
-			OpenLink:       rep.Spec.EmailOpenUrl,
+			OpenLink:       meta.OpenURL,
 			DownloadLink:   exportURL.String(),
-			EditLink:       rep.Spec.EmailEditUrl,
+			EditLink:       meta.EditURL,
 		})
 		if err != nil {
 			return true, fmt.Errorf("failed to generate report for %q: %w", recipient, err)
@@ -297,17 +311,6 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 }
 
 func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
-	var start, end *timestamppb.Timestamp
-	if rep.Spec.QueryTimeRange != "" {
-		d, err := duration.ParseISO8601(rep.Spec.QueryTimeRange)
-		if err != nil {
-			return nil, fmt.Errorf("invalid query time range %q: %w", rep.Spec.QueryTimeRange, err)
-		}
-
-		start = timestamppb.New(d.Sub(t))
-		end = timestamppb.New(t)
-	}
-
 	qry := &runtimev1.Query{}
 	switch rep.Spec.QueryName {
 	case "MetricsViewAggregation":
@@ -317,8 +320,7 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
-		req.TimeStart = start
-		req.TimeEnd = end
+		req.TimeRange = overrideTimeRange(req.TimeRange, t)
 	case "MetricsViewToplist":
 		req := &runtimev1.MetricsViewToplistRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewToplistRequest{MetricsViewToplistRequest: req}
@@ -326,8 +328,6 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
-		req.TimeStart = start
-		req.TimeEnd = end
 	case "MetricsViewRows":
 		req := &runtimev1.MetricsViewRowsRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewRowsRequest{MetricsViewRowsRequest: req}
@@ -335,8 +335,6 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
-		req.TimeStart = start
-		req.TimeEnd = end
 	case "MetricsViewTimeSeries":
 		req := &runtimev1.MetricsViewTimeSeriesRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewTimeSeriesRequest{MetricsViewTimeSeriesRequest: req}
@@ -344,8 +342,6 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
-		req.TimeStart = start
-		req.TimeEnd = end
 	case "MetricsViewComparison":
 		req := &runtimev1.MetricsViewComparisonRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewComparisonRequest{MetricsViewComparisonRequest: req}
@@ -353,8 +349,7 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
-		req.TimeRange = &runtimev1.TimeRange{Start: start, End: end}
-		req.ComparisonTimeRange = nil // TODO: Need ability pass comparison offset somewhere
+		req.TimeRange = overrideTimeRange(req.TimeRange, t)
 	default:
 		return nil, fmt.Errorf("query %q not supported for reports", rep.Spec.QueryName)
 	}
@@ -373,4 +368,14 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 	default:
 		return f.String()
 	}
+}
+
+func overrideTimeRange(tr *runtimev1.TimeRange, t time.Time) *runtimev1.TimeRange {
+	if tr == nil {
+		tr = &runtimev1.TimeRange{}
+	}
+
+	tr.End = timestamppb.New(t)
+
+	return tr
 }

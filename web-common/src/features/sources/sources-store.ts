@@ -31,3 +31,5 @@ export function useSourceStore(sourceName: string): Writable<SourceStore> {
 
   return sourceStores[sourceName];
 }
+
+export const sourceImportedName = writable<string>(null);

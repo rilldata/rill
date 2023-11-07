@@ -5,29 +5,29 @@ This component needs to do the following:
 3. update comparisons on user interactions
 -->
 <script lang="ts">
-  import { matchSorter } from "match-sorter";
+  import { IconSpaceFixer } from "@rilldata/web-common/components/button";
+  import { Chip } from "@rilldata/web-common/components/chip";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
+  import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import {
     Divider,
     Menu,
     MenuItem,
   } from "@rilldata/web-common/components/menu";
+  import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { NO_COMPARISON_LABEL } from "@rilldata/web-common/lib/time/config";
-  import SelectorButton from "./SelectorButton.svelte";
-  import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
-  import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
-  import { Search } from "@rilldata/web-common/components/search";
-  import { Chip } from "@rilldata/web-common/components/chip";
-  import { IconSpaceFixer } from "@rilldata/web-common/components/button";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import {
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import { NO_COMPARISON_LABEL } from "@rilldata/web-common/lib/time/config";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { matchSorter } from "match-sorter";
+  import SelectorButton from "./SelectorButton.svelte";
 
   export let metricViewName;
   export let chipStyle = false;
@@ -140,7 +140,13 @@ This component needs to do the following:
     on:click-outside={toggleFloatingElement}
     label="Comparison selector"
   >
-    <Search placeholder="Search Dimension" bind:value={searchText} />
+    <div class="px-2 pb-2">
+      <Search
+        placeholder="Search Dimension"
+        bind:value={searchText}
+        showBorderOnFocus={false}
+      />
+    </div>
     <MenuItem
       focusOnMount={false}
       selected={!(showTimeComparison || selectedDimension)}

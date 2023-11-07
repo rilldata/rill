@@ -106,22 +106,27 @@ func (c *connection) Close() error {
 	return nil
 }
 
-// Registry implements drivers.Connection.
+// AsRegistry implements drivers.Connection.
 func (c *connection) AsRegistry() (drivers.RegistryStore, bool) {
 	return nil, false
 }
 
-// Catalog implements drivers.Connection.
+// AsCatalogStore implements drivers.Connection.
 func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bool) {
 	return nil, false
 }
 
-// Repo implements drivers.Connection.
+// AsRepoStore implements drivers.Connection.
 func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
-// OLAP implements drivers.Connection.
+// AsAdmin implements drivers.Handle.
+func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return nil, false
+}
+
+// AsOLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }

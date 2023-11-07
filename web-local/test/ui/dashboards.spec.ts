@@ -518,6 +518,8 @@ dimensions:
 
     await runThroughDefaultTimeRanges(page);
 
+    await runThroughDefaultComparisons(page);
+
     // go back to the dashboard
 
     // TODO
@@ -948,6 +950,115 @@ dimensions:
   await expect(page.getByText("Total rows 11.2k")).toBeVisible();
   await expect(page.getByText("Facebook 2.9k")).toBeVisible();
 
+  // Go back to metrics editor
+  await page.getByRole("button", { name: "Edit metrics" }).click();
+}
+
+async function runThroughDefaultComparisons(page: Page) {
+  /**
+   * SUBFLOW: Change default time comparison and assert it updates the selections.
+   */
+
+  // Set comparison to time
+  const docWithPresetDefaultTimeComparison = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+
+title: "AdBids_model_dashboard_rename"
+model: "AdBids_model"
+default_time_range: "P4W"
+smallest_time_grain: "week"
+timeseries: "timestamp"
+default_comparison:
+  mode: time
+measures:
+  - label: Total rows
+    expression: count(*)
+    name: total_rows
+    description: Total number of records present
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain Name
+    column: domain
+    description: ""
+        `;
+  await updateCodeEditor(page, docWithPresetDefaultTimeComparison);
+  await waitForDashboard(page);
+  // Go to dashboard
+  await page.getByRole("button", { name: "Go to dashboard" }).click();
+  // Comparison is selected
+  await expect(page.getByText("Comparing by Time")).toBeVisible();
+  // Go back to metrics editor
+  await page.getByRole("button", { name: "Edit metrics" }).click();
+
+  // Set comparison to dimension
+  const docWithPresetDefaultDimensionComparison = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+
+title: "AdBids_model_dashboard_rename"
+model: "AdBids_model"
+default_time_range: "P4W"
+smallest_time_grain: "week"
+timeseries: "timestamp"
+default_comparison:
+  mode: dimension
+  dimension: publisher
+measures:
+  - label: Total rows
+    expression: count(*)
+    name: total_rows
+    description: Total number of records present
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain Name
+    column: domain
+    description: ""
+        `;
+  await updateCodeEditor(page, docWithPresetDefaultDimensionComparison);
+  await waitForDashboard(page);
+  // Go to dashboard
+  await page.getByRole("button", { name: "Go to dashboard" }).click();
+  // Comparison is selected
+  await expect(page.getByText("Comparing by Publisher")).toBeVisible();
+  // Go back to metrics editor
+  await page.getByRole("button", { name: "Edit metrics" }).click();
+
+  // Set comparison to none
+  const docWithPresetDefaultNoComparison = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+
+title: "AdBids_model_dashboard_rename"
+model: "AdBids_model"
+default_time_range: "P4W"
+smallest_time_grain: "week"
+timeseries: "timestamp"
+default_comparison:
+  mode: none
+measures:
+  - label: Total rows
+    expression: count(*)
+    name: total_rows
+    description: Total number of records present
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+    description: ""
+  - name: domain
+    label: Domain Name
+    column: domain
+    description: ""
+        `;
+  await updateCodeEditor(page, docWithPresetDefaultNoComparison);
+  await waitForDashboard(page);
+  // Go to dashboard
+  await page.getByRole("button", { name: "Go to dashboard" }).click();
+  // No Comparison
+  await expect(page.getByText("No Comparison")).toBeVisible();
   // Go back to metrics editor
   await page.getByRole("button", { name: "Edit metrics" }).click();
 }

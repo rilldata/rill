@@ -19,16 +19,23 @@
   import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
   import { SortType } from "../proto-state/derived-types";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { createEventDispatcher } from "svelte";
 
   export let dimensionName: string;
   export let isFetching: boolean;
-  export let excludeMode = false;
+  // export let excludeMode = false;
+  export let areAllTableRowsSelected = false;
+  export let isRowsEmpty = true;
+
+  const dispatch = createEventDispatcher();
 
   const stateManagers = getStateManagers();
   const {
     selectors: {
       sorting: { sortedByDimensionValue },
       dimensionTable: { dimensionTableSearchString },
+      dimensionFilters: { isFilterExcludeMode },
     },
     actions: {
       sorting: { toggleSort },
@@ -40,6 +47,8 @@
     },
     metricsViewName,
   } = stateManagers;
+
+  $: excludeMode = $isFilterExcludeMode(dimensionName);
 
   const queryClient = useQueryClient();
 
@@ -91,25 +100,15 @@
 
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
   <div class="flex items-center gap-x-5 cursor-pointer h-9">
-    <Tooltip distance={16} location="left">
-      <div class="flex items-center gap-x-1 ui-copy-icon">
-        <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
-          Exclude
-        </Switch>
-      </div>
-      <TooltipContent slot="tooltip-content">
-        <TooltipTitle>
-          <svelte:fragment slot="name">
-            Output {filterKey}s selected values
-          </svelte:fragment>
-        </TooltipTitle>
-        <TooltipShortcutContainer>
-          <div>Toggle to {otherFilterKey} values</div>
-          <Shortcut>Click</Shortcut>
-        </TooltipShortcutContainer>
-      </TooltipContent>
-    </Tooltip>
-
+    {#if searchText && !isRowsEmpty}
+      <Button
+        type="secondary"
+        compact={true}
+        on:click={() => dispatch("toggle-all-search-items")}
+      >
+        {areAllTableRowsSelected ? "Deselect all" : "Select all"}
+      </Button>
+    {/if}
     {#if !searchBarOpen}
       <button
         class="flex items-center gap-x-1 text-gray-700"
@@ -131,6 +130,26 @@
       </div>
     {/if}
 
+    <Tooltip distance={16} location="left">
+      <div class="flex items-center gap-x-1 ui-copy-icon">
+        <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
+          Exclude
+        </Switch>
+      </div>
+      <TooltipContent slot="tooltip-content">
+        <TooltipTitle>
+          <svelte:fragment slot="name">
+            Output {filterKey}s selected values
+          </svelte:fragment>
+        </TooltipTitle>
+        <TooltipShortcutContainer>
+          <div>Toggle to {otherFilterKey} values</div>
+          <Shortcut>Click</Shortcut>
+        </TooltipShortcutContainer>
+      </TooltipContent>
+    </Tooltip>
+
     <ExportDimensionTableDataButton metricViewName={$metricsViewName} />
+    <!-- >>>>>>> main -->
   </div>
 </div>

@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { Switch } from "@rilldata/web-common/components/button";
+  import { Button, Switch } from "@rilldata/web-common/components/button";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
+  import Row from "@rilldata/web-common/components/icons/Row.svelte";
+  import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
@@ -20,8 +22,6 @@
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { Chip } from "@rilldata/web-common/components/chip";
-  import { disabledChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -31,6 +31,8 @@
   export let dimensionName: string;
   export let isFetching = false;
   export let comparing: TDDComparison;
+  export let areAllTableRowsSelected = false;
+  export let isRowsEmpty = false;
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -92,43 +94,77 @@
 <div
   class="grid grid-auto-cols justify-between grid-flow-col items-center p-1 pb-3 h-11"
 >
-  <div class="flex gap-x-3 font-bold items-center">
-    <ComparisonSelector {metricViewName} chipStyle />
+  <div class="flex gap-x-3 items-center font-normal text-gray-500">
+    <div class="flex items-center gap-x-2">
+      <div class="flex items-center gap-x-1">
+        <Row size="16px" /> Rows
+      </div>
 
-    <SearchableFilterChip
-      label={selectedMeasureLabel}
-      on:item-clicked={switchMeasure}
-      selectableItems={selectableMeasures}
-      {selectedItems}
-      tooltipText="Choose a measure to display"
-    />
-    <span class="font-normal text-gray-400"> | </span>
+      <ComparisonSelector {metricViewName} chipStyle />
+    </div>
 
-    <Chip {...disabledChipColors} extraPadding={false}>
-      <div slot="body" class="flex">Time</div>
-    </Chip>
+    <div class="flex items-center gap-x-2 pl-2">
+      <div class="flex items-center gap-x-1">
+        <Column size="16px" /> Columns
+      </div>
+      <SearchableFilterChip
+        label={selectedMeasureLabel}
+        on:item-clicked={switchMeasure}
+        selectableItems={selectableMeasures}
+        {selectedItems}
+        tooltipText="Choose a measure to display"
+      />
+    </div>
 
-    <span class="font-normal text-gray-400"> : </span>
+    <!-- Revisit after Pivot table lands -->
+    <!-- <span> | </span>
+    <div>Time</div>
+    <span> : </span>
+    <div>{selectedMeasureLabel}</div> -->
 
-    <Chip
-      {...disabledChipColors}
-      extraPadding={false}
-      extraRounded={false}
-      label={selectedMeasureLabel}
-    >
-      <div slot="body" class="flex">{selectedMeasureLabel}</div>
-    </Chip>
     {#if isFetching}
       <Spinner size="18px" status={EntityStatus.Running} />
     {/if}
   </div>
 
   {#if comparing === "dimension"}
-    <div
-      class="flex items-center mr-4"
-      style:cursor="pointer"
-      style:grid-column-gap=".4rem"
-    >
+    <div class="flex items-center mr-4 gap-x-3" style:cursor="pointer">
+      {#if searchText && !isRowsEmpty}
+        <Button
+          type="secondary"
+          compact={true}
+          on:click={() => dispatch("toggle-all-search-items")}
+        >
+          {areAllTableRowsSelected ? "Deselect all" : "Select all"}
+        </Button>
+      {/if}
+
+      {#if !searchToggle}
+        <button
+          class="flex items-center ui-copy-icon"
+          in:fly={{ x: 10, duration: 300 }}
+          style:grid-column-gap=".2rem"
+          on:click={() => (searchToggle = !searchToggle)}
+        >
+          <SearchIcon size="16px" />
+          <span> Search </span>
+        </button>
+      {:else}
+        <div
+          transition:slideRight|local={{ leftOffset: 8 }}
+          class="flex items-center gap-x-1"
+        >
+          <Search bind:value={searchText} on:input={onSearch} />
+          <button
+            class="ui-copy-icon"
+            style:cursor="pointer"
+            on:click={() => closeSearchBar()}
+          >
+            <Close />
+          </button>
+        </div>
+      {/if}
+
       <Tooltip distance={16} location="left">
         <div class="mr-3 ui-copy-icon" style:grid-column-gap=".4rem">
           <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
@@ -147,32 +183,6 @@
           </TooltipShortcutContainer>
         </TooltipContent>
       </Tooltip>
-
-      {#if !searchToggle}
-        <button
-          class="flex items-center ui-copy-icon"
-          in:fly={{ x: 10, duration: 300 }}
-          style:grid-column-gap=".2rem"
-          on:click={() => (searchToggle = !searchToggle)}
-        >
-          <SearchIcon size="16px" />
-          <span> Search </span>
-        </button>
-      {:else}
-        <div
-          transition:slideRight|local={{ leftOffset: 8 }}
-          class="flex items-center"
-        >
-          <Search bind:value={searchText} on:input={onSearch} />
-          <button
-            class="ui-copy-icon"
-            style:cursor="pointer"
-            on:click={() => closeSearchBar()}
-          >
-            <Close />
-          </button>
-        </div>
-      {/if}
     </div>
   {/if}
 </div>

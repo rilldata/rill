@@ -19,6 +19,7 @@ import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
   V1MetricsViewFilter,
+  V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { derived, Readable, writable } from "svelte/store";
@@ -163,7 +164,7 @@ function syncDimensions(
 const metricViewReducers = {
   init(
     name: string,
-    metricsView: V1MetricsView,
+    metricsView: V1MetricsViewSpec,
     fullTimeRange: V1ColumnTimeRangeResponse | undefined
   ) {
     update((state) => {
@@ -190,6 +191,11 @@ const metricViewReducers = {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       for (const key in partial) {
         metricsExplorer[key] = partial[key];
+      }
+      // this hack is needed since what is shown for comparison is not a single source
+      // TODO: use an enum and get rid of this
+      if (!partial.showTimeComparison) {
+        metricsExplorer.showTimeComparison = false;
       }
       metricsExplorer.dimensionFilterExcludeMode =
         includeExcludeModeFromFilters(partial.filters);
@@ -404,6 +410,60 @@ const metricViewReducers = {
       if (metricsExplorer.dashboardSortType === initialSort) {
         metricsExplorer.dashboardSortType =
           sortTypeForContextColumnType(contextColumn);
+      }
+    });
+  },
+
+  selectItemsInFilter(name: string, dimensionName: string, values: string[]) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
+        dimensionName
+      )
+        ? "exclude"
+        : "include";
+
+      const dimensionEntryIndex = metricsExplorer.filters[
+        relevantFilterKey
+      ].findIndex((filter) => filter.name === dimensionName);
+
+      if (dimensionEntryIndex >= 0) {
+        // preserve old selections and add only new ones
+        const oldValues = metricsExplorer.filters[relevantFilterKey][
+          dimensionEntryIndex
+        ].in as string[];
+        const newValues = values.filter((v) => !oldValues.includes(v));
+        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in.push(
+          ...newValues
+        );
+      } else {
+        metricsExplorer.filters[relevantFilterKey].push({
+          name: dimensionName,
+          in: values,
+        });
+      }
+    });
+  },
+
+  deselectItemsInFilter(name: string, dimensionName: string, values: string[]) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
+        dimensionName
+      )
+        ? "exclude"
+        : "include";
+
+      const dimensionEntryIndex = metricsExplorer.filters[
+        relevantFilterKey
+      ].findIndex((filter) => filter.name === dimensionName);
+
+      if (dimensionEntryIndex >= 0) {
+        // remove only deselected values
+        const oldValues = metricsExplorer.filters[relevantFilterKey][
+          dimensionEntryIndex
+        ].in as string[];
+        const newValues = oldValues.filter((v) => !values.includes(v));
+        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in =
+          newValues;
       }
     });
   },
