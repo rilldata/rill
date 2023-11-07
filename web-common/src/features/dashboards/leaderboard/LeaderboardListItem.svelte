@@ -23,13 +23,13 @@
   import { getStateManagers } from "../state-managers/state-managers";
 
   export let dimensionName: string;
-  export let referenceValue;
 
   export let itemData: LeaderboardItemData;
   $: label = itemData.dimensionValue;
   $: measureValue = itemData.value;
   $: selected = itemData.selectedIndex >= 0;
   $: comparisonValue = itemData.prevValue;
+  $: pctOfTotal = itemData.pctOfTotal;
 
   const {
     selectors: {
@@ -64,16 +64,8 @@
     ? (filterExcludeMode && selected) || (!filterExcludeMode && !selected)
     : false;
 
-  let renderedBarValue = 0; // should be between 0 and 1.
-  $: {
-    renderedBarValue = $isSummableMeasure
-      ? referenceValue
-        ? (measureValue || 0) / referenceValue
-        : 0
-      : 0;
-    // if this somehow creates an NaN, let's set it to 0.
-    renderedBarValue = !isNaN(renderedBarValue) ? renderedBarValue : 0;
-  }
+  $: renderedBarValue = $isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
+
   $: color = excluded
     ? "ui-measure-bar-excluded"
     : selected
