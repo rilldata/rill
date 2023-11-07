@@ -222,7 +222,7 @@ export function estimateColumnSizes(
 export function prepareVirtualizedDimTableColumns(
   dash: MetricsExplorerEntity,
   allMeasures: MetricsViewSpecMeasureV2[],
-  referenceValues: { [key: string]: number },
+  measureTotals: { [key: string]: number },
   dimension: MetricsViewDimension,
   timeComparison: boolean,
   validPercentOfTotal: boolean
@@ -295,7 +295,7 @@ export function prepareVirtualizedDimTableColumns(
           type: "INT",
           label: measure?.label || measure?.expression,
           description: measure?.description,
-          total: referenceValues[measure?.name ?? ""] || 0,
+          total: measureTotals[measure?.name ?? ""] || 0,
           enableResize: false,
           format: measure?.formatPreset,
           highlight,

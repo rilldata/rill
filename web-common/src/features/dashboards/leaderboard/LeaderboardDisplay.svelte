@@ -1,46 +1,16 @@
 <script lang="ts">
   import VirtualizedGrid from "@rilldata/web-common/components/VirtualizedGrid.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { onDestroy, onMount } from "svelte";
-
   import Leaderboard from "./Leaderboard.svelte";
   import LeaderboardControls from "./LeaderboardControls.svelte";
 
   const {
     selectors: {
-      activeMeasure: { activeMeasureName, selectedMeasureNames },
       dimensions: { visibleDimensions },
-      dimensionFilters: { getAllFilters },
-      timeRangeSelectors: { isTimeControlReady, timeControlsState },
     },
     metricsViewName,
-    runtime,
   } = getStateManagers();
-
-  $: totalsQuery = createQueryServiceMetricsViewTotals(
-    $runtime.instanceId,
-    $metricsViewName,
-    {
-      measureNames: $selectedMeasureNames,
-      timeStart: $timeControlsState.timeStart,
-      timeEnd: $timeControlsState.timeEnd,
-      filter: $getAllFilters,
-    },
-    {
-      query: {
-        enabled:
-          $selectedMeasureNames?.length > 0 &&
-          $isTimeControlReady &&
-          !!$getAllFilters,
-      },
-    }
-  );
-
-  let referenceValue: number;
-  $: if ($totalsQuery?.data?.data) {
-    referenceValue = $totalsQuery.data.data?.[$activeMeasureName];
-  }
 
   /** Functionality for resizing the virtual leaderboard */
   let columns = 3;
@@ -89,10 +59,7 @@
         let:item
       >
         <!-- the single virtual element -->
-        <Leaderboard
-          dimensionName={item.name}
-          referenceValue={referenceValue || 0}
-        />
+        <Leaderboard dimensionName={item.name} />
       </VirtualizedGrid>
     {/if}
   </div>
