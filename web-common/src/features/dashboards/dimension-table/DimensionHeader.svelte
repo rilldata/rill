@@ -139,7 +139,7 @@
 
     <ExportDimensionTableDataButton
       {metricViewName}
-      includeScheduledReport={$featureFlags.admin}
+      includeScheduledReport={$featureFlags.adminServer}
     />
   </div>
 </div>

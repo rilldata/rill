@@ -28,7 +28,7 @@
     initMetrics(config);
 
     featureFlags.set({
-      admin: false,
+      adminServer: false,
       readOnly: config.readonly,
     });
 
