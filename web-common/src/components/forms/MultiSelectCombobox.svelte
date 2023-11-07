@@ -1,10 +1,10 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
+  import { WithTogglableFloatingElement } from "../floating-element";
+  import Check from "../icons/Check.svelte";
   import InfoCircle from "../icons/InfoCircle.svelte";
-  import Menu from "../menu-v2/Menu.svelte";
-  import MenuButton from "../menu-v2/MenuButton.svelte";
-  import MenuItem from "../menu-v2/MenuItem.svelte";
-  import MenuItems from "../menu-v2/MenuItems.svelte";
+  import Spacer from "../icons/Spacer.svelte";
+  import { Menu, MenuItem } from "../menu";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
@@ -16,13 +16,10 @@
   export let selectedValues: string[] = [];
   export let hint = "";
 
-  let selectedValue = "";
-  let showPopover = false;
+  let inputValue = "";
 
-  $: filteredOptions = options.filter(
-    (option) =>
-      !selectedValues.includes(option) &&
-      option.toLowerCase().includes(selectedValue.toLowerCase())
+  $: filteredOptions = options.filter((option) =>
+    option.toLowerCase().includes(inputValue.toLowerCase())
   );
 
   function toggleOption(option: string) {
@@ -35,7 +32,6 @@
         ...selectedValues.slice(index + 1),
       ];
     }
-    showPopover = false;
   }
 </script>
 
@@ -55,30 +51,61 @@
       </Tooltip>
     {/if}
   </div>
-  <Menu>
-    <MenuButton className="w-full">
-      <input
-        {id}
-        name={id}
-        {placeholder}
-        type="text"
-        class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {error &&
-          'border-red-500'}"
-        value={selectedValue}
-        on:input={(e) => {
-          selectedValue = e.target.value;
-          showPopover = true;
-        }}
-      />
-    </MenuButton>
-    <MenuItems>
-      {#each filteredOptions as option}
-        <MenuItem on:click={() => toggleOption(option)}>
-          {option}
-        </MenuItem>
-      {/each}
-    </MenuItems>
-  </Menu>
+  <WithTogglableFloatingElement
+    let:active
+    let:handleClose
+    let:toggleFloatingElement
+    distance={8}
+    alignment="start"
+  >
+    <input
+      {id}
+      name={id}
+      {placeholder}
+      type="text"
+      class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {error &&
+        'border-red-500'}"
+      value={inputValue}
+      on:input={(e) => {
+        inputValue = e.target.value;
+        if (!active) toggleFloatingElement();
+      }}
+    />
+    <Menu
+      slot="floating-element"
+      minWidth="400px"
+      focusOnMount={false}
+      on:click-outside={() => {
+        if (active) handleClose();
+      }}
+      on:escape={handleClose}
+      maxHeight="120px"
+    >
+      {#if filteredOptions.length > 0}
+        {#each filteredOptions as option}
+          <MenuItem
+            icon
+            focusOnMount={false}
+            animateSelect={false}
+            on:select={() => {
+              toggleOption(option);
+            }}
+          >
+            <svelte:fragment slot="icon">
+              {#if selectedValues.includes(option)}
+                <Check size="20px" color="#15141A" />
+              {:else}
+                <Spacer size="20px" />
+              {/if}
+            </svelte:fragment>
+            {option}
+          </MenuItem>
+        {/each}
+      {:else}
+        <MenuItem focusOnMount={false} disabled>No options</MenuItem>
+      {/if}
+    </Menu>
+  </WithTogglableFloatingElement>
   {#if error}
     <div in:slide|local={{ duration: 200 }} class="text-red-500 text-sm py-px">
       {error}
