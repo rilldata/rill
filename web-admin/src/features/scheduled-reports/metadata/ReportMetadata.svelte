@@ -10,7 +10,7 @@
     createAdminServiceDeleteReport,
     createAdminServiceListProjectMembers,
   } from "../../../client";
-  import { useReport } from "../selectors";
+  import { useReport, useReportDashboardName } from "../selectors";
   import MetadataLabel from "./MetadataLabel.svelte";
   import MetadataValue from "./MetadataValue.svelte";
   import { exportFormatToPrettyString } from "./utils";
@@ -22,12 +22,8 @@
   $: reportQuery = useReport($runtime.instanceId, report);
 
   // Get dashboard
-  $: metricsViewName =
-    ($reportQuery.data &&
-      JSON.parse($reportQuery.data.resource.report.spec.queryArgsJson)
-        ?.metrics_view_name) ??
-    "";
-  $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
+  $: dashboardName = useReportDashboardName($runtime.instanceId, report);
+  $: dashboard = useDashboard($runtime.instanceId, $dashboardName.data);
   $: dashboardTitle = $dashboard.data?.metricsView.spec.title;
 
   // Get human-readable frequency
@@ -97,7 +93,9 @@
         <!-- Dashboard -->
         <MetadataLabel>Dashboard</MetadataLabel>
         <MetadataValue>
-          {dashboardTitle}
+          <a href={`/${organization}/${project}/${$dashboardName.data}`}
+            >{dashboardTitle}</a
+          >
         </MetadataValue>
         <!-- Creator -->
         <MetadataLabel>Creator</MetadataLabel>
