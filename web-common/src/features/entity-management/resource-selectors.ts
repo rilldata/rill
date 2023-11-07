@@ -4,11 +4,13 @@ import {
   createRuntimeServiceListResources,
   V1ListResourcesResponse,
   V1ModelV2,
+  V1OLAPGetTableResponse,
   V1ReconcileStatus,
   V1Resource,
   V1SourceV2,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
+import { derived, Readable } from "svelte/store";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
@@ -93,7 +95,8 @@ export function useAllNames(instanceId: string) {
 
 export function useSchemaForTable(
   instanceId: string,
-  tableSpec: V1ModelV2 | V1SourceV2
+  tableSpec: V1ModelV2 | V1SourceV2,
+  queryClient?: QueryClient
 ) {
   return createConnectorServiceOLAPGetTable(
     {
@@ -104,9 +107,27 @@ export function useSchemaForTable(
     {
       query: {
         enabled: !!tableSpec?.state?.table && !!tableSpec?.state?.connector,
+        queryClient,
       },
     }
   );
+}
+
+export function createSchemaForTable(
+  instanceId: string,
+  resourceName: string,
+  resourceKind: ResourceKind,
+  queryClient?: QueryClient
+) {
+  return derived(
+    useResource(instanceId, resourceName, resourceKind, undefined, queryClient),
+    (res, set) =>
+      useSchemaForTable(
+        instanceId,
+        res.data?.source ?? res.data?.model,
+        queryClient
+      ).subscribe(set)
+  ) as ReturnType<typeof useSchemaForTable>;
 }
 
 export function resourceIsLoading(resource: V1Resource) {
