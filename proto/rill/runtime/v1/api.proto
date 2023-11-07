@@ -250,6 +250,7 @@ message Instance {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   string olap_connector = 2;
   string repo_connector = 4;
+  string admin_connector = 19;
   google.protobuf.Timestamp created_on = 11;
   google.protobuf.Timestamp updated_on = 12;
   repeated Connector connectors = 10;
@@ -304,6 +305,7 @@ message CreateInstanceRequest {
   }];
   string olap_connector = 2;
   string repo_connector = 4;
+  string admin_connector = 15;
   repeated Connector connectors = 10;
   map<string, string> variables = 7;
   map<string, string> annotations = 9;
@@ -334,6 +336,7 @@ message EditInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
   optional string olap_connector = 2;
   optional string repo_connector = 4;
+  optional string admin_connector = 16;
   repeated Connector connectors = 9;
   map<string, string> variables = 15;
   map<string, string> annotations = 10;

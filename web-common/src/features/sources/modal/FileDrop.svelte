@@ -1,9 +1,12 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
+  import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
@@ -12,6 +15,8 @@
   import { uploadTableFiles } from "./file-upload";
 
   export let showDropOverlay: boolean;
+
+  const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtime.instanceId;
   $: sourceNames = useSourceFileNames(runtimeInstanceId);
@@ -48,12 +53,14 @@
           "local_file"
         );
         await createSource(runtimeInstanceId, tableName, yaml);
+        checkSourceImported(
+          queryClient,
+          tableName,
+          getFilePathFromNameAndType(tableName, EntityType.Table)
+        );
       } catch (err) {
         console.error(err);
       }
-
-      // Navigate to source page
-      goto(`/source/${tableName}`);
     }
   };
 </script>

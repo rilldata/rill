@@ -13,7 +13,7 @@ A container GraphicContext for the time series in a metrics dashboard.
 </script>
 
 <div
-  class="grid w-max"
+  class="grid w-max pr-2"
   style:grid-template-columns="{MEASURE_CONFIG.bigNumber.widthWithChart}px
   max-content"
 >

@@ -222,6 +222,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
   timeStart?: string;
   timeEnd?: string;
   filter?: V1MetricsViewFilter;
@@ -331,6 +332,7 @@ See message Instance for field descriptions.
 export type RuntimeServiceEditInstanceBody = {
   olapConnector?: string;
   repoConnector?: string;
+  adminConnector?: string;
   connectors?: V1Connector[];
   variables?: RuntimeServiceEditInstanceBodyVariables;
   annotations?: RuntimeServiceEditInstanceBodyAnnotations;
@@ -475,6 +477,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -485,11 +493,6 @@ export interface V1TimeRangeSummary {
   min?: string;
   max?: string;
   interval?: TimeRangeSummaryInterval;
-}
-
-export interface V1TimeRange {
-  start?: string;
-  end?: string;
 }
 
 export type V1TimeGrain = (typeof V1TimeGrain)[keyof typeof V1TimeGrain];
@@ -508,10 +511,13 @@ export const V1TimeGrain = {
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
 
-export interface V1TimeSeriesTimeRange {
+export interface V1TimeRange {
   start?: string;
   end?: string;
-  interval?: V1TimeGrain;
+  isoDuration?: string;
+  isoOffset?: string;
+  roundToGrain?: V1TimeGrain;
+  timeZone?: string;
 }
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
@@ -680,25 +686,14 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-}
-
 export interface V1ReportState {
   nextRunOn?: string;
   currentExecution?: V1ReportExecution;
   executionHistory?: V1ReportExecution[];
   executionCount?: number;
 }
+
+export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
   trigger?: boolean;
@@ -707,13 +702,10 @@ export interface V1ReportSpec {
   timeoutSeconds?: number;
   queryName?: string;
   queryArgsJson?: string;
-  queryTimeRange?: string;
   exportLimit?: string;
   exportFormat?: V1ExportFormat;
   emailRecipients?: string[];
-  emailOpenUrl?: string;
-  emailEditUrl?: string;
-  emailExportUrl?: string;
+  annotations?: V1ReportSpecAnnotations;
 }
 
 export interface V1ReportExecution {
@@ -727,6 +719,19 @@ export interface V1ReportExecution {
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
 }
 
 export interface V1RenameFileResponse {
@@ -1153,6 +1158,8 @@ export interface V1MetricsViewSpec {
   firstDayOfWeek?: number;
   /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
   firstMonthOfYear?: number;
+  defaultComparisonMode?: MetricsViewSpecComparisonMode;
+  defaultComparisonDimension?: string;
 }
 
 export interface V1MetricsViewState {
@@ -1281,6 +1288,7 @@ export interface V1MetricsViewAggregationRequest {
   dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
   timeStart?: string;
   timeEnd?: string;
   filter?: V1MetricsViewFilter;
@@ -1377,6 +1385,7 @@ export interface V1Instance {
   instanceId?: string;
   olapConnector?: string;
   repoConnector?: string;
+  adminConnector?: string;
   createdOn?: string;
   updatedOn?: string;
   connectors?: V1Connector[];
@@ -1535,6 +1544,7 @@ export interface V1CreateInstanceRequest {
   instanceId?: string;
   olapConnector?: string;
   repoConnector?: string;
+  adminConnector?: string;
   connectors?: V1Connector[];
   variables?: V1CreateInstanceRequestVariables;
   annotations?: V1CreateInstanceRequestAnnotations;
@@ -1857,7 +1867,19 @@ export interface MetricsViewSpecDimensionV2 {
   column?: string;
   label?: string;
   description?: string;
+  unnest?: boolean;
 }
+
+export type MetricsViewSpecComparisonMode =
+  (typeof MetricsViewSpecComparisonMode)[keyof typeof MetricsViewSpecComparisonMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MetricsViewSpecComparisonMode = {
+  COMPARISON_MODE_UNSPECIFIED: "COMPARISON_MODE_UNSPECIFIED",
+  COMPARISON_MODE_NONE: "COMPARISON_MODE_NONE",
+  COMPARISON_MODE_TIME: "COMPARISON_MODE_TIME",
+  COMPARISON_MODE_DIMENSION: "COMPARISON_MODE_DIMENSION",
+} as const;
 
 export interface MetricsViewSecurity {
   access?: string;

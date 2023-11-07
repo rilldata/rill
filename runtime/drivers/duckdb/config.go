@@ -9,7 +9,11 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-const cpuThreadRatio float64 = 0.5
+const (
+	cpuThreadRatio float64 = 0.5
+	poolSizeMin    int     = 2
+	poolSizeMax    int     = 5
+)
 
 // config represents the DuckDB driver config
 type config struct {
@@ -23,14 +27,18 @@ type config struct {
 	ErrorOnIncompatibleVersion bool `mapstructure:"error_on_incompatible_version"`
 	// ExtTableStorage controls if every table is stored in a different db file
 	ExtTableStorage bool `mapstructure:"external_table_storage"`
-	// MemoryLimitGB is duckdb max_memory config
-	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
-	// CPU is the limit on cpu which determines number of threads based on cpuThreadRatio constant
+	// CPU cores available for the DB
 	CPU int `mapstructure:"cpu"`
-	// DisableThreadLimit disables any thread limit on duckdb
-	DisableThreadLimit bool `mapstructure:"disable_thread_limit"`
-	// StorageLimitBytes is the maximum size of all database files
+	// MemoryLimitGB is the amount of memory available for the DB
+	MemoryLimitGB int `mapstructure:"memory_limit_gb"`
+	// StorageLimitBytes is the amount of disk storage available for the DB
 	StorageLimitBytes int64 `mapstructure:"storage_limit_bytes"`
+	// MaxMemoryOverride sets a hard override for the "max_memory" DuckDB setting
+	MaxMemoryGBOverride int `mapstructure:"max_memory_gb_override"`
+	// ThreadsOverride sets a hard override for the "threads" DuckDB setting. Set to -1 for unlimited threads.
+	ThreadsOverride int `mapstructure:"threads_override"`
+	// BootQueries is queries to run on boot. Use ; to separate multiple queries. Common use case is to provide project specific memory and threads ratios.
+	BootQueries string `mapstructure:"boot_queries"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
 	DBFilePath string `mapstructure:"-"`
 	// ExtStoragePath is the path where the database files are stored in case external_table_storage is true. It is inferred from the DSN (can't be provided by user).
@@ -38,10 +46,7 @@ type config struct {
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
-	cfg := &config{
-		PoolSize:           2, // Default value
-		DisableThreadLimit: false,
-	}
+	cfg := &config{}
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode config: %w", err)
@@ -63,38 +68,57 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		cfg.ExtStoragePath = filepath.Dir(cfg.DBFilePath)
 	}
 
-	// We also support overriding the pool size via the DSN by setting "rill_pool_size" as a query argument.
-	if qry.Has("rill_pool_size") {
-		// Parse as integer
-		cfg.PoolSize, err = strconv.Atoi(qry.Get("rill_pool_size"))
-		if err != nil {
-			return nil, fmt.Errorf("could not parse dsn: 'rill_pool_size' is not an integer")
-		}
+	// Set memory limit
+	maxMemory := cfg.MemoryLimitGB
+	if cfg.MaxMemoryGBOverride != 0 {
+		maxMemory = cfg.MaxMemoryGBOverride
+	}
+	if maxMemory > 0 {
+		qry.Add("max_memory", fmt.Sprintf("%dGB", maxMemory))
+	}
 
-		// Remove from query string (so not passed into DuckDB config)
-		qry.Del("rill_pool_size")
-	}
-	if cfg.MemoryLimitGB > 0 {
-		qry.Add("max_memory", fmt.Sprintf("%dGB", cfg.MemoryLimitGB))
-	}
-	if cfg.CPU > 0 {
-		threads := int(cpuThreadRatio * float64(cfg.CPU))
+	// Set threads limit
+	var threads int
+	if cfg.ThreadsOverride != 0 {
+		threads = cfg.ThreadsOverride
+	} else if cfg.CPU > 0 {
+		threads = int(cpuThreadRatio * float64(cfg.CPU))
 		if threads <= 0 {
 			threads = 1
 		}
-		if !cfg.DisableThreadLimit {
-			qry.Add("threads", strconv.Itoa(threads))
-		}
-		cfg.PoolSize = max(2, min(cfg.CPU, threads))
 	}
+	if threads > 0 { // NOTE: threads=0 or threads=-1 means no limit
+		qry.Add("threads", strconv.Itoa(threads))
+	}
+
+	// Set pool size
+	poolSize := cfg.PoolSize
+	if qry.Has("rill_pool_size") {
+		// For backwards compatibility, we also support overriding the pool size via the DSN when "rill_pool_size" is a query argument.
+
+		// Remove from query string (so not passed into DuckDB config)
+		val := qry.Get("rill_pool_size")
+		qry.Del("rill_pool_size")
+
+		// Parse as integer
+		poolSize, err = strconv.Atoi(val)
+		if err != nil {
+			return nil, fmt.Errorf("could not parse dsn: 'rill_pool_size' is not an integer")
+		}
+	}
+	if poolSize == 0 && threads != 0 {
+		poolSize = threads
+		if cfg.CPU != 0 && cfg.CPU < poolSize {
+			poolSize = cfg.CPU
+		}
+		poolSize = min(poolSizeMax, poolSize) // Only enforce max pool size when inferred from threads/CPU
+	}
+	poolSize = max(poolSizeMin, poolSize) // Always enforce min pool size
+	cfg.PoolSize = poolSize
 
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
 	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
 	cfg.DSN = generateDSN(uri.Path, qry.Encode())
-	// Check pool size
-	if cfg.PoolSize < 2 {
-		return nil, fmt.Errorf("duckdb pool size must be >= 1")
-	}
 
 	return cfg, nil
 }

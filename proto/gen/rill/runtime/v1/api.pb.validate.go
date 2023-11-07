@@ -301,6 +301,8 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for RepoConnector
 
+	// no validation rules for AdminConnector
+
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
@@ -1158,6 +1160,8 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	// no validation rules for RepoConnector
 
+	// no validation rules for AdminConnector
+
 	for idx, item := range m.GetConnectors() {
 		_, _ = idx, item
 
@@ -1715,6 +1719,10 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	if m.RepoConnector != nil {
 		// no validation rules for RepoConnector
+	}
+
+	if m.AdminConnector != nil {
+		// no validation rules for AdminConnector
 	}
 
 	if m.EmbedCatalog != nil {

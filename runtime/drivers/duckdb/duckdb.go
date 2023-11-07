@@ -263,7 +263,6 @@ type connection struct {
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
 	driverName   string
-	instanceID   string // populated after call to AsOLAP
 	// config is parsed configs
 	config   *config
 	logger   *zap.Logger
@@ -314,6 +313,8 @@ func (c *connection) Config() map[string]any {
 func (c *connection) Close() error {
 	c.cancel()
 	_ = c.registration.Unregister()
+	// detach all attached DBs otherwise duckdb leaks memory
+	c.detachAllDBs()
 	return c.db.Close()
 }
 
@@ -336,18 +337,17 @@ func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
 	return nil, false
 }
 
+// AsAdmin implements drivers.Handle.
+func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
+	return nil, false
+}
+
 // AsOLAP OLAP implements drivers.Connection.
 func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	if c.shared {
 		// duckdb olap is instance specific
 		return nil, false
 	}
-	// TODO Add this back once every call passes instanceID correctly.
-	// Example incorrect usage : runtime/services/catalog/migrator/sources/sources.go
-	// if c.instanceID != "" && c.instanceID != instanceID {
-	// 	return nil, false
-	// }
-	c.instanceID = instanceID
 	return c, true
 }
 
@@ -364,7 +364,7 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	olap, _ := to.AsOLAP(c.instanceID) // if c == to, connection is instance specific
+	olap, _ := to.(*connection)
 	if c == to {
 		if from == to {
 			return transporter.NewDuckDBToDuckDB(olap, c.logger), true
@@ -393,6 +393,8 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 func (c *connection) reopenDB() error {
 	// If c.db is already open, close it first
 	if c.db != nil {
+		// detach all attached DBs otherwise duckdb leaks memory
+		c.detachAllDBs()
 		err := c.db.Close()
 		if err != nil {
 			return err
@@ -420,6 +422,10 @@ func (c *connection) reopenDB() error {
 	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
 	if !c.config.AllowHostAccess {
 		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
+	}
+
+	if c.config.BootQueries != "" {
+		bootQueries = append(bootQueries, c.config.BootQueries)
 	}
 
 	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
@@ -466,6 +472,8 @@ func (c *connection) reopenDB() error {
 		return err
 	}
 	defer conn.Close()
+
+	c.logLimits(conn)
 
 	// List the directories directly in the external storage directory
 	// Load the version.txt from each sub-directory
@@ -752,6 +760,48 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 			return
 		}
 	}
+}
+
+// detachAllDBs detaches all attached dbs if external_table_storage config is true
+func (c *connection) detachAllDBs() {
+	if !c.config.ExtTableStorage {
+		return
+	}
+	entries, err := os.ReadDir(c.config.ExtStoragePath)
+	if err != nil {
+		c.logger.Error("unable to read ExtStoragePath", zap.String("path", c.config.ExtStoragePath), zap.Error(err))
+		return
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		version, exist, err := c.tableVersion(entry.Name())
+		if err != nil {
+			continue
+		}
+		if !exist {
+			continue
+		}
+
+		db := dbName(entry.Name(), version)
+		_, err = c.db.ExecContext(context.Background(), fmt.Sprintf("DETACH %s", safeSQLName(db)))
+		if err != nil {
+			c.logger.Error("detach failed", zap.String("db", db), zap.Error(err))
+		}
+	}
+}
+
+func (c *connection) logLimits(conn *sqlx.Conn) {
+	row := conn.QueryRowContext(context.Background(), "SELECT value FROM duckdb_settings() WHERE name='max_memory'")
+	var memory string
+	_ = row.Scan(&memory)
+
+	row = conn.QueryRowContext(context.Background(), "SELECT value FROM duckdb_settings() WHERE name='threads'")
+	var threads string
+	_ = row.Scan(&threads)
+
+	c.logger.Info("duckdb limits", zap.String("memory", memory), zap.String("threads", threads))
 }
 
 // Regex to parse human-readable size returned by DuckDB
