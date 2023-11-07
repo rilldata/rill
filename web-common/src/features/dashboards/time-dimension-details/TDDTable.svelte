@@ -11,7 +11,9 @@
     ExcludeIcon,
     MeasureArrow,
     PieChart,
-    PinIcon,
+    PinSetIcon,
+    PinSetHoverIcon,
+    PinHoverUnsetIcon,
     PinUnsetIcon,
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDIcons";
   import type { TableData, TablePosition, TDDComparison } from "./types";
@@ -123,9 +125,11 @@
       noSelectionMarkerCount = 0;
 
       if (comparing === "dimension") {
+        const isHovering = document.querySelector(".pin")?.matches(":hover");
         if (tableData?.selectedValues.length === 0) return ``;
-        if (pinIndex === tableData?.selectedValues.length - 1) return PinIcon;
-        else return PinUnsetIcon;
+        if (pinIndex === tableData?.selectedValues.length - 1)
+          return isHovering ? PinHoverUnsetIcon : PinSetIcon;
+        else return isHovering ? PinSetHoverIcon : PinUnsetIcon;
       }
       return ``;
     }
