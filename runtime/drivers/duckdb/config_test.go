@@ -64,9 +64,6 @@ func TestConfig(t *testing.T) {
 	_, err = newConfig(map[string]any{"dsn": "path/to/duck.db?max_memory=4GB", "pool_size": "abc"})
 	require.Error(t, err)
 
-	_, err = newConfig(map[string]any{"dsn": "path/to/duck.db?max_memory=4GB", "pool_size": 0})
-	require.Error(t, err)
-
 	cfg, err = newConfig(map[string]any{"dsn": "duck.db"})
 	require.NoError(t, err)
 	require.Equal(t, "duck.db", cfg.DBFilePath)
@@ -108,4 +105,21 @@ func Test_specialCharInPath(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, res.Close())
 	require.NoError(t, conn.Close())
+}
+
+func TestOverrides(t *testing.T) {
+	cfgMap := map[string]any{"dsn": "duck.db", "memory_limit_gb": "4", "cpu": "2", "max_memory_gb_override": "2", "threads_override": "10"}
+	handle, err := Driver{}.Open(cfgMap, false, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+
+	olap, ok := handle.AsOLAP("")
+	require.True(t, ok)
+
+	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT value FROM duckdb_settings() WHERE name='max_memory'"})
+	require.NoError(t, err)
+	require.True(t, res.Next())
+	var mem string
+	require.NoError(t, res.Scan(&mem))
+
+	require.Equal(t, "2.0GB", mem)
 }

@@ -424,6 +424,10 @@ func (c *connection) reopenDB() error {
 		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
 	}
 
+	if c.config.BootQueries != "" {
+		bootQueries = append(bootQueries, c.config.BootQueries)
+	}
+
 	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
 	// So we use go-duckdb's custom connector to pass a callback that it invokes for each new connection.
 	connector, err := duckdb.NewConnector(c.config.DSN, func(execer driver.ExecerContext) error {
@@ -468,6 +472,8 @@ func (c *connection) reopenDB() error {
 		return err
 	}
 	defer conn.Close()
+
+	c.logLimits(conn)
 
 	// List the directories directly in the external storage directory
 	// Load the version.txt from each sub-directory
@@ -784,6 +790,18 @@ func (c *connection) detachAllDBs() {
 			c.logger.Error("detach failed", zap.String("db", db), zap.Error(err))
 		}
 	}
+}
+
+func (c *connection) logLimits(conn *sqlx.Conn) {
+	row := conn.QueryRowContext(context.Background(), "SELECT value FROM duckdb_settings() WHERE name='max_memory'")
+	var memory string
+	_ = row.Scan(&memory)
+
+	row = conn.QueryRowContext(context.Background(), "SELECT value FROM duckdb_settings() WHERE name='threads'")
+	var threads string
+	_ = row.Scan(&threads)
+
+	c.logger.Info("duckdb limits", zap.String("memory", memory), zap.String("threads", threads))
 }
 
 // Regex to parse human-readable size returned by DuckDB

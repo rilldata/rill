@@ -149,6 +149,7 @@
     {dimensionLabel}
     {measureLabel}
     sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
+    sortType={$dashboardStore.dashboardSortType}
     comparing={$timeDimensionDataStore?.comparing}
     {timeFormatter}
     tableData={formattedData}
@@ -160,9 +161,12 @@
     }}
     on:toggle-pin={togglePin}
     on:toggle-filter={toggleFilter}
-    on:toggle-sort={() => {
+    on:toggle-sort={(e) => {
       cancelDashboardQueries(queryClient, metricViewName);
-      metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE);
+      metricsExplorerStore.toggleSort(
+        metricViewName,
+        e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE
+      );
     }}
     on:highlight={highlightCell}
   />
