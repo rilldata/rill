@@ -123,8 +123,16 @@
     cancelDashboardQueries(queryClient, metricViewName);
 
     const pinIndex = $dashboardStore?.pinIndex;
-    const newPinIndex =
-      pinIndex === -1 ? formattedData?.selectedValues?.length - 1 : -1;
+    let newPinIndex = -1;
+
+    // Pin if some selected items are not pinned yet
+    if (pinIndex > -1 && pinIndex < formattedData?.selectedValues?.length - 1) {
+      newPinIndex = formattedData?.selectedValues?.length - 1;
+    }
+    // Pin if no items are pinned yet
+    else if (pinIndex === -1) {
+      newPinIndex = formattedData?.selectedValues?.length - 1;
+    }
     metricsExplorerStore.setPinIndex(metricViewName, newPinIndex);
   }
 </script>
