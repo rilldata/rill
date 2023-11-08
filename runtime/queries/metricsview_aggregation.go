@@ -204,7 +204,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	whereClause := ""
 	if mv.TimeDimension != "" {
 		timeCol := safeName(mv.TimeDimension)
-		clause, err := timeRangeClause(q.TimeRange, dialect, timeCol, &args)
+		clause, err := timeRangeClause(q.TimeRange, mv, dialect, timeCol, &args)
 		if err != nil {
 			return "", nil, err
 		}

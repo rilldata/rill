@@ -162,7 +162,8 @@ export function waitForResourceUpdate(
 export function getResourceStatusStore(
   queryClient: QueryClient,
   instanceId: string,
-  filePath: string
+  filePath: string,
+  validator?: (res: V1Resource) => boolean
 ): Readable<ResourceStatusState> {
   return derived(
     [
@@ -189,10 +190,15 @@ export function getResourceStatusStore(
         };
       }
 
-      const isBusy =
-        resourceResp.isFetching ||
-        resourceResp.data?.meta?.reconcileStatus !==
-          V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+      let isBusy: boolean;
+      if (validator && resourceResp.data) {
+        isBusy = !validator(resourceResp.data);
+      } else {
+        isBusy =
+          resourceResp.isFetching ||
+          resourceResp.data?.meta?.reconcileStatus !==
+            V1ReconcileStatus.RECONCILE_STATUS_IDLE;
+      }
 
       return {
         status: isBusy ? ResourceStatus.Busy : ResourceStatus.Idle,

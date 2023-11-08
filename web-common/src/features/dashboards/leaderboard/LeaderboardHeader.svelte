@@ -10,37 +10,35 @@
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
-  import { createEventDispatcher } from "svelte";
-  import { LeaderboardContextColumn } from "../leaderboard-context-column";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
 
-  export let displayName: string;
+  export let dimensionName: string;
   export let isFetching: boolean;
-  export let dimensionDescription: string;
   export let hovered: boolean;
-  export let isBeingCompared: boolean;
 
   const {
     selectors: {
       contextColumn: {
-        contextColumn,
         widthPx,
         isDeltaAbsolute,
         isDeltaPercent,
         isPercentOfTotal,
         isHidden,
       },
+      dimensions: { getDimensionDisplayName, getDimensionDescription },
       sorting: { sortedAscending, sortType },
+      comparison: { isBeingCompared: isBeingComparedReadable },
+    },
+    actions: {
+      sorting: { toggleSort, toggleSortByActiveContextColumn },
+      dimensions: { setPrimaryDimension },
     },
   } = getStateManagers();
 
-  const dispatch = createEventDispatcher();
-  $: contextColumnSortType = {
-    [LeaderboardContextColumn.DELTA_PERCENT]: SortType.DELTA_PERCENT,
-    [LeaderboardContextColumn.DELTA_ABSOLUTE]: SortType.DELTA_ABSOLUTE,
-    [LeaderboardContextColumn.PERCENT]: SortType.PERCENT,
-  }[$contextColumn];
+  $: isBeingCompared = $isBeingComparedReadable(dimensionName);
+  $: displayName = $getDimensionDisplayName(dimensionName);
+  $: dimensionDescription = $getDimensionDescription(dimensionName);
 
   $: arrowTransform = $sortedAscending ? "scale(1 -1)" : "scale(1 1)";
 </script>
@@ -52,10 +50,7 @@
     {:else if hovered || isBeingCompared}
       <div style="position:relative; height:100%; width:100%; ">
         <div style="position: absolute; ">
-          <DimensionCompareMenu
-            {isBeingCompared}
-            on:toggle-dimension-comparison
-          />
+          <DimensionCompareMenu {dimensionName} />
         </div>
       </div>
     {/if}
@@ -82,7 +77,7 @@
     <div style:width="100%">
       <Tooltip distance={16} location="top">
         <button
-          on:click={() => dispatch("open-dimension-details")}
+          on:click={() => setPrimaryDimension(dimensionName)}
           class="pl-2 truncate flex justify-start"
           style="max-width: calc(315px - 60px);"
           style:width="100%"
@@ -115,7 +110,7 @@
 
     <div class="shrink flex flex-row items-center gap-x-4">
       <button
-        on:click={() => dispatch("toggle-sort", SortType.VALUE)}
+        on:click={() => toggleSort(SortType.VALUE)}
         class="shrink flex flex-row items-center justify-end min-w-[40px]"
         aria-label="Toggle sort leaderboards by value"
       >
@@ -126,7 +121,7 @@
 
       {#if !$isHidden}
         <button
-          on:click={() => dispatch("toggle-sort", contextColumnSortType)}
+          on:click={toggleSortByActiveContextColumn}
           class="shrink flex flex-row items-center justify-end"
           aria-label="Toggle sort leaderboards by context column"
           style:width={$widthPx}
