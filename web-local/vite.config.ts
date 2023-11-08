@@ -17,7 +17,7 @@ const config = defineConfig(({ mode }) => ({
     rollupOptions: {
       // This ensures that the web-admin package is not bundled into the web-local package.
       // This is necessary because the Scheduled Reports dialog lives in `web-common` and imports the admin-client.
-      external: ["@rilldata/web-admin/client"],
+      external: (id) => id.startsWith("@rilldata/web-admin/"),
     },
   },
   resolve: {
