@@ -19,7 +19,7 @@
 
 {#if $proj.data}
   <div class="flex flex-col gap-y-1">
-    <span class="uppercase text-gray-500 font-semibold text-[10px] leading-4"
+    <span class="uppercase text-gray-500 font-semibold text-[10px] leading-none"
       >Github</span
     >
     {#if isGithubConnected}
