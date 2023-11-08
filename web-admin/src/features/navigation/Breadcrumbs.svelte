@@ -14,14 +14,21 @@
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
   import { useDashboards } from "../dashboards/listing/dashboards";
+  import { useReports } from "../scheduled-reports/selectors";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
-  import { isProjectPage } from "./nav-utils";
+  import {
+    isDashboardPage,
+    isOrganizationPage,
+    isProjectPage,
+    isReportPage,
+  } from "./nav-utils";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
   $: instanceId = $runtime?.instanceId;
 
+  // Org breadcrumb
   $: orgName = $page.params.organization;
   $: organization = createAdminServiceGetOrganization(orgName);
   $: organizations = createAdminServiceListOrganizations(undefined, {
@@ -29,8 +36,9 @@
       enabled: !!$user.data?.user,
     },
   });
-  $: isOrganizationPage = $page.route.id === "/[organization]";
+  $: onOrganizationPage = isOrganizationPage($page);
 
+  // Project breadcrumb
   $: projectName = $page.params.project;
   $: project = createAdminServiceGetProject(orgName, projectName);
   $: projects = createAdminServiceListProjectsForOrganization(
@@ -44,6 +52,7 @@
   );
   $: onProjectPage = isProjectPage($page);
 
+  // Dashboard breadcrumb
   $: dashboards = useDashboards(instanceId);
   let currentResource: V1Resource;
   $: currentResource = $dashboards?.data?.find(
@@ -52,8 +61,12 @@
   $: currentDashboardName = currentResource?.meta?.name?.name;
   let currentDashboard: V1MetricsViewSpec;
   $: currentDashboard = currentResource?.metricsView?.state?.validSpec;
-  $: isDashboardPage =
-    $page.route.id === "/[organization]/[project]/[dashboard]";
+  $: onDashboardPage = isDashboardPage($page);
+
+  // Report breadcrumb
+  $: reportName = $page.params.report;
+  $: reports = useReports(instanceId);
+  $: onReportPage = isReportPage($page);
 </script>
 
 <nav>
@@ -69,7 +82,7 @@
           }))}
         menuKey={orgName}
         onSelectMenuOption={(organization) => goto(`/${organization}`)}
-        isCurrentPage={isOrganizationPage}
+        isCurrentPage={onOrganizationPage}
       >
         <OrganizationAvatar organization={orgName} slot="icon" />
       </BreadcrumbItem>
@@ -78,7 +91,9 @@
       <span class="text-gray-600">/</span>
       <BreadcrumbItem
         label={projectName}
-        href={`/${orgName}/${projectName}`}
+        href={onReportPage
+          ? `/${orgName}/${projectName}/-/reports`
+          : `/${orgName}/${projectName}`}
         menuOptions={$projects.data?.projects?.length > 1 &&
           $projects.data.projects.map((proj) => ({
             key: proj.name,
@@ -106,7 +121,22 @@
         menuKey={currentDashboardName}
         onSelectMenuOption={(dashboard) =>
           goto(`/${orgName}/${projectName}/${dashboard}`)}
-        isCurrentPage={isDashboardPage}
+        isCurrentPage={onDashboardPage}
+      />
+    {/if}
+    {#if reportName}
+      <span class="text-gray-600">/</span>
+      <BreadcrumbItem
+        label={reportName}
+        href={`/${orgName}/${projectName}/-/reports/${reportName}`}
+        menuOptions={$reports.data?.resources.map((resource) => ({
+          key: resource.meta.name.name,
+          main: resource.report.spec.title || resource.meta.name.name,
+        }))}
+        menuKey={reportName}
+        onSelectMenuOption={(report) =>
+          goto(`/${orgName}/${projectName}/-/reports/${report}`)}
+        isCurrentPage={onReportPage}
       />
     {/if}
   </ol>

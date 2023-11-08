@@ -13,6 +13,9 @@
   export let data: unknown[] = [];
   export let columns: ColumnDef<unknown, unknown>[] = [];
   export let columnVisibility: Record<string, boolean> = {};
+  export let maxWidthOverride: string | null = null;
+
+  let maxWidth = maxWidthOverride ?? "max-w-[800px]";
 
   let sorting = [];
   function setSorting(updater) {
@@ -63,7 +66,7 @@
   $: data && rerender();
 </script>
 
-<table class="w-full max-w-[800px]">
+<table class="w-full {maxWidth}">
   <slot name="header" />
   <tbody>
     {#if $table.getRowModel().rows.length === 0}
