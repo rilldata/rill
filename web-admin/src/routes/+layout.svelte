@@ -34,6 +34,7 @@
   });
 
   featureFlags.set({
+    // The admin server enables some dashboard features like scheduled reports and alerts
     adminServer: true,
     // Set read-only mode so that the user can't edit the dashboard
     readOnly: true,
