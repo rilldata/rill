@@ -46,8 +46,9 @@ const (
 const (
 	DefaultInstanceID = "default"
 	DefaultOLAPDriver = "duckdb"
-	DefaultOLAPDSN    = "stage.db"
-	DefaultDBDir      = "rill_db"
+	DefaultOLAPDSN    = "main.db"
+	DefaultMetaStore  = "meta.db"
+	DefaultDBDir      = "tmp"
 )
 
 // App encapsulates the logic associated with configuring and running the UI and the runtime in a local environment.
@@ -94,6 +95,24 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		return nil, err
 	}
 
+	// backward compatibility for old stage.db file
+	embedCatalog := false
+	_, err = os.Stat(filepath.Join(projectPath, "stage.db"))
+	if err == nil { // a old stage.db file exists
+		// rename to main.db and move to db directory
+		err := os.Rename(filepath.Join(projectPath, "stage.db"), filepath.Join(dbDirPath, DefaultOLAPDSN))
+		if err != nil {
+			return nil, err
+		}
+
+		err = os.Rename(filepath.Join(projectPath, "stage.db.wal"), filepath.Join(dbDirPath, fmt.Sprintf("%s.wal", DefaultOLAPDSN)))
+		if err != nil {
+			return nil, err
+		}
+		// catalog is embedded for older flow
+		embedCatalog = true
+	}
+
 	parsedVariables, err := variable.Parse(variables)
 	if err != nil {
 		return nil, err
@@ -104,13 +123,19 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		{
 			Type:   "sqlite",
 			Name:   "metastore",
-			Config: map[string]string{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, "metastore.db"))},
+			Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+		},
+		{
+			Type:   "sqlite",
+			Name:   "catalog",
+			Config: map[string]string{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultMetaStore))},
 		},
 	}
 
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize:          100,
 		MetastoreConnector:           "metastore",
+		CatalogConnector:             "catalog",
 		QueryCacheSizeBytes:          int64(datasize.MB * 100),
 		AllowHostAccess:              true,
 		SystemConnectors:             systemConnectors,
@@ -169,9 +194,10 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 				Config: olapCfg,
 			},
 		},
-		Variables:   parsedVariables,
-		Annotations: map[string]string{},
-		WatchRepo:   true,
+		Variables:    parsedVariables,
+		Annotations:  map[string]string{},
+		WatchRepo:    true,
+		EmbedCatalog: embedCatalog,
 		// ModelMaterializeDelaySeconds:     30, // TODO: Enable when we support skipping it for the initial load
 		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}

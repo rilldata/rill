@@ -484,6 +484,7 @@ func newTestRuntime(t *testing.T) *Runtime {
 	opts := &Options{
 		ConnectionCacheSize:          100,
 		MetastoreConnector:           "metastore",
+		CatalogConnector:             "metastore",
 		QueryCacheSizeBytes:          int64(datasize.MB) * 100,
 		SecurityEngineCacheSize:      100,
 		AllowHostAccess:              true,

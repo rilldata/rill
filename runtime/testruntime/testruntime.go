@@ -44,6 +44,7 @@ type TestingT interface {
 func New(t TestingT) *runtime.Runtime {
 	opts := &runtime.Options{
 		MetastoreConnector: "metastore",
+		CatalogConnector:   "metastore",
 		SystemConnectors: []*runtimev1.Connector{
 			{
 				Type: "sqlite",

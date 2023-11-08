@@ -19,6 +19,7 @@ var tracer = otel.Tracer("github.com/rilldata/rill/runtime")
 
 type Options struct {
 	MetastoreConnector           string
+	CatalogConnector             string
 	SystemConnectors             []*runtimev1.Connector
 	ConnectionCacheSize          int
 	QueryCacheSizeBytes          int64
@@ -35,6 +36,7 @@ type Runtime struct {
 	logger         *zap.Logger
 	activity       activity.Client
 	metastore      drivers.Handle
+	catalog        drivers.Handle
 	registryCache  *registryCache
 	connCache      *connectionCache
 	queryCache     *queryCache
@@ -62,11 +64,16 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac activity.Cli
 		return nil, err
 	}
 	rt.metastore = store
-
 	reg, ok := rt.metastore.AsRegistry()
 	if !ok {
 		return nil, fmt.Errorf("metastore must be a valid registry")
 	}
+
+	catalog, _, err := rt.AcquireSystemHandle(ctx, opts.CatalogConnector)
+	if err != nil {
+		return nil, err
+	}
+	rt.catalog = catalog
 
 	rt.registryCache, err = newRegistryCache(ctx, rt, reg, logger, ac)
 	if err != nil {
@@ -89,7 +96,7 @@ func (r *Runtime) Close() error {
 	defer cancel()
 	err1 := r.registryCache.close(ctx)
 	err2 := r.queryCache.close()
-	err3 := r.connCache.Close() // Also closes metastore // TODO: Propagate ctx cancellation
+	err3 := r.connCache.Close() // Also closes metastore and catalogStore // TODO: Propagate ctx cancellation
 	return errors.Join(err1, err2, err3)
 }
 

@@ -125,7 +125,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 		return store, release, nil
 	}
 
-	store, ok := r.metastore.AsCatalogStore(instanceID)
+	store, ok := r.catalog.AsCatalogStore(instanceID)
 	if !ok {
 		return nil, nil, fmt.Errorf("metastore cannot serve as catalog")
 	}
