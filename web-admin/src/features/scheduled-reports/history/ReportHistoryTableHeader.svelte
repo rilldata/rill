@@ -9,82 +9,22 @@
 
   const table = getContext("table") as Readable<Table<unknown>>;
 
-  // Search
-  let filter = "";
-
-  $: filterTable(filter);
-
-  function filterTable(filter: string) {
-    $table.setGlobalFilter(filter);
-  }
-
   // Number of reports
   $: numReports = $table.getRowModel().rows.length;
-
-  // Sort
-  // function sortAlphabetically() {
-  //   $table.setSorting([{ id: "monocolumn", desc: false }]);
-  // }
-
-  // function sortByMostRecentlyRun() {
-  //   $table.setSorting([{ id: "lastRun", desc: true }]);
-  // }
-
-  // function sortByNextToRun() {
-  //   $table.setSorting([{ id: "monocolumn", desc: false }]);
-  // }
-
-  // let openSortMenu = false;
-  // function closeSortMenu() {
-  //   openSortMenu = false;
-  // }
 </script>
 
 <thead>
   <tr>
-    <!-- TODO: get max-width from a Table context -->
     <td
       class="pl-2 pr-4 py-2 {maxWidth} flex items-center gap-x-2 bg-slate-100"
     >
-      <!-- Search bar -->
-      <!-- <div class="px-2 grow">
-        <Search placeholder="Search" autofocus={false} bind:value={filter} />
-      </div> -->
-
       <!-- Spacer -->
       <div class="grow" />
-
-      <!-- filter menu button (future work) -->
-      <!-- <Button on:click={() => console.log("open filter menu")} type="secondary">
-    <span>Filter</span>
-    <CaretDownIcon />
-  </Button> -->
 
       <!-- Number of runs -->
       <span class="shrink-0"
         >Last {numReports} run{numReports !== 1 ? "s" : ""}</span
       >
-
-      <!-- Sort button -->
-      <!-- <WithTogglableFloatingElement active={openSortMenu}>
-        <Button on:click={() => (openSortMenu = true)} type="secondary">
-          <span>Sort</span>
-          <CaretDownIcon />
-        </Button>
-        <Menu
-          slot="floating-element"
-          minWidth="0px"
-          on:item-select={closeSortMenu}
-          on:click-outside={closeSortMenu}
-          on:escape={closeSortMenu}
-        >
-          <MenuItem on:select={sortAlphabetically}>Alphabetical</MenuItem>
-          <MenuItem on:select={sortByMostRecentlyRun}
-            >Most recently run</MenuItem
-          >
-          <MenuItem on:select={sortByNextToRun} disabled>Next to run</MenuItem>
-        </Menu>
-      </WithTogglableFloatingElement> -->
     </td>
   </tr>
 </thead>
