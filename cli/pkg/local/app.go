@@ -201,15 +201,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		// ModelMaterializeDelaySeconds:     30, // TODO: Enable when we support skipping it for the initial load
 		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}
-	_, err = rt.Instance(ctx, DefaultInstanceID)
-	if err != nil {
-		if !errors.Is(err, drivers.ErrNotFound) {
-			return nil, err
-		}
-		err = rt.CreateInstance(ctx, inst)
-	} else {
-		err = rt.EditInstance(ctx, inst, true)
-	}
+	err = rt.CreateInstance(ctx, inst)
 	if err != nil {
 		return nil, err
 	}
