@@ -95,7 +95,17 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 	case drivers.DialectDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
 			filename := q.TableName
-			sql := fmt.Sprintf("SELECT * FROM %s LIMIT %d", safeName(q.TableName), q.Limit)
+
+			limitClause := ""
+			if q.Limit > 0 {
+				limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
+			}
+
+			sql := fmt.Sprintf(
+				`SELECT * FROM %s%s`,
+				safeName(q.TableName),
+				limitClause,
+			)
 			args := []interface{}{}
 			if err := duckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
 				return err
