@@ -1,7 +1,6 @@
 <script lang="ts">
   import { MenuItem } from "@rgossiaux/svelte-headlessui";
 
-  export let as: "a" | "button" = "a";
   export let disabled = false;
 
   function classNames(...classes: (string | false | null | undefined)[]) {
@@ -23,6 +22,6 @@
   }
 </script>
 
-<MenuItem {as} {disabled} on:click class={resolveClass}>
+<MenuItem {disabled} on:click class={resolveClass}>
   <slot />
 </MenuItem>
