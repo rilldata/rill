@@ -102,7 +102,10 @@ export interface MetricsExplorerEntity {
   selectedTimezone?: string;
 
   /**
-   * Search text state for dimension tables
+   * Search text state for dimension tables. This search text state
+   * is shared by both the dimension detail table AND the time
+   * detailed dimension table, so that the same filter will be
+   * applied when switching between those views.
    */
   dimensionSearchText?: string;
 
@@ -120,7 +123,9 @@ export interface MetricsExplorerEntity {
   leaderboardContextColumn: LeaderboardContextColumn;
 
   /**
-   * User selected dimension. Null if no dimension is selected.
+   * The name of the dimension that is currently shown in the dimension
+   * detail table. If this is undefined, then the dimension detail table
+   * is not shown.
    */
   selectedDimensionName?: string;
 
