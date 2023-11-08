@@ -160,6 +160,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		if err != nil {
 			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
 		}
+		_ = os.RemoveAll(dbDirPath)
 	}
 
 	// Set default DuckDB pool size to 4
