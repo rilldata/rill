@@ -25,44 +25,68 @@ export function getLabeledComparisonFromComparisonRow(
     );
   }
   return {
-    dimensionValue: row.dimensionValue as string | number,
+    dimensionValue: row.dimensionValue as string,
     ...measure,
   };
 }
 
 export type LeaderboardItemData = {
-  // The dimension value label to be shown in the leaderboard
-  dimensionValue: string | number;
+  /**
+   *The dimension value label to be shown in the leaderboard
+   */
+  dimensionValue: string;
 
-  // main value to be shown in the leaderboard
+  /**
+   *  main value to be shown in the leaderboard
+   * */
   value: number | null;
 
-  // percent of total for summable measures; null if not summable
+  /**
+   *  percent of total for summable measures; null if not summable
+   * */
   pctOfTotal: number | null;
 
-  // The value from the comparison period.
-  // Techinally this might not be a "previous value" but
-  // we use that name as a shorthand, since it's the most
-  // common use case.
+  /**
+   *  The value from the comparison period.
+   * Techinally this might not be a "previous value" but
+   * we use that name as a shorthand, since it's the most
+   * common use case.
+   */
   prevValue: number | null;
-
-  // the relative change from the previous value
-  // note that this needs to be multiplied by 100 to get
-  // the percentage change
+  /**
+   *
+   * the relative change from the previous value
+   * note that this needs to be multiplied by 100 to get
+   * the percentage change
+   */
   deltaRel: number | null;
 
-  // the absolute change from the previous value
+  /**
+   *  the absolute change from the previous value
+   * */
   deltaAbs: number | null;
 
-  // This is the index of the item from within the list
-  // selected filters in the dashboard store.
-  // This index is retained to keep track of selection color?
-  // Will be -1 if the item is not selected.
-  // IMPORTANT: either this or defaultComparedIndex must be -1 !!!
+  /**
+   *  This tracks the order in which an item was selected,
+   * which is used to maintain a mapping between the color
+   * of the line in the charts and the icon in the
+   * leaderboard/dimension detail table.
+   * Will be -1 if the item is not selected.
+   * IMPORTANT: either this or defaultComparedIndex must be -1 !!!
+   * FIXME: this should be nullable rather than using -1 sentinel value!!!
+   */
   selectedIndex: number;
 
-  // This is the list index of a default comparison item.
-  // IMPORTANT: either this or selectedIndex must be -1 !!!
+  /**
+   * This tracks the order in which an default comparison
+   * item was "selected", i.e. added to the default selection.
+   * As above, this is used to maintain a mapping between the color
+   * of the line in the charts and the icon in the
+   * leaderboard/dimension detail table.
+   * This is the list index of a default comparison item.
+   * IMPORTANT: either this or selectedIndex must be -1 !!!
+   * FIXME: this should be nullable rather than using -1 sentinel value!!!
+   */
   defaultComparedIndex: number;
 };
 
@@ -100,7 +124,7 @@ function cleanUpComparisonValue(
  * value that it corresponds to.
  */
 type ComparisonValueWithLabel = V1MetricsViewComparisonValue & {
-  dimensionValue: string | number;
+  dimensionValue: string;
 };
 
 /**
@@ -114,7 +138,7 @@ type ComparisonValueWithLabel = V1MetricsViewComparisonValue & {
 export function prepareLeaderboardItemData(
   values: ComparisonValueWithLabel[],
   numberAboveTheFold: number,
-  selectedValues: (string | number)[],
+  selectedValues: string[],
   total: number | null,
   excludeMode: boolean
 ): {
@@ -138,7 +162,7 @@ export function prepareLeaderboardItemData(
   // selected values that _are_ in the API results.
   //
   // We also need to retain the original selection indices
-  const selectedButNotInAPIResults = new Map<string | number, number>();
+  const selectedButNotInAPIResults = new Map<string, number>();
   selectedValues.map((v, i) => selectedButNotInAPIResults.set(v, i));
 
   values.forEach((v, i) => {

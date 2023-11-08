@@ -3,16 +3,30 @@
   import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { createEventDispatcher } from "svelte";
+  import { getStateManagers } from "../state-managers/state-managers";
 
-  export let isBeingCompared = false;
+  export let dimensionName: string | undefined;
 
-  const dispatch = createEventDispatcher();
+  const {
+    selectors: {
+      comparison: { isBeingCompared: isBeingComparedReadable },
+    },
+    actions: {
+      comparison: { setComparisonDimension },
+    },
+  } = getStateManagers();
+
+  $: isBeingCompared =
+    dimensionName !== undefined && $isBeingComparedReadable(dimensionName);
 </script>
 
 <IconButton
   on:click={(e) => {
-    dispatch("toggle-dimension-comparison");
+    if (isBeingCompared) {
+      setComparisonDimension(undefined);
+    } else {
+      setComparisonDimension(dimensionName);
+    }
     e.stopPropagation();
   }}
 >

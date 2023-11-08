@@ -23,8 +23,9 @@
 </script>
 
 <div
-  class="grid items-center w-full justify-stretch pr-4 {!onProjectPage &&
-    'border-b'}"
+  class="grid items-center w-full justify-stretch pr-4 {onProjectPage
+    ? ''
+    : 'border-b'}"
   style:grid-template-columns="max-content auto max-content"
 >
   <Tooltip distance={2}>

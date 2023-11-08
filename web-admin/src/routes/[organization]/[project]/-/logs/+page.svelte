@@ -1,6 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ProjectDeploymentLogs from "@rilldata/web-admin/features/projects/ProjectDeploymentLogs.svelte";
+  import ProjectDeploymentStatus from "@rilldata/web-admin/features/projects/ProjectDeploymentStatus.svelte";
+  import ProjectGithubConnection from "@rilldata/web-admin/features/projects/ProjectGithubConnection.svelte";
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
   import ProjectDeploymentStatus from "../../../../../features/projects/ProjectDeploymentStatus.svelte";
   import ProjectGithubConnection from "./../../../../../features/projects/ProjectGithubConnection.svelte";
