@@ -91,6 +91,7 @@
             on:select={() => {
               toggleOption(option);
               toggleFloatingElement();
+              inputValue = "";
             }}
           >
             <svelte:fragment slot="icon">
