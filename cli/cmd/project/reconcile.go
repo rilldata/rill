@@ -11,13 +11,14 @@ import (
 
 func ReconcileCmd(cfg *config.Config) *cobra.Command {
 	var project, path string
-	var refresh, reset bool
+	var refresh, reset, force bool
 	var refreshSources []string
 
 	reconcileCmd := &cobra.Command{
 		Use:               "reconcile [<project-name>]",
 		Args:              cobra.MaximumNArgs(1),
 		Short:             "Send trigger to deployment",
+		Hidden:            true,
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -49,6 +50,13 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if reset || resp.ProdDeployment == nil {
+				if !force {
+					msg := "This will create a new deployment, causing downtime as data sources are reloaded from scratch. If you just need to refresh data, use `rill project refresh`. Do you want to continue?"
+					if !cmdutil.ConfirmPrompt(msg, "", false) {
+						return nil
+					}
+				}
+
 				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: cfg.Org, Project: project})
 				if err != nil {
 					return err
@@ -85,6 +93,7 @@ func ReconcileCmd(cfg *config.Config) *cobra.Command {
 	reconcileCmd.Flags().BoolVar(&refresh, "refresh", false, "Refresh all sources")
 	reconcileCmd.Flags().StringSliceVar(&refreshSources, "refresh-source", nil, "Refresh specific source(s)")
 	reconcileCmd.Flags().BoolVar(&reset, "reset", false, "Reset and redeploy the project from scratch")
+	reconcileCmd.Flags().BoolVar(&force, "force", false, "Force the operation")
 
 	reconcileCmd.MarkFlagsMutuallyExclusive("reset", "refresh")
 	reconcileCmd.MarkFlagsMutuallyExclusive("reset", "refresh-source")

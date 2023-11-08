@@ -1,6 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ProjectDeploymentLogs from "@rilldata/web-admin/features/projects/ProjectDeploymentLogs.svelte";
+  import ProjectDeploymentStatus from "@rilldata/web-admin/features/projects/ProjectDeploymentStatus.svelte";
+  import ProjectGithubConnection from "@rilldata/web-admin/features/projects/ProjectGithubConnection.svelte";
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
 
   $: organization = $page.params.organization;
@@ -8,5 +10,11 @@
 </script>
 
 <VerticalScrollContainer>
-  <ProjectDeploymentLogs {organization} {project} />
+  <div class="pt-4 flex flex-col gap-y-6">
+    <div class="px-12 flex gap-x-9 items-start">
+      <ProjectDeploymentStatus {organization} {project} />
+      <ProjectGithubConnection {organization} {project} />
+    </div>
+    <ProjectDeploymentLogs {organization} {project} />
+  </div>
 </VerticalScrollContainer>

@@ -6,12 +6,10 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -222,12 +220,23 @@ func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, ol
 }
 
 func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
-	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
+	dim, err := metricsViewDimension(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
+	rawColName := metricsViewDimensionColumn(dim)
+	colName := safeName(rawColName)
+	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
 
-	selectCols := []string{colName}
+	var selectCols []string
+	unnestClause := ""
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
+		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
+		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
+	} else {
+		selectCols = append(selectCols, colName)
+	}
 
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
@@ -259,7 +268,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	args := []any{}
 	td := safeName(mv.TimeDimension)
 
-	trc, err := timeRangeClause(q.TimeRange, dialect, td, &args)
+	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
@@ -302,27 +311,44 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
 	}
 
+	groupByCol := colName
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		groupByCol = unnestColName
+	}
+
 	sql := fmt.Sprintf(
-		`SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d`,
-		selectClause,    // 1
-		colName,         // 2
-		mv.Table,        // 3
-		baseWhereClause, // 4
-		orderClause,     // 5
-		limitClause,     // 6
-		q.Offset,        // 7
+		`SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d`,
+		selectClause,       // 1
+		groupByCol,         // 2
+		safeName(mv.Table), // 3
+		baseWhereClause,    // 4
+		orderClause,        // 5
+		limitClause,        // 6
+		q.Offset,           // 7
+		unnestClause,       // 8
 	)
 
 	return sql, args, nil
 }
 
 func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
-	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
+	dim, err := metricsViewDimension(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
+	rawColName := metricsViewDimensionColumn(dim)
+	colName := safeName(rawColName)
+	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
 
-	selectCols := []string{colName}
+	var selectCols []string
+	unnestClause := ""
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
+		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
+		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
+	} else {
+		selectCols = append(selectCols, colName)
+	}
 
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
@@ -386,7 +412,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	td := safeName(mv.TimeDimension)
 
-	trc, err := timeRangeClause(q.TimeRange, dialect, td, &args)
+	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
@@ -402,7 +428,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		args = append(args, clauseArgs...)
 	}
 
-	trc, err = timeRangeClause(q.ComparisonTimeRange, dialect, td, &args)
+	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, dialect, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
@@ -525,16 +551,21 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		LIMIT 10
 		OFFSET 0
 	*/
+	groupByCol := colName
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		groupByCol = unnestColName
+	}
+
 	var sql string
 	if dialect != drivers.DialectDruid {
 		sql = fmt.Sprintf(`
 		SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
 			(
-				SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s %[12]s 
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY %[15]s %[12]s 
 			) base
 		%[11]s JOIN
 			(
-				SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s %[13]s 
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY %[15]s %[13]s 
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
@@ -546,7 +577,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		`,
 			subSelectClause,           // 1
 			colName,                   // 2
-			mv.Table,                  // 3
+			safeName(mv.Table),        // 3
 			baseWhereClause,           // 4
 			comparisonWhereClause,     // 5
 			orderClause,               // 6
@@ -556,7 +587,9 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			safeName(q.DimensionName), // 10
 			joinType,                  // 11
 			baseLimitClause,           // 12
-			comparisonLimitClause,     // 12
+			comparisonLimitClause,     // 13
+			unnestClause,              // 14
+			groupByCol,                // 15
 		)
 	} else {
 		/*
@@ -605,11 +638,11 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		sql = fmt.Sprintf(`
 				SELECT %[11]s.%[2]s, %[9]s FROM 
 					(
-						SELECT %[1]s FROM %[3]q WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s %[10]s OFFSET %[8]d 
+						SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s %[10]s OFFSET %[8]d 
 					) %[11]s
 				LEFT OUTER JOIN
 					(
-						SELECT %[1]s FROM %[3]q WHERE %[5]s GROUP BY %[2]s
+						SELECT %[1]s FROM %[3]s WHERE %[5]s GROUP BY %[2]s
 					) %[12]s
 				ON
 						base.%[2]s = comparison.%[2]s
@@ -624,7 +657,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 			subSelectClause,     // 1
 			colName,             // 2
-			mv.Table,            // 3
+			safeName(mv.Table),  // 3
 			leftWhereClause,     // 4
 			rightWhereClause,    // 5
 			orderClause,         // 6
@@ -800,60 +833,15 @@ func (q *MetricsViewComparison) generateFilename() string {
 
 // TODO: a) Ensure correct time zone handling, b) Implement support for tr.RoundToGrain
 // (Maybe consider pushing all this logic into the SQL instead?)
-func timeRangeClause(tr *runtimev1.TimeRange, dialect drivers.Dialect, timeCol string, args *[]any) (string, error) {
+func timeRangeClause(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, timeCol string, args *[]any) (string, error) {
 	var clause string
 	if isTimeRangeNil(tr) {
 		return clause, nil
 	}
 
-	tz := time.UTC
-	if tr.TimeZone != "" {
-		var err error
-		tz, err = time.LoadLocation(tr.TimeZone)
-		if err != nil {
-			return "", fmt.Errorf("invalid time_range.time_zone %q: %w", tr.TimeZone, err)
-		}
-	}
-
-	var start, end time.Time
-	if tr.Start != nil {
-		start = tr.Start.AsTime().In(tz)
-	}
-	if tr.End != nil {
-		end = tr.End.AsTime().In(tz)
-	}
-
-	if tr.IsoDuration != "" {
-		if !start.IsZero() && !end.IsZero() {
-			return "", fmt.Errorf("only two of time_range.{start,end,iso_duration} can be specified")
-		}
-
-		d, err := duration.ParseISO8601(tr.IsoDuration)
-		if err != nil {
-			return "", fmt.Errorf("invalid iso_duration %q: %w", tr.IsoDuration, err)
-		}
-
-		if !start.IsZero() {
-			end = d.Add(start)
-		} else if !end.IsZero() {
-			start = d.Sub(end)
-		} else {
-			return "", fmt.Errorf("one of time_range.{start,end} must be specified with time_range.iso_duration")
-		}
-	}
-
-	if tr.IsoOffset != "" {
-		d, err := duration.ParseISO8601(tr.IsoOffset)
-		if err != nil {
-			return "", fmt.Errorf("invalid iso_offset %q: %w", tr.IsoOffset, err)
-		}
-
-		if !start.IsZero() {
-			start = d.Add(start)
-		}
-		if !end.IsZero() {
-			end = d.Add(end)
-		}
+	start, end, err := ResolveTimeRange(tr, mv)
+	if err != nil {
+		return "", err
 	}
 
 	if !start.IsZero() {

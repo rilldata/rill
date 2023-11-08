@@ -24,19 +24,22 @@ TableCells – the cell contents.
 
   export let rows: DimensionTableRow[];
   export let columns: VirtualizedTableColumns[];
-  export let selectedValues: Array<unknown> = [];
+  export let selectedValues: string[];
 
   export let dimensionName: string;
-  export let excludeMode = false;
-  export let isBeingCompared = false;
   export let isFetching: boolean;
 
   const {
-    actions: { dimTable },
+    actions: { dimensionTable },
     selectors: {
       sorting: { sortMeasure },
+      dimensionFilters: { isFilterExcludeMode },
+      comparison: { isBeingCompared: isBeingComparedReadable },
     },
   } = getStateManagers();
+
+  $: excludeMode = $isFilterExcludeMode(dimensionName);
+  $: isBeingCompared = $isBeingComparedReadable(dimensionName);
 
   /** the overscan values tell us how much to render off-screen. These may be set by the consumer
    * in certain circumstances. The tradeoff: the higher the overscan amount, the more DOM elements we have
@@ -58,7 +61,7 @@ TableCells – the cell contents.
   const CHARACTER_LIMIT_FOR_WRAPPING = 9;
   const FILTER_COLUMN_WIDTH = config.indexWidth;
 
-  $: selectedIndices = selectedValues
+  $: selectedIndex = selectedValues
     .map((label) => {
       return rows.findIndex((row) => row[dimensionName] === label);
     })
@@ -87,6 +90,8 @@ TableCells – the cell contents.
   let estimateColumnSize: number[] = [];
 
   /* Separate out dimension column */
+  // SAFETY: cast should be safe because if dimensionName is undefined,
+  // we should not be in a dimension table sub-component
   $: dimensionColumn = columns?.find(
     (c) => c.name == dimensionName
   ) as VirtualizedTableColumns;
@@ -181,7 +186,7 @@ TableCells – the cell contents.
   async function handleColumnHeaderClick(event) {
     colScrollOffset = $columnVirtualizer.scrollOffset;
     const columnName = event.detail;
-    dimTable.handleMeasureColumnHeaderClick(columnName);
+    dimensionTable.handleMeasureColumnHeaderClick(columnName);
   }
 
   async function handleResizeDimensionColumn(event) {
@@ -238,7 +243,7 @@ TableCells – the cell contents.
           <DimensionFilterGutter
             virtualRowItems={virtualRows}
             totalHeight={virtualHeight}
-            selectedIndex={selectedIndices}
+            {selectedIndex}
             {isBeingCompared}
             {excludeMode}
             atLeastOneActive={selectedValues?.length > 0}
@@ -253,7 +258,7 @@ TableCells – the cell contents.
             column={dimensionColumn}
             {rows}
             {activeIndex}
-            selectedIndex={selectedIndices}
+            {selectedIndex}
             {excludeMode}
             {scrolling}
             {horizontalScrolling}
@@ -270,7 +275,7 @@ TableCells – the cell contents.
             columns={measureColumns}
             {rows}
             {activeIndex}
-            selectedIndex={selectedIndices}
+            {selectedIndex}
             {scrolling}
             {excludeMode}
             on:select-item={(event) => onSelectItem(event)}

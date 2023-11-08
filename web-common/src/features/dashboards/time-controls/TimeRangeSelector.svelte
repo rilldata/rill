@@ -59,9 +59,9 @@
   let latestWindowTimeRanges: TimeRangeOption[];
   let periodToDateTimeRanges: TimeRangeOption[];
 
-  $: showDefaultItem = !(
-    $metaQuery.data?.defaultTimeRange in ISODurationToTimeRangePreset
-  );
+  $: showDefaultItem =
+    $metaQuery.data?.defaultTimeRange &&
+    !($metaQuery.data?.defaultTimeRange in ISODurationToTimeRangePreset);
 
   // get the available latest-window time ranges
   $: if (boundaryStart && boundaryEnd) {

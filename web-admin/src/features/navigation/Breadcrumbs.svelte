@@ -1,9 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { useDashboards } from "@rilldata/web-admin/features/projects/dashboards";
-  import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
-  import { Tag } from "@rilldata/web-common/components/tag";
   import type {
     V1MetricsViewSpec,
     V1Resource,
@@ -16,7 +13,9 @@
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
+  import { useDashboards } from "../dashboards/listing/dashboards";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
+  import { isProjectPage } from "./nav-utils";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
 
   const user = createAdminServiceGetCurrentUser();
@@ -34,8 +33,6 @@
 
   $: projectName = $page.params.project;
   $: project = createAdminServiceGetProject(orgName, projectName);
-  // Poll specifically for the project's deployment status
-  $: projectDeploymentStatus = useProjectDeploymentStatus(orgName, projectName);
   $: projects = createAdminServiceListProjectsForOrganization(
     orgName,
     undefined,
@@ -45,7 +42,7 @@
       },
     }
   );
-  $: isProjectPage = $page.route.id === "/[organization]/[project]";
+  $: onProjectPage = isProjectPage($page);
 
   $: dashboards = useDashboards(instanceId);
   let currentResource: V1Resource;
@@ -88,13 +85,8 @@
             main: proj.name,
           }))}
         menuKey={projectName}
-        onSelectMenuOption={(project) =>
-          goto(
-            isDashboardPage
-              ? `/${orgName}/${project}/-/redirect`
-              : `/${orgName}/${project}`
-          )}
-        isCurrentPage={isProjectPage}
+        onSelectMenuOption={(project) => goto(`/${orgName}/${project}`)}
+        isCurrentPage={onProjectPage}
       />
     {/if}
     {#if currentDashboard}
@@ -116,10 +108,6 @@
           goto(`/${orgName}/${projectName}/${dashboard}`)}
         isCurrentPage={isDashboardPage}
       />
-    {/if}
-    <!-- This is a temporary solution until we move intra-project navigation to tabs -->
-    {#if $page.route.id.endsWith("/-/logs")}
-      <Tag>Logs</Tag>
     {/if}
   </ol>
 </nav>

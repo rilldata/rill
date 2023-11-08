@@ -1,5 +1,5 @@
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
-import type { SelectorFnArgs } from "./types";
+import type { DashboardDataSources } from "./types";
 
 const contextColumnWidth = (contextType: LeaderboardContextColumn): string => {
   switch (contextType) {
@@ -19,40 +19,40 @@ export const contextColSelectors = {
   /**
    * Gets the active context column type for the dashboard.
    */
-  contextColumn: ({ dashboard }: SelectorFnArgs) =>
+  contextColumn: ({ dashboard }: DashboardDataSources) =>
     dashboard.leaderboardContextColumn,
 
   /**
    * Is the context column hidden in the leaderboards?
    */
-  isHidden: ({ dashboard }: SelectorFnArgs) =>
+  isHidden: ({ dashboard }: DashboardDataSources) =>
     dashboard.leaderboardContextColumn === LeaderboardContextColumn.HIDDEN,
 
   /**
    * Is the Percentage change context column currently active in the leaderboards?
    */
-  isDeltaPercent: ({ dashboard }: SelectorFnArgs) =>
+  isDeltaPercent: ({ dashboard }: DashboardDataSources) =>
     dashboard.leaderboardContextColumn ===
     LeaderboardContextColumn.DELTA_PERCENT,
 
   /**
    * Is the absolute change context column currently active in the leaderboards?
    */
-  isDeltaAbsolute: ({ dashboard }: SelectorFnArgs) =>
+  isDeltaAbsolute: ({ dashboard }: DashboardDataSources) =>
     dashboard.leaderboardContextColumn ===
     LeaderboardContextColumn.DELTA_ABSOLUTE,
 
   /**
    * Is the percent-of-total context column currently active in the leaderboards?
    */
-  isPercentOfTotal: ({ dashboard }: SelectorFnArgs) =>
+  isPercentOfTotal: ({ dashboard }: DashboardDataSources) =>
     dashboard.leaderboardContextColumn === LeaderboardContextColumn.PERCENT,
 
   /**
    * `true` if the context column is either percent or delta percent,
    * `false` otherwise.
    */
-  isAPercentColumn: ({ dashboard }: SelectorFnArgs) =>
+  isAPercentColumn: ({ dashboard }: DashboardDataSources) =>
     dashboard.leaderboardContextColumn ===
       LeaderboardContextColumn.DELTA_PERCENT ||
     dashboard.leaderboardContextColumn === LeaderboardContextColumn.PERCENT,
@@ -61,6 +61,6 @@ export const contextColSelectors = {
    * returns a css style string specifying the width of the context
    * column in the leaderboards.
    */
-  widthPx: ({ dashboard }: SelectorFnArgs) =>
+  widthPx: ({ dashboard }: DashboardDataSources) =>
     contextColumnWidth(dashboard.leaderboardContextColumn),
 };

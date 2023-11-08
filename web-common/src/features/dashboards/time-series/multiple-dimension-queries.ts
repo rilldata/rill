@@ -3,8 +3,8 @@ import { Readable, derived, writable } from "svelte/store";
 import {
   V1MetricsViewFilter,
   V1TimeSeriesValue,
+  createQueryServiceMetricsViewAggregation,
   createQueryServiceMetricsViewTimeSeries,
-  createQueryServiceMetricsViewToplist,
 } from "@rilldata/web-common/runtime-client";
 import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
 import {
@@ -14,7 +14,10 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import {
+  SortDirection,
+  SortType,
+} from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 
 export interface DimensionDataItem {
@@ -81,31 +84,36 @@ export function getDimensionValuesForComparison(
           }
         ).subscribe(set);
       } else {
+        let sortBy = isInTimeDimensionView
+          ? dashboardStore.expandedMeasureName
+          : dashboardStore.leaderboardMeasureName;
+        if (dashboardStore?.dashboardSortType === SortType.DIMENSION) {
+          sortBy = dimensionName;
+        }
+
         return derived(
-          createQueryServiceMetricsViewToplist(
+          createQueryServiceMetricsViewAggregation(
             runtime.instanceId,
             name,
             {
-              dimensionName: dimensionName,
-              measureNames: measures,
-              timeStart: timeControls.timeStart,
-              timeEnd: timeControls.timeEnd,
+              measures: measures.map((measure) => ({ name: measure })),
+              dimensions: [{ name: dimensionName }],
               filter: getDimensionFilterWithSearch(
                 dashboardStore?.filters,
                 dashboardStore?.dimensionSearchText,
                 dimensionName
               ),
-              limit: "250",
-              offset: "0",
+              timeStart: timeControls.timeStart,
+              timeEnd: timeControls.timeEnd,
               sort: [
                 {
-                  name: isInTimeDimensionView
-                    ? dashboardStore.expandedMeasureName
-                    : dashboardStore.leaderboardMeasureName,
-                  ascending:
-                    dashboardStore.sortDirection === SortDirection.ASCENDING,
+                  desc:
+                    dashboardStore.sortDirection === SortDirection.DESCENDING,
+                  name: sortBy,
                 },
               ],
+              limit: "250",
+              offset: "0",
             },
             {
               query: {
@@ -117,18 +125,19 @@ export function getDimensionValuesForComparison(
             }
           ),
           (topListData) => {
-            if (topListData?.isFetching)
+            if (topListData?.isFetching || !dimensionName)
               return {
                 values: [],
                 filter: dashboardStore?.filters,
               };
-            const columnName = topListData?.data?.meta[0]?.name;
+            const columnName =
+              topListData?.data?.schema?.fields?.[0]?.name || dimensionName;
             const totalValues = topListData?.data?.data?.map(
               (d) => d[measures[0]]
             ) as number[];
-            const topListValues = topListData?.data?.data.map(
+            const topListValues = topListData?.data?.data?.map(
               (d) => d[columnName]
-            );
+            ) as string[];
 
             const computedFilter = getFilterForComparedDimension(
               dimensionName,

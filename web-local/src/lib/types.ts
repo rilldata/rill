@@ -15,6 +15,7 @@ export interface VirtualizedTableColumns {
   // Is this the table sorted by this column, and if so, in what direction?
   // Leave undefined if the table is not sorted by this column.
   sorted?: SortDirection;
+  format?: string;
 }
 
 export type ProfileColumnSummary =
