@@ -451,11 +451,13 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			t := &runtimev1.MetricsViewSpec_AvailableTimeRange{
 				Range: r.Range,
 			}
-			t.ComparisonOffsets = make([]*runtimev1.MetricsViewSpec_AvailableComparisonOffset, len(r.ComparisonOffsets))
-			for i, o := range r.ComparisonOffsets {
-				t.ComparisonOffsets[i] = &runtimev1.MetricsViewSpec_AvailableComparisonOffset{
-					Offset: o.Offset,
-					Range:  o.Range,
+			if r.ComparisonOffsets != nil {
+				t.ComparisonOffsets = make([]*runtimev1.MetricsViewSpec_AvailableComparisonOffset, len(r.ComparisonOffsets))
+				for i, o := range r.ComparisonOffsets {
+					t.ComparisonOffsets[i] = &runtimev1.MetricsViewSpec_AvailableComparisonOffset{
+						Offset: o.Offset,
+						Range:  o.Range,
+					}
 				}
 			}
 			spec.AvailableTimeRanges = append(spec.AvailableTimeRanges, t)
