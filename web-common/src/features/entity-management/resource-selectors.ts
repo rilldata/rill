@@ -4,13 +4,12 @@ import {
   createRuntimeServiceListResources,
   V1ListResourcesResponse,
   V1ModelV2,
-  V1OLAPGetTableResponse,
   V1ReconcileStatus,
   V1Resource,
   V1SourceV2,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { derived, Readable } from "svelte/store";
+import { derived } from "svelte/store";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
