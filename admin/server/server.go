@@ -395,7 +395,9 @@ func newURLRegistry(opts *Options) *externalURLs {
 }
 
 func (u *externalURLs) reportOpen(org, project, projectSubpath string) string {
-	return urlutil.MustJoinURL(u.frontend, org, project, projectSubpath)
+	res := urlutil.MustJoinURL(u.frontend, org, project)
+	res += projectSubpath // Need to do an unsafe concat to provide flexibility, e.g. to avoid escaping '?'
+	return res
 }
 
 func (u *externalURLs) reportExport(org, project, report string) string {
