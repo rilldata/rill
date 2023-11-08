@@ -330,4 +330,7 @@
   :global(regular-table thead th) {
     height: var(--row-height);
   }
+  :global(regular-table tr:hover) {
+    color: none;
+  }
 </style>

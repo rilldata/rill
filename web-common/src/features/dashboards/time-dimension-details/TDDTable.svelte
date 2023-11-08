@@ -181,6 +181,14 @@
     if (x === 0) {
       element.classList.add("pl-0");
       const marker = getMarker(value, y);
+
+      // Gray out row if doesn't have marker
+      if (y !== 0 && tableData?.selectedValues?.length && !marker) {
+        element?.parentElement?.classList.add("text-gray-400");
+      } else {
+        element?.parentElement?.classList.remove("text-gray-400");
+      }
+
       const justifyTotal = y === 0 ? "justify-end" : "";
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
       return `<div class="flex items-center w-full h-full overflow-hidden pr-2 gap-1 ${justifyTotal}">
