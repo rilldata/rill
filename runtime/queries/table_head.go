@@ -15,6 +15,7 @@ type TableHead struct {
 	TableName string
 	Limit     int
 	Result    []*structpb.Struct
+	Schema    *runtimev1.StructType
 }
 
 var _ runtime.Query = &TableHead{}
@@ -79,9 +80,67 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 	}
 
 	q.Result = data
+	q.Schema = rows.Schema
 	return nil
 }
 
 func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	return ErrExportNotSupported
+	olap, release, err := rt.OLAP(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
+			filename := q.TableName
+			sql := fmt.Sprintf("SELECT * FROM %s LIMIT %d", safeName(q.TableName), q.Limit)
+			args := []interface{}{}
+			if err := duckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
+				return err
+			}
+		} else {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap); err != nil {
+				return err
+			}
+		}
+	case drivers.DialectDruid:
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
+
+	return nil
+}
+
+func (q *TableHead) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, olap drivers.OLAPStore) error {
+	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
+	if err != nil {
+		return err
+	}
+
+	if opts.PreWriteHook != nil {
+		err = opts.PreWriteHook(q.TableName)
+		if err != nil {
+			return err
+		}
+	}
+
+	meta := structTypeToMetricsViewColumn(q.Schema)
+
+	switch opts.Format {
+	case runtimev1.ExportFormat_EXPORT_FORMAT_UNSPECIFIED:
+		return fmt.Errorf("unspecified format")
+	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+		return writeCSV(meta, q.Result, w)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+		return writeXLSX(meta, q.Result, w)
+	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+		return writeParquet(meta, q.Result, w)
+	}
+
+	return nil
 }
