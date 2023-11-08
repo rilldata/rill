@@ -331,6 +331,6 @@
     height: var(--row-height);
   }
   :global(regular-table tr:hover) {
-    color: none;
+    color: none !important;
   }
 </style>

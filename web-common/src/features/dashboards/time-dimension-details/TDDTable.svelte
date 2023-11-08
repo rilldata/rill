@@ -124,34 +124,44 @@
   const getMarker = (value, y) => {
     if (y === 0) {
       noSelectionMarkerCount = 0;
-      return ``;
+      return { icon: ``, muted: false };
     }
     const visibleIdx = tableData?.selectedValues.indexOf(value.value);
 
     if (comparing === "time") {
-      if (y == 1) return SelectedCheckmark("fill-blue-500");
-      else if (y == 2) return SelectedCheckmark("fill-gray-300");
-      else return ``;
+      let icon = "";
+      if (y == 1) icon = SelectedCheckmark("fill-blue-500");
+      else if (y == 2) icon = SelectedCheckmark("fill-gray-300");
+      return { icon, muted: false };
     }
 
     if (visibleIdx > -1) {
-      if (excludeMode) return ExcludeIcon;
+      if (excludeMode) return { icon: ExcludeIcon, muted: true };
       // Only show colored markers for first 11 selected values
       else
-        return SelectedCheckmark(
-          "fill-" +
-            (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300")
-        );
+        return {
+          icon: SelectedCheckmark(
+            "fill-" +
+              (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300")
+          ),
+          muted: false,
+        };
     } else if (noSelectionMarkerCount < 3) {
       if (excludeMode || !tableData?.selectedValues.length) {
         noSelectionMarkerCount += 1;
-        return `<div class="rounded-full bg-${
-          CHECKMARK_COLORS[noSelectionMarkerCount - 1]
-        }" style="width: 13px; height: 13px;"></div>`;
+        return {
+          icon: `<div class="rounded-full bg-${
+            CHECKMARK_COLORS[noSelectionMarkerCount - 1]
+          }" style="width: 13px; height: 13px;"></div>`,
+          muted: false,
+        };
       }
     }
 
-    return ``;
+    return {
+      icon: ``,
+      muted: !excludeMode && tableData?.selectedValues.length > 0,
+    };
   };
 
   const renderRowHeader: PivotRenderCallback = ({ value, x, y, element }) => {
@@ -182,8 +192,8 @@
       element.classList.add("pl-0");
       const marker = getMarker(value, y);
 
-      // Gray out row if doesn't have marker
-      if (y !== 0 && tableData?.selectedValues?.length && !marker) {
+      // Gray out rows which are not included
+      if (marker.muted) {
         element?.parentElement?.classList.add("text-gray-400");
       } else {
         element?.parentElement?.classList.remove("text-gray-400");
@@ -192,7 +202,7 @@
       const justifyTotal = y === 0 ? "justify-end" : "";
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
       return `<div class="flex items-center w-full h-full overflow-hidden pr-2 gap-1 ${justifyTotal}">
-        <div class="w-5 shrink-0 h-full flex items-center justify-center" toggle-visible="${y}">${marker}</div>
+        <div class="w-5 shrink-0 h-full flex items-center justify-center" toggle-visible="${y}">${marker.icon}</div>
         <div class="truncate text-xs ${fontWeight}">${value.value}</div></div>`;
     } else if (x === 1)
       return `<div class="text-xs font-semibold text-right flex items-center justify-end gap-2" >${value.value}
