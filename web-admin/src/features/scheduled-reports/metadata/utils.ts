@@ -14,3 +14,14 @@ export function exportFormatToPrettyString(format: V1ExportFormat): string {
       return "Unknown";
   }
 }
+
+export function formatNextRunOn(nextRunOn: string): string {
+  return new Date(nextRunOn).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: true,
+  });
+}
