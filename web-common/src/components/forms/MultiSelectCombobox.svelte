@@ -33,6 +33,8 @@
       ];
     }
   }
+
+  let inputEl: HTMLElement;
 </script>
 
 <div class="flex flex-col gap-y-2">
@@ -53,33 +55,32 @@
   </div>
   <WithTogglableFloatingElement
     let:active
-    let:handleClose
     let:toggleFloatingElement
     distance={8}
     alignment="start"
   >
     <input
+      bind:this={inputEl}
       {id}
       name={id}
       {placeholder}
       type="text"
       class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {error &&
         'border-red-500'}"
-      value={inputValue}
-      on:input={(e) => {
-        inputValue = e.target.value;
+      bind:value={inputValue}
+      on:input={() => {
         if (!active) toggleFloatingElement();
       }}
     />
     <Menu
       slot="floating-element"
-      minWidth="400px"
       focusOnMount={false}
-      on:click-outside={() => {
-        if (active) handleClose();
-      }}
-      on:escape={handleClose}
+      minWidth={`${inputEl.clientWidth}px`}
       maxHeight="120px"
+      on:click-outside={() => {
+        if (active) toggleFloatingElement();
+      }}
+      on:escape={toggleFloatingElement}
     >
       {#if filteredOptions.length > 0}
         {#each filteredOptions as option}
@@ -89,6 +90,7 @@
             animateSelect={false}
             on:select={() => {
               toggleOption(option);
+              toggleFloatingElement();
             }}
           >
             <svelte:fragment slot="icon">

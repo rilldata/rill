@@ -35,7 +35,6 @@
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
   const queryArgs = JSON.parse(queryArgsJson);
-  // console.log("queryArgs", queryArgs);
 
   const { form, errors, handleSubmit, isSubmitting } = createForm({
     initialValues: {
@@ -90,7 +89,7 @@
   });
 </script>
 
-<Dialog {open} on:close>
+<Dialog {open}>
   <svelte:fragment slot="title">Schedule report</svelte:fragment>
   <form
     on:submit|preventDefault={handleSubmit}
