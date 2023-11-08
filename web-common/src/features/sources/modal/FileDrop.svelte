@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -58,6 +59,7 @@
           tableName,
           getFilePathFromNameAndType(tableName, EntityType.Table)
         );
+        goto(`/source/${tableName}`);
       } catch (err) {
         console.error(err);
       }
