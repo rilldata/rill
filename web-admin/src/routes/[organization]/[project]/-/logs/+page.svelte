@@ -4,8 +4,6 @@
   import ProjectDeploymentStatus from "@rilldata/web-admin/features/projects/ProjectDeploymentStatus.svelte";
   import ProjectGithubConnection from "@rilldata/web-admin/features/projects/ProjectGithubConnection.svelte";
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
-  import ProjectDeploymentStatus from "../../../../../features/projects/ProjectDeploymentStatus.svelte";
-  import ProjectGithubConnection from "./../../../../../features/projects/ProjectGithubConnection.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
