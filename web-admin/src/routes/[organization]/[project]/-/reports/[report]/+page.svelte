@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
+  import ReportHistoryTable from "@rilldata/web-admin/features/scheduled-reports/history/ReportHistoryTable.svelte";
+  import ReportMetadata from "@rilldata/web-admin/features/scheduled-reports/metadata/ReportMetadata.svelte";
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
-  import ContentContainer from "../../../../../../components/layout/ContentContainer.svelte";
-  import ReportHistoryTable from "../../../../../../features/scheduled-reports/history/ReportHistoryTable.svelte";
-  import ReportMetadata from "../../../../../../features/scheduled-reports/metadata/ReportMetadata.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;

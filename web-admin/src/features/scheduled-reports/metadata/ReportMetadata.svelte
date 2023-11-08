@@ -13,7 +13,7 @@
   import { useReport, useReportDashboardName } from "../selectors";
   import MetadataLabel from "./MetadataLabel.svelte";
   import MetadataValue from "./MetadataValue.svelte";
-  import { exportFormatToPrettyString } from "./utils";
+  import { exportFormatToPrettyString, formatNextRunOn } from "./utils";
 
   export let organization: string;
   export let project: string;
@@ -144,16 +144,7 @@
         <div class="flex gap-x-6">
           <MetadataLabel>Next run</MetadataLabel>
           <MetadataValue>
-            {new Date(
-              $reportQuery.data.resource.report.state.nextRunOn
-            ).toLocaleString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-              hour: "numeric",
-              minute: "numeric",
-              hour12: true,
-            })}
+            {formatNextRunOn($reportQuery.data.resource.report.state.nextRunOn)}
           </MetadataValue>
         </div>
       </div>
