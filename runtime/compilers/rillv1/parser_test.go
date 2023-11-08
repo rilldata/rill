@@ -94,6 +94,14 @@ measures:
     expression: count(*)
 first_day_of_week: 7
 first_month_of_year: 3
+available_time_ranges:
+  - P2W
+  - range: P4W
+  - range: P2M
+    comparison_offsets:
+      - P1M
+      - offset: P4M
+        range: P2M
 `,
 		// migration c1
 		`custom/c1.yml`: `
@@ -173,6 +181,17 @@ SELECT * FROM {{ ref "m2" }}
 				},
 				FirstDayOfWeek:   7,
 				FirstMonthOfYear: 3,
+				AvailableTimeRanges: []*runtimev1.MetricsViewSpec_AvailableTimeRange{
+					{Range: "P2W"},
+					{Range: "P4W"},
+					{
+						Range: "P2M",
+						ComparisonOffsets: []*runtimev1.MetricsViewSpec_AvailableComparisonOffset{
+							{Offset: "P1M"},
+							{Offset: "P4M", Range: "P2M"},
+						},
+					},
+				},
 			},
 		},
 		// migration c1
