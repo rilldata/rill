@@ -96,7 +96,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 
 	// If catalog is not embedded, catalog data is in the metastore, and should be cleaned up
 	if !inst.EmbedCatalog {
-		catalog, ok := r.catalog.AsCatalogStore(instanceID)
+		catalog, ok := r.metastore.AsCatalogStore(instanceID)
 		if ok {
 			err = catalog.DeleteResources(ctx)
 			if err != nil {

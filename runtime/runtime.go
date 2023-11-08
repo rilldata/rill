@@ -36,7 +36,6 @@ type Runtime struct {
 	logger         *zap.Logger
 	activity       activity.Client
 	metastore      drivers.Handle
-	catalog        drivers.Handle
 	registryCache  *registryCache
 	connCache      *connectionCache
 	queryCache     *queryCache
@@ -68,12 +67,6 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac activity.Cli
 	if !ok {
 		return nil, fmt.Errorf("metastore must be a valid registry")
 	}
-
-	catalog, _, err := rt.AcquireSystemHandle(ctx, opts.CatalogConnector)
-	if err != nil {
-		return nil, err
-	}
-	rt.catalog = catalog
 
 	rt.registryCache, err = newRegistryCache(ctx, rt, reg, logger, ac)
 	if err != nil {

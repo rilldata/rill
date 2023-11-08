@@ -14,9 +14,9 @@ import (
 func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	ctx := context.Background()
 	inst := &drivers.Instance{
-		OLAPConnector: "duckdb",
-		RepoConnector: "repo",
-		EmbedCatalog:  true,
+		OLAPConnector:    "duckdb",
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -28,6 +28,11 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 				Name:   "duckdb",
 				Config: map[string]string{"dsn": ":memory:"},
 			},
+			{
+				Type:   "sqlite",
+				Name:   "catalog",
+				Config: map[string]string{"dsn": ":memory:"},
+			},
 		},
 	}
 
@@ -37,7 +42,7 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	require.NoError(t, err)
 	require.Equal(t, "duckdb", inst.OLAPConnector)
 	require.Equal(t, "repo", inst.RepoConnector)
-	require.Equal(t, true, inst.EmbedCatalog)
+	require.Equal(t, "catalog", inst.CatalogConnector)
 	require.Greater(t, time.Minute, time.Since(inst.CreatedOn))
 	require.Greater(t, time.Minute, time.Since(inst.UpdatedOn))
 
@@ -45,6 +50,7 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	require.NoError(t, err)
 	require.Equal(t, inst.OLAPConnector, res.OLAPConnector)
 	require.Equal(t, inst.RepoConnector, res.RepoConnector)
+	require.Equal(t, inst.CatalogConnector, res.CatalogConnector)
 	require.Equal(t, inst.EmbedCatalog, res.EmbedCatalog)
 	require.ElementsMatch(t, inst.Connectors, res.Connectors)
 

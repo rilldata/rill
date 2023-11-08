@@ -30,10 +30,10 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit env",
 			inst: &drivers.Instance{
-				OLAPConnector: "duckdb",
-				RepoConnector: "repo",
-				EmbedCatalog:  true,
-				Variables:     map[string]string{"connectors.s3.region": "us-east-1"},
+				OLAPConnector:    "duckdb",
+				RepoConnector:    "repo",
+				CatalogConnector: "catalog",
+				Variables:        map[string]string{"connectors.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -44,13 +44,17 @@ func TestRuntime_EditInstance(t *testing.T) {
 						Type:   "duckdb",
 						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
+					},
+					{
+						Type:   "sqlite",
+						Name:   "catalog",
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
-				EmbedCatalog:  true,
 				Variables:     map[string]string{"connectors.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
@@ -62,6 +66,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 						Type:   "duckdb",
 						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
+					},
+					{
+						Type:   "sqlite",
+						Name:   "catalog",
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
@@ -484,7 +493,7 @@ func newTestRuntime(t *testing.T) *Runtime {
 	opts := &Options{
 		ConnectionCacheSize:          100,
 		MetastoreConnector:           "metastore",
-		CatalogConnector:             "metastore",
+		CatalogConnector:             "",
 		QueryCacheSizeBytes:          int64(datasize.MB) * 100,
 		SecurityEngineCacheSize:      100,
 		AllowHostAccess:              true,

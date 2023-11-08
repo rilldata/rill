@@ -95,22 +95,12 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		return nil, err
 	}
 
-	// backward compatibility for old stage.db file
-	embedCatalog := false
+	// drop old file, remove this code after some time
 	_, err = os.Stat(filepath.Join(projectPath, "stage.db"))
 	if err == nil { // a old stage.db file exists
-		// rename to main.db and move to db directory
-		err := os.Rename(filepath.Join(projectPath, "stage.db"), filepath.Join(dbDirPath, DefaultOLAPDSN))
-		if err != nil {
-			return nil, err
-		}
-
-		err = os.Rename(filepath.Join(projectPath, "stage.db.wal"), filepath.Join(dbDirPath, fmt.Sprintf("%s.wal", DefaultOLAPDSN)))
-		if err != nil {
-			return nil, err
-		}
-		// catalog is embedded for older flow
-		embedCatalog = true
+		_ = os.Remove(filepath.Join(projectPath, "stage.db"))
+		_ = os.Remove(filepath.Join(projectPath, "stage.db.wal"))
+		logger.Named("console").Info("dropping old stage.db file and rebuilding project")
 	}
 
 	parsedVariables, err := variable.Parse(variables)
@@ -124,11 +114,6 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 			Type:   "sqlite",
 			Name:   "metastore",
 			Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
-		},
-		{
-			Type:   "sqlite",
-			Name:   "catalog",
-			Config: map[string]string{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultMetaStore))},
 		},
 	}
 
@@ -180,9 +165,10 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
-		ID:            DefaultInstanceID,
-		OLAPConnector: olapDriver,
-		RepoConnector: "repo",
+		ID:               DefaultInstanceID,
+		OLAPConnector:    olapDriver,
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -194,11 +180,15 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 				Name:   olapDriver,
 				Config: olapCfg,
 			},
+			{
+				Type:   "sqlite",
+				Name:   "catalog",
+				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultMetaStore))},
+			},
 		},
-		Variables:    parsedVariables,
-		Annotations:  map[string]string{},
-		WatchRepo:    true,
-		EmbedCatalog: embedCatalog,
+		Variables:   parsedVariables,
+		Annotations: map[string]string{},
+		WatchRepo:   true,
 		// ModelMaterializeDelaySeconds:     30, // TODO: Enable when we support skipping it for the initial load
 		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}
