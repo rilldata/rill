@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createAdminServiceListProjectMembers } from "@rilldata/web-admin/client";
+  import { useProjectMembersEmails } from "@rilldata/web-admin/features/projects/selectors";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import MultiselectCombobox from "../../../components/forms/MultiSelectCombobox.svelte";
 
@@ -8,11 +8,7 @@
   export let recipients: string[];
   export let error: string;
 
-  $: projectMembersQuery = createAdminServiceListProjectMembers(
-    organization,
-    project
-  );
-  $: projectMembers = $projectMembersQuery.data?.members ?? [];
+  $: membersEmails = useProjectMembersEmails(organization, project);
 
   function removeRecipient(recipient: string) {
     recipients = recipients.filter((r) => r !== recipient);
@@ -26,7 +22,7 @@
     label="Recipients"
     {error}
     placeholder="Search emails"
-    options={projectMembers.map((member) => member.userEmail)}
+    options={$membersEmails.data}
     hint="Recipients may receive different views based on their security policy."
   />
   <!-- Project members to invite -->
