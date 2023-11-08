@@ -43,7 +43,6 @@ export function convertToCron(
   dayOfWeek: string,
   timeOfDay: string
 ): string {
-  console.log("convertToCron", frequency, dayOfWeek, timeOfDay);
   const [hour, minute] = timeOfDay.split(":").map(Number);
   let cronExpr = `${minute} ${hour} `;
 
