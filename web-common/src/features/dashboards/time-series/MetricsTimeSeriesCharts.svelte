@@ -200,7 +200,7 @@
   start={startValue}
   {workspaceWidth}
 >
-  <div class="bg-white sticky top-0 flex pl-1">
+  <div class="bg-white sticky top-0 flex pl-1 z-10">
     {#if expandedMeasureName}
       <BackToOverview {metricViewName} />
     {:else}
@@ -215,7 +215,7 @@
       />
     {/if}
   </div>
-  <div class="bg-white sticky left-0 top-0 overflow-visible">
+  <div class="bg-white sticky left-0 top-0 overflow-visible z-10">
     <!-- top axis element -->
     <div />
     <MeasureZoom {metricViewName} />
