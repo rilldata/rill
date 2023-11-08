@@ -185,21 +185,21 @@
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
       return `<div class="flex items-center w-full h-full overflow-hidden pr-2 gap-1 ${justifyTotal}">
         <div class="w-5 shrink-0 h-full flex items-center justify-center" toggle-visible="${y}">${marker}</div>
-        <div class="truncate text-xs ${fontWeight} text-gray-700">${value.value}</div></div>`;
+        <div class="truncate text-xs ${fontWeight}">${value.value}</div></div>`;
     } else if (x === 1)
-      return `<div class="text-xs font-semibold text-right text-gray-700 flex items-center justify-end gap-2" >${value.value}
+      return `<div class="text-xs font-semibold text-right flex items-center justify-end gap-2" >${value.value}
         ${value.spark}
 
         </div>`;
     else
-      return `<div class="text-xs font-normal text-right text-gray-700" >${value.value}</div>`;
+      return `<div class="text-xs font-normal text-right" >${value.value}</div>`;
   };
 
   const renderRowCorner: PivotRenderCallback = (data) => {
     data.element.classList.add("bg-white", "z-10");
     if (data.x === 0)
       return `
-      <div class="flex items-center font-medium text-gray-700 text-left" sort="dimension">
+      <div class="flex items-center font-medium text-left" sort="dimension">
         <span class="truncate">${dimensionLabel} </span>
         ${
           comparing === "dimension" && sortType === SortType.DIMENSION
@@ -208,7 +208,7 @@
         }
       </div>`;
     if (data.x === 1)
-      return `<div class="text-right font-medium text-gray-700 flex items-center" sort="value">
+      return `<div class="text-right font-medium flex items-center" sort="value">
         <span class="truncate">${measureLabel} </span>
         ${
           comparing === "dimension" &&
@@ -219,7 +219,7 @@
         }
       </div>`;
     if (data.x === 2)
-      return `<div class="flex items-center justify-end text-gray-700" sort="value">${PieChart} % 
+      return `<div class="flex items-center justify-end" sort="value">${PieChart} % 
         ${
           comparing === "dimension" && sortType === SortType.VALUE
             ? MeasureArrow(sortDirection)
