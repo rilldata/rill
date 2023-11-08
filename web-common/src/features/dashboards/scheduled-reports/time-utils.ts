@@ -19,17 +19,6 @@ export function getTimeIn24FormatFromDate(date: Date): string {
   return `${date.getHours()}:${date.getMinutes().toString().padStart(2, "0")}`;
 }
 
-export function formatTime(date: Date): string {
-  let hours = date.getHours();
-  const minutes = date.getMinutes().toString().padStart(2, "0");
-  const period = hours >= 12 ? "pm" : "am";
-
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-
-  return `${hours}:${minutes}${period}`;
-}
-
 export function convertToCron(
   frequency: string,
   dayOfWeek: string,
