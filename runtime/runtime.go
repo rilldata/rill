@@ -89,7 +89,7 @@ func (r *Runtime) Close() error {
 	defer cancel()
 	err1 := r.registryCache.close(ctx)
 	err2 := r.queryCache.close()
-	err3 := r.connCache.Close() // Also closes metastore and catalogStore // TODO: Propagate ctx cancellation
+	err3 := r.connCache.Close() // Also closes metastore // TODO: Propagate ctx cancellation
 	return errors.Join(err1, err2, err3)
 }
 

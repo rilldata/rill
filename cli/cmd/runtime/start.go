@@ -193,7 +193,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			opts := &runtime.Options{
 				ConnectionCacheSize:          conf.ConnectionCacheSize,
 				MetastoreConnector:           "metastore",
-				CatalogConnector:             "",
+				CatalogConnector:             "", // metastore will be used as catalog
 				QueryCacheSizeBytes:          conf.QueryCacheSizeBytes,
 				SecurityEngineCacheSize:      conf.SecurityEngineCacheSize,
 				ControllerLogBufferCapacity:  conf.LogBufferCapacity,

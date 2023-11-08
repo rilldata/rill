@@ -31,7 +31,7 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 			{
 				Type:   "sqlite",
 				Name:   "catalog",
-				Config: map[string]string{"dsn": ":memory:"},
+				Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
 			},
 		},
 	}

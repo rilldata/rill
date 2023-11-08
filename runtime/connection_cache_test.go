@@ -51,7 +51,7 @@ func TestConnectionCache(t *testing.T) {
 			{
 				Type:   "sqlite",
 				Name:   "catalog",
-				Config: map[string]string{"dsn": ":memory:"},
+				Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
 			},
 		},
 	}
@@ -410,7 +410,7 @@ func createInstance(t *testing.T, rt *Runtime, instanceId string) {
 			{
 				Type:   "sqlite",
 				Name:   "catalog",
-				Config: map[string]string{"dsn": ":memory:"},
+				Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
 			},
 		},
 	}

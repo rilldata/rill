@@ -95,6 +95,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		return nil, err
 	}
 
+	// old behaviour when data was stored in a stage.db file in the project directory.
 	// drop old file, remove this code after some time
 	_, err = os.Stat(filepath.Join(projectPath, "stage.db"))
 	if err == nil { // a old stage.db file exists
