@@ -1,15 +1,7 @@
-export function getTodaysDayOfWeek(): string {
-  const dayOfWeekMap: Record<number, string> = {
-    0: "Sunday",
-    1: "Monday",
-    2: "Tuesday",
-    3: "Wednesday",
-    4: "Thursday",
-    5: "Friday",
-    6: "Saturday",
-  };
+import { DateTime } from "luxon";
 
-  return dayOfWeekMap[new Date().getDay()];
+export function getTodaysDayOfWeek(): string {
+  return DateTime.now().toLocaleString({ weekday: "long" });
 }
 
 export function getNextQuarterHour(): Date {
