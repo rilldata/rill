@@ -4,19 +4,14 @@ export function getTodaysDayOfWeek(): string {
   return DateTime.now().toLocaleString({ weekday: "long" });
 }
 
-export function getNextQuarterHour(): Date {
-  const MS_PER_MINUTE = 60000;
-  const MINUTES_PER_QUARTER_HOUR = 15;
-  const MS_PER_QUARTER_HOUR = MS_PER_MINUTE * MINUTES_PER_QUARTER_HOUR;
-
-  const currentTime = new Date();
-  return new Date(
-    Math.ceil(currentTime.getTime() / MS_PER_QUARTER_HOUR) * MS_PER_QUARTER_HOUR
-  );
+export function getNextQuarterHour(): DateTime {
+  const now = DateTime.local();
+  const nextQuarter = now.plus({ minutes: 15 - (now.minute % 15) });
+  return nextQuarter.startOf("minute");
 }
 
-export function getTimeIn24FormatFromDate(date: Date): string {
-  return `${date.getHours()}:${date.getMinutes().toString().padStart(2, "0")}`;
+export function getTimeIn24FormatFromDateTime(dateTime: DateTime): string {
+  return dateTime.toFormat("HH:mm");
 }
 
 export function convertToCron(

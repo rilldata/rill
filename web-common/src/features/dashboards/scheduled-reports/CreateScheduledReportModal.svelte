@@ -20,7 +20,7 @@
   import {
     convertToCron,
     getNextQuarterHour,
-    getTimeIn24FormatFromDate,
+    getTimeIn24FormatFromDateTime,
     getTodaysDayOfWeek,
   } from "./time-utils";
 
@@ -43,7 +43,7 @@
       title: "",
       frequency: "Weekly",
       dayOfWeek: getTodaysDayOfWeek(),
-      timeOfDay: getTimeIn24FormatFromDate(getNextQuarterHour()),
+      timeOfDay: getTimeIn24FormatFromDateTime(getNextQuarterHour()),
       exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
       exportLimit: "",
       recipients: [],
