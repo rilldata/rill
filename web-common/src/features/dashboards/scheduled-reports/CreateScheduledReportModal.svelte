@@ -35,6 +35,8 @@
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
   const queryArgs = JSON.parse(queryArgsJson);
+  // TODO: a better approach will be to use the queryArgs to craft the right state object
+  const dashState = new URLSearchParams(window.location.search).get("state");
 
   const { form, errors, handleSubmit, isSubmitting } = createForm({
     initialValues: {
@@ -69,7 +71,7 @@
               queryArgsJson: queryArgsJson,
               exportLimit: values.exportLimit || undefined,
               exportFormat: values.exportFormat,
-              openProjectSubpath: `/${queryArgs.metricsViewName}`, // TODO: serialize the report parameters into the `?state` URL param
+              openProjectSubpath: `/${queryArgs.metricsViewName}?state=${dashState}`,
               recipients: values.recipients,
             },
           },
