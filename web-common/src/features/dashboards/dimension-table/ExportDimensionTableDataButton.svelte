@@ -19,17 +19,6 @@
   export let includeScheduledReport: boolean;
   export let metricViewName: string;
 
-  // Only import the Scheduled Report modal if in the Cloud context
-  // This ensures Rill Developer doesn't try and fail to import the admin-client
-  let CreateScheduledReportModal: typeof SvelteComponent | undefined;
-  onMount(async () => {
-    if (includeScheduledReport) {
-      CreateScheduledReportModal = (
-        await import("../scheduled-reports/CreateScheduledReportModal.svelte")
-      ).default;
-    }
-  });
-
   let exportMenuOpen = false;
   let showScheduledReportDialog = false;
 
@@ -45,6 +34,45 @@
       timeControlStore,
     });
   };
+
+  // Only import the Scheduled Report modal if in the Cloud context
+  // This ensures Rill Developer doesn't try and fail to import the admin-client
+  let CreateScheduledReportModal: typeof SvelteComponent | undefined;
+  onMount(async () => {
+    if (includeScheduledReport) {
+      CreateScheduledReportModal = (
+        await import("../scheduled-reports/CreateScheduledReportModal.svelte")
+      ).default;
+    }
+  });
+
+  $: scheduledReportsQueryArgsJson = JSON.stringify({
+    instanceId: get(runtime).instanceId,
+    metricsViewName: metricViewName,
+    dimension: {
+      name: $dashboardStore.selectedDimensionName,
+    },
+    measures: $dashboardStore.selectedMeasureNames.map((name) => ({
+      name: name,
+    })),
+    timeRange: {
+      start: $timeControlStore.timeStart,
+      end: $timeControlStore.timeEnd,
+    },
+    comparisonTimeRange: {
+      start: $timeControlStore.comparisonTimeStart,
+      end: $timeControlStore.comparisonTimeEnd,
+    },
+    sort: [
+      {
+        name: $dashboardStore.leaderboardMeasureName,
+        desc: $dashboardStore.sortDirection === SortDirection.DESCENDING,
+        type: getQuerySortType($dashboardStore.dashboardSortType),
+      },
+    ],
+    filter: $dashboardStore.filters,
+    offset: "0",
+  });
 </script>
 
 <WithTogglableFloatingElement
@@ -115,33 +143,7 @@
   <svelte:component
     this={CreateScheduledReportModal}
     queryName="MetricsViewComparison"
-    queryArgsJson={JSON.stringify({
-      instanceId: get(runtime).instanceId,
-      metricsViewName: metricViewName,
-      dimension: {
-        name: $dashboardStore.selectedDimensionName,
-      },
-      measures: $dashboardStore.selectedMeasureNames.map((name) => ({
-        name: name,
-      })),
-      timeRange: {
-        start: $timeControlStore.timeStart,
-        end: $timeControlStore.timeEnd,
-      },
-      comparisonTimeRange: {
-        start: $timeControlStore.comparisonTimeStart,
-        end: $timeControlStore.comparisonTimeEnd,
-      },
-      sort: [
-        {
-          name: $dashboardStore.leaderboardMeasureName,
-          desc: $dashboardStore.sortDirection === SortDirection.DESCENDING,
-          type: getQuerySortType($dashboardStore.dashboardSortType),
-        },
-      ],
-      filter: $dashboardStore.filters,
-      offset: "0",
-    })}
+    queryArgsJson={scheduledReportsQueryArgsJson}
     open={showScheduledReportDialog}
     on:close={() => (showScheduledReportDialog = false)}
   />
