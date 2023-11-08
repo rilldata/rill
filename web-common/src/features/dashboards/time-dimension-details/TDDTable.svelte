@@ -54,15 +54,15 @@
   const renderCell: PivotRenderCallback = (data) => {
     const classesToAdd = ["text-right"];
     const classesToRemove = [
-      "!bg-white",
-      "!bg-gray-100",
-      "!bg-gray-200",
-      "!bg-blue-50",
-      "!bg-blue-100",
-      "!bg-blue-200",
-      "!bg-slate-50",
-      "!bg-slate-100",
-      "!bg-slate-200",
+      "bg-white",
+      "bg-gray-100",
+      "bg-gray-200",
+      "bg-blue-50",
+      "bg-blue-100",
+      "bg-blue-200",
+      "bg-slate-50",
+      "bg-slate-100",
+      "bg-slate-200",
     ];
 
     if (data.y === 2) {
@@ -181,11 +181,7 @@
       x - tableData?.fixedColCount
     );
     if (x > 0) {
-      element.classList.remove(
-        "!bg-slate-50",
-        "!bg-slate-100",
-        "!bg-slate-200"
-      );
+      element.classList.remove("bg-slate-50", "bg-slate-100", "bg-slate-200");
       element.classList.add(cellBgColor);
     }
     if (x === 0) {
