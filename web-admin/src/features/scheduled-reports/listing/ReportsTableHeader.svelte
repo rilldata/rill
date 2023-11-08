@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { beforeNavigate } from "$app/navigation";
   import { Search } from "@rilldata/web-common/components/search";
   import type { Table } from "@tanstack/table-core/src/types";
   import { getContext } from "svelte";
@@ -10,28 +9,26 @@
   // Search
   let filter = "";
 
+  $: filterTable(filter);
+
   function filterTable(filter: string) {
     $table.setGlobalFilter(filter);
   }
 
-  $: filterTable(filter);
-
-  beforeNavigate(() => (filter = "")); // resets filter when changing projects
-
-  // Number of dashboards
-  $: numDashboards = $table.getRowModel().rows.length;
+  // Number of reports
+  $: numReports = $table.getRowModel().rows.length;
 
   // Sort
-  // function sortByTitle() {
-  //   $table.setSorting([{ id: "title", desc: false }]);
+  // function sortAlphabetically() {
+  //   $table.setSorting([{ id: "monocolumn", desc: false }]);
   // }
 
-  // function sortByName() {
-  //   $table.setSorting([{ id: "name", desc: false }]);
+  // function sortByMostRecentlyRun() {
+  //   $table.setSorting([{ id: "lastRun", desc: true }]);
   // }
 
-  // function sortByLastRefreshTime() {
-  //   $table.setSorting([{ id: "lastRefreshed", desc: true }]);
+  // function sortByNextToRun() {
+  //   $table.setSorting([{ id: "monocolumn", desc: false }]);
   // }
 
   // let openSortMenu = false;
@@ -53,19 +50,20 @@
       <!-- Spacer -->
       <div class="grow" />
 
-      <!-- Number of dashboards -->
-      <span>{numDashboards} dashboard{numDashboards !== 1 ? "s" : ""}</span>
+      <!-- filter menu button (future work) -->
+      <!-- <Button on:click={() => console.log("open filter menu")} type="secondary">
+    <span>Filter</span>
+    <CaretDownIcon />
+  </Button> -->
+
+      <!-- Number of reports -->
+      <span class="shrink-0"
+        >{numReports} report{numReports !== 1 ? "s" : ""}</span
+      >
 
       <!-- Sort button -->
-      <!-- <WithTogglableFloatingElement
-        active={openSortMenu}
-        distance={4}
-        alignment="end"
-      >
-        <Button
-          on:click={() => (openSortMenu = !openSortMenu)}
-          type="secondary"
-        >
+      <!-- <WithTogglableFloatingElement active={openSortMenu}>
+        <Button on:click={() => (openSortMenu = true)} type="secondary">
           <span>Sort</span>
           <CaretDownIcon />
         </Button>
@@ -76,11 +74,11 @@
           on:click-outside={closeSortMenu}
           on:escape={closeSortMenu}
         >
-          <MenuItem on:select={sortByTitle}>Alphabetical by title</MenuItem>
-          <MenuItem on:select={sortByName}>Alphabetical by URL</MenuItem>
-          <MenuItem on:select={sortByLastRefreshTime}
-            >Most recently refreshed</MenuItem
+          <MenuItem on:select={sortAlphabetically}>Alphabetical</MenuItem>
+          <MenuItem on:select={sortByMostRecentlyRun}
+            >Most recently run</MenuItem
           >
+          <MenuItem on:select={sortByNextToRun} disabled>Next to run</MenuItem>
         </Menu>
       </WithTogglableFloatingElement> -->
     </td>
