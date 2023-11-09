@@ -50,7 +50,5 @@ test.describe("dimension and measure selectors", () => {
 
     await expect(page.getByText("Publisher")).toBeVisible();
     await expect(page.getByText("Domain")).not.toBeVisible();
-    // Delete this when your flow is ready.
-    await page.pause();
   });
 });
