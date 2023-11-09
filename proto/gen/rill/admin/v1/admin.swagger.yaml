@@ -2314,6 +2314,8 @@ definitions:
         type: string
       refreshCron:
         type: string
+      refreshTimeZone:
+        type: string
       queryName:
         type: string
       queryArgsJson:
