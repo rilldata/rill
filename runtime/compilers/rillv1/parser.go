@@ -626,9 +626,9 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 			}
 		}
 
-		// Rule 3: If there's a resource of the same kind with that name, use it
+		// Rule 3: If there's another resource of the same kind with that name, use it
 		n := ResourceName{Kind: r.Name.Kind, Name: ref.Name}
-		if _, ok := p.Resources[n.Normalized()]; ok {
+		if other, ok := p.Resources[n.Normalized()]; ok && other != r {
 			refs = append(refs, n)
 			continue
 		}
