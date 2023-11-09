@@ -84,7 +84,8 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		}
 
 		table := client.DatasetInProject(projectID, dataset).Table(tableID)
-		// extract source metadata to ensure the source is a regular table as storage api doesn't support other types
+		// extract source metadata to ensure the source is a regular table or a snapshot
+		// as storage api doesn't support other types
 		metadata, err := table.Metadata(ctx)
 		if err != nil {
 			client.Close()
@@ -93,7 +94,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		if metadata.Type == bigquery.RegularTable || metadata.Type == bigquery.Snapshot {
 			it = table.Read(ctx)
 		} else {
-			c.logger.Info("source is not a regular table, falling back to a query execution")
+			c.logger.Info("source is not a regular table or a snapshot, falling back to a query execution")
 			fallbackToQueryExecution = true
 			client.Close()
 		}
