@@ -158,7 +158,7 @@ test.describe("dashboard", () => {
     await page.getByRole("button", { name: "Export model data" }).click();
     await page.getByText("Export as CSV").click();
     const downloadCSV = await downloadCSVPromise;
-    await downloadCSV.path();
+    await downloadCSV.saveAs("temp/" + downloadCSV.suggestedFilename());
     const csvRegex = /^AdBids_model_filtered_.*\.csv$/;
     expect(csvRegex.test(downloadCSV.suggestedFilename())).toBe(true);
 
@@ -168,7 +168,7 @@ test.describe("dashboard", () => {
     await page.getByRole("button", { name: "Export model data" }).click();
     await page.getByText("Export as XLSX").click();
     const downloadXLSX = await downloadXLSXPromise;
-    await downloadXLSX.path();
+    await downloadXLSX.saveAs("temp/" + downloadXLSX.suggestedFilename());
     const xlsxRegex = /^AdBids_model_filtered_.*\.xlsx$/;
     expect(xlsxRegex.test(downloadXLSX.suggestedFilename())).toBe(true);
 
@@ -178,7 +178,8 @@ test.describe("dashboard", () => {
     await page.getByRole("button", { name: "Export model data" }).click();
     await page.getByText("Export as Parquet").click();
     const downloadParquet = await downloadParquetPromise;
-    await downloadParquet.path();
+    await downloadParquet.saveAs("temp/" + downloadParquet.suggestedFilename());
+
     const parquetRegex = /^AdBids_model_filtered_.*\.parquet$/;
     expect(parquetRegex.test(downloadParquet.suggestedFilename())).toBe(true);
 

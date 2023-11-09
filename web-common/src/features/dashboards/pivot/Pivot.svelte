@@ -1,6 +1,6 @@
 <script lang="ts">
   import "regular-table";
-  import "regular-table/dist/css/material.css";
+  import "./regular-table-style.css";
   import type { RegularTableElement } from "regular-table";
   import { createEventDispatcher, onMount } from "svelte";
   import type { PivotPos, PivotRenderCallback } from "./types";

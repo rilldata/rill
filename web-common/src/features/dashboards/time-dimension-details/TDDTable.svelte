@@ -61,15 +61,15 @@
     const classesToRemove = [
       "border-b",
       "border-gray-200",
-      "!bg-white",
-      "!bg-gray-100",
-      "!bg-gray-200",
-      "!bg-blue-50",
-      "!bg-blue-100",
-      "!bg-blue-200",
-      "!bg-slate-50",
-      "!bg-slate-100",
-      "!bg-slate-200",
+      "bg-white",
+      "bg-gray-100",
+      "bg-gray-200",
+      "bg-blue-50",
+      "bg-blue-100",
+      "bg-blue-200",
+      "bg-slate-50",
+      "bg-slate-100",
+      "bg-slate-200",
     ];
 
     if (pinIndex > -1 && comparing === "dimension" && data.y === pinIndex + 1) {
@@ -125,40 +125,52 @@
       noSelectionMarkerCount = 0;
 
       if (comparing === "dimension") {
+        let icon = "";
         const isHovering = document.querySelector(".pin")?.matches(":hover");
-        if (tableData?.selectedValues.length === 0) return ``;
-        if (pinIndex === tableData?.selectedValues.length - 1)
-          return isHovering ? PinHoverUnsetIcon : PinSetIcon;
-        else return isHovering ? PinSetHoverIcon : PinUnsetIcon;
+        if (tableData?.selectedValues.length === 0) icon = "";
+        else if (pinIndex === tableData?.selectedValues.length - 1)
+          icon = isHovering ? PinHoverUnsetIcon : PinSetIcon;
+        else icon = isHovering ? PinSetHoverIcon : PinUnsetIcon;
+        return { icon, muted: false };
       }
-      return ``;
+      return { icon: "", muted: false };
     }
     const visibleIdx = tableData?.selectedValues.indexOf(value.value);
 
     if (comparing === "time") {
-      if (y == 1) return SelectedCheckmark("fill-blue-500");
-      else if (y == 2) return SelectedCheckmark("fill-gray-300");
-      else return ``;
+      let icon = "";
+      if (y == 1) icon = SelectedCheckmark("fill-blue-500");
+      else if (y == 2) icon = SelectedCheckmark("fill-gray-300");
+      return { icon, muted: false };
     }
 
     if (visibleIdx > -1) {
-      if (excludeMode) return ExcludeIcon;
+      if (excludeMode) return { icon: ExcludeIcon, muted: true };
       // Only show colored markers for first 11 selected values
       else
-        return SelectedCheckmark(
-          "fill-" +
-            (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300")
-        );
+        return {
+          icon: SelectedCheckmark(
+            "fill-" +
+              (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300")
+          ),
+          muted: false,
+        };
     } else if (noSelectionMarkerCount < 3) {
       if (excludeMode || !tableData?.selectedValues.length) {
         noSelectionMarkerCount += 1;
-        return `<div class="rounded-full bg-${
-          CHECKMARK_COLORS[noSelectionMarkerCount - 1]
-        }" style="width: 13px; height: 13px;"></div>`;
+        return {
+          icon: `<div class="rounded-full bg-${
+            CHECKMARK_COLORS[noSelectionMarkerCount - 1]
+          }" style="width: 13px; height: 13px;"></div>`,
+          muted: false,
+        };
       }
     }
 
-    return ``;
+    return {
+      icon: ``,
+      muted: !excludeMode && tableData?.selectedValues.length > 0,
+    };
   };
 
   const renderRowHeader: PivotRenderCallback = ({ value, x, y, element }) => {
@@ -179,35 +191,39 @@
       x - tableData?.fixedColCount
     );
     if (x > 0) {
-      element.classList.remove(
-        "!bg-slate-50",
-        "!bg-slate-100",
-        "!bg-slate-200"
-      );
+      element.classList.remove("bg-slate-50", "bg-slate-100", "bg-slate-200");
       element.classList.add(cellBgColor);
     }
     if (x === 0) {
       element.classList.add("pl-0");
       const marker = getMarker(value, y);
+
+      // Gray out rows which are not included
+      if (marker.muted) {
+        element?.parentElement?.classList.add("ui-copy-disabled-faint");
+      } else {
+        element?.parentElement?.classList.remove("ui-copy-disabled-faint");
+      }
+
       const pinClass = y === 0 ? "pin" : "";
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
       return `<div class="flex items-center w-full h-full overflow-hidden pr-2 gap-1">
-        <div class="${pinClass} w-5 shrink-0 h-full flex items-center justify-center" marker="${y}">${marker}</div>
-        <div class="truncate text-xs ${fontWeight} text-gray-700">${value.value}</div></div>`;
+        <div class="${pinClass} w-5 shrink-0 h-full flex items-center justify-center" marker="${y}">${marker.icon}</div>
+        <div class="truncate text-xs ${fontWeight}">${value.value}</div></div>`;
     } else if (x === 1)
-      return `<div class="text-xs font-semibold text-right text-gray-700 flex items-center justify-end gap-2" >${value.value}
+      return `<div class="text-xs font-semibold text-right flex items-center justify-end gap-2" >
+        ${value.value}
         ${value.spark}
-
         </div>`;
     else
-      return `<div class="text-xs font-normal text-right text-gray-700" >${value.value}</div>`;
+      return `<div class="text-xs font-normal text-right" >${value.value}</div>`;
   };
 
   const renderRowCorner: PivotRenderCallback = (data) => {
     data.element.classList.add("bg-white", "z-10");
     if (data.x === 0)
       return `
-      <div class="flex items-center font-medium text-gray-700 text-left" sort="dimension">
+      <div class="flex items-center font-medium text-left" sort="dimension">
         <span class="truncate">${dimensionLabel} </span>
         ${
           comparing === "dimension" && sortType === SortType.DIMENSION
@@ -216,7 +232,7 @@
         }
       </div>`;
     if (data.x === 1)
-      return `<div class="text-right font-medium text-gray-700 flex items-center" sort="value">
+      return `<div class="text-right font-medium flex items-center" sort="value">
         <span class="truncate">${measureLabel} </span>
         ${
           comparing === "dimension" &&
@@ -227,7 +243,7 @@
         }
       </div>`;
     if (data.x === 2)
-      return `<div class="flex items-center justify-end text-gray-700" sort="value">${PieChart} % 
+      return `<div class="flex items-center justify-end" sort="value">${PieChart} % 
         ${
           comparing === "dimension" && sortType === SortType.VALUE
             ? MeasureArrow(sortDirection)

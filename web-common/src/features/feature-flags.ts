@@ -2,9 +2,11 @@ import type { BeforeNavigate } from "@sveltejs/kit";
 import { writable } from "svelte/store";
 
 export type FeatureFlags = {
+  adminServer: boolean;
   readOnly: boolean;
 };
 export const featureFlags = writable<FeatureFlags>({
+  adminServer: undefined,
   readOnly: undefined,
 });
 

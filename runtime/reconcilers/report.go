@@ -320,6 +320,7 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
+		req.TimeRange = overrideTimeRange(req.TimeRange, t)
 	case "MetricsViewToplist":
 		req := &runtimev1.MetricsViewToplistRequest{}
 		qry.Query = &runtimev1.Query_MetricsViewToplistRequest{MetricsViewToplistRequest: req}
@@ -348,6 +349,7 @@ func buildQuery(rep *runtimev1.Report, t time.Time) (*runtimev1.Query, error) {
 		if err != nil {
 			return nil, fmt.Errorf("invalid properties for query %q: %w", rep.Spec.QueryName, err)
 		}
+		req.TimeRange = overrideTimeRange(req.TimeRange, t)
 	default:
 		return nil, fmt.Errorf("query %q not supported for reports", rep.Spec.QueryName)
 	}
@@ -366,4 +368,14 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 	default:
 		return f.String()
 	}
+}
+
+func overrideTimeRange(tr *runtimev1.TimeRange, t time.Time) *runtimev1.TimeRange {
+	if tr == nil {
+		tr = &runtimev1.TimeRange{}
+	}
+
+	tr.End = timestamppb.New(t)
+
+	return tr
 }

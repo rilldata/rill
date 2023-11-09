@@ -1,0 +1,39 @@
+/* Copy of regular-table/dist/css/material.css with some styles removed */
+
+regular-table tbody td,regular-table thead th:not(.rt-group-corner){transform:translate(var(--regular-table--transform-x,0px),0);}
+regular-table tbody{transform:translate(0,var(--regular-table--transform-y,0px));}
+regular-table tbody tr:first-child td,regular-table tbody tr:first-child th{-webkit-clip-path:polygon(0 var(--regular-table--clip-y,0),0 100%,100% 100%,100% var(--regular-table--clip-y,0));clip-path:polygon(0 var(--regular-table--clip-y,0),0 100%,100% 100%,100% var(--regular-table--clip-y,0));}
+regular-table tbody tr td:first-of-type{-webkit-clip-path:polygon(var(--regular-table--clip-x,0)0,var(--regular-table--clip-x,0)100%,100% 100%,100% 0);clip-path:polygon(var(--regular-table--clip-x,0)0,var(--regular-table--clip-x,0)100%,100% 100%,100% 0);}
+regular-table tbody tr:first-child td:first-of-type{-webkit-clip-path:polygon(var(--regular-table--clip-x,0)var(--regular-table--clip-y,0),var(--regular-table--clip-x,0)100%,100% 100%,100% var(--regular-table--clip-y,0));clip-path:polygon(var(--regular-table--clip-x,0)var(--regular-table--clip-y,0),var(--regular-table--clip-x,0)100%,100% 100%,100% var(--regular-table--clip-y,0));}
+regular-table{padding-top:12px;padding-left:12px;padding-bottom:0;padding-right:0;scrollbar-color:transparent transparent;scrollbar-width:thin;outline:none;}
+regular-table:hover{scrollbar-color:rgba(0,0,0,0.3)transparent;}
+regular-table div[tabindex]{outline:none;}
+regular-table>div{position:absolute;top:0;left:0;right:0;bottom:0;overflow:hidden;}
+regular-table th{text-align:center;}
+regular-table thead tr:not(:last-child) th{overflow:hidden;max-width:0px;}
+regular-table thead tr:last-child .rt-float,regular-table tbody .rt-float{text-align:right;}
+regular-table thead .rt-integer,regular-table tbody .rt-integer{text-align:right;}
+regular-table tbody th{text-align:left;}
+regular-table span.rt-tree-container{display:flex;align-items:center;height:100%;}
+regular-table thead .rt-string,regular-table tbody .rt-string,regular-table thead .rt-date,regular-table tbody .rt-date,regular-table thead .rt-datetime,regular-table tbody .rt-datetime{text-align:left;}
+regular-table thead tr:last-child th{border-bottom:1px solid#ddd;}
+regular-table th{position:relative;}
+regular-table tr th span.rt-tree-group{margin-left:5px;margin-right:15px;border-left:1px solid#eee;height:100%;}
+regular-table td,regular-table th{white-space:nowrap;font-size:12px;padding-right:5px;padding-left:5px;padding-top:0px;padding-bottom:0px;height:19px;}
+regular-table table *{box-sizing:border-box;}
+regular-table table{position:absolute;overflow:hidden;color:#666;outline:none;}
+regular-table span.rt-row-header-icon{color:#aaa;padding-right:4px;font-family:"Material Icons";}
+regular-table span.rt-column-header-icon{font-size:10px;padding-left:3px;display:inline-block;width:10px;font-family:"Material Icons";}
+regular-table span.rt-row-header-icon:hover{color:#1a7da1;text-shadow:0px 0px 3px#1a7da1;}
+regular-table .rt-selected td{background-color:#eee;}
+regular-table .rt-cell-clip{overflow:hidden;text-overflow:ellipsis;}
+regular-table td span.rt-group-name,regular-table th span.rt-group-name{margin-right:-5px;padding-right:5px;padding-left:8px;flex:1;height:100%;}
+regular-table th span.rt-group-name{text-align:left;}
+regular-table td th span.rt-group-leaf,regular-table th span.rt-group-leaf{margin-left:16px;height:100%;}
+regular-table .rt-column-resize{height:100%;width:10px;position:absolute;top:0;right:0;cursor:col-resize;}
+regular-table::-webkit-scrollbar,regular-table::-webkit-scrollbar-corner{background-color:transparent;height:12px;width:12px;}
+regular-table::-webkit-scrollbar-thumb{background-clip:content-box;background-color:rgba(0,0,0,0);border-radius:5px;}
+regular-table::-webkit-scrollbar-thumb:horizontal{border-bottom:2px solid transparent;border-top:2px solid transparent;}
+regular-table::-webkit-scrollbar-thumb:vertical{border-left:2px solid transparent;border-right:2px solid transparent;}
+regular-table:hover::-webkit-scrollbar-thumb{background-color:rgba(0,0,0,0.15);}
+regular-table::-webkit-scrollbar-thumb:hover{background-color:rgba(0,0,0,0.3);}

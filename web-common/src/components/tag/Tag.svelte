@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let color: "default" | "red" = "default";
+  export let color: "default" | "red" | "blue" = "default";
 
   function getColorClass(color: string) {
     switch (color) {
@@ -7,6 +7,8 @@
         return "bg-gray-100 border-gray-300 text-gray-600";
       case "red":
         return "bg-red-50 border-red-300 text-red-600";
+      case "blue":
+        return "bg-blue-50 border-blue-300 text-blue-600";
     }
   }
 </script>

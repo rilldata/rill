@@ -126,12 +126,9 @@
         {#if expandedMeasureName}
           <TimeDimensionDisplay {metricViewName} />
         {:else if selectedDimensionName}
-          <DimensionDisplay
-            {metricViewName}
-            dimensionName={selectedDimensionName}
-          />
+          <DimensionDisplay />
         {:else}
-          <LeaderboardDisplay {metricViewName} />
+          <LeaderboardDisplay />
         {/if}
       </div>
     </div>

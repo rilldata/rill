@@ -487,34 +487,39 @@ const metricViewReducers = {
     });
   },
 
-  toggleFilter(name: string, dimensionName: string, dimensionValue: string) {
+  toggleFilter(
+    name: string,
+    dimensionName: string | undefined,
+    dimensionValue: string
+  ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-        dimensionName
+        dimensionName ?? ""
       )
         ? "exclude"
         : "include";
 
-      const dimensionEntryIndex = metricsExplorer.filters[
-        relevantFilterKey
-      ].findIndex((filter) => filter.name === dimensionName);
+      const filters = metricsExplorer?.filters[relevantFilterKey];
+      // if there are no filters, or if the dimension name is not defined,
+      // there we cannot update anything.
+      if (filters === undefined || dimensionName === undefined) {
+        return;
+      }
+
+      const dimensionEntryIndex =
+        filters.findIndex((filter) => filter.name === dimensionName) ?? -1;
 
       if (dimensionEntryIndex >= 0) {
-        const index = metricsExplorer.filters[relevantFilterKey][
-          dimensionEntryIndex
-        ].in?.findIndex((value) => value === dimensionValue) as number;
+        const filtersIn = filters[dimensionEntryIndex].in;
+        if (filtersIn === undefined) return;
+
+        const index = filtersIn?.findIndex(
+          (value) => value === dimensionValue
+        ) as number;
         if (index >= 0) {
-          metricsExplorer.filters[relevantFilterKey][
-            dimensionEntryIndex
-          ].in?.splice(index, 1);
-          if (
-            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in
-              .length === 0
-          ) {
-            metricsExplorer.filters[relevantFilterKey].splice(
-              dimensionEntryIndex,
-              1
-            );
+          filtersIn?.splice(index, 1);
+          if (filtersIn.length === 0) {
+            filters.splice(dimensionEntryIndex, 1);
           }
 
           // Only decrement pinIndex if the removed value was before the pinned value
@@ -523,12 +528,9 @@ const metricViewReducers = {
           }
           return;
         }
-
-        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in.push(
-          dimensionValue
-        );
+        filtersIn.push(dimensionValue);
       } else {
-        metricsExplorer.filters[relevantFilterKey].push({
+        filters.push({
           name: dimensionName,
           in: [dimensionValue],
         });
@@ -617,7 +619,7 @@ export function useDashboardStore(
   });
 }
 
-function setDisplayComparison(
+export function setDisplayComparison(
   metricsExplorer: MetricsExplorerEntity,
   showTimeComparison: boolean
 ) {
