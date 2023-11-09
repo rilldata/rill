@@ -16,7 +16,7 @@
   import { Button } from "../../../components/button";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
-  import RecipientsFormElement from "./RecipientsFormElement.svelte";
+  import RecipientsList from "./RecipientsList.svelte";
   import {
     convertToCron,
     getNextQuarterHour,
@@ -46,12 +46,11 @@
       timeOfDay: getTimeIn24FormatFromDateTime(getNextQuarterHour()),
       exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
       exportLimit: "",
-      recipients: [],
+      recipients: [] as string[],
     },
     validationSchema: yup.object({
       title: yup.string().required("Required"),
-      // TODO: uncomment and fix this validation
-      // recipients: yup.array().of(yup.string()).min(1, "Required"),
+      recipients: yup.array().min(1, "Required"),
     }),
     onSubmit: async (values) => {
       const refreshCron = convertToCron(
@@ -87,6 +86,26 @@
       } catch (e) {
         // showing error below
       }
+    },
+  });
+
+  // This form-within-a-form is used to add new recipients to the parent form
+  const {
+    form: newRecipientForm,
+    errors: newRecipientErrors,
+    handleSubmit: newRecipientHandleSubmit,
+  } = createForm({
+    initialValues: {
+      newRecipient: "",
+    },
+    validationSchema: yup.object({
+      newRecipient: yup.string().email("Invalid email"),
+    }),
+    onSubmit: (values) => {
+      if (values.newRecipient) {
+        $form["recipients"] = $form["recipients"].concat(values.newRecipient);
+      }
+      $newRecipientForm.newRecipient = "";
     },
   });
 </script>
@@ -155,15 +174,26 @@
       placeholder="1000"
       optional
     />
-    <RecipientsFormElement
-      bind:recipients={$form["recipients"]}
-      error={$errors["recipients"]}
-      {organization}
-      {project}
-    />
+    <div class="flex flex-col gap-y-2">
+      <form
+        on:submit|preventDefault={newRecipientHandleSubmit}
+        id="add-recipient-form"
+        autocomplete="off"
+      >
+        <InputV2
+          bind:value={$newRecipientForm["newRecipient"]}
+          error={$newRecipientErrors["newRecipient"]}
+          id="newRecipient"
+          label="Recipients"
+          placeholder="Add an email address"
+          hint="Recipients will only be able to see the report if they have access to the project. Recipients may receive different views based on their security policy."
+        />
+      </form>
+      <RecipientsList bind:recipients={$form["recipients"]} />
+    </div>
   </form>
   <svelte:fragment slot="footer">
-    <div class="flex items-center gap-x-2">
+    <div class="flex items-center gap-x-2 mt-2">
       {#if $createReport.isError}
         <div class="text-red-500">{$createReport.error.message}</div>
       {/if}
