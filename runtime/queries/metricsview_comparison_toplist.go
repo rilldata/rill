@@ -241,15 +241,18 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	var labelCols []string
 	var selectCols []string
 	unnestClause := ""
+	dimLabel := colName
+	if dim.Label != "" {
+		dimLabel = safeName(dim.Label)
+	}
 	if dim.Unnest && dialect != drivers.DialectDruid {
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
 		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
-		labelCols = []string{colName}
 		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
 	} else {
 		selectCols = append(selectCols, colName)
-		labelCols = []string{colName}
 	}
+	labelCols = []string{dimLabel}
 
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
@@ -621,6 +624,10 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		groupByCol = unnestColName
 	}
 
+	finalDimName := safeName(q.DimensionName)
+	if export && dim.Label != "" {
+		finalDimName = safeName(dim.Label)
+	}
 	var sql string
 	if dialect != drivers.DialectDruid {
 		sql = fmt.Sprintf(`
@@ -640,21 +647,21 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		OFFSET
 			%[8]d
 		`,
-			subSelectClause,           // 1
-			colName,                   // 2
-			safeName(mv.Table),        // 3
-			baseWhereClause,           // 4
-			comparisonWhereClause,     // 5
-			orderClause,               // 6
-			limitClause,               // 7
-			q.Offset,                  // 8
-			finalSelectClause,         // 9
-			safeName(q.DimensionName), // 10
-			joinType,                  // 11
-			baseLimitClause,           // 12
-			comparisonLimitClause,     // 13
-			unnestClause,              // 14
-			groupByCol,                // 15
+			subSelectClause,       // 1
+			colName,               // 2
+			safeName(mv.Table),    // 3
+			baseWhereClause,       // 4
+			comparisonWhereClause, // 5
+			orderClause,           // 6
+			limitClause,           // 7
+			q.Offset,              // 8
+			finalSelectClause,     // 9
+			finalDimName,          // 10
+			joinType,              // 11
+			baseLimitClause,       // 12
+			comparisonLimitClause, // 13
+			unnestClause,          // 14
+			groupByCol,            // 15
 		)
 	} else {
 		/*
@@ -811,8 +818,14 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 		metaLen = len(q.Result.Rows[0].MeasureValues)
 	}
 	meta := make([]*runtimev1.MetricsViewColumn, metaLen+1)
+	dimName := q.DimensionName
+	for _, d := range mv.Dimensions {
+		if d.Name == q.DimensionName && d.Label != "" {
+			dimName = d.Label
+		}
+	}
 	meta[0] = &runtimev1.MetricsViewColumn{
-		Name: q.DimensionName,
+		Name: dimName,
 	}
 	if comparison {
 		for i, m := range q.Result.Rows[0].MeasureValues {
@@ -841,7 +854,7 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 	for i, row := range q.Result.Rows {
 		data[i] = &structpb.Struct{
 			Fields: map[string]*structpb.Value{
-				q.DimensionName: {
+				dimName: {
 					Kind: &structpb.Value_StringValue{
 						StringValue: row.DimensionValue.GetStringValue(),
 					},
@@ -850,28 +863,28 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 		}
 		for _, m := range row.MeasureValues {
 			if comparison {
-				data[i].Fields[m.MeasureName] = &structpb.Value{
+				data[i].Fields[labelMap[m.MeasureName]] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.BaseValue.GetNumberValue(),
 					},
 				}
-				data[i].Fields[fmt.Sprintf("%s__previous", m.MeasureName)] = &structpb.Value{
+				data[i].Fields[fmt.Sprintf("%s (prev)", labelMap[m.MeasureName])] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.ComparisonValue.GetNumberValue(),
 					},
 				}
-				data[i].Fields[fmt.Sprintf("%s__delta_abs", m.MeasureName)] = &structpb.Value{
+				data[i].Fields[fmt.Sprintf("%s (Δ)", labelMap[m.MeasureName])] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.DeltaAbs.GetNumberValue(),
 					},
 				}
-				data[i].Fields[fmt.Sprintf("%s__delta_rel", m.MeasureName)] = &structpb.Value{
+				data[i].Fields[fmt.Sprintf("%s (Δ%%)", labelMap[m.MeasureName])] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.DeltaRel.GetNumberValue(),
 					},
 				}
 			} else {
-				data[i].Fields[m.MeasureName] = &structpb.Value{
+				data[i].Fields[labelMap[m.MeasureName]] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.BaseValue.GetNumberValue(),
 					},
