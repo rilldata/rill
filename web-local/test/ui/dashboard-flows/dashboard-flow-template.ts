@@ -21,6 +21,7 @@ test.describe("dashboard", () => {
     await createAdBidsModel(page);
     await createDashboardFromModel(page, "AdBids_model");
 
-    // ADD BREAKPOINT HERE
+    // Delete this when your flow is ready.
+    await page.pause();
   });
 });
