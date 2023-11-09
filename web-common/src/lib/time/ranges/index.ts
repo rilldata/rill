@@ -139,6 +139,7 @@ export function convertTimeRangePreset(
   if (timeRangePreset === TimeRangePreset.ALL_TIME) {
     return {
       name: timeRangePreset,
+      isoRange: "inf",
       start,
       end: new Date(end.getTime() + 1),
     };
@@ -153,6 +154,7 @@ export function convertTimeRangePreset(
 
   return {
     name: timeRangePreset,
+    isoRange: timeRange.isoRange,
     start: timeRangeDates.startDate,
     end: timeRangeDates.endDate,
   };

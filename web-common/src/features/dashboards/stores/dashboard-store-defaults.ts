@@ -93,7 +93,7 @@ function setDefaultComparisonTimeRange(
   if (!comparisonRange.isComparisonRangeAvailable) return;
 
   metricsExplorer.selectedComparisonTimeRange = {
-    name: comparisonOption,
+    isoRange: comparisonOption,
     start: comparisonRange.start,
     end: comparisonRange.end,
   };

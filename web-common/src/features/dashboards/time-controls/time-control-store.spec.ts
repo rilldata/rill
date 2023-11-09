@@ -117,7 +117,7 @@ describe("time-control-store", () => {
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
-      name: TimeRangePreset.LAST_24_HOURS,
+      isoRange: "PT24H",
       start: undefined,
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
@@ -150,7 +150,7 @@ describe("time-control-store", () => {
     );
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
-      name: TimeRangePreset.LAST_7_DAYS,
+      isoRange: "P7D",
       start: new Date("2021-01-01"),
       end: new Date("2021-03-31"),
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
@@ -188,7 +188,7 @@ describe("time-control-store", () => {
 
     metricsExplorerStore.displayTimeComparison(AD_BIDS_NAME, true);
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
-      name: TimeRangePreset.LAST_24_HOURS,
+      isoRange: "PT24H",
       start: undefined,
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
@@ -205,7 +205,7 @@ describe("time-control-store", () => {
     );
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
-      name: TimeRangePreset.LAST_12_MONTHS,
+      isoRange: "P1M",
       start: undefined,
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_DAY,
@@ -214,7 +214,7 @@ describe("time-control-store", () => {
     expect(get(timeControlsStore).showComparison).toBeFalsy();
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
-      name: TimeRangePreset.LAST_7_DAYS,
+      isoRange: "P7D",
       start: undefined,
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_DAY,
@@ -258,7 +258,7 @@ describe("time-control-store", () => {
 
     metricsExplorerStore.displayTimeComparison(AD_BIDS_NAME, true);
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
-      name: TimeRangePreset.LAST_24_HOURS,
+      isoRange: "PT24H",
       start: undefined,
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
@@ -299,7 +299,7 @@ describe("time-control-store", () => {
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
     metricsExplorerStore.displayTimeComparison(AD_BIDS_NAME, true);
     metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {
-      name: "P1M",
+      isoRange: "P1M",
     } as any);
 
     metricsExplorerStore.setSelectedScrubRange(AD_BIDS_NAME, {
@@ -381,6 +381,7 @@ describe("time-control-store", () => {
     await waitForDefaultUpdate(timeControlsStore, "2022-03-07T00:00:00.000Z");
     expect(get(timeControlsStore).defaultTimeRange).toEqual({
       name: TimeRangePreset.LAST_4_WEEKS,
+      isoRange: "P4W",
       start: new Date("2022-03-07T00:00:00.000Z"),
       end: new Date("2022-04-04T00:00:00.000Z"),
     });
@@ -395,6 +396,7 @@ describe("time-control-store", () => {
     await waitForDefaultUpdate(timeControlsStore, "2022-03-21T00:00:00.000Z");
     expect(get(timeControlsStore).defaultTimeRange).toEqual({
       name: TimeRangePreset.DEFAULT,
+      isoRange: "P2W",
       start: new Date("2022-03-21T00:00:00.000Z"),
       end: new Date("2022-04-04T00:00:00.000Z"),
     });
@@ -438,7 +440,7 @@ function assertComparisonStartAndEnd(
   adjustedStart: string,
   adjustedEnd: string
 ) {
-  expect(timeControlsSate.selectedComparisonTimeRange?.name).toBe(name);
+  expect(timeControlsSate.selectedComparisonTimeRange?.isoRange).toBe(name);
   expect(timeControlsSate.comparisonTimeStart).toBe(start);
   expect(timeControlsSate.comparisonTimeEnd).toBe(end);
   expect(timeControlsSate.comparisonAdjustedStart).toBe(adjustedStart);

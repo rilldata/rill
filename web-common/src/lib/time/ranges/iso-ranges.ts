@@ -50,6 +50,11 @@ export const ISODurationToTimeRangePreset: Record<
   P14D: TimeRangePreset.LAST_14_DAYS,
   P4W: TimeRangePreset.LAST_4_WEEKS,
   inf: TimeRangePreset.ALL_TIME,
+  "rill-TD": TimeRangePreset.TODAY,
+  "rill-WTD": TimeRangePreset.WEEK_TO_DATE,
+  "rill-MTD": TimeRangePreset.MONTH_TO_DATE,
+  "rill-QTD": TimeRangePreset.QUARTER_TO_DATE,
+  "rill-YTD": TimeRangePreset.YEAR_TO_DATE,
 };
 export function isoDurationToFullTimeRange(
   isoDuration: string,
@@ -72,6 +77,7 @@ export function isoDurationToFullTimeRange(
   const { startTime, endTime } = isoDurationToTimeRange(isoDuration, end, zone);
   return {
     name: TimeRangePreset.DEFAULT,
+    isoRange: isoDuration,
     start: startTime,
     end: endTime,
   };

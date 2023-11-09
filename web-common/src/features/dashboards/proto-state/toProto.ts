@@ -53,7 +53,7 @@ export function getProtoFromDashboardState(
 
   const state: PartialMessage<DashboardState> = {};
   if (metrics.filters) {
-    state.filters = toFiltersProto(metrics.filters) as any;
+    state.filters = toFiltersProto(metrics.filters);
   }
   if (metrics.selectedTimeRange) {
     state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
@@ -120,29 +120,24 @@ function protoToBase64(proto: Uint8Array) {
 
 function toFiltersProto(filters: V1MetricsViewFilter) {
   return new MetricsViewFilter({
-    include: toFilterCondProto(filters.include) as any,
-    exclude: toFilterCondProto(filters.exclude) as any,
+    include: toFilterCondProto(filters.include ?? []),
+    exclude: toFilterCondProto(filters.exclude ?? []),
   });
 }
 
 function toTimeRangeProto(range: DashboardTimeControls) {
   const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
-    name: range.name,
+    isoRange: range.isoRange,
   };
-  if (
-    range.name === TimeRangePreset.CUSTOM ||
-    range.name === TimeComparisonOption.CUSTOM
-  ) {
-    timeRangeArgs.timeStart = toTimeProto(range.start);
-    timeRangeArgs.timeEnd = toTimeProto(range.end);
+  if (!range.isoRange) {
+    if (range.start) timeRangeArgs.timeStart = toTimeProto(range.start);
+    if (range.end) timeRangeArgs.timeEnd = toTimeProto(range.end);
   }
   return new DashboardTimeRange(timeRangeArgs);
 }
 
 function toScrubProto(range: ScrubRange) {
-  const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
-    name: TimeRangePreset.CUSTOM,
-  };
+  const timeRangeArgs: PartialMessage<DashboardTimeRange> = {};
   timeRangeArgs.timeStart = toTimeProto(range.start);
   timeRangeArgs.timeEnd = toTimeProto(range.end);
 
@@ -187,7 +182,7 @@ function toFilterCondProto(conds: Array<MetricsViewFilterCond>) {
       new MetricsViewFilter_Cond({
         name: include.name,
         like: include.like,
-        in: include.in.map(
+        in: include.in?.map(
           (v) =>
             (v === null
               ? new Value({
@@ -201,7 +196,7 @@ function toFilterCondProto(conds: Array<MetricsViewFilterCond>) {
                     case: "stringValue",
                     value: v as string,
                   },
-                })) as any
+                })) ?? []
         ),
       })
   );

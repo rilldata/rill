@@ -234,7 +234,7 @@ describe("dashboard-stores", () => {
     let metrics = get(metricsExplorerStore).entities[AD_BIDS_NAME];
     // unspecified mode will default to time comparison
     expect(metrics.showTimeComparison).toBeTruthy();
-    expect(metrics.selectedComparisonTimeRange.name).toBe("CONTIGUOUS");
+    expect(metrics.selectedComparisonTimeRange?.isoRange).toBe("CONTIGUOUS");
     expect(metrics.selectedComparisonTimeRange.start).toEqual(
       TestTimeOffsetConstants.LAST_12_HOURS
     );

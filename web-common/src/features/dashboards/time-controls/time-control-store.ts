@@ -19,7 +19,10 @@ import {
   convertTimeRangePreset,
   getAdjustedFetchTime,
 } from "@rilldata/web-common/lib/time/ranges";
-import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import {
+  isoDurationToFullTimeRange,
+  ISODurationToTimeRangePreset,
+} from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   TimeComparisonOption,
@@ -185,7 +188,7 @@ function calculateTimeRangePartial(
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain
-): TimeRangeState {
+): TimeRangeState | undefined {
   if (!metricsExplorer.selectedTimeRange) return undefined;
 
   const selectedTimeRange = getTimeRange(
@@ -293,32 +296,47 @@ function getTimeRange(
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls
 ) {
+  if (!metricsExplorer.selectedTimeRange) return undefined;
+
   let timeRange: DashboardTimeControls;
 
-  if (metricsExplorer.selectedTimeRange?.name === TimeRangePreset.CUSTOM) {
+  // console.log(metricsExplorer.selectedTimeRange);
+  if (metricsExplorer.selectedTimeRange.isoRange) {
+    if (
+      metricsExplorer.selectedTimeRange.isoRange in ISODurationToTimeRangePreset
+    ) {
+      // console.log(
+      //   metricsExplorer.selectedTimeRange.isoRange,
+      //   ISODurationToTimeRangePreset[
+      //     metricsExplorer.selectedTimeRange.isoRange
+      //   ],
+      //   allTimeRange.end
+      // );
+      /** rebuild off of existing presets for relative time range */
+      timeRange = convertTimeRangePreset(
+        ISODurationToTimeRangePreset[
+          metricsExplorer.selectedTimeRange.isoRange
+        ],
+        allTimeRange.start,
+        allTimeRange.end,
+        metricsExplorer.selectedTimezone
+      );
+    } else {
+      /** set the time range to the fixed default time range */
+      timeRange = {
+        name: TimeRangePreset.DEFAULT,
+        isoRange: metricsExplorer.selectedTimeRange.isoRange,
+        start: defaultTimeRange.start,
+        end: defaultTimeRange.end,
+      };
+    }
+  } else {
     /** set the time range to the fixed custom time range */
     timeRange = {
       name: TimeRangePreset.CUSTOM,
       start: new Date(metricsExplorer.selectedTimeRange.start),
       end: new Date(metricsExplorer.selectedTimeRange.end),
     };
-  } else if (
-    metricsExplorer.selectedTimeRange?.name === TimeRangePreset.DEFAULT
-  ) {
-    /** set the time range to the fixed custom time range */
-    timeRange = {
-      name: TimeRangePreset.DEFAULT,
-      start: defaultTimeRange.start,
-      end: defaultTimeRange.end,
-    };
-  } else {
-    /** rebuild off of relative time range */
-    timeRange = convertTimeRangePreset(
-      metricsExplorer.selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
-      allTimeRange.start,
-      allTimeRange.end,
-      metricsExplorer.selectedTimezone
-    );
   }
 
   return timeRange;
@@ -363,7 +381,7 @@ function getComparisonTimeRange(
   if (!comparisonTimeRange) return undefined;
 
   let selectedComparisonTimeRange: DashboardTimeControls;
-  if (!comparisonTimeRange?.name) {
+  if (!comparisonTimeRange?.isoRange) {
     const comparisonOption = DEFAULT_TIME_RANGES[timeRange.name]
       ?.defaultComparison as TimeComparisonOption;
     const range = getTimeComparisonParametersForComponent(
@@ -378,7 +396,7 @@ function getComparisonTimeRange(
       selectedComparisonTimeRange = {
         start: range.start,
         end: range.end,
-        name: comparisonOption,
+        isoRange: comparisonOption,
       };
     }
   } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
@@ -387,7 +405,8 @@ function getComparisonTimeRange(
     return undefined;
   } else {
     // variable time range of some kind.
-    const comparisonOption = comparisonTimeRange.name as TimeComparisonOption;
+    const comparisonOption =
+      comparisonTimeRange.isoRange as TimeComparisonOption;
     const range = getComparisonRange(
       timeRange.start,
       timeRange.end,
@@ -396,7 +415,7 @@ function getComparisonTimeRange(
 
     selectedComparisonTimeRange = {
       ...range,
-      name: comparisonOption,
+      isoRange: comparisonOption,
     };
   }
 

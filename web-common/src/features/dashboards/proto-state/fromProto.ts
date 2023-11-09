@@ -57,6 +57,7 @@ export function getDashboardStateFromProto(
   };
 
   if (dashboard.filters) {
+    entity.filters ??= {};
     entity.filters.include = fromFiltersProto(dashboard.filters.include);
     entity.filters.exclude = fromFiltersProto(dashboard.filters.exclude);
   }
@@ -70,7 +71,7 @@ export function getDashboardStateFromProto(
   entity.selectedTimeRange = dashboard.timeRange
     ? fromTimeRangeProto(dashboard.timeRange)
     : undefined;
-  if (dashboard.timeGrain && dashboard.timeRange) {
+  if (dashboard.timeGrain && entity.selectedTimeRange) {
     entity.selectedTimeRange.interval = fromTimeGrainProto(dashboard.timeGrain);
   }
 
@@ -109,8 +110,8 @@ export function getDashboardStateFromProto(
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
     entity.visibleMeasureKeys = new Set(
-      metricsView.measures.map((measure) => measure.name)
-    );
+      metricsView.measures?.map((measure) => measure.name) ?? []
+    ) as Set<string>;
   } else if (dashboard.visibleMeasures) {
     entity.allMeasuresVisible = false;
     entity.visibleMeasureKeys = new Set(dashboard.visibleMeasures);
@@ -119,8 +120,8 @@ export function getDashboardStateFromProto(
   if (dashboard.allDimensionsVisible) {
     entity.allDimensionsVisible = true;
     entity.visibleDimensionKeys = new Set(
-      metricsView.dimensions.map((measure) => measure.name)
-    );
+      metricsView.dimensions?.map((measure) => measure.name) ?? []
+    ) as Set<string>;
   } else if (dashboard.visibleDimensions) {
     entity.allDimensionsVisible = false;
     entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
@@ -169,10 +170,9 @@ function fromFiltersProto(conditions: Array<MetricsViewFilter_Cond>) {
 
 function fromTimeRangeProto(timeRange: DashboardTimeRange) {
   const selectedTimeRange: DashboardTimeControls = {
-    name: timeRange.name,
+    isoRange: timeRange.isoRange,
   } as DashboardTimeControls;
 
-  selectedTimeRange.name = timeRange.name;
   if (timeRange.timeStart) {
     selectedTimeRange.start = fromTimeProto(timeRange.timeStart);
   }

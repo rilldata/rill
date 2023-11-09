@@ -302,9 +302,9 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortType, "rill.ui.v1.Dashboar
  */
 export class DashboardTimeRange extends Message<DashboardTimeRange> {
   /**
-   * @generated from field: optional string name = 1;
+   * @generated from field: optional string iso_range = 1;
    */
-  name?: string;
+  isoRange?: string;
 
   /**
    * @generated from field: optional google.protobuf.Timestamp time_start = 2;
@@ -324,7 +324,7 @@ export class DashboardTimeRange extends Message<DashboardTimeRange> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.ui.v1.DashboardTimeRange";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 1, name: "iso_range", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 2, name: "time_start", kind: "message", T: Timestamp, opt: true },
     { no: 3, name: "time_end", kind: "message", T: Timestamp, opt: true },
   ]);

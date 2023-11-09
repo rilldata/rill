@@ -32,6 +32,7 @@ import {
 export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   LAST_SIX_HOURS: {
     label: "Last 6 Hours",
+    isoRange: "PT6H",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
@@ -59,6 +60,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
 
   LAST_24_HOURS: {
     label: "Last 24 Hours",
+    isoRange: "PT24H",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.DAY,
     start: {
@@ -85,6 +87,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
 
   LAST_7_DAYS: {
     label: "Last 7 Days",
+    isoRange: "P7D",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
     start: {
@@ -110,6 +113,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   },
   LAST_14_DAYS: {
     label: "Last 14 Days",
+    isoRange: "P14D",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
     start: {
@@ -135,6 +139,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   },
   LAST_4_WEEKS: {
     label: "Last 4 Weeks",
+    isoRange: "P4W",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
@@ -160,6 +165,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   },
   LAST_12_MONTHS: {
     label: "Last 12 Months",
+    isoRange: "P12M",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.YEAR,
     start: {
@@ -198,6 +204,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
 export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   TODAY: {
     label: "Today",
+    isoRange: "rill-TD",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.DAY,
     start: {
@@ -222,6 +229,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   },
   WEEK_TO_DATE: {
     label: "Week to Date",
+    isoRange: "rill-WTD",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
     start: {
@@ -246,6 +254,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   },
   MONTH_TO_DATE: {
     label: "Month to Date",
+    isoRange: "rill-MTD",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.MONTH,
     start: {
@@ -270,6 +279,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
   },
   YEAR_TO_DATE: {
     label: "Year to Date",
+    isoRange: "rill-YTD",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.YEAR,
     start: {
@@ -296,6 +306,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
 
 export const ALL_TIME = {
   label: "All Time",
+  isoRange: "inf",
   rangePreset: RangePresetType.ALL_TIME,
   // this comparison period is a no-op
   defaultComparison: TimeComparisonOption.CONTIGUOUS,
@@ -319,19 +330,6 @@ export const DEFAULT_TIME_RANGES: Record<string, TimeRangeMeta> = {
   ALL_TIME,
   CUSTOM,
   DEFAULT,
-};
-
-// This is a temporary fix for the default time range setting.
-// We need to deprecate this once we have moved the default_time_range setting to operate
-// on preset strings rather than ISO durations.
-// See https://github.com/rilldata/rill/issues/1961
-export const TEMPORARY_DEFAULT_RANGE_TO_DURATIONS = {
-  LAST_SIX_HOURS: "PT6H",
-  LAST_24_HOURS: "P1D",
-  LAST_7_DAYS: "P7D",
-  LAST_4_WEEKS: "P4W",
-  LAST_12_MONTHS: "P12M",
-  TODAY: "P1D",
 };
 
 /**
