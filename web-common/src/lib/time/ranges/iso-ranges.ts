@@ -49,6 +49,7 @@ export const ISODurationToTimeRangePreset: Record<
   P7D: TimeRangePreset.LAST_7_DAYS,
   P14D: TimeRangePreset.LAST_14_DAYS,
   P4W: TimeRangePreset.LAST_4_WEEKS,
+  P12M: TimeRangePreset.LAST_12_MONTHS,
   inf: TimeRangePreset.ALL_TIME,
   "rill-TD": TimeRangePreset.TODAY,
   "rill-WTD": TimeRangePreset.WEEK_TO_DATE,

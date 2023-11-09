@@ -5,7 +5,10 @@
  * - there's some legacy stuff that needs to get deprecated out of this.
  * - we need tests for this.
  */
-import { getSmallestTimeGrain } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import {
+  getSmallestTimeGrain,
+  ISODurationToTimeRangePreset,
+} from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DEFAULT_TIME_RANGES, TIME_GRAIN } from "../config";
 import {
@@ -56,7 +59,6 @@ export function getChildTimeRanges(
 
       // All time is always an option
       timeRanges.push({
-        name: timePreset,
         isoRange: "inf",
         label: timeRange.label,
         start,
@@ -90,7 +92,6 @@ export function getChildTimeRanges(
       );
       if (isGrainPossible && hasSomeGrainMatches) {
         timeRanges.push({
-          name: timePreset,
           isoRange: timeRange.isoRange,
           label: timeRange.label,
           start: timeRangeDates.startDate,
@@ -392,13 +393,13 @@ export function getAdjustedChartTime(
 
   let adjustedEnd = new Date(end);
 
-  if (timePreset === TimeRangePreset.ALL_TIME) {
+  if (timePreset === "inf") {
     // No offset has been applied to All time range so far
     // Adjust end according to the interval
     start = getStartOfPeriod(start, grainDuration, zone);
     start = getOffset(start, offsetDuration, TimeOffsetType.ADD);
     adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration, zone);
-  } else if (timePreset === TimeRangePreset.DEFAULT) {
+  } else if (timePreset && !(timePreset in ISODurationToTimeRangePreset)) {
     // For default presets the iso range can be mixed. There the offset added will be the smallest unit in the range.
     // But for the graph we need the offset based on selected grain.
     const smallestTimeGrain = getSmallestTimeGrain(defaultTimeRange);

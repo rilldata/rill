@@ -98,7 +98,6 @@
     closeMenu: () => void
   ) {
     closeMenu();
-    console.log(timeRange);
     dispatch("select-time-range", {
       iso: timeRange.isoRange,
       start: timeRange.start,
@@ -197,12 +196,10 @@
               Custom range
             {:else if currentSelection in ISODurationToTimeRangePreset}
               {DEFAULT_TIME_RANGES[
-                ISODurationToTimeRangePreset[
-                  $timeControlsStore?.selectedTimeRange?.isoRange
-                ]
+                ISODurationToTimeRangePreset[currentSelection]
               ].label}
-            {:else if currentSelection === TimeRangePreset.DEFAULT}
-              Last {humaniseISODuration($metaQuery.data?.defaultTimeRange)}
+            {:else if currentSelection}
+              Last {humaniseISODuration(currentSelection)}
             {:else}
               Select a time range
             {/if}
@@ -233,6 +230,7 @@
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,
+      isoRange: "inf",
       label: ALL_TIME.label,
       start: boundaryStart,
       end: new Date(boundaryEnd.getTime() + 1), // end is exclusive
@@ -248,23 +246,25 @@
       <Divider />
     {/if}
     <MenuItem
-      on:before-select={setIntermediateSelection(allTime.name)}
+      on:before-select={setIntermediateSelection(allTime.isoRange)}
       on:select={() =>
         onSelectRelativeTimeRange(allTime, toggleFloatingElement)}
     >
-      <span class:font-bold={intermediateSelection === allTime.name}>
+      <span class:font-bold={intermediateSelection === allTime.isoRange}>
         {allTime.label}
       </span>
     </MenuItem>
     {#if showDefaultItem && $timeControlsStore.defaultTimeRange}
       <DefaultTimeRangeMenuItem
-        on:before-select={setIntermediateSelection(TimeRangePreset.DEFAULT)}
+        on:before-select={setIntermediateSelection(
+          $metaQuery.data?.defaultTimeRange
+        )}
         on:select={() =>
           onSelectRelativeTimeRange(
             $timeControlsStore.defaultTimeRange,
             toggleFloatingElement
           )}
-        selected={intermediateSelection === TimeRangePreset.DEFAULT}
+        selected={intermediateSelection === $metaQuery.data?.defaultTimeRange}
         isoDuration={$metaQuery.data?.defaultTimeRange}
       />
     {/if}

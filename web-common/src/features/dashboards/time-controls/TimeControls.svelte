@@ -124,12 +124,12 @@
   }
 
   function onSelectComparisonRange(
-    name: TimeComparisonOption,
+    isoRange: TimeComparisonOption,
     start: Date,
     end: Date
   ) {
     metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
-      name,
+      isoRange,
       start,
       end,
     });
@@ -200,7 +200,11 @@
     {#if $dashboardStore?.showTimeComparison}
       <TimeComparisonSelector
         on:select-comparison={(e) => {
-          onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
+          onSelectComparisonRange(
+            e.detail.isoRange,
+            e.detail.start,
+            e.detail.end
+          );
         }}
         {minTimeGrain}
         currentStart={$timeControlsStore.selectedTimeRange.start}

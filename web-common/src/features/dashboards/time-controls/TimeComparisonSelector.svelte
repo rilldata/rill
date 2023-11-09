@@ -41,11 +41,11 @@ This component needs to do the following:
   export let selectedComparison;
   export let comparisonOptions: TimeComparisonOption[];
 
-  $: comparisonOption = selectedComparison?.name;
+  $: comparisonOption = selectedComparison?.isoRange;
 
   /** compile the comparison options */
   let options: {
-    name: TimeComparisonOption;
+    isoRange: TimeComparisonOption;
     start: Date;
     end: Date;
   }[];
@@ -57,7 +57,7 @@ This component needs to do the following:
         value
       );
       return {
-        name: value,
+        isoRange: value,
         key,
         start: comparisonTimeRange.start,
         end: comparisonTimeRange.end,
@@ -72,7 +72,7 @@ This component needs to do the following:
     intermediateSelection = TimeComparisonOption.CUSTOM;
     closeMenu();
     dispatch("select-comparison", {
-      name: TimeComparisonOption.CUSTOM,
+      isoRange: TimeComparisonOption.CUSTOM,
       start: new Date(startDate),
       end: new Date(endDate),
     });
@@ -86,7 +86,7 @@ This component needs to do the following:
     );
 
     dispatch("select-comparison", {
-      name: comparisonOption,
+      isoRange: comparisonOption,
       start: comparisonTimeRange.start,
       end: comparisonTimeRange.end,
     });
@@ -115,6 +115,8 @@ This component needs to do the following:
   $: intermediateSelection = showComparison
     ? comparisonOption
     : NO_COMPARISON_LABEL;
+
+  $: console.log(comparisonOption, intermediateSelection, label);
 </script>
 
 <WithTogglableFloatingElement
@@ -133,8 +135,8 @@ This component needs to do the following:
       <div class="flex items-center gap-x-3">
         <span class="ui-copy-icon"><ClockCircle size="16px" /></span>
         <span
-          style:transform="translateY(-1px)"
-          class="font-normal justify-center">{label}</span
+          class="font-normal justify-center"
+          style:transform="translateY(-1px)">{label}</span
         >
       </div>
     </SelectorButton>
@@ -149,22 +151,22 @@ This component needs to do the following:
     slot="floating-element"
   >
     {#each options as option}
-      {@const preset = TIME_COMPARISON[option.name]}
+      {@const preset = TIME_COMPARISON[option.isoRange]}
       <MenuItem
-        selected={option.name === intermediateSelection}
+        selected={option.isoRange === intermediateSelection}
         on:before-select={() => {
-          intermediateSelection = option.name;
+          intermediateSelection = option.isoRange;
         }}
         on:select={() => {
-          onCompareRangeSelect(option.name);
+          onCompareRangeSelect(option.isoRange);
           toggleFloatingElement();
         }}
       >
-        <span class:font-bold={intermediateSelection === option.name}>
-          {preset?.label || option.name}
+        <span class:font-bold={intermediateSelection === option.isoRange}>
+          {preset?.label || option.isoRange}
         </span>
       </MenuItem>
-      {#if option.name === TimeComparisonOption.CONTIGUOUS && options.length > 2}
+      {#if option.isoRange === TimeComparisonOption.CONTIGUOUS && options.length > 2}
         <Divider />
       {/if}
     {/each}

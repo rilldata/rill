@@ -145,7 +145,7 @@
       $timeControlsStore.selectedTimeRange?.end,
       $dashboardStore?.selectedTimezone,
       interval,
-      $timeControlsStore.selectedTimeRange?.name,
+      $timeControlsStore.selectedTimeRange?.isoRange,
       $metaQuery.data.defaultTimeRange
     );
 
