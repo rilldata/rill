@@ -41,7 +41,7 @@
 
   let rowIdxHover: number | undefined;
   let colIdxHover: number | undefined;
-  let hoveringPin: boolean = false;
+  let hoveringPin = false;
 
   function getBodyData(pos: PivotPos) {
     return tableData?.body
