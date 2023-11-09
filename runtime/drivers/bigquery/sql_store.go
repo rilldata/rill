@@ -98,7 +98,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		q := client.Query(srcProps.SQL)
 		it, err = q.Read(ctx)
 
-		if err != nil && !strings.Contains(err.Error(), "Response too large to return") {
+		if err != nil && strings.Contains(err.Error(), "Response too large to return") {
 			// https://cloud.google.com/knowledge/kb/bigquery-response-too-large-to-return-consider-setting-allowlargeresults-to-true-in-your-job-configuration-000004266
 			client.Close()
 			return nil, fmt.Errorf("response too large, consider ingesting the entire table with 'select * from `project_id.dataset.tablename`'")

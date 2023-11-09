@@ -15,6 +15,7 @@ export enum ResourceKind {
   Source = "rill.runtime.v1.Source",
   Model = "rill.runtime.v1.Model",
   MetricsView = "rill.runtime.v1.MetricsView",
+  Report = "rill.runtime.v1.Report",
 }
 export const SingletonProjectParserName = "parser";
 
