@@ -190,9 +190,9 @@
 
       // Gray out rows which are not included
       if (marker.muted) {
-        element?.parentElement?.classList.add("text-gray-400");
+        element?.parentElement?.classList.add("ui-copy-disabled-faint");
       } else {
-        element?.parentElement?.classList.remove("text-gray-400");
+        element?.parentElement?.classList.remove("ui-copy-disabled-faint");
       }
 
       const justifyTotal = y === 0 ? "justify-end" : "";
