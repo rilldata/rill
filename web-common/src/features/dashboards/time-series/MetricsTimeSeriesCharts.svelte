@@ -237,7 +237,7 @@
     <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
     {#each renderedMeasures as measure (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
-      {@const bigNum = totals?.[measure.name] ?? 0}
+      {@const bigNum = totals?.[measure.name]}
       {@const isBeingHovered =
         !expandedMeasureName && hoveredMeasure === measure.name}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
