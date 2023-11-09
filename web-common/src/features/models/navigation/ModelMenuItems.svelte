@@ -6,15 +6,17 @@
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useCreateDashboardFromModelUIAction } from "@rilldata/web-common/features/models/createDashboardFromModel";
+  import {
+    useCreateDashboardFromModelUIAction,
+    useModelSchemaIsReady,
+  } from "@rilldata/web-common/features/models/createDashboardFromModel";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
-  import { useModel, useModelFileNames } from "../selectors";
+  import { useModelFileNames } from "../selectors";
 
   export let modelName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
@@ -25,16 +27,17 @@
   const dispatch = createEventDispatcher();
 
   $: modelNames = useModelFileNames($runtime.instanceId);
-  $: modelQuery = useModel($runtime.instanceId, modelName);
   $: modelHasError = getFileHasErrors(
     queryClient,
     $runtime.instanceId,
     modelPath
   );
-  $: modelIsIdle =
-    $modelQuery.data?.meta?.reconcileStatus ===
-    V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-  $: disableCreateDashboard = $modelHasError || !modelIsIdle;
+  $: modelSchemaIsReady = useModelSchemaIsReady(
+    queryClient,
+    $runtime.instanceId,
+    modelName
+  );
+  $: disableCreateDashboard = $modelHasError || !$modelSchemaIsReady;
 
   $: createDashboardFromModel = useCreateDashboardFromModelUIAction(
     $runtime.instanceId,
@@ -71,7 +74,7 @@
   <svelte:fragment slot="description">
     {#if $modelHasError}
       Model has errors
-    {:else if !modelIsIdle}
+    {:else if !$modelSchemaIsReady}
       Dependencies are being reconciled.
     {/if}
   </svelte:fragment>

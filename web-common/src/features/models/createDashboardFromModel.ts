@@ -63,8 +63,6 @@ export const useCreateDashboardFromModel = <
     { data: CreateDashboardFromModelRequest }
   > = async (props) => {
     const { data } = props ?? {};
-    if (!data.schema)
-      throw new Error("Failed to create dashboard: Model is not ready");
 
     // create dashboard from model
     const dashboardYAML = generateDashboardYAMLForModel(
@@ -103,7 +101,7 @@ export const useCreateDashboardFromModel = <
   >(mutationFn, mutationOptions);
 };
 
-function modelHasDataStore(
+export function useModelSchemaIsReady(
   queryClient: QueryClient,
   instanceId: string,
   modelName: string
@@ -137,25 +135,8 @@ function modelHasDataStore(
   );
 }
 
-function waitForModelHasData(
-  queryClient: QueryClient,
-  instanceId: string,
-  modelName: string
-) {
-  const store = modelHasDataStore(queryClient, instanceId, modelName);
-  if (get(store)) return;
-  return new Promise<void>((resolve) => {
-    const unsub = store.subscribe((hasData) => {
-      if (!hasData) return;
-      resolve();
-      unsub();
-    });
-  });
-}
-
 /**
  * Wrapper function that takes care of UI side effects on top of creating a dashboard from model.
- * TODO: where would this go?
  */
 export function useCreateDashboardFromModelUIAction(
   instanceId: string,
@@ -182,15 +163,12 @@ export function useCreateDashboardFromModelUIAction(
       get(dashboardNames).data
     );
 
-    // Wait for model query to have data
-    await waitForModelHasData(queryClient, instanceId, modelName);
-
     try {
       await get(createDashboardFromModelMutation).mutateAsync({
         data: {
           instanceId,
           modelName,
-          schema: get(schemaForModel).data.schema,
+          schema: get(schemaForModel).data?.schema,
           newDashboardName,
         },
       });

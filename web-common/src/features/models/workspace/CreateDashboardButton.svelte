@@ -5,7 +5,10 @@
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useCreateDashboardFromModelUIAction } from "@rilldata/web-common/features/models/createDashboardFromModel";
+  import {
+    useCreateDashboardFromModelUIAction,
+    useModelSchemaIsReady,
+  } from "@rilldata/web-common/features/models/createDashboardFromModel";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -17,6 +20,12 @@
 
   const queryClient = useQueryClient();
 
+  $: modelSchemaIsReady = useModelSchemaIsReady(
+    queryClient,
+    $runtime.instanceId,
+    modelName
+  );
+
   $: createDashboardFromModel = useCreateDashboardFromModelUIAction(
     $runtime.instanceId,
     modelName,
@@ -27,7 +36,11 @@
 </script>
 
 <Tooltip alignment="right" distance={8} location="bottom">
-  <Button on:click={createDashboardFromModel} type="primary">
+  <Button
+    disabled={!$modelSchemaIsReady}
+    on:click={createDashboardFromModel}
+    type="primary"
+  >
     <IconSpaceFixer pullLeft pullRight={collapse}>
       <Add />
     </IconSpaceFixer>
