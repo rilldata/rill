@@ -23,5 +23,7 @@ test.describe("dashboard", () => {
 
     // Delete this when your flow is ready.
     await page.pause();
+
+    await expect(page.getByText("example expect - will fail")).toBeVisible();
   });
 });
