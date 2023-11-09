@@ -13,6 +13,7 @@
   } from "@tanstack/svelte-query";
   import { globalErrorCallback } from "../features/errors/error-utils";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
+  import { initPylonWidget } from "../features/help/initPylonWidget";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
 
@@ -42,6 +43,8 @@
 
   beforeNavigate(retainFeaturesFlags);
   clearViewedAsUserAfterNavigate(queryClient);
+
+  initPylonWidget();
 </script>
 
 <svelte:head>
