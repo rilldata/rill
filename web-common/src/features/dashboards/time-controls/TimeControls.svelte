@@ -16,7 +16,6 @@
     TimeComparisonOption,
     TimeGrain,
     TimeRange,
-    TimeRangeType,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";

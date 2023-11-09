@@ -6,11 +6,9 @@ import {
 } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import {
+import type {
   DashboardTimeControls,
   ScrubRange,
-  TimeComparisonOption,
-  TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
   MetricsViewFilter,

@@ -251,7 +251,8 @@
         value={bigNum}
         isMeasureExpanded={!!expandedMeasureName}
         {showComparison}
-        comparisonOption={$timeControlsStore?.selectedComparisonTimeRange?.name}
+        comparisonOption={$timeControlsStore?.selectedComparisonTimeRange
+          ?.isoRange}
         {comparisonValue}
         {comparisonPercChange}
         status={$timeSeriesDataStore?.isFetching
