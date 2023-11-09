@@ -9,6 +9,7 @@ import {
 } from "@rilldata/web-common/lib/arrayUtils";
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+import { ISODurationToTimeRangePreset } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -353,8 +354,9 @@ const metricViewReducers = {
       if (!comparisonTimeRange) {
         // when switching time range we reset comparison time range
         // get the default for the new time range and set it only if is valid
-        const comparisonOption = DEFAULT_TIME_RANGES[timeRange.name]
-          ?.defaultComparison as TimeComparisonOption;
+        const comparisonOption = DEFAULT_TIME_RANGES[
+          ISODurationToTimeRangePreset[timeRange.isoRange]
+        ]?.defaultComparison as TimeComparisonOption;
         const range = getTimeComparisonParametersForComponent(
           comparisonOption,
           allTimeRange.start,

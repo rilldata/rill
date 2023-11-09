@@ -57,6 +57,7 @@ export function getChildTimeRanges(
       // All time is always an option
       timeRanges.push({
         name: timePreset,
+        isoRange: "inf",
         label: timeRange.label,
         start,
         end: exclusiveEndDate,
@@ -90,6 +91,7 @@ export function getChildTimeRanges(
       if (isGrainPossible && hasSomeGrainMatches) {
         timeRanges.push({
           name: timePreset,
+          isoRange: timeRange.isoRange,
           label: timeRange.label,
           start: timeRangeDates.startDate,
           end: timeRangeDates.endDate,

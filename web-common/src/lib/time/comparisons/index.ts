@@ -191,7 +191,11 @@ export function getTimeComparisonParametersForComponent(
   currentStart,
   currentEnd
 ) {
-  if (boundStart === undefined || currentStart === undefined) {
+  if (
+    comparisonOption === undefined ||
+    boundStart === undefined ||
+    currentStart === undefined
+  ) {
     return {
       start: undefined,
       end: undefined,
