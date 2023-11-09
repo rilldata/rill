@@ -22,6 +22,7 @@ export function clearFilterForDimension(
         (dimensionValues) => dimensionValues.name === dimensionId
       );
     }
+    dashboard.pinIndex = -1;
   });
 }
 
@@ -36,6 +37,7 @@ export function clearAllFilters(ctx: StateManagers) {
       dashboard.filters.include = [];
       dashboard.filters.exclude = [];
       dashboard.dimensionFilterExcludeMode.clear();
+      dashboard.pinIndex = -1;
     });
   }
 }
@@ -60,18 +62,27 @@ export function toggleDimensionValue(
     );
 
     if (dimensionEntryIndex >= 0) {
-      if (
-        removeIfExists(
-          dashboard.filters[relevantFilterKey][dimensionEntryIndex].in,
-          (value) => value === dimensionValue
-        )
-      ) {
+      const index = dashboard.filters[relevantFilterKey][
+        dimensionEntryIndex
+      ].in?.findIndex((value) => value === dimensionValue) as number;
+
+      if (index >= 0) {
+        dashboard.filters[relevantFilterKey][dimensionEntryIndex].in?.splice(
+          index,
+          1
+        );
         if (
           dashboard.filters[relevantFilterKey][dimensionEntryIndex].in
             .length === 0
         ) {
           dashboard.filters[relevantFilterKey].splice(dimensionEntryIndex, 1);
         }
+
+        // Only decrement pinIndex if the removed value was before the pinned value
+        if (dashboard.pinIndex >= index) {
+          dashboard.pinIndex--;
+        }
+
         return;
       }
 

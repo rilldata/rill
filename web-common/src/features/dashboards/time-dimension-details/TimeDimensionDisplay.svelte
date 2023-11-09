@@ -100,6 +100,7 @@
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.toggleFilter(metricViewName, dimensionName, e.detail);
   }
+
   function toggleAllSearchItems() {
     cancelDashboardQueries(queryClient, metricViewName);
     if (areAllTableRowsSelected) {
@@ -116,6 +117,23 @@
         rowHeaderLabels
       );
     }
+  }
+
+  function togglePin() {
+    cancelDashboardQueries(queryClient, metricViewName);
+
+    const pinIndex = $dashboardStore?.pinIndex;
+    let newPinIndex = -1;
+
+    // Pin if some selected items are not pinned yet
+    if (pinIndex > -1 && pinIndex < formattedData?.selectedValues?.length - 1) {
+      newPinIndex = formattedData?.selectedValues?.length - 1;
+    }
+    // Pin if no items are pinned yet
+    else if (pinIndex === -1) {
+      newPinIndex = formattedData?.selectedValues?.length - 1;
+    }
+    metricsExplorerStore.setPinIndex(metricViewName, newPinIndex);
   }
 </script>
 
@@ -138,16 +156,18 @@
     {excludeMode}
     {dimensionLabel}
     {measureLabel}
-    scrubPos={{
-      start: $chartInteractionColumn?.scrubStart,
-      end: $chartInteractionColumn?.scrubEnd,
-    }}
     sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
     sortType={$dashboardStore.dashboardSortType}
     comparing={$timeDimensionDataStore?.comparing}
     {timeFormatter}
     tableData={formattedData}
     highlightedCol={$chartInteractionColumn?.hover}
+    pinIndex={$dashboardStore?.pinIndex}
+    scrubPos={{
+      start: $chartInteractionColumn?.scrubStart,
+      end: $chartInteractionColumn?.scrubEnd,
+    }}
+    on:toggle-pin={togglePin}
     on:toggle-filter={toggleFilter}
     on:toggle-sort={(e) => {
       cancelDashboardQueries(queryClient, metricViewName);
