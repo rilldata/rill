@@ -139,7 +139,17 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 		a.result[connector] = res
 	}
 
-	res.Resources = append(res.Resources, r)
+	found := false
+	for _, existing := range res.Resources {
+		if r.Name.Normalized() == existing.Name.Normalized() {
+			found = true
+			break
+		}
+	}
+	if !found {
+		res.Resources = append(res.Resources, r)
+	}
+
 	if !anonAccess {
 		res.AnonymousAccess = false
 	}
