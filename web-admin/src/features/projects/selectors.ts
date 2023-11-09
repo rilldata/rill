@@ -1,6 +1,7 @@
 import {
   V1DeploymentStatus,
   createAdminServiceGetProject,
+  createAdminServiceListProjectMembers,
 } from "@rilldata/web-admin/client";
 
 export function getProjectPermissions(orgName: string, projName: string) {
@@ -69,4 +70,21 @@ export function useProjectRuntime(orgName: string, projName: string) {
       },
     },
   });
+}
+
+export function useProjectMembersEmails(organization: string, project: string) {
+  return createAdminServiceListProjectMembers(
+    organization,
+    project,
+    undefined,
+    {
+      query: {
+        select: (data) => {
+          return data.members
+            ?.filter((member) => !!member?.userEmail)
+            .map((member) => member.userEmail as string);
+        },
+      },
+    }
+  );
 }

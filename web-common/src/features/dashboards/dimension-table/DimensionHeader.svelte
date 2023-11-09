@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Switch } from "@rilldata/web-common/components/button";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Back from "@rilldata/web-common/components/icons/Back.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
@@ -11,16 +12,16 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { fly } from "svelte/transition";
-  import Spinner from "../../entity-management/Spinner.svelte";
-  import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
-  import { getStateManagers } from "../state-managers/state-managers";
-  import { SortType } from "../proto-state/derived-types";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { createEventDispatcher } from "svelte";
+  import { fly } from "svelte/transition";
+  import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import Spinner from "../../entity-management/Spinner.svelte";
+  import { SortType } from "../proto-state/derived-types";
+  import { getStateManagers } from "../state-managers/state-managers";
+  import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -148,6 +149,9 @@
       </TooltipContent>
     </Tooltip>
 
-    <ExportDimensionTableDataButton metricViewName={$metricsViewName} />
+    <ExportDimensionTableDataButton
+      metricViewName={$metricsViewName}
+      includeScheduledReport={$featureFlags.adminServer}
+    />
   </div>
 </div>
