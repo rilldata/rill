@@ -89,7 +89,7 @@
     },
   });
 
-  // This form-within-a-form is used to add new recipients to the parent form
+  // This form-within-a-form is used to add recipients to the parent form
   const {
     form: newRecipientForm,
     errors: newRecipientErrors,
@@ -186,7 +186,8 @@
           id="newRecipient"
           label="Recipients"
           placeholder="Add an email address"
-          hint="Recipients will only be able to see the report if they have access to the project. Recipients may receive different views based on their security policy."
+          hint="Recipients may receive different views based on the project's security policies.
+           Recipients without access to the project will not be able to view the report."
         />
       </form>
       <RecipientsList bind:recipients={$form["recipients"]} />
