@@ -41,6 +41,7 @@
 
   let rowIdxHover: number | undefined;
   let colIdxHover: number | undefined;
+  let hoveringPin: boolean = false;
 
   function getBodyData(pos: PivotPos) {
     return tableData?.body
@@ -119,20 +120,21 @@
     pivot?.draw();
   }
 
+  const getPinIcon = () => {
+    if (comparing === "dimension") {
+      if (tableData?.selectedValues.length === 0) return "";
+      else if (pinIndex === tableData?.selectedValues.length - 1)
+        return hoveringPin ? PinHoverUnsetIcon : PinSetIcon;
+      else return hoveringPin ? PinSetHoverIcon : PinUnsetIcon;
+    } else {
+      return "";
+    }
+  };
+
   let noSelectionMarkerCount = 0;
   const getMarker = (value, y) => {
     if (y === 0) {
       noSelectionMarkerCount = 0;
-
-      if (comparing === "dimension") {
-        let icon = "";
-        const isHovering = document.querySelector(".pin")?.matches(":hover");
-        if (tableData?.selectedValues.length === 0) icon = "";
-        else if (pinIndex === tableData?.selectedValues.length - 1)
-          icon = isHovering ? PinHoverUnsetIcon : PinSetIcon;
-        else icon = isHovering ? PinSetHoverIcon : PinUnsetIcon;
-        return { icon, muted: false };
-      }
       return { icon: "", muted: false };
     }
     const visibleIdx = tableData?.selectedValues.indexOf(value.value);
@@ -205,10 +207,9 @@
         element?.parentElement?.classList.remove("ui-copy-disabled-faint");
       }
 
-      const pinClass = y === 0 ? "pin" : "";
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
       return `<div class="flex items-center w-full h-full overflow-hidden pr-2 gap-1">
-        <div class="${pinClass} w-5 shrink-0 h-full flex items-center justify-center" marker="${y}">${marker.icon}</div>
+        <div class="w-5 shrink-0 h-full flex items-center justify-center">${marker.icon}</div>
         <div class="truncate text-xs ${fontWeight}">${value.value}</div></div>`;
     } else if (x === 1)
       return `<div class="text-xs font-semibold text-right flex items-center justify-end gap-2" >
@@ -221,16 +222,22 @@
 
   const renderRowCorner: PivotRenderCallback = (data) => {
     data.element.classList.add("bg-white", "z-10");
-    if (data.x === 0)
+    if (data.x === 0) {
+      const pinIcon = getPinIcon();
       return `
-      <div class="flex items-center font-medium text-left" sort="dimension">
-        <span class="truncate">${dimensionLabel} </span>
+      <div class="flex items-center font-medium text-left">
+        <span pin="true" class="pin w-5 pr-1 shrink-0 h-full flex items-center justify-center">${pinIcon} </span>
+        <div sort="dimension" class="flex flex-grow items-center">
+          <span  class="flex truncate">${dimensionLabel} </span>
         ${
           comparing === "dimension" && sortType === SortType.DIMENSION
             ? `<span>${MeasureArrow(sortDirection)}</span>`
             : ``
         }
+        </div>
       </div>`;
+    }
+
     if (data.x === 1)
       return `<div class="text-right font-medium flex items-center" sort="value">
         <span class="truncate">${measureLabel} </span>
@@ -291,9 +298,7 @@
     dispatch("toggle-filter", label);
   };
 
-  const togglePin = (n) => {
-    n = parseInt(n);
-    if (n > 0) return;
+  const togglePin = () => {
     dispatch("toggle-pin");
   };
 
@@ -314,18 +319,26 @@
   const handleMouseDown = (evt, table) => {
     handleEvent(evt, table, "__row", toggleVisible);
     handleEvent(evt, table, "sort", (type) => dispatch("toggle-sort", type));
-    handleEvent(evt, table, "marker", togglePin);
+    handleEvent(evt, table, "pin", togglePin);
   };
 
   const handleMouseHover = (evt, table) => {
     let newRowIdxHover;
     let newColIdxHover;
+    let newHoveringPin;
     if (evt.type === "mouseout") {
       newRowIdxHover = undefined;
       newColIdxHover = undefined;
+      newHoveringPin = false;
     } else {
       handleEvent(evt, table, "__row", (n) => (newRowIdxHover = parseInt(n)));
       handleEvent(evt, table, "__col", (n) => (newColIdxHover = parseInt(n)));
+      handleEvent(evt, table, "pin", () => (newHoveringPin = true));
+    }
+
+    if (hoveringPin !== newHoveringPin) {
+      hoveringPin = newHoveringPin;
+      pivot?.draw();
     }
 
     if (newRowIdxHover !== rowIdxHover && newColIdxHover !== colIdxHover) {
@@ -415,8 +428,5 @@
   :global(.pin) {
     cursor: pointer;
     margin-top: 2px;
-  }
-  :global(regular-table thead th:first-child div) {
-    margin-left: 20px; /* w-5 */
   }
 </style>
