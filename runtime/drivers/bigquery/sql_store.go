@@ -90,7 +90,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 			client.Close()
 			return nil, fmt.Errorf("source metadata cannot be extracted: %w", err)
 		}
-		if metadata.Type == bigquery.RegularTable {
+		if metadata.Type == bigquery.RegularTable || metadata.Type == bigquery.Snapshot {
 			it = table.Read(ctx)
 		} else {
 			c.logger.Info("source is not a regular table, falling back to a query execution")
