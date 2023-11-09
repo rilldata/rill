@@ -10,6 +10,7 @@
   import { createPopperActions } from "svelte-popperjs";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
+  import { initPylonChat } from "../help/initPylonChat";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
   import ViewAsUserMenuItem from "../view-as-user/ViewAsUserMenuItem.svelte";
 
@@ -43,6 +44,8 @@
 
   // Position the View As User popover
   const [popperRef2, popperContent2] = createPopperActions();
+
+  $: if ($user.data?.user) initPylonChat($user.data.user);
 </script>
 
 <Popover class="relative" let:close={close1}>
