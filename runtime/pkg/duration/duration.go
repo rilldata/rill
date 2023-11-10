@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 type Duration interface {
@@ -16,35 +16,23 @@ type Duration interface {
 	Sub(t time.Time) time.Time
 }
 
-// StandardDuration represents an ISO8601 duration with Rill-specific extensions.
-// See ParseISO8601 for details.
-type StandardDuration struct {
-	// If Inf is true, the other components should be ignored
-	Inf bool
-	// Date component
-	Year  int
-	Month int
-	Week  int
-	Day   int
-	// Time Component
-	Hour   int
-	Minute int
-	Second int
-}
-
 // Regexes used by ParseISO8601
 var (
 	infPattern         = regexp.MustCompile("^(?i)inf$")
 	durationPattern    = regexp.MustCompile(`^P((?P<year>\d+)Y)?((?P<month>\d+)M)?((?P<week>\d+)W)?((?P<day>\d+)D)?(T((?P<hour>\d+)H)?((?P<minute>\d+)M)?((?P<second>\d+)S)?)?$`)
-	daxToDateNotations = map[string]runtimev1.TimeGrain{
+	daxToDateNotations = map[string]timeutil.TimeGrain{
 		// Pulled from https://www.daxpatterns.com/standard-time-related-calculations/
 		// Add more here once support in UI has been added
-		"MTD": runtimev1.TimeGrain_TIME_GRAIN_MONTH,
-		"QTD": runtimev1.TimeGrain_TIME_GRAIN_QUARTER,
-		"YTD": runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+		"TD":  timeutil.TimeGrainDay,
+		"WTD": timeutil.TimeGrainWeek,
+		"MTD": timeutil.TimeGrainMonth,
+		"QTD": timeutil.TimeGrainQuarter,
+		"YTD": timeutil.TimeGrainYear,
 	}
 	daxOffsetNotations = map[string]StandardDuration{
 		"PP": {},
+		"PD": {Day: 1},
+		"PW": {Week: 1},
 		"PM": {Month: 1},
 		"PQ": {Month: 3},
 		"PY": {Year: 1},
@@ -53,19 +41,25 @@ var (
 
 // ParseISO8601 parses an ISO8601 duration as well as some Rill-specific extensions.
 // (Section 3.7 of the standard supposedly allows extensions that do not interfere with the standard.)
-// The only current extension is "inf", for representing an unbounded duration of time.
+// Current extensions are,
+// 1. "inf" for representing an unbounded duration of time
+// 2. X-To-Date and Previous-X duration supports with a prefix of "rill-" to DAX notations. Pulled from https://www.daxpatterns.com/standard-time-related-calculations/
 func ParseISO8601(from string) (Duration, error) {
 	// Try parsing for "inf"
 	if infPattern.MatchString(from) {
-		return StandardDuration{Inf: true}, nil
+		return InfDuration{}, nil
 	}
 
-	rillDur := strings.Replace(from, "rill-", "", 1)
-	if a, ok := daxToDateNotations[rillDur]; ok {
-		return ToDateDuration{anchor: a}, nil
-	}
-	if o, ok := daxOffsetNotations[rillDur]; ok {
-		return o, nil
+	if strings.Contains(from, "rill-") {
+		// We are using "rill-" as a prefix to DAX notation so that it doesn't interfere with ISO8601 standard.
+		// Pulled from https://www.daxpatterns.com/standard-time-related-calculations/
+		rillDur := strings.Replace(from, "rill-", "", 1)
+		if a, ok := daxToDateNotations[rillDur]; ok {
+			return TruncToDateDuration{anchor: a}, nil
+		}
+		if o, ok := daxOffsetNotations[rillDur]; ok {
+			return o, nil
+		}
 	}
 
 	// Parse as a regular ISO8601 duration
@@ -108,12 +102,22 @@ func ParseISO8601(from string) (Duration, error) {
 	return d, nil
 }
 
+// StandardDuration represents an ISO8601 duration with Rill-specific extensions.
+// See ParseISO8601 for details.
+type StandardDuration struct {
+	// Date component
+	Year  int
+	Month int
+	Week  int
+	Day   int
+	// Time Component
+	Hour   int
+	Minute int
+	Second int
+}
+
 // Add adds the duration to a timestamp
 func (d StandardDuration) Add(t time.Time) time.Time {
-	if d.Inf {
-		return time.Time{}
-	}
-
 	days := 7*d.Week + d.Day
 	t = t.AddDate(d.Year, d.Month, days)
 
@@ -123,10 +127,6 @@ func (d StandardDuration) Add(t time.Time) time.Time {
 
 // Sub subtracts the duration from a timestamp
 func (d StandardDuration) Sub(t time.Time) time.Time {
-	if d.Inf {
-		return time.Time{}
-	}
-
 	days := 7*d.Week + d.Day
 	t = t.AddDate(-d.Year, -d.Month, -days)
 
@@ -134,14 +134,24 @@ func (d StandardDuration) Sub(t time.Time) time.Time {
 	return t.Add(-td)
 }
 
-type ToDateDuration struct {
-	anchor runtimev1.TimeGrain
-}
+type InfDuration struct{}
 
-func (d ToDateDuration) Add(t time.Time) time.Time {
+func (d InfDuration) Add(t time.Time) time.Time {
 	return time.Time{}
 }
 
-func (d ToDateDuration) Sub(t time.Time) time.Time {
-	return TruncateTime(t, d.anchor, t.Location(), 1, 1) // TODO: get first day and month
+func (d InfDuration) Sub(t time.Time) time.Time {
+	return time.Time{}
+}
+
+type TruncToDateDuration struct {
+	anchor timeutil.TimeGrain
+}
+
+func (d TruncToDateDuration) Add(t time.Time) time.Time {
+	return time.Time{}
+}
+
+func (d TruncToDateDuration) Sub(t time.Time) time.Time {
+	return timeutil.TruncateTime(t, d.anchor, t.Location(), 1, 1) // TODO: get first day and month
 }

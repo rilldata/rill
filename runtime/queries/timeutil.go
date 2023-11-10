@@ -6,7 +6,32 @@ import (
 
 	"github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
+
+func convTimeGrain(tg runtimev1.TimeGrain) timeutil.TimeGrain {
+	switch tg {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return timeutil.TimeGrainMillisecond
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return timeutil.TimeGrainSecond
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return timeutil.TimeGrainMinute
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return timeutil.TimeGrainHour
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return timeutil.TimeGrainDay
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return timeutil.TimeGrainWeek
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return timeutil.TimeGrainMonth
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return timeutil.TimeGrainQuarter
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return timeutil.TimeGrainYear
+	}
+	return timeutil.TimeGrainUnspecified
+}
 
 func ResolveTimeRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (time.Time, time.Time, error) {
 	tz := time.UTC
@@ -78,10 +103,10 @@ func ResolveTimeRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (t
 			fmoy = 1
 		}
 		if !start.IsZero() {
-			start = duration.TruncateTime(start, tr.RoundToGrain, tz, fdow, fmoy)
+			start = timeutil.TruncateTime(start, convTimeGrain(tr.RoundToGrain), tz, fdow, fmoy)
 		}
 		if !end.IsZero() {
-			end = duration.TruncateTime(end, tr.RoundToGrain, tz, fdow, fmoy)
+			end = timeutil.TruncateTime(end, convTimeGrain(tr.RoundToGrain), tz, fdow, fmoy)
 		}
 	}
 

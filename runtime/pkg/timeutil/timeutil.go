@@ -1,31 +1,47 @@
-package duration
+package timeutil
 
 import (
 	"time"
-
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 
 	// Load IANA time zone data
 	_ "time/tzdata"
 )
 
-func TruncateTime(start time.Time, tg runtimev1.TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
+// TimeGrain is extension of std time package with Week and Quarter added
+type TimeGrain int
+
+const (
+	TimeGrainUnspecified TimeGrain = iota
+	TimeGrainMillisecond
+	TimeGrainSecond
+	TimeGrainMinute
+	TimeGrainHour
+	TimeGrainDay
+	TimeGrainWeek
+	TimeGrainMonth
+	TimeGrainQuarter
+	TimeGrainYear
+)
+
+func TruncateTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
 	switch tg {
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+	case TimeGrainUnspecified:
+		return start
+	case TimeGrainMillisecond:
 		return start.Truncate(time.Millisecond)
-	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+	case TimeGrainSecond:
 		return start.Truncate(time.Second)
-	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+	case TimeGrainMinute:
 		return start.Truncate(time.Minute)
-	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+	case TimeGrainHour:
 		start = start.In(tz)
 		start = time.Date(start.Year(), start.Month(), start.Day(), start.Hour(), 0, 0, 0, tz)
 		return start.In(time.UTC)
-	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+	case TimeGrainDay:
 		start = start.In(tz)
 		start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, tz)
 		return start.In(time.UTC)
-	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+	case TimeGrainWeek:
 		start = start.In(tz)
 		weekday := int(start.Weekday())
 		if weekday == 0 {
@@ -45,18 +61,18 @@ func TruncateTime(start time.Time, tg runtimev1.TimeGrain, tz *time.Location, fi
 		start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, tz)
 		start = start.AddDate(0, 0, daysToSubtract)
 		return start.In(time.UTC)
-	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+	case TimeGrainMonth:
 		start = start.In(tz)
 		start = time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, tz)
 		start = start.In(time.UTC)
 		return start
-	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+	case TimeGrainQuarter:
 		monthsToSubtract := (3 + int(start.Month()) - firstMonth%3) % 3
 		start = start.In(tz)
 		start = time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, tz)
 		start = start.AddDate(0, -monthsToSubtract, 0)
 		return start.In(time.UTC)
-	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+	case TimeGrainYear:
 		start = start.In(tz)
 		year := start.Year()
 		if int(start.Month()) < firstMonth {
