@@ -82,16 +82,16 @@
     value={hoveredValue}
   />
 
-  <div
+  <button
     use:shiftClickAction
     on:shift-click={() => shiftClickHandler(hoveredValue)}
-    class="big-number m-0.5 rounded"
+    class="big-number m-0.5 rounded flex items-start"
+    on:click={(e) => {
+      if (e.shiftKey) return;
+      dispatch("expand-measure");
+    }}
   >
-    <button
-      on:click={(e) => {
-        if (e.shiftKey) return;
-        dispatch("expand-measure");
-      }}
+    <div
       class="flex flex-col px-2 text-left
     {withTimeseries ? 'py-3' : 'py-1 justify-between'}
     {isMeasureExpanded ? 'cursor-default' : ''}
@@ -179,8 +179,8 @@
           {/if}
         </div>
       </div>
-    </button>
-  </div>
+    </div>
+  </button>
 </Tooltip>
 
 <style lang="postcss">
