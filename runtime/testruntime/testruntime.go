@@ -90,8 +90,9 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 
 	tmpDir := t.TempDir()
 	inst := &drivers.Instance{
-		OLAPConnector: "duckdb",
-		RepoConnector: "repo",
+		OLAPConnector:    "duckdb",
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -103,9 +104,13 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 				Name:   "duckdb",
 				Config: map[string]string{"dsn": ""},
 			},
+			{
+				Type:   "sqlite",
+				Name:   "catalog",
+				Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+			},
 		},
 		Variables:                    opts.Variables,
-		EmbedCatalog:                 true,
 		WatchRepo:                    opts.WatchRepo,
 		StageChanges:                 opts.StageChanges,
 		ModelDefaultMaterialize:      opts.ModelDefaultMaterialize,
@@ -163,8 +168,9 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	projectPath := filepath.Join(currentFile, "..", "testdata", name)
 
 	inst := &drivers.Instance{
-		OLAPConnector: "duckdb",
-		RepoConnector: "repo",
+		OLAPConnector:    "duckdb",
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -175,6 +181,11 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 				Type:   "duckdb",
 				Name:   "duckdb",
 				Config: map[string]string{"dsn": ""},
+			},
+			{
+				Type:   "sqlite",
+				Name:   "catalog",
+				Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
 			},
 		},
 		EmbedCatalog: true,
