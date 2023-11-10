@@ -355,6 +355,7 @@ export interface V1RevokeCurrentAuthTokenResponse {
 export interface V1ReportOptions {
   title?: string;
   refreshCron?: string;
+  refreshTimeZone?: string;
   queryName?: string;
   queryArgsJson?: string;
   exportLimit?: string;
