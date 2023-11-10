@@ -44,11 +44,11 @@ const (
 
 // Default instance config on local.
 const (
-	DefaultInstanceID = "default"
-	DefaultOLAPDriver = "duckdb"
-	DefaultOLAPDSN    = "main.db"
-	DefaultMetaStore  = "meta.db"
-	DefaultDBDir      = "tmp"
+	DefaultInstanceID   = "default"
+	DefaultOLAPDriver   = "duckdb"
+	DefaultOLAPDSN      = "main.db"
+	DefaultCatalogStore = "meta.db"
+	DefaultDBDir        = "tmp"
 )
 
 // App encapsulates the logic associated with configuring and running the UI and the runtime in a local environment.
@@ -101,7 +101,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	if err == nil { // a old stage.db file exists
 		_ = os.Remove(filepath.Join(projectPath, "stage.db"))
 		_ = os.Remove(filepath.Join(projectPath, "stage.db.wal"))
-		logger.Named("console").Info("dropping old stage.db file and rebuilding project")
+		logger.Named("console").Info("Dropping old stage.db file and rebuilding project")
 	}
 
 	parsedVariables, err := variable.Parse(variables)
@@ -121,7 +121,6 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize:          100,
 		MetastoreConnector:           "metastore",
-		CatalogConnector:             "catalog",
 		QueryCacheSizeBytes:          int64(datasize.MB * 100),
 		AllowHostAccess:              true,
 		SystemConnectors:             systemConnectors,
@@ -184,7 +183,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 			{
 				Type:   "sqlite",
 				Name:   "catalog",
-				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultMetaStore))},
+				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultCatalogStore))},
 			},
 		},
 		Variables:   parsedVariables,

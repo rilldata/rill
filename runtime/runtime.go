@@ -19,7 +19,6 @@ var tracer = otel.Tracer("github.com/rilldata/rill/runtime")
 
 type Options struct {
 	MetastoreConnector           string
-	CatalogConnector             string
 	SystemConnectors             []*runtimev1.Connector
 	ConnectionCacheSize          int
 	QueryCacheSizeBytes          int64

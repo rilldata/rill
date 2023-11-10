@@ -125,7 +125,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 		return store, release, nil
 	}
 
-	if r.opts.CatalogConnector == "" {
+	if inst.CatalogConnector == "" {
 		store, ok := r.metastore.AsCatalogStore(instanceID)
 		if !ok {
 			return nil, nil, fmt.Errorf("metastore cannot serve as catalog")
