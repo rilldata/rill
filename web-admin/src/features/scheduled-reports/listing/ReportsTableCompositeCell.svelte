@@ -4,13 +4,14 @@
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
   import cronstrue from "cronstrue";
   import { createAdminServiceListProjectMembers } from "../../../client";
-  import { formatDateToCustomString } from "../tableUtils";
+  import { formatRunDate } from "../tableUtils";
 
   export let organization: string;
   export let project: string;
   export let id: string;
   export let title: string;
   export let lastRun: string | undefined;
+  export let timeZone: string;
   export let frequency: string;
   export let ownerId: string;
   export let lastRunErrorMessage: string | undefined;
@@ -44,7 +45,7 @@
     {#if !lastRun}
       <span>Hasn't run yet</span>
     {:else}
-      <span>Last run {formatDateToCustomString(new Date(lastRun))}</span>
+      <span>Last run {formatRunDate(lastRun, timeZone)}</span>
     {/if}
     <span>•</span>
     <span>{humanReadableFrequency}</span>
