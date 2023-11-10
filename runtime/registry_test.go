@@ -499,7 +499,7 @@ func newTestRuntime(t *testing.T) *Runtime {
 			Name: "metastore",
 			// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 			// "cache=shared" is needed to prevent threading problems.
-			Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+			Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 		},
 	}
 

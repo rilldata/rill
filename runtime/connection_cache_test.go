@@ -395,7 +395,6 @@ func createInstance(t *testing.T, rt *Runtime, instanceId string) {
 		OLAPConnector:    "duckdb",
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
-		EmbedCatalog:     true,
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
