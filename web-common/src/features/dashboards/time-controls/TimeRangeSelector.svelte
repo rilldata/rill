@@ -3,7 +3,9 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import DefaultTimeRangeMenuItem from "@rilldata/web-common/features/dashboards/time-controls/DefaultTimeRangeMenuItem.svelte";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     ALL_TIME,
@@ -16,6 +18,10 @@
     prettyFormatTimeRange,
   } from "@rilldata/web-common/lib/time/ranges";
   import {
+    humaniseISODuration,
+    ISODurationToTimeRangePreset,
+  } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+  import {
     DashboardTimeControls,
     TimeRange,
     TimeRangeOption,
@@ -27,7 +33,7 @@
   import Divider from "../../../components/menu/core/Divider.svelte";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import type { V1TimeGrain } from "../../../runtime-client";
-  import { useDashboardStore } from "../dashboard-stores";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
   import TimeRangeScrubChip from "@rilldata/web-common/features/dashboards/time-controls/TimeRangeScrubChip.svelte";
@@ -43,13 +49,19 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const ctx = getStateManagers();
+  const timeControlsStore = useTimeControlStore(ctx);
+  const metaQuery = useMetaQuery(ctx);
 
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
 
   let latestWindowTimeRanges: TimeRangeOption[];
   let periodToDateTimeRanges: TimeRangeOption[];
+
+  $: showDefaultItem =
+    $metaQuery.data?.defaultTimeRange &&
+    !($metaQuery.data?.defaultTimeRange in ISODurationToTimeRangePreset);
 
   // get the available latest-window time ranges
   $: if (boundaryStart && boundaryEnd) {
@@ -140,7 +152,7 @@
     }, 300);
   }
 
-  $: currentSelection = $timeControlsStore?.selectedTimeRange?.name;
+  $: currentSelection = $dashboardStore?.selectedTimeRange?.name;
   $: intermediateSelection = currentSelection;
 
   const handleMenuOpen = () => {
@@ -182,6 +194,8 @@
             <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
             {#if intermediateSelection === TimeRangePreset.CUSTOM}
               Custom range
+            {:else if currentSelection === TimeRangePreset.DEFAULT}
+              Last {humaniseISODuration($metaQuery.data?.defaultTimeRange)}
             {:else if currentSelection in DEFAULT_TIME_RANGES}
               {DEFAULT_TIME_RANGES[$timeControlsStore?.selectedTimeRange?.name]
                 .label}
@@ -238,6 +252,18 @@
         {allTime.label}
       </span>
     </MenuItem>
+    {#if showDefaultItem && $timeControlsStore.defaultTimeRange}
+      <DefaultTimeRangeMenuItem
+        on:before-select={setIntermediateSelection(TimeRangePreset.DEFAULT)}
+        on:select={() =>
+          onSelectRelativeTimeRange(
+            $timeControlsStore.defaultTimeRange,
+            toggleFloatingElement
+          )}
+        selected={intermediateSelection === TimeRangePreset.DEFAULT}
+        isoDuration={$metaQuery.data?.defaultTimeRange}
+      />
+    {/if}
     {#if latestWindowTimeRanges}
       {#if latestWindowTimeRanges?.length}
         <Divider />

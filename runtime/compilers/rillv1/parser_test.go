@@ -3,6 +3,8 @@ package rillv1
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"testing"
 
@@ -11,8 +13,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -92,6 +92,8 @@ dimensions:
 measures:
   - name: b
     expression: count(*)
+first_day_of_week: 7
+first_month_of_year: 3
 `,
 		// migration c1
 		`custom/c1.yml`: `
@@ -169,6 +171,8 @@ SELECT * FROM {{ ref "m2" }}
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
 				},
+				FirstDayOfWeek:   7,
+				FirstMonthOfYear: 3,
 			},
 		},
 		// migration c1
@@ -414,6 +418,240 @@ path: hello
 	require.Equal(t, &Diff{}, diff)
 }
 
+func TestReparseSourceModelCollision(t *testing.T) {
+	// Create project with model m1
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`models/m1.sql`: `
+SELECT 10
+		`,
+	})
+	m1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 10",
+		},
+	}
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
+
+	// Add colliding source m1
+	putRepo(t, repo, map[string]string{
+		`sources/m1.yaml`: `
+connector: s3
+path: hello
+`,
+	})
+	s1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "m1"},
+		Paths: []string{"/sources/m1.yaml"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+		},
+	}
+	diff, err := p.Reparse(ctx, s1.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1}, []*runtimev1.ParseError{
+		{
+			Message:  "model name collides with source \"m1\"",
+			FilePath: "/models/m1.sql",
+		},
+	})
+	require.Equal(t, &Diff{
+		Added:   []ResourceName{s1.Name},
+		Deleted: []ResourceName{m1.Name},
+	}, diff)
+
+	// Remove colliding source, verify model is restored
+	deleteRepo(t, repo, "/sources/m1.yaml")
+	diff, err = p.Reparse(ctx, s1.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
+	require.Equal(t, &Diff{
+		Added:   []ResourceName{m1.Name},
+		Deleted: []ResourceName{s1.Name},
+	}, diff)
+}
+
+func TestReparseNameCollision(t *testing.T) {
+	// Create project with model m1
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`models/m1.sql`: `
+SELECT 10
+		`,
+		`models/nested/m1.sql`: `
+SELECT 20
+		`,
+		`models/m2.sql`: `
+SELECT * FROM m1
+		`,
+	})
+	m1 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 10",
+		},
+	}
+	m1Nested := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/nested/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 20",
+		},
+	}
+	m2 := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
+		Paths: []string{"/models/m2.sql"},
+		Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT * FROM m1",
+		},
+	}
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, []*runtimev1.ParseError{
+		{
+			Message:  "name collision",
+			FilePath: "/models/nested/m1.sql",
+			External: true,
+		},
+	})
+
+	// Remove colliding model, verify things still work
+	deleteRepo(t, repo, "/models/m1.sql")
+	diff, err := p.Reparse(ctx, m1.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{m1Nested, m2}, nil)
+	require.Equal(t, &Diff{
+		Modified: []ResourceName{m1.Name, m2.Name}, // m2 due to ref re-inference
+	}, diff)
+}
+
+func TestReparseMultiKindNameCollision(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`:            ``,
+		`models/m1.sql`:        `SELECT 10`,
+		`models/nested/m1.sql`: `SELECT 20`,
+		`sources/m1.yaml`: `
+type: s3
+path: hello
+`,
+	})
+	src := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "m1"},
+		Paths: []string{"/sources/m1.yaml"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+		},
+	}
+	mdl := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 10",
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{src}, []*runtimev1.ParseError{
+		{
+			Message:  "collides with source",
+			FilePath: "/models/m1.sql",
+			External: true,
+		},
+		{
+			Message:  "name collision",
+			FilePath: "/models/nested/m1.sql",
+			External: true,
+		},
+	})
+
+	// Delete source m1
+	deleteRepo(t, repo, "/sources/m1.yaml")
+	diff, err := p.Reparse(ctx, src.Paths)
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{mdl}, []*runtimev1.ParseError{
+		{
+			Message:  "name collision",
+			FilePath: "/models/nested/m1.sql",
+			External: true,
+		},
+	})
+	require.Equal(t, &Diff{
+		Added:   []ResourceName{mdl.Name},
+		Deleted: []ResourceName{src.Name},
+	}, diff)
+}
+
+func TestReparseRillYAML(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{})
+
+	mdl := &Resource{
+		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+		Paths: []string{"/models/m1.sql"},
+		ModelSpec: &runtimev1.ModelSpec{
+			Sql: "SELECT 10",
+		},
+	}
+	perr := &runtimev1.ParseError{
+		Message:  "rill.yaml not found",
+		FilePath: "/rill.yaml",
+	}
+
+	// Parse empty project. Expect rill.yaml error.
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	require.Nil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{perr})
+
+	// Add rill.yaml. Expect success.
+	putRepo(t, repo, map[string]string{
+		`rill.yaml`: ``,
+	})
+	diff, err := p.Reparse(ctx, []string{"/rill.yaml"})
+	require.NoError(t, err)
+	require.True(t, diff.Reloaded)
+	require.NotNil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, nil, nil)
+
+	// Remove rill.yaml and add a model. Expect reloaded.
+	deleteRepo(t, repo, "/rill.yaml")
+	putRepo(t, repo, map[string]string{"/models/m1.sql": "SELECT 10"})
+	diff, err = p.Reparse(ctx, []string{"/rill.yaml", "/models/m1.sql"})
+	require.NoError(t, err)
+	require.True(t, diff.Reloaded)
+	require.Nil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, []*Resource{mdl}, []*runtimev1.ParseError{perr})
+
+	// Edit model. Expect nothing to happen because rill.yaml is still broken.
+	putRepo(t, repo, map[string]string{"/models/m1.sql": "SELECT 20"})
+	diff, err = p.Reparse(ctx, []string{"/models/m1.sql"})
+	require.NoError(t, err)
+	require.Equal(t, &Diff{Skipped: true}, diff)
+	require.Nil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, []*Resource{mdl}, []*runtimev1.ParseError{perr})
+
+	// Fix rill.yaml. Expect reloaded.
+	mdl.ModelSpec.Sql = "SELECT 20"
+	putRepo(t, repo, map[string]string{"/rill.yaml": ""})
+	diff, err = p.Reparse(ctx, []string{"/rill.yaml"})
+	require.NoError(t, err)
+	require.True(t, diff.Reloaded)
+	require.NotNil(t, p.RillYAML)
+	requireResourcesAndErrors(t, p, []*Resource{mdl}, nil)
+}
+
 func TestRefInferrence(t *testing.T) {
 	// Create model referencing "bar"
 	foo := &Resource{
@@ -518,6 +756,230 @@ materialize: true
 	}
 }
 
+func TestProjectModelDefaults(t *testing.T) {
+	ctx := context.Background()
+	truth := true
+	falsity := false
+
+	files := map[string]string{
+		// Provide dashboard defaults in rill.yaml
+		`rill.yaml`: `
+models:
+  materialize: true
+`,
+		// Model that inherits defaults
+		`models/m1.sql`: `
+SELECT * FROM t1
+`,
+		// Model that overrides defaults
+		`models/m2.sql`: `
+-- @materialize: false
+SELECT * FROM t2
+`,
+	}
+
+	resources := []*Resource{
+		// m1
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				Sql:         strings.TrimSpace(files["models/m1.sql"]),
+				Materialize: &truth,
+			},
+		},
+		// m2
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
+			Paths: []string{"/models/m2.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				Sql:         strings.TrimSpace(files["models/m2.sql"]),
+				Materialize: &falsity,
+			},
+		},
+	}
+
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestProjectDashboardDefaults(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		// Provide dashboard defaults in rill.yaml
+		`rill.yaml`: `
+dashboards:
+  first_day_of_week: 7
+  available_time_zones:
+    - America/New_York
+  security:
+    access: true
+`,
+		// Dashboard that inherits defaults
+		`dashboards/d1.yaml`: `
+table: t1
+dimensions:
+  - name: a
+measures:
+  - name: b
+    expression: count(*)
+`,
+		// Dashboard that overrides defaults
+		`dashboards/d2.yaml`: `
+table: t2
+dimensions:
+  - name: a
+measures:
+  - name: b
+    expression: count(*)
+first_day_of_week: 1
+available_time_zones: []
+security:
+  row_filter: true
+`,
+	})
+
+	resources := []*Resource{
+		// dashboard d1
+		{
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
+			Paths: []string{"/dashboards/d1.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Table: "t1",
+				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					{Name: "a"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+					{Name: "b", Expression: "count(*)"},
+				},
+				FirstDayOfWeek:     7,
+				AvailableTimeZones: []string{"America/New_York"},
+				Security: &runtimev1.MetricsViewSpec_SecurityV2{
+					Access: "true",
+				},
+			},
+		},
+		// dashboard d2
+		{
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d2"},
+			Paths: []string{"/dashboards/d2.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Table: "t2",
+				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					{Name: "a"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+					{Name: "b", Expression: "count(*)"},
+				},
+				FirstDayOfWeek:     1,
+				AvailableTimeZones: []string{},
+				Security: &runtimev1.MetricsViewSpec_SecurityV2{
+					Access:    "true",
+					RowFilter: "true",
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestReport(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`reports/r1.yaml`: `
+kind: report
+title: My Report
+
+refresh:
+  cron: 0 * * * *
+  time_zone: America/Los_Angeles
+
+query:
+  name: MetricsViewToplist
+  args:
+    metrics_view: mv1
+
+export:
+  format: csv
+  limit: 10000
+
+email:
+  recipients:
+    - benjamin@example.com
+
+annotations:
+  foo: bar
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r1"},
+			Paths: []string{"/reports/r1.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				Title: "My Report",
+				RefreshSchedule: &runtimev1.Schedule{
+					Cron:     "0 * * * *",
+					TimeZone: "America/Los_Angeles",
+				},
+				QueryName:       "MetricsViewToplist",
+				QueryArgsJson:   `{"metrics_view":"mv1"}`,
+				ExportFormat:    runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportLimit:     10000,
+				EmailRecipients: []string{"jane@example.com"},
+				Annotations:     map[string]string{"foo": "bar"},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// dashboard d1
+		`dashboards/d1.yaml`: `
+model: d1
+dimensions:
+  - name: a
+measures:
+  - name: b
+    expression: count(*)
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
+			Refs:  nil, // NOTE: This is what we're testing – that it avoids inferring the missing "d1" as a self-reference
+			Paths: []string{"/dashboards/d1.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Table: "d1",
+				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					{Name: "a"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+					{Name: "b", Expression: "count(*)"},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check resources
 	gotResources := maps.Clone(p.Resources)
@@ -538,13 +1000,9 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				break
 			}
 		}
-		if !found {
-			t.Errorf("missing resource %v", want.Name)
-		}
+		require.True(t, found, "missing resource %q", want.Name)
 	}
-	if len(gotResources) > 0 {
-		t.Errorf("unexpected resources: %v", gotResources)
-	}
+	require.True(t, len(gotResources) == 0, "unexpected resources: %v", gotResources)
 
 	// Check errors
 	// NOTE: Assumes there's at most one parse error per file path
@@ -561,13 +1019,9 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				break
 			}
 		}
-		if !found {
-			t.Errorf("missing error for path %q", want.FilePath)
-		}
+		require.True(t, found, "missing error for path %q", want.FilePath)
 	}
-	if len(gotErrors) > 0 {
-		t.Errorf("unexpected errors: %v", gotErrors)
-	}
+	require.True(t, len(gotErrors) == 0, "unexpected errors: %v", gotErrors)
 }
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {

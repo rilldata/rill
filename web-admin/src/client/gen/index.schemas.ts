@@ -32,6 +32,25 @@ export type AdminServiceSearchProjectNamesParams = {
   pageToken?: string;
 };
 
+export type AdminServiceGetReportMetaParams = {
+  branch?: string;
+  report?: string;
+  /**
+   * This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+   */
+  annotations?: string;
+};
+
+export type AdminServicePullVirtualRepoParams = {
+  branch?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceGetRepoMetaParams = {
+  branch?: string;
+};
+
 export type AdminServiceUpdateServiceBody = {
   newName?: string;
 };
@@ -143,6 +162,10 @@ export type AdminServiceTriggerRefreshSourcesBody = {
   sources?: string[];
 };
 
+export type AdminServiceCreateReportBodyBody = {
+  options?: V1ReportOptions;
+};
+
 export type AdminServiceAddOrganizationMemberBodyBody = {
   email?: string;
   role?: string;
@@ -157,6 +180,13 @@ export type AdminServiceTriggerReconcileBodyBody = { [key: string]: any };
 export interface V1WhitelistedDomain {
   domain?: string;
   role?: string;
+}
+
+export interface V1VirtualFile {
+  path?: string;
+  data?: string;
+  deleted?: boolean;
+  updatedOn?: string;
 }
 
 export interface V1UserQuotas {
@@ -209,6 +239,14 @@ export interface V1UpdateProjectResponse {
 
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
+}
+
+export interface V1UnsubscribeReportResponse {
+  [key: string]: any;
+}
+
+export interface V1TriggerReportResponse {
+  [key: string]: any;
 }
 
 export interface V1TriggerRefreshSourcesResponse {
@@ -314,6 +352,18 @@ export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
 }
 
+export interface V1ReportOptions {
+  title?: string;
+  refreshCron?: string;
+  refreshTimeZone?: string;
+  queryName?: string;
+  queryArgsJson?: string;
+  exportLimit?: string;
+  exportFormat?: V1ExportFormat;
+  openProjectSubpath?: string;
+  recipients?: string[];
+}
+
 export interface V1RemoveWhitelistedDomainResponse {
   [key: string]: any;
 }
@@ -330,6 +380,11 @@ export interface V1RemoveBookmarkResponse {
   [key: string]: any;
 }
 
+export interface V1PullVirtualRepoResponse {
+  files?: V1VirtualFile[];
+  nextPageToken?: string;
+}
+
 export interface V1ProjectPermissions {
   readProject?: boolean;
   manageProject?: boolean;
@@ -341,6 +396,8 @@ export interface V1ProjectPermissions {
   manageDev?: boolean;
   readProjectMembers?: boolean;
   manageProjectMembers?: boolean;
+  createReports?: boolean;
+  manageReports?: boolean;
 }
 
 export interface V1Project {
@@ -476,6 +533,18 @@ export interface V1GetUserResponse {
   user?: V1User;
 }
 
+export interface V1GetReportMetaResponse {
+  openUrl?: string;
+  exportUrl?: string;
+  editUrl?: string;
+}
+
+export interface V1GetRepoMetaResponse {
+  gitUrl?: string;
+  gitUrlExpiresOn?: string;
+  gitSubpath?: string;
+}
+
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
 
 export interface V1GetProjectVariablesResponse {
@@ -523,6 +592,25 @@ export interface V1GetBookmarkResponse {
   bookmark?: V1Bookmark;
 }
 
+export interface V1GenerateReportYAMLResponse {
+  yaml?: string;
+}
+
+export type V1ExportFormat =
+  (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1ExportFormat = {
+  EXPORT_FORMAT_UNSPECIFIED: "EXPORT_FORMAT_UNSPECIFIED",
+  EXPORT_FORMAT_CSV: "EXPORT_FORMAT_CSV",
+  EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
+  EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
+} as const;
+
+export interface V1EditReportResponse {
+  [key: string]: any;
+}
+
 export type V1DeploymentStatus =
   (typeof V1DeploymentStatus)[keyof typeof V1DeploymentStatus];
 
@@ -531,7 +619,6 @@ export const V1DeploymentStatus = {
   DEPLOYMENT_STATUS_UNSPECIFIED: "DEPLOYMENT_STATUS_UNSPECIFIED",
   DEPLOYMENT_STATUS_PENDING: "DEPLOYMENT_STATUS_PENDING",
   DEPLOYMENT_STATUS_OK: "DEPLOYMENT_STATUS_OK",
-  DEPLOYMENT_STATUS_RECONCILING: "DEPLOYMENT_STATUS_RECONCILING",
   DEPLOYMENT_STATUS_ERROR: "DEPLOYMENT_STATUS_ERROR",
 } as const;
 
@@ -543,13 +630,17 @@ export interface V1Deployment {
   runtimeHost?: string;
   runtimeInstanceId?: string;
   status?: V1DeploymentStatus;
-  logs?: string;
+  statusMessage?: string;
   createdOn?: string;
   updatedOn?: string;
 }
 
 export interface V1DeleteServiceResponse {
   service?: V1Service;
+}
+
+export interface V1DeleteReportResponse {
+  [key: string]: any;
 }
 
 export interface V1DeleteProjectResponse {
@@ -566,6 +657,10 @@ export interface V1CreateWhitelistedDomainResponse {
 
 export interface V1CreateServiceResponse {
   service?: V1Service;
+}
+
+export interface V1CreateReportResponse {
+  name?: string;
 }
 
 export interface V1CreateProjectResponse {

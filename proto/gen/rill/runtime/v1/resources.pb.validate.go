@@ -292,6 +292,47 @@ func (m *Resource) validate(all bool) error {
 			}
 		}
 
+	case *Resource_Report:
+		if v == nil {
+			err := ResourceValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetReport()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Report",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Report",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetReport()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceValidationError{
+					field:  "Report",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	case *Resource_PullTrigger:
 		if v == nil {
 			err := ResourceValidationError{
@@ -580,6 +621,8 @@ func (m *ResourceMeta) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for Hidden
 
 	// no validation rules for Version
 
@@ -1166,18 +1209,6 @@ func (m *ProjectParserSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Compiler
-
-	// no validation rules for Watch
-
-	// no validation rules for StageChanges
-
-	// no validation rules for SourceStreamIngestion
-
-	// no validation rules for ModelDefaultMaterialize
-
-	// no validation rules for ModelMaterializeDelaySeconds
-
 	if len(errors) > 0 {
 		return ProjectParserSpecMultiError(errors)
 	}
@@ -1315,6 +1346,8 @@ func (m *ProjectParserState) validate(all bool) error {
 	}
 
 	// no validation rules for CurrentCommitSha
+
+	// no validation rules for Watching
 
 	if len(errors) > 0 {
 		return ProjectParserStateMultiError(errors)
@@ -2583,6 +2616,14 @@ func (m *MetricsViewSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for FirstDayOfWeek
+
+	// no validation rules for FirstMonthOfYear
+
+	// no validation rules for DefaultComparisonMode
+
+	// no validation rules for DefaultComparisonDimension
+
 	if len(errors) > 0 {
 		return MetricsViewSpecMultiError(errors)
 	}
@@ -3154,6 +3195,690 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MigrationStateValidationError{}
+
+// Validate checks the field values on Report with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Report) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Report with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in ReportMultiError, or nil if none found.
+func (m *Report) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Report) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetSpec()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ReportValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ReportValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ReportValidationError{
+				field:  "Spec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetState()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ReportValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ReportValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ReportValidationError{
+				field:  "State",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ReportMultiError(errors)
+	}
+
+	return nil
+}
+
+// ReportMultiError is an error wrapping multiple validation errors returned by
+// Report.ValidateAll() if the designated constraints aren't met.
+type ReportMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ReportMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ReportMultiError) AllErrors() []error { return m }
+
+// ReportValidationError is the validation error returned by Report.Validate if
+// the designated constraints aren't met.
+type ReportValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ReportValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ReportValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ReportValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ReportValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ReportValidationError) ErrorName() string { return "ReportValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ReportValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sReport.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ReportValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ReportValidationError{}
+
+// Validate checks the field values on ReportSpec with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ReportSpec) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ReportSpec with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ReportSpecMultiError, or
+// nil if none found.
+func (m *ReportSpec) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ReportSpec) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Trigger
+
+	// no validation rules for Title
+
+	if all {
+		switch v := interface{}(m.GetRefreshSchedule()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ReportSpecValidationError{
+					field:  "RefreshSchedule",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ReportSpecValidationError{
+					field:  "RefreshSchedule",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetRefreshSchedule()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ReportSpecValidationError{
+				field:  "RefreshSchedule",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for TimeoutSeconds
+
+	// no validation rules for QueryName
+
+	// no validation rules for QueryArgsJson
+
+	// no validation rules for ExportLimit
+
+	// no validation rules for ExportFormat
+
+	// no validation rules for Annotations
+
+	if len(errors) > 0 {
+		return ReportSpecMultiError(errors)
+	}
+
+	return nil
+}
+
+// ReportSpecMultiError is an error wrapping multiple validation errors
+// returned by ReportSpec.ValidateAll() if the designated constraints aren't met.
+type ReportSpecMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ReportSpecMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ReportSpecMultiError) AllErrors() []error { return m }
+
+// ReportSpecValidationError is the validation error returned by
+// ReportSpec.Validate if the designated constraints aren't met.
+type ReportSpecValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ReportSpecValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ReportSpecValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ReportSpecValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ReportSpecValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ReportSpecValidationError) ErrorName() string { return "ReportSpecValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ReportSpecValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sReportSpec.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ReportSpecValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ReportSpecValidationError{}
+
+// Validate checks the field values on ReportState with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ReportState) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ReportState with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ReportStateMultiError, or
+// nil if none found.
+func (m *ReportState) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ReportState) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetNextRunOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ReportStateValidationError{
+					field:  "NextRunOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ReportStateValidationError{
+					field:  "NextRunOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetNextRunOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ReportStateValidationError{
+				field:  "NextRunOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetCurrentExecution()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ReportStateValidationError{
+					field:  "CurrentExecution",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ReportStateValidationError{
+					field:  "CurrentExecution",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCurrentExecution()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ReportStateValidationError{
+				field:  "CurrentExecution",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetExecutionHistory() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ReportStateValidationError{
+						field:  fmt.Sprintf("ExecutionHistory[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ReportStateValidationError{
+						field:  fmt.Sprintf("ExecutionHistory[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ReportStateValidationError{
+					field:  fmt.Sprintf("ExecutionHistory[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for ExecutionCount
+
+	if len(errors) > 0 {
+		return ReportStateMultiError(errors)
+	}
+
+	return nil
+}
+
+// ReportStateMultiError is an error wrapping multiple validation errors
+// returned by ReportState.ValidateAll() if the designated constraints aren't met.
+type ReportStateMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ReportStateMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ReportStateMultiError) AllErrors() []error { return m }
+
+// ReportStateValidationError is the validation error returned by
+// ReportState.Validate if the designated constraints aren't met.
+type ReportStateValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ReportStateValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ReportStateValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ReportStateValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ReportStateValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ReportStateValidationError) ErrorName() string { return "ReportStateValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ReportStateValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sReportState.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ReportStateValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ReportStateValidationError{}
+
+// Validate checks the field values on ReportExecution with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *ReportExecution) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ReportExecution with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ReportExecutionMultiError, or nil if none found.
+func (m *ReportExecution) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ReportExecution) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Adhoc
+
+	// no validation rules for ErrorMessage
+
+	if all {
+		switch v := interface{}(m.GetReportTime()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ReportExecutionValidationError{
+					field:  "ReportTime",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ReportExecutionValidationError{
+					field:  "ReportTime",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetReportTime()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ReportExecutionValidationError{
+				field:  "ReportTime",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetStartedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ReportExecutionValidationError{
+					field:  "StartedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ReportExecutionValidationError{
+					field:  "StartedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetStartedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ReportExecutionValidationError{
+				field:  "StartedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetFinishedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ReportExecutionValidationError{
+					field:  "FinishedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ReportExecutionValidationError{
+					field:  "FinishedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFinishedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ReportExecutionValidationError{
+				field:  "FinishedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ReportExecutionMultiError(errors)
+	}
+
+	return nil
+}
+
+// ReportExecutionMultiError is an error wrapping multiple validation errors
+// returned by ReportExecution.ValidateAll() if the designated constraints
+// aren't met.
+type ReportExecutionMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ReportExecutionMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ReportExecutionMultiError) AllErrors() []error { return m }
+
+// ReportExecutionValidationError is the validation error returned by
+// ReportExecution.Validate if the designated constraints aren't met.
+type ReportExecutionValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ReportExecutionValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ReportExecutionValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ReportExecutionValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ReportExecutionValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ReportExecutionValidationError) ErrorName() string { return "ReportExecutionValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ReportExecutionValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sReportExecution.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ReportExecutionValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ReportExecutionValidationError{}
 
 // Validate checks the field values on PullTrigger with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -4437,6 +5162,8 @@ func (m *Schedule) validate(all bool) error {
 
 	// no validation rules for TickerSeconds
 
+	// no validation rules for TimeZone
+
 	if len(errors) > 0 {
 		return ScheduleMultiError(errors)
 	}
@@ -4568,6 +5295,8 @@ func (m *ParseError) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for External
 
 	if len(errors) > 0 {
 		return ParseErrorMultiError(errors)
@@ -5085,6 +5814,8 @@ func (m *MetricsViewSpec_DimensionV2) validate(all bool) error {
 
 	// no validation rules for Description
 
+	// no validation rules for Unnest
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionV2MultiError(errors)
 	}
@@ -5196,7 +5927,9 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 
 	// no validation rules for Description
 
-	// no validation rules for Format
+	// no validation rules for FormatPreset
+
+	// no validation rules for FormatD3
 
 	// no validation rules for ValidPercentOfTotal
 

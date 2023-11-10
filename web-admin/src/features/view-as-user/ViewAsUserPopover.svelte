@@ -62,7 +62,9 @@
       href="https://docs.rilldata.com/develop/security">security policies</a
     > by viewing this project from the perspective of another user.
   </div>
-  <Search bind:value={searchText} />
+  <div class="px-2 pb-2">
+    <Search bind:value={searchText} autofocus={false} />
+  </div>
   {#if visibleUsers.length > 0}
     <div class="overflow-auto pb-1">
       {#each visibleUsers as user}

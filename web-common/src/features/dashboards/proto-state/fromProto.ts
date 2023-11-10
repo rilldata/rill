@@ -1,6 +1,6 @@
 import type { Timestamp } from "@bufbuild/protobuf";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -88,12 +88,22 @@ export function getDashboardStateFromProto(
   }
   if (dashboard.selectedDimension) {
     entity.selectedDimensionName = dashboard.selectedDimension;
+  } else {
+    entity.selectedDimensionName = undefined;
   }
-
+  if (dashboard.expandedMeasure) {
+    entity.expandedMeasureName = dashboard.expandedMeasure;
+  } else {
+    entity.expandedMeasureName = undefined;
+  }
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;
+  } else {
+    entity.selectedComparisonDimension = undefined;
   }
-
+  if (dashboard.pinIndex !== undefined) {
+    entity.pinIndex = dashboard.pinIndex;
+  }
   if (dashboard.selectedTimezone) {
     entity.selectedTimezone = dashboard.selectedTimezone;
   }

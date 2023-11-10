@@ -7,8 +7,9 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/services/catalog"
 )
+
+var ErrAdminNotConfigured = fmt.Errorf("an admin store is not configured for this instance")
 
 func (r *Runtime) AcquireSystemHandle(ctx context.Context, connector string) (drivers.Handle, func(), error) {
 	for _, c := range r.opts.SystemConnectors {
@@ -30,33 +31,16 @@ func (r *Runtime) AcquireHandle(ctx context.Context, instanceID, connector strin
 	if err != nil {
 		return nil, nil, err
 	}
+	if ctx.Err() != nil {
+		// Many code paths around connection acquisition leverage caches that won't actually touch the ctx.
+		// So we take this moment to make sure the ctx gets checked for cancellation at least every once in a while.
+		return nil, nil, ctx.Err()
+	}
 	return r.connCache.get(ctx, instanceID, driver, cfg, false)
 }
 
-// EvictHandle flushes the db handle for the specific connector from the cache
-func (r *Runtime) EvictHandle(ctx context.Context, instanceID, connector string, drop bool) error {
-	driver, cfg, err := r.connectorConfig(ctx, instanceID, connector)
-	if err != nil {
-		return err
-	}
-	r.connCache.evict(ctx, instanceID, driver, cfg)
-	if drop {
-		return drivers.Drop(driver, cfg, r.logger)
-	}
-	return nil
-}
-
-func (r *Runtime) Registry() drivers.RegistryStore {
-	registry, ok := r.metastore.AsRegistry()
-	if !ok {
-		// Verified as registry in New, so this should never happen
-		panic("metastore is not a registry")
-	}
-	return registry
-}
-
 func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStore, func(), error) {
-	inst, err := r.FindInstance(ctx, instanceID)
+	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -69,15 +53,39 @@ func (r *Runtime) Repo(ctx context.Context, instanceID string) (drivers.RepoStor
 	repo, ok := conn.AsRepoStore(instanceID)
 	if !ok {
 		release()
-		// Verified as repo when instance is created, so this should never happen
-		return nil, release, fmt.Errorf("connection for instance '%s' is not a repo", instanceID)
+		return nil, release, fmt.Errorf("connector %q is not a valid project file store", inst.RepoConnector)
 	}
 
 	return repo, release, nil
 }
 
+func (r *Runtime) Admin(ctx context.Context, instanceID string) (drivers.AdminService, func(), error) {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// The admin connector is optional
+	if inst.AdminConnector == "" {
+		return nil, nil, ErrAdminNotConfigured
+	}
+
+	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.AdminConnector)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	admin, ok := conn.AsAdmin(instanceID)
+	if !ok {
+		release()
+		return nil, nil, fmt.Errorf("connector %q is not a valid admin store", inst.AdminConnector)
+	}
+
+	return admin, release, nil
+}
+
 func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStore, func(), error) {
-	inst, err := r.FindInstance(ctx, instanceID)
+	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -90,15 +98,14 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 	olap, ok := conn.AsOLAP(instanceID)
 	if !ok {
 		release()
-		// Verified as OLAP when instance is created, so this should never happen
-		return nil, nil, fmt.Errorf("connection for instance '%s' is not an olap", instanceID)
+		return nil, nil, fmt.Errorf("connector %q is not a valid OLAP data store", instanceID)
 	}
 
 	return olap, release, nil
 }
 
 func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.CatalogStore, func(), error) {
-	inst, err := r.FindInstance(ctx, instanceID)
+	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -112,8 +119,7 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 		store, ok := conn.AsCatalogStore(instanceID)
 		if !ok {
 			release()
-			// Verified as CatalogStore when instance is created, so this should never happen
-			return nil, nil, fmt.Errorf("instance cannot embed catalog")
+			return nil, nil, fmt.Errorf("can't embed catalog because it is not supported by the connector %q", inst.OLAPConnector)
 		}
 
 		return store, release, nil
@@ -126,48 +132,8 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 	return store, func() {}, nil
 }
 
-func (r *Runtime) NewCatalogService(ctx context.Context, instanceID string) (*catalog.Service, error) {
-	// get all stores
-	olapStore, releaseOLAP, err := r.OLAP(ctx, instanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	catalogStore, releaseCatalog, err := r.Catalog(ctx, instanceID)
-	if err != nil {
-		releaseOLAP()
-		return nil, err
-	}
-
-	repoStore, releaseRepo, err := r.Repo(ctx, instanceID)
-	if err != nil {
-		releaseOLAP()
-		releaseCatalog()
-		return nil, err
-	}
-
-	registry := r.Registry()
-
-	migrationMetadata := r.migrationMetaCache.get(instanceID)
-	releaseFunc := func() {
-		releaseOLAP()
-		releaseCatalog()
-		releaseRepo()
-	}
-
-	inst, err := r.FindInstance(ctx, instanceID)
-	if err != nil {
-		return nil, err
-	}
-
-	activityDims := instanceAnnotationsToAttribs(inst)
-	ac := r.activity.With(activityDims...)
-
-	return catalog.NewService(catalogStore, repoStore, olapStore, registry, instanceID, r.logger, migrationMetadata, releaseFunc, ac), nil
-}
-
 func (r *Runtime) connectorConfig(ctx context.Context, instanceID, name string) (string, map[string]any, error) {
-	inst, err := r.FindInstance(ctx, instanceID)
+	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return "", nil, err
 	}

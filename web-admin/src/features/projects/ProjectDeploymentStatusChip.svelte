@@ -3,20 +3,20 @@
     createAdminServiceGetProject,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
-  import { getDashboardsForProject } from "@rilldata/web-admin/features/projects/dashboards";
+  import {
+    getDashboardsForProject,
+    useDashboardsStatus,
+  } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import {
-    getRuntimeServiceListCatalogEntriesQueryKey,
-    getRuntimeServiceListFilesQueryKey,
-  } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { SvelteComponent } from "svelte";
 
@@ -31,14 +31,17 @@
     project
   );
   let deploymentStatus: V1DeploymentStatus;
-  $: currentStatusDisplay =
-    !!deploymentStatus && statusDisplays[deploymentStatus];
+
+  $: instanceId = $proj?.data?.prodDeployment?.runtimeInstanceId;
+
+  $: deploymentStatusFromDashboards = useDashboardsStatus(instanceId);
 
   const queryClient = useQueryClient();
 
   $: if ($projectDeploymentStatus.data) {
     const prevStatus = deploymentStatus;
 
+    // status checking for a full invalidation should only depend on deployment status
     deploymentStatus = $projectDeploymentStatus.data;
 
     if (
@@ -50,13 +53,8 @@
 
       // Invalidate the queries used to compose the dashboard list in the breadcrumbs
       queryClient.invalidateQueries(
-        getRuntimeServiceListFilesQueryKey($runtime?.instanceId, {
-          glob: "dashboards/*.yaml",
-        })
-      );
-      queryClient.invalidateQueries(
-        getRuntimeServiceListCatalogEntriesQueryKey($runtime?.instanceId, {
-          type: "OBJECT_TYPE_METRICS_VIEW",
+        getRuntimeServiceListResourcesQueryKey(instanceId, {
+          kind: ResourceKind.MetricsView,
         })
       );
     }
@@ -64,7 +62,9 @@
 
   async function getDashboardsAndInvalidate() {
     const dashboardListItems = await getDashboardsForProject($proj.data);
-    const dashboardNames = dashboardListItems.map((listing) => listing.name);
+    const dashboardNames = dashboardListItems.map(
+      (listing) => listing.meta.name.name
+    );
     return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 
@@ -97,17 +97,6 @@
       textClass: "text-purple-600",
       wrapperClass: "bg-purple-50 border-purple-300",
     },
-    [V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING]: {
-      icon: Spinner,
-      iconProps: {
-        bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-        className: "text-purple-600 hover:text-purple-500",
-        status: EntityStatus.Running,
-      },
-      text: "syncing",
-      textClass: "text-purple-600",
-      wrapperClass: "bg-purple-50 border-purple-300",
-    },
     [V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR]: {
       icon: CancelCircle,
       iconProps: { className: "text-red-600 hover:text-red-500" },
@@ -123,16 +112,35 @@
       wrapperClass: "bg-indigo-50 border-indigo-300",
     },
   };
+
+  // Merge the status from deployment and dashboards to show the chip
+  let currentStatusDisplay: StatusDisplay;
+  $: if (deploymentStatus || $deploymentStatusFromDashboards?.data) {
+    if (
+      deploymentStatus !== V1DeploymentStatus.DEPLOYMENT_STATUS_OK ||
+      !$deploymentStatusFromDashboards
+    ) {
+      currentStatusDisplay = statusDisplays[deploymentStatus];
+    } else {
+      currentStatusDisplay =
+        statusDisplays[
+          $deploymentStatusFromDashboards?.data ??
+            V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED
+        ];
+    }
+  }
 </script>
 
-{#if deploymentStatus}
+{#if $deploymentStatusFromDashboards.isFetching && !$deploymentStatusFromDashboards?.data}
+  <div class="p-0.5">
+    <Spinner status={EntityStatus.Running} size="16px" />
+  </div>
+{:else if deploymentStatus}
   {#if iconOnly}
-    <div class="pb-0.5">
-      <svelte:component
-        this={currentStatusDisplay.icon}
-        {...currentStatusDisplay.iconProps}
-      />
-    </div>
+    <svelte:component
+      this={currentStatusDisplay.icon}
+      {...currentStatusDisplay.iconProps}
+    />
   {:else}
     <div
       class="flex space-x-1 items-center px-2 border rounded rounded-[20px] w-fit {currentStatusDisplay.wrapperClass} {iconOnly &&

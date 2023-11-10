@@ -54,8 +54,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 		defer rowIter.Close()
 		return s.transferFromRowIterator(ctx, rowIter, sinkCfg.Table, opts.Progress)
 	}
-
-	limitInBytes := opts.LimitInBytes
+	limitInBytes, _ := s.to.(drivers.Handle).Config()["storage_limit_bytes"].(int64)
 	if limitInBytes == 0 {
 		limitInBytes = math.MaxInt64
 	}
@@ -96,15 +95,13 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 			return err
 		}
 
-		var query string
 		if create {
-			query = fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (SELECT * FROM %s);", safeName(sinkCfg.Table), from)
+			err = s.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
 			create = false
 		} else {
-			query = fmt.Sprintf("INSERT INTO %s (SELECT * FROM %s);", safeName(sinkCfg.Table), from)
+			err = s.to.InsertTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
 		}
-
-		if err := s.to.Exec(ctx, &drivers.Statement{Query: query, Priority: 1, LongRunning: true}); err != nil {
+		if err != nil {
 			return err
 		}
 	}

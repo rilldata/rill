@@ -6,9 +6,9 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
-  import { useDashboardStore } from "../dashboard-stores";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
 
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
@@ -46,11 +46,11 @@
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
-  $: metricsContainerHeight = $observedNode?.offsetHeight || 0;
+  $: metricsContainerHeight = ($observedNode?.offsetHeight as number) || 0;
 
   let measuresWrapper;
-  let measuresHeight = [];
-  let measureGridHeights = [];
+  let measuresHeight: number[] = [];
+  let measureGridHeights: number[] = [];
 
   let containerWidths = MEASURE_CONFIG.bigNumber.widthWithoutChart;
 
@@ -141,7 +141,7 @@
     }
   );
 
-  let measureNodes = [];
+  let measureNodes: HTMLDivElement[] = [];
 
   $: if (metricsContainerHeight && measureNodes.length) {
     calculateGridColumns();
@@ -171,7 +171,7 @@
     class="grid grid-cols-{numColumns}"
     style:column-gap="{COLUMN_GAP}px"
   >
-    <div class="bg-white sticky top-0" style="z-index:100">
+    <div class="bg-white sticky top-0">
       <SeachableFilterButton
         label="Measures"
         on:deselect-all={setAllMeasuresNotVisible}
@@ -184,8 +184,6 @@
     </div>
     {#if $metaQuery.data?.measures}
       {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
-        <!-- FIXME: I can't select the big number by the measure id. -->
-        {@const bigNum = $totalsQuery?.data?.data?.[measure.name]}
         <div
           bind:this={measureNodes[index]}
           style:width="{MEASURE_WIDTH}px"
@@ -193,21 +191,15 @@
           style:margin-top="{MARGIN_TOP}px"
           class="inline-grid"
         >
+          <!-- FIXME: I can't select the big number by the measure id. -->
           <MeasureBigNumber
-            value={bigNum}
-            description={measure?.description ||
-              measure?.label ||
-              measure?.expression}
-            formatPreset={measure?.format}
+            {measure}
+            value={$totalsQuery?.data?.data?.[measure?.name ?? ""] ?? 0}
             withTimeseries={false}
             status={$totalsQuery?.isFetching
               ? EntityStatus.Running
               : EntityStatus.Idle}
-          >
-            <svelte:fragment slot="name">
-              {measure?.label || measure?.expression}
-            </svelte:fragment>
-          </MeasureBigNumber>
+          />
         </div>
       {/each}
     {/if}

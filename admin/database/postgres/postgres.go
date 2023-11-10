@@ -355,17 +355,6 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	return res, nil
 }
 
-func (c *connection) UpdateProjectVariables(ctx context.Context, id string, prodVariables map[string]string) (*database.Project, error) {
-	res := &database.Project{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE projects SET prod_variables=$1, updated_on=now() WHERE id=$2 RETURNING *",
-		prodVariables, id,
-	).StructScan(res)
-	if err != nil {
-		return nil, parseErr("project", err)
-	}
-	return res, nil
-}
-
 func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM projects WHERE org_id = $1", orgID).Scan(&count)
@@ -423,9 +412,9 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO deployments (project_id, slots, branch, runtime_host, runtime_instance_id, runtime_audience, status, logs)
+		INSERT INTO deployments (project_id, slots, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-		opts.ProjectID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.Logs,
+		opts.ProjectID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
@@ -438,9 +427,9 @@ func (c *connection) DeleteDeployment(ctx context.Context, id string) error {
 	return checkDeleteRow("deployment", res, err)
 }
 
-func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, logs string) (*database.Deployment, error) {
+func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
 	res := &database.Deployment{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, logs=$2, updated_on=now() WHERE id=$3 RETURNING *", status, logs, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}
@@ -836,6 +825,45 @@ func (c *connection) DeleteServiceAuthToken(ctx context.Context, id string) erro
 func (c *connection) DeleteExpiredServiceAuthTokens(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM service_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
 	return parseErr("service auth token", err)
+}
+
+func (c *connection) FindDeploymentAuthToken(ctx context.Context, id string) (*database.DeploymentAuthToken, error) {
+	res := &database.DeploymentAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.* FROM deployment_auth_tokens t WHERE t.id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment auth token", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertDeploymentAuthToken(ctx context.Context, opts *database.InsertDeploymentAuthTokenOptions) (*database.DeploymentAuthToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.DeploymentAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO deployment_auth_tokens (id, secret_hash, deployment_id, expires_on)
+		VALUES ($1, $2, $3, $4) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.DeploymentID, opts.ExpiresOn,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment auth token", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateDeploymentAuthTokenUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE deployment_auth_tokens SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("deployment auth token", err)
+	}
+	return nil
+}
+
+func (c *connection) DeleteExpiredDeploymentAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM deployment_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("deployment auth token", err)
 }
 
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
@@ -1235,6 +1263,54 @@ func (c *connection) DeleteBookmark(ctx context.Context, bookmarkID string) erro
 	return checkDeleteRow("bookmarks", res, err)
 }
 
+func (c *connection) FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*database.VirtualFile, error) {
+	var res []*database.VirtualFile
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT path, data, deleted, updated_on
+		FROM virtual_files
+		WHERE project_id=$1 AND branch=$2 AND (updated_on>$3 OR updated_on=$3 AND path>$4)
+		ORDER BY updated_on, path LIMIT $5
+	`, projectID, branch, afterUpdatedOn, afterPath, limit)
+	if err != nil {
+		return nil, parseErr("virtual files", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.InsertVirtualFileOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
+	}
+
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO virtual_files (project_id, branch, path, data, deleted)
+		VALUES ($1, $2, $3, $4, FALSE)
+		ON CONFLICT (project_id, branch, path) DO UPDATE SET
+			data = EXCLUDED.data,
+			deleted = FALSE,
+			updated_on = now()
+	`, opts.ProjectID, opts.Branch, opts.Path, opts.Data)
+	if err != nil {
+		return parseErr("virtual file", err)
+	}
+	return nil
+}
+
+func (c *connection) UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE virtual_files SET
+			data = ''::BYTEA,
+			deleted = TRUE,
+			updated_on = now()
+		WHERE project_id=$1 AND branch=$2 AND path=$3`, projectID, branch, path)
+	return checkUpdateRow("virtual file", res, err)
+}
+
+func (c *connection) DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `DELETE FROM virtual_files WHERE deleted AND updated_on + $1 < now()`, retention)
+	return parseErr("virtual files", err)
+}
+
 func checkUpdateRow(target string, res sql.Result, err error) error {
 	if err != nil {
 		return parseErr(target, err)
@@ -1317,6 +1393,8 @@ func parseErr(target string, err error) error {
 			return newAlreadyExistsErr("domain has already been added for the org")
 		case "service_name_idx":
 			return newAlreadyExistsErr("a service with that name already exists in the org")
+		case "virtual_files_pkey":
+			return newAlreadyExistsErr("a virtual file already exists at that path")
 		default:
 			if target == "" {
 				return database.ErrNotUnique

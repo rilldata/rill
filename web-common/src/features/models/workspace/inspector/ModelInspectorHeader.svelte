@@ -1,8 +1,12 @@
 <script lang="ts">
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifactsStore } from "@rilldata/web-common/features/entity-management/file-artifacts-store";
+  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useEmbeddedSources } from "@rilldata/web-common/features/sources/selectors";
+  import {
+    useModel,
+    useModels,
+  } from "@rilldata/web-common/features/models/selectors";
+  import { useSources } from "@rilldata/web-common/features/sources/selectors";
   import {
     formatBigNumberPercentage,
     formatInteger,
@@ -10,11 +14,10 @@
   import {
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServiceListCatalogEntries,
-    V1Model,
+    V1ModelV2,
     V1TableCardinalityResponse,
   } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { derived } from "svelte/store";
   import { COLUMN_PROFILE_CONFIG } from "../../../../layout/config";
@@ -26,71 +29,59 @@
   export let modelName: string;
   export let containerWidth = 0;
 
-  $: getModel = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
-  let model: V1Model;
-  $: model = $getModel?.data?.entry?.model;
+  const queryClient = useQueryClient();
+
+  $: modelQuery = useModel($runtime.instanceId, modelName);
+  let model: V1ModelV2;
+  $: model = $modelQuery?.data?.model;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
-  $: modelError = $fileArtifactsStore.entities[modelPath]?.errors[0]?.message;
+  $: modelHasError = getFileHasErrors(
+    queryClient,
+    $runtime.instanceId,
+    modelPath
+  );
 
   let rollup: number;
   let sourceTableReferences;
 
   // get source table references.
-  $: if (model?.sql) {
-    sourceTableReferences = getTableReferences(model.sql);
+  $: if (model?.spec?.sql) {
+    sourceTableReferences = getTableReferences(model?.spec?.sql);
   }
 
-  $: embeddedSources = useEmbeddedSources($runtime.instanceId);
-
-  // get the cardinalitie & table information.
+  // get the cardinality & table information.
   let cardinalityQueries: Array<CreateQueryResult<number>> = [];
   let sourceProfileColumns: Array<CreateQueryResult<number>> = [];
 
-  $: getAllSources = createRuntimeServiceListCatalogEntries(
-    $runtime?.instanceId,
-    {
-      type: "OBJECT_TYPE_SOURCE",
-    }
-  );
+  $: getAllSources = useSources($runtime?.instanceId);
 
-  $: getAllModels = createRuntimeServiceListCatalogEntries(
-    $runtime?.instanceId,
-    {
-      type: "OBJECT_TYPE_MODEL",
-    }
-  );
+  $: getAllModels = useModels($runtime?.instanceId);
 
   // for each reference, match to an existing model or source,
   $: referencedThings = getMatchingReferencesAndEntries(
     modelName,
     sourceTableReferences,
-    [
-      ...($getAllSources?.data?.entries || []),
-      ...($getAllModels?.data?.entries || []),
-    ]
+    [...($getAllSources?.data || []), ...($getAllModels?.data || [])]
   );
   $: if (sourceTableReferences?.length) {
     // first, pull out all references that are in the catalog.
 
     // then get the cardinalities.
-    cardinalityQueries = referencedThings?.map(([entity, _reference]) => {
+    cardinalityQueries = referencedThings?.map(([resource]) => {
       return createQueryServiceTableCardinality(
         $runtime?.instanceId,
-        entity.name,
+        resource.meta.name.name,
         {},
         { query: { select: (data) => +data?.cardinality || 0 } }
       );
     });
 
     // then we'll get the total number of columns for comparison.
-    sourceProfileColumns = referencedThings?.map(([entity]) => {
+    sourceProfileColumns = referencedThings?.map(([resource]) => {
       return createQueryServiceTableColumns(
         $runtime?.instanceId,
-        entity.name,
+        resource.meta.name.name,
         {},
         { query: { select: (data) => data?.profileColumns?.length || 0 } }
       );
@@ -115,13 +106,16 @@
     },
     0
   );
+  $: modelColumns = createQueryServiceTableColumns(
+    $runtime?.instanceId,
+    modelName
+  );
 
   let modelCardinalityQuery: CreateQueryResult<V1TableCardinalityResponse>;
-  $: if (model?.name)
-    modelCardinalityQuery = createQueryServiceTableCardinality(
-      $runtime.instanceId,
-      model?.name
-    );
+  $: modelCardinalityQuery = createQueryServiceTableCardinality(
+    $runtime.instanceId,
+    modelName
+  );
   let outputRowCardinalityValue: number;
   $: outputRowCardinalityValue = Number(
     $modelCardinalityQuery?.data?.cardinality ?? 0
@@ -139,20 +133,18 @@
     return rollup !== Infinity && rollup !== -Infinity && !isNaN(number);
   }
 
-  $: outputColumnNum = model?.schema?.fields?.length ?? 0;
+  $: outputColumnNum = $modelColumns.data?.profileColumns?.length ?? 0;
   $: columnDelta = outputColumnNum - $sourceColumns;
-
-  $: modelHasError = !!modelError;
 </script>
 
 <div class="grow text-right px-4 pb-4 pt-2" style:height="56px">
   <!-- top row: row analysis -->
   <div
     class="flex flex-row items-center justify-between"
-    class:text-gray-300={modelHasError}
+    class:text-gray-300={$modelHasError}
   >
-    <div class="text-gray-500" class:text-gray-500={modelHasError}>
-      <WithModelResultTooltip {modelHasError}>
+    <div class="text-gray-500" class:text-gray-500={$modelHasError}>
+      <WithModelResultTooltip modelHasError={$modelHasError}>
         <div>
           {#if validRollup(rollup)}
             {#if isNaN(rollup)}
@@ -200,10 +192,10 @@
   <!-- bottom row: column analysis -->
 
   <div class="flex flex-row justify-between">
-    <WithModelResultTooltip {modelHasError}>
+    <WithModelResultTooltip modelHasError={$modelHasError}>
       <div
-        class:font-normal={modelHasError}
-        class:text-gray-500={modelHasError}
+        class:font-normal={$modelHasError}
+        class:text-gray-500={$modelHasError}
       >
         {#if columnDelta > 0}
           {`${formatInteger(columnDelta)} column${

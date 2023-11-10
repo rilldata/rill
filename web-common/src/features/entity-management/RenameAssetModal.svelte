@@ -3,36 +3,23 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import { Dialog } from "@rilldata/web-common/components/modal/index";
+  import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import {
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServiceRenameFileAndReconcile,
-  } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { renameFileArtifact } from "./actions";
   import { getLabel, getRouteFromName } from "./entity-mappers";
   import { isDuplicateName } from "./name-utils";
-  import { useAllNames } from "./selectors";
 
   export let closeModal: () => void;
   export let entityType: EntityType;
   export let currentAssetName: string;
 
-  const queryClient = useQueryClient();
-
   let error: string;
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: getCatalog = createRuntimeServiceGetCatalogEntry(
-    runtimeInstanceId,
-    currentAssetName
-  );
   $: allNamesQuery = useAllNames(runtimeInstanceId);
-
-  const renameAsset = createRuntimeServiceRenameFileAndReconcile();
 
   const { form, errors, handleSubmit } = createForm({
     initialValues: {
@@ -50,19 +37,21 @@
     }),
     onSubmit: async (values) => {
       if (
-        isDuplicateName(values.newName, currentAssetName, $allNamesQuery.data)
+        isDuplicateName(
+          values.newName,
+          currentAssetName,
+          $allNamesQuery?.data ?? []
+        )
       ) {
         error = `Name ${values.newName} is already in use`;
         return;
       }
       try {
         await renameFileArtifact(
-          queryClient,
           runtimeInstanceId,
           currentAssetName,
           values.newName,
-          entityType,
-          $renameAsset
+          entityType
         );
         goto(getRouteFromName(values.newName, entityType), {
           replaceState: true,

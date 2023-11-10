@@ -7,163 +7,76 @@
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import {
-    getFilterForDimension,
-    useMetaDimension,
-    useMetaMeasure,
-  } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
-    createQueryServiceMetricsViewComparisonToplist,
-    MetricsViewDimension,
-    MetricsViewMeasure,
+    createQueryServiceMetricsViewComparison,
+    createQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import { SortDirection } from "../proto-state/derived-types";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
-  import type { FormatPreset } from "../humanize-numbers";
+
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import {
     LeaderboardItemData,
     getLabeledComparisonFromComparisonRow,
-    getQuerySortType,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
 
-  export let metricViewName: string;
   export let dimensionName: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
    * gets scaled with. For a summable metric, the total is a reference value,
    * or for a count(*) metric, the reference value is the total number of rows.
    */
   export let referenceValue: number;
-  export let unfilteredTotal: number;
-
-  export let formatPreset: FormatPreset;
-  export let isSummableMeasure = false;
 
   let slice = 7;
 
-  $: dashboardStore = useDashboardStore(metricViewName);
-
-  let filterExcludeMode: boolean;
-  $: filterExcludeMode =
-    $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
-  let filterKey: "exclude" | "include";
-  $: filterKey = filterExcludeMode ? "exclude" : "include";
-
-  $: dimensionQuery = useMetaDimension(
-    $runtime.instanceId,
-    metricViewName,
-    dimensionName
-  );
-  let dimension: MetricsViewDimension;
-  $: dimension = $dimensionQuery?.data;
-  $: displayName = dimension?.label || dimension?.name;
-  $: dimensionColumn = dimension?.column || dimension?.name;
-
-  $: measureQuery = useMetaMeasure(
-    $runtime.instanceId,
-    metricViewName,
-    $dashboardStore?.leaderboardMeasureName
-  );
-  let measure: MetricsViewMeasure;
-  $: measure = $measureQuery?.data;
-
-  $: filterForDimension = getFilterForDimension(
-    $dashboardStore?.filters,
-    dimensionName
-  );
-
-  let activeValues: Array<unknown>;
-  $: activeValues =
-    $dashboardStore?.filters[filterKey]?.find((d) => d.name === dimension?.name)
-      ?.in ?? [];
-  $: atLeastOneActive = !!activeValues?.length;
-
-  const timeControlsStore = useTimeControlStore(getStateManagers());
-
-  function selectDimension(dimensionName) {
-    metricsExplorerStore.setMetricDimensionName(metricViewName, dimensionName);
-  }
-
-  function toggleComparisonDimension(dimensionName, isBeingCompared) {
-    metricsExplorerStore.setComparisonDimension(
-      metricViewName,
-      isBeingCompared ? undefined : dimensionName
-    );
-  }
-
-  function toggleSort(evt) {
-    metricsExplorerStore.toggleSort(metricViewName, evt.detail);
-  }
-
-  $: isBeingCompared =
-    $dashboardStore?.selectedComparisonDimension === dimensionName;
-
-  $: isBeingCompared =
-    $dashboardStore?.selectedComparisonDimension === dimensionName;
-
-  $: sortAscending = $dashboardStore.sortDirection === SortDirection.ASCENDING;
-  $: sortType = $dashboardStore.dashboardSortType;
-
-  $: contextColumn = $dashboardStore?.leaderboardContextColumn;
-
-  $: querySortType = getQuerySortType(sortType);
-
-  $: sortedQueryBody = {
-    dimensionName: dimensionName,
-    measureNames: [measure?.name],
-    baseTimeRange: {
-      start: $timeControlsStore.timeStart,
-      end: $timeControlsStore.timeEnd,
-    },
-    comparisonTimeRange: {
-      start: $timeControlsStore.comparisonTimeStart,
-      end: $timeControlsStore.comparisonTimeEnd,
-    },
-    sort: [
-      {
-        ascending: sortAscending,
-        measureName: measure?.name,
-        type: querySortType,
+  const {
+    selectors: {
+      activeMeasure: { activeMeasureName },
+      dimensionFilters: { selectedDimensionValues, isFilterExcludeMode },
+      dashboardQueries: {
+        leaderboardSortedQueryBody,
+        leaderboardSortedQueryOptions,
+        leaderboardDimensionTotalQueryBody,
+        leaderboardDimensionTotalQueryOptions,
       },
-    ],
-    filter: filterForDimension,
-    limit: "250",
-    offset: "0",
-  };
-
-  $: sortedQueryEnabled = $timeControlsStore.ready && !!filterForDimension;
-
-  $: sortedQueryOptions = {
-    query: {
-      enabled: sortedQueryEnabled,
     },
-  };
+    actions: {
+      dimensions: { setPrimaryDimension },
+    },
+    metricsViewName,
+    runtime,
+  } = getStateManagers();
 
-  $: sortedQuery = createQueryServiceMetricsViewComparisonToplist(
+  $: sortedQuery = createQueryServiceMetricsViewComparison(
     $runtime.instanceId,
-    metricViewName,
-    sortedQueryBody,
-    sortedQueryOptions
+    $metricsViewName,
+    $leaderboardSortedQueryBody(dimensionName),
+    $leaderboardSortedQueryOptions(dimensionName)
   );
+
+  $: totalsQuery = createQueryServiceMetricsViewTotals(
+    $runtime.instanceId,
+    $metricsViewName,
+    $leaderboardDimensionTotalQueryBody(dimensionName),
+    $leaderboardDimensionTotalQueryOptions(dimensionName)
+  );
+
+  $: leaderboardTotal = $totalsQuery?.data?.data?.[$activeMeasureName];
 
   let aboveTheFold: LeaderboardItemData[] = [];
   let selectedBelowTheFold: LeaderboardItemData[] = [];
   let noAvailableValues = true;
   let showExpandTable = false;
-  $: if (!$sortedQuery?.isFetching) {
+  $: if (sortedQuery && !$sortedQuery?.isFetching) {
     const leaderboardData = prepareLeaderboardItemData(
       $sortedQuery?.data?.rows?.map((r) =>
-        getLabeledComparisonFromComparisonRow(r, measure.name)
+        getLabeledComparisonFromComparisonRow(r, $activeMeasureName)
       ) ?? [],
       slice,
-      activeValues,
-      unfilteredTotal,
-      filterExcludeMode
+      $selectedDimensionValues(dimensionName),
+      leaderboardTotal,
+      $isFilterExcludeMode(dimensionName)
     );
 
     aboveTheFold = leaderboardData.aboveTheFold;
@@ -175,42 +88,27 @@
   let hovered: boolean;
 </script>
 
-{#if sortedQuery}
+{#if $sortedQuery !== undefined}
   <div
     style:width="315px"
     on:mouseenter={() => (hovered = true)}
     on:mouseleave={() => (hovered = false)}
   >
     <LeaderboardHeader
-      {contextColumn}
       isFetching={$sortedQuery.isFetching}
-      {displayName}
-      on:toggle-dimension-comparison={() =>
-        toggleComparisonDimension(dimensionName, isBeingCompared)}
-      {isBeingCompared}
+      {dimensionName}
       {hovered}
-      {sortAscending}
-      {sortType}
-      dimensionDescription={dimension?.description}
-      on:open-dimension-details={() => selectDimension(dimensionName)}
-      on:toggle-sort={toggleSort}
     />
     {#if aboveTheFold || selectedBelowTheFold}
       <div class="rounded-b border-gray-200 surface text-gray-800">
         <!-- place the leaderboard entries that are above the fold here -->
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
           <LeaderboardListItem
+            {dimensionName}
             {itemData}
-            {contextColumn}
-            {atLeastOneActive}
-            {isBeingCompared}
-            {filterExcludeMode}
-            {isSummableMeasure}
             {referenceValue}
-            {formatPreset}
             on:click
             on:keydown
-            on:select-item
           />
         {/each}
         <!-- place the selected values that are not above the fold here -->
@@ -218,17 +116,11 @@
           <hr />
           {#each selectedBelowTheFold as itemData (itemData.dimensionValue)}
             <LeaderboardListItem
+              {dimensionName}
               {itemData}
-              {contextColumn}
-              {atLeastOneActive}
-              {isBeingCompared}
-              {filterExcludeMode}
-              {isSummableMeasure}
               {referenceValue}
-              {formatPreset}
               on:click
               on:keydown
-              on:select-item
             />
           {/each}
 
@@ -246,7 +138,7 @@
         {#if showExpandTable}
           <Tooltip location="right">
             <button
-              on:click={() => selectDimension(dimensionName)}
+              on:click={() => setPrimaryDimension(dimensionName)}
               class="block flex-row w-full text-left transition-color ui-copy-muted"
               style:padding-left="30px"
             >

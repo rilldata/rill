@@ -1,6 +1,7 @@
 import {
   V1DeploymentStatus,
   createAdminServiceGetProject,
+  createAdminServiceListProjectMembers,
 } from "@rilldata/web-admin/client";
 
 export function getProjectPermissions(orgName: string, projName: string) {
@@ -11,9 +12,9 @@ export function getProjectPermissions(orgName: string, projName: string) {
   });
 }
 
-const PollTimeDuringReconcile = 1000;
-const PollTimeDuringError = 5000;
-const PollTimeWhenProjectReady = 60 * 1000;
+export const PollTimeDuringReconcile = 1000;
+export const PollTimeDuringError = 5000;
+export const PollTimeWhenProjectReady = 60 * 1000;
 
 export function useProjectDeploymentStatus(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1DeploymentStatus>(orgName, projName, {
@@ -27,8 +28,8 @@ export function useProjectDeploymentStatus(orgName: string, projName: string) {
       },
       refetchInterval: (data) => {
         switch (data) {
+          // case "DEPLOYMENT_STATUS_RECONCILING":
           case "DEPLOYMENT_STATUS_PENDING":
-          case "DEPLOYMENT_STATUS_RECONCILING":
             return PollTimeDuringReconcile;
 
           case "DEPLOYMENT_STATUS_ERROR":
@@ -69,4 +70,21 @@ export function useProjectRuntime(orgName: string, projName: string) {
       },
     },
   });
+}
+
+export function useProjectMembersEmails(organization: string, project: string) {
+  return createAdminServiceListProjectMembers(
+    organization,
+    project,
+    undefined,
+    {
+      query: {
+        select: (data) => {
+          return data.members
+            ?.filter((member) => !!member?.userEmail)
+            .map((member) => member.userEmail as string);
+        },
+      },
+    }
+  );
 }

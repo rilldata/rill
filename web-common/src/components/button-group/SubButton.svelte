@@ -6,12 +6,14 @@
   import TooltipContent from "../tooltip/TooltipContent.svelte";
 
   export let value: number | string;
-  export let tooltips: {
-    selected?: string;
-    unselected?: string;
-    disabled?: string;
-  } = undefined;
-  export let ariaLabel: string = undefined;
+  export let tooltips:
+    | undefined
+    | {
+        selected?: string;
+        unselected?: string;
+        disabled?: string;
+      } = undefined;
+  export let ariaLabel: string | undefined = undefined;
 
   const {
     registerSubButton,
@@ -21,10 +23,10 @@
     dispatch,
   }: ButtonGroupContext = getContext(buttonGroupContext);
 
-  registerSubButton(value);
+  registerSubButton?.(value);
 
-  $: disabled = $disabledKeys.includes(value);
-  $: isSelected = $selectedKeys.includes(value);
+  $: disabled = $disabledKeys?.includes(value);
+  $: isSelected = $selectedKeys?.includes(value);
 
   const baseStyles = `shrink flex flex-row items-center px-1 py-1
   transition-transform duration-100`;
@@ -41,8 +43,8 @@
 
   // This is needed to make sure that the left and right most child
   // elements don't break out of the border drawn by the parent element
-  $: isFirst = $subButtons.at(0) === value;
-  $: isLast = $subButtons.at(-1) === value;
+  $: isFirst = $subButtons?.at(0) === value;
+  $: isLast = $subButtons?.at(-1) === value;
   $: roundings = `${isFirst ? "rounded-l" : ""} ${isLast ? "rounded-r" : ""} `;
 
   $: finalStyles = `${baseStyles} ${roundings} ${textStyle} ${bgStyle}`;
@@ -60,7 +62,7 @@
     <button
       class={finalStyles}
       on:click={() => {
-        if (!disabled) {
+        if (!disabled && dispatch) {
           dispatch("subbutton-click", value);
         }
       }}

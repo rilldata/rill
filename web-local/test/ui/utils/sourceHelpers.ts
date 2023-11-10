@@ -53,15 +53,9 @@ export async function uploadFile(
       // else click on `Replace Existing Source`
       duplicatePromise = clickModalButton(page, "Replace Existing Source");
     }
-    await Promise.all([
-      page.waitForResponse(/put-and-reconcile/),
-      duplicatePromise,
-    ]);
+    await Promise.all([page.waitForResponse(/files\/-\//), duplicatePromise]);
   } else {
-    await Promise.all([
-      page.waitForResponse(/put-and-reconcile/),
-      fileUploadPromise,
-    ]);
+    await Promise.all([page.waitForResponse(/files\/-\//), fileUploadPromise]);
     // if not duplicate wait and make sure `Duplicate source name` modal is not open
     await asyncWait(100);
     await expect(page.getByText("Duplicate source name")).toBeHidden();
@@ -81,7 +75,10 @@ export async function createOrReplaceSource(
   } catch (err) {
     await uploadFile(page, file);
   }
-  await waitForEntity(page, TestEntityType.Source, name, true);
+  await Promise.all([
+    page.getByText("View this source").click(),
+    waitForEntity(page, TestEntityType.Source, name, true),
+  ]);
 }
 
 export async function waitForSource(
@@ -89,7 +86,8 @@ export async function waitForSource(
   name: string,
   columns: Array<string>
 ) {
-  return Promise.all([
+  await Promise.all([
+    page.getByText("View this source").click(),
     waitForEntity(page, TestEntityType.Source, name, true),
     waitForProfiling(page, name, columns),
   ]);

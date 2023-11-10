@@ -1,26 +1,17 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
-  import { useSourceNames } from "@rilldata/web-common/features/sources/selectors";
-  import {
-    createRuntimeServicePutFileAndReconcile,
-    createRuntimeServiceUnpackEmpty,
-  } from "@rilldata/web-common/runtime-client";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
+  import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
+  import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
+  import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { appScreen } from "../../../layout/app-store";
-  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
-  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-  import { SourceConnectionType } from "../../../metrics/service/SourceEventTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useModelNames } from "../../models/selectors";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
-  import {
-    compileCreateSourceYAML,
-    emitSourceErrorTelemetry,
-    emitSourceSuccessTelemetry,
-    getSourceError,
-  } from "../sourceUtils";
+  import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
 
@@ -29,15 +20,11 @@
   const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: sourceNames = useSourceNames(runtimeInstanceId);
-  $: modelNames = useModelNames(runtimeInstanceId);
+  $: sourceNames = useSourceFileNames(runtimeInstanceId);
+  $: modelNames = useModelFileNames(runtimeInstanceId);
   $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
-  const createSourceMutation = createRuntimeServicePutFileAndReconcile();
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
-
-  $: createSourceMutationError = ($createSourceMutation?.error as any)?.response
-    ?.data;
 
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
@@ -66,41 +53,16 @@
           },
           "local_file"
         );
-        const errors = await createSource(
+        await createSource(runtimeInstanceId, tableName, yaml);
+        checkSourceImported(
           queryClient,
-          runtimeInstanceId,
           tableName,
-          yaml,
-          $createSourceMutation
+          getFilePathFromNameAndType(tableName, EntityType.Table)
         );
-
-        // Emit telemetry
-        const sourceError = getSourceError(errors, tableName);
-        if ($createSourceMutation.isError || sourceError) {
-          // Error
-          emitSourceErrorTelemetry(
-            MetricsEventSpace.Workspace,
-            $appScreen,
-            createSourceMutationError?.message ?? sourceError?.message,
-            SourceConnectionType.Local,
-            filePath
-          );
-        } else {
-          // Success
-          emitSourceSuccessTelemetry(
-            MetricsEventSpace.Workspace,
-            $appScreen,
-            BehaviourEventMedium.Drag,
-            SourceConnectionType.Local,
-            filePath
-          );
-        }
+        goto(`/source/${tableName}`);
       } catch (err) {
         console.error(err);
       }
-
-      // Navigate to source page
-      goto(`/source/${tableName}`);
     }
   };
 </script>

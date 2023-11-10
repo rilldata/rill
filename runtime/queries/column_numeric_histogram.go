@@ -26,8 +26,11 @@ func (q *ColumnNumericHistogram) Key() string {
 	return fmt.Sprintf("ColumnNumericHistogram:%s:%s:%s:%d", q.TableName, q.ColumnName, q.Method.String(), q.Threshold)
 }
 
-func (q *ColumnNumericHistogram) Deps() []string {
-	return []string{q.TableName}
+func (q *ColumnNumericHistogram) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *ColumnNumericHistogram) MarshalResult() *runtime.QueryResult {
@@ -136,6 +139,14 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
+	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.TableName, priority)
+	if err != nil {
+		return err
+	}
+	if !min.Valid || !max.Valid || !rng.Valid {
+		return nil
+	}
+
 	sanitizedColumnName := safeName(q.ColumnName)
 	bucketSize, err := q.calculateBucketSize(ctx, olap, instanceID, priority)
 	if err != nil {
@@ -153,26 +164,20 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
             SELECT %[1]s as %[2]s 
             FROM %[3]s
             WHERE %[2]s IS NOT NULL
-          ), S AS (
-            SELECT 
-              min(%[2]s) as minVal,
-              max(%[2]s) as maxVal,
-              (max(%[2]s) - min(%[2]s)) as range
-              FROM data_table
           ), values AS (
             SELECT %[2]s as value from data_table
             WHERE %[2]s IS NOT NULL
           ), buckets AS (
             SELECT
               range as bucket,
-              (range) * (select range FROM S) / %[4]v + (select minVal from S) as low,
-              (range + 1) * (select range FROM S) / %[4]v + (select minVal from S) as high
+              (range) * (%[7]v) / %[4]v + (%[5]v) as low,
+              (range + 1) * (%[7]v) / %[4]v + (%[5]v) as high
             FROM range(0, %[4]v, 1)
           ),
           -- bin the values
           binned_data AS (
             SELECT 
-              FLOOR((value - (select minVal from S)) / (select range from S) * %[4]v) as bucket
+              FLOOR((value - (%[5]v)) / (%[7]v) * %[4]v) as bucket
             from values
           ),
           -- join the bucket set with the binned values to generate the histogram
@@ -190,7 +195,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
           -- calculate the right edge, sine in histogram_stage we don't look at the values that
           -- might be the largest.
           right_edge AS (
-            SELECT count(*) as c from values WHERE value = (select maxVal from S)
+            SELECT count(*) as c from values WHERE value = %[6]v
           )
           SELECT 
             bucket,
@@ -199,11 +204,15 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
             -- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
             CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
             FROM histogram_stage
+            ORDER BY bucket
 	      `,
 		selectColumn,
 		sanitizedColumnName,
 		safeName(q.TableName),
 		bucketSize,
+		min.Float64,
+		max.Float64,
+		rng.Float64,
 	)
 
 	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
@@ -248,39 +257,10 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	sanitizedColumnName := safeName(q.ColumnName)
-	minMaxSQL := fmt.Sprintf(
-		`
-			SELECT
-				min(%[2]s) as min,
-				max(%[2]s) as max,
-				max(%[2]s) - min(%[2]s) as range
-			FROM %[1]s
-			WHERE %[2]s IS NOT NULL
-		`,
-		safeName(q.TableName),
-		sanitizedColumnName,
-	)
-
-	minMaxRow, err := olap.Execute(ctx, &drivers.Statement{
-		Query:            minMaxSQL,
-		Priority:         priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
+	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.TableName, priority)
 	if err != nil {
 		return err
 	}
-
-	var min, max, rng sql.NullFloat64
-	if minMaxRow.Next() {
-		err = minMaxRow.Scan(&min, &max, &rng)
-		if err != nil {
-			minMaxRow.Close()
-			return err
-		}
-	}
-
-	minMaxRow.Close()
 	if !min.Valid || !max.Valid || !rng.Valid {
 		return nil
 	}
@@ -296,6 +276,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		bucketCount++
 	}
 
+	sanitizedColumnName := safeName(q.ColumnName)
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 	histogramSQL := fmt.Sprintf(
 		`
@@ -352,6 +333,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		-- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
 			CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
 		FROM histogram_stage
+    ORDER BY bucket
 		`,
 		selectColumn,
 		sanitizedColumnName,
@@ -392,4 +374,44 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 	q.Result = histogramBins
 
 	return nil
+}
+
+// getMinMaxRange get min, max and range of values for a given column. This is needed since nesting it in query is throwing error in 0.9.x
+func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, tableName string, priority int) (sql.NullFloat64, sql.NullFloat64, sql.NullFloat64, error) {
+	sanitizedColumnName := safeName(columnName)
+	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
+	minMaxSQL := fmt.Sprintf(
+		`
+			SELECT
+				min(%[2]s) as min,
+				max(%[2]s) as max,
+				max(%[2]s) - min(%[2]s) as range
+			FROM %[1]s
+			WHERE %[2]s IS NOT NULL
+		`,
+		safeName(tableName),
+		selectColumn,
+	)
+
+	minMaxRow, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            minMaxSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return sql.NullFloat64{}, sql.NullFloat64{}, sql.NullFloat64{}, err
+	}
+
+	var min, max, rng sql.NullFloat64
+	if minMaxRow.Next() {
+		err = minMaxRow.Scan(&min, &max, &rng)
+		if err != nil {
+			minMaxRow.Close()
+			return sql.NullFloat64{}, sql.NullFloat64{}, sql.NullFloat64{}, err
+		}
+	}
+
+	minMaxRow.Close()
+
+	return min, max, rng, nil
 }

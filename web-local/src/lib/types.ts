@@ -1,17 +1,21 @@
-export interface ProfileColumn {
+import type { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import type { SvelteComponent } from "svelte";
+
+export interface VirtualizedTableColumns {
   name: string;
   type: string;
-  conceptualType: string;
   largestStringLength?: number;
   summary?: ProfileColumnSummary | any;
-  nullCount?: number;
-}
-
-export interface VirtualizedTableColumns extends ProfileColumn {
-  label?: string;
+  label?: string | typeof SvelteComponent;
   total?: number;
   description?: string;
   enableResize?: boolean;
+  // is this column highlighted in the table
+  highlight?: boolean;
+  // Is this the table sorted by this column, and if so, in what direction?
+  // Leave undefined if the table is not sorted by this column.
+  sorted?: SortDirection;
+  format?: string;
 }
 
 export type ProfileColumnSummary =

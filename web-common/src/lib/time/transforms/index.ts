@@ -8,17 +8,17 @@
  * We are opting to define transformations in a way that can be serialized
  * in a configuration file.
  */
+import { PeriodToUnitsMap } from "@rilldata/web-common/lib/time/config";
 import {
   ReferencePoint,
   RelativePointInTime,
   RelativeTimeTransformation,
   TimeTruncationType,
 } from "../types";
-
 import { DateTime, Duration } from "luxon";
 import { Period, TimeOffsetType, TimeUnit } from "../types";
 
-/** Returns the current time. Might be deprecated later. */
+/** Returns the current time */
 export function getPresentTime() {
   return new Date();
 }
@@ -109,14 +109,26 @@ export function relativePointInTimeToAbsolute(
   let endDate: Date;
   if (typeof start === "string") startDate = new Date(start);
   else {
-    if (start.reference === ReferencePoint.NOW)
+    if (start.reference === ReferencePoint.NOW) {
       referenceTime = getPresentTime();
+    } else if (start.reference === ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW) {
+      referenceTime = new Date(
+        Math.min(referenceTime.getTime(), getPresentTime().getTime())
+      );
+    }
+
     startDate = transformDate(referenceTime, start.transformation, zone);
   }
 
   if (typeof end === "string") endDate = new Date(end);
   else {
-    if (end.reference === ReferencePoint.NOW) referenceTime = getPresentTime();
+    if (end.reference === ReferencePoint.NOW) {
+      referenceTime = getPresentTime();
+    } else if (end.reference === ReferencePoint.MIN_OF_LATEST_DATA_AND_NOW) {
+      referenceTime = new Date(
+        Math.min(referenceTime.getTime(), getPresentTime().getTime())
+      );
+    }
     endDate = transformDate(referenceTime, end.transformation, zone);
   }
 
@@ -134,4 +146,9 @@ export function getDurationMultiple(duration: string, multiple: number) {
   return Duration.fromMillis(newDuration)
     .shiftTo("days", "hours", "minutes", "seconds")
     .toISO();
+}
+
+export function subtractFromPeriod(duration: Duration, period: Period) {
+  if (!PeriodToUnitsMap[period]) return duration;
+  return duration.minus({ [PeriodToUnitsMap[period]]: 1 });
 }

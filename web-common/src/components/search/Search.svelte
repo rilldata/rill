@@ -1,16 +1,18 @@
-<script>
+<script lang="ts">
   import { onMount } from "svelte";
   import Search from "../icons/Search.svelte";
 
   /* Autofocus search bar on mount */
   export let autofocus = true;
-  /* Get reference of input DOM element */
-  export let ref = null;
+  export let showBorderOnFocus = true;
   /* Input value being searched */
   export let value;
   /* Aria label for input */
   export let label = "Search";
   export let placeholder = "Search";
+
+  /* Reference of input DOM element */
+  let ref: HTMLInputElement;
 
   function handleKeyDown(event) {
     if (event.code == "Enter") {
@@ -25,7 +27,7 @@
   });
 </script>
 
-<form class="relative w-full px-1">
+<form class="relative w-full">
   <div class="flex absolute inset-y-0 items-center pl-2 ui-copy-icon">
     <Search />
   </div>
@@ -33,9 +35,9 @@
     bind:this={ref}
     type="text"
     autocomplete="off"
-    class="outline-none bg-gray-100 surface-impression border border-gray-200 dark:border-gray-400
-        rounded-sm focus:border-gray-300
-        block w-full pl-8 p-1"
+    class="bg-white border border-gray-200 {showBorderOnFocus
+      ? 'focus:border-blue-400'
+      : ''} outline-none rounded-sm block w-full pl-8 p-1"
     {placeholder}
     bind:value
     on:input

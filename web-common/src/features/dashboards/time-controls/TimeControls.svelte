@@ -21,7 +21,10 @@
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { metricsExplorerStore, useDashboardStore } from "../dashboard-stores";
+  import {
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { initLocalUserPreferenceStore } from "../user-preferences";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
   import TimeComparisonSelector from "./TimeComparisonSelector.svelte";
@@ -40,7 +43,6 @@
   let baseTimeRange: TimeRange;
   let minTimeGrain: V1TimeGrain;
   let availableTimeZones: string[] = [];
-  let dimensions = [];
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
@@ -56,7 +58,7 @@
 
   $: if (
     $timeControlsStore.ready &&
-    !!$metaQuery?.data?.model &&
+    !!$metaQuery?.data?.table &&
     !!$metaQuery?.data?.timeDimension
   ) {
     availableTimeZones = $metaQuery?.data?.availableTimeZones;
@@ -75,7 +77,6 @@
       localUserPreferences.set({ timeZone: "Etc/UTC" });
     }
 
-    dimensions = $metaQuery?.data?.dimensions;
     baseTimeRange ??= {
       ...$dashboardStore.selectedTimeRange,
     };
@@ -134,14 +135,6 @@
     });
   }
 
-  function enableComparison(type: string, name: string) {
-    if (type === "time") {
-      metricsExplorerStore.displayTimeComparison(metricViewName, true);
-    } else {
-      metricsExplorerStore.setComparisonDimension(metricViewName, name);
-    }
-  }
-
   function makeTimeSeriesTimeRangeAndUpdateAppState(
     timeRange: TimeRange,
     timeGrain: V1TimeGrain,
@@ -181,7 +174,7 @@
 
 <div class="flex flex-row items-center gap-x-1">
   {#if !hasTimeSeries}
-    <NoTimeDimensionCTA {metricViewName} modelName={$metaQuery?.data?.model} />
+    <NoTimeDimensionCTA {metricViewName} modelName={$metaQuery?.data?.table} />
   {:else if allTimeRange?.start}
     <TimeRangeSelector
       {metricViewName}
@@ -203,16 +196,7 @@
         now={allTimeRange?.end}
       />
     {/if}
-    <ComparisonSelector
-      on:enable-comparison={(e) => {
-        enableComparison(e.detail.type, e.detail.name);
-      }}
-      on:disable-all-comparison={() =>
-        metricsExplorerStore.disableAllComparisons(metricViewName)}
-      showTimeComparison={$dashboardStore?.showTimeComparison}
-      selectedDimension={$dashboardStore?.selectedComparisonDimension}
-      {dimensions}
-    />
+    <ComparisonSelector {metricViewName} />
     {#if $dashboardStore?.showTimeComparison}
       <TimeComparisonSelector
         on:select-comparison={(e) => {

@@ -24,7 +24,7 @@ type MetricsViewToplist struct {
 	Offset             int64                                `json:"offset,omitempty"`
 	Sort               []*runtimev1.MetricsViewSort         `json:"sort,omitempty"`
 	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
-	MetricsView        *runtimev1.MetricsView               `json:"-"`
+	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
 	Result *runtimev1.MetricsViewToplistResponse `json:"-"`
@@ -40,8 +40,10 @@ func (q *MetricsViewToplist) Key() string {
 	return fmt.Sprintf("MetricsViewToplist:%s", r)
 }
 
-func (q *MetricsViewToplist) Deps() []string {
-	return []string{q.MetricsViewName}
+func (q *MetricsViewToplist) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindMetricsView, Name: q.MetricsViewName},
+	}
 }
 
 func (q *MetricsViewToplist) MarshalResult() *runtime.QueryResult {
@@ -119,12 +121,12 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 				return err
 			}
 		} else {
-			if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
+			if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
 				return err
 			}
 		}
 	case drivers.DialectDruid:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
 			return err
 		}
 	default:
@@ -134,7 +136,7 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 	return nil
 }
 
-func (q *MetricsViewToplist) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, mv *runtimev1.MetricsView) error {
+func (q *MetricsViewToplist) generalExport(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec) error {
 	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		return err
@@ -161,8 +163,8 @@ func (q *MetricsViewToplist) generalExport(ctx context.Context, rt *runtime.Runt
 	return nil
 }
 
-func (q *MetricsViewToplist) generateFilename(mv *runtimev1.MetricsView) string {
-	filename := strings.ReplaceAll(mv.Name, `"`, `_`)
+func (q *MetricsViewToplist) generateFilename(mv *runtimev1.MetricsViewSpec) string {
+	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
 	filename += "_" + q.DimensionName
 	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
 		filename += "_filtered"
@@ -170,18 +172,30 @@ func (q *MetricsViewToplist) generateFilename(mv *runtimev1.MetricsView) string 
 	return filename
 }
 
-func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	ms, err := resolveMeasures(mv, q.InlineMeasures, q.MeasureNames)
 	if err != nil {
 		return "", nil, err
 	}
 
-	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
+	dim, err := metricsViewDimension(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
+	rawColName := metricsViewDimensionColumn(dim)
+	colName := safeName(rawColName)
+	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
 
-	selectCols := []string{colName}
+	var selectCols []string
+	unnestClause := ""
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
+		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
+		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
+	} else {
+		selectCols = append(selectCols, colName)
+	}
+
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
 		selectCols = append(selectCols, expr)
@@ -227,17 +241,20 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsView, d
 
 	var limitClause string
 	if q.Limit != nil {
-		if *q.Limit == 0 {
-			*q.Limit = 100
-		}
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s %s %s OFFSET %d",
+	groupByCol := colName
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		groupByCol = unnestColName
+	}
+
+	sql := fmt.Sprintf("SELECT %s FROM %s %s WHERE %s GROUP BY %s %s %s OFFSET %d",
 		strings.Join(selectCols, ", "),
-		mv.Model,
+		safeName(mv.Table),
+		unnestClause,
 		whereClause,
-		colName,
+		groupByCol,
 		orderClause,
 		limitClause,
 		q.Offset,

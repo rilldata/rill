@@ -16,7 +16,11 @@ _**`timeseries`**_ — the timestamp column from your model that will underlie x
 
 _**`default_time_range`**_ — the default time range shown when a user initially loads the dashboard _(optional)_. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, `PT12H` for 12 hours, `P1M` for 1 month, or `P26W` for 26 weeks) or the constant value `inf` for all time (default). If not specified, defaults to the full time range of the `timeseries` column.
 
-_**`smallest_time_grain`**_ — the smallest time granularity the user is allowed to view in the dashboard _(optional)_. The valid values are: `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`. If not specified, the user will be 
+_**`smallest_time_grain`**_ — the smallest time granularity the user is allowed to view in the dashboard _(optional)_. The valid values are: `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`.
+
+_**`first_day_of_week`**_ — the first day of the week for time grain aggregation (for example, Sunday instead of Monday). The valid values are 1 through 7 where Monday=1 and Sunday=7 _(optional)_
+
+_**`first_month_of_year`**_ — the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12 _(optional)_
 
 <!-- UNCOMMENT WHEN RELEASED: -->
 <!--
@@ -37,12 +41,13 @@ _**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measur
   - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_ 
   - _**`ignore`**_ — hides the measure _(optional)_ 
   - _**`valid_percent_of_total`**_ — a boolean indicating whether percent-of-total values should be rendered for this measure _(optional)_ 
-  - _**`format_preset`**_ — one of a set of values that format dashboard measures. _(optional; default is humanize)_. Possible values include:
-      - _`humanize`_ — round off numbers in an opinionated way to thousands (K), millions (M), billions B), etc
-      - _`none`_ — raw output
-      - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign
-      - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
-      - _`comma_separators`_ — output transformed to decimal formal with commas every 3 digits
+  - _**`format_d3`**_ — controls the formatting of this measure in the dashboard using a [d3-format string](https://d3js.org/d3-format). If an invalid format string is supplied, measures will be formatted with `format_preset: humanize` (described below). Measures cannot have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
+  - _**`format_preset`**_ — controls the formatting of this measure in the dashboard according to option specified below. Measures cannot have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
+    - _`humanize`_ — round off numbers in an opinionated way to thousands (K), millions (M), billions (B), etc
+    - _`none`_ — raw output
+    - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign
+    - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
+    - _`interval_ms`_ — time intervals given in milliseconds are transformed into human readable time units like hours (h), days (d), years (y), etc
 
 _**`security`**_ - define a [security policy](../../develop/security) for the dashboard _(optional)_
   - _**`access`**_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. _(optional)_

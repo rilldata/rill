@@ -1,7 +1,7 @@
 import type { TimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
-import { useDashboardStore } from "../dashboard-stores";
+import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
 import type {
   V1ExportFormat,
   createQueryServiceExport,
@@ -28,12 +28,14 @@ export default async function exportMetrics({
     instanceId: get(runtime).instanceId,
     data: {
       format,
-      metricsViewRowsRequest: {
-        instanceId: get(runtime).instanceId,
-        metricsViewName: metricViewName,
-        filter: dashboard.filters,
-        timeStart: timeControlState.timeStart,
-        timeEnd: timeControlState.timeEnd,
+      query: {
+        metricsViewRowsRequest: {
+          instanceId: get(runtime).instanceId,
+          metricsViewName: metricViewName,
+          filter: dashboard.filters,
+          timeStart: timeControlState.timeStart,
+          timeEnd: timeControlState.timeEnd,
+        },
       },
     },
   });

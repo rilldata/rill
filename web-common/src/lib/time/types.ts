@@ -38,6 +38,7 @@ export enum RangePresetType {
 export enum ReferencePoint {
   LATEST_DATA = "LatestData",
   NOW = "Now",
+  MIN_OF_LATEST_DATA_AND_NOW = "MinOfLatestDataAndNow",
 }
 
 /** An offset defines an operation on a point in time, primarily used to map from a
@@ -132,6 +133,7 @@ export const TimeRangePreset: { [K in TimeRangeType]: K } = {
   QUARTER_TO_DATE: "QUARTER_TO_DATE",
   YEAR_TO_DATE: "YEAR_TO_DATE",
   CUSTOM: "CUSTOM",
+  DEFAULT: "DEFAULT",
 };
 
 export interface TimeRange {

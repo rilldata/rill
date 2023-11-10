@@ -1,7 +1,7 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
-import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import {
   getComparionRangeForScrub,
@@ -18,21 +18,25 @@ import {
 import {
   convertTimeRangePreset,
   getAdjustedFetchTime,
-  ISODurationToTimePreset,
 } from "@rilldata/web-common/lib/time/ranges";
+import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   TimeComparisonOption,
   TimeRange,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import type { TimeRangeType } from "@rilldata/web-common/lib/time/types";
-import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
-  createQueryServiceColumnTimeRange,
+  RpcStatus,
   V1ColumnTimeRangeResponse,
+  V1MetricsViewSpec,
   V1TimeGrain,
+  createQueryServiceColumnTimeRange,
 } from "@rilldata/web-common/runtime-client";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
+import type {
+  CreateQueryResult,
+  QueryObserverResult,
+} from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 import type { Readable } from "svelte/store";
 
@@ -58,9 +62,9 @@ export type TimeControlState = {
   isFetching: boolean;
 
   // Computed properties from all time range query
-  defaultTimeRange?: TimeRangeType;
   minTimeGrain?: V1TimeGrain;
   allTimeRange?: TimeRange;
+  defaultTimeRange?: TimeRange;
 
   ready?: boolean;
 } & TimeRangeState &
@@ -75,7 +79,7 @@ function createTimeRangeSummary(
     ([runtime, metricsView], set) =>
       createQueryServiceColumnTimeRange(
         runtime.instanceId,
-        metricsView.data?.model,
+        metricsView.data?.table,
         {
           columnName: metricsView.data?.timeDimension,
         },
@@ -89,55 +93,80 @@ function createTimeRangeSummary(
   );
 }
 
+export const timeControlStateSelector = ([
+  metricsView,
+  timeRangeResponse,
+  metricsExplorer,
+]: [
+  QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
+  QueryObserverResult<V1ColumnTimeRangeResponse, unknown>,
+  MetricsExplorerEntity
+]): TimeControlState => {
+  const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
+  if (
+    !metricsView.data ||
+    !metricsExplorer ||
+    !metricsView.data ||
+    !timeRangeResponse ||
+    !timeRangeResponse.isSuccess
+  ) {
+    return {
+      isFetching: metricsView.isFetching || timeRangeResponse.isRefetching,
+      ready: !metricsExplorer || !hasTimeSeries,
+    } as TimeControlState;
+  }
+
+  const allTimeRange = {
+    name: TimeRangePreset.ALL_TIME,
+    start: new Date(timeRangeResponse.data.timeRangeSummary.min),
+    end: new Date(timeRangeResponse.data.timeRangeSummary.max),
+  };
+  const minTimeGrain =
+    (metricsView.data.smallestTimeGrain as V1TimeGrain) ||
+    V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
+  const defaultTimeRange = isoDurationToFullTimeRange(
+    metricsView.data.defaultTimeRange,
+    allTimeRange.start,
+    allTimeRange.end,
+    metricsExplorer.selectedTimezone
+  );
+
+  const timeRangeState = calculateTimeRangePartial(
+    metricsExplorer,
+    allTimeRange,
+    defaultTimeRange,
+    minTimeGrain
+  );
+  if (!timeRangeState) {
+    return {
+      ready: false,
+    };
+  }
+
+  const comparisonTimeRangeState = calculateComparisonTimeRangePartial(
+    metricsExplorer,
+    allTimeRange,
+    timeRangeState
+  );
+
+  return {
+    isFetching: false,
+    minTimeGrain,
+    allTimeRange,
+    defaultTimeRange,
+    ready: true,
+
+    ...timeRangeState,
+
+    ...comparisonTimeRangeState,
+  } as TimeControlState;
+};
+
 export function createTimeControlStore(ctx: StateManagers) {
   return derived(
     [useMetaQuery(ctx), createTimeRangeSummary(ctx), ctx.dashboardStore],
-    ([metricsView, timeRangeResponse, metricsExplorer]) => {
-      const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
-      if (!timeRangeResponse || !timeRangeResponse.isSuccess) {
-        return {
-          isFetching: metricsView.isFetching || timeRangeResponse.isRefetching,
-          ready: !hasTimeSeries,
-        } as TimeControlState;
-      }
-
-      const allTimeRange = {
-        name: TimeRangePreset.ALL_TIME,
-        start: new Date(timeRangeResponse.data.timeRangeSummary.min),
-        end: new Date(timeRangeResponse.data.timeRangeSummary.max),
-      };
-      const defaultTimeRange = ISODurationToTimePreset(
-        metricsView.data.defaultTimeRange
-      );
-      const minTimeGrain =
-        (metricsView.data.smallestTimeGrain as V1TimeGrain) ||
-        V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
-
-      const timeRangeState = calculateTimeRangePartial(
-        metricsExplorer,
-        allTimeRange,
-        minTimeGrain
-      );
-
-      const comparisonTimeRangeState = calculateComparisonTimeRangePartial(
-        metricsExplorer,
-        allTimeRange,
-        timeRangeState
-      );
-
-      return {
-        isFetching: false,
-        defaultTimeRange,
-        minTimeGrain,
-        allTimeRange,
-        ready: true,
-
-        ...timeRangeState,
-
-        ...comparisonTimeRangeState,
-      } as TimeControlState;
-    }
-  ) as TimeControlStore;
+    timeControlStateSelector
+  );
 }
 
 /**
@@ -154,9 +183,18 @@ export const useTimeControlStore = memoizeMetricsStore<TimeControlStore>(
 function calculateTimeRangePartial(
   metricsExplorer: MetricsExplorerEntity,
   allTimeRange: DashboardTimeControls,
+  defaultTimeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain
 ): TimeRangeState {
-  const selectedTimeRange = getTimeRange(metricsExplorer, allTimeRange);
+  if (!metricsExplorer.selectedTimeRange) return undefined;
+
+  const selectedTimeRange = getTimeRange(
+    metricsExplorer,
+    allTimeRange,
+    defaultTimeRange
+  );
+  if (!selectedTimeRange) return undefined;
+
   selectedTimeRange.interval = getTimeGrain(
     metricsExplorer,
     selectedTimeRange,
@@ -252,16 +290,26 @@ function calculateComparisonTimeRangePartial(
 
 function getTimeRange(
   metricsExplorer: MetricsExplorerEntity,
-  allTimeRange: DashboardTimeControls
+  allTimeRange: DashboardTimeControls,
+  defaultTimeRange: DashboardTimeControls
 ) {
   let timeRange: DashboardTimeControls;
 
-  if (metricsExplorer.selectedTimeRange.name === TimeRangePreset.CUSTOM) {
+  if (metricsExplorer.selectedTimeRange?.name === TimeRangePreset.CUSTOM) {
     /** set the time range to the fixed custom time range */
     timeRange = {
       name: TimeRangePreset.CUSTOM,
       start: new Date(metricsExplorer.selectedTimeRange.start),
       end: new Date(metricsExplorer.selectedTimeRange.end),
+    };
+  } else if (
+    metricsExplorer.selectedTimeRange?.name === TimeRangePreset.DEFAULT
+  ) {
+    /** set the time range to the fixed custom time range */
+    timeRange = {
+      name: TimeRangePreset.DEFAULT,
+      start: defaultTimeRange.start,
+      end: defaultTimeRange.end,
     };
   } else {
     /** rebuild off of relative time range */

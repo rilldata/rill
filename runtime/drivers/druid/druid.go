@@ -37,6 +37,11 @@ func (d driver) Open(config map[string]any, shared bool, client activity.Client,
 
 	db.SetMaxOpenConns(40)
 
+	err = db.Ping()
+	if err != nil {
+		return nil, fmt.Errorf("druid: %w", err)
+	}
+
 	conn := &connection{
 		db:     db,
 		config: config,
@@ -92,6 +97,11 @@ func (c *connection) AsCatalogStore(instanceID string) (drivers.CatalogStore, bo
 
 // Repo implements drivers.Connection.
 func (c *connection) AsRepoStore(instanceID string) (drivers.RepoStore, bool) {
+	return nil, false
+}
+
+// AsAdmin implements drivers.Handle.
+func (c *connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 

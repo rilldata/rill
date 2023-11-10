@@ -1,9 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
   import { createAdminServiceGetProject } from "../../../client";
-  import DashboardList from "../../../features/projects/DashboardList.svelte";
-  import ProjectHero from "../../../features/projects/ProjectHero.svelte";
+  import DashboardsTable from "../../../features/dashboards/listing/DashboardsTable.svelte";
   import RedeployProjectCta from "../../../features/projects/RedeployProjectCTA.svelte";
 
   $: organization = $page.params.organization;
@@ -18,17 +18,13 @@
   <title>{project} overview - Rill</title>
 </svelte:head>
 <VerticalScrollContainer>
-  <div
-    class="mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-40 flex flex-col gap-y-4"
-  >
-    <ProjectHero {organization} {project} />
-    {#if isProjectDeployed}
-      <span class="text-gray-500 text-base font-normal leading-normal"
-        >Check out your dashboards below.</span
-      >
-      <DashboardList {organization} {project} />
-    {:else if isProjectHibernating}
-      <RedeployProjectCta {organization} {project} />
-    {/if}
-  </div>
+  <ContentContainer>
+    <div class="flex flex-col items-center gap-y-4">
+      {#if isProjectDeployed}
+        <DashboardsTable {organization} {project} />
+      {:else if isProjectHibernating}
+        <RedeployProjectCta {organization} {project} />
+      {/if}
+    </div>
+  </ContentContainer>
 </VerticalScrollContainer>

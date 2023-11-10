@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 // rawConn is similar to *sql.Conn.Raw, but additionally unwraps otelsql (which we use for instrumentation).
@@ -64,7 +64,6 @@ type fileSourceProperties struct {
 	Format                string         `mapstructure:"format"`
 	AllowSchemaRelaxation bool           `mapstructure:"allow_schema_relaxation"`
 	BatchSize             string         `mapstructure:"batch_size"`
-	BatchSizeBytes        int64          `mapstructure:"-"` // Inferred from BatchSize
 
 	// Backwards compatibility
 	HivePartitioning            *bool  `mapstructure:"hive_partitioning"`
@@ -106,15 +105,6 @@ func parseFileSourceProperties(props map[string]any) (*fileSourceProperties, err
 			return nil, fmt.Errorf("if any of `columns`,`types`,`dtypes` is set `allow_schema_relaxation` must be disabled")
 		}
 	}
-
-	if cfg.BatchSize != "" {
-		b, err := datasize.ParseString(cfg.BatchSize)
-		if err != nil {
-			return nil, err
-		}
-		cfg.BatchSizeBytes = int64(b.Bytes())
-	}
-
 	return cfg, nil
 }
 
@@ -129,9 +119,8 @@ func sourceReader(paths []string, format string, ingestionProps map[string]any) 
 	} else if containsAny(format, []string{".json", ".ndjson"}) {
 		// JSON reader
 		return generateReadJSONStatement(paths, ingestionProps)
-	} else {
-		return "", fmt.Errorf("file type not supported : %s", format)
 	}
+	return "", fmt.Errorf("file type not supported : %s", format)
 }
 
 func generateReadCsvStatement(paths []string, properties map[string]any) (string, error) {
@@ -268,4 +257,17 @@ func safeName(name string) string {
 		return name
 	}
 	return quoteName(escapeDoubleQuotes(name))
+}
+
+func sizeWithinStorageLimits(olap drivers.OLAPStore, size int64) bool {
+	limit, ok := olap.(drivers.Handle).Config()["storage_limit_bytes"].(int64)
+	if !ok || limit <= 0 { // no limit
+		return true
+	}
+
+	dbSizeInBytes, ok := olap.EstimateSize()
+	if ok && dbSizeInBytes+size > limit {
+		return false
+	}
+	return true
 }

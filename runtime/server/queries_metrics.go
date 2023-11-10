@@ -61,13 +61,20 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		}
 	}
 
+	tr := req.TimeRange
+	if req.TimeStart != nil || req.TimeEnd != nil {
+		tr = &runtimev1.TimeRange{
+			Start: req.TimeStart,
+			End:   req.TimeEnd,
+		}
+	}
+
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName:    req.MetricsView,
 		Dimensions:         req.Dimensions,
 		Measures:           req.Measures,
 		Sort:               req.Sort,
-		TimeStart:          req.TimeStart,
-		TimeEnd:            req.TimeEnd,
+		TimeRange:          tr,
 		Filter:             req.Filter,
 		Limit:              &req.Limit,
 		Offset:             req.Offset,
@@ -126,6 +133,10 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		return nil, err
 	}
 
+	if req.Limit == 0 {
+		req.Limit = 100
+	}
+
 	q := &queries.MetricsViewToplist{
 		MetricsViewName:    req.MetricsViewName,
 		DimensionName:      req.DimensionName,
@@ -148,14 +159,17 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 	return q.Result, nil
 }
 
-// MetricsViewComparisonToplist implements QueryService.
-func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev1.MetricsViewComparisonToplistRequest) (*runtimev1.MetricsViewComparisonToplistResponse, error) {
+// MetricsViewComparison implements QueryService.
+func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.MetricsViewComparisonRequest) (*runtimev1.MetricsViewComparisonResponse, error) {
+	measureNames := make([]string, 0, len(req.Measures))
+	for _, m := range req.Measures {
+		measureNames = append(measureNames, m.Name)
+	}
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metric_view", req.MetricsViewName),
-		attribute.String("args.dimension", req.DimensionName),
-		attribute.StringSlice("args.measures", req.MeasureNames),
-		attribute.StringSlice("args.inline_measures.names", marshalInlineMeasure(req.InlineMeasures)),
+		attribute.String("args.dimension", req.Dimension.Name),
+		attribute.StringSlice("args.measures", measureNames),
 		attribute.StringSlice("args.sort.names", marshalMetricsViewComparisonSort(req.Sort)),
 		attribute.Int("args.filter_count", filterCount(req.Filter)),
 		attribute.Int64("args.limit", req.Limit),
@@ -165,9 +179,9 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if req.BaseTimeRange != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.base_time_range.start", safeTimeStr(req.BaseTimeRange.Start)))
-		observability.AddRequestAttributes(ctx, attribute.String("args.base_time_range.end", safeTimeStr(req.BaseTimeRange.End)))
+	if req.TimeRange != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.base_time_range.start", safeTimeStr(req.TimeRange.Start)))
+		observability.AddRequestAttributes(ctx, attribute.String("args.base_time_range.end", safeTimeStr(req.TimeRange.End)))
 	}
 	if req.ComparisonTimeRange != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.comparison_time_range.start", safeTimeStr(req.ComparisonTimeRange.Start)))
@@ -183,28 +197,26 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		return nil, err
 	}
 
-	if !checkFieldAccess(req.DimensionName, security) {
+	if !checkFieldAccess(req.Dimension.Name, security) {
 		return nil, ErrForbidden
 	}
 
 	// validate measures access
-	for _, m := range req.MeasureNames {
-		if !checkFieldAccess(m, security) {
+	for _, m := range req.Measures {
+		if !checkFieldAccess(m.Name, security) {
 			return nil, ErrForbidden
 		}
 	}
 
-	err = validateInlineMeasures(req.InlineMeasures)
-	if err != nil {
-		return nil, err
+	if req.Limit == 0 {
+		req.Limit = 100
 	}
 
-	q := &queries.MetricsViewComparisonToplist{
+	q := &queries.MetricsViewComparison{
 		MetricsViewName:     req.MetricsViewName,
-		DimensionName:       req.DimensionName,
-		MeasureNames:        req.MeasureNames,
-		InlineMeasures:      req.InlineMeasures,
-		BaseTimeRange:       req.BaseTimeRange,
+		DimensionName:       req.Dimension.Name,
+		Measures:            req.Measures,
+		TimeRange:           req.TimeRange,
 		ComparisonTimeRange: req.ComparisonTimeRange,
 		Limit:               req.Limit,
 		Offset:              req.Offset,
@@ -212,6 +224,7 @@ func (s *Server) MetricsViewComparisonToplist(ctx context.Context, req *runtimev
 		Filter:              req.Filter,
 		MetricsView:         mv,
 		ResolvedMVSecurity:  security,
+		Exact:               req.Exact,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -427,7 +440,7 @@ func validateInlineMeasures(ms []*runtimev1.InlineMeasure) error {
 	return nil
 }
 
-func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsView, *runtime.ResolvedMetricsViewSecurity, error) {
+func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
 	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
@@ -444,7 +457,7 @@ func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, 
 	return mv, resolvedSecurity, nil
 }
 
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any) (*runtimev1.MetricsView, *runtime.ResolvedMetricsViewSecurity, error) {
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
 	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
@@ -463,15 +476,24 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 }
 
 // returns the metrics view and the time the catalog was last updated
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsView, time.Time, error) {
-	obj, err := rt.GetCatalogEntry(ctx, instanceID, name)
+func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsViewSpec, time.Time, error) {
+	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
 		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	mv := obj.GetMetricsView()
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
+	if err != nil {
+		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
+	}
 
-	return mv, obj.UpdatedOn, nil
+	mv := res.GetMetricsView()
+	spec := mv.State.ValidSpec
+	if spec == nil {
+		return nil, time.Time{}, status.Errorf(codes.InvalidArgument, "metrics view %q is invalid", name)
+	}
+
+	return spec, res.Meta.StateUpdatedOn.AsTime(), nil
 }
 
 func checkFieldAccess(field string, policy *runtime.ResolvedMetricsViewSecurity) bool {

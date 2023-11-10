@@ -9,7 +9,7 @@
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import type { V1TimeGrain } from "../../../runtime-client";
-  import { useDashboardStore } from "../dashboard-stores";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
 
   export let metricViewName: string;
   export let timeGrainOptions: TimeGrain[];

@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"time"
@@ -13,6 +14,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -23,6 +25,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	// Load connectors and reconcilers for runtime
+	_ "github.com/rilldata/rill/runtime/drivers/admin"
 	_ "github.com/rilldata/rill/runtime/drivers/athena"
 	_ "github.com/rilldata/rill/runtime/drivers/azure"
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
@@ -50,14 +53,24 @@ type Config struct {
 	MetastoreDriver         string                 `default:"sqlite" split_words:"true"`
 	MetastoreURL            string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
+	SessionKeyPairs         []string               `split_words:"true"`
 	AuthEnable              bool                   `default:"false" split_words:"true"`
 	AuthIssuerURL           string                 `default:"" split_words:"true"`
 	AuthAudienceURL         string                 `default:"" split_words:"true"`
+	EmailSMTPHost           string                 `split_words:"true"`
+	EmailSMTPPort           int                    `split_words:"true"`
+	EmailSMTPUsername       string                 `split_words:"true"`
+	EmailSMTPPassword       string                 `split_words:"true"`
+	EmailSenderEmail        string                 `split_words:"true"`
+	EmailSenderName         string                 `split_words:"true"`
+	EmailBCC                string                 `split_words:"true"`
 	DownloadRowLimit        int64                  `default:"10000" split_words:"true"`
 	SafeSourceRefresh       bool                   `default:"false" split_words:"true"`
 	ConnectionCacheSize     int                    `default:"100" split_words:"true"`
 	QueryCacheSizeBytes     int64                  `default:"104857600" split_words:"true"` // 100MB by default
 	SecurityEngineCacheSize int                    `default:"1000" split_words:"true"`
+	LogBufferCapacity       int                    `default:"10000" split_words:"true"`    // 10k log lines
+	LogBufferSizeBytes      int64                  `default:"16777216" split_words:"true"` // 16MB by default
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
@@ -102,6 +115,36 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				os.Exit(1)
 			}
 
+			// Init email client
+			var sender email.Sender
+			if conf.EmailSMTPHost != "" {
+				sender, err = email.NewSMTPSender(&email.SMTPOptions{
+					SMTPHost:     conf.EmailSMTPHost,
+					SMTPPort:     conf.EmailSMTPPort,
+					SMTPUsername: conf.EmailSMTPUsername,
+					SMTPPassword: conf.EmailSMTPPassword,
+					FromEmail:    conf.EmailSenderEmail,
+					FromName:     conf.EmailSenderName,
+					BCC:          conf.EmailBCC,
+				})
+			} else {
+				sender, err = email.NewConsoleSender(logger, conf.EmailSenderEmail, conf.EmailSenderName)
+			}
+			if err != nil {
+				logger.Fatal("error creating email sender", zap.Error(err))
+			}
+			emailClient := email.New(sender)
+
+			// Parse session keys as hex strings
+			keyPairs := make([][]byte, len(conf.SessionKeyPairs))
+			for idx, keyHex := range conf.SessionKeyPairs {
+				key, err := hex.DecodeString(keyHex)
+				if err != nil {
+					logger.Fatal("failed to parse session key from hex string to bytes")
+				}
+				keyPairs[idx] = key
+			}
+
 			// Init telemetry
 			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
 				MetricsExporter: conf.MetricsExporter,
@@ -143,14 +186,19 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			}
 			activityClient := activity.NewBufferedClient(activityOpts)
 
+			// Create ctx that cancels on termination signals
+			ctx := graceful.WithCancelOnTerminate(context.Background())
+
 			// Init runtime
 			opts := &runtime.Options{
-				ConnectionCacheSize:     conf.ConnectionCacheSize,
-				MetastoreConnector:      "metastore",
-				QueryCacheSizeBytes:     conf.QueryCacheSizeBytes,
-				SecurityEngineCacheSize: conf.SecurityEngineCacheSize,
-				AllowHostAccess:         conf.AllowHostAccess,
-				SafeSourceRefresh:       conf.SafeSourceRefresh,
+				ConnectionCacheSize:          conf.ConnectionCacheSize,
+				MetastoreConnector:           "metastore",
+				QueryCacheSizeBytes:          conf.QueryCacheSizeBytes,
+				SecurityEngineCacheSize:      conf.SecurityEngineCacheSize,
+				ControllerLogBufferCapacity:  conf.LogBufferCapacity,
+				ControllerLogBufferSizeBytes: conf.LogBufferSizeBytes,
+				AllowHostAccess:              conf.AllowHostAccess,
+				SafeSourceRefresh:            conf.SafeSourceRefresh,
 				SystemConnectors: []*runtimev1.Connector{
 					{
 						Type:   conf.MetastoreDriver,
@@ -159,14 +207,11 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 					},
 				},
 			}
-			rt, err := runtime.New(opts, logger, activityClient)
+			rt, err := runtime.New(ctx, opts, logger, activityClient, emailClient)
 			if err != nil {
 				logger.Fatal("error: could not create runtime", zap.Error(err))
 			}
 			defer rt.Close()
-
-			// Create ctx that cancels on termination signals
-			ctx := graceful.WithCancelOnTerminate(context.Background())
 
 			var limiter ratelimit.Limiter
 			if conf.RedisURL == "" {
@@ -185,6 +230,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				GRPCPort:         conf.GRPCPort,
 				AllowedOrigins:   conf.AllowedOrigins,
 				ServePrometheus:  conf.MetricsExporter == observability.PrometheusExporter,
+				SessionKeyPairs:  keyPairs,
 				AuthEnable:       conf.AuthEnable,
 				AuthIssuerURL:    conf.AuthIssuerURL,
 				AuthAudienceURL:  conf.AuthAudienceURL,

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/dgraph-io/ristretto"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -39,9 +40,10 @@ type ExportOptions struct {
 type Query interface {
 	// Key should return a cache key that uniquely identifies the query
 	Key() string
-	// Deps should return the source and model names that the query targets.
+	// Deps should return the resource names that the query targets.
 	// It's used to invalidate cached queries when the underlying data changes.
-	Deps() []string
+	// If a dependency doesn't exist, it is ignored. (So if the underlying resource kind is unknown, it can return all possible dependency names.)
+	Deps() []*runtimev1.ResourceName
 	// MarshalResult should return the query result and estimated cost in bytes for caching
 	MarshalResult() *QueryResult
 	// UnmarshalResult should populate a query with a cached result
@@ -73,22 +75,21 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	release()
 
 	// Get dependency cache keys
+	ctrl, err := r.Controller(ctx, instanceID)
+	if err != nil {
+		return err
+	}
 	deps := query.Deps()
-	depKeys := make([]string, len(deps))
-	for i, dep := range deps {
-		entry, err := r.GetCatalogEntry(ctx, instanceID, dep)
+	depKeys := make([]string, 0, len(deps))
+	for _, dep := range deps {
+		res, err := ctrl.Get(ctx, dep, false)
 		if err != nil {
-			// This err usually means the query has a dependency that does not exist in the catalog.
-			// Returning the error is not critical, it just saves a redundant subsequent query to the OLAP, which would likely fail.
-			// However, for dependencies created in the OLAP DB directly (and are hence not tracked in the catalog), the query would actually succeed.
-			// For read-only Druid dashboards on existing tables, we specifically need the ColumnTimeRange to succeed.
-			// TODO: Remove this horrible hack when discovery of existing tables is implemented. Then we can safely return an error in all cases.
-			if strings.HasPrefix(qk, "ColumnTimeRange") {
-				continue
-			}
-			return fmt.Errorf("query dependency %q not found", dep)
+			// Deps are approximate, not exact (see docstring for Deps()), so they may not all exist
+			continue
 		}
-		depKeys[i] = entry.Name + ":" + entry.RefreshedOn.String()
+		// Using StateUpdatedOn instead of StateVersion because the state version is reset when the resource is deleted and recreated.
+		key := fmt.Sprintf("%s:%s:%d:%d", res.Meta.Name.Kind, res.Meta.Name.Name, res.Meta.StateUpdatedOn.Seconds, res.Meta.StateUpdatedOn.Nanos/int32(time.Millisecond))
+		depKeys = append(depKeys, key)
 	}
 
 	// If there were no known dependencies, skip caching

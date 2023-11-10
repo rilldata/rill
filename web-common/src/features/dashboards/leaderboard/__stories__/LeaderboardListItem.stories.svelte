@@ -5,7 +5,9 @@
 
   import LeaderboardListItem from "../LeaderboardListItem.svelte";
 
-  import { FormatPreset } from "../../humanize-numbers";
+  import type { LeaderboardItemData } from "../leaderboard-utils";
+  import { LeaderboardContextColumn } from "../../leaderboard-context-column";
+  import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
   const atLeastOneActive = true;
   const filterExcludeMode = true;
@@ -13,36 +15,37 @@
   const referenceValue = 400;
   const formatPreset = "humanize";
 
-  const defaultArgs = {
-    label: "item label",
+  const itemData: LeaderboardItemData = {
+    dimensionValue: "Widget Co.",
     value: 300,
-    selected: true,
-    comparisonValue: 200,
-    showContext: "time",
-    filterExcludeMode: false,
-    isSummableMeasure: true,
-    referenceValue: 400,
-    unfilteredTotal: 1000,
-    formatPreset: "humanize",
+    pctOfTotal: 0.4,
+    prevValue: 200,
+    deltaRel: 0.5,
+    deltaAbs: 100,
+    selectedIndex: -1,
+    defaultComparedIndex: -1,
+  };
+  const defaultArgs = {
+    itemData,
+    contextColumn: LeaderboardContextColumn.HIDDEN,
+    atLeastOneActive: false,
+    isBeingCompared: false,
+    filterExcludeMode,
+    formatPreset,
+    isSummableMeasure,
+    referenceValue,
   };
 </script>
 
 <Meta
   title="Leaderboard/LeaderboardListItem"
   argTypes={{
-    label: { control: "text" },
-    value: 300,
-    selected: {
-      control: {
-        type: "boolean",
-      },
-    },
-    comparisonValue: 200,
-    showContext: {
+    contextColumn: {
+      options: Object.values(LeaderboardContextColumn),
       control: {
         type: "inline-radio",
+        labels: LeaderboardContextColumn,
       },
-      options: ["time", "percent", "false"],
     },
     filterExcludeMode: {
       control: {
@@ -57,13 +60,9 @@
     formatPreset: {
       control: {
         type: "inline-radio",
+        labels: FormatPreset,
       },
-      options: [
-        FormatPreset.HUMANIZE,
-        FormatPreset.PERCENTAGE,
-        FormatPreset.CURRENCY,
-        FormatPreset.NONE,
-      ],
+      options: Object.values(FormatPreset),
     },
   }}
 />

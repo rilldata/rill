@@ -10,10 +10,13 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"gopkg.in/yaml.v3"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
-// metricsViewYAML is the raw structure of a MetricsView resource defined in YAML
-type metricsViewYAML struct {
+// MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
+type MetricsViewYAML struct {
 	commonYAML         `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title              string           `yaml:"title"`
 	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
@@ -24,6 +27,8 @@ type metricsViewYAML struct {
 	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
 	DefaultTimeRange   string           `yaml:"default_time_range"`
 	AvailableTimeZones []string         `yaml:"available_time_zones"`
+	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
+	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string
@@ -31,13 +36,15 @@ type metricsViewYAML struct {
 		Property    string // For backwards compatibility
 		Description string
 		Ignore      bool `yaml:"ignore"`
+		Unnest      bool
 	}
 	Measures []*struct {
 		Name                string
 		Label               string
 		Expression          string
 		Description         string
-		Format              string `yaml:"format_preset"`
+		FormatPreset        string `yaml:"format_preset"`
+		FormatD3            string `yaml:"format_d3"`
 		Ignore              bool   `yaml:"ignore"`
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
@@ -53,12 +60,29 @@ type metricsViewYAML struct {
 			Condition string `yaml:"if"`
 		}
 	}
+	DefaultComparison struct {
+		Mode      string `yaml:"mode"`
+		Dimension string `yaml:"dimension"`
+	} `yaml:"default_comparison"`
 }
+
+var comparisonModesMap = map[string]runtimev1.MetricsViewSpec_ComparisonMode{
+	"":          runtimev1.MetricsViewSpec_COMPARISON_MODE_UNSPECIFIED,
+	"none":      runtimev1.MetricsViewSpec_COMPARISON_MODE_NONE,
+	"time":      runtimev1.MetricsViewSpec_COMPARISON_MODE_TIME,
+	"dimension": runtimev1.MetricsViewSpec_COMPARISON_MODE_DIMENSION,
+}
+var validComparisonModes = []string{"none", "time", "dimension"}
 
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	// Parse YAML
-	tmp := &metricsViewYAML{}
+	tmp := &MetricsViewYAML{}
+	if p.RillYAML != nil && !p.RillYAML.Defaults.MetricsViews.IsZero() {
+		if err := p.RillYAML.Defaults.MetricsViews.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
+		}
+	}
 	if node.YAMLRaw != "" {
 		// Can't use node.YAML because we need to set KnownFields for metrics views
 		dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
@@ -107,7 +131,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	names := make(map[string]bool)
 	columns := make(map[string]bool)
 	for i, dim := range tmp.Dimensions {
-		if dim.Ignore {
+		if dim == nil || dim.Ignore {
 			continue
 		}
 
@@ -140,7 +164,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 	measureCount := 0
 	for i, measure := range tmp.Measures {
-		if measure.Ignore {
+		if measure == nil || measure.Ignore {
 			continue
 		}
 
@@ -160,9 +184,23 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		if ok := columns[lower]; ok {
 			return fmt.Errorf("measure name %q coincides with a dimension column name", measure.Name)
 		}
+
+		if measure.FormatPreset != "" && measure.FormatD3 != "" {
+			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)
+		}
 	}
 	if measureCount == 0 {
 		return fmt.Errorf("must define at least one measure")
+	}
+
+	tmp.DefaultComparison.Mode = strings.ToLower(tmp.DefaultComparison.Mode)
+	if _, ok := comparisonModesMap[tmp.DefaultComparison.Mode]; !ok {
+		return fmt.Errorf("invalid mode: %q. allowed values: %s", tmp.DefaultComparison.Mode, strings.Join(validComparisonModes, ","))
+	}
+	if tmp.DefaultComparison.Dimension != "" {
+		if ok := names[tmp.DefaultComparison.Dimension]; !ok {
+			return fmt.Errorf("default comparison dimension %q doesn't exist", tmp.DefaultComparison.Dimension)
+		}
 	}
 
 	if tmp.Security != nil {
@@ -249,8 +287,11 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 	node.Refs = append(node.Refs, ResourceName{Name: table})
 
-	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
-	r := p.upsertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
+	if err != nil {
+		return err
+	}
+	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 	spec := r.MetricsViewSpec
 
 	spec.Connector = node.Connector
@@ -261,9 +302,11 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.DefaultTimeRange = tmp.DefaultTimeRange
 	spec.AvailableTimeZones = tmp.AvailableTimeZones
+	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
+	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
 
 	for _, dim := range tmp.Dimensions {
-		if dim.Ignore {
+		if dim == nil || dim.Ignore {
 			continue
 		}
 
@@ -272,11 +315,12 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			Column:      dim.Column,
 			Label:       dim.Label,
 			Description: dim.Description,
+			Unnest:      dim.Unnest,
 		})
 	}
 
 	for _, measure := range tmp.Measures {
-		if measure.Ignore {
+		if measure == nil || measure.Ignore {
 			continue
 		}
 
@@ -285,9 +329,15 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			Expression:          measure.Expression,
 			Label:               measure.Label,
 			Description:         measure.Description,
-			Format:              measure.Format,
+			FormatPreset:        measure.FormatPreset,
+			FormatD3:            measure.FormatD3,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
+	}
+
+	spec.DefaultComparisonMode = comparisonModesMap[tmp.DefaultComparison.Mode]
+	if tmp.DefaultComparison.Dimension != "" {
+		spec.DefaultComparisonDimension = tmp.DefaultComparison.Dimension
 	}
 
 	if tmp.Security != nil {

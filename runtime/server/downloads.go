@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -12,7 +11,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/pkg/symmetriccrypto"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
@@ -20,18 +18,52 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+func BakeQuery(qry *runtimev1.Query) (string, error) {
+	if qry == nil {
+		return "", errors.New("cannot bake nil query")
+	}
+
+	data, err := proto.Marshal(qry)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.URLEncoding.EncodeToString(data), nil
+}
+
+func UnbakeQuery(bakedQry string) (*runtimev1.Query, error) {
+	data, err := base64.URLEncoding.DecodeString(bakedQry)
+	if err != nil {
+		return nil, err
+	}
+
+	qry := &runtimev1.Query{}
+	if err := proto.Unmarshal(data, qry); err != nil {
+		return nil, err
+	}
+
+	return qry, nil
+}
+
 func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*runtimev1.ExportResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
 		return nil, ErrForbidden
 	}
 
 	if s.opts.DownloadRowLimit != nil {
-		if req.Limit == nil {
-			req.Limit = s.opts.DownloadRowLimit
-		}
-		if *req.Limit > *s.opts.DownloadRowLimit {
+		if req.Limit > *s.opts.DownloadRowLimit {
 			return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to %d", *s.opts.DownloadRowLimit)
 		}
+	}
+
+	if req.BakedQuery != "" {
+		qry, err := UnbakeQuery(req.BakedQuery)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to parse baked query: %s", err.Error())
+		}
+
+		req.Query = qry
+		req.BakedQuery = ""
 	}
 
 	tkn, err := s.generateDownloadToken(req, auth.GetClaims(ctx).Attributes())
@@ -54,14 +86,9 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if s.opts.DownloadRowLimit != nil && (request.Limit == nil || *request.Limit > *s.opts.DownloadRowLimit) {
-		http.Error(w, fmt.Sprintf("limit must be less than or equal to %d", *s.opts.DownloadRowLimit), http.StatusBadRequest)
-		return
-	}
-
 	var q runtime.Query
-	switch v := request.Request.(type) {
-	case *runtimev1.ExportRequest_MetricsViewAggregationRequest:
+	switch v := request.Query.Query.(type) {
+	case *runtimev1.Query_MetricsViewAggregationRequest:
 		r := v.MetricsViewAggregationRequest
 		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsView, attrs)
 		if err != nil {
@@ -90,20 +117,33 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			}
 		}
 
+		var limitPtr *int64
+		limit := s.resolveExportLimit(request.Limit, r.Limit)
+		if limit != 0 {
+			limitPtr = &limit
+		}
+
+		tr := r.TimeRange
+		if r.TimeStart != nil || r.TimeEnd != nil {
+			tr = &runtimev1.TimeRange{
+				Start: r.TimeStart,
+				End:   r.TimeEnd,
+			}
+		}
+
 		q = &queries.MetricsViewAggregation{
 			MetricsViewName:    r.MetricsView,
 			Dimensions:         r.Dimensions,
 			Measures:           r.Measures,
 			Sort:               r.Sort,
-			TimeStart:          r.TimeStart,
-			TimeEnd:            r.TimeEnd,
+			TimeRange:          tr,
 			Filter:             r.Filter,
-			Limit:              &r.Limit,
+			Limit:              limitPtr,
 			Offset:             r.Offset,
 			MetricsView:        mv,
 			ResolvedMVSecurity: security,
 		}
-	case *runtimev1.ExportRequest_MetricsViewToplistRequest:
+	case *runtimev1.Query_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest
 
 		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs)
@@ -134,10 +174,10 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		limit := request.Limit
-		// if query limit is set and is less than request limit use it
-		if (r.Limit > 0 && limit == nil) || (r.Limit > 0 && limit != nil && r.Limit < *limit) {
-			limit = &r.Limit
+		var limitPtr *int64
+		limit := s.resolveExportLimit(request.Limit, r.Limit)
+		if limit != 0 {
+			limitPtr = &limit
 		}
 
 		q = &queries.MetricsViewToplist{
@@ -149,11 +189,11 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			TimeEnd:            r.TimeEnd,
 			Sort:               r.Sort,
 			Filter:             r.Filter,
-			Limit:              limit,
+			Limit:              limitPtr,
 			MetricsView:        mv,
 			ResolvedMVSecurity: security,
 		}
-	case *runtimev1.ExportRequest_MetricsViewRowsRequest:
+	case *runtimev1.Query_MetricsViewRowsRequest:
 		r := v.MetricsViewRowsRequest
 		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs)
 		if err != nil {
@@ -165,18 +205,24 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
+		var limitPtr *int64
+		limit := s.resolveExportLimit(request.Limit, int64(r.Limit))
+		if limit != 0 {
+			limitPtr = &limit
+		}
+
 		q = &queries.MetricsViewRows{
 			MetricsViewName:    r.MetricsViewName,
 			TimeStart:          r.TimeStart,
 			TimeEnd:            r.TimeEnd,
 			Filter:             r.Filter,
 			Sort:               r.Sort,
-			Limit:              request.Limit,
+			Limit:              limitPtr,
 			TimeZone:           r.TimeZone,
 			MetricsView:        mv,
 			ResolvedMVSecurity: security,
 		}
-	case *runtimev1.ExportRequest_MetricsViewTimeSeriesRequest:
+	case *runtimev1.Query_MetricsViewTimeSeriesRequest:
 		r := v.MetricsViewTimeSeriesRequest
 
 		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs)
@@ -207,8 +253,8 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			MetricsView:        mv,
 			ResolvedMVSecurity: security,
 		}
-	case *runtimev1.ExportRequest_MetricsViewComparisonToplistRequest:
-		r := v.MetricsViewComparisonToplistRequest
+	case *runtimev1.Query_MetricsViewComparisonRequest:
+		r := v.MetricsViewComparisonRequest
 
 		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs)
 		if err != nil {
@@ -220,44 +266,43 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		if !checkFieldAccess(r.DimensionName, security) {
+		if !checkFieldAccess(r.Dimension.Name, security) {
 			http.Error(w, "action not allowed", http.StatusUnauthorized)
 			return
 		}
 
 		// validate measures access
-		for _, m := range r.MeasureNames {
-			if !checkFieldAccess(m, security) {
+		for _, m := range r.Measures {
+			if !checkFieldAccess(m.Name, security) {
 				http.Error(w, "action not allowed", http.StatusUnauthorized)
 				return
 			}
 		}
 
-		err = validateInlineMeasures(r.InlineMeasures)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		limit := r.Limit
-		// if request limit is set and is less than query limit use it
-		if request.Limit != nil && *request.Limit < limit {
-			limit = *request.Limit
-		}
-
-		q = &queries.MetricsViewComparisonToplist{
+		q = &queries.MetricsViewComparison{
 			MetricsViewName:     r.MetricsViewName,
-			DimensionName:       r.DimensionName,
-			MeasureNames:        r.MeasureNames,
-			InlineMeasures:      r.InlineMeasures,
-			BaseTimeRange:       r.BaseTimeRange,
+			DimensionName:       r.Dimension.Name,
+			Measures:            r.Measures,
+			TimeRange:           r.TimeRange,
 			ComparisonTimeRange: r.ComparisonTimeRange,
-			Limit:               limit,
+			Limit:               s.resolveExportLimit(request.Limit, r.Limit),
 			Offset:              r.Offset,
 			Sort:                r.Sort,
 			Filter:              r.Filter,
 			MetricsView:         mv,
 			ResolvedMVSecurity:  security,
+		}
+	case *runtimev1.Query_TableRowsRequest:
+		r := v.TableRowsRequest
+		if !auth.GetClaims(req.Context()).CanInstance(r.InstanceId, auth.ReadOLAP) {
+			http.Error(w, "action not allowed", http.StatusUnauthorized)
+			return
+		}
+
+		q = &queries.TableHead{
+			TableName: r.TableName,
+			Limit:     int(r.Limit),
+			Result:    nil,
 		}
 	default:
 		http.Error(w, fmt.Sprintf("unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
@@ -294,12 +339,21 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (s *Server) resolveExportLimit(base, override int64) int64 {
+	res := base
+	if override < res {
+		res = override
+	}
+	if s.opts.DownloadRowLimit != nil {
+		if res == 0 || res > *s.opts.DownloadRowLimit {
+			res = *s.opts.DownloadRowLimit
+		}
+	}
+	return res
+}
+
 // downloadTokenTTL determines how long a download token is valid.
 const downloadTokenTTL = 1 * time.Hour
-
-// downloadTokenEncoder is an in-memory symmetric cryptography encoder for download tokens.
-// TODO: Replace it with a stable environment-configured key. And multiple key versions for key rotation.
-var downloadTokenEncoder = symmetriccrypto.Must(symmetriccrypto.NewEphemeralEncoder(32))
 
 // downloadTokenJSON is the non-encrypted JSON representation of a download token.
 type downloadTokenJSON struct {
@@ -321,33 +375,18 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, attrs map[s
 		ExpiresOn:  time.Now().Add(downloadTokenTTL),
 	}
 
-	data, err := json.Marshal(tknJSON)
+	res, err := s.codec.Encode(tknJSON)
 	if err != nil {
 		return "", err
 	}
 
-	res, err := downloadTokenEncoder.Encrypt(data)
-	if err != nil {
-		return "", err
-	}
-
-	return base64.URLEncoding.EncodeToString(res), nil
+	return res, nil
 }
 
 // parseDownloadToken decrypts and parses a download token and returns the request and attributes.
 func (s *Server) parseDownloadToken(tkn string) (*runtimev1.ExportRequest, map[string]any, error) {
-	data, err := base64.URLEncoding.DecodeString(tkn)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	decrypted, err := downloadTokenEncoder.Decrypt(data)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	tknJSON := downloadTokenJSON{}
-	err = json.Unmarshal(decrypted, &tknJSON)
+	err := s.codec.Decode(tkn, &tknJSON)
 	if err != nil {
 		return nil, nil, err
 	}

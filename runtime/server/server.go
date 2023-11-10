@@ -19,8 +19,10 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	"github.com/rilldata/rill/runtime/pkg/securetoken"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -29,6 +31,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+var tracer = otel.Tracer("github.com/rilldata/rill/runtime/server")
+
 var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
 
 type Options struct {
@@ -36,6 +40,7 @@ type Options struct {
 	GRPCPort         int
 	AllowedOrigins   []string
 	ServePrometheus  bool
+	SessionKeyPairs  [][]byte
 	AuthEnable       bool
 	AuthIssuerURL    string
 	AuthAudienceURL  string
@@ -46,12 +51,12 @@ type Server struct {
 	runtimev1.UnsafeRuntimeServiceServer
 	runtimev1.UnsafeQueryServiceServer
 	runtimev1.UnsafeConnectorServiceServer
-	runtime *runtime.Runtime
-	opts    *Options
-	logger  *zap.Logger
-	aud     *auth.Audience
-	limiter ratelimit.Limiter
-	// activity is used for usage tracking
+	runtime  *runtime.Runtime
+	opts     *Options
+	logger   *zap.Logger
+	aud      *auth.Audience
+	codec    *securetoken.Codec
+	limiter  ratelimit.Limiter
 	activity activity.Client
 }
 
@@ -64,10 +69,20 @@ var (
 // NewServer creates a new runtime server.
 // The provided ctx is used for the lifetime of the server for background refresh of the JWKS that is used to validate auth tokens.
 func NewServer(ctx context.Context, opts *Options, rt *runtime.Runtime, logger *zap.Logger, limiter ratelimit.Limiter, activityClient activity.Client) (*Server, error) {
+	// The runtime doesn't actually set cookies, but we use securecookie to encode/decode ephemeral tokens.
+	// If no session key pairs are provided, we generate a random one for the duration of the process.
+	var codec *securetoken.Codec
+	if len(opts.SessionKeyPairs) == 0 {
+		codec = securetoken.NewRandom()
+	} else {
+		codec = securetoken.NewCodec(opts.SessionKeyPairs)
+	}
+
 	srv := &Server{
-		opts:     opts,
 		runtime:  rt,
+		opts:     opts,
 		logger:   logger,
+		codec:    codec,
 		limiter:  limiter,
 		activity: activityClient,
 	}
@@ -171,13 +186,6 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// One-off REST-only path for multipart file upload
 	// NOTE: It's local only and we should deprecate it in favor of a cloud-friendly alternative.
 	err = gwMux.HandlePath("POST", "/v1/instances/{instance_id}/files/upload/-/{path=**}", auth.GatewayMiddleware(s.aud, s.UploadMultipartFile))
-	if err != nil {
-		panic(err)
-	}
-
-	// One-off REST-only path for file export
-	// NOTE: It's local only and we should deprecate it in favor of a cloud-friendly alternative.
-	err = gwMux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", auth.GatewayMiddleware(s.aud, s.ExportTable))
 	if err != nil {
 		panic(err)
 	}

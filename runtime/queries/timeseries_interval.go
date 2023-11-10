@@ -21,8 +21,11 @@ func (q *RollupInterval) Key() string {
 	return fmt.Sprintf("RollupInterval:%s:%s", q.TableName, q.ColumnName)
 }
 
-func (q *RollupInterval) Deps() []string {
-	return []string{q.TableName}
+func (q *RollupInterval) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *RollupInterval) MarshalResult() *runtime.QueryResult {

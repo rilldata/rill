@@ -10,47 +10,24 @@
   export let virtualColumnItems;
   export let noPin = false;
   export let showDataIcon = false;
-  export let selectedColumn: string = null;
-  export let fallbackBGClass = "";
-
-  // set this prop to control sorting arrow externally.
-  // if undefined, sorting arrow is toggled within the
-  // cell header component.
-  export let sortAscending: boolean = undefined;
+  export let selectedColumn: string | null = null;
 
   const getColumnHeaderProps = (header) => {
-    const name = columns[header.index]?.label || columns[header.index]?.name;
-    const isEnableResizeDefined = "enableResize" in columns[header.index];
-    const enableResize = isEnableResizeDefined
-      ? columns[header.index].enableResize
-      : true;
+    const column = columns[header.index];
+    const name = column.label || column.name;
+    const isEnableResizeDefined = "enableResize" in column;
+    const enableResize = isEnableResizeDefined ? column.enableResize : true;
     return {
       name,
       enableResize,
-      type: columns[header.index]?.type,
-      description: columns[header.index]?.description || "",
-      pinned: pinnedColumns.some((column) => column.name === name),
-      isSelected: selectedColumn === columns[header.index]?.name,
+      type: column.type,
+      description: column.description || "",
+      pinned: pinnedColumns.some((pinCol) => pinCol.name === column.name),
+      isSelected: selectedColumn === column.name,
+      highlight: column.highlight,
+      sorted: column.sorted,
     };
   };
-
-  function isDelta(column) {
-    return column?.endsWith("_delta");
-  }
-
-  function isDeltaPercentage(column) {
-    return column?.endsWith("_delta_perc");
-  }
-
-  function isPercentOfTotal(column) {
-    return column?.endsWith("_percent_of_total");
-  }
-
-  function isHighlightedColumn(column) {
-    return (
-      isDelta(column) || isDeltaPercentage(column) || isPercentOfTotal(column)
-    );
-  }
 </script>
 
 <div class="w-full sticky relative top-0 z-10">
@@ -58,15 +35,11 @@
     {@const props = getColumnHeaderProps(header)}
     <ColumnHeader
       on:resize-column
-      on:reset-column-size
-      bgClass={props.isSelected || isHighlightedColumn(header?.key)
-        ? `bg-gray-50`
-        : fallbackBGClass}
+      on:reset-column-width
       {...props}
       {header}
       {noPin}
       {showDataIcon}
-      {sortAscending}
       on:pin={() => {
         dispatch("pin", columns[header.index]);
       }}

@@ -10,7 +10,7 @@ const INCREMENT = new RegExp(/(\d+)$/);
  * @param name The name to increment.
  * @param others The array of existing names.
  */
-export function getName(name: string, others: string[]) {
+export function getName(name: string, others: string[]): string {
   const set = new Set(others.map((other) => other.toLowerCase()));
 
   let result = name;
@@ -39,7 +39,7 @@ export function getNextEntityName(
 export function isDuplicateName(
   name: string,
   fromName: string,
-  names: Array<string>
+  names: Array<string | undefined>
 ) {
   if (name.toLowerCase() === fromName.toLowerCase()) return false;
   return names.findIndex((n) => n.toLowerCase() === name.toLowerCase()) >= 0;

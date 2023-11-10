@@ -4,8 +4,8 @@ import {
   Timestamp,
   Value,
 } from "@bufbuild/protobuf";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/dashboard-stores";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   DashboardTimeControls,
   ScrubRange,
@@ -78,6 +78,12 @@ export function getProtoFromDashboardState(
   }
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
+  }
+  if (metrics.expandedMeasureName) {
+    state.expandedMeasure = metrics.expandedMeasureName;
+  }
+  if (metrics.pinIndex !== undefined) {
+    state.pinIndex = metrics.pinIndex;
   }
   if (metrics.selectedDimensionName) {
     state.selectedDimension = metrics.selectedDimensionName;

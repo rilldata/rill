@@ -11,11 +11,13 @@ export function globalErrorCallback(error: AxiosError): void {
   const isDashboardPage =
     get(page).route.id === "/[organization]/[project]/[dashboard]";
 
+  if (!error.response) return;
+
   // Special handling for some errors on the Project page
   if (isProjectPage) {
     // If "repository not found", ignore the error and show the page
     if (
-      error.response.status === 400 &&
+      error.response?.status === 400 &&
       (error.response.data as RpcStatus).message === "repository not found"
     ) {
       return;
@@ -27,7 +29,7 @@ export function globalErrorCallback(error: AxiosError): void {
     // If a dashboard wasn't found, let +page.svelte handle the error.
     // Because the project may be reconciling, in which case we want to show a loading spinner not a 404.
     if (
-      error.response.status === 404 &&
+      error.response?.status === 404 &&
       (error.response.data as RpcStatus).message === "not found"
     ) {
       return;
@@ -35,13 +37,13 @@ export function globalErrorCallback(error: AxiosError): void {
 
     // When a JWT doesn't permit access to a metrics view, the metrics view APIs return 401s.
     // In this scenario, `GetCatalog` returns a 404. We ignore the 401s so we can show the 404.
-    if (error.response.status === 401) {
+    if (error.response?.status === 401) {
       return;
     }
   }
 
   // If Unauthorized, redirect to login page
-  if (error.response.status === 401) {
+  if (error.response?.status === 401) {
     goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
     return;
   }
@@ -55,10 +57,18 @@ export function globalErrorCallback(error: AxiosError): void {
 function createErrorStoreStateFromAxiosError(
   error: AxiosError
 ): ErrorStoreState {
-  const status = error.response.status;
-  const msg = (error.response.data as RpcStatus).message;
+  // Handle network errors
+  if (error.message === "Network Error") {
+    return {
+      statusCode: null,
+      header: "Network Error",
+      body: "It seems we're having trouble reaching our servers. Check your connection or try again later.",
+    };
+  }
 
-  // Specifically handle some errors
+  // Handle some application errors
+  const status = error.response?.status;
+  const msg = (error?.response?.data as RpcStatus | undefined)?.message;
   if (status === 403) {
     return {
       statusCode: error.response.status,
@@ -67,21 +77,21 @@ function createErrorStoreStateFromAxiosError(
     };
   } else if (msg === "org not found") {
     return {
-      statusCode: error.response.status,
+      statusCode: error.response?.status,
       header: "Organization not found",
       body: "The organization you requested could not be found. Please check that you have provided a valid organization name.",
     };
   } else if (msg === "project not found") {
     return {
-      statusCode: error.response.status,
+      statusCode: error.response?.status,
       header: "Project not found",
       body: "The project you requested could not be found. Please check that you have provided a valid project name.",
     };
   }
 
-  // Fallback for all other errors
+  // Fallback for all other errors (including 5xx errors)
   return {
-    statusCode: error.response.status,
+    statusCode: error.response?.status,
     header: "Sorry, unexpected error!",
     body: "Try refreshing the page, and reach out to us if that doesn't fix the error.",
   };

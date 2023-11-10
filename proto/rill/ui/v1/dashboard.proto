@@ -86,6 +86,11 @@ message DashboardState {
   optional LeaderboardSortType leaderboard_sort_type = 16;
 
   optional string comparison_dimension = 17;
+
+  // Expanded measure for TDD view
+  optional string expanded_measure = 18;
+
+  optional int32 pin_index = 19;
 }
 
 message DashboardTimeRange {

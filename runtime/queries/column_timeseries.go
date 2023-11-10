@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"slices"
 	"strconv"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -41,9 +41,11 @@ type ColumnTimeseries struct {
 	SampleSize          int32                                             `json:"sample_size"`
 	TimeZone            string                                            `json:"time_zone,omitempty"`
 	Result              *ColumnTimeseriesResult                           `json:"-"`
+	FirstDayOfWeek      uint32
+	FirstMonthOfYear    uint32
 
 	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
-	MetricsView       *runtimev1.MetricsView               `json:"-"`
+	MetricsView       *runtimev1.MetricsViewSpec           `json:"-"`
 	MetricsViewFilter *runtimev1.MetricsViewFilter         `json:"filters"`
 	MetricsViewPolicy *runtime.ResolvedMetricsViewSecurity `json:"security"`
 }
@@ -58,8 +60,11 @@ func (q *ColumnTimeseries) Key() string {
 	return fmt.Sprintf("ColumnTimeseries:%s", r)
 }
 
-func (q *ColumnTimeseries) Deps() []string {
-	return []string{q.TableName}
+func (q *ColumnTimeseries) Deps() []*runtimev1.ResourceName {
+	return []*runtimev1.ResourceName{
+		{Kind: runtime.ResourceKindSource, Name: q.TableName},
+		{Kind: runtime.ResourceKindModel, Name: q.TableName},
+	}
 }
 
 func (q *ColumnTimeseries) MarshalResult() *runtime.QueryResult {
@@ -89,7 +94,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	timeRange, err := q.resolveNormaliseTimeRange(ctx, rt, instanceID, priority)
+	timeRange, err := q.ResolveNormaliseTimeRange(ctx, rt, instanceID, priority)
 	if err != nil {
 		return err
 	}
@@ -126,6 +131,26 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		args = append([]any{timezone, timeRange.Start.AsTime(), timezone, timeRange.End.AsTime(), timezone}, args...)
 		args = append(args, timezone)
 
+		if q.FirstDayOfWeek > 7 || q.FirstDayOfWeek <= 0 {
+			q.FirstDayOfWeek = 1
+		}
+
+		if q.FirstMonthOfYear > 12 || q.FirstMonthOfYear <= 0 {
+			q.FirstMonthOfYear = 1
+		}
+
+		timeOffsetClause1 := ""
+		timeOffsetClause2 := ""
+		if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_WEEK && q.FirstDayOfWeek > 1 {
+			dayOffset := 8 - q.FirstDayOfWeek
+			timeOffsetClause1 = fmt.Sprintf(" + INTERVAL '%d DAY'", dayOffset)
+			timeOffsetClause2 = fmt.Sprintf(" - INTERVAL '%d DAY'", dayOffset)
+		} else if timeRange.Interval == runtimev1.TimeGrain_TIME_GRAIN_YEAR && q.FirstMonthOfYear > 1 {
+			monthOffset := 13 - q.FirstMonthOfYear
+			timeOffsetClause1 = fmt.Sprintf(" + INTERVAL '%d MONTH'", monthOffset)
+			timeOffsetClause2 = fmt.Sprintf(" - INTERVAL '%d MONTH'", monthOffset)
+		}
+
 		querySQL := `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (
 			-- generate a time series column that has the intended range
 			WITH template as (
@@ -133,14 +158,14 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 					range as ` + tsAlias + `
 				FROM
 					range(
-					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ)),
-					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ)),
+					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
+					date_trunc('` + dateTruncSpecifier + `', timezone(?, ?::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + `,
 					INTERVAL '1 ` + dateTruncSpecifier + `')
 			),
 			-- transform the original data, and optionally sample it.
 			series AS (
 			SELECT
-				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ)) as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
+				date_trunc('` + dateTruncSpecifier + `', timezone(?, ` + safeName(q.TimestampColumnName) + `::TIMESTAMPTZ) ` + timeOffsetClause1 + `) ` + timeOffsetClause2 + ` as ` + tsAlias + `,` + getExpressionColumnsFromMeasures(measures) + `
 			FROM ` + safeName(q.TableName) + ` ` + filter + `
 			GROUP BY ` + tsAlias + ` ORDER BY ` + tsAlias + `
 			)
@@ -196,8 +221,8 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 		}
 
 		var data []*runtimev1.TimeSeriesValue
+		rowMap := make(map[string]any)
 		for rows.Next() {
-			rowMap := make(map[string]any)
 			err := rows.MapScan(rowMap)
 			if err != nil {
 				rows.Close()
@@ -236,7 +261,7 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 
 		var sparkValues []*runtimev1.TimeSeriesValue
 		if q.Pixels != 0 {
-			sparkValues, err = q.createTimestampRollupReduction(ctx, rt, olap, instanceID, priority, temporaryTableName, tsAlias, "count")
+			sparkValues, err = q.CreateTimestampRollupReduction(ctx, rt, olap, instanceID, priority, temporaryTableName, tsAlias, "count")
 			if err != nil {
 				return err
 			}
@@ -255,7 +280,7 @@ func (q *ColumnTimeseries) Export(ctx context.Context, rt *runtime.Runtime, inst
 	return ErrExportNotSupported
 }
 
-func (q *ColumnTimeseries) resolveNormaliseTimeRange(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) (*runtimev1.TimeSeriesTimeRange, error) {
+func (q *ColumnTimeseries) ResolveNormaliseTimeRange(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) (*runtimev1.TimeSeriesTimeRange, error) {
 	rtr := q.TimeRange
 	if rtr == nil {
 		rtr = &runtimev1.TimeSeriesTimeRange{}
@@ -330,7 +355,7 @@ func (q *ColumnTimeseries) resolveNormaliseTimeRange(ctx context.Context, rt *ru
  * Importantly, this function runs very fast. For more information about the original M4 method,
  * see http://www.vldb.org/pvldb/vol7/p797-jugel.pdf
  */
-func (q *ColumnTimeseries) createTimestampRollupReduction(
+func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 	ctx context.Context,
 	rt *runtime.Runtime,
 	olap drivers.OLAPStore,
@@ -389,7 +414,7 @@ func (q *ColumnTimeseries) createTimestampRollupReduction(
 
 	querySQL := ` -- extract unix time
       WITH Q as (
-        SELECT extract('epoch' from ` + safeTimestampColumnName + `) as t, "` + valueColumn + `"::DOUBLE as v FROM "` + tableName + `"
+        SELECT extract('epoch' from ` + safeTimestampColumnName + `)::BIGINT as t, "` + valueColumn + `"::DOUBLE as v FROM "` + tableName + `"
       ),
       -- generate bounds
       M as (

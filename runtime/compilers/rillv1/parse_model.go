@@ -2,6 +2,7 @@ package rillv1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -9,11 +10,11 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 )
 
-// modelYAML is the raw structure of a Model resource defined in YAML (does not include common fields)
-type modelYAML struct {
+// ModelYAML is the raw structure of a Model resource defined in YAML (does not include common fields)
+type ModelYAML struct {
 	Materialize  *bool         `yaml:"materialize" mapstructure:"materialize"`
 	Timeout      string        `yaml:"timeout" mapstructure:"timeout"`
-	Refresh      *scheduleYAML `yaml:"refresh" mapstructure:"refresh"`
+	Refresh      *ScheduleYAML `yaml:"refresh" mapstructure:"refresh"`
 	ParserConfig struct {
 		DuckDB struct {
 			InferRefs *bool `yaml:"infer_refs" mapstructure:"infer_refs"`
@@ -24,7 +25,12 @@ type modelYAML struct {
 // parseModel parses a model definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	// Parse YAML
-	tmp := &modelYAML{}
+	tmp := &ModelYAML{}
+	if p.RillYAML != nil && !p.RillYAML.Defaults.Models.IsZero() {
+		if err := p.RillYAML.Defaults.Models.Decode(tmp); err != nil {
+			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
+		}
+	}
 	if node.YAML != nil {
 		if err := node.YAML.Decode(tmp); err != nil {
 			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
@@ -50,6 +56,11 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 	schedule, err := parseScheduleYAML(tmp.Refresh)
 	if err != nil {
 		return err
+	}
+
+	// Validate SQL
+	if strings.TrimSpace(node.SQL) == "" {
+		return errors.New("no SQL provided")
 	}
 
 	// If the connector is a DuckDB connector, extract info using DuckDB SQL parsing.
@@ -81,10 +92,13 @@ func (p *Parser) parseModel(ctx context.Context, node *Node) error {
 		}
 	}
 
-	// NOTE: After calling upsertResource, an error must not be returned. Any validation should be done before calling it.
+	// Insert the model
+	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, refs...)
+	if err != nil {
+		return err
+	}
+	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	// Upsert the model
-	r := p.upsertResource(ResourceKindModel, node.Name, node.Paths, refs...)
 	if node.SQL != "" {
 		r.ModelSpec.Sql = strings.TrimSpace(node.SQL)
 		r.ModelSpec.UsesTemplating = node.SQLUsesTemplating

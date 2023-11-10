@@ -12,4 +12,6 @@ export const DimensionTableConfig: VirtualizedTableConfig = {
   columnHeaderFontWeightClass: "font-normal",
   defaultFontWeightClass: "font-normal",
   table: "DimensionTable",
+  headerBgColorClass: "bg-white",
+  headerBgColorHighlightClass: "bg-gray-50",
 };

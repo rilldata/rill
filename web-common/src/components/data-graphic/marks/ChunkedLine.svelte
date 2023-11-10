@@ -20,7 +20,6 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import {
     areaFactory,
-    createAdaptiveLineThicknessStore,
     lineFactory,
     pathIsDefined,
   } from "@rilldata/web-common/components/data-graphic/utils";
@@ -32,6 +31,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   export let xAccessor: string;
   export let yAccessor: string;
 
+  export let isComparingDimension = false;
   export let area = true;
   /** time in ms to trigger a delay when the underlying data changes */
   export let delay = 0;
@@ -89,8 +89,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   /** use this line thickness heuristic to allow some amount of overplotting
    * FIXME: this needs refinement!
    */
-  let lineThickness = createAdaptiveLineThicknessStore(yAccessor);
-  $: lineThickness.setData(data);
+  // let lineThickness = createAdaptiveLineThicknessStore(yAccessor);
+  // $: lineThickness.setData(data);
 </script>
 
 <WithDelayedValue
@@ -106,6 +106,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       x={$xScale(singleton[xAccessor]) - 0.75}
       y={Math.min($yScale(0), $yScale(singleton[yAccessor]))}
       width="1.5"
+      class={lineClasses}
       height={Math.abs($yScale(0) - $yScale(singleton[yAccessor]))}
       fill="hsla(217,60%, 55%, .5)"
     />
@@ -128,7 +129,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     >
       <!-- line -->
       <path
-        stroke-width={$lineThickness}
+        stroke-width={isComparingDimension ? 1.5 : 1}
         stroke={lineColor}
         class={lineClasses}
         d={dt}

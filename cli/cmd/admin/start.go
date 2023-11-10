@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"net/url"
 	"os"
 	"time"
 
@@ -11,10 +12,10 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/admin"
-	"github.com/rilldata/rill/admin/email"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -41,6 +42,7 @@ type Config struct {
 	MetricsExporter        observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter         observability.Exporter `default:"" split_words:"true"`
 	ExternalURL            string                 `default:"http://localhost:8080" split_words:"true"`
+	ExternalGRPCURL        string                 `envconfig:"external_grpc_url"`
 	FrontendURL            string                 `default:"http://localhost:3000" split_words:"true"`
 	SessionKeyPairs        []string               `split_words:"true"`
 	AllowedOrigins         []string               `default:"*" split_words:"true"`
@@ -93,6 +95,33 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				os.Exit(1)
 			}
 
+			// Let ExternalGRPCURL default to ExternalURL, unless ExternalURL is itself the default.
+			// NOTE: This is temporary until we migrate to a server that can host HTTP and gRPC on the same port.
+			if conf.ExternalGRPCURL == "" {
+				if conf.ExternalURL == "http://localhost:8080" {
+					conf.ExternalGRPCURL = "http://localhost:9090"
+				} else {
+					conf.ExternalGRPCURL = conf.ExternalURL
+				}
+			}
+
+			// Validate frontend and external URLs
+			_, err = url.Parse(conf.FrontendURL)
+			if err != nil {
+				fmt.Printf("error: invalid frontend URL: %s\n", err.Error())
+				os.Exit(1)
+			}
+			_, err = url.Parse(conf.ExternalURL)
+			if err != nil {
+				fmt.Printf("error: invalid external URL: %s\n", err.Error())
+				os.Exit(1)
+			}
+			_, err = url.Parse(conf.ExternalGRPCURL)
+			if err != nil {
+				fmt.Printf("error: invalid external grpc URL: %s\n", err.Error())
+				os.Exit(1)
+			}
+
 			// Init telemetry
 			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
 				MetricsExporter: conf.MetricsExporter,
@@ -137,7 +166,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			if err != nil {
 				logger.Fatal("error creating email sender", zap.Error(err))
 			}
-			emailClient := email.New(sender, conf.FrontendURL, conf.ExternalURL)
+			emailClient := email.New(sender)
 
 			// Init github client
 			gh, err := admin.NewGithub(conf.GithubAppID, conf.GithubAppPrivateKey)
@@ -150,6 +179,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				DatabaseDriver:  conf.DatabaseDriver,
 				DatabaseDSN:     conf.DatabaseURL,
 				ProvisionerSpec: conf.ProvisionerSpec,
+				ExternalURL:     conf.ExternalGRPCURL, // NOTE: using gRPC url
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh)
 			if err != nil {

@@ -7,9 +7,12 @@
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
   import { Divider } from "@rilldata/web-common/components/menu/index.js";
-  import { useDashboardNames } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
   import { deleteFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getFilePathFromNameAndType,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     FileArtifactsData,
     fileArtifactsStore,
@@ -18,6 +21,8 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { SourceModelValidationStatus } from "@rilldata/web-common/features/metrics-views/errors.js";
+  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
+  import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -25,13 +30,10 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
-    createRuntimeServiceDeleteFileAndReconcile,
-    createRuntimeServicePutFileAndReconcile,
+    createRuntimeServicePutFile,
     runtimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
-  import { invalidateAfterReconcile } from "@rilldata/web-common/runtime-client/invalidation";
   import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
@@ -40,24 +42,19 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import AddAssetButton from "../entity-management/AddAssetButton.svelte";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
-  import { useModelNames } from "../models/selectors";
-  import { useSourceNames } from "../sources/selectors";
 
   $: instanceId = $runtime.instanceId;
 
-  $: sourceNames = useSourceNames(instanceId);
-  $: modelNames = useModelNames(instanceId);
-  $: dashboardNames = useDashboardNames(instanceId);
+  $: sourceNames = useSourceFileNames(instanceId);
+  $: modelNames = useModelFileNames(instanceId);
+  $: dashboardNames = useDashboardFileNames(instanceId);
 
-  const queryClient = useQueryClient();
-
-  const createDashboard = createRuntimeServicePutFileAndReconcile();
-  const deleteDashboard = createRuntimeServiceDeleteFileAndReconcile();
+  const createDashboard = createRuntimeServicePutFile();
 
   let showMetricsDefs = true;
 
   let showRenameMetricsDefinitionModal = false;
-  let renameMetricsDefName = null;
+  let renameMetricsDefName: string | null = null;
 
   async function getDashboardArtifact(
     instanceId: string,
@@ -68,7 +65,7 @@
       EntityType.MetricsDefinition
     );
     const resp = await runtimeServiceGetFile(instanceId, filePath);
-    const metricYAMLString = resp.blob;
+    const metricYAMLString = resp.blob as string;
     fileArtifactsStore.setJSONRep(filePath, metricYAMLString);
   }
 
@@ -81,25 +78,21 @@
     if (!showMetricsDefs) {
       showMetricsDefs = true;
     }
-    const newDashboardName = getName("dashboard", $dashboardNames.data);
-    const filePath = getFilePathFromNameAndType(
-      newDashboardName,
-      EntityType.MetricsDefinition
-    );
-    const resp = await $createDashboard.mutateAsync({
+    const newDashboardName = getName("dashboard", $dashboardNames?.data ?? []);
+    await $createDashboard.mutateAsync({
+      instanceId,
+      path: getFileAPIPathFromNameAndType(
+        newDashboardName,
+        EntityType.MetricsDefinition
+      ),
       data: {
-        instanceId,
-        path: filePath,
         blob: "",
         create: true,
         createOnly: true,
-        strict: false,
       },
     });
-    fileArtifactsStore.setErrors(resp.affectedPaths, resp.errors);
 
     goto(`/dashboard/${newDashboardName}`);
-    return invalidateAfterReconcile(queryClient, instanceId, resp);
   };
 
   const editModel = async (dashboardName: string) => {
@@ -109,7 +102,7 @@
       $fileArtifactsStore.entities,
       dashboardName
     );
-    const sourceModelName = dashboardData.jsonRepresentation.model;
+    const sourceModelName = dashboardData.jsonRepresentation?.model as string;
 
     const previousActiveEntity = $appScreen?.type;
     goto(`/model/${sourceModelName}`);
@@ -143,17 +136,14 @@
       dashboardName
     );
     await deleteFileArtifact(
-      queryClient,
       instanceId,
       dashboardName,
       EntityType.MetricsDefinition,
-      $deleteDashboard,
-      $appScreen,
-      $dashboardNames.data
+      $dashboardNames?.data ?? []
     );
 
     // redirect to model when metric is deleted
-    const sourceModelName = dashboardData.jsonRepresentation.model;
+    const sourceModelName = dashboardData?.jsonRepresentation?.model as string;
     if ($appScreen?.name === dashboardName) {
       if (sourceModelName) {
         goto(`/model/${sourceModelName}`);
@@ -185,6 +175,8 @@
   $: canAddDashboard = $featureFlags.readOnly === false;
 
   $: hasSourceAndModelButNoDashboards =
+    $sourceNames?.data &&
+    $modelNames?.data &&
     $sourceNames?.data?.length > 0 &&
     $modelNames?.data?.length > 0 &&
     $dashboardNames?.data?.length === 0;
@@ -260,12 +252,12 @@
       <AddAssetButton
         id="add-dashboard"
         label="Add dashboard"
-        bold={hasSourceAndModelButNoDashboards}
+        bold={hasSourceAndModelButNoDashboards ?? false}
         on:click={() => dispatchAddEmptyMetricsDef()}
       />
     {/if}
   </div>
-  {#if showRenameMetricsDefinitionModal}
+  {#if showRenameMetricsDefinitionModal && renameMetricsDefName}
     <RenameAssetModal
       entityType={EntityType.MetricsDefinition}
       closeModal={() => (showRenameMetricsDefinitionModal = false)}

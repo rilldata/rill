@@ -10,13 +10,20 @@
   import { getContext } from "svelte";
   import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
   import DimensionCompareMenu from "@rilldata/web-common/features/dashboards/leaderboard/DimensionCompareMenu.svelte";
+  import { getStateManagers } from "../state-managers/state-managers";
 
   export let totalHeight: number;
   export let virtualRowItems;
-  export let selectedIndex = [];
+  export let selectedIndex: number[] = [];
   export let excludeMode = false;
   export let isBeingCompared = false;
   export let atLeastOneActive = false;
+
+  const {
+    selectors: {
+      dimensions: { dimensionTableDimName },
+    },
+  } = getStateManagers();
 
   function getInsertIndex(arr, num) {
     return arr
@@ -63,7 +70,7 @@
     style:height="{config.columnHeaderHeight}px"
     class="sticky left-0 top-0 surface z-40 flex items-center"
   >
-    <DimensionCompareMenu {isBeingCompared} on:toggle-dimension-comparison />
+    <DimensionCompareMenu dimensionName={$dimensionTableDimName} />
   </div>
   {#each virtualRowItems as row (`row-${row.key}`)}
     {@const isSelected = selectedIndex.includes(row.index)}

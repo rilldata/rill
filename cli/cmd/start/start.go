@@ -27,7 +27,6 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	var reset bool
 	var noUI bool
 	var noOpen bool
-	var strict bool
 	var logFormat string
 	var variables []string
 
@@ -94,13 +93,6 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer app.Close()
 
-			if app.IsProjectInit() {
-				err = app.Reconcile(strict)
-				if err != nil {
-					return fmt.Errorf("reconcile project: %w", err)
-				}
-			}
-
 			userID := ""
 			if cfg.IsAuthenticated() {
 				userID, _ = cmdutil.FetchUserID(context.Background(), cfg)
@@ -124,7 +116,6 @@ func StartCmd(cfg *config.Config) *cobra.Command {
 	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
-	startCmd.Flags().BoolVar(&strict, "strict", false, "Exit if project has build errors")
 	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
 	startCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")

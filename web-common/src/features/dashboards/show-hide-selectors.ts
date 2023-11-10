@@ -1,12 +1,12 @@
 import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
 import {
-  MetricsExplorerEntity,
   updateMetricsExplorerByName,
   useDashboardStore,
-} from "@rilldata/web-common/features/dashboards/dashboard-stores";
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   MetricsViewDimension,
-  MetricsViewMeasure,
+  MetricsViewSpecMeasureV2,
   RpcStatus,
   V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
@@ -43,7 +43,12 @@ function createShowHideStore<Item>(
   const derivedStore = derived(
     [metaQuery, useDashboardStore(metricsViewName)],
     ([meta, metricsExplorer]) => {
-      if (!meta || !meta.isSuccess || meta.isRefetching) {
+      if (
+        !meta?.data ||
+        !metricsExplorer ||
+        !meta.isSuccess ||
+        meta.isRefetching
+      ) {
         return {
           selectableItems: [],
           selectedItems: [],
@@ -130,7 +135,7 @@ export function createShowHideMeasuresStore(
   metricsViewName: string,
   metaQuery: CreateQueryResult<V1MetricsView, RpcStatus>
 ) {
-  return createShowHideStore<MetricsViewMeasure>(
+  return createShowHideStore<MetricsViewSpecMeasureV2>(
     metricsViewName,
     metaQuery,
     "measures",

@@ -1,14 +1,13 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
-import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_INIT,
   AD_BIDS_INIT_WITH_TIME,
   AD_BIDS_NAME,
   AD_BIDS_SOURCE_NAME,
   AD_BIDS_TIMESTAMP_DIMENSION,
-  initAdBidsInStore,
-} from "@rilldata/web-common/features/dashboards/dashboard-stores-test-data";
-import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  initStateManagers,
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
 import {
   createTimeControlStore,
   TimeControlState,
@@ -24,7 +23,6 @@ import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
-import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import { render } from "@testing-library/svelte";
@@ -116,7 +114,7 @@ describe("time-control-store", () => {
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
       AD_BIDS_INIT_WITH_TIME
     );
-    await waitForUpdate(timeControlsStore, "2022-03-30T01:00:00.000Z");
+    await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
       name: TimeRangePreset.LAST_24_HOURS,
@@ -353,24 +351,62 @@ describe("time-control-store", () => {
     unmount();
   });
 
-  function initTimeControlStoreTest(resp: V1MetricsView) {
-    initAdBidsInStore();
-    dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, resp);
+  it("Default time ranges", async () => {
+    dashboardFetchMocks.mockTimeRangeSummary(
+      AD_BIDS_SOURCE_NAME,
+      AD_BIDS_TIMESTAMP_DIMENSION,
+      {
+        min: "2022-01-01",
+        max: "2022-03-31",
+      }
+    );
+    const { unmount, timeControlsStore, queryClient } =
+      initTimeControlStoreTest(AD_BIDS_INIT_WITH_TIME);
+    await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
+    assertStartAndEnd(
+      get(timeControlsStore),
+      "2022-01-01T00:00:00.000Z",
+      "2022-03-31T00:00:00.001Z",
+      "2021-12-31T00:00:00.000Z",
+      "2022-04-01T00:00:00.000Z"
+    );
 
-    const queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          refetchOnMount: false,
-          refetchOnReconnect: false,
-          refetchOnWindowFocus: false,
-          retry: false,
-        },
-      },
+    dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, {
+      ...AD_BIDS_INIT_WITH_TIME,
+      defaultTimeRange: "P4W",
     });
-    const stateManagers = createStateManagers({
-      queryClient,
-      metricsViewName: AD_BIDS_NAME,
+    await queryClient.refetchQueries({
+      type: "active",
     });
+    await waitForDefaultUpdate(timeControlsStore, "2022-03-07T00:00:00.000Z");
+    expect(get(timeControlsStore).defaultTimeRange).toEqual({
+      name: TimeRangePreset.LAST_4_WEEKS,
+      start: new Date("2022-03-07T00:00:00.000Z"),
+      end: new Date("2022-04-04T00:00:00.000Z"),
+    });
+
+    dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, {
+      ...AD_BIDS_INIT_WITH_TIME,
+      defaultTimeRange: "P2W",
+    });
+    await queryClient.refetchQueries({
+      type: "active",
+    });
+    await waitForDefaultUpdate(timeControlsStore, "2022-03-21T00:00:00.000Z");
+    expect(get(timeControlsStore).defaultTimeRange).toEqual({
+      name: TimeRangePreset.DEFAULT,
+      start: new Date("2022-03-21T00:00:00.000Z"),
+      end: new Date("2022-04-04T00:00:00.000Z"),
+    });
+
+    unmount();
+  });
+
+  function initTimeControlStoreTest(resp: V1MetricsView) {
+    const { stateManagers, queryClient } = initStateManagers(
+      dashboardFetchMocks,
+      resp
+    );
     const timeControlsStore = createTimeControlStore(stateManagers);
 
     const { unmount } = render(TimeControlsStoreTest, {
@@ -413,8 +449,22 @@ async function waitForUpdate(
   timeControlsStore: TimeControlStore,
   startTime: string
 ) {
-  return waitUntil(
+  await waitUntil(
     () => get(timeControlsStore).timeStart === startTime,
+    1000,
+    20
+  );
+  expect(get(timeControlsStore).timeStart).toBe(startTime);
+}
+
+async function waitForDefaultUpdate(
+  timeControlsStore: TimeControlStore,
+  startTime: string
+) {
+  return waitUntil(
+    () =>
+      get(timeControlsStore).defaultTimeRange?.start?.toISOString() ===
+      startTime,
     1000,
     20
   );

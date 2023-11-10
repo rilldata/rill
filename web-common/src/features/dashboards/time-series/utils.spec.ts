@@ -28,13 +28,16 @@ describe("getFilterForComparedDimension", () => {
     const result = getFilterForComparedDimension(
       dimensionName,
       filters,
-      topListValues
+      topListValues,
+      "chart"
     );
 
     expect(result.updatedFilter).toEqual({
-      include: [{ name: "country", in: ["US", "IN", "CN"] }],
+      include: [{ name: "country", in: [] }],
       exclude: [],
     });
+
+    expect(result.includedValues).toEqual(["US", "IN", "CN"]);
   });
 
   it("should exclude values from top list based on existing exclude filter", () => {
@@ -48,16 +51,19 @@ describe("getFilterForComparedDimension", () => {
     const result = getFilterForComparedDimension(
       dimensionName,
       filters,
-      topListValues
+      topListValues,
+      "chart"
     );
 
     expect(result.updatedFilter).toEqual({
-      include: [{ name: "country", in: ["US", "IN"] }],
+      include: [{ name: "country", in: [] }],
       exclude: [{ name: "country", in: ["CN"] }],
     });
+
+    expect(result.includedValues).toEqual(["US", "IN"]);
   });
 
-  it("should slice top list values to max of 3", () => {
+  it("should slice top list values to max of 3 for chart", () => {
     const dimensionName = "country";
     const filters = { include: [], exclude: [] };
     const topListValues = ["US", "IN", "CN", "UK", "FR"];
@@ -65,11 +71,30 @@ describe("getFilterForComparedDimension", () => {
     const result = getFilterForComparedDimension(
       dimensionName,
       filters,
-      topListValues
+      topListValues,
+      "chart"
     );
 
-    expect(result.updatedFilter.include[0].in).toHaveLength(3);
+    expect(result.includedValues).toHaveLength(3);
   });
+
+  it("should slice top list values to max of 250 for table", () => {
+    const dimensionName = "country";
+    const filters = { include: [], exclude: [] };
+    const topListValues = new Array(300)
+      .fill(null)
+      .map((_, i) => `Country ${i}`);
+
+    const result = getFilterForComparedDimension(
+      dimensionName,
+      filters,
+      topListValues,
+      "table"
+    );
+
+    expect(result.includedValues).toHaveLength(250);
+  });
+
   it("should not modify filters for unrelated dimensions", () => {
     const dimensionName = "country";
 
@@ -83,15 +108,18 @@ describe("getFilterForComparedDimension", () => {
     const result = getFilterForComparedDimension(
       dimensionName,
       filters,
-      topListValues
+      topListValues,
+      "chart"
     );
 
     expect(result.updatedFilter).toEqual({
       include: [
         { name: "company", in: ["zoom"] },
-        { name: "country", in: ["US", "IN", "CN"] },
+        { name: "country", in: [] },
       ],
       exclude: [{ name: "device", in: ["mobile"] }],
     });
+
+    expect(result.includedValues).toEqual(["US", "IN", "CN"]);
   });
 });

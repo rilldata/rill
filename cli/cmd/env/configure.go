@@ -12,10 +12,13 @@ import (
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
 func ConfigureCmd(cfg *config.Config) *cobra.Command {
@@ -83,7 +86,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 
 			variables, err := VariablesFlow(ctx, fullProjectPath, nil)
 			if err != nil {
-				return fmt.Errorf("failed to get variables %w", err)
+				return fmt.Errorf("failed to get variables: %w", err)
 			}
 
 			// get existing variables
@@ -140,59 +143,80 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 }
 
 func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telemetry) (map[string]string, error) {
-	connectorList, err := rillv1beta.ExtractConnectors(ctx, projectPath)
+	// Create an ad-hoc file repo for projectPath
+	instanceID := "default"
+	repoHandle, err := drivers.Open("file", map[string]any{"dsn": projectPath}, false, activity.NewNoopClient(), zap.NewNop())
 	if err != nil {
-		return nil, fmt.Errorf("failed to extract connectors %w", err)
+		return nil, fmt.Errorf("failed to open project repo: %w", err)
+	}
+	repo, _ := repoHandle.AsRepoStore(instanceID)
+
+	// Parse the project's connectors
+	parser, err := rillv1.Parse(ctx, repo, instanceID, "duckdb", []string{"duckdb"})
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse project: %w", err)
+	}
+	connectors, err := parser.AnalyzeConnectors(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract connectors: %w", err)
 	}
 
-	// collect all sources
-	srcs := make([]*runtimev1.Source, 0)
-	for _, c := range connectorList {
+	// Exit early if all connectors can be used anonymously
+	foundNotAnonymous := false
+	for _, c := range connectors {
 		if !c.AnonymousAccess {
-			srcs = append(srcs, c.Sources...)
+			foundNotAnonymous = true
 		}
 	}
-	if len(srcs) == 0 {
+	if !foundNotAnonymous {
 		return nil, nil
 	}
 
+	// Start the flow
 	tel.Emit(telemetry.ActionDataAccessStart)
-	fmt.Printf("Finish deploying your project by providing access to the data store. Rill does not have access to the following data sources:\n\n")
-	for _, src := range srcs {
-		props := src.Properties.AsMap()
-		if _, ok := props["path"]; ok {
-			// print URL wherever applicable
-			fmt.Printf(" - %s\n", props["path"])
-		} else {
-			fmt.Printf(" - %s\n", src.Name)
+	fmt.Printf("Finish deploying your project by providing access to the connectors. Rill does not have access to the following data sources:\n\n")
+	for _, c := range connectors {
+		if c.AnonymousAccess {
+			continue
+		}
+		for _, r := range c.Resources {
+			fmt.Printf(" - %s", r.Name.Name)
+			if len(r.Paths) > 0 {
+				fmt.Printf(" (%s)", r.Paths[0])
+			}
+			fmt.Print("\n")
 		}
 	}
 
+	// Prompt for credentials
 	variables := make(map[string]string)
-	for _, c := range connectorList {
+	for _, c := range connectors {
 		if c.AnonymousAccess {
-			// ignore asking for credentials if external source can be access anonymously
 			continue
 		}
-		connectorVariables := c.Spec.ConfigProperties
-		if len(connectorVariables) != 0 {
-			fmt.Printf("\nConnector %q requires credentials.\n", c.Type)
-			if c.Spec.ServiceAccountDocs != "" {
-				fmt.Printf("For instructions on how to create a service account, see: %s\n", c.Spec.ServiceAccountDocs)
-			}
-			fmt.Printf("\n")
+		if len(c.Spec.ConfigProperties) == 0 {
+			continue
 		}
+
+		fmt.Printf("\nConnector %q requires credentials.\n", c.Name)
+		if c.Spec.ServiceAccountDocs != "" {
+			fmt.Printf("For instructions on how to create a service account, see: %s\n", c.Spec.ServiceAccountDocs)
+		}
+		fmt.Printf("\n")
 		if c.Spec.Help != "" {
 			fmt.Println(c.Spec.Help)
 		}
-		for i := range connectorVariables {
-			prop := connectorVariables[i]
-			question := &survey.Question{}
-			msg := fmt.Sprintf("connector.%s.%s", c.Name, prop.Key)
+
+		for i := range c.Spec.ConfigProperties {
+			prop := c.Spec.ConfigProperties[i] // TODO: Move into range and turn into pointer
+
+			key := fmt.Sprintf("connector.%s.%s", c.Name, prop.Key)
+			msg := key
 			if prop.Hint != "" {
 				msg = fmt.Sprintf(msg+" (%s)", prop.Hint)
 			}
 
+			question := &survey.Question{}
 			if prop.Secret {
 				question.Prompt = &survey.Password{Message: msg}
 			} else {
@@ -209,20 +233,18 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 
 			answer := ""
 			if err := survey.Ask([]*survey.Question{question}, &answer); err != nil {
-				return nil, fmt.Errorf("variables prompt failed with error %w", err)
+				return nil, fmt.Errorf("variables prompt failed with error: %w", err)
 			}
 
 			if answer != "" {
-				variables[prop.Key] = answer
+				variables[key] = answer
 			}
 		}
 	}
 
-	if len(connectorList) > 0 {
-		fmt.Println("")
-	}
-
+	// Continue with the flow
 	tel.Emit(telemetry.ActionDataAccessSuccess)
+	fmt.Println("")
 
 	return variables, nil
 }

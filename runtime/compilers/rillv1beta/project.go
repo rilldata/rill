@@ -1,7 +1,6 @@
 package rillv1beta
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -9,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"gopkg.in/yaml.v2"
 )
@@ -42,7 +40,7 @@ func (c *Codec) InitEmpty(ctx context.Context, title string) error {
 	if gitignore != "" {
 		gitignore += "\n"
 	}
-	gitignore += "# Rill\n*.db\n*.db.tmp\n*.db.wal\n"
+	gitignore += ".DS_Store\n\n# Rill\n*.db\n*.db.tmp\n*.db.wal\n"
 
 	err = c.Repo.Put(ctx, ".gitignore", strings.NewReader(gitignore))
 	if err != nil {
@@ -65,47 +63,6 @@ func (c *Codec) InitEmpty(ctx context.Context, title string) error {
 	}
 
 	return nil
-}
-
-func (c *Codec) PutSource(ctx context.Context, repo drivers.RepoStore, instanceID string, source *runtimev1.Source, force bool) (string, error) {
-	props := source.Properties.AsMap()
-
-	out := Source{
-		Type: source.Connector,
-	}
-
-	if val, ok := props["uri"].(string); ok {
-		out.URI = val
-	}
-
-	if val, ok := props["path"].(string); ok {
-		out.Path = val
-	}
-
-	if val, ok := props["region"].(string); ok {
-		out.Region = val
-	}
-
-	blob, err := yaml.Marshal(out)
-	if err != nil {
-		return "", err
-	}
-
-	p := path.Join("sources", source.Name+".yaml")
-
-	// TODO: Use create and createOnly when they're added to repo.Put
-	if _, err := os.Stat(path.Join(repo.Root(), p)); err == nil {
-		if !force {
-			return "", os.ErrExist
-		}
-	}
-
-	err = repo.Put(ctx, p, bytes.NewReader(blob))
-	if err != nil {
-		return "", err
-	}
-
-	return p, nil
 }
 
 func (c *Codec) DeleteSource(ctx context.Context, name string) (string, error) {

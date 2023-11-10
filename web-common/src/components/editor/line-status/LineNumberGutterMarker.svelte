@@ -1,5 +1,6 @@
 <script lang="ts">
-  export let level: "error" | "warning" | "info" | "success" = undefined;
+  export let level: "error" | "warning" | "info" | "success" | undefined =
+    undefined;
   export let line: number;
   export let active = false;
 </script>

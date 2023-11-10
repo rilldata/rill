@@ -4,6 +4,7 @@ package rill.runtime.v1;
 import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
+import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
 import "validate/validate.proto";
@@ -13,6 +14,14 @@ service QueryService {
   rpc Query(QueryRequest) returns (QueryResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/query",
+      body: "*"
+    };
+  }
+
+  // Batch request with different queries
+  rpc QueryBatch(QueryBatchRequest) returns (stream QueryBatchResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/query/batch",
       body: "*"
     };
   }
@@ -44,7 +53,7 @@ service QueryService {
     };
   }
 
-  rpc MetricsViewComparisonToplist(MetricsViewComparisonToplistRequest) returns (MetricsViewComparisonToplistResponse) {
+  rpc MetricsViewComparison(MetricsViewComparisonRequest) returns (MetricsViewComparisonResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/compare-toplist",
       body: "*"
@@ -163,27 +172,13 @@ service QueryService {
   rpc TableRows(TableRowsRequest) returns (TableRowsResponse) {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/rows/tables/{table_name}"};
   }
-
-  // Batch request with different queries
-  rpc QueryBatch(QueryBatchRequest) returns (stream QueryBatchResponse) {
-    option (google.api.http) = {
-      post: "/v1/instances/{instance_id}/query/batch",
-      body: "*"
-    };
-  }
 }
 
-// Request message for QueryService.Query
 message QueryRequest {
-  // Instance to query
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
-  // SELECT statement
   string sql = 2;
-  // Args to interpolate into the statement
   repeated google.protobuf.Value args = 3;
-  // Query priority (not supported by all backends)
   int32 priority = 4;
-  // If true, will only validate the query, not execute it
   bool dry_run = 5;
   int32 limit = 6 [(validate.rules).int32 = {
     lte: 10000,
@@ -191,43 +186,88 @@ message QueryRequest {
   }];
 }
 
-// Response message for QueryService.Query
 message QueryResponse {
-  // Schema of result data
   StructType meta = 1;
-  // Result data
   repeated google.protobuf.Struct data = 2;
 }
 
-// Request message for QueryService.Export
-message ExportRequest {
+message QueryBatchRequest {
   string instance_id = 1;
-  optional int64 limit = 2;
-  ExportFormat format = 3;
-  oneof request {
-    MetricsViewAggregationRequest metrics_view_aggregation_request = 7;
-    MetricsViewToplistRequest metrics_view_toplist_request = 4;
-    MetricsViewRowsRequest metrics_view_rows_request = 5;
-    MetricsViewTimeSeriesRequest metrics_view_time_series_request = 6;
-    MetricsViewComparisonToplistRequest metrics_view_comparison_toplist_request = 8;
-  }
+  repeated Query queries = 2;
 }
 
-// Response message for QueryService.Export
+message QueryBatchResponse {
+  uint32 index = 1;
+  QueryResult result = 2;
+  string error = 3;
+}
+
+message ExportRequest {
+  string instance_id = 1;
+  int64 limit = 2;
+  ExportFormat format = 3;
+  Query query = 4;
+  string baked_query = 5;
+}
+
 message ExportResponse {
   string download_url_path = 1;
 }
 
-// ExportFormat is a file format for a data export
-enum ExportFormat {
-  EXPORT_FORMAT_UNSPECIFIED = 0;
-  EXPORT_FORMAT_CSV = 1;
-  EXPORT_FORMAT_XLSX = 2;
-  EXPORT_FORMAT_PARQUET = 3;
+// **********
+// All queries
+// **********
+
+message Query {
+  oneof query {
+    MetricsViewAggregationRequest metrics_view_aggregation_request = 20;
+    MetricsViewToplistRequest metrics_view_toplist_request = 2;
+    MetricsViewComparisonRequest metrics_view_comparison_request = 3;
+    MetricsViewTimeSeriesRequest metrics_view_time_series_request = 4;
+    MetricsViewTotalsRequest metrics_view_totals_request = 5;
+    MetricsViewRowsRequest metrics_view_rows_request = 6;
+    ColumnRollupIntervalRequest column_rollup_interval_request = 7;
+    ColumnTopKRequest column_top_k_request = 8;
+    ColumnNullCountRequest column_null_count_request = 9;
+    ColumnDescriptiveStatisticsRequest column_descriptive_statistics_request = 10;
+    ColumnTimeGrainRequest column_time_grain_request = 11;
+    ColumnNumericHistogramRequest column_numeric_histogram_request = 12;
+    ColumnRugHistogramRequest column_rug_histogram_request = 13;
+    ColumnTimeRangeRequest column_time_range_request = 14;
+    ColumnCardinalityRequest column_cardinality_request = 15;
+    ColumnTimeSeriesRequest column_time_series_request = 16;
+    TableCardinalityRequest table_cardinality_request = 17;
+    TableColumnsRequest table_columns_request = 18;
+    TableRowsRequest table_rows_request = 19;
+  }
+}
+
+message QueryResult {
+  oneof result {
+    MetricsViewAggregationResponse metrics_view_aggregation_response = 21;
+    MetricsViewToplistResponse metrics_view_toplist_response = 3;
+    MetricsViewComparisonResponse metrics_view_comparison_response = 4;
+    MetricsViewTimeSeriesResponse metrics_view_time_series_response = 5;
+    MetricsViewTotalsResponse metrics_view_totals_response = 6;
+    MetricsViewRowsResponse metrics_view_rows_response = 7;
+    ColumnRollupIntervalResponse column_rollup_interval_response = 8;
+    ColumnTopKResponse column_top_k_response = 9;
+    ColumnNullCountResponse column_null_count_response = 10;
+    ColumnDescriptiveStatisticsResponse column_descriptive_statistics_response = 11;
+    ColumnTimeGrainResponse column_time_grain_response = 12;
+    ColumnNumericHistogramResponse column_numeric_histogram_response = 13;
+    ColumnRugHistogramResponse column_rug_histogram_response = 14;
+    ColumnTimeRangeResponse column_time_range_response = 15;
+    ColumnCardinalityResponse column_cardinality_response = 16;
+    ColumnTimeSeriesResponse column_time_series_response = 17;
+    TableCardinalityResponse table_cardinality_response = 18;
+    TableColumnsResponse table_columns_response = 19;
+    TableRowsResponse table_rows_response = 20;
+  }
 }
 
 // **********
-// Explore APIs
+// Metrics APIs
 // **********
 
 message MetricsViewAggregationRequest {
@@ -236,8 +276,9 @@ message MetricsViewAggregationRequest {
   repeated MetricsViewAggregationDimension dimensions = 3;
   repeated MetricsViewAggregationMeasure measures = 4;
   repeated MetricsViewAggregationSort sort = 5;
-  google.protobuf.Timestamp time_start = 6;
-  google.protobuf.Timestamp time_end = 7;
+  TimeRange time_range = 12;
+  google.protobuf.Timestamp time_start = 6; // Deprecated in favor of time_range
+  google.protobuf.Timestamp time_end = 7; // Deprecated in favor of time_range
   MetricsViewFilter filter = 8;
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   int64 offset = 10 [(validate.rules).int64.gte = 0];
@@ -272,7 +313,6 @@ message MetricsViewAggregationSort {
   bool desc = 2;
 }
 
-// Request message for QueryService.MetricsViewToplist
 message MetricsViewToplistRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
@@ -288,36 +328,39 @@ message MetricsViewToplistRequest {
   int32 priority = 11;
 }
 
-// Response message for QueryService.MetricsViewToplist
 message MetricsViewToplistResponse {
   repeated MetricsViewColumn meta = 1;
   repeated google.protobuf.Struct data = 2;
 }
 
-// Request message for QueryService.MetricsViewComparisonToplist
-message MetricsViewComparisonToplistRequest {
+// Request message for QueryService.MetricsViewComparison
+message MetricsViewComparisonRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
-  string dimension_name = 3 [(validate.rules).string.min_len = 1];
-  repeated string measure_names = 4;
-  repeated InlineMeasure inline_measures = 5;
-  TimeRange base_time_range = 6;
+  MetricsViewAggregationDimension dimension = 3;
+  repeated MetricsViewAggregationMeasure measures = 4;
+  repeated MetricsViewComparisonSort sort = 5;
+  TimeRange time_range = 6;
   TimeRange comparison_time_range = 7;
-  repeated MetricsViewComparisonSort sort = 8;
-  MetricsViewFilter filter = 9;
-  int64 limit = 10 [(validate.rules).int64.gte = 0];
-  int64 offset = 11 [(validate.rules).int64.gte = 0];
-  int32 priority = 12;
+  MetricsViewFilter filter = 8;
+  int64 limit = 9 [(validate.rules).int64.gte = 0];
+  int64 offset = 10 [(validate.rules).int64.gte = 0];
+  int32 priority = 11;
+  bool exact = 13;
 }
 
-// Response message for QueryService.MetricsViewComparisonToplist
-message MetricsViewComparisonToplistResponse {
+// Response message for QueryService.MetricsViewComparison
+message MetricsViewComparisonResponse {
   repeated MetricsViewComparisonRow rows = 1;
 }
 
 message TimeRange {
   google.protobuf.Timestamp start = 1;
   google.protobuf.Timestamp end = 2;
+  string iso_duration = 3;
+  string iso_offset = 4;
+  TimeGrain round_to_grain = 5;
+  string time_zone = 6;
 }
 
 enum MetricsViewComparisonSortType {
@@ -329,8 +372,8 @@ enum MetricsViewComparisonSortType {
 }
 
 message MetricsViewComparisonSort {
-  string measure_name = 1 [(validate.rules).string.min_len = 1];
-  bool ascending = 2;
+  string name = 1 [(validate.rules).string.min_len = 1];
+  bool desc = 2;
   MetricsViewComparisonSortType type = 3;
 }
 
@@ -347,7 +390,6 @@ message MetricsViewComparisonValue {
   google.protobuf.Value delta_rel = 5;
 }
 
-// Request message for QueryService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
@@ -361,13 +403,11 @@ message MetricsViewTimeSeriesRequest {
   int32 priority = 8;
 }
 
-// Response message for QueryService.MetricsViewTimeSeries
 message MetricsViewTimeSeriesResponse {
   repeated MetricsViewColumn meta = 1;
   repeated TimeSeriesValue data = 2;
 }
 
-// Request message for QueryService.MetricsViewTotals
 message MetricsViewTotalsRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
@@ -379,13 +419,11 @@ message MetricsViewTotalsRequest {
   int32 priority = 8;
 }
 
-// Response message for QueryService.MetricsViewTotals
 message MetricsViewTotalsResponse {
   repeated MetricsViewColumn meta = 1;
   google.protobuf.Struct data = 2;
 }
 
-// Request message for QueryService.MetricsViewRows
 message MetricsViewRowsRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
@@ -400,19 +438,16 @@ message MetricsViewRowsRequest {
   string time_zone = 11;
 }
 
-// Response message for QueryService.MetricsViewRows
 message MetricsViewRowsResponse {
   repeated MetricsViewColumn meta = 1;
   repeated google.protobuf.Struct data = 2;
 }
 
-// Sort clause for metrics view requests
 message MetricsViewSort {
   string name = 1 [(validate.rules).string.min_len = 1];
   bool ascending = 2;
 }
 
-// Filter clause for metrics view requests
 message MetricsViewFilter {
   message Cond {
     string name = 1;
@@ -423,14 +458,12 @@ message MetricsViewFilter {
   repeated Cond exclude = 3;
 }
 
-// MetricsViewColumn represents a column in a metrics view
 message MetricsViewColumn {
   string name = 1;
   string type = 2;
   bool nullable = 3;
 }
 
-// InlineMeasure is a measure to inject in a metrics view query that is not defined in the underlying MetricsView
 message InlineMeasure {
   string name = 1 [(validate.rules).string.min_len = 1];
   string expression = 2 [(validate.rules).string.min_len = 1];
@@ -463,7 +496,6 @@ message ColumnRollupIntervalResponse {
   TimeGrain interval = 3;
 }
 
-// Request for QueryService.ColumnTopK. Returns the top K values for a given column using agg function for table table_name.
 message ColumnTopKRequest {
   string instance_id = 1;
   string table_name = 2 [(validate.rules).string.min_len = 1];
@@ -477,7 +509,6 @@ message ColumnTopKResponse {
   CategoricalSummary categorical_summary = 1;
 }
 
-// Response for QueryService.ColumnTopK and QueryService.ColumnCardinality. Message will have either topK or cardinality set.
 message CategoricalSummary {
   oneof case {
     TopK top_k = 1;
@@ -493,7 +524,6 @@ message TopK {
   }
 }
 
-// Request for QueryService.ColumnNullCount. Returns the null count for a given column for table table_name
 message ColumnNullCountRequest {
   string instance_id = 1;
   string table_name = 2 [(validate.rules).string.min_len = 1];
@@ -501,12 +531,10 @@ message ColumnNullCountRequest {
   int32 priority = 4;
 }
 
-// Response for QueryService.ColumnNullCount
 message ColumnNullCountResponse {
   double count = 1;
 }
 
-// Request for QueryService.GetColumnDescriptiveStatisticsRequest. Returns the stats for a given column for table table_name
 message ColumnDescriptiveStatisticsRequest {
   string instance_id = 1;
   string table_name = 2 [(validate.rules).string.min_len = 1];
@@ -518,8 +546,6 @@ message ColumnDescriptiveStatisticsResponse {
   NumericSummary numeric_summary = 1;
 }
 
-// Response for QueryService.ColumnNumericHistogram, QueryService.ColumnDescriptiveStatistics and QueryService.ColumnCardinality.
-// Message will have either numericHistogramBins, numericStatistics or numericOutliers set.
 message NumericSummary {
   oneof case {
     NumericHistogramBins numeric_histogram_bins = 1;
@@ -539,7 +565,6 @@ message NumericHistogramBins {
   repeated Bin bins = 1;
 }
 
-// Response for QueryService.ColumnDescriptiveStatistics
 message NumericStatistics {
   double min = 1;
   double max = 2;
@@ -561,7 +586,6 @@ message NumericOutliers {
   repeated Outlier outliers = 1;
 }
 
-// Request for QueryService.ColumnTimeGrainRequest
 message ColumnTimeGrainRequest {
   string instance_id = 1;
   string table_name = 2 [(validate.rules).string.min_len = 1];
@@ -569,12 +593,10 @@ message ColumnTimeGrainRequest {
   int32 priority = 4;
 }
 
-// Response for QueryService.ColumnTimeGrain
 message ColumnTimeGrainResponse {
   TimeGrain time_grain = 1;
 }
 
-// Request for QueryService.ColumnNumericHistogram. Returns the histogram for a given column for table table_name
 message ColumnNumericHistogramRequest {
   string instance_id = 1;
   string table_name = 2 [(validate.rules).string.min_len = 1];
@@ -583,7 +605,6 @@ message ColumnNumericHistogramRequest {
   int32 priority = 5;
 }
 
-// Response for QueryService.ColumnNumericHistogram
 message ColumnNumericHistogramResponse {
   NumericSummary numeric_summary = 1;
 }
@@ -594,7 +615,6 @@ enum HistogramMethod {
   HISTOGRAM_METHOD_DIAGNOSTIC = 2;
 }
 
-// Request for QueryService.ColumnRugHistogram
 message ColumnRugHistogramRequest {
   string instance_id = 1;
   string table_name = 2 [(validate.rules).string.min_len = 1];
@@ -606,7 +626,6 @@ message ColumnRugHistogramResponse {
   NumericSummary numeric_summary = 1;
 }
 
-// Request for QueryService.ColumnTimeRange
 message ColumnTimeRangeRequest {
   string instance_id = 1;
   string table_name = 2 [(validate.rules).string.min_len = 1];
@@ -629,7 +648,6 @@ message TimeRangeSummary {
   Interval interval = 3;
 }
 
-// Request for QueryService.ColumnCardinality. Returns the cardinality for a given column for table table_name
 message ColumnCardinalityRequest {
   string instance_id = 1;
   string table_name = 2 [(validate.rules).string.min_len = 1];
@@ -721,61 +739,4 @@ message TableRowsRequest {
 
 message TableRowsResponse {
   repeated google.protobuf.Struct data = 1;
-}
-
-message QueryBatchEntry {
-  // Since response could out of order `key` is used to co-relate a specific response to request.
-  int32 key = 1;
-  oneof query {
-    MetricsViewAggregationRequest metrics_view_aggregation_request = 20;
-    MetricsViewToplistRequest metrics_view_toplist_request = 2;
-    MetricsViewComparisonToplistRequest metrics_view_comparison_toplist_request = 3;
-    MetricsViewTimeSeriesRequest metrics_view_time_series_request = 4;
-    MetricsViewTotalsRequest metrics_view_totals_request = 5;
-    MetricsViewRowsRequest metrics_view_rows_request = 6;
-    ColumnRollupIntervalRequest column_rollup_interval_request = 7;
-    ColumnTopKRequest column_top_k_request = 8;
-    ColumnNullCountRequest column_null_count_request = 9;
-    ColumnDescriptiveStatisticsRequest column_descriptive_statistics_request = 10;
-    ColumnTimeGrainRequest column_time_grain_request = 11;
-    ColumnNumericHistogramRequest column_numeric_histogram_request = 12;
-    ColumnRugHistogramRequest column_rug_histogram_request = 13;
-    ColumnTimeRangeRequest column_time_range_request = 14;
-    ColumnCardinalityRequest column_cardinality_request = 15;
-    ColumnTimeSeriesRequest column_time_series_request = 16;
-    TableCardinalityRequest table_cardinality_request = 17;
-    TableColumnsRequest table_columns_request = 18;
-    TableRowsRequest table_rows_request = 19;
-  }
-}
-
-message QueryBatchRequest {
-  string instance_id = 1;
-  repeated QueryBatchEntry queries = 3;
-}
-
-message QueryBatchResponse {
-  int32 key = 1;
-  string error = 2;
-  oneof result {
-    MetricsViewAggregationResponse metrics_view_aggregation_response = 21;
-    MetricsViewToplistResponse metrics_view_toplist_response = 3;
-    MetricsViewComparisonToplistResponse metrics_view_comparison_toplist_response = 4;
-    MetricsViewTimeSeriesResponse metrics_view_time_series_response = 5;
-    MetricsViewTotalsResponse metrics_view_totals_response = 6;
-    MetricsViewRowsResponse metrics_view_rows_response = 7;
-    ColumnRollupIntervalResponse column_rollup_interval_response = 8;
-    ColumnTopKResponse column_top_k_response = 9;
-    ColumnNullCountResponse column_null_count_response = 10;
-    ColumnDescriptiveStatisticsResponse column_descriptive_statistics_response = 11;
-    ColumnTimeGrainResponse column_time_grain_response = 12;
-    ColumnNumericHistogramResponse column_numeric_histogram_response = 13;
-    ColumnRugHistogramResponse column_rug_histogram_response = 14;
-    ColumnTimeRangeResponse column_time_range_response = 15;
-    ColumnCardinalityResponse column_cardinality_response = 16;
-    ColumnTimeSeriesResponse column_time_series_response = 17;
-    TableCardinalityResponse table_cardinality_response = 18;
-    TableColumnsResponse table_columns_response = 19;
-    TableRowsResponse table_rows_response = 20;
-  }
 }

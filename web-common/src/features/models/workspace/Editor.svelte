@@ -50,32 +50,22 @@
   } from "@codemirror/view";
   import { Debounce } from "@rilldata/web-common/features/models/utils/Debounce";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import {
-    createRuntimeServiceGetCatalogEntry,
-    createRuntimeServiceListCatalogEntries,
-    V1Model,
-  } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher, onMount } from "svelte";
   import { editorTheme } from "../../../components/editor/theme";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { useAllSourceColumns } from "../../sources/selectors";
 
-  export let modelName: string;
   export let content: string;
   export let editorHeight = 0;
   export let selections: SelectionRange[] = [];
   export let focusOnMount = false;
 
+  const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
   const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
   // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
-
-  $: getModel = createRuntimeServiceGetCatalogEntry(
-    $runtime.instanceId,
-    modelName
-  );
-  let model: V1Model;
-  $: model = $getModel?.data?.entry?.model;
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -93,43 +83,51 @@
 
   let autocompleteCompartment = new Compartment();
 
-  $: sourceCatalogsQuery = createRuntimeServiceListCatalogEntries(
-    $runtime.instanceId,
-    {
-      type: "OBJECT_TYPE_SOURCE",
-    }
-  );
-
-  let schema: { [table: string]: string[] };
-
-  /** Track embedded sources separately*/
-  let embeddedSources = [];
-  $: if ($sourceCatalogsQuery?.data?.entries) {
-    schema = {};
-    embeddedSources = [];
-    for (const sourceTable of $sourceCatalogsQuery.data.entries) {
-      const sourceIdentifier = sourceTable?.embedded
-        ? sourceTable?.source?.properties?.path
-        : sourceTable?.name;
-      if (sourceTable?.embedded) embeddedSources.push(sourceIdentifier);
-      schema[sourceIdentifier] =
-        sourceTable.source?.schema?.fields?.map((field) => field.name) ?? [];
-    }
-  }
-
+  // Autocomplete: SQL dialect
   const DuckDBSQL: SQLDialect = SQLDialect.define({
     keywords:
       "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then else end in cast left join on not desc asc sum union",
   });
 
+  // Autocomplete: source tables
+  let schema: { [table: string]: string[] };
+  $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
+  $: if ($allSourceColumns?.length) {
+    schema = {};
+    for (const sourceTable of $allSourceColumns) {
+      const sourceIdentifier = sourceTable?.tableName;
+      schema[sourceIdentifier] =
+        sourceTable.profileColumns?.map((c) => c.name) ?? [];
+    }
+  }
+
+  function getTableNameFromFromClause(
+    sql: string,
+    schema: { [table: string]: string[] }
+  ): string | null {
+    if (!sql || !schema) return null;
+
+    const fromMatch = sql.toUpperCase().match(/\bFROM\b\s+(\w+)/);
+    const tableName = fromMatch ? fromMatch[1] : null;
+
+    // Get the tableName from the schema map, so we can use the correct case
+    for (const schemaTableName of Object.keys(schema)) {
+      if (schemaTableName.toUpperCase() === tableName) {
+        return schemaTableName;
+      }
+    }
+
+    return null;
+  }
+
   function makeAutocompleteConfig(
     schema: { [table: string]: string[] },
-    _embeddedSources: string[]
+    defaultTable?: string
   ) {
     return autocompletion({
       override: [
         keywordCompletionSource(DuckDBSQL),
-        schemaCompletionSource({ schema }),
+        schemaCompletionSource({ schema, defaultTable }),
       ],
       icons: false,
     });
@@ -181,7 +179,7 @@
           bracketMatching(),
           closeBrackets(),
           autocompleteCompartment.of(
-            makeAutocompleteConfig(schema, embeddedSources)
+            makeAutocompleteConfig(schema, defaultTable)
           ), // a compartment makes the config dynamic
           rectangularSelection(),
           highlightActiveLine(),
@@ -257,12 +255,12 @@
 
   function updateAutocompleteSources(
     schema: { [table: string]: string[] },
-    embeddedSources
+    defaultTable?: string
   ) {
     if (editor) {
       editor.dispatch({
         effects: autocompleteCompartment.reconfigure(
-          makeAutocompleteConfig(schema, embeddedSources)
+          makeAutocompleteConfig(schema, defaultTable)
         ),
       });
     }
@@ -284,7 +282,8 @@
 
   // reactive statements to dynamically update the editor when inputs change
   $: updateEditorContents(content);
-  $: updateAutocompleteSources(schema, embeddedSources);
+  $: defaultTable = getTableNameFromFromClause(content, schema);
+  $: updateAutocompleteSources(schema, defaultTable);
   $: underlineSelection(selections || []);
 </script>
 
@@ -294,8 +293,8 @@
     class="editor-container h-full w-full overflow-x-auto"
   >
     <div
-      class="w-full overflow-x-auto h-full"
       bind:this={editorContainerComponent}
+      class="w-full overflow-x-auto h-full"
       on:click={() => {
         /** give the editor focus no matter where we click */
         if (!editor.hasFocus) editor.focus();

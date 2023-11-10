@@ -1,40 +1,37 @@
 <script lang="ts">
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
+  import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import Expand from "@rilldata/web-common/components/icons/Expand.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import { useDashboardStore } from "@rilldata/web-common/features/dashboards/dashboard-stores";
-  import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
-  import {
-    humanizeDataType,
-    FormatPreset,
-    nicelyFormattedTypesToNumberKind,
-  } from "@rilldata/web-common/features/dashboards/humanize-numbers";
-  import {
-    getFilterForDimension,
-    useMetaQuery,
-  } from "@rilldata/web-common/features/dashboards/selectors";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-  import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import {
-    createQueryServiceMetricsViewTimeSeries,
-    createQueryServiceMetricsViewToplist,
-    createQueryServiceMetricsViewTotals,
-    V1MetricsViewTimeSeriesResponse,
-  } from "@rilldata/web-common/runtime-client";
-  import type { CreateQueryResult } from "@tanstack/svelte-query";
-  import { getDimensionValueTimeSeries } from "./multiple-dimension-queries";
+    metricsExplorerStore,
+    useDashboardStore,
+  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+  import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
+  import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+  import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
+  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./MeasureChart.svelte";
   import MeasureZoom from "./MeasureZoom.svelte";
+  import type { DimensionDataItem } from "./multiple-dimension-queries";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
 
   export let metricViewName;
@@ -47,127 +44,69 @@
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
 
-  const timeControlsStore = useTimeControlStore(getStateManagers());
+  $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
 
-  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
+  const timeControlsStore = useTimeControlStore(getStateManagers());
+  const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
+
+  $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
   $: showComparison = !comparisonDimension && $timeControlsStore.showComparison;
   $: interval =
     $timeControlsStore.selectedTimeRange?.interval ??
     $timeControlsStore.minTimeGrain;
+  $: isScrubbing = $dashboardStore?.selectedScrubRange?.isScrubbing;
 
-  $: totalsQuery = createQueryServiceMetricsViewTotals(
-    $runtime.instanceId,
-    metricViewName,
-    {
-      measureNames: selectedMeasureNames,
-      timeStart: $timeControlsStore.timeStart,
-      timeEnd: $timeControlsStore.timeEnd,
-      filter: $dashboardStore?.filters,
-    },
-    {
-      query: {
-        enabled:
-          selectedMeasureNames?.length > 0 &&
-          $timeControlsStore.ready &&
-          !!$dashboardStore?.filters,
-      },
-    }
-  );
-
-  $: totalsComparisonQuery = createQueryServiceMetricsViewTotals(
-    instanceId,
-    metricViewName,
-    {
-      measureNames: selectedMeasureNames,
-      timeStart: $timeControlsStore.comparisonTimeStart,
-      timeEnd: $timeControlsStore.comparisonTimeEnd,
-      filter: $dashboardStore?.filters,
-    },
-    {
-      query: {
-        enabled: Boolean(showComparison && !!$dashboardStore?.filters),
-      },
-    }
-  );
-
-  // get the totalsComparisons.
-  $: totalsComparisons = $totalsComparisonQuery?.data?.data;
-
-  let timeSeriesQuery: CreateQueryResult<
-    V1MetricsViewTimeSeriesResponse,
-    Error
-  >;
-
-  let timeSeriesComparisonQuery: CreateQueryResult<
-    V1MetricsViewTimeSeriesResponse,
-    Error
-  >;
-
-  let includedValues;
-  let allDimQuery;
-
-  $: if (
-    $dashboardStore &&
-    metaQuery &&
-    $metaQuery.isSuccess &&
-    !$metaQuery.isRefetching &&
-    $timeControlsStore.ready
-  ) {
-    timeSeriesQuery = createQueryServiceMetricsViewTimeSeries(
-      instanceId,
-      metricViewName,
-      {
-        measureNames: selectedMeasureNames,
-        filter: $dashboardStore?.filters,
-        timeStart: $timeControlsStore.adjustedStart,
-        timeEnd: $timeControlsStore.adjustedEnd,
-        timeGranularity: interval,
-        timeZone: $dashboardStore?.selectedTimezone,
-      }
-    );
-    if (showComparison) {
-      timeSeriesComparisonQuery = createQueryServiceMetricsViewTimeSeries(
-        instanceId,
-        metricViewName,
-        {
-          measureNames: selectedMeasureNames,
-          filter: $dashboardStore?.filters,
-          timeStart: $timeControlsStore.comparisonAdjustedStart,
-          timeEnd: $timeControlsStore.comparisonAdjustedEnd,
-          timeGranularity: interval,
-          timeZone: $dashboardStore?.selectedTimezone,
-        }
+  // List of measures which will be shown on the dashboard
+  let renderedMeasures = [];
+  $: {
+    if (expandedMeasureName) {
+      renderedMeasures = $metaQuery.data?.measures.filter(
+        (measure) => measure.name === expandedMeasureName
+      );
+    } else {
+      renderedMeasures = $metaQuery.data?.measures.filter(
+        (_, i) => $showHideMeasures.selectedItems[i]
       );
     }
   }
+
+  $: totals = $timeSeriesDataStore.total;
+  $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
+
+  // Track the big number currently being hovered
+  let hoveredMeasure;
+
+  let scrubStart;
+  let scrubEnd;
+
+  let mouseoverValue = undefined;
+  let startValue: Date;
+  let endValue: Date;
 
   // When changing the timeseries query and the cache is empty, $timeSeriesQuery.data?.data is
   // temporarily undefined as results are fetched.
   // To avoid unmounting TimeSeriesBody, which would cause us to lose our tween animations,
   // we make a copy of the data that avoids `undefined` transition states.
   // TODO: instead, try using svelte-query's `keepPreviousData = True` option.
+
   let dataCopy;
-  let dataComparisonCopy;
-
-  $: if ($timeSeriesQuery?.data?.data) {
-    dataCopy = $timeSeriesQuery.data.data;
+  let dimensionDataCopy: DimensionDataItem[] = [];
+  $: if ($timeSeriesDataStore?.timeSeriesData) {
+    dataCopy = $timeSeriesDataStore.timeSeriesData;
   }
-  $: if ($timeSeriesComparisonQuery?.data?.data)
-    dataComparisonCopy = $timeSeriesComparisonQuery.data.data;
+  $: formattedData = dataCopy;
 
-  // formattedData adjusts the data to account for Javascript's handling of timezones
-  let formattedData;
-  let scrubStart;
-  let scrubEnd;
-  $: if (dataCopy && dataCopy?.length) {
-    formattedData = prepareTimeSeries(
-      dataCopy,
-      dataComparisonCopy,
-      TIME_GRAIN[interval].duration,
-      $dashboardStore.selectedTimezone
-    );
+  $: if (
+    $timeSeriesDataStore?.dimensionChartData?.length ||
+    !comparisonDimension
+  ) {
+    dimensionDataCopy = $timeSeriesDataStore.dimensionChartData;
+  }
+  $: dimensionData = dimensionDataCopy;
 
+  // FIXME: move this logic to a function + write tests.
+  $: if ($timeControlsStore.ready) {
     // adjust scrub values for Javascript's timezone changes
     scrubStart = adjustOffsetForZone(
       $dashboardStore?.selectedScrubRange?.start,
@@ -177,107 +116,72 @@
       $dashboardStore?.selectedScrubRange?.end,
       $dashboardStore?.selectedTimezone
     );
-  }
 
-  let mouseoverValue = undefined;
-  let startValue: Date;
-  let endValue: Date;
+    const slicedData =
+      $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
+        ? formattedData?.slice(1)
+        : formattedData?.slice(1, -1);
+    chartInteractionColumn.update((state) => {
+      const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
 
-  // FIXME: move this logic to a function + write tests.
-  $: if ($timeControlsStore.ready) {
+      const startPos = bisectData(
+        start,
+        "center",
+        "ts_position",
+        slicedData,
+        true
+      );
+      const endPos = bisectData(end, "center", "ts_position", slicedData, true);
+
+      return {
+        hover: isScrubbing ? undefined : state.hover,
+        scrubStart: startPos,
+        scrubEnd: endPos,
+      };
+    });
+
     const adjustedChartValue = getAdjustedChartTime(
       $timeControlsStore.selectedTimeRange?.start,
       $timeControlsStore.selectedTimeRange?.end,
       $dashboardStore?.selectedTimezone,
       interval,
-      $timeControlsStore.selectedTimeRange?.name
+      $timeControlsStore.selectedTimeRange?.name,
+      $metaQuery.data.defaultTimeRange
     );
 
     startValue = adjustedChartValue?.start;
     endValue = adjustedChartValue?.end;
   }
 
-  let topListQuery;
-  $: if (comparisonDimension && $timeControlsStore.ready) {
-    const dimensionFilters = $dashboardStore.filters.include.filter(
-      (filter) => filter.name === comparisonDimension
-    );
-    if (dimensionFilters) {
-      includedValues = dimensionFilters[0]?.in.slice(0, 7) || [];
-    }
-
-    if (includedValues.length === 0) {
-      // TODO: Create a central store for topList
-      // Fetch top values for the dimension
-      const filterForDimension = getFilterForDimension(
-        $dashboardStore?.filters,
-        comparisonDimension
-      );
-      topListQuery = createQueryServiceMetricsViewToplist(
-        $runtime.instanceId,
-        metricViewName,
-        {
-          dimensionName: comparisonDimension,
-          measureNames: [$dashboardStore?.leaderboardMeasureName],
-          timeStart: $timeControlsStore.timeStart,
-          timeEnd: $timeControlsStore.timeEnd,
-          filter: filterForDimension,
-          limit: "250",
-          offset: "0",
-          sort: [
-            {
-              name: $dashboardStore?.leaderboardMeasureName,
-              ascending:
-                $dashboardStore.sortDirection === SortDirection.ASCENDING,
-            },
-          ],
-        },
-        {
-          query: {
-            enabled: $timeControlsStore.ready && !!filterForDimension,
-          },
-        }
-      );
-    }
-  }
-
   $: if (
-    includedValues?.length ||
-    (topListQuery && !$topListQuery?.isFetching)
+    expandedMeasureName &&
+    formattedData &&
+    $timeControlsStore.selectedTimeRange &&
+    !isScrubbing
   ) {
-    let filters = $dashboardStore.filters;
-
-    // Handle case when there are no included filters for the dimension
-    if (!includedValues?.length) {
-      const columnName = $topListQuery?.data?.meta[0]?.name;
-      const topListValues = $topListQuery?.data?.data.map((d) => d[columnName]);
-
-      const computedFilter = getFilterForComparedDimension(
-        comparisonDimension,
-        $dashboardStore?.filters,
-        topListValues
+    if (!mouseoverValue?.x) {
+      chartInteractionColumn.update((state) => ({
+        ...state,
+        hover: undefined,
+      }));
+    } else {
+      const columnNum = bisectData(
+        mouseoverValue.x,
+        "center",
+        "ts_position",
+        $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
+          ? formattedData?.slice(1)
+          : formattedData?.slice(1, -1),
+        true
       );
-      filters = computedFilter?.updatedFilter;
-      includedValues = computedFilter?.includedValues;
+
+      if ($chartInteractionColumn?.hover !== columnNum)
+        chartInteractionColumn.update((state) => ({
+          ...state,
+          hover: columnNum,
+        }));
     }
-
-    allDimQuery = getDimensionValueTimeSeries(
-      includedValues,
-      instanceId,
-      metricViewName,
-      comparisonDimension,
-      selectedMeasureNames,
-      filters,
-      $timeControlsStore.adjustedStart,
-      $timeControlsStore.adjustedEnd,
-      interval,
-      $dashboardStore?.selectedTimezone
-    );
   }
-
-  $: dimensionData = comparisonDimension ? $allDimQuery : [];
-
-  $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
 
   const toggleMeasureVisibility = (e) => {
     showHideMeasures.toggleVisibility(e.detail.name);
@@ -290,26 +194,32 @@
   };
 </script>
 
-<TimeSeriesChartContainer end={endValue} start={startValue} {workspaceWidth}>
-  <div class="bg-white sticky top-0 flex pl-1" style="z-index:100">
-    <SeachableFilterButton
-      label="Measures"
-      on:deselect-all={setAllMeasuresNotVisible}
-      on:item-clicked={toggleMeasureVisibility}
-      on:select-all={setAllMeasuresVisible}
-      selectableItems={$showHideMeasures.selectableItems}
-      selectedItems={$showHideMeasures.selectedItems}
-      tooltipText="Choose measures to display"
-    />
+<TimeSeriesChartContainer
+  enableFullWidth={Boolean(expandedMeasureName)}
+  end={endValue}
+  start={startValue}
+  {workspaceWidth}
+>
+  <div class="bg-white sticky top-0 flex pl-1 z-10">
+    {#if expandedMeasureName}
+      <BackToOverview {metricViewName} />
+    {:else}
+      <SeachableFilterButton
+        label="Measures"
+        on:deselect-all={setAllMeasuresNotVisible}
+        on:item-clicked={toggleMeasureVisibility}
+        on:select-all={setAllMeasuresVisible}
+        selectableItems={$showHideMeasures.selectableItems}
+        selectedItems={$showHideMeasures.selectedItems}
+        tooltipText="Choose measures to display"
+      />
+    {/if}
   </div>
-  <div
-    class="bg-white sticky left-0 top-0 overflow-visible"
-    style="z-index:101"
-  >
+  <div class="bg-white sticky left-0 top-0 overflow-visible z-10">
     <!-- top axis element -->
     <div />
     <MeasureZoom {metricViewName} />
-    {#if $dashboardStore?.selectedTimeRange}
+    {#if $dashboardStore?.selectedTimeRange && startValue && endValue}
       <SimpleDataGraphic
         height={26}
         overflowHidden={false}
@@ -323,72 +233,89 @@
     {/if}
   </div>
   <!-- bignumbers and line charts -->
-  {#if $metaQuery.data?.measures}
+  {#if renderedMeasures.length}
     <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
-    {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure (measure.name)}
+    {#each renderedMeasures as measure (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
-      {@const bigNum = $totalsQuery?.data?.data?.[measure.name]}
+      {@const bigNum = totals?.[measure.name]}
+      {@const isBeingHovered =
+        !expandedMeasureName && hoveredMeasure === measure.name}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
       {@const comparisonPercChange =
         comparisonValue && bigNum !== undefined && bigNum !== null
           ? (bigNum - comparisonValue) / comparisonValue
           : undefined}
-      {@const formatPreset =
-        FormatPreset[measure?.format] || FormatPreset.HUMANIZE}
-      <!-- FIXME: I can't select a time series by measure id. -->
       <MeasureBigNumber
+        bind:hoveredMeasure
+        {measure}
         value={bigNum}
+        isMeasureExpanded={!!expandedMeasureName}
         {showComparison}
         comparisonOption={$timeControlsStore?.selectedComparisonTimeRange?.name}
         {comparisonValue}
         {comparisonPercChange}
-        description={measure?.description ||
-          measure?.label ||
-          measure?.expression}
-        formatPreset={measure?.format}
-        status={$totalsQuery?.isFetching
+        status={$timeSeriesDataStore?.isFetching
           ? EntityStatus.Running
           : EntityStatus.Idle}
+        on:expand-measure={() => {
+          metricsExplorerStore.setExpandedMeasureName(
+            metricViewName,
+            measure.name
+          );
+        }}
+      />
+
+      <div
+        class="time-series-body rounded {isBeingHovered ? 'bg-gray-100' : ''}"
+        style:height="125px"
       >
-        <svelte:fragment slot="name">
-          {measure?.label || measure?.expression}
-        </svelte:fragment>
-      </MeasureBigNumber>
-      <div class="time-series-body" style:height="125px">
-        {#if $timeSeriesQuery?.isError}
+        {#if $timeSeriesDataStore?.isError}
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
-          <MeasureChart
-            bind:mouseoverValue
-            isScrubbing={$dashboardStore?.selectedScrubRange?.isScrubbing}
-            {scrubStart}
-            {scrubEnd}
-            {metricViewName}
-            data={formattedData}
-            {dimensionData}
-            zone={$dashboardStore?.selectedTimezone}
-            xAccessor="ts_position"
-            labelAccessor="ts"
-            timeGrain={interval}
-            yAccessor={measure.name}
-            xMin={startValue}
-            xMax={endValue}
-            {showComparison}
-            mouseoverTimeFormat={(value) => {
-              /** format the date according to the time grain */
-              return new Date(value).toLocaleDateString(
-                undefined,
-                TIME_GRAIN[interval].formatDate
-              );
-            }}
-            numberKind={nicelyFormattedTypesToNumberKind(measure?.format)}
-            mouseoverFormat={(value) =>
-              formatPreset === FormatPreset.NONE
-                ? `${value}`
-                : humanizeDataType(value, measure?.format)}
-          />
+          <div class="relative">
+            <MeasureChart
+              bind:mouseoverValue
+              {measure}
+              {isScrubbing}
+              {scrubStart}
+              {scrubEnd}
+              {metricViewName}
+              data={formattedData}
+              {dimensionData}
+              zone={$dashboardStore?.selectedTimezone}
+              xAccessor="ts_position"
+              labelAccessor="ts"
+              timeGrain={interval}
+              yAccessor={measure.name}
+              xMin={startValue}
+              xMax={endValue}
+              {showComparison}
+              mouseoverTimeFormat={(value) => {
+                /** format the date according to the time grain */
+                return new Date(value).toLocaleDateString(
+                  undefined,
+                  TIME_GRAIN[interval].formatDate
+                );
+              }}
+            />
+
+            {#if isBeingHovered}
+              <Tooltip active={isBeingHovered} distance={4} location="right">
+                <TooltipContent slot="tooltip-content" maxWidth="280px">
+                  <TooltipShortcutContainer>
+                    <div>Expand Measure</div>
+                    <Shortcut>Click</Shortcut>
+                  </TooltipShortcutContainer>
+                </TooltipContent>
+
+                <div class="absolute right-0 top-0 p-2">
+                  <Expand />
+                </div>
+              </Tooltip>
+            {/if}
+          </div>
         {:else}
-          <div>
+          <div class="flex items-center justify-center w-24">
             <Spinner status={EntityStatus.Running} />
           </div>
         {/if}
