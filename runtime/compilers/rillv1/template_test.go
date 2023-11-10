@@ -18,7 +18,7 @@ func TestAnalyze(t *testing.T) {
 			name:     "no template",
 			template: `SELECT * FROM foo`,
 			want: &TemplateMetadata{
-				Variables:                map[string][]string{},
+				Variables:                []string{},
 				UsesTemplating:           false,
 				ResolvedWithPlaceholders: `SELECT * FROM foo`,
 			},
@@ -28,7 +28,7 @@ func TestAnalyze(t *testing.T) {
 			template: `SELECT * FROM {{ ref "foo" }}`,
 			want: &TemplateMetadata{
 				Refs:                     []ResourceName{{Name: "foo"}},
-				Variables:                map[string][]string{},
+				Variables:                []string{},
 				UsesTemplating:           true,
 				ResolvedWithPlaceholders: `SELECT * FROM <no value>`,
 			},
@@ -38,7 +38,7 @@ func TestAnalyze(t *testing.T) {
 			template: `{{ configure "a" "b" }}SELECT * FROM foo`,
 			want: &TemplateMetadata{
 				Config:                   map[string]any{"a": "b"},
-				Variables:                map[string][]string{},
+				Variables:                []string{},
 				UsesTemplating:           true,
 				ResolvedWithPlaceholders: `SELECT * FROM foo`,
 			},
@@ -49,7 +49,7 @@ func TestAnalyze(t *testing.T) {
 			want: &TemplateMetadata{
 				Refs:                     []ResourceName{{Name: "bar"}, {Kind: ResourceKindModel, Name: "foo"}, {Name: "baz"}},
 				Config:                   map[string]any{"a": "b", "c": "d", "e": "f"},
-				Variables:                map[string][]string{"env": {"world"}},
+				Variables:                []string{"env.world"},
 				UsesTemplating:           true,
 				ResolvedWithPlaceholders: `SELECT * FROM <no value> WHERE hello='<no value>' AND world='<no value>'`,
 			},
@@ -60,7 +60,7 @@ func TestAnalyze(t *testing.T) {
 			want: &TemplateMetadata{
 				Refs:                     []ResourceName{},
 				Config:                   map[string]any{},
-				Variables:                map[string][]string{"env": {"partner_table_name", "partner_table_name"}, "user": {"domain"}},
+				Variables:                []string{"env.partner_table_name", "user.domain"},
 				UsesTemplating:           true,
 				ResolvedWithPlaceholders: `SELECT * FROM <no value> WITH SAMPLING <no value> .... <no value>`,
 			},

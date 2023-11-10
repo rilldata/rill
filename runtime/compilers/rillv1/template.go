@@ -3,7 +3,6 @@ package rillv1
 import (
 	"bytes"
 	"fmt"
-	"strings"
 	"text/template"
 	"text/template/parse"
 
@@ -62,7 +61,7 @@ type TemplateResource struct {
 type TemplateMetadata struct {
 	Refs                     []ResourceName
 	Config                   map[string]any
-	Variables                map[string][]string
+	Variables                []string
 	UsesTemplating           bool
 	ResolvedWithPlaceholders string
 }
@@ -147,7 +146,6 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 
 	variables, err := ExtractVariablesFromTemplate(t.Tree)
 	if err != nil {
-		fmt.Printf("failed to extract variables from template: %v\n", err)
 		return nil, err
 	}
 
@@ -287,26 +285,16 @@ func EvaluateBoolExpression(expr string) (bool, error) {
 	return result, nil
 }
 
-func ExtractVariablesFromTemplate(tree *parse.Tree) (map[string][]string, error) {
-	var variables []string
+func ExtractVariablesFromTemplate(tree *parse.Tree) ([]string, error) {
+	variablesMap := make(map[string]bool)
 	walkNodes(tree.Root, func(n parse.Node) {
 		if vn, ok := n.(*parse.FieldNode); ok {
-			variables = append(variables, joinIdentifiers(vn.Ident))
+			v := joinIdentifiers(vn.Ident)
+			variablesMap[v] = true
 		}
 	})
 
-	variablesMap := make(map[string][]string)
-	// Iterate through the variables and split them into key and value and add them to the map
-	for _, variable := range variables {
-		// Split the variable into parts using dot (.) as the separator
-		parts := strings.Split(variable, ".")
-		key := parts[0]
-		value := parts[1]
-
-		variablesMap[key] = append(variablesMap[key], value)
-	}
-
-	return variablesMap, nil
+	return maps.Keys(variablesMap), nil
 }
 
 func walkNodes(node parse.Node, fn func(n parse.Node)) {
@@ -326,6 +314,8 @@ func walkNodes(node parse.Node, fn func(n parse.Node)) {
 		for _, arg := range n.Args {
 			walkNodes(arg, fn)
 		}
+	default:
+		return
 	}
 }
 
