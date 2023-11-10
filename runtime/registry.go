@@ -275,6 +275,12 @@ func (r *registryCache) edit(ctx context.Context, inst *drivers.Instance, restar
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	// use saved instance to populate the cache
+	inst, err = r.store.FindInstance(ctx, inst.ID)
+	if err != nil {
+		return err
+	}
+
 	iwc, ok := r.instances[inst.ID]
 	if !ok {
 		return fmt.Errorf("instance %q not found", inst.ID)
