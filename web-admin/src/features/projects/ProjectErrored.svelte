@@ -7,8 +7,8 @@
   export let organization: string;
   export let project: string;
 
-  function handleViewProjectLogs() {
-    goto(`/${organization}/${project}/-/logs`);
+  function handleViewProjectStatus() {
+    goto(`/${organization}/${project}/-/status`);
   }
 
   function handleViewProject() {
@@ -25,7 +25,7 @@
     <p class="text-gray-500 text-base">
       <ProjectAccessControls {organization} {project}>
         <svelte:fragment slot="manage-project">
-          View project logs for errors that may help you find a fix.
+          View project status for errors that may help you find a fix.
         </svelte:fragment>
         <svelte:fragment slot="read-project">
           Contact your project's admin for help.
@@ -35,8 +35,8 @@
   </div>
   <ProjectAccessControls {organization} {project}>
     <svelte:fragment slot="manage-project">
-      <CtaButton variant="primary-outline" on:click={handleViewProjectLogs}
-        >View project logs
+      <CtaButton variant="primary-outline" on:click={handleViewProjectStatus}
+        >View project status
       </CtaButton>
     </svelte:fragment>
     <svelte:fragment slot="read-project">

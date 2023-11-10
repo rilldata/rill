@@ -55,7 +55,7 @@
                     <svelte:fragment slot="manage-project">
                       <span class="text-xs">
                         This dashboard has an error. Please check the project
-                        logs.
+                        status.
                       </span>
                     </svelte:fragment>
                     <svelte:fragment slot="read-project">

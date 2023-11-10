@@ -8,7 +8,7 @@ export function isProjectPage(page: Page): boolean {
   return (
     page.route.id === "/[organization]/[project]" ||
     page.route.id === "/[organization]/[project]/-/reports" ||
-    page.route.id === "/[organization]/[project]/-/logs"
+    page.route.id === "/[organization]/[project]/-/status"
   );
 }
 export function isDashboardPage(page: Page): boolean {

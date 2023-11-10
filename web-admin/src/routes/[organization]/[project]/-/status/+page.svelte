@@ -1,8 +1,8 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import ProjectDeploymentLogs from "@rilldata/web-admin/features/projects/ProjectDeploymentLogs.svelte";
   import ProjectDeploymentStatus from "@rilldata/web-admin/features/projects/ProjectDeploymentStatus.svelte";
   import ProjectGithubConnection from "@rilldata/web-admin/features/projects/ProjectGithubConnection.svelte";
+  import ProjectParseErrors from "@rilldata/web-admin/features/projects/ProjectParseErrors.svelte";
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
 
   $: organization = $page.params.organization;
@@ -15,6 +15,6 @@
       <ProjectDeploymentStatus {organization} {project} />
       <ProjectGithubConnection {organization} {project} />
     </div>
-    <ProjectDeploymentLogs {organization} {project} />
+    <ProjectParseErrors {organization} {project} />
   </div>
 </VerticalScrollContainer>

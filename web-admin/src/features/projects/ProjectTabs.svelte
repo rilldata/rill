@@ -26,8 +26,8 @@
         ];
         const adminTabs = [
           {
-            route: `/${organization}/${project}/-/logs`,
-            label: "Logs",
+            route: `/${organization}/${project}/-/status`,
+            label: "Status",
           },
         ];
 
@@ -75,7 +75,7 @@
         {#each tabs as tab}
           <Tab>
             {tab.label}
-            {#if tab.label === "Logs"}
+            {#if tab.label === "Status"}
               <ProjectDeploymentStatusChip
                 {organization}
                 {project}

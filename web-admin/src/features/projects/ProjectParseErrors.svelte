@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getProjectErrors } from "@rilldata/web-admin/features/projects/getProjectErrors";
-  import Logs from "@rilldata/web-common/components/icons/Logs.svelte";
+  import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { Readable } from "svelte/store";
@@ -27,14 +27,14 @@
   <div
     class="px-12 py-2 font-semibold text-gray-500 uppercase text-[10px] leading-none border-b border-gray-200"
   >
-    Logs
+    Errors
   </div>
-  <!-- Logs -->
+  <!-- Parse errors -->
   {#if $proj.isSuccess}
     {#if !$errors || $errors.length === 0}
       <div class="flex flex-col items-center gap-y-4 mt-40">
-        <Logs size="48px" className="text-slate-300" />
-        <div class="font-semibold text-gray-600">No logs</div>
+        <CheckCircle size="48px" className="text-slate-300" />
+        <div class="font-semibold text-gray-600">No errors</div>
       </div>
     {:else}
       <ul>
