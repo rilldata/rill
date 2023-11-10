@@ -68,7 +68,7 @@ type App struct {
 	activity              activity.Client
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
 	// Setup logger
 	logger, cleanupFn := initLogger(verbose, logFormat)
 	sugarLogger := logger.Sugar()
@@ -213,15 +213,6 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		activity:              client,
 	}
 
-	// Wait for the initial reconcile
-	if isInit {
-		err = app.AwaitInitialReconcile(strict)
-		if err != nil {
-			app.Close()
-			return nil, fmt.Errorf("reconcile project: %w", err)
-		}
-	}
-
 	return app, nil
 }
 
@@ -242,80 +233,6 @@ func (a *App) Close() error {
 	}
 
 	a.loggerCleanUp()
-	return nil
-}
-
-func (a *App) AwaitInitialReconcile(strict bool) (err error) {
-	defer func() {
-		if a.Context.Err() != nil {
-			a.Logger.Errorf("Hydration canceled")
-			err = nil
-		}
-	}()
-
-	controller, err := a.Runtime.Controller(a.Context, a.Instance.ID)
-	if err != nil {
-		return err
-	}
-
-	// We need to do some extra work to ensure we don't return until all resources have been reconciled.
-	// We can't call WaitUntilIdle until the parser has initially parsed and created the resources for the project.
-	// We know the global project parser is created immediately, and should only be IDLE initially or if a fatal error occurs with the watcher.
-	// So we poll for it's state to transition to Watching.
-	start := time.Now()
-	for {
-		if a.Context.Err() != nil {
-			return nil
-		}
-
-		if time.Since(start) >= 5*time.Second {
-			// Starting the watcher should take just a few ms. This is just meant to serve as an extra safety net in case something goes wrong.
-			return fmt.Errorf("timed out waiting for project parser to start watching")
-		}
-
-		r, err := controller.Get(a.Context, runtime.GlobalProjectParserName, false)
-		if err != nil {
-			return fmt.Errorf("could not find project parser: %w", err)
-		}
-
-		if r.Meta.ReconcileStatus == runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE && r.Meta.ReconcileError != "" {
-			return fmt.Errorf("parser failed: %s", r.Meta.ReconcileError)
-		}
-
-		if r.GetProjectParser().State.Watching {
-			break
-		}
-
-		time.Sleep(100 * time.Millisecond)
-	}
-
-	err = a.Runtime.WaitUntilIdle(a.Context, a.Instance.ID, true)
-	if err != nil {
-		return err
-	}
-
-	rs, err := controller.List(a.Context, "", false)
-	if err != nil {
-		return err
-	}
-
-	hasError := false
-	for _, r := range rs {
-		if r.Meta.ReconcileError != "" {
-			hasError = true
-			break
-		}
-	}
-
-	if hasError {
-		a.Logger.Named("console").Errorf("Hydration failed")
-		if strict {
-			return fmt.Errorf("strict mode exit")
-		}
-	} else {
-		a.Logger.Named("console").Infof("Hydration completed!")
-	}
-
 	return nil
 }
 

@@ -7,13 +7,22 @@
     createQueryServiceExport,
     V1ExportFormat,
   } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { onMount, SvelteComponent } from "svelte";
+  import { get } from "svelte/store";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
+  import { getQuerySortType } from "../leaderboard/leaderboard-utils";
+  import { SortDirection } from "../proto-state/derived-types";
+  import { useDashboardStore } from "../stores/dashboard-stores";
   import exportToplist from "./export-toplist";
 
+  export let includeScheduledReport: boolean;
   export let metricViewName: string;
 
   let exportMenuOpen = false;
+  let showScheduledReportDialog = false;
 
+  const dashboardStore = useDashboardStore(metricViewName);
   const timeControlStore = useTimeControlStore(getStateManagers());
 
   const exportDash = createQueryServiceExport();
@@ -25,6 +34,45 @@
       timeControlStore,
     });
   };
+
+  // Only import the Scheduled Report modal if in the Cloud context
+  // This ensures Rill Developer doesn't try and fail to import the admin-client
+  let CreateScheduledReportModal: typeof SvelteComponent | undefined;
+  onMount(async () => {
+    if (includeScheduledReport) {
+      CreateScheduledReportModal = (
+        await import("../scheduled-reports/CreateScheduledReportModal.svelte")
+      ).default;
+    }
+  });
+
+  $: scheduledReportsQueryArgsJson = JSON.stringify({
+    instanceId: get(runtime).instanceId,
+    metricsViewName: metricViewName,
+    dimension: {
+      name: $dashboardStore.selectedDimensionName,
+    },
+    measures: $dashboardStore.selectedMeasureNames.map((name) => ({
+      name: name,
+    })),
+    timeRange: {
+      start: $timeControlStore.timeStart,
+      end: $timeControlStore.timeEnd,
+    },
+    comparisonTimeRange: {
+      start: $timeControlStore.comparisonTimeStart,
+      end: $timeControlStore.comparisonTimeEnd,
+    },
+    sort: [
+      {
+        name: $dashboardStore.leaderboardMeasureName,
+        desc: $dashboardStore.sortDirection === SortDirection.DESCENDING,
+        type: getQuerySortType($dashboardStore.dashboardSortType),
+      },
+    ],
+    filter: $dashboardStore.filters,
+    offset: "0",
+  });
 </script>
 
 <WithTogglableFloatingElement
@@ -78,5 +126,25 @@
     >
       Export as XLSX
     </MenuItem>
+    {#if includeScheduledReport}
+      <MenuItem
+        on:select={() => {
+          toggleFloatingElement();
+          showScheduledReportDialog = true;
+        }}
+      >
+        Create scheduled report...
+      </MenuItem>
+    {/if}
   </Menu>
 </WithTogglableFloatingElement>
+
+{#if includeScheduledReport && CreateScheduledReportModal}
+  <svelte:component
+    this={CreateScheduledReportModal}
+    queryName="MetricsViewComparison"
+    queryArgsJson={scheduledReportsQueryArgsJson}
+    open={showScheduledReportDialog}
+    on:close={() => (showScheduledReportDialog = false)}
+  />
+{/if}

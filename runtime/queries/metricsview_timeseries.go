@@ -175,7 +175,13 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		start = addTo(t, q.TimeGranularity, tz)
 	}
 	if q.TimeEnd != nil && nullRecords != nil {
-		data = addNulls(data, nullRecords, start, q.TimeEnd.AsTime(), q.TimeGranularity, tz)
+		if start.Equal(zeroTime) && q.TimeStart != nil {
+			start = q.TimeStart.AsTime()
+		}
+
+		if !start.Equal(zeroTime) {
+			data = addNulls(data, nullRecords, start, q.TimeEnd.AsTime(), q.TimeGranularity, tz)
+		}
 	}
 
 	meta := structTypeToMetricsViewColumn(rows.Schema)

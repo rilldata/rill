@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -67,6 +68,7 @@
           tableName,
           getFilePathFromNameAndType(tableName, EntityType.Table)
         );
+        goto(`/source/${tableName}`);
       } catch (err) {
         console.error(err);
       }

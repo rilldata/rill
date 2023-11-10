@@ -8,8 +8,9 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Forward from "@rilldata/web-common/components/icons/Forward.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
+  import { createExportTableMutation } from "@rilldata/web-common/features/models/workspace/export-table";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
+  import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
 
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -24,11 +25,16 @@
 
   export let collapse = false;
 
-  const onExport = async (exportExtension: "csv" | "parquet") => {
-    // TODO: how do we handle errors ?
-    window.open(
-      `${RuntimeUrl}/v1/instances/${$runtime.instanceId}/table/${modelName}/export/${exportExtension}`
-    );
+  const exportModelMutation = createExportTableMutation();
+
+  const onExport = async (format: V1ExportFormat) => {
+    return $exportModelMutation.mutateAsync({
+      data: {
+        instanceId: $runtime.instanceId,
+        format,
+        tableName: modelName,
+      },
+    });
   };
 </script>
 
@@ -66,7 +72,7 @@
       <MenuItem
         on:select={() => {
           toggleFloatingElement();
-          onExport("parquet");
+          onExport(V1ExportFormat.EXPORT_FORMAT_PARQUET);
         }}
       >
         Export as Parquet
@@ -74,10 +80,18 @@
       <MenuItem
         on:select={() => {
           toggleFloatingElement();
-          onExport("csv");
+          onExport(V1ExportFormat.EXPORT_FORMAT_CSV);
         }}
       >
         Export as CSV
+      </MenuItem>
+      <MenuItem
+        on:select={() => {
+          toggleFloatingElement();
+          onExport(V1ExportFormat.EXPORT_FORMAT_XLSX);
+        }}
+      >
+        Export as XLSX
       </MenuItem>
     </Menu>
   </WithTogglableFloatingElement>

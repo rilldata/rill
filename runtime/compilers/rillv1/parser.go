@@ -626,11 +626,14 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 			}
 		}
 
-		// Rule 3: If there's a resource of the same kind with that name, use it
-		n := ResourceName{Kind: r.Name.Kind, Name: ref.Name}
-		if _, ok := p.Resources[n.Normalized()]; ok {
-			refs = append(refs, n)
-			continue
+		// Rule 3: If it's a model and there's another model with that name, use it
+		if r.Name.Kind == ResourceKindModel {
+			n := ResourceName{Kind: r.Name.Kind, Name: ref.Name}
+			if _, ok := p.Resources[n.Normalized()]; ok {
+				// NOTE: Not skipping self-references because we'd rather add them and error during cyclic dependency check
+				refs = append(refs, n)
+				continue
+			}
 		}
 
 		// Rule 4: Skip it

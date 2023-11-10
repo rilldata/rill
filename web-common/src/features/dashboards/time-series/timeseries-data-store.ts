@@ -152,7 +152,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
 
           if (!primary?.data || !primaryTotal?.data || !unfilteredTotal?.data) {
             return {
-              isFetching: metricsView.isFetching,
+              isFetching: metricsView.isFetching || primaryTotal?.isFetching,
             };
           }
 

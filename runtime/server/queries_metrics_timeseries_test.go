@@ -745,6 +745,55 @@ func TestServer_Timeseries_1day(t *testing.T) {
 	require.Equal(t, 2, len(results))
 }
 
+func TestServer_Timeseries_1day_no_data(t *testing.T) {
+	t.Parallel()
+	server, instanceID := getMetricsTestServer(t, "timeseries")
+
+	response, err := server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceID,
+		MetricsViewName: "timeseries",
+		MeasureNames:    []string{"max_clicks"},
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2018-01-01T00:00:00Z"),
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2018-01-03T00:00:00Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+	})
+
+	require.NoError(t, err)
+	results := response.Data
+	require.Equal(t, 2, len(results))
+	require.Equal(t, parseTime(t, "2018-01-01T00:00:00Z"), results[0].Ts.AsTime())
+	require.Equal(t, parseTime(t, "2018-01-02T00:00:00Z"), results[1].Ts.AsTime())
+}
+
+func TestServer_Timeseries_1day_no_data_no_range(t *testing.T) {
+	t.Parallel()
+	server, instanceID := getMetricsTestServer(t, "timeseries")
+
+	response, err := server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceID,
+		MetricsViewName: "timeseries",
+		MeasureNames:    []string{"max_clicks"},
+		TimeEnd:         parseTimeToProtoTimeStamps(t, "2018-01-03T00:00:00Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+	})
+
+	require.NoError(t, err)
+	results := response.Data
+	require.Equal(t, 0, len(results))
+
+	response, err = server.MetricsViewTimeSeries(testCtx(), &runtimev1.MetricsViewTimeSeriesRequest{
+		InstanceId:      instanceID,
+		MetricsViewName: "timeseries",
+		MeasureNames:    []string{"max_clicks"},
+		TimeStart:       parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+	})
+
+	require.NoError(t, err)
+	results = response.Data
+	require.Equal(t, 0, len(results))
+}
+
 func TestServer_Timeseries_1day_Count(t *testing.T) {
 	t.Parallel()
 	server, instanceID := getMetricsTestServer(t, "timeseries")
