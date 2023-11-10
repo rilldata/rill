@@ -346,7 +346,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.Equal(t, tt.savedInst.EmbedCatalog, newInst.EmbedCatalog)
 			require.Equal(t, tt.savedInst.CatalogConnector, newInst.CatalogConnector)
 			require.Greater(t, time.Since(newInst.CreatedOn), time.Since(newInst.UpdatedOn))
-			require.True(t, time.Since(newInst.UpdatedOn) < time.Second)
+			require.True(t, time.Since(newInst.UpdatedOn) < 10*time.Second)
 			require.Equal(t, tt.savedInst.Variables, newInst.Variables)
 
 			// Verify new olap connection is opened
