@@ -105,9 +105,11 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 				Config: map[string]string{"dsn": ""},
 			},
 			{
-				Type:   "sqlite",
-				Name:   "catalog",
-				Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+				Type: "sqlite",
+				Name: "catalog",
+				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
+				// "cache=shared" is needed to prevent threading problems.
+				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
 		Variables:                    opts.Variables,
@@ -183,9 +185,11 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 				Config: map[string]string{"dsn": ""},
 			},
 			{
-				Type:   "sqlite",
-				Name:   "catalog",
-				Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+				Type: "sqlite",
+				Name: "catalog",
+				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
+				// "cache=shared" is needed to prevent threading problems.
+				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
 		EmbedCatalog: true,
