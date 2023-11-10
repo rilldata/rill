@@ -17,7 +17,7 @@
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
-  import BigNumberTooltipContent from "@rilldata/web-common/features/dashboards/big-number/BigNumberTooltipContent.svelte";
+  import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
