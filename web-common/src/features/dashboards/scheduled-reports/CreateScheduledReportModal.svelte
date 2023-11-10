@@ -16,6 +16,11 @@
   import { Button } from "../../../components/button";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
+  import {
+    getAbbreviationForIANA,
+    getLocalIANA,
+    getUTCIANA,
+  } from "../../../lib/time/timezone";
   import RecipientsList from "./RecipientsList.svelte";
   import {
     convertToCron,
@@ -26,6 +31,7 @@
 
   export let queryName: string;
   export let queryArgsJson: string;
+  export let dashboardTimeZone: string;
   export let open: boolean;
 
   $: organization = $page.params.organization;
@@ -35,6 +41,10 @@
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
   const queryArgs = JSON.parse(queryArgsJson);
+
+  const userLocalIANA = getLocalIANA();
+  const UTCIana = getUTCIANA();
+
   // TODO: a better approach will be to use the queryArgs to craft the right state object
   const dashState = new URLSearchParams(window.location.search).get("state");
 
@@ -44,6 +54,7 @@
       frequency: "Weekly",
       dayOfWeek: getTodaysDayOfWeek(),
       timeOfDay: getTimeIn24FormatFromDateTime(getNextQuarterHour()),
+      timeZone: dashboardTimeZone || userLocalIANA,
       exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
       exportLimit: "",
       recipients: [] as string[],
@@ -66,6 +77,7 @@
             options: {
               title: values.title,
               refreshCron: refreshCron, // for testing: "* * * * *"
+              refreshTimeZone: values.timeZone,
               queryName: queryName,
               queryArgsJson: queryArgsJson,
               exportLimit: values.exportLimit || undefined,
@@ -155,6 +167,27 @@
         />
       {/if}
       <TimePicker bind:value={$form["timeOfDay"]} id="timeOfDay" label="Time" />
+      <Select
+        bind:value={$form["timeZone"]}
+        id="timeZone"
+        label="Time zone"
+        options={[dashboardTimeZone, userLocalIANA, UTCIana]
+          // Remove duplicates when dashboardTimeZone is already covered by userLocalIANA or UTCIana
+          .filter((z, i, self) => {
+            return self.indexOf(z) === i;
+          })
+          // Add labels
+          .map((z) => {
+            let label = getAbbreviationForIANA(new Date(), z);
+            if (z === userLocalIANA) {
+              label += " (local time)";
+            }
+            return {
+              value: z,
+              label: label,
+            };
+          })}
+      />
     </div>
     <Select
       bind:value={$form["exportFormat"]}
@@ -199,8 +232,9 @@
         <div class="text-red-500">{$createReport.error.message}</div>
       {/if}
       <div class="grow" />
-      <Button type="secondary" on:click={() => dispatch("close")}>Cancel</Button
-      >
+      <Button type="secondary" on:click={() => dispatch("close")}>
+        Cancel
+      </Button>
       <Button
         type="primary"
         submitForm

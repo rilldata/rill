@@ -139,11 +139,14 @@
   </Menu>
 </WithTogglableFloatingElement>
 
-{#if includeScheduledReport && CreateScheduledReportModal}
+<!-- Including `showScheduledReportDialog` in the conditional ensures we tear 
+  down the form state when the dialog closes -->
+{#if includeScheduledReport && CreateScheduledReportModal && showScheduledReportDialog}
   <svelte:component
     this={CreateScheduledReportModal}
     queryName="MetricsViewComparison"
     queryArgsJson={scheduledReportsQueryArgsJson}
+    dashboardTimeZone={$dashboardStore?.selectedTimezone}
     open={showScheduledReportDialog}
     on:close={() => (showScheduledReportDialog = false)}
   />
