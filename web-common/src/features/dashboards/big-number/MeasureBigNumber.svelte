@@ -78,7 +78,8 @@
 >
   <Tooltip distance={16} location="top" alignment="start">
     <h2
-      class="break-words line-clamp-2"
+      style:overflow-wrap="anywhere"
+      class="line-clamp-2"
       style:font-size={withTimeseries ? "" : "0.8rem"}
     >
       {name}
