@@ -462,7 +462,7 @@ dimensions:
     await expect(page.getByText("Avg Bid Price $3.01")).toBeVisible();
 
     // Change the leaderboard metric
-    await page.getByRole("button", { name: "Total rows" }).click();
+    await page.getByRole("button", { name: "Total rows", exact: true }).click();
     await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
 
     // Check domain and sample value in leaderboard
@@ -689,7 +689,7 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
    */
 
   // Switch to measure "total bid price"
-  await page.getByRole("button", { name: "Total rows" }).click();
+  await page.getByRole("button", { name: "Total rows", exact: true }).click();
   await page.getByRole("menuitem", { name: "Total Bid Price" }).click();
   await page.getByRole("button", { name: "Total Bid Price" }).isVisible();
 
@@ -777,7 +777,9 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
    */
 
   // Switch to measure "total rows" (no valid_percent_of_total)
-  await page.getByRole("button", { name: "Total Bid Price" }).click();
+  await page
+    .getByRole("button", { name: "Total Bid Price", exact: true })
+    .click();
   await page.getByRole("menuitem", { name: "Total rows" }).click();
   // check that the context column is hidden
   await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
