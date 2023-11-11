@@ -85,7 +85,9 @@
   <button
     use:shiftClickAction
     on:shift-click={() => shiftClickHandler(hoveredValue)}
-    class="big-number m-0.5 rounded flex items-start"
+    class="big-number m-0.5 rounded flex items-start {isMeasureExpanded
+      ? 'cursor-default'
+      : 'cursor-pointer'}"
     on:click={(e) => {
       if (e.shiftKey) return;
       dispatch("expand-measure");
@@ -94,7 +96,6 @@
     <div
       class="flex flex-col px-2 text-left
     {withTimeseries ? 'py-3' : 'py-1 justify-between'}
-    {isMeasureExpanded ? 'cursor-default' : ''}
     "
     >
       <h2
