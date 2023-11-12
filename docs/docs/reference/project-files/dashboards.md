@@ -22,10 +22,7 @@ _**`first_day_of_week`**_ — the first day of the week for time grain aggregati
 
 _**`first_month_of_year`**_ — the first month of the year for time grain aggregation. The valid values are 1 through 12 where January=1 and December=12 _(optional)_
 
-<!-- UNCOMMENT WHEN RELEASED: -->
-<!--
 _**`available_time_zones`**_ — time zones that should be pinned to the top of the time zone selector _(optional)_. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
--->
 
 _**`dimensions`**_ — for exploring [segments](../../develop/metrics-dashboard#dimensions) and filtering the dashboard _(required)_
   - _**`column`**_ — a categorical column _(required)_ 
