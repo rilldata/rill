@@ -57,6 +57,11 @@
     $timeControlsStore.minTimeGrain;
   $: isScrubbing = $dashboardStore?.selectedScrubRange?.isScrubbing;
 
+  $: includedValuesForDimension =
+    $dashboardStore?.filters?.include?.find(
+      (filter) => filter.name === comparisonDimension
+    )?.in || [];
+
   // List of measures which will be shown on the dashboard
   let renderedMeasures = [];
   $: {
@@ -99,9 +104,10 @@
 
   $: if (
     $timeSeriesDataStore?.dimensionChartData?.length ||
-    !comparisonDimension
+    !comparisonDimension ||
+    includedValuesForDimension.length === 0
   ) {
-    dimensionDataCopy = $timeSeriesDataStore.dimensionChartData;
+    dimensionDataCopy = $timeSeriesDataStore.dimensionChartData || [];
   }
   $: dimensionData = dimensionDataCopy;
 
