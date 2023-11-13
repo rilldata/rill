@@ -75,8 +75,7 @@
       ) ?? [],
       slice,
       $selectedDimensionValues(dimensionName),
-      leaderboardTotal,
-      $isFilterExcludeMode(dimensionName)
+      leaderboardTotal
     );
 
     aboveTheFold = leaderboardData.aboveTheFold;

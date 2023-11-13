@@ -8,7 +8,6 @@
   export let selectionIndex: number;
   export let excluded = false;
   export let isBeingCompared = false;
-  export let defaultComparedIndex: number;
 
   $: selected = selectionIndex >= 0;
 
@@ -21,8 +20,6 @@
 <div style:width="22px" class="grid place-items-center">
   {#if selected && !excluded && isBeingCompared}
     <CheckCircle className={getColor(selectionIndex)} size="18px" />
-  {:else if isBeingCompared && defaultComparedIndex >= 0}
-    <Circle className={getColor(defaultComparedIndex)} size="16px" />
   {:else if selected && !excluded}
     <Check size="20px" />
   {:else if selected && excluded}
