@@ -2,7 +2,6 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getDimensionTableExportArgs } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export-utils";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
@@ -11,7 +10,6 @@
   } from "@rilldata/web-common/runtime-client";
   import { onMount, SvelteComponent } from "svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import { useDashboardStore } from "../stores/dashboard-stores";
   import exportToplist from "./export-toplist";
 
   export let includeScheduledReport: boolean;
@@ -20,10 +18,8 @@
   let exportMenuOpen = false;
   let showScheduledReportDialog = false;
 
-  const dashboardStore = useDashboardStore(metricViewName);
   const ctx = getStateManagers();
   const timeControlStore = useTimeControlStore(ctx);
-  const metaQuery = useMetaQuery(ctx);
 
   const exportDash = createQueryServiceExport();
   const handleExportTopList = async (format: V1ExportFormat) => {
@@ -46,12 +42,7 @@
     }
   });
 
-  $: scheduledReportsQueryArgsJson = getDimensionTableExportArgs(
-    metricViewName,
-    $dashboardStore,
-    $timeControlStore,
-    $metaQuery.data
-  );
+  $: scheduledReportsQueryArgsJson = getDimensionTableExportArgs(ctx);
 </script>
 
 <WithTogglableFloatingElement

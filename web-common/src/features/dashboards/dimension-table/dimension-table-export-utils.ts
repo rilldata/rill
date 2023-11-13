@@ -1,6 +1,9 @@
 import { getQuerySortType } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   TimeComparisonOption,
@@ -13,7 +16,7 @@ import type {
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { get } from "svelte/store";
+import { derived, get, Readable } from "svelte/store";
 
 // Temporary. A future PR will add iso to the selection itself.
 const TIME_RANGES_TO_ISO: Record<TimeRangeType, string> = {
@@ -32,42 +35,50 @@ const TIME_RANGES_TO_ISO: Record<TimeRangeType, string> = {
 };
 
 export function getDimensionTableExportArgs(
-  metricViewName: string,
-  dashboardStore: MetricsExplorerEntity,
-  timeControlState: TimeControlState,
-  metricsView: V1MetricsViewSpec | undefined
-): V1MetricsViewComparisonRequest | undefined {
-  if (!metricsView) return undefined;
-
-  const timeRange = getTimeRange(timeControlState, metricsView);
-
-  const comparisonTimeRange = getComparisonTimeRange(
-    dashboardStore,
-    timeControlState,
-    timeRange
-  );
-
-  return {
-    instanceId: get(runtime).instanceId,
-    metricsViewName: metricViewName,
-    dimension: {
-      name: dashboardStore.selectedDimensionName,
-    },
-    measures: dashboardStore.selectedMeasureNames.map((name) => ({
-      name: name,
-    })),
-    ...(timeRange ? { timeRange } : {}),
-    ...(comparisonTimeRange ? { comparisonTimeRange } : {}),
-    sort: [
-      {
-        name: dashboardStore.leaderboardMeasureName,
-        desc: dashboardStore.sortDirection === SortDirection.DESCENDING,
-        type: getQuerySortType(dashboardStore.dashboardSortType),
-      },
+  ctx: StateManagers
+): Readable<V1MetricsViewComparisonRequest | undefined> {
+  return derived(
+    [
+      ctx.metricsViewName,
+      ctx.dashboardStore,
+      useTimeControlStore(ctx),
+      useMetaQuery(ctx),
     ],
-    filter: dashboardStore.filters,
-    offset: "0",
-  };
+    ([metricViewName, dashboardState, timeControlState, metricsView]) => {
+      if (!metricsView.data || !timeControlState.ready) return undefined;
+
+      const timeRange = getTimeRange(timeControlState, metricsView.data);
+      if (!timeRange) return undefined;
+
+      const comparisonTimeRange = getComparisonTimeRange(
+        dashboardState,
+        timeControlState,
+        timeRange
+      );
+
+      return {
+        instanceId: get(runtime).instanceId,
+        metricsViewName: metricViewName,
+        dimension: {
+          name: dashboardState.selectedDimensionName,
+        },
+        measures: dashboardState.selectedMeasureNames.map((name) => ({
+          name: name,
+        })),
+        timeRange,
+        ...(comparisonTimeRange ? { comparisonTimeRange } : {}),
+        sort: [
+          {
+            name: dashboardState.leaderboardMeasureName,
+            desc: dashboardState.sortDirection === SortDirection.DESCENDING,
+            type: getQuerySortType(dashboardState.dashboardSortType),
+          },
+        ],
+        filter: dashboardState.filters,
+        offset: "0",
+      };
+    }
+  );
 }
 
 /**
@@ -105,13 +116,13 @@ function getTimeRange(
  * This is used by scheduled report by using report run time as end time.
  */
 function getComparisonTimeRange(
-  dashboardStore: MetricsExplorerEntity,
+  dashboardState: MetricsExplorerEntity,
   timeControlState: TimeControlState,
   timeRange: V1TimeRange | undefined
 ) {
   if (
     !timeRange ||
-    dashboardStore.selectedComparisonDimension ||
+    dashboardState.selectedComparisonDimension ||
     !timeControlState.showComparison ||
     !timeControlState.selectedComparisonTimeRange?.name
   ) {
