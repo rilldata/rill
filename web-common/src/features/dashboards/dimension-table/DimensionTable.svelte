@@ -246,7 +246,6 @@ TableCells – the cell contents.
             {selectedIndex}
             {isBeingCompared}
             {excludeMode}
-            atLeastOneActive={selectedValues?.length > 0}
             on:toggle-dimension-comparison
             on:select-item={(event) => onSelectItem(event)}
           />
