@@ -15,16 +15,9 @@
 
 <thead>
   <tr>
-    <td
-      class="pl-2 pr-4 py-2 {maxWidth} flex items-center gap-x-2 bg-slate-100"
-    >
-      <!-- Spacer -->
-      <div class="grow" />
-
+    <td class="pl-4 pr-4 py-2 {maxWidth} bg-slate-100">
       <!-- Number of runs -->
-      <span class="shrink-0"
-        >Last {numReports} run{numReports !== 1 ? "s" : ""}</span
-      >
+      Last {numReports} run{numReports !== 1 ? "s" : ""}
     </td>
   </tr>
 </thead>
