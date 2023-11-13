@@ -113,7 +113,7 @@
   <svelte:component
     this={CreateScheduledReportModal}
     queryName="MetricsViewComparison"
-    queryArgsJson={scheduledReportsQueryArgsJson}
+    queryArgsJson={$scheduledReportsQueryArgsJson}
     open={showScheduledReportDialog}
     on:close={() => (showScheduledReportDialog = false)}
   />
