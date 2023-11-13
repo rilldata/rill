@@ -492,7 +492,7 @@ func variablesFlow(ctx context.Context, projectPath, projectName string) {
 	if err != nil {
 		return
 	}
-	parser, err := rillv1.Parse(ctx, repo, instanceID, "", nil)
+	parser, err := rillv1.Parse(ctx, repo, instanceID, "duckdb", []string{"duckdb"})
 	if err != nil {
 		return
 	}
