@@ -16,6 +16,11 @@
   import { Button } from "../../../components/button";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
+  import {
+    getAbbreviationForIANA,
+    getLocalIANA,
+    getUTCIANA,
+  } from "../../../lib/time/timezone";
   import RecipientsList from "./RecipientsList.svelte";
   import {
     convertToCron,
@@ -25,7 +30,8 @@
   } from "./time-utils";
 
   export let queryName: string;
-  export let queryArgsJson: any;
+  export let queryArgs: any;
+  export let dashboardTimeZone: string;
   export let open: boolean;
 
   $: organization = $page.params.organization;
@@ -34,6 +40,10 @@
   const createReport = createAdminServiceCreateReport();
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
+
+  const userLocalIANA = getLocalIANA();
+  const UTCIana = getUTCIANA();
+
   // TODO: a better approach will be to use the queryArgs to craft the right state object
   const dashState = new URLSearchParams(window.location.search).get("state");
 
@@ -43,6 +53,7 @@
       frequency: "Weekly",
       dayOfWeek: getTodaysDayOfWeek(),
       timeOfDay: getTimeIn24FormatFromDateTime(getNextQuarterHour()),
+      timeZone: dashboardTimeZone || userLocalIANA,
       exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
       exportLimit: "",
       recipients: [] as string[],
@@ -64,12 +75,13 @@
           data: {
             options: {
               title: values.title,
-              refreshCron, // for testing: "* * * * *"
+              refreshCron: refreshCron, // for testing: "* * * * *"
+              refreshTimeZone: values.timeZone,
               queryName: queryName,
-              queryArgsJson: JSON.stringify(queryArgsJson),
+              queryArgsJson: JSON.stringify(queryArgs),
               exportLimit: values.exportLimit || undefined,
               exportFormat: values.exportFormat,
-              openProjectSubpath: `/${queryArgsJson.metricsViewName}?state=${dashState}`,
+              openProjectSubpath: `/${queryArgs.metricsViewName}?state=${dashState}`,
               recipients: values.recipients,
             },
           },
@@ -154,6 +166,27 @@
         />
       {/if}
       <TimePicker bind:value={$form["timeOfDay"]} id="timeOfDay" label="Time" />
+      <Select
+        bind:value={$form["timeZone"]}
+        id="timeZone"
+        label="Time zone"
+        options={[dashboardTimeZone, userLocalIANA, UTCIana]
+          // Remove duplicates when dashboardTimeZone is already covered by userLocalIANA or UTCIana
+          .filter((z, i, self) => {
+            return self.indexOf(z) === i;
+          })
+          // Add labels
+          .map((z) => {
+            let label = getAbbreviationForIANA(new Date(), z);
+            if (z === userLocalIANA) {
+              label += " (local time)";
+            }
+            return {
+              value: z,
+              label: label,
+            };
+          })}
+      />
     </div>
     <Select
       bind:value={$form["exportFormat"]}
@@ -198,8 +231,9 @@
         <div class="text-red-500">{$createReport.error.message}</div>
       {/if}
       <div class="grow" />
-      <Button on:click={() => dispatch("close")} type="secondary">Cancel</Button
-      >
+      <Button on:click={() => dispatch("close")} type="secondary">
+        Cancel
+      </Button>
       <Button
         disabled={$isSubmitting || $form["recipients"].length === 0}
         form="create-scheduled-report-form"

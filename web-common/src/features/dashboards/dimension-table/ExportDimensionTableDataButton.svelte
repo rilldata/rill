@@ -19,6 +19,7 @@
   let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
+  const dashboardStore = ctx.dashboardStore;
   const timeControlStore = useTimeControlStore(ctx);
 
   const exportDash = createQueryServiceExport();
@@ -42,7 +43,7 @@
     }
   });
 
-  $: scheduledReportsQueryArgsJson = getDimensionTableExportArgs(ctx);
+  $: scheduledReportsQueryArgs = getDimensionTableExportArgs(ctx);
 </script>
 
 <WithTogglableFloatingElement
@@ -109,11 +110,14 @@
   </Menu>
 </WithTogglableFloatingElement>
 
-{#if includeScheduledReport && CreateScheduledReportModal}
+<!-- Including `showScheduledReportDialog` in the conditional ensures we tear 
+  down the form state when the dialog closes -->
+{#if includeScheduledReport && CreateScheduledReportModal && showScheduledReportDialog}
   <svelte:component
     this={CreateScheduledReportModal}
     queryName="MetricsViewComparison"
-    queryArgsJson={$scheduledReportsQueryArgsJson}
+    queryArgs={$scheduledReportsQueryArgs}
+    dashboardTimeZone={$dashboardStore?.selectedTimezone}
     open={showScheduledReportDialog}
     on:close={() => (showScheduledReportDialog = false)}
   />

@@ -24,6 +24,8 @@
       cell: (info) =>
         flexRender(ReportHistoryTableCompositeCell, {
           reportTime: info.row.original.reportTime,
+          timeZone:
+            $reportQuery.data.resource.report.spec.refreshSchedule.timeZone,
           errorMessage: info.row.original.errorMessage,
         }),
     },

@@ -31,7 +31,9 @@
     $reportQuery.data &&
     cronstrue.toString(
       $reportQuery.data.resource.report.spec.refreshSchedule.cron,
-      { verbose: true }
+      {
+        verbose: true,
+      }
     );
 
   // Get owner's name
@@ -144,7 +146,10 @@
         <div class="flex gap-x-6">
           <MetadataLabel>Next run</MetadataLabel>
           <MetadataValue>
-            {formatNextRunOn($reportQuery.data.resource.report.state.nextRunOn)}
+            {formatNextRunOn(
+              $reportQuery.data.resource.report.state.nextRunOn,
+              $reportQuery.data.resource.report.spec.refreshSchedule.timeZone
+            )}
           </MetadataValue>
         </div>
       </div>
