@@ -32,7 +32,7 @@
   const {
     selectors: {
       activeMeasure: { activeMeasureName },
-      dimensionFilters: { selectedDimensionValues, isFilterExcludeMode },
+      dimensionFilters: { selectedDimensionValues },
       dashboardQueries: {
         leaderboardSortedQueryBody,
         leaderboardSortedQueryOptions,
@@ -74,8 +74,7 @@
       ) ?? [],
       slice,
       $selectedDimensionValues(dimensionName),
-      leaderboardTotal,
-      $isFilterExcludeMode(dimensionName)
+      leaderboardTotal
     );
 
     aboveTheFold = leaderboardData.aboveTheFold;

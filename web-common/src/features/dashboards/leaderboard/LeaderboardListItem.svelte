@@ -116,7 +116,6 @@
       {isBeingCompared}
       {excluded}
       selectionIndex={itemData?.selectedIndex}
-      defaultComparedIndex={itemData?.defaultComparedIndex}
     />
     <BarAndLabel
       {color}
