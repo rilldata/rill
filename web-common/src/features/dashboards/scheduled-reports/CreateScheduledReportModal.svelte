@@ -30,7 +30,7 @@
   } from "./time-utils";
 
   export let queryName: string;
-  export let queryArgsJson: string;
+  export let queryArgs: any;
   export let dashboardTimeZone: string;
   export let open: boolean;
 
@@ -40,7 +40,6 @@
   const createReport = createAdminServiceCreateReport();
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
-  const queryArgs = JSON.parse(queryArgsJson);
 
   const userLocalIANA = getLocalIANA();
   const UTCIana = getUTCIANA();
@@ -79,7 +78,7 @@
               refreshCron: refreshCron, // for testing: "* * * * *"
               refreshTimeZone: values.timeZone,
               queryName: queryName,
-              queryArgsJson: queryArgsJson,
+              queryArgsJson: JSON.stringify(queryArgs),
               exportLimit: values.exportLimit || undefined,
               exportFormat: values.exportFormat,
               openProjectSubpath: `/${queryArgs.metricsViewName}?state=${dashState}`,
@@ -125,10 +124,10 @@
 <Dialog {open}>
   <svelte:fragment slot="title">Schedule report</svelte:fragment>
   <form
-    on:submit|preventDefault={handleSubmit}
-    id="create-scheduled-report-form"
     autocomplete="off"
     class="flex flex-col gap-y-6"
+    id="create-scheduled-report-form"
+    on:submit|preventDefault={handleSubmit}
     slot="body"
   >
     <span>Email recurring exports to recipients.</span>
@@ -204,23 +203,23 @@
       error={$errors["exportLimit"]}
       id="exportLimit"
       label="Row limit"
-      placeholder="1000"
       optional
+      placeholder="1000"
     />
     <div class="flex flex-col gap-y-2">
       <form
-        on:submit|preventDefault={newRecipientHandleSubmit}
-        id="add-recipient-form"
         autocomplete="off"
+        id="add-recipient-form"
+        on:submit|preventDefault={newRecipientHandleSubmit}
       >
         <InputV2
           bind:value={$newRecipientForm["newRecipient"]}
           error={$newRecipientErrors["newRecipient"]}
+          hint="Recipients may receive different views based on the project's security policies.
+           Recipients without access to the project will not be able to view the report."
           id="newRecipient"
           label="Recipients"
           placeholder="Add an email address"
-          hint="Recipients may receive different views based on the project's security policies.
-           Recipients without access to the project will not be able to view the report."
         />
       </form>
       <RecipientsList bind:recipients={$form["recipients"]} />
@@ -232,14 +231,14 @@
         <div class="text-red-500">{$createReport.error.message}</div>
       {/if}
       <div class="grow" />
-      <Button type="secondary" on:click={() => dispatch("close")}>
+      <Button on:click={() => dispatch("close")} type="secondary">
         Cancel
       </Button>
       <Button
-        type="primary"
-        submitForm
-        form="create-scheduled-report-form"
         disabled={$isSubmitting || $form["recipients"].length === 0}
+        form="create-scheduled-report-form"
+        submitForm
+        type="primary"
       >
         Create
       </Button>

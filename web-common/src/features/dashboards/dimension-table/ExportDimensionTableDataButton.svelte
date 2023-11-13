@@ -1,19 +1,15 @@
 <script lang="ts">
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
+  import { getDimensionTableExportArgs } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export-utils";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceExport,
     V1ExportFormat,
   } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount, SvelteComponent } from "svelte";
-  import { get } from "svelte/store";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
-  import { getQuerySortType } from "../leaderboard/leaderboard-utils";
-  import { SortDirection } from "../proto-state/derived-types";
-  import { useDashboardStore } from "../stores/dashboard-stores";
   import exportToplist from "./export-toplist";
 
   export let includeScheduledReport: boolean;
@@ -22,8 +18,9 @@
   let exportMenuOpen = false;
   let showScheduledReportDialog = false;
 
-  const dashboardStore = useDashboardStore(metricViewName);
-  const timeControlStore = useTimeControlStore(getStateManagers());
+  const ctx = getStateManagers();
+  const dashboardStore = ctx.dashboardStore;
+  const timeControlStore = useTimeControlStore(ctx);
 
   const exportDash = createQueryServiceExport();
   const handleExportTopList = async (format: V1ExportFormat) => {
@@ -46,33 +43,7 @@
     }
   });
 
-  $: scheduledReportsQueryArgsJson = JSON.stringify({
-    instanceId: get(runtime).instanceId,
-    metricsViewName: metricViewName,
-    dimension: {
-      name: $dashboardStore.selectedDimensionName,
-    },
-    measures: $dashboardStore.selectedMeasureNames.map((name) => ({
-      name: name,
-    })),
-    timeRange: {
-      start: $timeControlStore.timeStart,
-      end: $timeControlStore.timeEnd,
-    },
-    comparisonTimeRange: {
-      start: $timeControlStore.comparisonTimeStart,
-      end: $timeControlStore.comparisonTimeEnd,
-    },
-    sort: [
-      {
-        name: $dashboardStore.leaderboardMeasureName,
-        desc: $dashboardStore.sortDirection === SortDirection.DESCENDING,
-        type: getQuerySortType($dashboardStore.dashboardSortType),
-      },
-    ],
-    filter: $dashboardStore.filters,
-    offset: "0",
-  });
+  $: scheduledReportsQueryArgs = getDimensionTableExportArgs(ctx);
 </script>
 
 <WithTogglableFloatingElement
@@ -84,16 +55,16 @@
   on:open={() => (exportMenuOpen = true)}
 >
   <button
+    class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700"
     on:click={(evt) => {
       evt.stopPropagation();
       toggleFloatingElement();
     }}
-    class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700"
   >
     Export
     <CaretDownIcon
-      size="10px"
       className="transition-transform {exportMenuOpen && '-rotate-180'}"
+      size="10px"
     />
   </button>
   <Menu
@@ -145,7 +116,7 @@
   <svelte:component
     this={CreateScheduledReportModal}
     queryName="MetricsViewComparison"
-    queryArgsJson={scheduledReportsQueryArgsJson}
+    queryArgs={$scheduledReportsQueryArgs}
     dashboardTimeZone={$dashboardStore?.selectedTimezone}
     open={showScheduledReportDialog}
     on:close={() => (showScheduledReportDialog = false)}

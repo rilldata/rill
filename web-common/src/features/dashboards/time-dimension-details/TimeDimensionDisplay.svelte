@@ -18,7 +18,7 @@
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
-  import type { TableData } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+  import type { TDDComparison, TableData } from "./types";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { useQueryClient } from "@tanstack/svelte-query";
 
@@ -45,16 +45,18 @@
         ?.label ?? "";
   } else if ($timeDimensionDataStore?.comparing === "time") {
     dimensionLabel = "Time";
-  } else {
+  } else if ($timeDimensionDataStore?.comparing === "none") {
     dimensionLabel = "No Comparison";
   }
 
   // Create a copy of the data to avoid flashing of table in transient states
   let timeDimensionDataCopy: TableData;
+  let comparisonCopy: TDDComparison;
   $: if (
     $timeDimensionDataStore?.data &&
     $timeDimensionDataStore?.data?.columnHeaderData
   ) {
+    comparisonCopy = $timeDimensionDataStore?.comparing;
     timeDimensionDataCopy = $timeDimensionDataStore.data;
   }
   $: formattedData = timeDimensionDataCopy;
@@ -158,7 +160,7 @@
     {measureLabel}
     sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
     sortType={$dashboardStore.dashboardSortType}
-    comparing={$timeDimensionDataStore?.comparing}
+    comparing={comparisonCopy}
     {timeFormatter}
     tableData={formattedData}
     highlightedCol={$chartInteractionColumn?.hover}

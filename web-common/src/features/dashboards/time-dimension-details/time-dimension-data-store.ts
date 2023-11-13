@@ -343,7 +343,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         timeControls?.isFetching ||
         timeSeries?.isFetching
       )
-        return;
+        return { isFetching: true };
 
       const measureName = dashboardStore?.expandedMeasureName;
       const pinIndex = dashboardStore?.pinIndex;
