@@ -192,7 +192,7 @@
         <div class="flex items-center pr-2 gap-x-2">
           {#if $sourceQuery && source?.state?.refreshedOn}
             <div
-              class="ui-copy-muted"
+              class="ml-2 ui-copy-muted line-clamp-2"
               style:font-size="11px"
               transition:fade|local={{ duration: 200 }}
             >
