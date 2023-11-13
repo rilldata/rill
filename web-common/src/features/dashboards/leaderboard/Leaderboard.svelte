@@ -26,7 +26,6 @@
    * gets scaled with. For a summable metric, the total is a reference value,
    * or for a count(*) metric, the reference value is the total number of rows.
    */
-  export let referenceValue: number;
 
   let slice = 7;
 
@@ -103,13 +102,7 @@
       <div class="rounded-b border-gray-200 surface text-gray-800">
         <!-- place the leaderboard entries that are above the fold here -->
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
-          <LeaderboardListItem
-            {dimensionName}
-            {itemData}
-            {referenceValue}
-            on:click
-            on:keydown
-          />
+          <LeaderboardListItem {dimensionName} {itemData} on:click on:keydown />
         {/each}
         <!-- place the selected values that are not above the fold here -->
         {#if selectedBelowTheFold?.length}
@@ -118,7 +111,6 @@
             <LeaderboardListItem
               {dimensionName}
               {itemData}
-              {referenceValue}
               on:click
               on:keydown
             />

@@ -38,12 +38,13 @@ export type LeaderboardItemData = {
 
   /**
    *  main value to be shown in the leaderboard
-   * */
+   */
   value: number | null;
 
   /**
-   *  percent of total for summable measures; null if not summable
-   * */
+   * Percent of total for summable measures; null if not summable.
+   * Note that this value will be between 0 and 1, not 0 and 100.
+   */
   pctOfTotal: number | null;
 
   /**
@@ -63,7 +64,7 @@ export type LeaderboardItemData = {
 
   /**
    *  the absolute change from the previous value
-   * */
+   */
   deltaAbs: number | null;
 
   /**
@@ -103,12 +104,12 @@ function cleanUpComparisonValue(
       )}`
     );
   }
-  const value = v.baseValue as number;
+  const value = v.baseValue === null ? null : (v.baseValue as number);
 
   return {
     dimensionValue: v.dimensionValue,
     value,
-    pctOfTotal: total && value ? value / total : null,
+    pctOfTotal: total !== null && value !== null ? value / total : null,
     prevValue: Number.isFinite(v.comparisonValue)
       ? (v.comparisonValue as number)
       : null,
