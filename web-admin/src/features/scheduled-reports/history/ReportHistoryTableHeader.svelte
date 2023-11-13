@@ -15,7 +15,7 @@
 
 <thead>
   <tr>
-    <td class="pl-4 pr-4 py-2 {maxWidth} bg-slate-100">
+    <td class="pl-[17px] pr-4 py-2 {maxWidth} bg-slate-100">
       <!-- Number of runs -->
       Last {numReports} run{numReports !== 1 ? "s" : ""}
     </td>
