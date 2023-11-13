@@ -33,7 +33,7 @@
   const {
     selectors: {
       activeMeasure: { activeMeasureName },
-      dimensionFilters: { selectedDimensionValues, isFilterExcludeMode },
+      dimensionFilters: { selectedDimensionValues },
       dashboardQueries: {
         leaderboardSortedQueryBody,
         leaderboardSortedQueryOptions,
