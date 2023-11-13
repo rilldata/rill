@@ -157,16 +157,6 @@
           ),
           muted: false,
         };
-    } else if (noSelectionMarkerCount < 3) {
-      if (excludeMode || !tableData?.selectedValues.length) {
-        noSelectionMarkerCount += 1;
-        return {
-          icon: `<div class="rounded-full bg-${
-            CHECKMARK_COLORS[noSelectionMarkerCount - 1]
-          }" style="width: 13px; height: 13px;"></div>`,
-          muted: false,
-        };
-      }
     }
 
     return {

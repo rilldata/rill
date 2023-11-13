@@ -2,7 +2,6 @@
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
-  import Circle from "@rilldata/web-common/components/icons/Circle.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { CHECKMARK_COLORS } from "@rilldata/web-common/features/dashboards/config";
   export let selectionIndex: number;
