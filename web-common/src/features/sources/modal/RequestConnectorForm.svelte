@@ -57,8 +57,9 @@
       />
     </div>
   </form>
-  <div class="flex">
+  <div class="flex gap-x-2">
     <div class="grow" />
+    <Button on:click={() => dispatch("back")} type="secondary">Back</Button>
     <Button
       type="primary"
       submitForm
