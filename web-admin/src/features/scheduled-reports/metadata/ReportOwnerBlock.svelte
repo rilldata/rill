@@ -1,20 +1,21 @@
 <script lang="ts">
-  import { createAdminServiceListProjectMembers } from "@rilldata/web-admin/client";
+  import { createAdminServiceSearchProjectUsers } from "@rilldata/web-admin/client";
 
   export let organization: string;
   export let project: string;
   export let ownerId: string;
 
   // Get owner's name
-  const membersQuery = createAdminServiceListProjectMembers(
+  const usersQuery = createAdminServiceSearchProjectUsers(
     organization,
-    project
+    project,
+    { emailQuery: "%", pageSize: 1000, pageToken: undefined }
   );
-  $: owner =
-    $membersQuery.data &&
-    $membersQuery.data.members.find((member) => member.userId === ownerId);
+  $: user =
+    $usersQuery.data &&
+    $usersQuery.data.users.find((user) => user.id === ownerId);
 </script>
 
-{owner?.userName
-  ? `Report created by ${owner.userName}`
+{user?.displayName
+  ? `Report created by ${user.displayName}`
   : "Report created through code"} •
