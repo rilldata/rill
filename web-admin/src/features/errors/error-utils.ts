@@ -1,17 +1,32 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { errorEvent } from "@rilldata/web-common/metrics/initMetrics";
+import type { Query } from "@tanstack/query-core";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
 import type { RpcStatus } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
 import { ErrorStoreState, errorStore } from "./error-store";
 
-export function globalErrorCallback(error: AxiosError): void {
+export function globalErrorCallback(error: AxiosError, query: Query): void {
   const isProjectPage = get(page).route.id === "/[organization]/[project]";
   const isDashboardPage =
     get(page).route.id === "/[organization]/[project]/[dashboard]";
 
-  if (!error.response) return;
+  if (!error.response) {
+    errorEvent?.fireErrorBoundaryEvent(
+      query.queryKey[0] as string,
+      "",
+      "unknown error"
+    );
+    return;
+  } else {
+    errorEvent?.fireErrorBoundaryEvent(
+      query.queryKey[0] as string,
+      error.response?.status + "" ?? error.status,
+      (error.response?.data as RpcStatus)?.message ?? error.message
+    );
+  }
 
   // Special handling for some errors on the Project page
   if (isProjectPage) {

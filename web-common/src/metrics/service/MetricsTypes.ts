@@ -36,6 +36,9 @@ export enum MetricsEventScreenName {
   CLI = "cli",
   Splash = "splash",
   Home = "home",
+  Project = "project",
+  Report = "report",
+  ReportExport = "report-export",
 }
 
 export const ScreenToEntityMap = {

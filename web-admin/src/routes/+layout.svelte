@@ -6,6 +6,7 @@
     retainFeaturesFlags,
   } from "@rilldata/web-common/features/feature-flags";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
+  import { initCloudMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import {
     QueryCache,
     QueryClient,
@@ -42,6 +43,7 @@
 
   beforeNavigate(retainFeaturesFlags);
   clearViewedAsUserAfterNavigate(queryClient);
+  initCloudMetrics();
 </script>
 
 <svelte:head>

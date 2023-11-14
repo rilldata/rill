@@ -423,9 +423,18 @@ service AdminService {
       body: "*"
     };
   }
+
+  rpc ProxyTrack(TrackRequest) returns (TrackResponse) {
+    option (google.api.http) = {
+      post: "/v1/track",
+      body: "*"
+    };
+  }
 }
 
-message PingRequest {}
+message PingRequest {
+  string event = 1;
+}
 
 message PingResponse {
   string version = 1;
@@ -1067,6 +1076,10 @@ message GenerateReportYAMLRequest {
 message GenerateReportYAMLResponse {
   string yaml = 1;
 }
+
+message TrackRequest {}
+
+message TrackResponse {}
 
 message User {
   string id = 1;

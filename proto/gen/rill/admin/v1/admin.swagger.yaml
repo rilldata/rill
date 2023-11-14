@@ -1283,6 +1283,11 @@ paths:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: event
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
   /v1/projects/-/redeploy:
@@ -1592,6 +1597,26 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1IssueRepresentativeAuthTokenRequest'
+      tags:
+        - AdminService
+  /v1/track:
+    post:
+      operationId: AdminService_ProxyTrack
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TrackResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1TrackRequest'
       tags:
         - AdminService
   /v1/users:
@@ -2459,6 +2484,10 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
+  v1TrackRequest:
+    type: object
+  v1TrackResponse:
+    type: object
   v1TriggerReconcileResponse:
     type: object
   v1TriggerRedeployRequest:

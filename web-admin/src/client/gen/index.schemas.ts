@@ -51,6 +51,10 @@ export type AdminServiceGetRepoMetaParams = {
   branch?: string;
 };
 
+export type AdminServicePingParams = {
+  event?: string;
+};
+
 export type AdminServiceUpdateServiceBody = {
   newName?: string;
 };
@@ -264,6 +268,14 @@ export interface V1TriggerRedeployRequest {
 }
 
 export interface V1TriggerReconcileResponse {
+  [key: string]: any;
+}
+
+export interface V1TrackResponse {
+  [key: string]: any;
+}
+
+export interface V1TrackRequest {
   [key: string]: any;
 }
 

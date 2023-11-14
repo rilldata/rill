@@ -1,7 +1,9 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import ProjectDashboardsListener from "@rilldata/web-admin/features/projects/ProjectDashboardsListener.svelte";
+  import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import { isProjectPage } from "../../../features/navigation/nav-utils";
   import ProjectTabs from "../../../features/projects/ProjectTabs.svelte";
@@ -12,6 +14,7 @@
     $page.params.organization,
     $page.params.project
   );
+  const user = createAdminServiceGetCurrentUser();
 
   $: isRuntimeHibernating = $projRuntime.isSuccess && !$projRuntime.data;
 
@@ -21,6 +24,14 @@
   }
 
   $: onProjectPage = isProjectPage($page);
+
+  $: if ($page.params.project && $user.data?.user?.id) {
+    metricsService.loadCloudFields({
+      isDev: window.location.host.startsWith("localhost"),
+      projectId: $page.params.project,
+      userId: $user.data?.user?.id,
+    });
+  }
 </script>
 
 <!-- Note: we don't provide the runtime here when the user is being spoofed via the "View As" functionality.

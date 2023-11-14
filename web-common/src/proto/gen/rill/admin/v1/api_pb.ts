@@ -43,6 +43,11 @@ proto3.util.setEnumType(DeploymentStatus, "rill.admin.v1.DeploymentStatus", [
  * @generated from message rill.admin.v1.PingRequest
  */
 export class PingRequest extends Message<PingRequest> {
+  /**
+   * @generated from field: string event = 1;
+   */
+  event = "";
+
   constructor(data?: PartialMessage<PingRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -51,6 +56,7 @@ export class PingRequest extends Message<PingRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.PingRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "event", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PingRequest {
@@ -5731,6 +5737,68 @@ export class GenerateReportYAMLResponse extends Message<GenerateReportYAMLRespon
 
   static equals(a: GenerateReportYAMLResponse | PlainMessage<GenerateReportYAMLResponse> | undefined, b: GenerateReportYAMLResponse | PlainMessage<GenerateReportYAMLResponse> | undefined): boolean {
     return proto3.util.equals(GenerateReportYAMLResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.TrackRequest
+ */
+export class TrackRequest extends Message<TrackRequest> {
+  constructor(data?: PartialMessage<TrackRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.TrackRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TrackRequest {
+    return new TrackRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TrackRequest {
+    return new TrackRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TrackRequest {
+    return new TrackRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TrackRequest | PlainMessage<TrackRequest> | undefined, b: TrackRequest | PlainMessage<TrackRequest> | undefined): boolean {
+    return proto3.util.equals(TrackRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.TrackResponse
+ */
+export class TrackResponse extends Message<TrackResponse> {
+  constructor(data?: PartialMessage<TrackResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.TrackResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TrackResponse {
+    return new TrackResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): TrackResponse {
+    return new TrackResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): TrackResponse {
+    return new TrackResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: TrackResponse | PlainMessage<TrackResponse> | undefined, b: TrackResponse | PlainMessage<TrackResponse> | undefined): boolean {
+    return proto3.util.equals(TrackResponse, a, b);
   }
 }
 
