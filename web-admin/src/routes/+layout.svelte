@@ -11,18 +11,15 @@
     QueryClient,
     QueryClientProvider,
   } from "@tanstack/svelte-query";
-  import { globalErrorCallback } from "../features/errors/error-utils";
+  import {
+    createErrorCallback,
+    globalErrorCallback,
+  } from "../features/errors/error-utils";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
 
   const queryClient = new QueryClient({
-    queryCache: new QueryCache({
-      // Motivation:
-      // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
-      // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
-      onError: globalErrorCallback,
-    }),
     defaultOptions: {
       queries: {
         refetchOnMount: false,
@@ -32,6 +29,10 @@
       },
     },
   });
+  // Motivation:
+  // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
+  // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
+  queryClient.getQueryCache().config.onError = createErrorCallback(queryClient);
 
   featureFlags.set({
     // The admin server enables some dashboard features like scheduled reports and alerts

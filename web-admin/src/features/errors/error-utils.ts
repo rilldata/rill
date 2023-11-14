@@ -1,57 +1,74 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import type { QueryClient } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
+import { getAdminServiceGetProjectQueryKey } from "../../client";
 import type { RpcStatus } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
 import { ErrorStoreState, errorStore } from "./error-store";
 
-export function globalErrorCallback(error: AxiosError): void {
-  const isProjectPage = get(page).route.id === "/[organization]/[project]";
-  const isDashboardPage =
-    get(page).route.id === "/[organization]/[project]/[dashboard]";
+export function createErrorCallback(queryClient: QueryClient) {
+  return (error: AxiosError) => {
+    const isProjectPage = get(page).route.id === "/[organization]/[project]";
+    const isDashboardPage =
+      get(page).route.id === "/[organization]/[project]/[dashboard]";
 
-  if (!error.response) return;
+    if (!error.response) return;
 
-  // Special handling for some errors on the Project page
-  if (isProjectPage) {
-    // If "repository not found", ignore the error and show the page
+    // Special handling for some errors on the Project page
+    if (isProjectPage) {
+      // If "repository not found", ignore the error and show the page
+      if (
+        error.response?.status === 400 &&
+        (error.response.data as RpcStatus).message === "repository not found"
+      ) {
+        return;
+      }
+    }
+
+    // Special handling for some errors on the Dashboard page
+    if (isDashboardPage) {
+      // If a dashboard wasn't found, let +page.svelte handle the error.
+      // Because the project may be reconciling, in which case we want to show a loading spinner not a 404.
+      if (
+        error.response?.status === 404 &&
+        (error.response.data as RpcStatus).message === "not found"
+      ) {
+        return;
+      }
+
+      // When a JWT doesn't permit access to a metrics view, the metrics view APIs return 401s.
+      // In this scenario, `GetCatalog` returns a 404. We ignore the 401s so we can show the 404.
+      if (error.response?.status === 401) {
+        return;
+      }
+    }
+
+    // If Unauthorized, redirect to login page
+    if (error.response?.status === 401) {
+      goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
+      return;
+    }
+
     if (
       error.response?.status === 400 &&
-      (error.response.data as RpcStatus).message === "repository not found"
+      (error.response.data as RpcStatus).message === "driver: not found" &&
+      (isProjectPage || isDashboardPage)
     ) {
-      return;
-    }
-  }
-
-  // Special handling for some errors on the Dashboard page
-  if (isDashboardPage) {
-    // If a dashboard wasn't found, let +page.svelte handle the error.
-    // Because the project may be reconciling, in which case we want to show a loading spinner not a 404.
-    if (
-      error.response?.status === 404 &&
-      (error.response.data as RpcStatus).message === "not found"
-    ) {
+      const [, org, proj] = get(page).url.pathname.split("/");
+      // goto(`/${org}/${proj}/-/status`);
+      goto(`/${org}/${proj}`).then(() =>
+        queryClient.resetQueries(getAdminServiceGetProjectQueryKey(org, proj))
+      );
       return;
     }
 
-    // When a JWT doesn't permit access to a metrics view, the metrics view APIs return 401s.
-    // In this scenario, `GetCatalog` returns a 404. We ignore the 401s so we can show the 404.
-    if (error.response?.status === 401) {
-      return;
-    }
-  }
+    // Create a pretty message for the error page
+    const errorStoreState = createErrorStoreStateFromAxiosError(error);
 
-  // If Unauthorized, redirect to login page
-  if (error.response?.status === 401) {
-    goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
-    return;
-  }
-
-  // Create a pretty message for the error page
-  const errorStoreState = createErrorStoreStateFromAxiosError(error);
-
-  errorStore.set(errorStoreState);
+    errorStore.set(errorStoreState);
+  };
 }
 
 function createErrorStoreStateFromAxiosError(
