@@ -33,7 +33,7 @@
 </script>
 
 <div class="flex flex-col gap-y-4 w-full">
-  <h1 class="text-gray-600 text-lg font-bold">Recent history</h1>
+  <h1 class="text-gray-600 text-base font-bold">Recent history</h1>
   {#if $reportQuery.error}
     <div class="text-red-500">
       {$reportQuery.error.message}
