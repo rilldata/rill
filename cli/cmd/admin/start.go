@@ -71,7 +71,7 @@ type Config struct {
 	ActivitySinkPeriodMs     int                    `default:"1000" split_words:"true"`
 	ActivityMaxBufferSize    int                    `default:"1000" split_words:"true"`
 	ActivitySinkKafkaBrokers string                 `default:"" split_words:"true"`
-	ActivitySinkKafkaTopic   string                 `default:"" split_words:"true"`
+	ActivityUISinkKafkaTopic string                 `default:"" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -213,12 +213,12 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			runWorker := len(args) == 0 || args[0] == "worker"
 			runJobs := len(args) == 0 || args[0] == "jobs"
 
-			activityClient := activity.NewClientFromConf(
+			uiActivityClient := activity.NewClientFromConf(
 				conf.ActivitySinkType,
 				conf.ActivitySinkPeriodMs,
 				conf.ActivityMaxBufferSize,
 				conf.ActivitySinkKafkaBrokers,
-				conf.ActivitySinkKafkaTopic,
+				conf.ActivityUISinkKafkaTopic,
 				logger,
 			)
 
@@ -234,7 +234,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 					}
 					limiter = ratelimit.NewRedis(redis.NewClient(opts))
 				}
-				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
+				srv, err := server.New(logger, adm, issuer, limiter, uiActivityClient, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
 					ExternalURL:            conf.ExternalURL,

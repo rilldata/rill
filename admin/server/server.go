@@ -72,12 +72,13 @@ type Server struct {
 	issuer        *runtimeauth.Issuer
 	urls          *externalURLs
 	limiter       ratelimit.Limiter
-	activity      activity.Client
+	// Activity specifically for events from UI
+	uiActivity activity.Client
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, activity activity.Client, opts *Options) (*Server, error) {
+func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, uiActivity activity.Client, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
@@ -112,6 +113,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		issuer:        issuer,
 		urls:          newURLRegistry(opts),
 		limiter:       limiter,
+		uiActivity:    uiActivity,
 	}, nil
 }
 
@@ -303,7 +305,7 @@ func (s *Server) Telemetry(ctx context.Context, req *adminv1.TelemetryRequest) (
 	for k, v := range req.Event {
 		dims = append(dims, attribute.String(k, v))
 	}
-	s.activity.Emit(ctx, "cloud-ui-error", 0, dims...)
+	s.uiActivity.Emit(ctx, "cloud-ui-telemetry", 0, dims...)
 	return &adminv1.TelemetryResponse{}, nil
 }
 
