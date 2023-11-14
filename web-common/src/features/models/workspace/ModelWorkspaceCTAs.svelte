@@ -140,14 +140,14 @@
         on:escape={toggleFloatingElement}
         on:click-outside={toggleFloatingElement}
       >
-        {#each availableDashboards as dashboard}
+        {#each availableDashboards as resource}
           <MenuItem
             on:select={() => {
-              goto(`/dashboard/${dashboard.name}`);
+              goto(`/dashboard/${resource.meta.name.name}`);
               toggleFloatingElement();
             }}
           >
-            {dashboard.name}
+            {resource.meta.name.name}
           </MenuItem>
         {/each}
       </Menu>

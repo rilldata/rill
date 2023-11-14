@@ -33,10 +33,10 @@ func TestConnectionCache(t *testing.T) {
 	require.NotNil(t, conn2)
 
 	inst := &drivers.Instance{
-		ID:            "default1",
-		OLAPConnector: "duckdb",
-		RepoConnector: "repo",
-		EmbedCatalog:  true,
+		ID:               "default1",
+		OLAPConnector:    "duckdb",
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -47,6 +47,11 @@ func TestConnectionCache(t *testing.T) {
 				Type:   "duckdb",
 				Name:   "duckdb",
 				Config: map[string]string{"dsn": ""},
+			},
+			{
+				Type:   "sqlite",
+				Name:   "catalog",
+				Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
 			},
 		},
 	}
@@ -386,10 +391,10 @@ func newTestRuntimeWithInst(t *testing.T) *Runtime {
 
 func createInstance(t *testing.T, rt *Runtime, instanceId string) {
 	inst := &drivers.Instance{
-		ID:            instanceId,
-		OLAPConnector: "duckdb",
-		RepoConnector: "repo",
-		EmbedCatalog:  true,
+		ID:               instanceId,
+		OLAPConnector:    "duckdb",
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -400,6 +405,11 @@ func createInstance(t *testing.T, rt *Runtime, instanceId string) {
 				Type:   "duckdb",
 				Name:   "duckdb",
 				Config: map[string]string{"dsn": ""},
+			},
+			{
+				Type:   "sqlite",
+				Name:   "catalog",
+				Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
 			},
 		},
 	}

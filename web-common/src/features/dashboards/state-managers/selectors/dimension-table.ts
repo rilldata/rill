@@ -52,11 +52,11 @@ export const virtualizedTableColumns =
 
     const measures = visibleMeasures(dashData);
 
-    const referenceValues: { [key: string]: number } = {};
+    const measureTotals: { [key: string]: number } = {};
     if (totalsQuery?.data?.data) {
       measures.map((m) => {
         if (m.name && isSummableMeasure(m)) {
-          referenceValues[m.name] = totalsQuery.data?.data?.[m.name];
+          measureTotals[m.name] = totalsQuery.data?.data?.[m.name];
         }
       });
     }
@@ -64,7 +64,7 @@ export const virtualizedTableColumns =
     return prepareVirtualizedDimTableColumns(
       dashData.dashboard,
       measures,
-      referenceValues,
+      measureTotals,
       dimension,
       isTimeComparisonActive(dashData),
       isValidPercentOfTotal(dashData)

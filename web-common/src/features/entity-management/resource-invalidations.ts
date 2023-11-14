@@ -83,6 +83,16 @@ async function invalidateResource(
 
   const lastStateUpdatedOn = getLastStateUpdatedOn(resource);
   if (
+    resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE &&
+    !lastStateUpdatedOn
+  ) {
+    // When a resource is created it can send an event with status = IDLE just before it is queued for reconcile.
+    // So handle the case when it is 1st queued and status != IDLE
+    resourcesStore.setVersion(resource);
+    return;
+  }
+
+  if (
     resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE ||
     lastStateUpdatedOn === resource.meta.stateUpdatedOn
   )

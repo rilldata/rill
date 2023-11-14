@@ -62,20 +62,21 @@ export function getDimensionValuesForComparison(
       const dimensionName = dashboardStore?.selectedComparisonDimension;
       const isInTimeDimensionView = dashboardStore?.expandedMeasureName;
 
-      let includedValues = [];
+      // Values to be compared
+      let comparisonValues: string[] = [];
       const dimensionFilters = dashboardStore?.filters?.include?.filter(
         (filter) => filter.name === dimensionName
       );
-      if (surface === "chart" && dimensionFilters?.length) {
-        // For TDD view max 11 allowed, for overview max 7 allowed
-        includedValues =
-          dimensionFilters[0]?.in.slice(0, isInTimeDimensionView ? 11 : 7) ||
-          [];
-      }
-
-      if (includedValues.length && surface === "chart") {
+      if (surface === "chart") {
+        if (dimensionFilters?.length) {
+          // For TDD view max 11 allowed, for overview max 7 allowed
+          comparisonValues = dimensionFilters[0]?.in.slice(
+            0,
+            isInTimeDimensionView ? 11 : 7
+          );
+        }
         return derived(
-          [writable(includedValues), writable(dashboardStore?.filters)],
+          [writable(comparisonValues), writable(dashboardStore?.filters)],
           ([values, filter]) => {
             return {
               values,
@@ -83,7 +84,7 @@ export function getDimensionValuesForComparison(
             };
           }
         ).subscribe(set);
-      } else {
+      } else if (surface === "table") {
         let sortBy = isInTimeDimensionView
           ? dashboardStore.expandedMeasureName
           : dashboardStore.leaderboardMeasureName;
@@ -142,8 +143,7 @@ export function getDimensionValuesForComparison(
             const computedFilter = getFilterForComparedDimension(
               dimensionName,
               dashboardStore?.filters,
-              topListValues,
-              surface
+              topListValues
             );
 
             return {

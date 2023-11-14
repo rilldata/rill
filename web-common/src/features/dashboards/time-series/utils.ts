@@ -100,33 +100,28 @@ export function getOrderedStartEnd(start: Date, stop: Date) {
 export function getFilterForComparedDimension(
   dimensionName: string,
   filters: V1MetricsViewFilter,
-  topListValues: string[],
-  surface
+  topListValues: string[]
 ) {
-  // Check if we have an excluded filter for the dimension
-  const excludedFilter = filters.exclude.find((d) => d.name === dimensionName);
+  const includedValues = topListValues?.slice(0, 250);
 
-  let excludedValues = [];
-  if (excludedFilter) {
-    excludedValues = excludedFilter.in;
-  }
-  let includedValues;
+  const includeFilter = [...(filters?.include || [])];
+  // Check if dimension already exists in filter
+  const dimensionEntryIndex = includeFilter.findIndex(
+    (filter) => filter.name === dimensionName
+  );
 
-  if (surface === "table") {
-    // TODO : make this configurable
-    includedValues = topListValues?.slice(0, 250);
-  } else {
-    // Remove excluded values from top list
-    includedValues = topListValues
-      ?.filter((d) => !excludedValues.includes(d))
-      ?.slice(0, 3);
+  if (dimensionEntryIndex >= 0) {
+    includeFilter[dimensionEntryIndex] = {
+      name: dimensionName,
+      in: [],
+    };
   }
 
-  // Add dimension to filter
+  // Add dimension to filter set
   const updatedFilter = {
     ...filters,
     include: [
-      ...filters.include,
+      ...includeFilter,
       {
         name: dimensionName,
         in: [],

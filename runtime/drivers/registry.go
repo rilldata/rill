@@ -27,6 +27,8 @@ type Instance struct {
 	RepoConnector string
 	// Driver name for the admin service managing the deployment (optional)
 	AdminConnector string
+	// Driver name for catalog
+	CatalogConnector string
 	// CreatedOn is when the instance was created
 	CreatedOn time.Time `db:"created_on"`
 	// UpdatedOn is when the instance was last updated in the registry

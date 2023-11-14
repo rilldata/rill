@@ -38,12 +38,13 @@ export type LeaderboardItemData = {
 
   /**
    *  main value to be shown in the leaderboard
-   * */
+   */
   value: number | null;
 
   /**
-   *  percent of total for summable measures; null if not summable
-   * */
+   * Percent of total for summable measures; null if not summable.
+   * Note that this value will be between 0 and 1, not 0 and 100.
+   */
   pctOfTotal: number | null;
 
   /**
@@ -63,7 +64,7 @@ export type LeaderboardItemData = {
 
   /**
    *  the absolute change from the previous value
-   * */
+   */
   deltaAbs: number | null;
 
   /**
@@ -72,29 +73,15 @@ export type LeaderboardItemData = {
    * of the line in the charts and the icon in the
    * leaderboard/dimension detail table.
    * Will be -1 if the item is not selected.
-   * IMPORTANT: either this or defaultComparedIndex must be -1 !!!
    * FIXME: this should be nullable rather than using -1 sentinel value!!!
    */
   selectedIndex: number;
-
-  /**
-   * This tracks the order in which an default comparison
-   * item was "selected", i.e. added to the default selection.
-   * As above, this is used to maintain a mapping between the color
-   * of the line in the charts and the icon in the
-   * leaderboard/dimension detail table.
-   * This is the list index of a default comparison item.
-   * IMPORTANT: either this or selectedIndex must be -1 !!!
-   * FIXME: this should be nullable rather than using -1 sentinel value!!!
-   */
-  defaultComparedIndex: number;
 };
 
 function cleanUpComparisonValue(
   v: ComparisonValueWithLabel,
   total: number | null,
-  selectedIndex: number,
-  defaultComparedIndex: number
+  selectedIndex: number
 ): LeaderboardItemData {
   if (!(Number.isFinite(v.baseValue) || v.baseValue === null)) {
     throw new Error(
@@ -103,19 +90,18 @@ function cleanUpComparisonValue(
       )}`
     );
   }
-  const value = v.baseValue as number;
+  const value = v.baseValue === null ? null : (v.baseValue as number);
 
   return {
     dimensionValue: v.dimensionValue,
     value,
-    pctOfTotal: total && value ? value / total : null,
+    pctOfTotal: total !== null && value !== null ? value / total : null,
     prevValue: Number.isFinite(v.comparisonValue)
       ? (v.comparisonValue as number)
       : null,
     deltaRel: Number.isFinite(v.deltaRel) ? (v.deltaRel as number) : null,
     deltaAbs: Number.isFinite(v.deltaAbs) ? (v.deltaAbs as number) : null,
     selectedIndex,
-    defaultComparedIndex,
   };
 }
 
@@ -139,8 +125,7 @@ export function prepareLeaderboardItemData(
   values: ComparisonValueWithLabel[],
   numberAboveTheFold: number,
   selectedValues: string[],
-  total: number | null,
-  excludeMode: boolean
+  total: number | null
 ): {
   aboveTheFold: LeaderboardItemData[];
   selectedBelowTheFold: LeaderboardItemData[];
@@ -149,11 +134,6 @@ export function prepareLeaderboardItemData(
 } {
   const aboveTheFold: LeaderboardItemData[] = [];
   const selectedBelowTheFold: LeaderboardItemData[] = [];
-  const comparisonDefaultSelection = getComparisonDefaultSelection(
-    values,
-    selectedValues,
-    excludeMode
-  );
 
   // we keep a copy of the selected values array to keep
   // track of values that the user has selected but that
@@ -173,24 +153,13 @@ export function prepareLeaderboardItemData(
     // remove it from the selectedButNotInAPIResults array
     if (selectedIndex > -1) selectedButNotInAPIResults.delete(v.dimensionValue);
 
-    const defaultComparedIndex = comparisonDefaultSelection.findIndex(
-      (value) => value === v.dimensionValue
-    );
-
-    const cleanValue = cleanUpComparisonValue(
-      v,
-      total,
-      selectedIndex,
-      defaultComparedIndex
-    );
+    const cleanValue = cleanUpComparisonValue(v, total, selectedIndex);
 
     if (i < numberAboveTheFold) {
       aboveTheFold.push(cleanValue);
-    } else if (selectedIndex > -1 || defaultComparedIndex > -1) {
-      // Note: only one of selectedIndex or defaultComparedIndex
-      // can be > -1 at one time, so if one is > -1,
-      // it represents either a selected value or a default selection,
-      // and must be included in the below-the-fold list.
+    } else if (selectedIndex > -1) {
+      // Note: if selectedIndex is > -1, it represents the
+      // selected value must be included in the below-the-fold list.
       selectedBelowTheFold.push(cleanValue);
     }
   });
@@ -202,14 +171,9 @@ export function prepareLeaderboardItemData(
   // the previous strategy, and just push a dummy value with only
   // the dimension value and nulls for all measure values.
   for (const [dimensionValue, selectedIndex] of selectedButNotInAPIResults) {
-    const defaultComparedIndex = comparisonDefaultSelection.findIndex(
-      (value) => value === dimensionValue
-    );
-
     selectedBelowTheFold.push({
       dimensionValue,
       selectedIndex,
-      defaultComparedIndex,
       value: null,
       pctOfTotal: null,
       prevValue: null,
