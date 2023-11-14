@@ -59,6 +59,11 @@ export function getDimensionValuesForComparison(
       useTimeControlStore(ctx),
     ],
     ([runtime, name, dashboardStore, timeControls], set) => {
+      const isValidMeasureList =
+        measures?.length > 0 && measures?.every((m) => m !== undefined);
+
+      if (!isValidMeasureList) return;
+
       const dimensionName = dashboardStore?.selectedComparisonDimension;
       const isInTimeDimensionView = dashboardStore?.expandedMeasureName;
 
@@ -187,7 +192,10 @@ export function getDimensionValueTimeSeries(
         timeStore?.selectedTimeRange?.interval ?? timeStore?.minTimeGrain;
       const zone = dashboardStore?.selectedTimezone;
 
-      if (!dimensionName) return;
+      const isValidMeasureList =
+        measures?.length > 0 && measures?.every((m) => m !== undefined);
+
+      if (!isValidMeasureList || !dimensionName) return;
       if (dashboardStore?.selectedScrubRange?.isScrubbing) return;
 
       return derived(
