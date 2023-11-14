@@ -33,7 +33,6 @@ TableCells – the cell contents.
     actions: { dimensionTable },
     selectors: {
       sorting: { sortMeasure },
-      dimensions: { dimensionTableColumnName },
       dimensionFilters: { isFilterExcludeMode },
       comparison: { isBeingCompared: isBeingComparedReadable },
     },
@@ -93,10 +92,8 @@ TableCells – the cell contents.
   /* Separate out dimension column */
   // SAFETY: cast should be safe because if dimensionName is undefined,
   // we should not be in a dimension table sub-component
-
-  $: dimensionColumnName = $dimensionTableColumnName(dimensionName) as string;
   $: dimensionColumn = columns?.find(
-    (c) => c.name == dimensionColumnName
+    (c) => c.name == dimensionName
   ) as VirtualizedTableColumns;
   $: measureColumns = columns?.filter((c) => c.name !== dimensionName) ?? [];
 

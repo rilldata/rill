@@ -12,7 +12,7 @@ import {
 import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
 import { allMeasures, visibleMeasures } from "./measures";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
-import { getDimensionColumn, isSummableMeasure } from "../../dashboard-utils";
+import { isSummableMeasure } from "../../dashboard-utils";
 import { isTimeComparisonActive } from "./time-range";
 import { activeMeasureName, isValidPercentOfTotal } from "./active-measure";
 import { selectedDimensionValues } from "./dimension-filters";
@@ -82,12 +82,10 @@ export const prepareDimTableRows =
     unfilteredTotal: number
   ) => DimensionTableRow[]) =>
   (sortedQuery, unfilteredTotal) => {
-    const dimension = primaryDimension(dashData);
-
-    if (!dimension) return [];
-
-    const dimensionColumn = getDimensionColumn(dimension);
+    const dimensionName = primaryDimension(dashData)?.name;
     const leaderboardMeasureName = activeMeasureName(dashData);
+
+    if (!dimensionName) return [];
 
     // FIXME: should this really be all measures, or just visible measures?
     const measures = allMeasures(dashData);
@@ -96,7 +94,7 @@ export const prepareDimTableRows =
       sortedQuery?.data?.rows ?? [],
       measures,
       leaderboardMeasureName,
-      dimensionColumn,
+      dimensionName,
       isTimeComparisonActive(dashData),
       isValidPercentOfTotal(dashData),
       unfilteredTotal
