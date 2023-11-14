@@ -584,19 +584,16 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			approximationLimit = 100
 		}
 
-		maxLimit := 10000
 		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE || deltaComparison {
 			joinType = "LEFT OUTER"
 			baseLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
 			if approximationLimit > 0 {
 				baseLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
-				comparisonLimitClause += fmt.Sprintf(" LIMIT %d", maxLimit)
 			}
 		} else if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
 			joinType = "RIGHT OUTER"
 			comparisonLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
 			if approximationLimit > 0 {
-				baseLimitClause += fmt.Sprintf(" LIMIT %d", maxLimit)
 				comparisonLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
 			}
 		}
