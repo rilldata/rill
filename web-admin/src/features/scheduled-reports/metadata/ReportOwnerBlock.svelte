@@ -1,21 +1,17 @@
 <script lang="ts">
-  import { createAdminServiceSearchProjectUsers } from "@rilldata/web-admin/client";
+  import { useReportOwnerName } from "../selectors";
 
   export let organization: string;
   export let project: string;
   export let ownerId: string;
 
-  // Get owner's name
-  const usersQuery = createAdminServiceSearchProjectUsers(
-    organization,
-    project,
-    { emailQuery: "%", pageSize: 1000, pageToken: undefined }
-  );
-  $: user =
-    $usersQuery.data &&
-    $usersQuery.data.users.find((user) => user.id === ownerId);
+  const ownerName = useReportOwnerName(organization, project, ownerId);
 </script>
 
-{user?.displayName
-  ? `Report created by ${user.displayName}`
-  : "Report created through code"} •
+{#if $ownerName.isSuccess}
+  <span>
+    {$ownerName.data
+      ? `Report created by ${$ownerName.data}`
+      : "Report created through code"} •
+  </span>
+{/if}
