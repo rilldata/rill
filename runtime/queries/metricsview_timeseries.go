@@ -12,6 +12,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -135,6 +136,8 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		fmoy = 1
 	}
 
+	dur := timeGrainToDuration(q.TimeGranularity)
+
 	var start time.Time
 	var zeroTime time.Time
 	var data []*runtimev1.TimeSeriesValue
@@ -163,17 +166,17 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		if zeroTime.Equal(start) {
 			if q.TimeStart != nil {
 				start = timeutil.TruncateTime(q.TimeStart.AsTime(), convTimeGrain(q.TimeGranularity), tz, int(fdow), int(fmoy))
-				data = addNulls(data, nullRecords, start, t, q.TimeGranularity, tz)
+				data = addNulls(data, nullRecords, start, t, dur, tz)
 			}
 		} else {
-			data = addNulls(data, nullRecords, start, t, q.TimeGranularity, tz)
+			data = addNulls(data, nullRecords, start, t, dur, tz)
 		}
 
 		data = append(data, &runtimev1.TimeSeriesValue{
 			Ts:      timestamppb.New(t),
 			Records: records,
 		})
-		start = addTo(t, q.TimeGranularity, tz)
+		start = addTo(t, dur, tz)
 	}
 	if q.TimeEnd != nil && nullRecords != nil {
 		if start.Equal(zeroTime) && q.TimeStart != nil {
@@ -181,7 +184,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		}
 
 		if !start.Equal(zeroTime) {
-			data = addNulls(data, nullRecords, start, q.TimeEnd.AsTime(), q.TimeGranularity, tz)
+			data = addNulls(data, nullRecords, start, q.TimeEnd.AsTime(), dur, tz)
 		}
 	}
 
@@ -362,42 +365,17 @@ func generateNullRecords(schema *runtimev1.StructType) *structpb.Struct {
 	return &nullStruct
 }
 
-func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, tg runtimev1.TimeGrain, tz *time.Location) []*runtimev1.TimeSeriesValue {
+func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, d duration.Duration, tz *time.Location) []*runtimev1.TimeSeriesValue {
 	for start.Before(end) {
 		data = append(data, &runtimev1.TimeSeriesValue{
 			Ts:      timestamppb.New(start),
 			Records: nullRecords,
 		})
-		start = addTo(start, tg, tz)
+		start = addTo(start, d, tz)
 	}
 	return data
 }
 
-func addTo(start time.Time, tg runtimev1.TimeGrain, tz *time.Location) time.Time {
-	switch tg {
-	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
-		return start.Add(time.Millisecond)
-	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		return start.Add(time.Second)
-	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		return start.Add(time.Minute)
-	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		return start.Add(time.Hour)
-	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		return start.AddDate(0, 0, 1)
-	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		return start.AddDate(0, 0, 7)
-	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		start = start.In(tz)
-		start = start.AddDate(0, 1, 0)
-		return start.In(time.UTC)
-	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		start = start.In(tz)
-		start = start.AddDate(0, 3, 0)
-		return start.In(time.UTC)
-	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		return start.AddDate(1, 0, 0)
-	}
-
-	return start
+func addTo(start time.Time, d duration.Duration, tz *time.Location) time.Time {
+	return d.Add(start.In(tz)).In(time.UTC)
 }
