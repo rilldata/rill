@@ -367,17 +367,26 @@ func generateNullRecords(schema *runtimev1.StructType) *structpb.Struct {
 
 func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, d duration.Duration, tz *time.Location) []*runtimev1.TimeSeriesValue {
 	for start.Before(end) {
+		ns := addTo(start, d, tz)
+		nstz := ns.In(tz)
+		stz := start.In(tz)
+		if stz.IsDST() && !nstz.IsDST() && stz.Hour() == nstz.Hour() {
+			// the hour of DST roll over
+			start = ns
+			continue
+		}
+
+		if nstz.Equal(stz) {
+			// handle the hour after the DST roll over
+			start = addTo(start, duration.StandardDuration{Hour: 2}, tz)
+			continue
+		}
+
 		data = append(data, &runtimev1.TimeSeriesValue{
 			Ts:      timestamppb.New(start),
 			Records: nullRecords,
 		})
-		ns := addTo(start, d, tz)
-		if ns.Equal(start) {
-			// day light saving rollover
-			start = addTo(start, duration.StandardDuration{Hour: 2}, tz)
-		} else {
-			start = ns
-		}
+		start = ns
 	}
 	return data
 }
