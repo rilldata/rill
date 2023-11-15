@@ -74,6 +74,12 @@
           structuredClone(LOADING_CELL)
         );
       }
+      // Replace null values inside the header with null placeholders
+      // Assumes that the second item in the array is always the measure
+      // value
+      else if (r?.[1]?.value === null) {
+        row_headers[i][1].value = NULL_CELL;
+      }
     });
 
     let data = getBodyData({ x0, x1, y0, y1 });
