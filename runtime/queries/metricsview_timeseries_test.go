@@ -164,7 +164,6 @@ func TestMetricsViewTimeSeries_DayLightSavings(t *testing.T) {
 		TimeZone:        "America/New_York",
 		Limit:           250,
 	}
-
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	assertTimeSeriesResponse(t, q.Result, []string{
@@ -172,6 +171,30 @@ func TestMetricsViewTimeSeries_DayLightSavings(t *testing.T) {
 		"2023-11-04T04:00:00Z",
 		"2023-11-05T04:00:00Z",
 		"2023-11-06T05:00:00Z",
+	})
+
+	q = &queries.MetricsViewTimeSeries{
+		MeasureNames:    []string{"total_records"},
+		MetricsViewName: "timeseries_dst",
+		MetricsView:     mv.Spec,
+		TimeStart:       parseTime(t, "2023-11-06T01:00:00.000Z"),
+		TimeEnd:         parseTime(t, "2023-11-06T10:00:00.000Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
+		TimeZone:        "America/New_York",
+		Limit:           250,
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	assertTimeSeriesResponse(t, q.Result, []string{
+		"2023-11-06T01:00:00.000Z",
+		"2023-11-06T02:00:00.000Z",
+		"2023-11-06T03:00:00.000Z",
+		"2023-11-06T04:00:00.000Z",
+		"2023-11-06T05:00:00.000Z",
+		"2023-11-06T06:00:00.000Z",
+		"2023-11-06T07:00:00.000Z",
+		"2023-11-06T08:00:00.000Z",
+		"2023-11-06T09:00:00.000Z",
 	})
 }
 

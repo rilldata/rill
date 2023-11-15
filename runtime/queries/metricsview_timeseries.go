@@ -371,7 +371,13 @@ func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, s
 			Ts:      timestamppb.New(start),
 			Records: nullRecords,
 		})
-		start = addTo(start, d, tz)
+		ns := addTo(start, d, tz)
+		if ns.Equal(start) {
+			// day light saving rollover
+			start = addTo(start, duration.StandardDuration{Hour: 2}, tz)
+		} else {
+			start = ns
+		}
 	}
 	return data
 }
