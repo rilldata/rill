@@ -5,9 +5,7 @@ import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humaniz
 
 export const formattingSelectors = {
   /**
-   * the currently active measure's format preset. If no measure is active,
-   * or the active measure has no format preset, this will return the
-   * default format preset, FormatPreset.HUMANIZE.
+   * the currently active measure's format preset.
    */
   activeMeasureFormatPreset: (args: DashboardDataSources): FormatPreset =>
     (activeMeasure(args)?.formatPreset as FormatPreset) ??
@@ -17,10 +15,7 @@ export const formattingSelectors = {
    * A readable containing a function that formats values
    * according to the active measure's format specification,
    * whether it's a d3 format string or a format preset.
-   *
-   * Note that this formatter is ONLY valid when an active measure
-   * is present. If no measure is active, the formatter
-   * will return an empty string.
    */
-  activeMeasureFormatter: createMeasureValueFormatter(activeMeasure(args)),
+  activeMeasureFormatter: (args: DashboardDataSources) =>
+    createMeasureValueFormatter(activeMeasure(args)),
 };
