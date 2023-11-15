@@ -215,8 +215,8 @@
         <InputV2
           bind:value={$newRecipientForm["newRecipient"]}
           error={$newRecipientErrors["newRecipient"]}
-          hint="Recipients may receive different views based on the project's security policies.
-           Recipients without access to the project will not be able to view the report."
+          hint="Recipients will receive different views based on their security policy.
+           Recipients without project access can't view the report."
           id="newRecipient"
           label="Recipients"
           placeholder="Add an email address"
