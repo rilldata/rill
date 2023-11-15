@@ -15,17 +15,11 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
-  import { slide } from "svelte/transition";
   import * as yup from "yup";
   import { Button } from "../../../components/button";
-  import IconButton from "../../../components/button/IconButton.svelte";
+  import InputArray from "../../../components/forms/InputArray.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
-  import Add from "../../../components/icons/Add.svelte";
-  import InfoCircle from "../../../components/icons/InfoCircle.svelte";
-  import Trash from "../../../components/icons/Trash.svelte";
-  import Tooltip from "../../../components/tooltip/Tooltip.svelte";
-  import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
   import {
     getAbbreviationForIANA,
     getLocalIANA,
@@ -46,11 +40,11 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  const user = createAdminServiceGetCurrentUser();
-  const createReport = createAdminServiceCreateReport();
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
+  const createReport = createAdminServiceCreateReport();
 
+  const user = createAdminServiceGetCurrentUser();
   const userLocalIANA = getLocalIANA();
   const UTCIana = getUTCIANA();
 
@@ -120,12 +114,6 @@
   // There's a bug in how `svelte-forms-lib` types the `$errors` store for arrays.
   // See: https://github.com/tjinauyeung/svelte-forms-lib/issues/154#issuecomment-1087331250
   $: recipientErrors = $errors.recipients as unknown as { email: string }[];
-
-  function handleKeyDown(event: KeyboardEvent) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-    }
-  }
 </script>
 
 <Dialog {open}>
@@ -213,73 +201,26 @@
       optional
       placeholder="1000"
     />
-    <!-- Recipients element -->
-    <div class="flex flex-col gap-y-2.5">
-      <div class="flex items-center gap-x-1">
-        <label for="recipients" class="text-gray-800 text-sm font-medium"
-          >Recipients</label
-        >
-        <Tooltip location="right" alignment="middle" distance={8}>
-          <div class="text-gray-500" style="transform:translateY(-.5px)">
-            <InfoCircle size="13px" />
-          </div>
-          <TooltipContent maxWidth="400px" slot="tooltip-content">
-            Recipients will receive different views based on their security
-            policy. Recipients without project access can't view the report.
-          </TooltipContent>
-        </Tooltip>
-      </div>
-      <div class="flex flex-col gap-y-4">
-        {#each $form["recipients"] as recipient, i}
-          <div class="flex flex-col gap-y-2">
-            <div class="flex gap-x-2 items-center">
-              <input
-                on:keydown={handleKeyDown}
-                name="recipients"
-                bind:value={$form["recipients"][i]["email"]}
-                autocomplete="off"
-                placeholder="Enter an email address"
-                class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {recipientErrors[
-                  i
-                ]?.email && 'border-red-500'}"
-              />
-              <IconButton
-                on:click={() => {
-                  $form["recipients"] = $form["recipients"].filter(
-                    (r, index) => index !== i
-                  );
-                  recipientErrors = recipientErrors.filter(
-                    (r, index) => index !== i
-                  );
-                }}
-              >
-                <Trash size="16px" className="text-gray-500 cursor-pointer" />
-              </IconButton>
-            </div>
-            {#if recipientErrors[i]?.email}
-              <div
-                in:slide|local={{ duration: 200 }}
-                class="text-red-500 text-sm py-px"
-              >
-                {recipientErrors[i].email}
-              </div>
-            {/if}
-          </div>
-        {/each}
-        <Button
-          on:click={() => {
-            $form["recipients"] = $form["recipients"].concat({ email: "" });
-            recipientErrors = recipientErrors.concat({ email: "" });
-          }}
-          type="dashed"
-        >
-          <div class="flex gap-x-2">
-            <Add className="text-gray-700" />
-            Add email
-          </div>
-        </Button>
-      </div>
-    </div>
+    <InputArray
+      id="recipients"
+      label="Recipients"
+      bind:values={$form["recipients"]}
+      bind:errors={recipientErrors}
+      accessorKey="email"
+      hint="Recipients will receive different views based on their security policy.
+        Recipients without project access can't view the report."
+      placeholder="Enter an email address"
+      addItemLabel="Add email"
+      on:add-item={() => {
+        $form["recipients"] = $form["recipients"].concat({ email: "" });
+        recipientErrors = recipientErrors.concat({ email: "" });
+      }}
+      on:remove-item={(event) => {
+        const index = event.detail.index;
+        $form["recipients"] = $form["recipients"].filter((r, i) => i !== index);
+        recipientErrors = recipientErrors.filter((r, i) => i !== index);
+      }}
+    />
   </form>
   <svelte:fragment slot="footer">
     <div class="flex items-center gap-x-2 mt-5">
