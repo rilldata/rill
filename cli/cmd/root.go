@@ -77,10 +77,19 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		Version: ver,
 	}
 
+	format := printer.Human
+	printer := printer.NewPrinter(&format)
+
+	// Create cmdutil Helper
+	ch := &cmdutil.Helper{
+		Config:  cfg,
+		Printer: printer,
+	}
+
 	// Check version
 	err := update.CheckVersion(ctx, cfg.Version.Number)
 	if err != nil {
-		printer.BoldYellow(fmt.Sprintf("Warning: version check failed: %v\n", err))
+		printer.PrintlnWarn(fmt.Sprintf("Warning: version check failed: %v\n", err))
 	}
 
 	// Print warning if currently acting as an assumed user
@@ -89,7 +98,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		fmt.Printf("could not parse representing user email\n")
 	}
 	if representingUser != "" {
-		printer.BoldYellow(fmt.Sprintf("Warning: Running action as %q\n", representingUser))
+		printer.PrintlnWarn(fmt.Sprintf("Warning: Running action as %q\n", representingUser))
 	}
 
 	// Load admin token from .rill (may later be overridden by flag --api-token)
@@ -125,13 +134,6 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
 	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
 	rootCmd.Flags().BoolP("version", "v", false, "Show rill version") // Adds option to get version by passing --version or -v
-
-	// Create cmdutil Helper
-	format := printer.Human
-	ch := &cmdutil.Helper{
-		Config:  cfg,
-		Printer: printer.NewPrinter(&format),
-	}
 
 	// Add sub-commands
 	rootCmd.AddCommand(start.StartCmd(ch))

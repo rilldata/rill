@@ -36,12 +36,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.Printer.PrintlnSuccess("Renamed service")
-			err = ch.Printer.PrintResource([]*service{toRow(res.Service)})
-			if err != nil {
-				return err
-			}
-
-			return nil
+			return ch.Printer.PrintResource([]*service{toRow(res.Service)})
 		},
 	}
 	renameCmd.Flags().SortFlags = false

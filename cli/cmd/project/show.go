@@ -42,11 +42,7 @@ func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			err = ch.Printer.PrintResource(toRow(proj.Project))
-			if err != nil {
-				return err
-			}
-			return nil
+			return ch.Printer.PrintResource(toRow(proj.Project))
 		},
 	}
 

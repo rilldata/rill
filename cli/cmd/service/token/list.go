@@ -37,11 +37,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			err = ch.Printer.PrintResource(toTable(res.Tokens))
-			if err != nil {
-				return err
-			}
-			return nil
+			return ch.Printer.PrintResource(toTable(res.Tokens))
 		},
 	}
 

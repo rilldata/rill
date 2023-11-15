@@ -32,37 +32,6 @@ func NewFormatValue(val Format, p *Format) *Format {
 	return p
 }
 
-func (f *Format) String() string {
-	switch *f {
-	case Human:
-		return "human"
-	case JSON:
-		return "json"
-	case CSV:
-		return "csv"
-	}
-
-	return "unknown format"
-}
-
-func (f *Format) Set(s string) error {
-	var v Format
-	switch s {
-	case "human":
-		v = Human
-	case "json":
-		v = JSON
-	case "csv":
-		v = CSV
-	default:
-		return fmt.Errorf("failed to parse Format: %q. Valid values: %+v",
-			s, []string{"human", "json", "csv"})
-	}
-
-	*f = v
-	return nil
-}
-
 func (f *Format) Type() string {
 	return "string"
 }

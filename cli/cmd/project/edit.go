@@ -108,11 +108,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.Printer.PrintlnSuccess("Updated project")
-			err = ch.Printer.PrintResource(toRow(updatedProj.Project))
-			if err != nil {
-				return err
-			}
-			return nil
+			return ch.Printer.PrintResource(toRow(updatedProj.Project))
 		},
 	}
 

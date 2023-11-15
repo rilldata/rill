@@ -48,7 +48,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// 1. Print project info
-			ch.Printer.PrintlnSuccess("Project info")
+			ch.Printer.PrintlnSuccess("Project info\n")
 			err = ch.Printer.PrintResource(toRow(proj.Project))
 			if err != nil {
 				return err
@@ -101,7 +101,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 				table = append(table, newResourceTableRow(r))
 			}
 
-			ch.Printer.PrintlnSuccess("\nResources")
+			ch.Printer.PrintlnSuccess("\nResources\n")
 			err = ch.Printer.PrintResource(table)
 			if err != nil {
 				return err
@@ -113,7 +113,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 					table = append(table, newParseErrorTableRow(e))
 				}
 
-				ch.Printer.PrintlnSuccess("\nParse errors")
+				ch.Printer.PrintlnSuccess("\nParse errors\n")
 				err = ch.Printer.PrintResource(table)
 				if err != nil {
 					return err

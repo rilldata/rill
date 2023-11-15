@@ -71,11 +71,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			ch.Printer.PrintlnSuccess("Renamed organization")
-			err = ch.Printer.PrintResource([]*organization{toRow(updatedOrg.Organization)})
-			if err != nil {
-				return err
-			}
-			return nil
+			return ch.Printer.PrintResource([]*organization{toRow(updatedOrg.Organization)})
 		},
 	}
 	renameCmd.Flags().SortFlags = false
