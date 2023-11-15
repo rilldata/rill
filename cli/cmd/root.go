@@ -78,18 +78,18 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	}
 
 	format := printer.Human
-	printer := printer.NewPrinter(&format)
+	p := printer.NewPrinter(&format)
 
 	// Create cmdutil Helper
 	ch := &cmdutil.Helper{
 		Config:  cfg,
-		Printer: printer,
+		Printer: p,
 	}
 
 	// Check version
 	err := update.CheckVersion(ctx, cfg.Version.Number)
 	if err != nil {
-		printer.PrintlnWarn(fmt.Sprintf("Warning: version check failed: %v\n", err))
+		p.PrintlnWarn(fmt.Sprintf("Warning: version check failed: %v\n", err))
 	}
 
 	// Print warning if currently acting as an assumed user
@@ -98,7 +98,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		fmt.Printf("could not parse representing user email\n")
 	}
 	if representingUser != "" {
-		printer.PrintlnWarn(fmt.Sprintf("Warning: Running action as %q\n", representingUser))
+		p.PrintlnWarn(fmt.Sprintf("Warning: Running action as %q\n", representingUser))
 	}
 
 	// Load admin token from .rill (may later be overridden by flag --api-token)
