@@ -17,9 +17,9 @@
       You don't have any reports yet
     </div>
     <div>
-      <span style="text-gray-500 font-normal"
-        >Learn how to create a report in our
-      </span><a href="https://docs.rilldata.com/" target="_blank">docs</a>
+      <span style="text-gray-500 font-normal">
+        To create a report, click the Export button in a dashboard.
+      </span>
     </div>
   </div>
 </div>
