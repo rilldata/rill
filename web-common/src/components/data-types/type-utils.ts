@@ -10,3 +10,8 @@ export enum PERC_DIFF {
   PREV_VALUE_NO_DATA = "prev_value_no_data",
   CURRENT_VALUE_NO_DATA = "current_value_no_data",
 }
+
+export const isPercDiff = (
+  token: unknown
+): token is PERC_DIFF[keyof PERC_DIFF] =>
+  Object.values(PERC_DIFF).includes(token as PERC_DIFF);
