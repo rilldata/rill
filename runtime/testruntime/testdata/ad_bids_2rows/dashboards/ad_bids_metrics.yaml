@@ -9,7 +9,7 @@ dimensions:
   - label: Publisher
     property: publisher
     description: ""
-  - label: Domain
+  - label: Domain Label
     property: domain
     description: ""
   - label: Id
