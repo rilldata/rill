@@ -1,3 +1,9 @@
+/**
+ * Describes the king of missing data that is being displayed.
+ *
+ * FIXME: rename to eg. MISSING_DATA, since it's not just for
+ * percent diffs
+ */
 export enum PERC_DIFF {
   PREV_VALUE_ZERO = "prev_value_zero",
   PREV_VALUE_NULL = "prev_value_null",
