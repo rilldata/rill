@@ -1,5 +1,5 @@
 /**
- * Describes the king of missing data that is being displayed.
+ * Describes the kind of missing data that is being displayed.
  *
  * FIXME: rename to eg. MISSING_DATA, since it's not just for
  * percent diffs

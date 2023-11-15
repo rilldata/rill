@@ -19,9 +19,10 @@
 
   $: if (
     !isNoData &&
+    // expanding this out in full provides type narrowing
     !isPercDiff(value) &&
     value !== null &&
-    value !== undefined && // this is a NumberParts object
+    value !== undefined &&
     typeof value !== "number"
   ) {
     // in this case, we have a NumberParts object.
@@ -57,7 +58,7 @@
   {dark}
 >
   <slot name="value">
-    {#if isNoData || isPercDiff(value)}
+    {#if isNoData}
       <span class="opacity-50 italic" style:font-size=".925em">no data</span>
     {:else if value !== null}
       <span class:text-red-500={diffIsNegative}>
