@@ -22,14 +22,5 @@ export const formattingSelectors = {
    * is present. If no measure is active, the formatter
    * will return an empty string.
    */
-  activeMeasureFormatter: (args: DashboardDataSources) => {
-    const measure = activeMeasure(args);
-    if (measure) {
-      createMeasureValueFormatter(measure);
-    }
-
-    // allowed to make make function signatures match in both cases
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return (value: number) => "";
-  },
+  activeMeasureFormatter: createMeasureValueFormatter(activeMeasure(args)),
 };
