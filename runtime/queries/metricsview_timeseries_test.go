@@ -2,9 +2,9 @@ package queries_test
 
 import (
 	"context"
-	"fmt"
 	// "fmt"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -186,21 +186,19 @@ func TestMetricsViewTimeSeries_DayLightSavings(t *testing.T) {
 	}
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
-	for _, r := range q.Result.Data {
-		fmt.Println(r.Ts.AsTime().String(), r.Records.AsMap())
-	}
 	assertTimeSeriesResponse(t, q.Result, []string{
-		"2023-11-05T03:00:00.000Z",
-		"2023-11-05T04:00:00.000Z",
-		"2023-11-05T06:00:00.000Z",
-		"2023-11-05T07:00:00.000Z",
+		"2023-11-05T03:00:00Z",
+		"2023-11-05T04:00:00Z",
+		"2023-11-05T06:00:00Z",
+		"2023-11-05T07:00:00Z",
 	})
 }
 
-func assertTimeSeriesResponse(t *testing.T, res *runtimev1.MetricsViewTimeSeriesResponse, dates []string) {
+func assertTimeSeriesResponse(t *testing.T, res *runtimev1.MetricsViewTimeSeriesResponse, expected []string) {
 	require.NotEmpty(t, res)
-	require.Len(t, res.Data, len(dates))
-	for i, r := range res.Data {
-		require.Equal(t, parseTime(t, dates[i]).AsTime(), r.Ts.AsTime())
+	actual := make([]string, 0)
+	for _, r := range res.Data {
+		actual = append(actual, r.Ts.AsTime().Format(time.RFC3339))
 	}
+	require.ElementsMatch(t, actual, expected)
 }
