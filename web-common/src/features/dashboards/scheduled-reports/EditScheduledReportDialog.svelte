@@ -10,6 +10,7 @@
   import { notifications } from "../../../components/notifications";
   import {
     getRuntimeServiceGetResourceQueryKey,
+    getRuntimeServiceListResourcesQueryKey,
     V1ExportFormat,
     V1ReportSpec,
   } from "../../../runtime-client";
@@ -92,6 +93,9 @@
             "name.name": reportName,
             "name.kind": ResourceKind.Report,
           })
+        );
+        queryClient.invalidateQueries(
+          getRuntimeServiceListResourcesQueryKey($runtime.instanceId)
         );
         dispatch("close");
         notifications.send({
