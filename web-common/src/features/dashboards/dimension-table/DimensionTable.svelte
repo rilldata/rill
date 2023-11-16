@@ -64,7 +64,7 @@ TableCells – the cell contents.
 
   $: selectedIndex = selectedValues
     .map((label) => {
-      return rows.findIndex((row) => row[dimensionName] === label);
+      return rows.findIndex((row) => row[dimensionColumnName] === label);
     })
     .filter((i) => i >= 0);
 
