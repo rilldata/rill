@@ -305,7 +305,7 @@ func (s *Server) Telemetry(ctx context.Context, req *adminv1.TelemetryRequest) (
 	for k, v := range req.Event {
 		dims = append(dims, attribute.String(k, v))
 	}
-	s.uiActivity.Emit(ctx, "cloud-ui-telemetry", 0, dims...)
+	s.uiActivity.Emit(ctx, "cloud-ui-telemetry", 1, dims...)
 	return &adminv1.TelemetryResponse{}, nil
 }
 
