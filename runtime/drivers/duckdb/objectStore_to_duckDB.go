@@ -1,4 +1,4 @@
-package transporter
+package duckdb
 
 import (
 	"context"
@@ -55,7 +55,17 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 
 	// if sql is specified use ast rewrite to fill in the downloaded files
 	if srcCfg.SQL != "" {
-		return t.ingestDuckDBSQL(ctx, srcCfg.SQL, iterator, srcCfg, sinkCfg, opts)
+		err = t.ingestDuckDBSQL(ctx, srcCfg.SQL, iterator, srcCfg, sinkCfg, opts)
+		if err != nil {
+			return err
+		}
+
+		for _, col := range srcCfg.CastToENUM {
+			err = ConvertEnum(ctx, t.to, sinkCfg.Table, col)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	opts.Progress.Target(size, drivers.ProgressUnitByte)

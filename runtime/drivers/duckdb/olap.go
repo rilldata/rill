@@ -33,6 +33,17 @@ var (
 	connectionsInUse      = observability.Must(meter.Int64ObservableGauge("connections_in_use"))
 )
 
+// ConvertEnum converts a varchar col in table to an enum type.
+// Generally to be used for low cardinality varchar columns although not enforced here.
+// TODO: merge transporter and duckdb pkg and remove this function
+func ConvertEnum(ctx context.Context, olap drivers.OLAPStore, table, col string) error {
+	c, ok := olap.(*connection)
+	if !ok {
+		return fmt.Errorf("invalid olap connection")
+	}
+	return c.convertToEnum(ctx, table, col)
+}
+
 func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDuckDB
 }
@@ -630,6 +641,62 @@ func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Sta
 	return err
 }
 
+func (c *connection) convertToEnum(ctx context.Context, table, col string) error {
+	// supported only if ext_storage is true
+	if !c.config.ExtTableStorage {
+		return fmt.Errorf("`cast_to_enum` is only supported when `external_table_storage` is enabled")
+	}
+
+	version, exist, err := c.tableVersion(table)
+	if err != nil {
+		return err
+	}
+
+	if !exist {
+		return fmt.Errorf("table %q does not exist", table)
+	}
+
+	dbName := dbName(table, version)
+	enum := fmt.Sprintf("%s_enum", col)
+
+	var switchErr error
+	err = c.WithConnection(ctx, 100, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s", dbName)})
+		if err != nil {
+			return fmt.Errorf("failed switch db %q: %w", dbName, err)
+		}
+		defer func() {
+			// switch to main db
+			switchErr = c.Exec(ensuredCtx, &drivers.Statement{Query: "USE main"})
+			if err != nil {
+				c.logger.Error("failed switch db to main", zap.Error(err))
+			}
+		}()
+
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE TYPE %s AS ENUM (SELECT DISTINCT %s FROM \"default\")", safeSQLName(enum), safeSQLName(col))})
+		if err != nil {
+			return fmt.Errorf("failed to create enum %q: %w", enum, err)
+		}
+
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ALTER TABLE \"default\" ALTER COLUMN %s SET TYPE %s", safeSQLName(col), safeSQLName(enum))})
+		if err != nil {
+			return fmt.Errorf("failed to alter table %q: %w", table, err)
+		}
+
+		// recreate view to propagate schema changes
+		return c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW main.%s AS SELECT * FROM \"default\"", safeSQLName(table))})
+	})
+	if err != nil {
+		return err
+	}
+
+	if switchErr != nil {
+		// if switching to main fails all subsequent queries would fail so we reopen db
+		return c.reopenDB()
+	}
+	return nil
+}
+
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
@@ -659,16 +726,6 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	}
 
 	return &runtimev1.StructType{Fields: fields}, nil
-}
-
-func fileSize(paths []string) int64 {
-	var size int64
-	for _, path := range paths {
-		if info, err := os.Stat(path); err == nil { // ignoring error since only error possible is *PathError
-			size += info.Size()
-		}
-	}
-	return size
 }
 
 func dbName(name, version string) string {
