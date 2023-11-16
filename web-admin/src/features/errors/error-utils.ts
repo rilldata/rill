@@ -17,12 +17,17 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     if (!error.response) return;
 
     // Special handling for some errors on the Project page
-    if (isProjectPage) {
+    if (isProjectPage && error.response?.status === 400) {
       // If "repository not found", ignore the error and show the page
       if (
-        error.response?.status === 400 &&
         (error.response.data as RpcStatus).message === "repository not found"
       ) {
+        return;
+      }
+      // This error is the error:`driver.ErrNotFound` thrown while looking up an instance in the runtime.
+      if ((error.response.data as RpcStatus).message === "driver: not found") {
+        const [, org, proj] = get(page).url.pathname.split("/");
+        queryClient.resetQueries(getAdminServiceGetProjectQueryKey(org, proj));
         return;
       }
     }
@@ -48,23 +53,6 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     // If Unauthorized, redirect to login page
     if (error.response?.status === 401) {
       goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
-      return;
-    }
-
-    // Handle the case when the deployment is being reset.
-    if (
-      error.response?.status === 400 &&
-      // The error is actually driver.ErrNotFound while looking up an instance in the runtime.
-      // Since it is defined in driver package it has that prefix.
-      // TODO: should we refactor to use a generic NotFound error?
-      (error.response.data as RpcStatus).message === "driver: not found" &&
-      (isProjectPage || isDashboardPage)
-    ) {
-      const [, org, proj] = get(page).url.pathname.split("/");
-      // goto(`/${org}/${proj}/-/status`);
-      goto(`/${org}/${proj}`).then(() =>
-        queryClient.resetQueries(getAdminServiceGetProjectQueryKey(org, proj))
-      );
       return;
     }
 
@@ -107,6 +95,12 @@ function createErrorStoreStateFromAxiosError(
       statusCode: error.response?.status,
       header: "Project not found",
       body: "The project you requested could not be found. Please check that you have provided a valid project name.",
+    };
+  } else if (status === 400 && msg === "driver: not found") {
+    return {
+      statusCode: error.response?.status,
+      header: "Project is being deployed",
+      body: "The project you requested is being deployed.",
     };
   }
 
