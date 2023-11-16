@@ -94,7 +94,7 @@ message DashboardState {
 }
 
 message DashboardTimeRange {
-  optional string iso_range = 1;
+  optional string name = 1;
   optional google.protobuf.Timestamp time_start = 2;
   optional google.protobuf.Timestamp time_end = 3;
 }

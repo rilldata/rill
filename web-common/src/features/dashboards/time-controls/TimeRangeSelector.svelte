@@ -195,9 +195,7 @@
             {#if intermediateSelection === TimeRangePreset.CUSTOM}
               Custom range
             {:else if currentSelection in ISODurationToTimeRangePreset}
-              {DEFAULT_TIME_RANGES[
-                ISODurationToTimeRangePreset[currentSelection]
-              ].label}
+              {DEFAULT_TIME_RANGES[currentSelection].label}
             {:else if currentSelection}
               Last {humaniseISODuration(currentSelection)}
             {:else}

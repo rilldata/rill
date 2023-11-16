@@ -300,43 +300,30 @@ function getTimeRange(
 
   let timeRange: DashboardTimeControls;
 
-  // console.log(metricsExplorer.selectedTimeRange);
-  if (metricsExplorer.selectedTimeRange.isoRange) {
-    if (
-      metricsExplorer.selectedTimeRange.isoRange in ISODurationToTimeRangePreset
-    ) {
-      // console.log(
-      //   metricsExplorer.selectedTimeRange.isoRange,
-      //   ISODurationToTimeRangePreset[
-      //     metricsExplorer.selectedTimeRange.isoRange
-      //   ],
-      //   allTimeRange.end
-      // );
-      /** rebuild off of existing presets for relative time range */
-      timeRange = convertTimeRangePreset(
-        ISODurationToTimeRangePreset[
-          metricsExplorer.selectedTimeRange.isoRange
-        ],
-        allTimeRange.start,
-        allTimeRange.end,
-        metricsExplorer.selectedTimezone
-      );
-    } else {
-      /** set the time range to the fixed default time range */
-      timeRange = {
-        name: TimeRangePreset.DEFAULT,
-        isoRange: metricsExplorer.selectedTimeRange.isoRange,
-        start: defaultTimeRange.start,
-        end: defaultTimeRange.end,
-      };
-    }
-  } else {
+  if (metricsExplorer.selectedTimeRange?.name === TimeRangePreset.CUSTOM) {
     /** set the time range to the fixed custom time range */
     timeRange = {
       name: TimeRangePreset.CUSTOM,
       start: new Date(metricsExplorer.selectedTimeRange.start),
       end: new Date(metricsExplorer.selectedTimeRange.end),
     };
+  } else if (
+    metricsExplorer.selectedTimeRange?.name === TimeRangePreset.DEFAULT
+  ) {
+    /** set the time range to the fixed custom time range */
+    timeRange = {
+      name: TimeRangePreset.DEFAULT,
+      start: defaultTimeRange.start,
+      end: defaultTimeRange.end,
+    };
+  } else {
+    /** rebuild off of relative time range */
+    timeRange = convertTimeRangePreset(
+      metricsExplorer.selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
+      allTimeRange.start,
+      allTimeRange.end,
+      metricsExplorer.selectedTimezone
+    );
   }
 
   return timeRange;
@@ -378,12 +365,13 @@ function getComparisonTimeRange(
   timeRange: DashboardTimeControls,
   comparisonTimeRange: DashboardTimeControls
 ) {
-  if (!comparisonTimeRange) return undefined;
+  if (!comparisonTimeRange || !timeRange.name) return undefined;
 
   let selectedComparisonTimeRange: DashboardTimeControls;
-  if (!comparisonTimeRange?.isoRange) {
-    const comparisonOption = DEFAULT_TIME_RANGES[timeRange.name]
-      ?.defaultComparison as TimeComparisonOption;
+  if (!comparisonTimeRange?.name) {
+    const comparisonOption = DEFAULT_TIME_RANGES[
+      timeRange.name as TimeComparisonOption
+    ]?.defaultComparison as TimeComparisonOption;
     const range = getTimeComparisonParametersForComponent(
       comparisonOption,
       allTimeRange.start,
@@ -394,9 +382,9 @@ function getComparisonTimeRange(
 
     if (range.isComparisonRangeAvailable) {
       selectedComparisonTimeRange = {
+        name: comparisonOption,
         start: range.start,
         end: range.end,
-        isoRange: comparisonOption,
       };
     }
   } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
@@ -405,8 +393,7 @@ function getComparisonTimeRange(
     return undefined;
   } else {
     // variable time range of some kind.
-    const comparisonOption =
-      comparisonTimeRange.isoRange as TimeComparisonOption;
+    const comparisonOption = comparisonTimeRange.name as TimeComparisonOption;
     const range = getComparisonRange(
       timeRange.start,
       timeRange.end,
@@ -415,7 +402,7 @@ function getComparisonTimeRange(
 
     selectedComparisonTimeRange = {
       ...range,
-      isoRange: comparisonOption,
+      name: comparisonOption,
     };
   }
 

@@ -39,23 +39,22 @@ export function isoDurationToTimeRange(
   };
 }
 
-export const ISODurationToTimeRangePreset: Record<
-  string,
-  keyof typeof TimeRangePreset
+export const ISODurationToTimeRangePreset: Partial<
+  Record<TimeRangePreset, boolean>
 > = {
-  PT6H: TimeRangePreset.LAST_SIX_HOURS,
-  PT24H: TimeRangePreset.LAST_24_HOURS,
-  P1D: TimeRangePreset.LAST_24_HOURS,
-  P7D: TimeRangePreset.LAST_7_DAYS,
-  P14D: TimeRangePreset.LAST_14_DAYS,
-  P4W: TimeRangePreset.LAST_4_WEEKS,
-  P12M: TimeRangePreset.LAST_12_MONTHS,
-  inf: TimeRangePreset.ALL_TIME,
-  "rill-TD": TimeRangePreset.TODAY,
-  "rill-WTD": TimeRangePreset.WEEK_TO_DATE,
-  "rill-MTD": TimeRangePreset.MONTH_TO_DATE,
-  "rill-QTD": TimeRangePreset.QUARTER_TO_DATE,
-  "rill-YTD": TimeRangePreset.YEAR_TO_DATE,
+  [TimeRangePreset.LAST_SIX_HOURS]: true,
+  [TimeRangePreset.LAST_24_HOURS]: true,
+  [TimeRangePreset.LAST_24_HOURS]: true,
+  [TimeRangePreset.LAST_7_DAYS]: true,
+  [TimeRangePreset.LAST_14_DAYS]: true,
+  [TimeRangePreset.LAST_4_WEEKS]: true,
+  [TimeRangePreset.LAST_12_MONTHS]: true,
+  [TimeRangePreset.ALL_TIME]: true,
+  [TimeRangePreset.TODAY]: true,
+  [TimeRangePreset.WEEK_TO_DATE]: true,
+  [TimeRangePreset.MONTH_TO_DATE]: true,
+  [TimeRangePreset.QUARTER_TO_DATE]: true,
+  [TimeRangePreset.YEAR_TO_DATE]: true,
 };
 export function isoDurationToFullTimeRange(
   isoDuration: string,
@@ -68,7 +67,7 @@ export function isoDurationToFullTimeRange(
   }
   if (isoDuration in ISODurationToTimeRangePreset) {
     return convertTimeRangePreset(
-      ISODurationToTimeRangePreset[isoDuration],
+      isoDuration as TimeRangePreset,
       start,
       end,
       zone
@@ -113,6 +112,8 @@ function getStartTimeTransformations(
 ): Array<RelativeTimeTransformation> {
   const duration = Duration.fromISO(isoDuration);
   const period = getSmallestUnit(duration);
+  if (!period) return [];
+
   return [
     {
       period, // this is the offset alias for the given time range alias
@@ -120,7 +121,7 @@ function getStartTimeTransformations(
     }, // truncation
     // then offset that by -1 of smallest period
     {
-      duration: subtractFromPeriod(duration, period).toISO(),
+      duration: subtractFromPeriod(duration, period).toISO() as string,
       operationType: TimeOffsetType.SUBTRACT,
     }, // operation
   ];
@@ -131,6 +132,8 @@ function getEndTimeTransformations(
 ): Array<RelativeTimeTransformation> {
   const duration = Duration.fromISO(isoDuration);
   const period = getSmallestUnit(duration);
+  if (!period) return [];
+
   return [
     {
       duration: period,

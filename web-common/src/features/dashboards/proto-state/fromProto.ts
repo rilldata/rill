@@ -172,7 +172,7 @@ function fromFiltersProto(conditions: Array<MetricsViewFilter_Cond>) {
 
 function fromTimeRangeProto(timeRange: DashboardTimeRange) {
   const selectedTimeRange: DashboardTimeControls = {
-    isoRange: timeRange.isoRange,
+    name: timeRange.name,
   } as DashboardTimeControls;
 
   if (timeRange.timeStart) {

@@ -101,13 +101,12 @@ export const TestTimeOffsetConstants = {
 };
 export const AD_BIDS_DEFAULT_TIME_RANGE = {
   name: TimeRangePreset.ALL_TIME,
-  isoRange: "inf",
   interval: V1TimeGrain.TIME_GRAIN_HOUR,
   start: TestTimeConstants.LAST_DAY,
   end: new Date(TestTimeConstants.NOW.getTime() + 1),
 };
 export const AD_BIDS_DEFAULT_URL_TIME_RANGE = {
-  isoRange: "inf",
+  name: TimeRangePreset.ALL_TIME,
   interval: V1TimeGrain.TIME_GRAIN_HOUR,
 };
 
@@ -393,12 +392,12 @@ export const AD_BIDS_CLEARED_FILTER = {
 
 // parsed time controls won't have start & end
 export const ALL_TIME_PARSED_TEST_CONTROLS = {
-  isoRange: "inf",
+  name: TimeRangePreset.ALL_TIME,
   interval: V1TimeGrain.TIME_GRAIN_HOUR,
 } as DashboardTimeControls;
 
 export const LAST_6_HOURS_TEST_CONTROLS = {
-  isoRange: "PT6H",
+  name: TimeRangePreset.LAST_SIX_HOURS,
   interval: V1TimeGrain.TIME_GRAIN_HOUR,
   start: TestTimeConstants.LAST_6_HOURS,
   end: TestTimeConstants.NOW,
@@ -406,11 +405,12 @@ export const LAST_6_HOURS_TEST_CONTROLS = {
 
 // parsed time controls won't have start & end
 export const LAST_6_HOURS_TEST_PARSED_CONTROLS = {
-  isoRange: "PT6H",
+  name: TimeRangePreset.LAST_SIX_HOURS,
   interval: V1TimeGrain.TIME_GRAIN_HOUR,
 } as DashboardTimeControls;
 
 export const CUSTOM_TEST_CONTROLS = {
+  name: TimeRangePreset.CUSTOM,
   interval: V1TimeGrain.TIME_GRAIN_MINUTE,
   start: TestTimeConstants.LAST_18_HOURS,
   end: TestTimeConstants.LAST_12_HOURS,

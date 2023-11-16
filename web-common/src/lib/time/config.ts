@@ -15,6 +15,7 @@ import {
   TimeGrain,
   TimeOffsetType,
   TimeRangeMeta,
+  TimeRangePreset,
   TimeTruncationType,
 } from "./types";
 
@@ -30,7 +31,7 @@ import {
  * periodicity (e.g. to the start of the hour) and then applying the offset.
  */
 export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
-  LAST_SIX_HOURS: {
+  [TimeRangePreset.LAST_SIX_HOURS]: {
     label: "Last 6 Hours",
     isoRange: "PT6H",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
@@ -58,7 +59,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     },
   },
 
-  LAST_24_HOURS: {
+  [TimeRangePreset.LAST_24_HOURS]: {
     label: "Last 24 Hours",
     isoRange: "PT24H",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
@@ -85,7 +86,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
     },
   },
 
-  LAST_7_DAYS: {
+  [TimeRangePreset.LAST_7_DAYS]: {
     label: "Last 7 Days",
     isoRange: "P7D",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
@@ -111,7 +112,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
   },
-  LAST_14_DAYS: {
+  [TimeRangePreset.LAST_14_DAYS]: {
     label: "Last 14 Days",
     isoRange: "P14D",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
@@ -137,7 +138,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
   },
-  LAST_4_WEEKS: {
+  [TimeRangePreset.LAST_4_WEEKS]: {
     label: "Last 4 Weeks",
     isoRange: "P4W",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
@@ -163,7 +164,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
   },
-  LAST_12_MONTHS: {
+  [TimeRangePreset.LAST_12_MONTHS]: {
     label: "Last 12 Months",
     isoRange: "P12M",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
@@ -201,8 +202,10 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
  * Like the latest window ranges, wetruncate the latest data point datetime to the
  * start of a reasonable period for now.
  */
-export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
-  TODAY: {
+export const PERIOD_TO_DATE_RANGES: Partial<
+  Record<TimeRangePreset, TimeRangeMeta>
+> = {
+  [TimeRangePreset.TODAY]: {
     label: "Today",
     isoRange: "rill-TD",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
@@ -227,7 +230,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
   },
-  WEEK_TO_DATE: {
+  [TimeRangePreset.WEEK_TO_DATE]: {
     label: "Week to Date",
     isoRange: "rill-WTD",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
@@ -252,7 +255,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
   },
-  MONTH_TO_DATE: {
+  [TimeRangePreset.MONTH_TO_DATE]: {
     label: "Month to Date",
     isoRange: "rill-MTD",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
@@ -277,7 +280,7 @@ export const PERIOD_TO_DATE_RANGES: Record<string, TimeRangeMeta> = {
       ],
     },
   },
-  YEAR_TO_DATE: {
+  [TimeRangePreset.YEAR_TO_DATE]: {
     label: "Year to Date",
     isoRange: "rill-YTD",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
@@ -324,10 +327,13 @@ export const DEFAULT = {
   defaultComparison: TimeComparisonOption.CONTIGUOUS,
 };
 
-export const DEFAULT_TIME_RANGES: Record<string, TimeRangeMeta> = {
+// TODO: get rid of Partial here
+export const DEFAULT_TIME_RANGES: Partial<
+  Record<TimeRangePreset, TimeRangeMeta>
+> = {
   ...LATEST_WINDOW_TIME_RANGES,
   ...PERIOD_TO_DATE_RANGES,
-  ALL_TIME,
+  [TimeRangePreset.ALL_TIME]: ALL_TIME,
   CUSTOM,
   DEFAULT,
 };

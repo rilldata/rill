@@ -6,6 +6,10 @@ import {
 } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  TimeComparisonOption,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -128,9 +132,12 @@ function toFiltersProto(filters: V1MetricsViewFilter) {
 
 function toTimeRangeProto(range: DashboardTimeControls) {
   const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
-    isoRange: range.isoRange,
+    name: range.name,
   };
-  if (!range.isoRange) {
+  if (
+    range.name === TimeRangePreset.CUSTOM ||
+    range.name === TimeComparisonOption.CUSTOM
+  ) {
     if (range.start) timeRangeArgs.timeStart = toTimeProto(range.start);
     if (range.end) timeRangeArgs.timeEnd = toTimeProto(range.end);
   }
@@ -138,7 +145,9 @@ function toTimeRangeProto(range: DashboardTimeControls) {
 }
 
 function toScrubProto(range: ScrubRange) {
-  const timeRangeArgs: PartialMessage<DashboardTimeRange> = {};
+  const timeRangeArgs: PartialMessage<DashboardTimeRange> = {
+    name: TimeRangePreset.CUSTOM,
+  };
   timeRangeArgs.timeStart = toTimeProto(range.start);
   timeRangeArgs.timeEnd = toTimeProto(range.end);
 

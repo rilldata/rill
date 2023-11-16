@@ -31,7 +31,6 @@ import {
   TimeRangeMeta,
   TimeRangeOption,
   TimeRangePreset,
-  TimeRangeType,
 } from "../types";
 import {
   addZoneOffset,
@@ -109,7 +108,7 @@ export function getChildTimeRanges(
 export function ISODurationToTimePreset(
   isoDuration: string,
   defaultToAllTime = true
-): TimeRangeType {
+): TimeRangePreset | undefined {
   switch (isoDuration) {
     case "PT6H":
       return TimeRangePreset.LAST_SIX_HOURS;
@@ -134,7 +133,7 @@ export function ISODurationToTimePreset(
 
 /* Converts a Time Range preset to a TimeRange object */
 export function convertTimeRangePreset(
-  timeRangePreset: TimeRangeType,
+  timeRangePreset: TimeRangePreset,
   start: Date,
   end: Date,
   zone: string
@@ -171,7 +170,7 @@ export function convertTimeRangePreset(
 export const prettyFormatTimeRange = (
   start: Date,
   end: Date,
-  timePreset: TimeRangeType,
+  timePreset: TimeRangePreset,
   timeZone: string
 ): string => {
   const isAllTime = timePreset === TimeRangePreset.ALL_TIME;
@@ -379,7 +378,7 @@ export function getAdjustedChartTime(
   end: Date,
   zone: string,
   interval: V1TimeGrain,
-  timePreset: TimeRangeType,
+  timePreset: TimeRangePreset,
   defaultTimeRange: string
 ) {
   if (!start || !end)

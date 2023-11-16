@@ -362,6 +362,8 @@ const metricViewReducers = {
     allTimeRange: TimeRange
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      if (!timeRange.name) return;
+
       // Reset scrub when range changes
       setSelectedScrubRange(metricsExplorer, undefined);
 
@@ -373,9 +375,8 @@ const metricViewReducers = {
       if (!comparisonTimeRange) {
         // when switching time range we reset comparison time range
         // get the default for the new time range and set it only if is valid
-        const comparisonOption = DEFAULT_TIME_RANGES[
-          ISODurationToTimeRangePreset[timeRange.isoRange]
-        ]?.defaultComparison as TimeComparisonOption;
+        const comparisonOption = DEFAULT_TIME_RANGES[timeRange.name]
+          ?.defaultComparison as TimeComparisonOption;
         const range = getTimeComparisonParametersForComponent(
           comparisonOption,
           allTimeRange.start,
