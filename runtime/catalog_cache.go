@@ -391,7 +391,7 @@ func (c *catalogCache) updateDeleted(name *runtimev1.ResourceName) error {
 	r.Meta.SpecUpdatedOn = timestamppb.Now()
 	c.link(r)
 	c.dirty[nameStr(r.Meta.Name)] = r.Meta.Name
-	c.addEvent(r.Meta.Name, r, runtimev1.ResourceEvent_RESOURCE_EVENT_WRITE)
+	c.addEvent(r.Meta.Name, r, runtimev1.ResourceEvent_RESOURCE_EVENT_DELETE)
 	return nil
 }
 
