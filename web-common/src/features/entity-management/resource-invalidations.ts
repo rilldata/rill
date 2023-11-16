@@ -52,14 +52,10 @@ export function invalidateResourceResponse(
 
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here
-  switch (res.event) {
-    case V1ResourceEvent.RESOURCE_EVENT_WRITE:
-      invalidateResource(queryClient, instanceId, res.resource);
-      break;
-
-    case V1ResourceEvent.RESOURCE_EVENT_DELETE:
-      invalidateRemovedResource(queryClient, instanceId, res.resource);
-      break;
+  if (res.resource?.meta?.deletedOn) {
+    invalidateRemovedResource(queryClient, instanceId, res.resource);
+  } else {
+    invalidateResource(queryClient, instanceId, res.resource);
   }
 
   // only re-fetch list queries for kinds in `MainResources`
