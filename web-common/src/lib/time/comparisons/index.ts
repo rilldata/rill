@@ -1,3 +1,4 @@
+import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import { Duration, Interval } from "luxon";
 import { getTimeWidth, transformDate } from "../transforms";
 import {
@@ -11,6 +12,7 @@ export function getComparisonTransform(
   end: Date,
   comparison: TimeComparisonOption
 ): RelativeTimeTransformation {
+  console.log(comparison);
   if (
     comparison === TimeComparisonOption.CONTIGUOUS ||
     comparison === TimeComparisonOption.CUSTOM
@@ -27,7 +29,7 @@ export function getComparisonTransform(
     // map to a distinct Period-like TimeComparisonOption (e.g. "P1D")
     return {
       operationType: TimeOffsetType.SUBTRACT,
-      duration: comparison as TimeComparisonOption,
+      duration: TIME_COMPARISON[comparison].offsetIso,
     };
   }
 }

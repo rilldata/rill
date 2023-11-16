@@ -382,9 +382,9 @@ function getComparisonTimeRange(
 
     if (range.isComparisonRangeAvailable) {
       selectedComparisonTimeRange = {
-        name: comparisonOption,
         start: range.start,
         end: range.end,
+        name: comparisonOption,
       };
     }
   } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {

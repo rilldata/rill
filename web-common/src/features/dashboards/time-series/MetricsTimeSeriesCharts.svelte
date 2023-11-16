@@ -143,7 +143,7 @@
       $timeControlsStore.selectedTimeRange?.end,
       $dashboardStore?.selectedTimezone,
       interval,
-      $timeControlsStore.selectedTimeRange?.isoRange,
+      $timeControlsStore.selectedTimeRange?.name,
       $metaQuery.data.defaultTimeRange
     );
 
@@ -246,8 +246,7 @@
         value={bigNum}
         isMeasureExpanded={!!expandedMeasureName}
         {showComparison}
-        comparisonOption={$timeControlsStore?.selectedComparisonTimeRange
-          ?.isoRange}
+        comparisonOption={$timeControlsStore?.selectedComparisonTimeRange?.name}
         {comparisonValue}
         {comparisonPercChange}
         status={$timeSeriesDataStore?.isFetching

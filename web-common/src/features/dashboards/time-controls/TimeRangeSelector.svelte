@@ -99,7 +99,7 @@
   ) {
     closeMenu();
     dispatch("select-time-range", {
-      iso: timeRange.isoRange,
+      name: timeRange.name,
       start: timeRange.start,
       end: timeRange.end,
     });
@@ -113,6 +113,7 @@
     setIntermediateSelection(TimeRangePreset.CUSTOM)();
     closeMenu();
     dispatch("select-time-range", {
+      name: TimeRangePreset.CUSTOM,
       start: startDate,
       end: endDate,
     });
@@ -151,9 +152,8 @@
     }, 300);
   }
 
-  $: currentSelection = $dashboardStore?.selectedTimeRange?.isoRange;
+  $: currentSelection = $dashboardStore?.selectedTimeRange?.name;
   $: intermediateSelection = currentSelection;
-  $: console.log(intermediateSelection, currentSelection);
 
   const handleMenuOpen = () => {
     if (intermediateSelection !== TimeRangePreset.CUSTOM) {
@@ -194,10 +194,12 @@
             <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
             {#if intermediateSelection === TimeRangePreset.CUSTOM}
               Custom range
-            {:else if currentSelection in ISODurationToTimeRangePreset}
-              {DEFAULT_TIME_RANGES[currentSelection].label}
             {:else if currentSelection}
-              Last {humaniseISODuration(currentSelection)}
+              {#if currentSelection in DEFAULT_TIME_RANGES}
+                {DEFAULT_TIME_RANGES[currentSelection].label}
+              {:else}
+                Last {humaniseISODuration(currentSelection)}
+              {/if}
             {:else}
               Select a time range
             {/if}
@@ -228,7 +230,6 @@
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,
-      isoRange: "inf",
       label: ALL_TIME.label,
       start: boundaryStart,
       end: new Date(boundaryEnd.getTime() + 1), // end is exclusive
@@ -244,11 +245,11 @@
       <Divider />
     {/if}
     <MenuItem
-      on:before-select={setIntermediateSelection(allTime.isoRange)}
+      on:before-select={setIntermediateSelection(allTime.name)}
       on:select={() =>
         onSelectRelativeTimeRange(allTime, toggleFloatingElement)}
     >
-      <span class:font-bold={intermediateSelection === allTime.isoRange}>
+      <span class:font-bold={intermediateSelection === allTime.name}>
         {allTime.label}
       </span>
     </MenuItem>
@@ -273,11 +274,11 @@
 
       {#each latestWindowTimeRanges as timeRange}
         <MenuItem
-          on:before-select={setIntermediateSelection(timeRange.isoRange)}
+          on:before-select={setIntermediateSelection(timeRange.name)}
           on:select={() =>
             onSelectRelativeTimeRange(timeRange, toggleFloatingElement)}
         >
-          <span class:font-bold={intermediateSelection === timeRange.isoRange}>
+          <span class:font-bold={intermediateSelection === timeRange.name}>
             {timeRange.label}
           </span>
         </MenuItem>
@@ -287,11 +288,11 @@
       <Divider />
       {#each periodToDateTimeRanges as timeRange}
         <MenuItem
-          on:before-select={setIntermediateSelection(timeRange.isoRange)}
+          on:before-select={setIntermediateSelection(timeRange.name)}
           on:select={() =>
             onSelectRelativeTimeRange(timeRange, toggleFloatingElement)}
         >
-          <span class:font-bold={intermediateSelection === timeRange.isoRange}>
+          <span class:font-bold={intermediateSelection === timeRange.name}>
             {timeRange.label}
           </span>
         </MenuItem>

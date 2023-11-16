@@ -58,7 +58,7 @@ export function getChildTimeRanges(
 
       // All time is always an option
       timeRanges.push({
-        isoRange: "inf",
+        name: timePreset as TimeRangePreset,
         label: timeRange.label,
         start,
         end: exclusiveEndDate,
@@ -91,7 +91,7 @@ export function getChildTimeRanges(
       );
       if (isGrainPossible && hasSomeGrainMatches) {
         timeRanges.push({
-          isoRange: timeRange.isoRange,
+          name: timePreset as TimeRangePreset,
           label: timeRange.label,
           start: timeRangeDates.startDate,
           end: timeRangeDates.endDate,
@@ -141,7 +141,6 @@ export function convertTimeRangePreset(
   if (timeRangePreset === TimeRangePreset.ALL_TIME) {
     return {
       name: timeRangePreset,
-      isoRange: "inf",
       start,
       end: new Date(end.getTime() + 1),
     };
@@ -156,7 +155,6 @@ export function convertTimeRangePreset(
 
   return {
     name: timeRangePreset,
-    isoRange: timeRange.isoRange,
     start: timeRangeDates.startDate,
     end: timeRangeDates.endDate,
   };
@@ -392,7 +390,7 @@ export function getAdjustedChartTime(
 
   let adjustedEnd = new Date(end);
 
-  if (timePreset === "inf") {
+  if (timePreset === TimeRangePreset.ALL_TIME) {
     // No offset has been applied to All time range so far
     // Adjust end according to the interval
     start = getStartOfPeriod(start, grainDuration, zone);

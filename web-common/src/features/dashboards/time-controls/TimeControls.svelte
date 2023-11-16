@@ -16,6 +16,7 @@
     TimeComparisonOption,
     TimeGrain,
     TimeRange,
+    TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -89,9 +90,9 @@
     new Date($timeControlsStore.timeEnd)
   );
 
-  function onSelectTimeRange(isoRange: string, start: Date, end: Date) {
+  function onSelectTimeRange(name: TimeRangePreset, start: Date, end: Date) {
     baseTimeRange = {
-      isoRange,
+      name,
       start: new Date(start),
       end: new Date(end),
     };
@@ -123,12 +124,12 @@
   }
 
   function onSelectComparisonRange(
-    isoRange: TimeComparisonOption,
+    name: TimeComparisonOption,
     start: Date,
     end: Date
   ) {
     metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
-      isoRange,
+      name,
       start,
       end,
     });
@@ -182,7 +183,7 @@
       boundaryEnd={allTimeRange.end}
       selectedRange={$timeControlsStore?.selectedTimeRange}
       on:select-time-range={(e) =>
-        onSelectTimeRange(e.detail.iso, e.detail.start, e.detail.end)}
+        onSelectTimeRange(e.detail.name, e.detail.start, e.detail.end)}
       on:remove-scrub={() => {
         metricsExplorerStore.setSelectedScrubRange(metricViewName, undefined);
       }}
@@ -199,11 +200,7 @@
     {#if $dashboardStore?.showTimeComparison}
       <TimeComparisonSelector
         on:select-comparison={(e) => {
-          onSelectComparisonRange(
-            e.detail.isoRange,
-            e.detail.start,
-            e.detail.end
-          );
+          onSelectComparisonRange(e.detail.name, e.detail.start, e.detail.end);
         }}
         {minTimeGrain}
         currentStart={$timeControlsStore.selectedTimeRange.start}

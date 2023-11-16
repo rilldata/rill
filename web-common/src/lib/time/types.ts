@@ -105,7 +105,6 @@ export interface RelativePointInTime {
 
 export interface TimeRangeMeta {
   label: string;
-  isoRange?: string;
   defaultGrain?: V1TimeGrain; // Affordance for future use
   rangePreset?: RangePresetType | string;
   defaultComparison?: TimeComparisonOption | string;
@@ -133,7 +132,6 @@ export enum TimeRangePreset {
 
 export interface TimeRange {
   name?: TimeRangePreset | TimeComparisonOption;
-  isoRange?: string;
   start: Date;
   end: Date;
 }

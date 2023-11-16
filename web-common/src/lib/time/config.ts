@@ -33,7 +33,6 @@ import {
 export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   [TimeRangePreset.LAST_SIX_HOURS]: {
     label: "Last 6 Hours",
-    isoRange: "PT6H",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
@@ -61,7 +60,6 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
 
   [TimeRangePreset.LAST_24_HOURS]: {
     label: "Last 24 Hours",
-    isoRange: "PT24H",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.DAY,
     start: {
@@ -88,7 +86,6 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
 
   [TimeRangePreset.LAST_7_DAYS]: {
     label: "Last 7 Days",
-    isoRange: "P7D",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
     start: {
@@ -114,7 +111,6 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   },
   [TimeRangePreset.LAST_14_DAYS]: {
     label: "Last 14 Days",
-    isoRange: "P14D",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
     start: {
@@ -140,7 +136,6 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   },
   [TimeRangePreset.LAST_4_WEEKS]: {
     label: "Last 4 Weeks",
-    isoRange: "P4W",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
@@ -166,7 +161,6 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
   },
   [TimeRangePreset.LAST_12_MONTHS]: {
     label: "Last 12 Months",
-    isoRange: "P12M",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     defaultComparison: TimeComparisonOption.YEAR,
     start: {
@@ -207,7 +201,6 @@ export const PERIOD_TO_DATE_RANGES: Partial<
 > = {
   [TimeRangePreset.TODAY]: {
     label: "Today",
-    isoRange: "rill-TD",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.DAY,
     start: {
@@ -232,7 +225,6 @@ export const PERIOD_TO_DATE_RANGES: Partial<
   },
   [TimeRangePreset.WEEK_TO_DATE]: {
     label: "Week to Date",
-    isoRange: "rill-WTD",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.WEEK,
     start: {
@@ -257,7 +249,6 @@ export const PERIOD_TO_DATE_RANGES: Partial<
   },
   [TimeRangePreset.MONTH_TO_DATE]: {
     label: "Month to Date",
-    isoRange: "rill-MTD",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.MONTH,
     start: {
@@ -282,7 +273,6 @@ export const PERIOD_TO_DATE_RANGES: Partial<
   },
   [TimeRangePreset.YEAR_TO_DATE]: {
     label: "Year to Date",
-    isoRange: "rill-YTD",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
     defaultComparison: TimeComparisonOption.YEAR,
     start: {
@@ -309,7 +299,6 @@ export const PERIOD_TO_DATE_RANGES: Partial<
 
 export const ALL_TIME = {
   label: "All Time",
-  isoRange: "inf",
   rangePreset: RangePresetType.ALL_TIME,
   // this comparison period is a no-op
   defaultComparison: TimeComparisonOption.CONTIGUOUS,
@@ -422,12 +411,14 @@ export const TIME_COMPARISON = {
     shorthand: "prev. period",
     description: "Compare the current time range to the previous time range",
     comparisonType: TimeComparisonOption.CONTIGUOUS,
+    offsetIso: "",
   },
   [TimeComparisonOption.CUSTOM]: {
     label: "Custom range",
     shorthand: "comparing",
     description: "Compare the current time range to a custom time range",
     comparisonType: TimeComparisonOption.CUSTOM,
+    offsetIso: "",
   },
   [TimeComparisonOption.DAY]: {
     label: "Previous day",
@@ -435,6 +426,7 @@ export const TIME_COMPARISON = {
     description:
       "Compare the current time range to the same time range the day before",
     comparisonType: TimeComparisonOption.DAY,
+    offsetIso: "P1D",
   },
   [TimeComparisonOption.WEEK]: {
     label: "Previous week",
@@ -442,6 +434,7 @@ export const TIME_COMPARISON = {
     description:
       "Compare the current time range to the same time range the week before",
     comparisonType: TimeComparisonOption.WEEK,
+    offsetIso: "P1W",
   },
   [TimeComparisonOption.MONTH]: {
     label: "Previous month",
@@ -449,6 +442,7 @@ export const TIME_COMPARISON = {
     description:
       "Compare the current time range to the same time range the month before",
     comparisonType: TimeComparisonOption.MONTH,
+    offsetIso: "P1M",
   },
   [TimeComparisonOption.QUARTER]: {
     label: "Previous quarter",
@@ -456,6 +450,7 @@ export const TIME_COMPARISON = {
     description:
       "Compare the current time range to the same time range the quarter before",
     comparisonType: TimeComparisonOption.QUARTER,
+    offsetIso: "P1Q",
   },
 
   [TimeComparisonOption.YEAR]: {
@@ -464,6 +459,7 @@ export const TIME_COMPARISON = {
     description:
       "Compare the current time range to the same time range the year before",
     comparisonType: TimeComparisonOption.YEAR,
+    offsetIso: "P1Y",
   },
 };
 

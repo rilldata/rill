@@ -41,11 +41,11 @@ This component needs to do the following:
   export let selectedComparison;
   export let comparisonOptions: TimeComparisonOption[];
 
-  $: comparisonOption = selectedComparison?.isoRange;
+  $: comparisonOption = selectedComparison?.name;
 
   /** compile the comparison options */
   let options: {
-    isoRange: TimeComparisonOption;
+    name: TimeComparisonOption;
     start: Date;
     end: Date;
   }[];
@@ -57,7 +57,7 @@ This component needs to do the following:
         value
       );
       return {
-        isoRange: value,
+        name: value,
         key,
         start: comparisonTimeRange.start,
         end: comparisonTimeRange.end,
@@ -72,7 +72,7 @@ This component needs to do the following:
     intermediateSelection = TimeComparisonOption.CUSTOM;
     closeMenu();
     dispatch("select-comparison", {
-      isoRange: TimeComparisonOption.CUSTOM,
+      name: TimeComparisonOption.CUSTOM,
       start: new Date(startDate),
       end: new Date(endDate),
     });
@@ -86,7 +86,7 @@ This component needs to do the following:
     );
 
     dispatch("select-comparison", {
-      isoRange: comparisonOption,
+      name: comparisonOption,
       start: comparisonTimeRange.start,
       end: comparisonTimeRange.end,
     });
@@ -151,22 +151,22 @@ This component needs to do the following:
     slot="floating-element"
   >
     {#each options as option}
-      {@const preset = TIME_COMPARISON[option.isoRange]}
+      {@const preset = TIME_COMPARISON[option.name]}
       <MenuItem
-        selected={option.isoRange === intermediateSelection}
+        selected={option.name === intermediateSelection}
         on:before-select={() => {
-          intermediateSelection = option.isoRange;
+          intermediateSelection = option.name;
         }}
         on:select={() => {
-          onCompareRangeSelect(option.isoRange);
+          onCompareRangeSelect(option.name);
           toggleFloatingElement();
         }}
       >
-        <span class:font-bold={intermediateSelection === option.isoRange}>
-          {preset?.label || option.isoRange}
+        <span class:font-bold={intermediateSelection === option.name}>
+          {preset?.label || option.name}
         </span>
       </MenuItem>
-      {#if option.isoRange === TimeComparisonOption.CONTIGUOUS && options.length > 2}
+      {#if option.name === TimeComparisonOption.CONTIGUOUS && options.length > 2}
         <Divider />
       {/if}
     {/each}
