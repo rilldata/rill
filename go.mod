@@ -152,7 +152,7 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
-	github.com/fsnotify/fsnotify v1.6.0
+	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.4.1 // indirect
@@ -272,5 +272,7 @@ replace github.com/apache/calcite-avatica-go/v5 v5.2.0 => github.com/rilldata/ca
 
 // revert to original SDK once this PR is merged : https://github.com/googleapis/google-cloud-go/pull/8506
 replace cloud.google.com/go/bigquery v1.53.0 => github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230830110740-57fe623cde03
+
+replace github.com/marcboeker/go-duckdb v1.5.1 => github.com/k-anshul/go-duckdb v0.0.0-20231115055946-e3b8c2b95ce0
 
 exclude modernc.org/sqlite v1.18.1

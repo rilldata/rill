@@ -1558,6 +1558,26 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/telemetry:
+    post:
+      operationId: AdminService_Telemetry
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1TelemetryResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1TelemetryRequest'
+      tags:
+        - AdminService
   /v1/tokens/current:
     delete:
       summary: RevokeCurrentAuthToken revoke the current auth token
@@ -2314,6 +2334,8 @@ definitions:
         type: string
       refreshCron:
         type: string
+      refreshTimeZone:
+        type: string
       queryName:
         type: string
       queryArgsJson:
@@ -2457,6 +2479,15 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
+  v1TelemetryRequest:
+    type: object
+    properties:
+      event:
+        type: object
+        additionalProperties:
+          type: string
+  v1TelemetryResponse:
+    type: object
   v1TriggerReconcileResponse:
     type: object
   v1TriggerRedeployRequest:

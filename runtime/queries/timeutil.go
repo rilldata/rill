@@ -4,72 +4,33 @@ import (
 	"fmt"
 	"time"
 
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
-func TruncateTime(start time.Time, tg runtimev1.TimeGrain, tz *time.Location, firstDay, firstMonth int) time.Time {
+func convTimeGrain(tg runtimev1.TimeGrain) timeutil.TimeGrain {
 	switch tg {
 	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
-		return start.Truncate(time.Millisecond)
+		return timeutil.TimeGrainMillisecond
 	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
-		return start.Truncate(time.Second)
+		return timeutil.TimeGrainSecond
 	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
-		return start.Truncate(time.Minute)
+		return timeutil.TimeGrainMinute
 	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
-		start = start.In(tz)
-		start = time.Date(start.Year(), start.Month(), start.Day(), start.Hour(), 0, 0, 0, tz)
-		return start.In(time.UTC)
+		return timeutil.TimeGrainHour
 	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
-		start = start.In(tz)
-		start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, tz)
-		return start.In(time.UTC)
+		return timeutil.TimeGrainDay
 	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
-		start = start.In(tz)
-		weekday := int(start.Weekday())
-		if weekday == 0 {
-			weekday = 7
-		}
-		if firstDay < 1 {
-			firstDay = 1
-		}
-		if firstDay > 7 {
-			firstDay = 7
-		}
-
-		daysToSubtract := -(weekday - firstDay)
-		if weekday < firstDay {
-			daysToSubtract = -7 + daysToSubtract
-		}
-		start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, tz)
-		start = start.AddDate(0, 0, daysToSubtract)
-		return start.In(time.UTC)
+		return timeutil.TimeGrainWeek
 	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
-		start = start.In(tz)
-		start = time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, tz)
-		start = start.In(time.UTC)
-		return start
+		return timeutil.TimeGrainMonth
 	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
-		monthsToSubtract := (3 + int(start.Month()) - firstMonth%3) % 3
-		start = start.In(tz)
-		start = time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, tz)
-		start = start.AddDate(0, -monthsToSubtract, 0)
-		return start.In(time.UTC)
+		return timeutil.TimeGrainQuarter
 	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
-		start = start.In(tz)
-		year := start.Year()
-		if int(start.Month()) < firstMonth {
-			year = start.Year() - 1
-		}
-
-		start = time.Date(year, time.Month(firstMonth), 1, 0, 0, 0, 0, tz)
-		return start.In(time.UTC)
+		return timeutil.TimeGrainYear
 	}
-
-	return start
+	return timeutil.TimeGrainUnspecified
 }
 
 func ResolveTimeRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (time.Time, time.Time, error) {
@@ -121,10 +82,10 @@ func ResolveTimeRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (t
 		}
 
 		if !start.IsZero() {
-			start = d.Add(start)
+			start = d.Sub(start)
 		}
 		if !end.IsZero() {
-			end = d.Add(end)
+			end = d.Sub(end)
 		}
 
 		isISO = true
@@ -142,10 +103,10 @@ func ResolveTimeRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (t
 			fmoy = 1
 		}
 		if !start.IsZero() {
-			start = TruncateTime(start, tr.RoundToGrain, tz, fdow, fmoy)
+			start = timeutil.TruncateTime(start, convTimeGrain(tr.RoundToGrain), tz, fdow, fmoy)
 		}
 		if !end.IsZero() {
-			end = TruncateTime(end, tr.RoundToGrain, tz, fdow, fmoy)
+			end = timeutil.TruncateTime(end, convTimeGrain(tr.RoundToGrain), tz, fdow, fmoy)
 		}
 	}
 

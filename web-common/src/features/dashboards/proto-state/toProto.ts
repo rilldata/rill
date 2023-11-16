@@ -80,6 +80,9 @@ export function getProtoFromDashboardState(
   if (metrics.expandedMeasureName) {
     state.expandedMeasure = metrics.expandedMeasureName;
   }
+  if (metrics.pinIndex !== undefined) {
+    state.pinIndex = metrics.pinIndex;
+  }
   if (metrics.selectedDimensionName) {
     state.selectedDimension = metrics.selectedDimensionName;
   }

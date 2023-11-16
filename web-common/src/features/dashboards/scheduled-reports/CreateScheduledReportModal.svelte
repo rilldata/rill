@@ -16,7 +16,12 @@
   import { Button } from "../../../components/button";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
-  import RecipientsFormElement from "./RecipientsFormElement.svelte";
+  import {
+    getAbbreviationForIANA,
+    getLocalIANA,
+    getUTCIANA,
+  } from "../../../lib/time/timezone";
+  import RecipientsList from "./RecipientsList.svelte";
   import {
     convertToCron,
     getNextQuarterHour,
@@ -25,7 +30,8 @@
   } from "./time-utils";
 
   export let queryName: string;
-  export let queryArgsJson: string;
+  export let queryArgs: any;
+  export let dashboardTimeZone: string;
   export let open: boolean;
 
   $: organization = $page.params.organization;
@@ -34,7 +40,10 @@
   const createReport = createAdminServiceCreateReport();
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
-  const queryArgs = JSON.parse(queryArgsJson);
+
+  const userLocalIANA = getLocalIANA();
+  const UTCIana = getUTCIANA();
+
   // TODO: a better approach will be to use the queryArgs to craft the right state object
   const dashState = new URLSearchParams(window.location.search).get("state");
 
@@ -44,14 +53,14 @@
       frequency: "Weekly",
       dayOfWeek: getTodaysDayOfWeek(),
       timeOfDay: getTimeIn24FormatFromDateTime(getNextQuarterHour()),
+      timeZone: dashboardTimeZone || userLocalIANA,
       exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
       exportLimit: "",
-      recipients: [],
+      recipients: [] as string[],
     },
     validationSchema: yup.object({
       title: yup.string().required("Required"),
-      // TODO: uncomment and fix this validation
-      // recipients: yup.array().of(yup.string()).min(1, "Required"),
+      recipients: yup.array().min(1, "Required"),
     }),
     onSubmit: async (values) => {
       const refreshCron = convertToCron(
@@ -67,8 +76,9 @@
             options: {
               title: values.title,
               refreshCron: refreshCron, // for testing: "* * * * *"
+              refreshTimeZone: values.timeZone,
               queryName: queryName,
-              queryArgsJson: queryArgsJson,
+              queryArgsJson: JSON.stringify(queryArgs),
               exportLimit: values.exportLimit || undefined,
               exportFormat: values.exportFormat,
               openProjectSubpath: `/${queryArgs.metricsViewName}?state=${dashState}`,
@@ -89,15 +99,35 @@
       }
     },
   });
+
+  // This form-within-a-form is used to add recipients to the parent form
+  const {
+    form: newRecipientForm,
+    errors: newRecipientErrors,
+    handleSubmit: newRecipientHandleSubmit,
+  } = createForm({
+    initialValues: {
+      newRecipient: "",
+    },
+    validationSchema: yup.object({
+      newRecipient: yup.string().email("Invalid email"),
+    }),
+    onSubmit: (values) => {
+      if (values.newRecipient) {
+        $form["recipients"] = $form["recipients"].concat(values.newRecipient);
+      }
+      $newRecipientForm.newRecipient = "";
+    },
+  });
 </script>
 
 <Dialog {open}>
   <svelte:fragment slot="title">Schedule report</svelte:fragment>
   <form
-    on:submit|preventDefault={handleSubmit}
-    id="create-scheduled-report-form"
     autocomplete="off"
     class="flex flex-col gap-y-6"
+    id="create-scheduled-report-form"
+    on:submit|preventDefault={handleSubmit}
     slot="body"
   >
     <span>Email recurring exports to recipients.</span>
@@ -136,6 +166,27 @@
         />
       {/if}
       <TimePicker bind:value={$form["timeOfDay"]} id="timeOfDay" label="Time" />
+      <Select
+        bind:value={$form["timeZone"]}
+        id="timeZone"
+        label="Time zone"
+        options={[dashboardTimeZone, userLocalIANA, UTCIana]
+          // Remove duplicates when dashboardTimeZone is already covered by userLocalIANA or UTCIana
+          .filter((z, i, self) => {
+            return self.indexOf(z) === i;
+          })
+          // Add labels
+          .map((z) => {
+            let label = getAbbreviationForIANA(new Date(), z);
+            if (z === userLocalIANA) {
+              label += " (local time)";
+            }
+            return {
+              value: z,
+              label: label,
+            };
+          })}
+      />
     </div>
     <Select
       bind:value={$form["exportFormat"]}
@@ -152,29 +203,42 @@
       error={$errors["exportLimit"]}
       id="exportLimit"
       label="Row limit"
-      placeholder="1000"
       optional
+      placeholder="1000"
     />
-    <RecipientsFormElement
-      bind:recipients={$form["recipients"]}
-      error={$errors["recipients"]}
-      {organization}
-      {project}
-    />
+    <div class="flex flex-col gap-y-2">
+      <form
+        autocomplete="off"
+        id="add-recipient-form"
+        on:submit|preventDefault={newRecipientHandleSubmit}
+      >
+        <InputV2
+          bind:value={$newRecipientForm["newRecipient"]}
+          error={$newRecipientErrors["newRecipient"]}
+          hint="Recipients may receive different views based on the project's security policies.
+           Recipients without access to the project will not be able to view the report."
+          id="newRecipient"
+          label="Recipients"
+          placeholder="Add an email address"
+        />
+      </form>
+      <RecipientsList bind:recipients={$form["recipients"]} />
+    </div>
   </form>
   <svelte:fragment slot="footer">
-    <div class="flex items-center gap-x-2">
+    <div class="flex items-center gap-x-2 mt-2">
       {#if $createReport.isError}
         <div class="text-red-500">{$createReport.error.message}</div>
       {/if}
       <div class="grow" />
-      <Button type="secondary" on:click={() => dispatch("close")}>Cancel</Button
-      >
+      <Button on:click={() => dispatch("close")} type="secondary">
+        Cancel
+      </Button>
       <Button
-        type="primary"
-        submitForm
-        form="create-scheduled-report-form"
         disabled={$isSubmitting || $form["recipients"].length === 0}
+        form="create-scheduled-report-form"
+        submitForm
+        type="primary"
       >
         Create
       </Button>

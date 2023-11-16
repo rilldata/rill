@@ -429,6 +429,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, reportName, o
 	res.Kind = "report"
 	res.Title = opts.Title
 	res.Refresh.Cron = opts.RefreshCron
+	res.Refresh.TimeZone = opts.RefreshTimeZone
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	res.Export.Format = opts.ExportFormat.String()
@@ -468,6 +469,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Kind = "report"
 	res.Title = opts.Title
 	res.Refresh.Cron = opts.RefreshCron
+	res.Refresh.TimeZone = opts.RefreshTimeZone
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
 	res.Export.Format = exportFormat
@@ -522,6 +524,7 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	opts.Title = spec.Title
 	if spec.RefreshSchedule != nil && spec.RefreshSchedule.Cron != "" {
 		opts.RefreshCron = spec.RefreshSchedule.Cron
+		opts.RefreshTimeZone = spec.RefreshSchedule.TimeZone
 	}
 	opts.QueryName = spec.QueryName
 	opts.QueryArgsJson = spec.QueryArgsJson
@@ -537,7 +540,8 @@ type reportYAML struct {
 	Kind    string `yaml:"kind"`
 	Title   string `yaml:"title"`
 	Refresh struct {
-		Cron string `yaml:"cron"`
+		Cron     string `yaml:"cron"`
+		TimeZone string `yaml:"time_zone"`
 	} `yaml:"refresh"`
 	Query struct {
 		Name     string         `yaml:"name"`

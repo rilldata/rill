@@ -1,6 +1,6 @@
 <script lang="ts">
   import "regular-table";
-  import "regular-table/dist/css/material.css";
+  import "./regular-table-style.css";
   import type { RegularTableElement } from "regular-table";
   import { createEventDispatcher, onMount } from "svelte";
   import type { PivotPos, PivotRenderCallback } from "./types";
@@ -73,6 +73,12 @@
         row_headers[i] = range(0, rowHeaderDepth, () =>
           structuredClone(LOADING_CELL)
         );
+      }
+      // Replace null values inside the header with null placeholders
+      // Assumes that the second item in the array is always the measure
+      // value
+      else if (r?.[1]?.value === null) {
+        row_headers[i][1].value = NULL_CELL;
       }
     });
 

@@ -12,7 +12,7 @@
 
 - When the runtime is restarted
 - When the resource's refs or spec is updated
-- When the resource is deleted (`.Meta.Deleted` will be true)
+- When the resource is deleted (`.Meta.DeletedOn` will be non-nil)
 - When the resource is renamed (`.Meta.RenamedFrom` will be non-nil)
 - When all the resource's refs finish running `Reconcile` (even if they return an error)
 - When `Controller.Reconcile` is called for the resource
@@ -23,6 +23,7 @@
 - The controller may run `Reconcile` for different resources at the same time.
 - The controller will only run one `Reconcile` *per resource name* at a time.
 - The controller will not reconcile resources that reference each other at the same time – i.e. it only runs one non-cancelled `Reconcile` call between any given root and leaf node of the resource DAG. This means `Reconcile` does not need to worry about refs changing their state while it's running.
+- The controller cancels a reconcile if the resource being reconciled was updated/deleted by another agent than the reconciler itself (self-updates do not cause cancellations).
 - The controller cancels reconciles if DAG ancestors need to be reconciled. It will wait for the cancelled reconcile to complete before starting reconcile for the ancestor.
 - The controller does not call `Reconcile` for resources with cyclic refs. Instead, it immediately sets an error on them. 
 - The controller schedules reconciles of deleted and renamed resources, and waits for them to finish, before scheduling new regular reconciles. It does so in two phases, first letting all deletes finish (resources with `deleted_on != nil`), second letting all renames finish (resources with `renamed_from != nil`).

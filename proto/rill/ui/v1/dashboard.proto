@@ -89,6 +89,8 @@ message DashboardState {
 
   // Expanded measure for TDD view
   optional string expanded_measure = 18;
+
+  optional int32 pin_index = 19;
 }
 
 message DashboardTimeRange {

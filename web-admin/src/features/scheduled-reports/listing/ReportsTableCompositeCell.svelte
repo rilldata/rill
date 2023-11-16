@@ -3,27 +3,21 @@
   import CheckCircleOutline from "@rilldata/web-common/components/icons/CheckCircleOutline.svelte";
   import ReportIcon from "@rilldata/web-common/components/icons/ReportIcon.svelte";
   import cronstrue from "cronstrue";
-  import { createAdminServiceListProjectMembers } from "../../../client";
-  import { formatDateToCustomString } from "../tableUtils";
+  import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
+  import { formatRunDate } from "../tableUtils";
+  import ReportOwnerBullet from "./ReportOwnerBullet.svelte";
 
   export let organization: string;
   export let project: string;
   export let id: string;
   export let title: string;
   export let lastRun: string | undefined;
+  export let timeZone: string;
   export let frequency: string;
   export let ownerId: string;
   export let lastRunErrorMessage: string | undefined;
 
   const humanReadableFrequency = cronstrue.toString(frequency);
-
-  const membersQuery = createAdminServiceListProjectMembers(
-    organization,
-    project
-  );
-  $: owner = $membersQuery.data?.members.find(
-    (member) => member.userId === ownerId
-  );
 </script>
 
 <a href={`reports/${id}`} class="flex flex-col gap-y-0.5 group px-4 py-[5px]">
@@ -44,11 +38,15 @@
     {#if !lastRun}
       <span>Hasn't run yet</span>
     {:else}
-      <span>Last run {formatDateToCustomString(new Date(lastRun))}</span>
+      <span>Last run {formatRunDate(lastRun, timeZone)}</span>
     {/if}
     <span>•</span>
     <span>{humanReadableFrequency}</span>
-    <span>•</span>
-    <span>Created by {owner?.userName || "a project admin"}</span>
+    <ProjectAccessControls {organization} {project}>
+      <svelte:fragment slot="manage-project">
+        <span>•</span>
+        <ReportOwnerBullet {organization} {project} {ownerId} />
+      </svelte:fragment>
+    </ProjectAccessControls>
   </div>
 </a>

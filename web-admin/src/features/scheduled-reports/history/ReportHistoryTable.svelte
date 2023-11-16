@@ -24,6 +24,8 @@
       cell: (info) =>
         flexRender(ReportHistoryTableCompositeCell, {
           reportTime: info.row.original.reportTime,
+          timeZone:
+            $reportQuery.data.resource.report.spec.refreshSchedule.timeZone,
           errorMessage: info.row.original.errorMessage,
         }),
     },
@@ -31,9 +33,7 @@
 </script>
 
 <div class="flex flex-col gap-y-4 w-full">
-  <h1 class="text-gray-800 text-base font-medium leading-none">
-    Recent history
-  </h1>
+  <h1 class="text-gray-600 text-lg font-bold">Recent history</h1>
   {#if $reportQuery.error}
     <div class="text-red-500">
       {$reportQuery.error.message}

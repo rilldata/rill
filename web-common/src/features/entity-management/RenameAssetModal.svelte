@@ -37,7 +37,11 @@
     }),
     onSubmit: async (values) => {
       if (
-        isDuplicateName(values.newName, currentAssetName, $allNamesQuery.data)
+        isDuplicateName(
+          values.newName,
+          currentAssetName,
+          $allNamesQuery?.data ?? []
+        )
       ) {
         error = `Name ${values.newName} is already in use`;
         return;

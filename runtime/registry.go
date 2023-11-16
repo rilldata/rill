@@ -267,13 +267,14 @@ func (r *registryCache) add(inst *drivers.Instance) {
 }
 
 func (r *registryCache) edit(ctx context.Context, inst *drivers.Instance, restartController bool) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	// call edit instance under lock to ensure that concurrent edits do not end up in different entity in cache and db
 	err := r.store.EditInstance(ctx, inst)
 	if err != nil {
 		return err
 	}
-
-	r.mu.Lock()
-	defer r.mu.Unlock()
 
 	iwc, ok := r.instances[inst.ID]
 	if !ok {

@@ -102,7 +102,9 @@ export function getDashboardStateFromProto(
   } else {
     entity.selectedComparisonDimension = undefined;
   }
-
+  if (dashboard.pinIndex !== undefined) {
+    entity.pinIndex = dashboard.pinIndex;
+  }
   if (dashboard.selectedTimezone) {
     entity.selectedTimezone = dashboard.selectedTimezone;
   }

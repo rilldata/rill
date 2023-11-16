@@ -56,7 +56,7 @@
   $: debounceRunstate("disconnected");
 
   function isEventWithFiles(event: DragEvent) {
-    let types = event.dataTransfer.types;
+    let types = event?.dataTransfer?.types;
     return types && types.indexOf("Files") != -1;
   }
 </script>

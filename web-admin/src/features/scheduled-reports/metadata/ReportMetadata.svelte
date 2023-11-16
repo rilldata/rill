@@ -1,18 +1,23 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { Button } from "@rilldata/web-common/components/button";
+  import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
+  import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
+  import Menu from "@rilldata/web-common/components/menu-v2/Menu.svelte";
+  import MenuButton from "@rilldata/web-common/components/menu-v2/MenuButton.svelte";
+  import MenuItem from "@rilldata/web-common/components/menu-v2/MenuItem.svelte";
+  import MenuItems from "@rilldata/web-common/components/menu-v2/MenuItems.svelte";
+  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import cronstrue from "cronstrue";
-  import {
-    createAdminServiceDeleteReport,
-    createAdminServiceListProjectMembers,
-  } from "../../../client";
+  import { createAdminServiceDeleteReport } from "../../../client";
+  import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import { useReport, useReportDashboardName } from "../selectors";
   import MetadataLabel from "./MetadataLabel.svelte";
   import MetadataValue from "./MetadataValue.svelte";
+  import ReportOwnerBlock from "./ReportOwnerBlock.svelte";
   import { exportFormatToPrettyString, formatNextRunOn } from "./utils";
 
   export let organization: string;
@@ -31,23 +36,9 @@
     $reportQuery.data &&
     cronstrue.toString(
       $reportQuery.data.resource.report.spec.refreshSchedule.cron,
-      { verbose: true }
-    );
-
-  // Get owner's name
-  const membersQuery = createAdminServiceListProjectMembers(
-    organization,
-    project
-  );
-  $: owner =
-    $reportQuery.data &&
-    $membersQuery.data &&
-    $membersQuery.data.members.find(
-      (member) =>
-        member.userId ===
-        $reportQuery.data.resource.report.spec.annotations[
-          "admin_owner_user_id"
-        ]
+      {
+        verbose: true,
+      }
     );
 
   // Actions
@@ -67,86 +58,102 @@
 </script>
 
 {#if $reportQuery.data}
-  <div class="flex flex-col gap-y-8 w-full max-w-full 2xl:max-w-[1200px]">
+  <div class="flex flex-col gap-y-9 w-full max-w-full 2xl:max-w-[1200px]">
     <div class="flex flex-col gap-y-2">
+      <!-- Header row 1 -->
+      <div class="uppercase text-xs text-gray-500 font-semibold">
+        <!-- Author -->
+        <ProjectAccessControls {organization} {project}>
+          <svelte:fragment slot="manage-project">
+            {#if $reportQuery.data}
+              <ReportOwnerBlock
+                {organization}
+                {project}
+                ownerId={$reportQuery.data.resource.report.spec.annotations[
+                  "admin_owner_user_id"
+                ]}
+              />
+            {/if}
+          </svelte:fragment>
+        </ProjectAccessControls>
+        <!-- Format -->
+        <span>
+          {exportFormatToPrettyString(
+            $reportQuery.data.resource.report.spec.exportFormat
+          )} •
+        </span>
+        <!-- Limit -->
+        <span>
+          {$reportQuery.data?.resource.report.spec.exportLimit === "0"
+            ? "No row limit"
+            : `${$reportQuery.data?.resource.report.spec.exportLimit} row limit`}
+        </span>
+      </div>
       <div class="flex gap-x-2 items-center">
-        <h1 class="text-gray-800 text-base font-medium leading-none">
+        <h1 class="text-gray-700 text-lg font-bold">
           {$reportQuery.data.resource.report.spec.title}
         </h1>
-        <div class="grow" />
-        <!-- TODO: add more buttons & put delete report into a "..." icon button menu -->
-        <!-- TODO: add an "are you sure?" confirmation dialog -->
-        <Button
-          type="secondary"
-          on:click={handleDeleteReport}
-          disabled={$deleteReport.isLoading}
-        >
-          Delete report
-        </Button>
+        <!-- <div class="grow" /> -->
+        <Menu>
+          <MenuButton>
+            <IconButton>
+              <ThreeDot size="16px" />
+            </IconButton>
+          </MenuButton>
+          <MenuItems>
+            <!-- TODO: add an "are you sure?" confirmation dialog -->
+            <MenuItem as="button" on:click={handleDeleteReport}
+              >Delete report</MenuItem
+            >
+          </MenuItems>
+        </Menu>
       </div>
     </div>
 
     <!-- Three columns of metadata -->
-    <div class="flex flex-wrap gap-x-16 gap-y-3">
-      <!-- Column 1 -->
-      <div class="grid grid-cols-2 gap-x-6 gap-y-3 grid-cols-[auto,1fr]">
-        <!-- Dashboard -->
+    <div class="flex flex-wrap gap-x-16 gap-y-6">
+      <!-- Dashboard -->
+      <div class="flex flex-col gap-y-3">
         <MetadataLabel>Dashboard</MetadataLabel>
         <MetadataValue>
           <a href={`/${organization}/${project}/${$dashboardName.data}`}
             >{dashboardTitle}</a
           >
         </MetadataValue>
-        <!-- Creator -->
-        <MetadataLabel>Creator</MetadataLabel>
+      </div>
+
+      <!-- Frequency -->
+      <div class="flex flex-col gap-y-3">
+        <MetadataLabel>Repeats</MetadataLabel>
         <MetadataValue>
-          {owner?.userName || "a project admin"}
-        </MetadataValue>
-        <!-- Recipients -->
-        <MetadataLabel>Recipients</MetadataLabel>
-        <MetadataValue>
-          {$reportQuery.data.resource.report.spec.emailRecipients.length}
+          {humanReadableFrequency}
         </MetadataValue>
       </div>
 
-      <!-- Column 2 -->
+      <!-- Next run -->
       <div class="flex flex-col gap-y-3">
-        <!-- Format -->
-        <div class="flex gap-x-6">
-          <MetadataLabel>Format</MetadataLabel>
-          <MetadataValue>
-            {exportFormatToPrettyString(
-              $reportQuery.data.resource.report.spec.exportFormat
-            )}
-          </MetadataValue>
-        </div>
-        <!-- Limit -->
-        <div class="flex gap-x-6">
-          <MetadataLabel>Limit</MetadataLabel>
-          <MetadataValue>
-            {$reportQuery.data?.resource.report.spec.exportLimit === "0"
-              ? "None"
-              : $reportQuery.data?.resource.report.spec.exportLimit}
-          </MetadataValue>
-        </div>
+        <MetadataLabel>Next run</MetadataLabel>
+        <MetadataValue>
+          {formatNextRunOn(
+            $reportQuery.data.resource.report.state.nextRunOn,
+            $reportQuery.data.resource.report.spec.refreshSchedule.timeZone
+          )}
+        </MetadataValue>
       </div>
+    </div>
 
-      <!-- Column 3 -->
-      <div class="flex flex-col gap-y-3">
-        <!-- Frequency -->
-        <div class="flex gap-x-6">
-          <MetadataLabel>Frequency</MetadataLabel>
-          <MetadataValue>
-            {humanReadableFrequency}
-          </MetadataValue>
-        </div>
-        <!-- Next run -->
-        <div class="flex gap-x-6">
-          <MetadataLabel>Next run</MetadataLabel>
-          <MetadataValue>
-            {formatNextRunOn($reportQuery.data.resource.report.state.nextRunOn)}
-          </MetadataValue>
-        </div>
+    <!-- Recipients -->
+    <div class="flex flex-col gap-y-3">
+      <MetadataLabel
+        >Recipients ({$reportQuery.data.resource.report.spec.emailRecipients
+          .length})</MetadataLabel
+      >
+      <div class="flex flex-wrap gap-2">
+        {#each $reportQuery.data.resource.report.spec.emailRecipients as recipient}
+          <Tag>
+            {recipient}
+          </Tag>
+        {/each}
       </div>
     </div>
   </div>

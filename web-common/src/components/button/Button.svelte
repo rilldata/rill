@@ -46,7 +46,7 @@
   }) {
     return `
   ${compact ? "px-2 py-0.5" : "px-3 py-0.5"} text-xs font-normal leading-snug
- flex flex-row gap-x-2 items-center transition-transform duration-100
+ flex flex-row gap-x-2 min-w-fit items-center transition-transform duration-100
   focus:outline-none focus:ring-2
   ${customClasses ? customClasses : levels[status][type]}
   ${disabledClasses}

@@ -34,7 +34,9 @@
     <div class="w-6 m-auto ml-0 mr-0">
       <CheckCircleNew className="fill-blue-500" size="24px" />
     </div>
-    <div>Source "{$sourceImportedName}" imported successfully.</div>
+    <div class="break-all">
+      Source "{$sourceImportedName}" imported successfully.
+    </div>
   </div>
   <div class="flex flex-auto gap-x-2.5" slot="body">
     <div class="w-6" />

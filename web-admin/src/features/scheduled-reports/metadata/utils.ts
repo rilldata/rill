@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import { V1ExportFormat } from "../../../client";
 
 export function exportFormatToPrettyString(format: V1ExportFormat): string {
@@ -15,13 +16,12 @@ export function exportFormatToPrettyString(format: V1ExportFormat): string {
   }
 }
 
-export function formatNextRunOn(nextRunOn: string): string {
-  return new Date(nextRunOn).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  });
+export function formatNextRunOn(nextRunOn: string, timeZone: string): string {
+  // If the timezone is empty, interpret it as UTC
+  if (timeZone === "") {
+    timeZone = "UTC";
+  }
+  return DateTime.fromISO(nextRunOn)
+    .setZone(timeZone)
+    .toLocaleString(DateTime.DATETIME_FULL);
 }

@@ -98,7 +98,7 @@ func (r *Runtime) OLAP(ctx context.Context, instanceID string) (drivers.OLAPStor
 	olap, ok := conn.AsOLAP(instanceID)
 	if !ok {
 		release()
-		return nil, nil, fmt.Errorf("connector %q is not a valid OLAP data store", instanceID)
+		return nil, nil, fmt.Errorf("connector %q is not a valid OLAP data store", inst.OLAPConnector)
 	}
 
 	return olap, release, nil
@@ -125,11 +125,26 @@ func (r *Runtime) Catalog(ctx context.Context, instanceID string) (drivers.Catal
 		return store, release, nil
 	}
 
-	store, ok := r.metastore.AsCatalogStore(instanceID)
-	if !ok {
-		return nil, nil, fmt.Errorf("metastore cannot serve as catalog")
+	if inst.CatalogConnector == "" {
+		store, ok := r.metastore.AsCatalogStore(instanceID)
+		if !ok {
+			return nil, nil, fmt.Errorf("metastore cannot serve as catalog")
+		}
+		return store, func() {}, nil
 	}
-	return store, func() {}, nil
+
+	conn, release, err := r.AcquireHandle(ctx, instanceID, inst.CatalogConnector)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	store, ok := conn.AsCatalogStore(instanceID)
+	if !ok {
+		release()
+		return nil, nil, fmt.Errorf("connector %q is not a valid catalog store", inst.CatalogConnector)
+	}
+
+	return store, release, nil
 }
 
 func (r *Runtime) connectorConfig(ctx context.Context, instanceID, name string) (string, map[string]any, error) {

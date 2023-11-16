@@ -38,6 +38,7 @@
           title: info.row.original.report.spec.title,
           lastRun:
             info.row.original.report.state.executionHistory[0]?.reportTime,
+          timeZone: info.row.original.report.spec.refreshSchedule.timeZone,
           frequency: info.row.original.report.spec.refreshSchedule.cron,
           ownerId:
             info.row.original.report.spec.annotations["admin_owner_user_id"],
@@ -51,7 +52,7 @@
     },
     {
       id: "lastRun",
-      accessorFn: (row) => row.report.state.currentExecution.reportTime,
+      accessorFn: (row) => row.report.state.currentExecution?.reportTime,
     },
     // {
     //   id: "nextRun",
