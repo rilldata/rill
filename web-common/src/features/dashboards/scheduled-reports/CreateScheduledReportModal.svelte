@@ -53,7 +53,7 @@
       frequency: "Weekly",
       dayOfWeek: getTodaysDayOfWeek(),
       timeOfDay: getTimeIn24FormatFromDateTime(getNextQuarterHour()),
-      timeZone: dashboardTimeZone || userLocalIANA,
+      timeZone: userLocalIANA,
       exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
       exportLimit: "",
       recipients: [] as string[],
@@ -170,7 +170,7 @@
         bind:value={$form["timeZone"]}
         id="timeZone"
         label="Time zone"
-        options={[dashboardTimeZone, userLocalIANA, UTCIana]
+        options={[userLocalIANA, dashboardTimeZone, UTCIana]
           // Remove duplicates when dashboardTimeZone is already covered by userLocalIANA or UTCIana
           .filter((z, i, self) => {
             return self.indexOf(z) === i;
