@@ -1,7 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceEditReport } from "@rilldata/web-admin/client";
-  import { useReport } from "@rilldata/web-admin/features/scheduled-reports/selectors";
   import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
@@ -12,6 +11,7 @@
   import {
     getRuntimeServiceGetResourceQueryKey,
     V1ExportFormat,
+    V1ReportSpec,
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { ResourceKind } from "../../entity-management/resource-selectors";
@@ -24,50 +24,49 @@
   } from "./time-utils";
 
   export let open: boolean;
-  export let queryName: string;
-  export let queryArgs: any;
-
-  $: reportName = $page.params.report;
-  $: report = useReport($runtime.instanceId, reportName);
+  export let reportSpec: V1ReportSpec;
 
   const editReport = createAdminServiceEditReport();
   $: organization = $page.params.organization;
   $: project = $page.params.project;
-  const dashState = new URLSearchParams(window.location.search).get("state");
+  $: reportName = $page.params.report;
+
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
   const formState = createForm({
     initialValues: {
-      title: $report.data?.resource?.report?.spec?.title ?? "",
+      title: reportSpec.title as string,
       frequency: getFrequencyFromCron(
-        $report.data?.resource?.report?.spec?.refreshSchedule?.cron as string
+        reportSpec.refreshSchedule?.cron as string
       ),
       dayOfWeek: getDayOfWeekFromCron(
-        $report.data?.resource?.report?.spec?.refreshSchedule?.cron as string
+        reportSpec.refreshSchedule?.cron as string
       ),
       timeOfDay: getTimeOfDayFromCron(
-        $report.data?.resource?.report?.spec?.refreshSchedule?.cron as string
+        reportSpec.refreshSchedule?.cron as string
       ),
-      // TODO: convert time zone to IANA
-      timeZone:
-        $report.data?.resource?.report?.spec?.refreshSchedule?.timeZone ?? "",
+      timeZone: reportSpec.refreshSchedule?.timeZone ?? "",
       exportFormat:
-        $report.data?.resource?.report?.spec?.exportFormat ??
-        V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
-      exportLimit: $report.data?.resource?.report?.spec?.exportLimit ?? "",
-      recipients: $report.data?.resource?.report?.spec?.emailRecipients ?? [],
+        reportSpec.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
+      exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
+      recipients: reportSpec.emailRecipients ?? [],
     },
     validationSchema: yup.object({
       title: yup.string().required("Required"),
-      recipients: yup.array().min(1, "Required"),
+      // recipients: yup.array().min(1, "Required"),
     }),
     onSubmit: async (values) => {
+      const queryName = reportSpec.queryName ?? "";
+      const queryArgs = reportSpec.queryArgsJson
+        ? JSON.parse(reportSpec.queryArgsJson)
+        : {};
       const refreshCron = convertToCron(
         values.frequency,
         values.dayOfWeek,
         values.timeOfDay
       );
+
       try {
         await $editReport.mutateAsync({
           organization,
@@ -82,7 +81,8 @@
               queryArgsJson: JSON.stringify(queryArgs),
               exportLimit: values.exportLimit || undefined,
               exportFormat: values.exportFormat,
-              openProjectSubpath: `/${queryArgs.metricsViewName}?state=${dashState}`,
+              // TODO: test this
+              // openProjectSubpath: ..., // This isn't on the reportSpec. Either this API is a patch, or we need to construct dashboard state from the queryArgsJson.
               recipients: values.recipients,
             },
           },
@@ -110,7 +110,11 @@
 <Dialog {open}>
   <svelte:fragment slot="title">Edit scheduled report</svelte:fragment>
   <svelte:fragment slot="body">
-    <BaseScheduledReportForm formId="edit-scheduled-report-form" {formState} />
+    <BaseScheduledReportForm
+      formId="edit-scheduled-report-form"
+      {formState}
+      dashboardTimeZone={undefined}
+    />
   </svelte:fragment>
   <svelte:fragment slot="footer">
     <div class="flex items-center gap-x-2 mt-2">

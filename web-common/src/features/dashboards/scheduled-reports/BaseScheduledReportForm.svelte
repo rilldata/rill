@@ -10,18 +10,15 @@
     getLocalIANA,
     getUTCIANA,
   } from "../../../lib/time/timezone";
-  import { getStateManagers } from "../state-managers/state-managers";
   import RecipientsList from "./RecipientsList.svelte";
 
   export let formId: string;
   export let formState: any; // svelte-forms-lib's FormState
+  export let dashboardTimeZone: string | undefined; // Ugh.
 
   const { form, errors, handleSubmit } = formState;
 
   const userLocalIANA = getLocalIANA();
-  const ctx = getStateManagers();
-  const dashboardStore = ctx.dashboardStore;
-  $: dashboardTimeZone = $dashboardStore?.selectedTimezone ?? "";
   const UTCIana = getUTCIANA();
 
   // This form-within-a-form is used to add recipients to the parent form
@@ -91,7 +88,11 @@
       bind:value={$form["timeZone"]}
       id="timeZone"
       label="Time zone"
-      options={[dashboardTimeZone, userLocalIANA, UTCIana]
+      options={[
+        ...(dashboardTimeZone ? [dashboardTimeZone] : []),
+        userLocalIANA,
+        UTCIana,
+      ]
         // Remove duplicates when dashboardTimeZone is already covered by userLocalIANA or UTCIana
         .filter((z, i, self) => {
           return self.indexOf(z) === i;
