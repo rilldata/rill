@@ -23,9 +23,14 @@
   $: onProjectPage = isProjectPage($page);
 </script>
 
-<!-- Note: we don't provide the runtime here when the user is being spoofed via the "View As" functionality.
+{#if $viewAsUserStore}
+  <!-- When the user is being spoofed via the "View As" functionality, we don't provide the runtime here.
     In these cases, the "View as" actions manually set the runtime.  -->
-{#if !$viewAsUserStore}
+  <slot />
+{:else if isRuntimeHibernating}
+  <!-- When the runtime is hibernating, we omit the RuntimeProvider. -->
+  <slot />
+{:else}
   <RuntimeProvider
     host={$projRuntime.data?.host}
     instanceId={$projRuntime.data?.instanceId}
@@ -40,6 +45,4 @@
       <slot />
     </ProjectDashboardsListener>
   </RuntimeProvider>
-{:else}
-  <slot />
 {/if}

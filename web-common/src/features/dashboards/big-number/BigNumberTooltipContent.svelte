@@ -8,7 +8,7 @@
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
   export let measure: MetricsViewSpecMeasureV2;
-  export let value: any;
+  export let value = "";
 
   $: description =
     measure?.description || measure?.label || measure?.expression;
