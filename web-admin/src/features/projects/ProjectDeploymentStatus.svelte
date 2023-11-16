@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/projects/dashboards";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createAdminServiceGetProject } from "../../client";
   import ProjectDeploymentStatusChip from "./ProjectDeploymentStatusChip.svelte";
@@ -16,15 +14,11 @@
     organization,
     project
   );
-
-  function handleViewLogs() {
-    goto(`/${organization}/${project}/-/logs`);
-  }
 </script>
 
 <div class="flex flex-col gap-y-2">
   <div>
-    <span class="uppercase text-gray-500 font-semibold text-[10px] leading-4"
+    <span class="uppercase text-gray-500 font-semibold text-[10px] leading-none"
       >Project status</span
     >
     <div>
@@ -41,9 +35,7 @@
       </span>
     {/if}
   </div>
-  {#if isProjectDeployed}
-    <div>
-      <Button type="secondary" on:click={handleViewLogs}>View logs</Button>
-    </div>
+  {#if !isProjectDeployed}
+    <div>This project is not deployed.</div>
   {/if}
 </div>

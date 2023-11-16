@@ -108,7 +108,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
         columnWidths[column.name] = largest;
 
         if (TIMESTAMPS.has(column.type)) {
-          columnWidths[column.name] = DATES.has(column.type) ? 13 : 22;
+          columnWidths[column.name] = DATES.has(column.type) ? 13 : 24;
         }
       });
     }

@@ -20,64 +20,6 @@ describe("niceMeasureExtents", () => {
 });
 
 describe("getFilterForComparedDimension", () => {
-  it("should return filter with dimension added if no existing filter", () => {
-    const dimensionName = "country";
-    const filters = { include: [], exclude: [] };
-    const topListValues = ["US", "IN", "CN"];
-
-    const result = getFilterForComparedDimension(
-      dimensionName,
-      filters,
-      topListValues,
-      "chart"
-    );
-
-    expect(result.updatedFilter).toEqual({
-      include: [{ name: "country", in: [] }],
-      exclude: [],
-    });
-
-    expect(result.includedValues).toEqual(["US", "IN", "CN"]);
-  });
-
-  it("should exclude values from top list based on existing exclude filter", () => {
-    const dimensionName = "country";
-    const filters = {
-      include: [],
-      exclude: [{ name: "country", in: ["CN"] }],
-    };
-    const topListValues = ["US", "IN", "CN"];
-
-    const result = getFilterForComparedDimension(
-      dimensionName,
-      filters,
-      topListValues,
-      "chart"
-    );
-
-    expect(result.updatedFilter).toEqual({
-      include: [{ name: "country", in: [] }],
-      exclude: [{ name: "country", in: ["CN"] }],
-    });
-
-    expect(result.includedValues).toEqual(["US", "IN"]);
-  });
-
-  it("should slice top list values to max of 3 for chart", () => {
-    const dimensionName = "country";
-    const filters = { include: [], exclude: [] };
-    const topListValues = ["US", "IN", "CN", "UK", "FR"];
-
-    const result = getFilterForComparedDimension(
-      dimensionName,
-      filters,
-      topListValues,
-      "chart"
-    );
-
-    expect(result.includedValues).toHaveLength(3);
-  });
-
   it("should slice top list values to max of 250 for table", () => {
     const dimensionName = "country";
     const filters = { include: [], exclude: [] };
@@ -88,8 +30,7 @@ describe("getFilterForComparedDimension", () => {
     const result = getFilterForComparedDimension(
       dimensionName,
       filters,
-      topListValues,
-      "table"
+      topListValues
     );
 
     expect(result.includedValues).toHaveLength(250);
@@ -108,8 +49,7 @@ describe("getFilterForComparedDimension", () => {
     const result = getFilterForComparedDimension(
       dimensionName,
       filters,
-      topListValues,
-      "chart"
+      topListValues
     );
 
     expect(result.updatedFilter).toEqual({

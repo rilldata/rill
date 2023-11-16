@@ -1,38 +1,33 @@
 <script lang="ts">
+  import { runtime } from "../../../runtime-client/runtime-store";
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
+  import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
-  import Expand from "@rilldata/web-common/components/icons/Expand.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
-  import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
+  import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+  import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
+  import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+  import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import type { DimensionDataItem } from "./multiple-dimension-queries";
+  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./MeasureChart.svelte";
   import MeasureZoom from "./MeasureZoom.svelte";
+  import type { DimensionDataItem } from "./multiple-dimension-queries";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
-  import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
-  import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
-  import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
-  import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
-  import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-  import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
-  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -57,6 +52,11 @@
     $timeControlsStore.minTimeGrain;
   $: isScrubbing = $dashboardStore?.selectedScrubRange?.isScrubbing;
 
+  $: includedValuesForDimension =
+    $dashboardStore?.filters?.include?.find(
+      (filter) => filter.name === comparisonDimension
+    )?.in || [];
+
   // List of measures which will be shown on the dashboard
   let renderedMeasures = [];
   $: {
@@ -73,9 +73,6 @@
 
   $: totals = $timeSeriesDataStore.total;
   $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
-
-  // Track the big number currently being hovered
-  let hoveredMeasure;
 
   let scrubStart;
   let scrubEnd;
@@ -99,9 +96,10 @@
 
   $: if (
     $timeSeriesDataStore?.dimensionChartData?.length ||
-    !comparisonDimension
+    !comparisonDimension ||
+    includedValuesForDimension.length === 0
   ) {
-    dimensionDataCopy = $timeSeriesDataStore.dimensionChartData;
+    dimensionDataCopy = $timeSeriesDataStore.dimensionChartData || [];
   }
   $: dimensionData = dimensionDataCopy;
 
@@ -200,7 +198,7 @@
   start={startValue}
   {workspaceWidth}
 >
-  <div class="bg-white sticky top-0 flex pl-1" style="z-index:100">
+  <div class="bg-white sticky top-0 flex pl-1 z-10">
     {#if expandedMeasureName}
       <BackToOverview {metricViewName} />
     {:else}
@@ -215,10 +213,7 @@
       />
     {/if}
   </div>
-  <div
-    class="bg-white sticky left-0 top-0 overflow-visible"
-    style="z-index:101"
-  >
+  <div class="bg-white sticky left-0 top-0 overflow-visible z-10">
     <!-- top axis element -->
     <div />
     <MeasureZoom {metricViewName} />
@@ -240,16 +235,13 @@
     <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
     {#each renderedMeasures as measure (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
-      {@const bigNum = totals?.[measure.name] ?? 0}
-      {@const isBeingHovered =
-        !expandedMeasureName && hoveredMeasure === measure.name}
+      {@const bigNum = totals?.[measure.name]}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
       {@const comparisonPercChange =
         comparisonValue && bigNum !== undefined && bigNum !== null
           ? (bigNum - comparisonValue) / comparisonValue
           : undefined}
       <MeasureBigNumber
-        bind:hoveredMeasure
         {measure}
         value={bigNum}
         isMeasureExpanded={!!expandedMeasureName}
@@ -268,55 +260,35 @@
         }}
       />
 
-      <div
-        class="time-series-body rounded {isBeingHovered ? 'bg-gray-100' : ''}"
-        style:height="125px"
-      >
+      <div style:height="125px">
         {#if $timeSeriesDataStore?.isError}
           <div class="p-5"><CrossIcon /></div>
         {:else if formattedData}
-          <div class="relative">
-            <MeasureChart
-              bind:mouseoverValue
-              {measure}
-              {isScrubbing}
-              {scrubStart}
-              {scrubEnd}
-              {metricViewName}
-              data={formattedData}
-              {dimensionData}
-              zone={$dashboardStore?.selectedTimezone}
-              xAccessor="ts_position"
-              labelAccessor="ts"
-              timeGrain={interval}
-              yAccessor={measure.name}
-              xMin={startValue}
-              xMax={endValue}
-              {showComparison}
-              mouseoverTimeFormat={(value) => {
-                /** format the date according to the time grain */
-                return new Date(value).toLocaleDateString(
-                  undefined,
-                  TIME_GRAIN[interval].formatDate
-                );
-              }}
-            />
-
-            {#if isBeingHovered}
-              <Tooltip active={isBeingHovered} distance={4} location="right">
-                <TooltipContent slot="tooltip-content" maxWidth="280px">
-                  <TooltipShortcutContainer>
-                    <div>Expand Measure</div>
-                    <Shortcut>Click</Shortcut>
-                  </TooltipShortcutContainer>
-                </TooltipContent>
-
-                <div class="absolute right-0 top-0 p-2">
-                  <Expand />
-                </div>
-              </Tooltip>
-            {/if}
-          </div>
+          <MeasureChart
+            bind:mouseoverValue
+            {measure}
+            {isScrubbing}
+            {scrubStart}
+            {scrubEnd}
+            {metricViewName}
+            data={formattedData}
+            {dimensionData}
+            zone={$dashboardStore?.selectedTimezone}
+            xAccessor="ts_position"
+            labelAccessor="ts"
+            timeGrain={interval}
+            yAccessor={measure.name}
+            xMin={startValue}
+            xMax={endValue}
+            {showComparison}
+            mouseoverTimeFormat={(value) => {
+              /** format the date according to the time grain */
+              return new Date(value).toLocaleDateString(
+                undefined,
+                TIME_GRAIN[interval].formatDate
+              );
+            }}
+          />
         {:else}
           <div class="flex items-center justify-center w-24">
             <Spinner status={EntityStatus.Running} />

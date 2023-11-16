@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { useDashboards } from "@rilldata/web-admin/features/projects/dashboards";
+  import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
   import DashboardIcon from "@rilldata/web-common/components/icons/DashboardIcon.svelte";
   import { Tag } from "@rilldata/web-common/components/tag";
-  import { createAdminServiceGetProject } from "../../client";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { createAdminServiceGetProject } from "../../../client";
 
   export let organization: string;
   export let project: string;
@@ -55,7 +55,7 @@
                     <svelte:fragment slot="manage-project">
                       <span class="text-xs">
                         This dashboard has an error. Please check the project
-                        logs.
+                        status.
                       </span>
                     </svelte:fragment>
                     <svelte:fragment slot="read-project">

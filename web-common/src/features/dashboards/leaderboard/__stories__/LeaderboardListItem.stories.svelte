@@ -23,7 +23,6 @@
     deltaRel: 0.5,
     deltaAbs: 100,
     selectedIndex: -1,
-    defaultComparedIndex: -1,
   };
   const defaultArgs = {
     itemData,

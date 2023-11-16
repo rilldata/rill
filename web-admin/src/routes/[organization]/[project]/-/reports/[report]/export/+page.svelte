@@ -9,6 +9,8 @@
   import type { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
   $: reportId = $page.params.report;
   $: format = $page.url.searchParams.get("format");
   $: bakedQuery = $page.url.searchParams.get("query");
@@ -28,7 +30,6 @@
         limit,
       },
     });
-    // TODO: redirect to report page once success once that is merged in
   }
 
   $: if (reportId && format && bakedQuery && $runtime) {
@@ -49,16 +50,28 @@
   }
 </script>
 
-{#if error}
-  <CtaLayoutContainer>
-    <CtaContentContainer>
-      <CtaMessage>
-        {error}
-      </CtaMessage>
-      <!-- TODO: redirect to report once that page is merged -->
-      <CtaButton variant="primary-outline" on:click={() => goto("/")}>
-        Back to home
-      </CtaButton>
-    </CtaContentContainer>
-  </CtaLayoutContainer>
-{/if}
+<CtaLayoutContainer>
+  <CtaContentContainer>
+    {#if error}
+      <div class="flex flex-col gap-y-2">
+        <h2 class="text-lg font-semibold">Download failed</h2>
+        <CtaMessage>
+          {error}
+        </CtaMessage>
+      </div>
+    {:else}
+      <div class="flex flex-col gap-y-2">
+        <h2 class="text-lg font-semibold">Downloading report...</h2>
+        <CtaMessage
+          >If your download has failed, refresh the page to try again.</CtaMessage
+        >
+      </div>
+    {/if}
+    <CtaButton
+      on:click={() => goto(`/${organization}/${project}/-/reports/${reportId}`)}
+      variant="primary-outline"
+    >
+      Go to report page
+    </CtaButton>
+  </CtaContentContainer>
+</CtaLayoutContainer>

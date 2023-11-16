@@ -12,7 +12,7 @@
 
   let editor: YAMLEditor;
   let view: EditorView;
-  let error: Error;
+  let error: Error | undefined;
 
   const queryClient = useQueryClient();
 
@@ -29,7 +29,7 @@
     error = validateYAMLAndReturnError(blob);
   }
 
-  function validateYAMLAndReturnError(blob: string): Error {
+  function validateYAMLAndReturnError(blob: string): Error | undefined {
     try {
       parse(blob);
       return undefined;

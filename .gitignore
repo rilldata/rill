@@ -11,7 +11,6 @@ web-local/src/server/duckdb
 web-local/src/server/scratch/
 server/venv/
 tsc-tmp/
-export/
 .vscode
 /temp
 /tmp

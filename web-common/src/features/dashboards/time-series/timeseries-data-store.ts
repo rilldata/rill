@@ -77,6 +77,13 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
   return derived(
     [useMetaQuery(ctx), useTimeControlStore(ctx), ctx.dashboardStore],
     ([metricsView, timeControls, dashboardStore], set) => {
+      if (!timeControls.ready || timeControls.isFetching) {
+        set({
+          isFetching: true,
+        });
+        return;
+      }
+
       const showComparison = timeControls.showComparison;
       const interval =
         timeControls.selectedTimeRange?.interval ?? timeControls.minTimeGrain;
@@ -152,7 +159,11 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
 
           if (!primary?.data || !primaryTotal?.data || !unfilteredTotal?.data) {
             return {
-              isFetching: metricsView.isFetching,
+              isFetching:
+                metricsView.isFetching ||
+                primary?.isFetching ||
+                primaryTotal?.isFetching ||
+                unfilteredTotal?.isFetching,
             };
           }
 

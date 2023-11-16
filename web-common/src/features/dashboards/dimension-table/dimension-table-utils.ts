@@ -222,7 +222,7 @@ export function estimateColumnSizes(
 export function prepareVirtualizedDimTableColumns(
   dash: MetricsExplorerEntity,
   allMeasures: MetricsViewSpecMeasureV2[],
-  referenceValues: { [key: string]: number },
+  measureTotals: { [key: string]: number },
   dimension: MetricsViewDimension,
   timeComparison: boolean,
   validPercentOfTotal: boolean
@@ -295,7 +295,7 @@ export function prepareVirtualizedDimTableColumns(
           type: "INT",
           label: measure?.label || measure?.expression,
           description: measure?.description,
-          total: referenceValues[measure?.name ?? ""] || 0,
+          total: measureTotals[measure?.name ?? ""] || 0,
           enableResize: false,
           format: measure?.formatPreset,
           highlight,
@@ -429,24 +429,37 @@ export function prepareDimensionTableRows(
 
       if (addDeltas && activeMeasure) {
         rowOut[`${activeMeasureName}_delta`] = activeMeasure.deltaAbs
-          ? formattersForMeasures[activeMeasureName](
-              activeMeasure.deltaAbs as number
-            )
-          : PERC_DIFF.PREV_VALUE_NO_DATA;
+          ? (activeMeasure.deltaAbs as number)
+          : 0;
+        rowOut[`__formatted_${activeMeasureName}_delta`] =
+          activeMeasure.deltaAbs
+            ? formattersForMeasures[activeMeasureName](
+                activeMeasure.deltaAbs as number
+              )
+            : PERC_DIFF.PREV_VALUE_NO_DATA;
 
         rowOut[`${activeMeasureName}_delta_perc`] = activeMeasure.deltaRel
-          ? formatMeasurePercentageDifference(activeMeasure.deltaRel as number)
-          : PERC_DIFF.PREV_VALUE_NO_DATA;
+          ? (activeMeasure.deltaRel as number)
+          : 0;
+        rowOut[`__formatted_${activeMeasureName}_delta_perc`] =
+          activeMeasure.deltaRel
+            ? formatMeasurePercentageDifference(
+                activeMeasure.deltaRel as number
+              )
+            : PERC_DIFF.PREV_VALUE_NO_DATA;
       }
 
       if (addPercentOfTotal && activeMeasure) {
         const value = activeMeasure.baseValue as number;
 
         if (unfilteredTotal === 0 || !unfilteredTotal) {
-          rowOut[activeMeasureName + "_percent_of_total"] =
+          rowOut[activeMeasureName + "_percent_of_total"] = 0;
+          rowOut[`__formatted_${activeMeasureName}_percent_of_total`] =
             PERC_DIFF.CURRENT_VALUE_NO_DATA;
         } else {
           rowOut[activeMeasureName + "_percent_of_total"] =
+            value / unfilteredTotal;
+          rowOut[`__formatted_${activeMeasureName}_percent_of_total`] =
             formatMeasurePercentageDifference(value / unfilteredTotal);
         }
       }

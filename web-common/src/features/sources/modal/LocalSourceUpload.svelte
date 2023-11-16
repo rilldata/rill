@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -67,6 +68,7 @@
           tableName,
           getFilePathFromNameAndType(tableName, EntityType.Table)
         );
+        goto(`/source/${tableName}`);
       } catch (err) {
         console.error(err);
       }
@@ -81,4 +83,8 @@
   <Button on:click={handleOpenFileDialog} type="primary"
     >Upload a CSV, JSON or Parquet file
   </Button>
+</div>
+<div class="flex">
+  <div class="grow" />
+  <Button on:click={() => dispatch("back")} type="secondary">Back</Button>
 </div>

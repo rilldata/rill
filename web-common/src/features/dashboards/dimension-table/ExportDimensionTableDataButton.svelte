@@ -1,20 +1,26 @@
 <script lang="ts">
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
+  import { getDimensionTableExportArgs } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export-utils";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceExport,
     V1ExportFormat,
   } from "@rilldata/web-common/runtime-client";
+  import { onMount, SvelteComponent } from "svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import exportToplist from "./export-toplist";
 
+  export let includeScheduledReport: boolean;
   export let metricViewName: string;
 
   let exportMenuOpen = false;
+  let showScheduledReportDialog = false;
 
-  const timeControlStore = useTimeControlStore(getStateManagers());
+  const ctx = getStateManagers();
+  const dashboardStore = ctx.dashboardStore;
+  const timeControlStore = useTimeControlStore(ctx);
 
   const exportDash = createQueryServiceExport();
   const handleExportTopList = async (format: V1ExportFormat) => {
@@ -25,6 +31,19 @@
       timeControlStore,
     });
   };
+
+  // Only import the Scheduled Report modal if in the Cloud context
+  // This ensures Rill Developer doesn't try and fail to import the admin-client
+  let CreateScheduledReportModal: typeof SvelteComponent | undefined;
+  onMount(async () => {
+    if (includeScheduledReport) {
+      CreateScheduledReportModal = (
+        await import("../scheduled-reports/CreateScheduledReportModal.svelte")
+      ).default;
+    }
+  });
+
+  $: scheduledReportsQueryArgs = getDimensionTableExportArgs(ctx);
 </script>
 
 <WithTogglableFloatingElement
@@ -36,16 +55,16 @@
   on:open={() => (exportMenuOpen = true)}
 >
   <button
+    class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700"
     on:click={(evt) => {
       evt.stopPropagation();
       toggleFloatingElement();
     }}
-    class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700"
   >
     Export
     <CaretDownIcon
-      size="10px"
       className="transition-transform {exportMenuOpen && '-rotate-180'}"
+      size="10px"
     />
   </button>
   <Menu
@@ -78,5 +97,28 @@
     >
       Export as XLSX
     </MenuItem>
+    {#if includeScheduledReport}
+      <MenuItem
+        on:select={() => {
+          toggleFloatingElement();
+          showScheduledReportDialog = true;
+        }}
+      >
+        Create scheduled report...
+      </MenuItem>
+    {/if}
   </Menu>
 </WithTogglableFloatingElement>
+
+<!-- Including `showScheduledReportDialog` in the conditional ensures we tear 
+  down the form state when the dialog closes -->
+{#if includeScheduledReport && CreateScheduledReportModal && showScheduledReportDialog}
+  <svelte:component
+    this={CreateScheduledReportModal}
+    queryName="MetricsViewComparison"
+    queryArgs={$scheduledReportsQueryArgs}
+    dashboardTimeZone={$dashboardStore?.selectedTimezone}
+    open={showScheduledReportDialog}
+    on:close={() => (showScheduledReportDialog = false)}
+  />
+{/if}

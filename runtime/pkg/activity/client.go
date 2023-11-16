@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -64,6 +65,34 @@ type BufferedClientOptions struct {
 	SinkPeriod time.Duration
 	BufferSize int
 	Logger     *zap.Logger
+}
+
+func NewClientFromConf(
+	sinkType string,
+	sinkPeriodMs, maxBufferSize int,
+	sinkKafkaBrokers, sinkKafkaTopic string,
+	logger *zap.Logger,
+) Client {
+	var err error
+	var sink Sink
+	switch sinkType {
+	case "", "noop":
+		sink = NewNoopSink()
+	case "kafka":
+		sink, err = NewKafkaSink(sinkKafkaBrokers, sinkKafkaTopic, logger)
+		if err != nil {
+			logger.Fatal("failed to create a kafka sink", zap.Error(err))
+		}
+	default:
+		logger.Fatal(fmt.Sprintf("unknown activity sink type: %s", sinkType))
+	}
+
+	return NewBufferedClient(BufferedClientOptions{
+		Sink:       sink,
+		SinkPeriod: time.Duration(sinkPeriodMs) * time.Millisecond,
+		BufferSize: maxBufferSize,
+		Logger:     logger,
+	})
 }
 
 func NewBufferedClient(opts BufferedClientOptions) Client {

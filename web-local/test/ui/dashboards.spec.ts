@@ -158,7 +158,7 @@ test.describe("dashboard", () => {
     await page.getByRole("button", { name: "Export model data" }).click();
     await page.getByText("Export as CSV").click();
     const downloadCSV = await downloadCSVPromise;
-    await downloadCSV.path();
+    await downloadCSV.saveAs("temp/" + downloadCSV.suggestedFilename());
     const csvRegex = /^AdBids_model_filtered_.*\.csv$/;
     expect(csvRegex.test(downloadCSV.suggestedFilename())).toBe(true);
 
@@ -168,7 +168,7 @@ test.describe("dashboard", () => {
     await page.getByRole("button", { name: "Export model data" }).click();
     await page.getByText("Export as XLSX").click();
     const downloadXLSX = await downloadXLSXPromise;
-    await downloadXLSX.path();
+    await downloadXLSX.saveAs("temp/" + downloadXLSX.suggestedFilename());
     const xlsxRegex = /^AdBids_model_filtered_.*\.xlsx$/;
     expect(xlsxRegex.test(downloadXLSX.suggestedFilename())).toBe(true);
 
@@ -178,7 +178,8 @@ test.describe("dashboard", () => {
     await page.getByRole("button", { name: "Export model data" }).click();
     await page.getByText("Export as Parquet").click();
     const downloadParquet = await downloadParquetPromise;
-    await downloadParquet.path();
+    await downloadParquet.saveAs("temp/" + downloadParquet.suggestedFilename());
+
     const parquetRegex = /^AdBids_model_filtered_.*\.parquet$/;
     expect(parquetRegex.test(downloadParquet.suggestedFilename())).toBe(true);
 
@@ -461,7 +462,7 @@ dimensions:
     await expect(page.getByText("Avg Bid Price $3.01")).toBeVisible();
 
     // Change the leaderboard metric
-    await page.getByRole("button", { name: "Total rows" }).click();
+    await page.getByRole("button", { name: "Total rows", exact: true }).click();
     await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
 
     // Check domain and sample value in leaderboard
@@ -509,8 +510,39 @@ dimensions:
     // clear all filters
     await page.getByText("Clear filters").click();
 
-    await page.getByRole("button", { name: "Edit metrics" }).click();
+    // run through TDD table view
+    await page.getByText("Total rows 100.0k").click();
 
+    await expect(
+      page.getByText("No comparison dimension selected")
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "No comparison" }).nth(1).click();
+    await page.getByRole("menuitem", { name: "Domain Name" }).click();
+
+    await page.getByText("google.com", { exact: true }).click();
+    await page.getByText("instagram.com").click();
+    await page.getByText("news.google.com").click();
+
+    await expect(page.getByText(" Total rows 41.1k")).toBeVisible();
+
+    await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
+
+    await page.getByRole("button", { name: "Total rows", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
+
+    await expect(page.getByText(" Avg Bid Price $2.93")).toBeVisible();
+
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
+    });
+
+    await page.getByRole("button", { name: "Domain name" }).nth(1).click();
+    await page.getByRole("menuitem", { name: "Time" }).click();
+
+    await expect(page.getByText("-52.2%")).toBeVisible();
+
+    await page.getByRole("button", { name: "Edit metrics" }).click();
     /** walk through empty metrics def  */
     await runThroughEmptyMetricsFlows(page);
 
@@ -688,7 +720,7 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
    */
 
   // Switch to measure "total bid price"
-  await page.getByRole("button", { name: "Total rows" }).click();
+  await page.getByRole("button", { name: "Total rows", exact: true }).click();
   await page.getByRole("menuitem", { name: "Total Bid Price" }).click();
   await page.getByRole("button", { name: "Total Bid Price" }).isVisible();
 
@@ -776,7 +808,9 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
    */
 
   // Switch to measure "total rows" (no valid_percent_of_total)
-  await page.getByRole("button", { name: "Total Bid Price" }).click();
+  await page
+    .getByRole("button", { name: "Total Bid Price", exact: true })
+    .click();
   await page.getByRole("menuitem", { name: "Total rows" }).click();
   // check that the context column is hidden
   await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
