@@ -50,7 +50,7 @@
         <div class="flex gap-x-2 items-center">
           <input
             bind:value={values[i][accessorKey]}
-            name={`${id}.${i}.${accessorKey}`}
+            id="{id}.{i}.{accessorKey}"
             autocomplete="off"
             {placeholder}
             class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {errors[

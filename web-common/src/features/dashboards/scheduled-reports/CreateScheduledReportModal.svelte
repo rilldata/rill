@@ -214,6 +214,14 @@
       on:add-item={() => {
         $form["recipients"] = $form["recipients"].concat({ email: "" });
         recipientErrors = recipientErrors.concat({ email: "" });
+
+        // Focus on the new input element
+        setTimeout(() => {
+          const input = document.getElementById(
+            `recipients.${$form["recipients"].length - 1}.email`
+          );
+          input?.focus();
+        }, 0);
       }}
       on:remove-item={(event) => {
         const index = event.detail.index;
