@@ -290,19 +290,19 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		for _, r := range tmp.AvailableTimeRanges {
 			_, err := duration.ParseISO8601(r.Range)
 			if err != nil {
-				return fmt.Errorf("invalid range in available_time_ranges: %v", r.Range)
+				return fmt.Errorf("invalid range in available_time_ranges: %w", err)
 			}
 
 			for _, o := range r.ComparisonOffsets {
 				_, err := duration.ParseISO8601(o.Offset)
 				if err != nil {
-					return fmt.Errorf("invalid offset in comparison_offsets: %v", o.Offset)
+					return fmt.Errorf("invalid offset in comparison_offsets: %w", err)
 				}
 
 				if o.Range != "" {
 					_, err := duration.ParseISO8601(o.Range)
 					if err != nil {
-						return fmt.Errorf("invalid range in comparison_offsets: %v", o.Range)
+						return fmt.Errorf("invalid range in comparison_offsets: %w", err)
 					}
 				}
 			}
