@@ -84,7 +84,11 @@ test.describe("leaderboard and dimension table sorting", () => {
     // add time comparison and select Pct change
     await page.getByRole("button", { name: "Select time range" }).click();
     await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
-    await page.getByRole("button", { name: "Select time range" }).click();
+
+    // need a slight delay for the time range to update
+    // and the "Pct change" option to be available
+    // in the context column dropdown
+    await page.waitForTimeout(1000);
 
     await page.getByRole("button", { name: "Select a context column" }).click();
     await page.getByRole("menuitem", { name: "Percent change" }).click();
