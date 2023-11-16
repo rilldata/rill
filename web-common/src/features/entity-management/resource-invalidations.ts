@@ -9,7 +9,6 @@ import {
   getRuntimeServiceListResourcesQueryKey,
   V1ReconcileStatus,
   V1Resource,
-  V1ResourceEvent,
 } from "@rilldata/web-common/runtime-client";
 import {
   invalidateMetricsViewData,
