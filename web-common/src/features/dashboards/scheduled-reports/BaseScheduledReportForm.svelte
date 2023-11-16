@@ -98,8 +98,8 @@
     label="Format"
     options={[
       { value: V1ExportFormat.EXPORT_FORMAT_CSV, label: "CSV" },
-      { value: V1ExportFormat.EXPORT_FORMAT_PARQUET, label: "Parquet" },
       { value: V1ExportFormat.EXPORT_FORMAT_XLSX, label: "Excel" },
+      { value: V1ExportFormat.EXPORT_FORMAT_PARQUET, label: "Parquet" },
     ]}
   />
   <InputV2
