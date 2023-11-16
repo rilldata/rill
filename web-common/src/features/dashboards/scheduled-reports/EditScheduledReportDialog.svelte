@@ -1,0 +1,134 @@
+<script lang="ts">
+  import { page } from "$app/stores";
+  import { createAdminServiceEditReport } from "@rilldata/web-admin/client";
+  import { useReport } from "@rilldata/web-admin/features/scheduled-reports/selectors";
+  import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { createEventDispatcher } from "svelte";
+  import { createForm } from "svelte-forms-lib";
+  import * as yup from "yup";
+  import { Button } from "../../../components/button";
+  import { notifications } from "../../../components/notifications";
+  import {
+    getRuntimeServiceGetResourceQueryKey,
+    V1ExportFormat,
+  } from "../../../runtime-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { ResourceKind } from "../../entity-management/resource-selectors";
+  import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
+  import {
+    convertToCron,
+    getDayOfWeekFromCron,
+    getFrequencyFromCron,
+    getTimeOfDayFromCron,
+  } from "./time-utils";
+
+  export let open: boolean;
+  export let queryName: string;
+  export let queryArgs: any;
+
+  $: reportName = $page.params.report;
+  $: report = useReport($runtime.instanceId, reportName);
+
+  const editReport = createAdminServiceEditReport();
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
+  const dashState = new URLSearchParams(window.location.search).get("state");
+  const queryClient = useQueryClient();
+  const dispatch = createEventDispatcher();
+
+  const formState = createForm({
+    initialValues: {
+      title: $report.data?.resource?.report?.spec?.title ?? "",
+      frequency: getFrequencyFromCron(
+        $report.data?.resource?.report?.spec?.refreshSchedule?.cron as string
+      ),
+      dayOfWeek: getDayOfWeekFromCron(
+        $report.data?.resource?.report?.spec?.refreshSchedule?.cron as string
+      ),
+      timeOfDay: getTimeOfDayFromCron(
+        $report.data?.resource?.report?.spec?.refreshSchedule?.cron as string
+      ),
+      // TODO: convert time zone to IANA
+      timeZone:
+        $report.data?.resource?.report?.spec?.refreshSchedule?.timeZone ?? "",
+      exportFormat:
+        $report.data?.resource?.report?.spec?.exportFormat ??
+        V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
+      exportLimit: $report.data?.resource?.report?.spec?.exportLimit ?? "",
+      recipients: $report.data?.resource?.report?.spec?.emailRecipients ?? [],
+    },
+    validationSchema: yup.object({
+      title: yup.string().required("Required"),
+      recipients: yup.array().min(1, "Required"),
+    }),
+    onSubmit: async (values) => {
+      const refreshCron = convertToCron(
+        values.frequency,
+        values.dayOfWeek,
+        values.timeOfDay
+      );
+      try {
+        await $editReport.mutateAsync({
+          organization,
+          project,
+          name: reportName,
+          data: {
+            options: {
+              title: values.title,
+              refreshCron: refreshCron,
+              refreshTimeZone: values.timeZone,
+              queryName: queryName,
+              queryArgsJson: JSON.stringify(queryArgs),
+              exportLimit: values.exportLimit || undefined,
+              exportFormat: values.exportFormat,
+              openProjectSubpath: `/${queryArgs.metricsViewName}?state=${dashState}`,
+              recipients: values.recipients,
+            },
+          },
+        });
+        queryClient.invalidateQueries(
+          getRuntimeServiceGetResourceQueryKey($runtime.instanceId, {
+            "name.name": reportName,
+            "name.kind": ResourceKind.Report,
+          })
+        );
+        dispatch("close");
+        notifications.send({
+          message: "Report edited",
+          type: "success",
+        });
+      } catch (e) {
+        // showing error below
+      }
+    },
+  });
+
+  const { isSubmitting, form } = formState;
+</script>
+
+<Dialog {open}>
+  <svelte:fragment slot="title">Edit scheduled report</svelte:fragment>
+  <svelte:fragment slot="body">
+    <BaseScheduledReportForm formId="edit-scheduled-report-form" {formState} />
+  </svelte:fragment>
+  <svelte:fragment slot="footer">
+    <div class="flex items-center gap-x-2 mt-2">
+      {#if $editReport.isError}
+        <div class="text-red-500">{$editReport.error.message}</div>
+      {/if}
+      <div class="grow" />
+      <Button on:click={() => dispatch("close")} type="secondary">
+        Cancel
+      </Button>
+      <Button
+        disabled={$isSubmitting || $form["recipients"].length === 0}
+        form="edit-scheduled-report-form"
+        submitForm
+        type="primary"
+      >
+        Save
+      </Button>
+    </div>
+  </svelte:fragment>
+</Dialog>
