@@ -99,16 +99,15 @@ test.describe("leaderboard and dimension table sorting", () => {
       .locator("svelte-virtual-list-row")
       .filter({
         hasText:
-          "Publisher # % Google 116 4% Yahoo 103 3% null 383 0% Microsoft 237 ~0% Facebook ",
+          "Publisher # % Facebook 283 -4% Microsoft 237 ~0% null 383 0% Yahoo 103 3% Google",
       })
       .getByRole("button", {
         name: "Toggle sort leaderboards by context column",
-      })
-      .click();
+      });
 
     await assertAAboveB(
-      page.getByRole("button", { name: "sports.yahoo.com 67 -27%" }),
-      page.getByRole("button", { name: "news.yahoo.com 89 15%" })
+      page.getByRole("button", { name: "news.yahoo.com 89 15%" }),
+      page.getByRole("button", { name: "sports.yahoo.com 67 -27%" })
     );
 
     // select absolute change
@@ -116,29 +115,25 @@ test.describe("leaderboard and dimension table sorting", () => {
     await page.getByRole("menuitem", { name: "Absolute change" }).click();
 
     await assertAAboveB(
-      page.getByRole("button", { name: "Facebook 283 -14" }),
-      page.getByRole("button", { name: "Google 116 5" })
-    );
-
-    // toggle sort by absolute change
-    await page
-      .locator("svelte-virtual-list-row")
-      .filter({
-        hasText:
-          "Domain # sports.yahoo.com 67 -25 facebook.com 342 -19 news.google.com 85 3 googl",
-      })
-      .getByRole("button", {
-        name: "Toggle sort leaderboards by context column",
-      })
-      .click();
-
-    await assertAAboveB(
       page.getByRole("button", { name: "Google 116 5" }),
       page.getByRole("button", { name: "Facebook 283 -14" })
     );
 
+    // toggle sort by absolute change
+    await page
+      .getByRole("button", {
+        name: "Toggle sort leaderboards by context column",
+      })
+      .nth(1)
+      .click();
+
+    await assertAAboveB(
+      page.getByRole("button", { name: "Facebook 283 -14" }),
+      page.getByRole("button", { name: "Google 116 5" })
+    );
+
     /**
-     * DIMEENSION TABLE
+     * DIMENSION TABLE
      */
     // click publisher leaderboard header to enter dimension table for that dim
     await page.locator("#svelte").getByText("Publisher").click();
