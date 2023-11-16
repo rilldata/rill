@@ -23,6 +23,15 @@ export const dimensionTableDimName = ({
   return dashboard.selectedDimensionName;
 };
 
+export const dimensionTableColumnName = (
+  dashData: DashboardDataSources
+): ((name: string) => string) => {
+  return (name: string) => {
+    const dim = getDimensionByName(dashData)(name);
+    return dim?.column || name;
+  };
+};
+
 export const getDimensionByName = (
   dashData: DashboardDataSources
 ): ((name: string) => MetricsViewSpecDimensionV2 | undefined) => {
@@ -84,4 +93,9 @@ export const dimensionSelectors = {
    * is not shown.
    */
   dimensionTableDimName,
+
+  /**
+   * Gets the name of the column that is currently selected in the dimension table.
+   */
+  dimensionTableColumnName,
 };
