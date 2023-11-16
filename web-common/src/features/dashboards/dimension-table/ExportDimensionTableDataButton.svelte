@@ -19,7 +19,6 @@
   let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
-  const dashboardStore = ctx.dashboardStore;
   const timeControlStore = useTimeControlStore(ctx);
 
   const exportDash = createQueryServiceExport();
@@ -34,11 +33,11 @@
 
   // Only import the Scheduled Report modal if in the Cloud context
   // This ensures Rill Developer doesn't try and fail to import the admin-client
-  let CreateScheduledReportModal: typeof SvelteComponent | undefined;
+  let CreateScheduledReportDialog: typeof SvelteComponent | undefined;
   onMount(async () => {
     if (includeScheduledReport) {
-      CreateScheduledReportModal = (
-        await import("../scheduled-reports/CreateScheduledReportModal.svelte")
+      CreateScheduledReportDialog = (
+        await import("../scheduled-reports/CreateScheduledReportDialog.svelte")
       ).default;
     }
   });
@@ -112,12 +111,11 @@
 
 <!-- Including `showScheduledReportDialog` in the conditional ensures we tear 
   down the form state when the dialog closes -->
-{#if includeScheduledReport && CreateScheduledReportModal && showScheduledReportDialog}
+{#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog}
   <svelte:component
-    this={CreateScheduledReportModal}
+    this={CreateScheduledReportDialog}
     queryName="MetricsViewComparison"
     queryArgs={$scheduledReportsQueryArgs}
-    dashboardTimeZone={$dashboardStore?.selectedTimezone}
     open={showScheduledReportDialog}
     on:close={() => (showScheduledReportDialog = false)}
   />
