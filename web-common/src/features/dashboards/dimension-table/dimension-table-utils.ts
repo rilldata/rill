@@ -95,6 +95,10 @@ export function getComparisonProperties(
   measureName: string,
   selectedMeasure: MetricsViewSpecMeasureV2
 ): {
+  /**
+   * "component" in this context is a Svelte component that will be
+   * used to render the column header.
+   */
   component: typeof SvelteComponent;
   type: string;
   format: string;
@@ -111,7 +115,7 @@ export function getComparisonProperties(
     return {
       component: DeltaChange,
       type: "RILL_CHANGE",
-      format: selectedMeasure.formatPreset,
+      format: selectedMeasure.formatPreset ?? FormatPreset.HUMANIZE,
       description: "Change over comparison period",
     };
   } else if (measureName.includes("_percent_of_total")) {
@@ -122,6 +126,9 @@ export function getComparisonProperties(
       description: "Percent of total",
     };
   }
+  throw new Error(
+    "Invalid measure name, getComparisonProperties must only be called on context columns"
+  );
 }
 
 export function estimateColumnCharacterWidths(
@@ -311,8 +318,8 @@ export function prepareVirtualizedDimTableColumns(
           highlight,
           sorted,
         };
-      } else if (selectedMeasure) {
-        // Handle delta and delta_perc
+      } else if (selectedMeasure !== undefined) {
+        // Handle delta, delta_perc, and percent_of_total columns
         const comparison = getComparisonProperties(name, selectedMeasure);
         columnOut = {
           name,
@@ -373,6 +380,15 @@ export function addContextColumnNames(
   }
 }
 
+function castUnknownToNumberOrNull(val: unknown): number | null {
+  if (typeof val === "number") return val;
+  if (val === null || val === undefined) return null;
+  console.warn(
+    `castUnknownNumberOrNull should only be used to cast unknowns that should be numbers, null, or undefined to numbers or null. Got: ${val}`
+  );
+  return val as number;
+}
+
 /**
  * This function prepares the data for the dimension table
  * from data returned by the createQueryServiceMetricsViewComparison
@@ -405,17 +421,18 @@ export function prepareDimensionTableRows(
       // cast is safe since we filtered out rows without measureValues
       const measureValues = row.measureValues as V1MetricsViewComparisonValue[];
 
-      const rawVals: [string, number][] = measureValues.map((m) => [
+      const rawVals: [string, number | null][] = measureValues.map((m) => [
         m.measureName?.toString() ?? "",
-        m.baseValue ? (m.baseValue as number) : 0,
+        castUnknownToNumberOrNull(m.baseValue),
       ]);
 
-      const formattedVals: [string, string | number][] = rawVals.map(
-        ([name, val]) => [
+      const formattedVals: [string, string | number | PERC_DIFF][] =
+        rawVals.map(([name, val]) => [
           "__formatted_" + name,
-          formattersForMeasures[name](val),
-        ]
-      );
+          val !== null
+            ? formattersForMeasures[name](val)
+            : PERC_DIFF.CURRENT_VALUE_NO_DATA,
+        ]);
 
       const rowOut: DimensionTableRow = Object.fromEntries([
         [dimensionColumn, row.dimensionValue as string],
@@ -428,9 +445,10 @@ export function prepareDimensionTableRows(
       );
 
       if (addDeltas && activeMeasure) {
-        rowOut[`${activeMeasureName}_delta`] = activeMeasure.deltaAbs
-          ? (activeMeasure.deltaAbs as number)
-          : 0;
+        rowOut[`${activeMeasureName}_delta`] = castUnknownToNumberOrNull(
+          activeMeasure.deltaAbs
+        );
+
         rowOut[`__formatted_${activeMeasureName}_delta`] =
           activeMeasure.deltaAbs
             ? formattersForMeasures[activeMeasureName](
@@ -438,9 +456,10 @@ export function prepareDimensionTableRows(
               )
             : PERC_DIFF.PREV_VALUE_NO_DATA;
 
-        rowOut[`${activeMeasureName}_delta_perc`] = activeMeasure.deltaRel
-          ? (activeMeasure.deltaRel as number)
-          : 0;
+        rowOut[`${activeMeasureName}_delta_perc`] = castUnknownToNumberOrNull(
+          activeMeasure.deltaRel
+        );
+
         rowOut[`__formatted_${activeMeasureName}_delta_perc`] =
           activeMeasure.deltaRel
             ? formatMeasurePercentageDifference(
@@ -450,15 +469,18 @@ export function prepareDimensionTableRows(
       }
 
       if (addPercentOfTotal && activeMeasure) {
-        const value = activeMeasure.baseValue as number;
+        const value = castUnknownToNumberOrNull(activeMeasure.baseValue);
 
-        if (unfilteredTotal === 0 || !unfilteredTotal) {
-          rowOut[activeMeasureName + "_percent_of_total"] = 0;
+        if (value === null || unfilteredTotal === 0 || !unfilteredTotal) {
+          rowOut[activeMeasureName + "_percent_of_total"] =
+            PERC_DIFF.CURRENT_VALUE_NO_DATA;
+
           rowOut[`__formatted_${activeMeasureName}_percent_of_total`] =
             PERC_DIFF.CURRENT_VALUE_NO_DATA;
         } else {
           rowOut[activeMeasureName + "_percent_of_total"] =
             value / unfilteredTotal;
+
           rowOut[`__formatted_${activeMeasureName}_percent_of_total`] =
             formatMeasurePercentageDifference(value / unfilteredTotal);
         }
