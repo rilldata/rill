@@ -42,7 +42,9 @@
       </Tooltip>
     {/if}
   </div>
-  <div class="flex flex-col gap-y-4 max-h-[200px] overflow-y-auto">
+  <div
+    class="flex flex-col gap-y-4 max-h-[200px] pl-1 pr-4 py-1 overflow-y-auto"
+  >
     {#each values as value, i}
       <div class="flex flex-col gap-y-2">
         <div class="flex gap-x-2 items-center">
