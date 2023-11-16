@@ -13,6 +13,7 @@
     getRuntimeServiceListResourcesQueryKey,
     V1ExportFormat,
     V1ReportSpec,
+    V1ReportSpecAnnotations,
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { ResourceKind } from "../../entity-management/resource-selectors";
@@ -82,8 +83,9 @@
               queryArgsJson: JSON.stringify(queryArgs),
               exportLimit: values.exportLimit || undefined,
               exportFormat: values.exportFormat,
-              // TODO: test this
-              // openProjectSubpath: ..., // This isn't on the reportSpec. Either this API is a patch, or we need to construct dashboard state from the queryArgsJson.
+              openProjectSubpath: (
+                reportSpec.annotations as V1ReportSpecAnnotations
+              )["web_open_project_subpath"],
               recipients: values.recipients,
             },
           },
