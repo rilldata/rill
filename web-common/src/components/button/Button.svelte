@@ -53,14 +53,18 @@
   focus:outline-none focus:ring-2
   ${customClasses ? customClasses : levels[status][type]}
   ${disabledClasses}
+  ${
+    type === "highlighted"
+      ? "min-h-[32px]"
+      : compact
+      ? "h-auto"
+      : "min-h-[28px]"
+  }
   `;
   }
-
-  const height = type === "highlighted" ? "32px" : compact ? "auto" : "28px";
 </script>
 
 <button
-  style:height
   {disabled}
   class={buttonClasses({ type, compact, status })}
   on:click={handleClick}
