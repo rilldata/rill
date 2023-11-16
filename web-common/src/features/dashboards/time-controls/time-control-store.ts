@@ -308,15 +308,9 @@ function getTimeRange(
       end: new Date(metricsExplorer.selectedTimeRange.end),
     };
   } else if (
-    metricsExplorer.selectedTimeRange?.name === TimeRangePreset.DEFAULT
+    metricsExplorer.selectedTimeRange?.name &&
+    metricsExplorer.selectedTimeRange?.name in DEFAULT_TIME_RANGES
   ) {
-    /** set the time range to the fixed custom time range */
-    timeRange = {
-      name: TimeRangePreset.DEFAULT,
-      start: defaultTimeRange.start,
-      end: defaultTimeRange.end,
-    };
-  } else {
     /** rebuild off of relative time range */
     timeRange = convertTimeRangePreset(
       metricsExplorer.selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
@@ -324,6 +318,13 @@ function getTimeRange(
       allTimeRange.end,
       metricsExplorer.selectedTimezone
     );
+  } else {
+    /** set the time range to the fixed custom time range */
+    timeRange = {
+      name: defaultTimeRange.name,
+      start: defaultTimeRange.start,
+      end: defaultTimeRange.end,
+    };
   }
 
   return timeRange;

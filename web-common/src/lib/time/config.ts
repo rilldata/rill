@@ -450,7 +450,7 @@ export const TIME_COMPARISON = {
     description:
       "Compare the current time range to the same time range the quarter before",
     comparisonType: TimeComparisonOption.QUARTER,
-    offsetIso: "P1Q",
+    offsetIso: "P3M",
   },
 
   [TimeComparisonOption.YEAR]: {

@@ -397,7 +397,7 @@ describe("time-control-store", () => {
     });
     await waitForDefaultUpdate(timeControlsStore, "2022-03-21T00:00:00.000Z");
     expect(get(timeControlsStore).defaultTimeRange).toEqual({
-      name: TimeRangePreset.DEFAULT,
+      name: "P2W",
       start: new Date("2022-03-21T00:00:00.000Z"),
       end: new Date("2022-04-04T00:00:00.000Z"),
     });

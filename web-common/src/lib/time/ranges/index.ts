@@ -9,6 +9,11 @@ import {
   getSmallestTimeGrain,
   ISODurationToTimeRangePreset,
 } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import {
+  addZoneOffset,
+  getDateMonthYearForTimezone,
+  removeLocalTimezoneOffset,
+} from "@rilldata/web-common/lib/time/timezone";
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { DEFAULT_TIME_RANGES, TIME_GRAIN } from "../config";
 import {
@@ -32,11 +37,6 @@ import {
   TimeRangeOption,
   TimeRangePreset,
 } from "../types";
-import {
-  addZoneOffset,
-  getDateMonthYearForTimezone,
-  removeLocalTimezoneOffset,
-} from "@rilldata/web-common/lib/time/timezone";
 
 // Loop through all presets to check if they can be a part of subset of given start and end date
 export function getChildTimeRanges(
@@ -396,7 +396,11 @@ export function getAdjustedChartTime(
     start = getStartOfPeriod(start, grainDuration, zone);
     start = getOffset(start, offsetDuration, TimeOffsetType.ADD);
     adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration, zone);
-  } else if (timePreset && !(timePreset in ISODurationToTimeRangePreset)) {
+  } else if (
+    timePreset &&
+    timePreset !== TimeRangePreset.CUSTOM &&
+    !(timePreset in ISODurationToTimeRangePreset)
+  ) {
     // For default presets the iso range can be mixed. There the offset added will be the smallest unit in the range.
     // But for the graph we need the offset based on selected grain.
     const smallestTimeGrain = getSmallestTimeGrain(defaultTimeRange);

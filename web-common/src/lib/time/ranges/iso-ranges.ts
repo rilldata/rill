@@ -76,7 +76,7 @@ export function isoDurationToFullTimeRange(
 
   const { startTime, endTime } = isoDurationToTimeRange(isoDuration, end, zone);
   return {
-    name: TimeRangePreset.DEFAULT,
+    name: isoDuration,
     start: startTime,
     end: endTime,
   };

@@ -115,8 +115,6 @@ This component needs to do the following:
   $: intermediateSelection = showComparison
     ? comparisonOption
     : NO_COMPARISON_LABEL;
-
-  $: console.log(comparisonOption, intermediateSelection, label);
 </script>
 
 <WithTogglableFloatingElement

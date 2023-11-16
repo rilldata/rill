@@ -12,7 +12,6 @@ export function getComparisonTransform(
   end: Date,
   comparison: TimeComparisonOption
 ): RelativeTimeTransformation {
-  console.log(comparison);
   if (
     comparison === TimeComparisonOption.CONTIGUOUS ||
     comparison === TimeComparisonOption.CUSTOM
@@ -173,7 +172,11 @@ export function getAvailableComparisonsForTimeRange(
         // treat a custom comparison as contiguous.
         comparison
       ) &&
-        !isRangeLargerThanDuration(start, end, comparison))
+        !isRangeLargerThanDuration(
+          start,
+          end,
+          TIME_COMPARISON[comparison].offsetIso
+        ))
     );
   });
 
