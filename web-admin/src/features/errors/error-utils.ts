@@ -8,7 +8,7 @@ import type { RpcStatus } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
 import { ErrorStoreState, errorStore } from "./error-store";
 
-export function createErrorCallback(queryClient: QueryClient) {
+export function createGlobalErrorCallback(queryClient: QueryClient) {
   return (error: AxiosError) => {
     const isProjectPage = get(page).route.id === "/[organization]/[project]";
     const isDashboardPage =
@@ -51,8 +51,12 @@ export function createErrorCallback(queryClient: QueryClient) {
       return;
     }
 
+    // Handle the case when the deployment is being reset.
     if (
       error.response?.status === 400 &&
+      // The error is actually driver.ErrNotFound while looking up an instance in the runtime.
+      // Since it is defined in driver package it has that prefix.
+      // TODO: should we refactor to use a generic NotFound error?
       (error.response.data as RpcStatus).message === "driver: not found" &&
       (isProjectPage || isDashboardPage)
     ) {
