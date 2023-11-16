@@ -3,8 +3,8 @@ import { page } from "$app/stores";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
-import { getAdminServiceGetProjectQueryKey } from "../../client";
 import type { RpcStatus } from "../../client";
+import { getAdminServiceGetProjectQueryKey } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
 import { ErrorStoreState, errorStore } from "./error-store";
 
@@ -99,8 +99,8 @@ function createErrorStoreStateFromAxiosError(
   } else if (status === 400 && msg === "driver: not found") {
     return {
       statusCode: error.response?.status,
-      header: "Project is being deployed",
-      body: "The project you requested is being deployed.",
+      header: "Project deployment not found",
+      body: "This is potentially a temporary state if the project has just been reset.",
     };
   }
 
