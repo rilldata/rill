@@ -19,10 +19,10 @@
   import { ResourceKind } from "../../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import {
-    convertToCron,
-    getDayOfWeekFromCron,
-    getFrequencyFromCron,
-    getTimeOfDayFromCron,
+    convertFormValuesToCronExpression,
+    getDayOfWeekFromCronExpression,
+    getFrequencyFromCronExpression,
+    getTimeOfDayFromCronExpression,
   } from "./time-utils";
 
   export let open: boolean;
@@ -39,13 +39,13 @@
   const formState = createForm({
     initialValues: {
       title: reportSpec.title as string,
-      frequency: getFrequencyFromCron(
+      frequency: getFrequencyFromCronExpression(
         reportSpec.refreshSchedule?.cron as string
       ),
-      dayOfWeek: getDayOfWeekFromCron(
+      dayOfWeek: getDayOfWeekFromCronExpression(
         reportSpec.refreshSchedule?.cron as string
       ),
-      timeOfDay: getTimeOfDayFromCron(
+      timeOfDay: getTimeOfDayFromCronExpression(
         reportSpec.refreshSchedule?.cron as string
       ),
       timeZone: reportSpec.refreshSchedule?.timeZone ?? "",
@@ -70,7 +70,7 @@
       const queryArgs = reportSpec.queryArgsJson
         ? JSON.parse(reportSpec.queryArgsJson)
         : {};
-      const refreshCron = convertToCron(
+      const refreshCron = convertFormValuesToCronExpression(
         values.frequency,
         values.dayOfWeek,
         values.timeOfDay

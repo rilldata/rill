@@ -20,7 +20,7 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import {
-    convertToCron,
+    convertFormValuesToCronExpression,
     getNextQuarterHour,
     getTimeIn24FormatFromDateTime,
     getTodaysDayOfWeek,
@@ -61,7 +61,7 @@
       ),
     }),
     onSubmit: async (values) => {
-      const refreshCron = convertToCron(
+      const refreshCron = convertFormValuesToCronExpression(
         values.frequency,
         values.dayOfWeek,
         values.timeOfDay

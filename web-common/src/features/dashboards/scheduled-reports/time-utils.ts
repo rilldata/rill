@@ -14,7 +14,7 @@ export function getTimeIn24FormatFromDateTime(dateTime: DateTime): string {
   return dateTime.toFormat("HH:mm");
 }
 
-export function convertToCron(
+export function convertFormValuesToCronExpression(
   frequency: string,
   dayOfWeek: string,
   timeOfDay: string
@@ -47,7 +47,7 @@ export function convertToCron(
   return cronExpr;
 }
 
-export function getFrequencyFromCron(cronExpr: string): string {
+export function getFrequencyFromCronExpression(cronExpr: string): string {
   const [, , dayOfMonth, month, dayOfWeek] = cronExpr.split(" ");
 
   if (dayOfMonth === "*" && month === "*") {
@@ -63,7 +63,7 @@ export function getFrequencyFromCron(cronExpr: string): string {
   return "Custom";
 }
 
-export function getDayOfWeekFromCron(cronExpr: string): string {
+export function getDayOfWeekFromCronExpression(cronExpr: string): string {
   const [, , , , dayOfWeek] = cronExpr.split(" ");
 
   switch (dayOfWeek) {
@@ -86,7 +86,7 @@ export function getDayOfWeekFromCron(cronExpr: string): string {
   }
 }
 
-export function getTimeOfDayFromCron(cronExpr: string): string {
+export function getTimeOfDayFromCronExpression(cronExpr: string): string {
   const [minute, hour, , ,] = cronExpr.split(" ");
   return `${hour}:${minute}`;
 }
