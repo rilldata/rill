@@ -28,7 +28,7 @@
         dimensionTableTotalQueryBody,
       },
       comparison: { isBeingCompared },
-      dimensions: { dimensionTableDimName },
+      dimensions: { dimensionTableDimName, dimensionTableColumnName },
       dimensionTable: {
         virtualizedTableColumns,
         selectedDimensionValueNames,
@@ -43,6 +43,7 @@
   // cast is safe because dimensionTableDimName must be defined
   // for the dimension table to be open
   $: dimensionName = $dimensionTableDimName as string;
+  $: dimensionColumnName = $dimensionTableColumnName(dimensionName) as string;
 
   let searchText = "";
 
@@ -87,11 +88,11 @@
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
-    $selectedDimensionValueNames.includes(row[dimensionName] as string)
+    $selectedDimensionValueNames.includes(row[dimensionColumnName] as string)
   );
 
   function onSelectItem(event) {
-    const label = tableRows[event.detail][dimensionName] as string;
+    const label = tableRows[event.detail][dimensionColumnName] as string;
     cancelDashboardQueries(queryClient, $metricsViewName);
     metricsExplorerStore.toggleFilter($metricsViewName, dimensionName, label);
   }

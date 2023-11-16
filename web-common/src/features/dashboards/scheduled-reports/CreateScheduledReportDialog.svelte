@@ -1,6 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { createAdminServiceCreateReport } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceCreateReport,
+    createAdminServiceGetCurrentUser,
+  } from "@rilldata/web-admin/client";
   import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
@@ -27,6 +30,7 @@
   export let queryName: string;
   export let queryArgs: any;
 
+  const user = createAdminServiceGetCurrentUser();
   const createReport = createAdminServiceCreateReport();
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -43,11 +47,18 @@
       timeZone: getLocalIANA(),
       exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
       exportLimit: "",
-      recipients: [] as string[],
+      recipients: [
+        { email: $user.data?.user?.email ? $user.data.user.email : "" },
+        { email: "" },
+      ],
     },
     validationSchema: yup.object({
       title: yup.string().required("Required"),
-      recipients: yup.array().min(1, "Required"),
+      recipients: yup.array().of(
+        yup.object().shape({
+          email: yup.string().email("Invalid email"),
+        })
+      ),
     }),
     onSubmit: async (values) => {
       const refreshCron = convertToCron(
@@ -69,7 +80,7 @@
               exportLimit: values.exportLimit || undefined,
               exportFormat: values.exportFormat,
               openProjectSubpath: `/${queryArgs.metricsViewName}?state=${dashState}`,
-              recipients: values.recipients,
+              recipients: values.recipients.map((r) => r.email).filter(Boolean),
             },
           },
         });
@@ -104,7 +115,7 @@
     />
   </svelte:fragment>
   <svelte:fragment slot="footer">
-    <div class="flex items-center gap-x-2 mt-2">
+    <div class="flex items-center gap-x-2 mt-5">
       {#if $createReport.isError}
         <div class="text-red-500">{$createReport.error.message}</div>
       {/if}
@@ -113,7 +124,8 @@
         Cancel
       </Button>
       <Button
-        disabled={$isSubmitting || $form["recipients"].length === 0}
+        disabled={$isSubmitting ||
+          $form["recipients"].filter((r) => r.email).length === 0}
         form="create-scheduled-report-form"
         submitForm
         type="primary"

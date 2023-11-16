@@ -52,11 +52,18 @@
       exportFormat:
         reportSpec.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
       exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
-      recipients: reportSpec.emailRecipients ?? [],
+      recipients:
+        reportSpec.emailRecipients?.map((email) => ({
+          email: email,
+        })) ?? [],
     },
     validationSchema: yup.object({
       title: yup.string().required("Required"),
-      // recipients: yup.array().min(1, "Required"),
+      recipients: yup.array().of(
+        yup.object().shape({
+          email: yup.string().email("Invalid email"),
+        })
+      ),
     }),
     onSubmit: async (values) => {
       const queryName = reportSpec.queryName ?? "";
@@ -86,7 +93,7 @@
               openProjectSubpath: (
                 reportSpec.annotations as V1ReportSpecAnnotations
               )["web_open_project_subpath"],
-              recipients: values.recipients,
+              recipients: values.recipients.map((r) => r.email).filter(Boolean),
             },
           },
         });

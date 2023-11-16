@@ -267,6 +267,16 @@ export interface V1TriggerReconcileResponse {
   [key: string]: any;
 }
 
+export interface V1TelemetryResponse {
+  [key: string]: any;
+}
+
+export type V1TelemetryRequestEvent = { [key: string]: string };
+
+export interface V1TelemetryRequest {
+  event?: V1TelemetryRequestEvent;
+}
+
 export interface V1SudoUpdateUserQuotasResponse {
   user?: V1User;
 }
