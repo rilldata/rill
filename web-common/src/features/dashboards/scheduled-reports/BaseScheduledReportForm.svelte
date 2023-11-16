@@ -4,15 +4,13 @@
   import InputArray from "../../../components/forms/InputArray.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
-  import {
-    getAbbreviationForIANA,
-    getLocalIANA,
-    getUTCIANA,
-  } from "../../../lib/time/timezone";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { useDashboard } from "../selectors";
+  import { makeTimeZoneOptions } from "./time-utils";
 
   export let formId: string;
   export let formState: any; // svelte-forms-lib's FormState
-  export let dashboardTimeZone: string | undefined; // Ugh.
+  export let metricsViewName: string;
 
   const { form, errors, handleSubmit } = formState;
 
@@ -20,8 +18,11 @@
   // See: https://github.com/tjinauyeung/svelte-forms-lib/issues/154#issuecomment-1087331250
   $: recipientErrors = $errors.recipients as unknown as { email: string }[];
 
-  const userLocalIANA = getLocalIANA();
-  const UTCIana = getUTCIANA();
+  // Pull the time zone options from the dashboard's spec
+  $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
+  $: availableTimeZones =
+    $dashboard.data?.metricsView?.spec?.availableTimeZones;
+  $: timeZoneOptions = makeTimeZoneOptions(availableTimeZones);
 </script>
 
 <form
@@ -70,26 +71,7 @@
       bind:value={$form["timeZone"]}
       id="timeZone"
       label="Time zone"
-      options={[
-        userLocalIANA,
-        ...(dashboardTimeZone ? [dashboardTimeZone] : []),
-        UTCIana,
-      ]
-        // Remove duplicates when dashboardTimeZone is already covered by userLocalIANA or UTCIana
-        .filter((z, i, self) => {
-          return self.indexOf(z) === i;
-        })
-        // Add labels
-        .map((z) => {
-          let label = getAbbreviationForIANA(new Date(), z);
-          if (z === userLocalIANA) {
-            label += " (local time)";
-          }
-          return {
-            value: z,
-            label: label,
-          };
-        })}
+      options={timeZoneOptions}
     />
   </div>
   <Select
@@ -98,8 +80,8 @@
     label="Format"
     options={[
       { value: V1ExportFormat.EXPORT_FORMAT_CSV, label: "CSV" },
-      { value: V1ExportFormat.EXPORT_FORMAT_XLSX, label: "Excel" },
       { value: V1ExportFormat.EXPORT_FORMAT_PARQUET, label: "Parquet" },
+      { value: V1ExportFormat.EXPORT_FORMAT_XLSX, label: "XLSX" },
     ]}
   />
   <InputV2

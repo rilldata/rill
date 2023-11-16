@@ -8,6 +8,7 @@
   import * as yup from "yup";
   import { Button } from "../../../components/button";
   import { notifications } from "../../../components/notifications";
+  import { getAbbreviationForIANA } from "../../../lib/time/timezone";
   import {
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
@@ -32,6 +33,9 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
   $: reportName = $page.params.report;
+  $: metricsViewName = reportSpec?.queryArgsJson
+    ? JSON.parse(reportSpec.queryArgsJson).metricsViewName
+    : "";
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -48,7 +52,12 @@
       timeOfDay: getTimeOfDayFromCronExpression(
         reportSpec.refreshSchedule?.cron as string
       ),
-      timeZone: reportSpec.refreshSchedule?.timeZone ?? "",
+      timeZone: reportSpec.refreshSchedule?.timeZone
+        ? getAbbreviationForIANA(
+            new Date(),
+            reportSpec.refreshSchedule.timeZone
+          )
+        : "",
       exportFormat:
         reportSpec.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
       exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,
@@ -126,7 +135,7 @@
     <BaseScheduledReportForm
       formId="edit-scheduled-report-form"
       {formState}
-      dashboardTimeZone={undefined}
+      {metricsViewName}
     />
   </svelte:fragment>
   <svelte:fragment slot="footer">

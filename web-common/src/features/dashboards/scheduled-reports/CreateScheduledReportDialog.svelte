@@ -111,7 +111,7 @@
     <BaseScheduledReportForm
       formId="create-scheduled-report-form"
       {formState}
-      {dashboardTimeZone}
+      metricsViewName={queryArgs.metricsViewName}
     />
   </svelte:fragment>
   <svelte:fragment slot="footer">

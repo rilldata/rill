@@ -1,4 +1,9 @@
 import { DateTime } from "luxon";
+import {
+  getAbbreviationForIANA,
+  getLocalIANA,
+  getUTCIANA,
+} from "../../../lib/time/timezone";
 
 export function getTodaysDayOfWeek(): string {
   return DateTime.now().toLocaleString({ weekday: "long" });
@@ -89,4 +94,44 @@ export function getDayOfWeekFromCronExpression(cronExpr: string): string {
 export function getTimeOfDayFromCronExpression(cronExpr: string): string {
   const [minute, hour, , ,] = cronExpr.split(" ");
   return `${hour}:${minute}`;
+}
+
+export function makeTimeZoneOptions(availableTimeZones: string[] | undefined) {
+  const userLocalIANA = getLocalIANA();
+  const UTCIana = getUTCIANA();
+  const currentDate = new Date();
+
+  if (!availableTimeZones) {
+    return [
+      {
+        value: userLocalIANA,
+        label: getAbbreviationForIANA(currentDate, userLocalIANA) + " (Local)",
+      },
+      {
+        value: UTCIana,
+        label: getAbbreviationForIANA(currentDate, UTCIana),
+      },
+    ];
+  }
+
+  // Add local time and UTC to available time zones
+  const extendedTimeZones = [userLocalIANA, UTCIana, ...availableTimeZones];
+
+  // Create a map to deduplicate time zones
+  const deduplicatedTimeZones = new Map();
+
+  extendedTimeZones.forEach((z) => {
+    const abbreviation = getAbbreviationForIANA(currentDate, z);
+    if (!deduplicatedTimeZones.has(abbreviation)) {
+      deduplicatedTimeZones.set(abbreviation, z);
+    }
+  });
+
+  // Convert the map back to an array of options
+  return Array.from(deduplicatedTimeZones).map(([abbreviation, value]) => {
+    return {
+      value: value,
+      label: abbreviation + (value === userLocalIANA ? " (Local)" : ""),
+    };
+  });
 }
