@@ -31,8 +31,8 @@
     });
   };
 
-  // Only import the Scheduled Report modal if in the Cloud context
-  // This ensures Rill Developer doesn't try and fail to import the admin-client
+  // Only import the Scheduled Report dialog if in the Cloud context.
+  // This ensures Rill Developer doesn't try and fail to import the admin-client.
   let CreateScheduledReportDialog: typeof SvelteComponent | undefined;
   onMount(async () => {
     if (includeScheduledReport) {
