@@ -250,7 +250,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	} else {
 		selectCols = append(selectCols, colName)
 	}
-	labelCols = []string{dimLabel}
+	labelCols = []string{fmt.Sprintf("%s as %s", safeName(dim.Name), dimLabel)}
 
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
@@ -706,7 +706,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		}
 
 		sql = fmt.Sprintf(`
-				SELECT %[11]s.%[2]s, %[9]s FROM 
+				SELECT %[11]s.%[2]s AS %[14]s, %[9]s FROM 
 					(
 						SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s %[10]s OFFSET %[8]d 
 					) %[11]s
@@ -738,6 +738,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			leftSubQueryAlias,   // 11
 			rightSubQueryAlias,  // 12
 			subQueryOrderClause, // 13
+			finalDimName,        // 14
 		)
 	}
 
