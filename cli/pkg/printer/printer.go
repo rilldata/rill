@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/gocarina/gocsv"
 	"github.com/lensesio/tableprinter"
 )
 
@@ -73,23 +72,7 @@ func (p *Printer) PrintResource(v interface{}) error {
 		return nil
 	case JSON:
 		return p.PrintJSON(v)
-	case CSV:
-		type csvvaluer interface {
-			MarshalCSVValue() interface{}
-		}
-
-		if c, ok := v.(csvvaluer); ok {
-			v = c.MarshalCSVValue()
-		}
-
-		buf, err := gocsv.MarshalString(v)
-		if err != nil {
-			return fmt.Errorf("failed to marshal CSV: %w", err)
-		}
-		fmt.Fprintln(out, buf)
-		return nil
 	}
-
 	return fmt.Errorf("unknown printer.Format: %T", *p.format)
 }
 

@@ -96,7 +96,7 @@ func TestServiceWorkflow(t *testing.T) {
 	expectedServiceMsg := []string{`Created service "myservice" in org "myorg".`}
 	bufSlice := strings.Split(buf.String(), "\n")
 	// Should we check for Access token as well?
-	c.Assert(bufSlice, qt.HasLen, 2)
+	c.Assert(bufSlice, qt.HasLen, 3)
 	c.Assert(bufSlice[0], qt.Contains, expectedServiceMsg[0])
 
 	// Create one more service in same org

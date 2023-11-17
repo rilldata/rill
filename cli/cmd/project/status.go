@@ -60,7 +60,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// 2. Print deployment info
-			ch.Printer.PrintlnSuccess("\nDeployment info")
+			ch.Printer.PrintlnSuccess("\nDeployment info\n")
 			fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
 			fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 			fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
