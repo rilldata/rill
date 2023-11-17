@@ -295,11 +295,6 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 	return resp, nil
 }
 
-func (s *Server) ProxyTrack(ctx context.Context, req *adminv1.TrackRequest) (*adminv1.TrackResponse, error) {
-	fmt.Println("ProxyTrack", req)
-	return &adminv1.TrackResponse{}, nil
-}
-
 func timeoutSelector(fullMethodName string) time.Duration {
 	return time.Minute
 }

@@ -85,7 +85,6 @@ const (
 	AdminService_DeleteReport_FullMethodName                 = "/rill.admin.v1.AdminService/DeleteReport"
 	AdminService_TriggerReport_FullMethodName                = "/rill.admin.v1.AdminService/TriggerReport"
 	AdminService_GenerateReportYAML_FullMethodName           = "/rill.admin.v1.AdminService/GenerateReportYAML"
-	AdminService_ProxyTrack_FullMethodName                   = "/rill.admin.v1.AdminService/ProxyTrack"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -225,7 +224,6 @@ type AdminServiceClient interface {
 	TriggerReport(ctx context.Context, in *TriggerReportRequest, opts ...grpc.CallOption) (*TriggerReportResponse, error)
 	// GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
 	GenerateReportYAML(ctx context.Context, in *GenerateReportYAMLRequest, opts ...grpc.CallOption) (*GenerateReportYAMLResponse, error)
-	ProxyTrack(ctx context.Context, in *TrackRequest, opts ...grpc.CallOption) (*TrackResponse, error)
 }
 
 type adminServiceClient struct {
@@ -830,15 +828,6 @@ func (c *adminServiceClient) GenerateReportYAML(ctx context.Context, in *Generat
 	return out, nil
 }
 
-func (c *adminServiceClient) ProxyTrack(ctx context.Context, in *TrackRequest, opts ...grpc.CallOption) (*TrackResponse, error) {
-	out := new(TrackResponse)
-	err := c.cc.Invoke(ctx, AdminService_ProxyTrack_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
@@ -976,7 +965,6 @@ type AdminServiceServer interface {
 	TriggerReport(context.Context, *TriggerReportRequest) (*TriggerReportResponse, error)
 	// GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
 	GenerateReportYAML(context.Context, *GenerateReportYAMLRequest) (*GenerateReportYAMLResponse, error)
-	ProxyTrack(context.Context, *TrackRequest) (*TrackResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -1181,9 +1169,6 @@ func (UnimplementedAdminServiceServer) TriggerReport(context.Context, *TriggerRe
 }
 func (UnimplementedAdminServiceServer) GenerateReportYAML(context.Context, *GenerateReportYAMLRequest) (*GenerateReportYAMLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateReportYAML not implemented")
-}
-func (UnimplementedAdminServiceServer) ProxyTrack(context.Context, *TrackRequest) (*TrackResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ProxyTrack not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -2386,24 +2371,6 @@ func _AdminService_GenerateReportYAML_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_ProxyTrack_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TrackRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).ProxyTrack(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_ProxyTrack_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).ProxyTrack(ctx, req.(*TrackRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2674,10 +2641,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateReportYAML",
 			Handler:    _AdminService_GenerateReportYAML_Handler,
-		},
-		{
-			MethodName: "ProxyTrack",
-			Handler:    _AdminService_ProxyTrack_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

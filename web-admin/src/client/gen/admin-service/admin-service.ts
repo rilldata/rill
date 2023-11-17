@@ -83,7 +83,6 @@ import type {
   V1ListServiceAuthTokensResponse,
   V1IssueServiceAuthTokenResponse,
   V1PingResponse,
-  AdminServicePingParams,
   V1TriggerRedeployResponse,
   V1TriggerRedeployRequest,
   V1GetRepoMetaResponse,
@@ -107,8 +106,6 @@ import type {
   V1RevokeCurrentAuthTokenResponse,
   V1IssueRepresentativeAuthTokenResponse,
   V1IssueRepresentativeAuthTokenRequest,
-  V1TrackResponse,
-  V1TrackRequest,
   V1GetUserResponse,
   AdminServiceGetUserParams,
   V1ListBookmarksResponse,
@@ -3866,46 +3863,33 @@ export const createAdminServiceIssueServiceAuthToken = <
 /**
  * @summary Ping returns information about the server
  */
-export const adminServicePing = (
-  params?: AdminServicePingParams,
-  signal?: AbortSignal
-) => {
-  return httpClient<V1PingResponse>({
-    url: `/v1/ping`,
-    method: "get",
-    params,
-    signal,
-  });
+export const adminServicePing = (signal?: AbortSignal) => {
+  return httpClient<V1PingResponse>({ url: `/v1/ping`, method: "get", signal });
 };
 
-export const getAdminServicePingQueryKey = (params?: AdminServicePingParams) =>
-  [`/v1/ping`, ...(params ? [params] : [])] as const;
+export const getAdminServicePingQueryKey = () => [`/v1/ping`] as const;
 
 export const getAdminServicePingQueryOptions = <
   TData = Awaited<ReturnType<typeof adminServicePing>>,
   TError = RpcStatus
->(
-  params?: AdminServicePingParams,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServicePing>>,
-      TError,
-      TData
-    >;
-  }
-): CreateQueryOptions<
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServicePing>>,
+    TError,
+    TData
+  >;
+}): CreateQueryOptions<
   Awaited<ReturnType<typeof adminServicePing>>,
   TError,
   TData
 > & { queryKey: QueryKey } => {
   const { query: queryOptions } = options ?? {};
 
-  const queryKey =
-    queryOptions?.queryKey ?? getAdminServicePingQueryKey(params);
+  const queryKey = queryOptions?.queryKey ?? getAdminServicePingQueryKey();
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServicePing>>
-  > = ({ signal }) => adminServicePing(params, signal);
+  > = ({ signal }) => adminServicePing(signal);
 
   return { queryKey, queryFn, ...queryOptions };
 };
@@ -3921,17 +3905,14 @@ export type AdminServicePingQueryError = RpcStatus;
 export const createAdminServicePing = <
   TData = Awaited<ReturnType<typeof adminServicePing>>,
   TError = RpcStatus
->(
-  params?: AdminServicePingParams,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServicePing>>,
-      TError,
-      TData
-    >;
-  }
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const queryOptions = getAdminServicePingQueryOptions(params, options);
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServicePing>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServicePingQueryOptions(options);
 
   const query = createQuery(queryOptions) as CreateQueryResult<
     TData,
@@ -4936,66 +4917,6 @@ export const createAdminServiceIssueRepresentativeAuthToken = <
 }) => {
   const mutationOptions =
     getAdminServiceIssueRepresentativeAuthTokenMutationOptions(options);
-
-  return createMutation(mutationOptions);
-};
-export const adminServiceProxyTrack = (v1TrackRequest: V1TrackRequest) => {
-  return httpClient<V1TrackResponse>({
-    url: `/v1/track`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: v1TrackRequest,
-  });
-};
-
-export const getAdminServiceProxyTrackMutationOptions = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceProxyTrack>>,
-    TError,
-    { data: V1TrackRequest },
-    TContext
-  >;
-}): CreateMutationOptions<
-  Awaited<ReturnType<typeof adminServiceProxyTrack>>,
-  TError,
-  { data: V1TrackRequest },
-  TContext
-> => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceProxyTrack>>,
-    { data: V1TrackRequest }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return adminServiceProxyTrack(data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AdminServiceProxyTrackMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceProxyTrack>>
->;
-export type AdminServiceProxyTrackMutationBody = V1TrackRequest;
-export type AdminServiceProxyTrackMutationError = RpcStatus;
-
-export const createAdminServiceProxyTrack = <
-  TError = RpcStatus,
-  TContext = unknown
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceProxyTrack>>,
-    TError,
-    { data: V1TrackRequest },
-    TContext
-  >;
-}) => {
-  const mutationOptions = getAdminServiceProxyTrackMutationOptions(options);
 
   return createMutation(mutationOptions);
 };
