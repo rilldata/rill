@@ -201,7 +201,8 @@ export function formatDataTypeAsDuckDbQueryString(
   value: unknown,
   type: string
 ): string {
-  if (value === undefined) return "";
+  if (value === undefined) return "undefined";
+  if (value === null) return "null";
   if (
     INTEGERS.has(type) ||
     type.startsWith("DECIMAL") ||

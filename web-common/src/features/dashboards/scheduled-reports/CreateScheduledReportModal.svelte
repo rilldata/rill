@@ -1,6 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { createAdminServiceCreateReport } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceCreateReport,
+    createAdminServiceGetCurrentUser,
+  } from "@rilldata/web-admin/client";
   import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
   import TimePicker from "@rilldata/web-common/components/forms/TimePicker.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
@@ -14,6 +17,7 @@
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { Button } from "../../../components/button";
+  import InputArray from "../../../components/forms/InputArray.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
   import {
@@ -21,7 +25,6 @@
     getLocalIANA,
     getUTCIANA,
   } from "../../../lib/time/timezone";
-  import RecipientsList from "./RecipientsList.svelte";
   import {
     convertToCron,
     getNextQuarterHour,
@@ -37,10 +40,11 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
-  const createReport = createAdminServiceCreateReport();
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
+  const createReport = createAdminServiceCreateReport();
 
+  const user = createAdminServiceGetCurrentUser();
   const userLocalIANA = getLocalIANA();
   const UTCIana = getUTCIANA();
 
@@ -53,14 +57,21 @@
       frequency: "Weekly",
       dayOfWeek: getTodaysDayOfWeek(),
       timeOfDay: getTimeIn24FormatFromDateTime(getNextQuarterHour()),
-      timeZone: dashboardTimeZone || userLocalIANA,
+      timeZone: userLocalIANA,
       exportFormat: V1ExportFormat.EXPORT_FORMAT_CSV,
       exportLimit: "",
-      recipients: [] as string[],
+      recipients: [
+        { email: $user.data?.user?.email ? $user.data.user.email : "" },
+        { email: "" },
+      ],
     },
     validationSchema: yup.object({
       title: yup.string().required("Required"),
-      recipients: yup.array().min(1, "Required"),
+      recipients: yup.array().of(
+        yup.object().shape({
+          email: yup.string().email("Invalid email"),
+        })
+      ),
     }),
     onSubmit: async (values) => {
       const refreshCron = convertToCron(
@@ -82,7 +93,7 @@
               exportLimit: values.exportLimit || undefined,
               exportFormat: values.exportFormat,
               openProjectSubpath: `/${queryArgs.metricsViewName}?state=${dashState}`,
-              recipients: values.recipients,
+              recipients: values.recipients.map((r) => r.email).filter(Boolean),
             },
           },
         });
@@ -100,25 +111,9 @@
     },
   });
 
-  // This form-within-a-form is used to add recipients to the parent form
-  const {
-    form: newRecipientForm,
-    errors: newRecipientErrors,
-    handleSubmit: newRecipientHandleSubmit,
-  } = createForm({
-    initialValues: {
-      newRecipient: "",
-    },
-    validationSchema: yup.object({
-      newRecipient: yup.string().email("Invalid email"),
-    }),
-    onSubmit: (values) => {
-      if (values.newRecipient) {
-        $form["recipients"] = $form["recipients"].concat(values.newRecipient);
-      }
-      $newRecipientForm.newRecipient = "";
-    },
-  });
+  // There's a bug in how `svelte-forms-lib` types the `$errors` store for arrays.
+  // See: https://github.com/tjinauyeung/svelte-forms-lib/issues/154#issuecomment-1087331250
+  $: recipientErrors = $errors.recipients as unknown as { email: string }[];
 </script>
 
 <Dialog {open}>
@@ -170,7 +165,7 @@
         bind:value={$form["timeZone"]}
         id="timeZone"
         label="Time zone"
-        options={[dashboardTimeZone, userLocalIANA, UTCIana]
+        options={[userLocalIANA, dashboardTimeZone, UTCIana]
           // Remove duplicates when dashboardTimeZone is already covered by userLocalIANA or UTCIana
           .filter((z, i, self) => {
             return self.indexOf(z) === i;
@@ -206,27 +201,37 @@
       optional
       placeholder="1000"
     />
-    <div class="flex flex-col gap-y-2">
-      <form
-        autocomplete="off"
-        id="add-recipient-form"
-        on:submit|preventDefault={newRecipientHandleSubmit}
-      >
-        <InputV2
-          bind:value={$newRecipientForm["newRecipient"]}
-          error={$newRecipientErrors["newRecipient"]}
-          hint="Recipients may receive different views based on the project's security policies.
-           Recipients without access to the project will not be able to view the report."
-          id="newRecipient"
-          label="Recipients"
-          placeholder="Add an email address"
-        />
-      </form>
-      <RecipientsList bind:recipients={$form["recipients"]} />
-    </div>
+    <InputArray
+      id="recipients"
+      label="Recipients"
+      bind:values={$form["recipients"]}
+      bind:errors={recipientErrors}
+      accessorKey="email"
+      hint="Recipients will receive different views based on their security policy.
+        Recipients without project access can't view the report."
+      placeholder="Enter an email address"
+      addItemLabel="Add email"
+      on:add-item={() => {
+        $form["recipients"] = $form["recipients"].concat({ email: "" });
+        recipientErrors = recipientErrors.concat({ email: "" });
+
+        // Focus on the new input element
+        setTimeout(() => {
+          const input = document.getElementById(
+            `recipients.${$form["recipients"].length - 1}.email`
+          );
+          input?.focus();
+        }, 0);
+      }}
+      on:remove-item={(event) => {
+        const index = event.detail.index;
+        $form["recipients"] = $form["recipients"].filter((r, i) => i !== index);
+        recipientErrors = recipientErrors.filter((r, i) => i !== index);
+      }}
+    />
   </form>
   <svelte:fragment slot="footer">
-    <div class="flex items-center gap-x-2 mt-2">
+    <div class="flex items-center gap-x-2 mt-5">
       {#if $createReport.isError}
         <div class="text-red-500">{$createReport.error.message}</div>
       {/if}
@@ -235,7 +240,8 @@
         Cancel
       </Button>
       <Button
-        disabled={$isSubmitting || $form["recipients"].length === 0}
+        disabled={$isSubmitting ||
+          $form["recipients"].filter((r) => r.email).length === 0}
         form="create-scheduled-report-form"
         submitForm
         type="primary"

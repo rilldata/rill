@@ -423,6 +423,13 @@ service AdminService {
       body: "*"
     };
   }
+
+  rpc Telemetry(TelemetryRequest) returns (TelemetryResponse) {
+    option (google.api.http) = {
+      post: "/v1/telemetry",
+      body: "*"
+    };
+  }
 }
 
 message PingRequest {}
@@ -1067,6 +1074,12 @@ message GenerateReportYAMLRequest {
 message GenerateReportYAMLResponse {
   string yaml = 1;
 }
+
+message TelemetryRequest {
+  map<string, string> event = 1;
+}
+
+message TelemetryResponse {}
 
 message User {
   string id = 1;

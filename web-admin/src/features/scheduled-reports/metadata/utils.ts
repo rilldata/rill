@@ -17,6 +17,10 @@ export function exportFormatToPrettyString(format: V1ExportFormat): string {
 }
 
 export function formatNextRunOn(nextRunOn: string, timeZone: string): string {
+  // If the timezone is empty, interpret it as UTC
+  if (timeZone === "") {
+    timeZone = "UTC";
+  }
   return DateTime.fromISO(nextRunOn)
     .setZone(timeZone)
     .toLocaleString(DateTime.DATETIME_FULL);

@@ -160,6 +160,16 @@ message MetricsViewSpec {
     COMPARISON_MODE_TIME = 2;
     COMPARISON_MODE_DIMENSION = 3;
   }
+  message AvailableComparisonOffset {
+    string offset = 1;
+    // Used to override the range for the comparison with something other than the selected range.
+    string range = 2;
+  }
+  message AvailableTimeRange {
+    string range = 1;
+    // Available comparison offsets for this time range.
+    repeated AvailableComparisonOffset comparison_offsets = 2;
+  }
   // Connector containing the table
   string connector = 1;
   // Name of the table the metrics view is based on
@@ -190,6 +200,8 @@ message MetricsViewSpec {
   ComparisonMode default_comparison_mode = 14;
   // If comparison mode is dimension then this determines which is the default dimension
   string default_comparison_dimension = 15;
+  // List of available time ranges with comparison ranges that would replace the default list.
+  repeated AvailableTimeRange available_time_ranges = 16;
 }
 
 message MetricsViewState {

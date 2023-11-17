@@ -52,7 +52,7 @@
     },
     {
       id: "lastRun",
-      accessorFn: (row) => row.report.state.currentExecution.reportTime,
+      accessorFn: (row) => row.report.state.currentExecution?.reportTime,
     },
     // {
     //   id: "nextRun",

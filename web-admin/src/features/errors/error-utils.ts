@@ -2,71 +2,80 @@ import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { errorEvent } from "@rilldata/web-common/metrics/initMetrics";
 import type { Query } from "@tanstack/query-core";
+import type { QueryClient } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
 import type { RpcStatus } from "../../client";
+import { getAdminServiceGetProjectQueryKey } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
 import { ErrorStoreState, errorStore } from "./error-store";
 
-export function globalErrorCallback(error: AxiosError, query: Query): void {
-  const isProjectPage = get(page).route.id === "/[organization]/[project]";
-  const isDashboardPage =
-    get(page).route.id === "/[organization]/[project]/[dashboard]";
+export function createGlobalErrorCallback(queryClient: QueryClient) {
+  return (error: AxiosError, query: Query) => {
+    const isProjectPage = get(page).route.id === "/[organization]/[project]";
+    const isDashboardPage =
+      get(page).route.id === "/[organization]/[project]/[dashboard]";
 
-  if (!error.response) {
-    errorEvent?.fireErrorBoundaryEvent(
-      query.queryKey[0] as string,
-      "",
-      "unknown error"
-    );
-    return;
-  } else {
-    errorEvent?.fireErrorBoundaryEvent(
-      query.queryKey[0] as string,
-      error.response?.status + "" ?? error.status,
-      (error.response?.data as RpcStatus)?.message ?? error.message
-    );
-  }
-
-  // Special handling for some errors on the Project page
-  if (isProjectPage) {
-    // If "repository not found", ignore the error and show the page
-    if (
-      error.response?.status === 400 &&
-      (error.response.data as RpcStatus).message === "repository not found"
-    ) {
+    if (!error.response) {
+      errorEvent?.fireErrorBoundaryEvent(
+        query.queryKey[0] as string,
+        "",
+        "unknown error"
+      );
       return;
-    }
-  }
-
-  // Special handling for some errors on the Dashboard page
-  if (isDashboardPage) {
-    // If a dashboard wasn't found, let +page.svelte handle the error.
-    // Because the project may be reconciling, in which case we want to show a loading spinner not a 404.
-    if (
-      error.response?.status === 404 &&
-      (error.response.data as RpcStatus).message === "not found"
-    ) {
-      return;
+    } else {
+      errorEvent?.fireErrorBoundaryEvent(
+        query.queryKey[0] as string,
+        error.response?.status + "" ?? error.status,
+        (error.response?.data as RpcStatus)?.message ?? error.message
+      );
     }
 
-    // When a JWT doesn't permit access to a metrics view, the metrics view APIs return 401s.
-    // In this scenario, `GetCatalog` returns a 404. We ignore the 401s so we can show the 404.
+    // Special handling for some errors on the Project page
+    if (isProjectPage && error.response?.status === 400) {
+      // If "repository not found", ignore the error and show the page
+      if (
+        (error.response.data as RpcStatus).message === "repository not found"
+      ) {
+        return;
+      }
+      // This error is the error:`driver.ErrNotFound` thrown while looking up an instance in the runtime.
+      if ((error.response.data as RpcStatus).message === "driver: not found") {
+        const [, org, proj] = get(page).url.pathname.split("/");
+        queryClient.resetQueries(getAdminServiceGetProjectQueryKey(org, proj));
+        return;
+      }
+    }
+
+    // Special handling for some errors on the Dashboard page
+    if (isDashboardPage) {
+      // If a dashboard wasn't found, let +page.svelte handle the error.
+      // Because the project may be reconciling, in which case we want to show a loading spinner not a 404.
+      if (
+        error.response?.status === 404 &&
+        (error.response.data as RpcStatus).message === "not found"
+      ) {
+        return;
+      }
+
+      // When a JWT doesn't permit access to a metrics view, the metrics view APIs return 401s.
+      // In this scenario, `GetCatalog` returns a 404. We ignore the 401s so we can show the 404.
+      if (error.response?.status === 401) {
+        return;
+      }
+    }
+
+    // If Unauthorized, redirect to login page
     if (error.response?.status === 401) {
+      goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
       return;
     }
-  }
 
-  // If Unauthorized, redirect to login page
-  if (error.response?.status === 401) {
-    goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
-    return;
-  }
+    // Create a pretty message for the error page
+    const errorStoreState = createErrorStoreStateFromAxiosError(error);
 
-  // Create a pretty message for the error page
-  const errorStoreState = createErrorStoreStateFromAxiosError(error);
-
-  errorStore.set(errorStoreState);
+    errorStore.set(errorStoreState);
+  };
 }
 
 function createErrorStoreStateFromAxiosError(
@@ -101,6 +110,12 @@ function createErrorStoreStateFromAxiosError(
       statusCode: error.response?.status,
       header: "Project not found",
       body: "The project you requested could not be found. Please check that you have provided a valid project name.",
+    };
+  } else if (status === 400 && msg === "driver: not found") {
+    return {
+      statusCode: error.response?.status,
+      header: "Project deployment not found",
+      body: "This is potentially a temporary state if the project has just been reset.",
     };
   }
 

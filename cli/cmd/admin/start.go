@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -33,39 +34,44 @@ import (
 // Env var keys must be prefixed with RILL_ADMIN_ and are converted from snake_case to CamelCase.
 // For example RILL_ADMIN_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	DatabaseDriver         string                 `default:"postgres" split_words:"true"`
-	DatabaseURL            string                 `split_words:"true"`
-	Jobs                   []string               `split_words:"true"`
-	HTTPPort               int                    `default:"8080" split_words:"true"`
-	GRPCPort               int                    `default:"9090" split_words:"true"`
-	LogLevel               zapcore.Level          `default:"info" split_words:"true"`
-	MetricsExporter        observability.Exporter `default:"prometheus" split_words:"true"`
-	TracesExporter         observability.Exporter `default:"" split_words:"true"`
-	ExternalURL            string                 `default:"http://localhost:8080" split_words:"true"`
-	ExternalGRPCURL        string                 `envconfig:"external_grpc_url"`
-	FrontendURL            string                 `default:"http://localhost:3000" split_words:"true"`
-	SessionKeyPairs        []string               `split_words:"true"`
-	AllowedOrigins         []string               `default:"*" split_words:"true"`
-	AuthDomain             string                 `split_words:"true"`
-	AuthClientID           string                 `split_words:"true"`
-	AuthClientSecret       string                 `split_words:"true"`
-	GithubAppID            int64                  `split_words:"true"`
-	GithubAppName          string                 `split_words:"true"`
-	GithubAppPrivateKey    string                 `split_words:"true"`
-	GithubAppWebhookSecret string                 `split_words:"true"`
-	GithubClientID         string                 `split_words:"true"`
-	GithubClientSecret     string                 `split_words:"true"`
-	ProvisionerSpec        string                 `split_words:"true"`
-	SigningJWKS            string                 `split_words:"true"`
-	SigningKeyID           string                 `split_words:"true"`
-	EmailSMTPHost          string                 `split_words:"true"`
-	EmailSMTPPort          int                    `split_words:"true"`
-	EmailSMTPUsername      string                 `split_words:"true"`
-	EmailSMTPPassword      string                 `split_words:"true"`
-	EmailSenderEmail       string                 `split_words:"true"`
-	EmailSenderName        string                 `split_words:"true"`
-	EmailBCC               string                 `split_words:"true"`
-	RedisURL               string                 `default:"" split_words:"true"`
+	DatabaseDriver           string                 `default:"postgres" split_words:"true"`
+	DatabaseURL              string                 `split_words:"true"`
+	Jobs                     []string               `split_words:"true"`
+	HTTPPort                 int                    `default:"8080" split_words:"true"`
+	GRPCPort                 int                    `default:"9090" split_words:"true"`
+	LogLevel                 zapcore.Level          `default:"info" split_words:"true"`
+	MetricsExporter          observability.Exporter `default:"prometheus" split_words:"true"`
+	TracesExporter           observability.Exporter `default:"" split_words:"true"`
+	ExternalURL              string                 `default:"http://localhost:8080" split_words:"true"`
+	ExternalGRPCURL          string                 `envconfig:"external_grpc_url"`
+	FrontendURL              string                 `default:"http://localhost:3000" split_words:"true"`
+	SessionKeyPairs          []string               `split_words:"true"`
+	AllowedOrigins           []string               `default:"*" split_words:"true"`
+	AuthDomain               string                 `split_words:"true"`
+	AuthClientID             string                 `split_words:"true"`
+	AuthClientSecret         string                 `split_words:"true"`
+	GithubAppID              int64                  `split_words:"true"`
+	GithubAppName            string                 `split_words:"true"`
+	GithubAppPrivateKey      string                 `split_words:"true"`
+	GithubAppWebhookSecret   string                 `split_words:"true"`
+	GithubClientID           string                 `split_words:"true"`
+	GithubClientSecret       string                 `split_words:"true"`
+	ProvisionerSpec          string                 `split_words:"true"`
+	SigningJWKS              string                 `split_words:"true"`
+	SigningKeyID             string                 `split_words:"true"`
+	EmailSMTPHost            string                 `split_words:"true"`
+	EmailSMTPPort            int                    `split_words:"true"`
+	EmailSMTPUsername        string                 `split_words:"true"`
+	EmailSMTPPassword        string                 `split_words:"true"`
+	EmailSenderEmail         string                 `split_words:"true"`
+	EmailSenderName          string                 `split_words:"true"`
+	EmailBCC                 string                 `split_words:"true"`
+	RedisURL                 string                 `default:"" split_words:"true"`
+	ActivitySinkType         string                 `default:"" split_words:"true"`
+	ActivitySinkPeriodMs     int                    `default:"1000" split_words:"true"`
+	ActivityMaxBufferSize    int                    `default:"1000" split_words:"true"`
+	ActivitySinkKafkaBrokers string                 `default:"" split_words:"true"`
+	ActivityUISinkKafkaTopic string                 `default:"" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -207,6 +213,15 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			runWorker := len(args) == 0 || args[0] == "worker"
 			runJobs := len(args) == 0 || args[0] == "jobs"
 
+			uiActivityClient := activity.NewClientFromConf(
+				conf.ActivitySinkType,
+				conf.ActivitySinkPeriodMs,
+				conf.ActivityMaxBufferSize,
+				conf.ActivitySinkKafkaBrokers,
+				conf.ActivityUISinkKafkaTopic,
+				logger,
+			)
+
 			// Init and run server
 			if runServer {
 				var limiter ratelimit.Limiter
@@ -219,7 +234,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 					}
 					limiter = ratelimit.NewRedis(redis.NewClient(opts))
 				}
-				srv, err := server.New(logger, adm, issuer, limiter, &server.Options{
+				srv, err := server.New(logger, adm, issuer, limiter, uiActivityClient, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
 					ExternalURL:            conf.ExternalURL,
