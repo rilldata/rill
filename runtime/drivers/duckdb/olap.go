@@ -652,21 +652,38 @@ func (c *connection) convertToEnum(ctx context.Context, table, col string) error
 
 	var switchErr error
 	err = c.WithConnection(ctx, 100, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
-		res, err := c.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(DISTINCT %s) FROM %s.default WHERE %s IS NOT NULL", safeSQLName(col), safeSQLName(dbName), safeSQLName(col))})
-		if err != nil {
-			return fmt.Errorf("failed to create enum %q: %w", enum, err)
-		}
-		_ = res.Next()
-		var count int
-		err = res.Scan(&count)
-		res.Close()
+		// check that atleast one non nil value exists in the column
+		res, err := c.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT (SELECT count(%s) FROM %s.default WHERE %s IS NOT NULL) > 0 AS cnt", safeSQLName(col), safeSQLName(dbName), safeSQLName(col))})
 		if err != nil {
 			return err
 		}
 
-		if count == 0 {
+		var exists bool
+		if res.Next() {
+			if err := res.Scan(&exists); err != nil {
+				_ = res.Close()
+				return err
+			}
+		}
+		_ = res.Close()
+		if !exists {
 			return fmt.Errorf("column %q can't be converted to enum, has zero non null values", col)
 		}
+
+		// scan current db and current schema
+		res, err = c.Execute(ctx, &drivers.Statement{Query: "SELECT current_database(), current_schema()"})
+		if err != nil {
+			return err
+		}
+
+		var currentDB, currentSchema string
+		if res.Next() {
+			if err := res.Scan(&currentDB, &currentSchema); err != nil {
+				_ = res.Close()
+				return err
+			}
+		}
+		_ = res.Close()
 
 		// switch to source db
 		// this is only required since duckdb has bugs around db scoped custom types
@@ -676,9 +693,9 @@ func (c *connection) convertToEnum(ctx context.Context, table, col string) error
 			return fmt.Errorf("failed switch db %q: %w", dbName, err)
 		}
 		defer func() {
-			// switch to main db, notice `main.main` just doing USE main switches context to `main` schema in the current db
-			// we want to switch to main db
-			switchErr = c.Exec(ensuredCtx, &drivers.Statement{Query: "USE main.main"})
+			// switch to original db, notice `db.schema` just doing USE db switches context to `main` schema in the current db if doing `USE main`
+			// we want to switch to original db and schema
+			switchErr = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("USE %s.%s", safeSQLName(currentDB), safeSQLName(currentSchema))})
 		}()
 
 		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TYPE %s", safeSQLName(enum))})
@@ -698,7 +715,7 @@ func (c *connection) convertToEnum(ctx context.Context, table, col string) error
 
 		// recreate view to propagate schema changes
 		// NOTE :: db name need to be appened in the view query else query fails when switching to main db
-		return c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW main.main.%s AS SELECT * FROM %s.default", safeSQLName(table), safeSQLName(dbName))})
+		return c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s.%s AS SELECT * FROM %s.default", safeSQLName(currentDB), safeSQLName(currentSchema), safeSQLName(table), safeSQLName(dbName))})
 	})
 	if switchErr != nil {
 		c.logger.Error("failed switch db to main, reopening db", zap.Error(switchErr))

@@ -387,7 +387,7 @@ func Test_connection_CastEnum(t *testing.T) {
 	temp := t.TempDir()
 	os.Mkdir(temp, fs.ModePerm)
 
-	dbPath := filepath.Join(temp, "main.db")
+	dbPath := filepath.Join(temp, "view.db")
 	handle, err := Driver{}.Open(map[string]any{"dsn": dbPath, "external_table_storage": true}, false, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	c := handle.(*connection)

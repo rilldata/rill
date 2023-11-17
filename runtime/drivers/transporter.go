@@ -10,7 +10,7 @@ type Transporter interface {
 	Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *TransferOptions) error
 }
 
-// TransferOptions provide execution context for duckdb.Transfer
+// TransferOptions provide execution context for Transporter.Transfer
 type TransferOptions struct {
 	AllowHostAccess  bool
 	RepoRoot         string
