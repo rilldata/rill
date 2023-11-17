@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/admin/server"
 	admincli "github.com/rilldata/rill/cli/cmd/admin"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
@@ -76,7 +77,7 @@ func AdminServer(ctx context.Context, logger *zap.Logger, adm *admin.Service) (*
 	}
 
 	limiter := ratelimit.NewNoop()
-	srv, err := server.New(logger, adm, issuer, limiter, &server.Options{
+	srv, err := server.New(logger, adm, issuer, limiter, activity.NewNoopClient(), &server.Options{
 		HTTPPort:               conf.HTTPPort,
 		GRPCPort:               conf.GRPCPort,
 		ExternalURL:            conf.ExternalURL,
