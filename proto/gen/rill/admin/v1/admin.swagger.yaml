@@ -2484,8 +2484,6 @@ definitions:
     properties:
       event:
         type: object
-        additionalProperties:
-          type: string
   v1TelemetryResponse:
     type: object
   v1TriggerReconcileResponse:

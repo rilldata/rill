@@ -12,7 +12,7 @@ import type { MetricsEventFactory } from "./MetricsEventFactory";
 import type { ErrorEventFactory } from "./ErrorEventFactory";
 import type { CommonFields, MetricsEvent } from "./MetricsTypes";
 import type { ProductHealthEventFactory } from "./ProductHealthEventFactory";
-import type { RillIntakeClient } from "./RillIntakeClient";
+import type { TelemetryClient } from "./RillIntakeClient";
 
 export const ClientIDStorageKey = "client_id";
 
@@ -44,8 +44,8 @@ export class MetricsService
   private commonFields: Record<string, unknown>;
 
   public constructor(
-    private readonly rillIntakeClient: RillIntakeClient,
-    private readonly metricsEventFactories: Array<MetricsEventFactory>
+    private readonly telemetryClient: TelemetryClient,
+    metricsEventFactories: Array<MetricsEventFactory>
   ) {
     metricsEventFactories.forEach((actions) => {
       getActionMethods(actions).forEach((action) => {
@@ -98,7 +98,7 @@ export class MetricsService
       { ...this.commonFields },
       ...args
     );
-    await this.rillIntakeClient.fireEvent(event);
+    await this.telemetryClient.fireEvent(event);
   }
 
   private getOrSetClientID(): string {

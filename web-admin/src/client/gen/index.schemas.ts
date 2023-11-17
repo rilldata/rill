@@ -271,7 +271,7 @@ export interface V1TelemetryResponse {
   [key: string]: any;
 }
 
-export type V1TelemetryRequestEvent = { [key: string]: string };
+export type V1TelemetryRequestEvent = { [key: string]: any };
 
 export interface V1TelemetryRequest {
   event?: V1TelemetryRequestEvent;

@@ -1076,7 +1076,7 @@ message GenerateReportYAMLResponse {
 }
 
 message TelemetryRequest {
-  map<string, string> event = 1;
+  google.protobuf.Struct event = 1;
 }
 
 message TelemetryResponse {}

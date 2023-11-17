@@ -204,10 +204,6 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 		attribute.String("args.name.name", req.Name.Name),
 	)
 
-	if req.Name.Name == "AdData_dashboard" {
-		return nil, errors.New("error")
-	}
-
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
 		return nil, ErrForbidden
 	}
