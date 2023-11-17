@@ -121,12 +121,8 @@
       }`;
 
   $: bgColor = dark
-    ? `${
-        hovered ? "bg-gray-600" : ""
-      }`
-    : `${
-      hovered ? "bg-gray-200" : ""
-      }`;
+    ? `${hovered ? "bg-gray-600" : ""}`
+    : `${hovered ? "bg-gray-200" : ""}`;
 
 </script>
 
