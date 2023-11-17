@@ -33,17 +33,6 @@ var (
 	connectionsInUse      = observability.Must(meter.Int64ObservableGauge("connections_in_use"))
 )
 
-// ConvertEnum converts a varchar col in table to an enum type.
-// Generally to be used for low cardinality varchar columns although not enforced here.
-// TODO: merge transporter and duckdb pkg and remove this function
-func ConvertEnum(ctx context.Context, olap drivers.OLAPStore, table, col string) error {
-	c, ok := olap.(*connection)
-	if !ok {
-		return fmt.Errorf("invalid olap connection")
-	}
-	return c.convertToEnum(ctx, table, col)
-}
-
 func (c *connection) Dialect() drivers.Dialect {
 	return drivers.DialectDuckDB
 }
@@ -641,11 +630,13 @@ func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Sta
 	return err
 }
 
+// convertToEnum converts a varchar col in table to an enum type.
+// Generally to be used for low cardinality varchar columns although not enforced here.
 func (c *connection) convertToEnum(ctx context.Context, table, col string) error {
-	// supported only if ext_storage is true
 	if !c.config.ExtTableStorage {
 		return fmt.Errorf("`cast_to_enum` is only supported when `external_table_storage` is enabled")
 	}
+	c.logger.Info("convert column to enum", zap.String("table", table), zap.String("col", col))
 
 	version, exist, err := c.tableVersion(table)
 	if err != nil {
@@ -661,39 +652,64 @@ func (c *connection) convertToEnum(ctx context.Context, table, col string) error
 
 	var switchErr error
 	err = c.WithConnection(ctx, 100, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+		res, err := c.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(DISTINCT %s) FROM %s.default WHERE %s IS NOT NULL", safeSQLName(col), safeSQLName(dbName), safeSQLName(col))})
+		if err != nil {
+			return fmt.Errorf("failed to create enum %q: %w", enum, err)
+		}
+		_ = res.Next()
+		var count int
+		err = res.Scan(&count)
+		res.Close()
+		if err != nil {
+			return err
+		}
+
+		if count == 0 {
+			return fmt.Errorf("column %q can't be converted to enum, has zero non null values", col)
+		}
+
+		// switch to source db
+		// this is only required since duckdb has bugs around db scoped custom types
+		// TODO: remove this when https://github.com/duckdb/duckdb/pull/9622 is released
 		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s", dbName)})
 		if err != nil {
 			return fmt.Errorf("failed switch db %q: %w", dbName, err)
 		}
 		defer func() {
-			// switch to main db
-			switchErr = c.Exec(ensuredCtx, &drivers.Statement{Query: "USE main"})
-			if err != nil {
-				c.logger.Error("failed switch db to main", zap.Error(err))
-			}
+			// switch to main db, notice `main.main` just doing USE main switches context to `main` schema in the current db
+			// we want to switch to main db
+			switchErr = c.Exec(ensuredCtx, &drivers.Statement{Query: "USE main.main"})
 		}()
 
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE TYPE %s AS ENUM (SELECT DISTINCT %s FROM \"default\")", safeSQLName(enum), safeSQLName(col))})
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TYPE %s", safeSQLName(enum))})
+		if err != nil && !strings.Contains(err.Error(), "does not exist") {
+			return fmt.Errorf("failed to drop enum %q: %w", enum, err)
+		}
+
+		err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE TYPE %s AS ENUM (SELECT DISTINCT %s FROM \"default\" WHERE %s IS NOT NULL)", safeSQLName(enum), safeSQLName(col), safeSQLName(col))})
 		if err != nil {
 			return fmt.Errorf("failed to create enum %q: %w", enum, err)
 		}
 
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ALTER TABLE \"default\" ALTER COLUMN %s SET TYPE %s", safeSQLName(col), safeSQLName(enum))})
+		err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("ALTER TABLE \"default\" ALTER COLUMN %s SET TYPE %s", safeSQLName(col), safeSQLName(enum))})
 		if err != nil {
 			return fmt.Errorf("failed to alter table %q: %w", table, err)
 		}
 
 		// recreate view to propagate schema changes
-		return c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW main.%s AS SELECT * FROM \"default\"", safeSQLName(table))})
+		// NOTE :: db name need to be appened in the view query else query fails when switching to main db
+		return c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW main.main.%s AS SELECT * FROM %s.default", safeSQLName(table), safeSQLName(dbName))})
 	})
+	if switchErr != nil {
+		c.logger.Error("failed switch db to main, reopening db", zap.Error(switchErr))
+		// if switching to main fails all subsequent queries would fail so we reopen db
+		_ = c.reopenDB()
+	}
+
 	if err != nil {
 		return err
 	}
 
-	if switchErr != nil {
-		// if switching to main fails all subsequent queries would fail so we reopen db
-		return c.reopenDB()
-	}
 	return nil
 }
 

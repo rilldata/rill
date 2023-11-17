@@ -10,7 +10,6 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb"
-	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"

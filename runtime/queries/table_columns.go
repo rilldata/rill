@@ -81,31 +81,20 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			})
 		}()
 
-		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query: fmt.Sprintf(`
-				SELECT column_name AS name, data_type AS type
-				FROM information_schema.columns
-				WHERE table_catalog = 'temp' AND table_name = '%s'`, temporaryTableName),
-			Priority:         priority,
-			ExecutionTimeout: defaultExecutionTimeout,
-		})
+		table, err := olap.InformationSchema().Lookup(ctx, temporaryTableName)
 		if err != nil {
 			return err
 		}
-		defer rows.Close()
 
-		var pcs []*runtimev1.ProfileColumn
-		i := 0
-		for rows.Next() {
-			pc := runtimev1.ProfileColumn{}
-			if err := rows.StructScan(&pc); err != nil {
-				return err
+		q.Result = make([]*runtimev1.ProfileColumn, len(table.Schema.Fields))
+		for i := 0; i < len(table.Schema.Fields); i++ {
+			field := table.Schema.Fields[i]
+			pc := runtimev1.ProfileColumn{
+				Name: field.Name,
+				Type: field.Type.Code.String(),
 			}
-			pcs = append(pcs, &pc)
-			i++
+			q.Result[i] = &pc
 		}
-
-		q.Result = pcs[0:i]
 		return nil
 	})
 }
