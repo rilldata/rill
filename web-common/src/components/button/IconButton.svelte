@@ -22,6 +22,7 @@
   alignment={tooltipAlignment}
 >
   <button
+    type="button"
     on:click
     aria-label={ariaLabel}
     class:cursor-auto={disabled}

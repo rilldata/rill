@@ -510,8 +510,39 @@ dimensions:
     // clear all filters
     await page.getByText("Clear filters").click();
 
-    await page.getByRole("button", { name: "Edit metrics" }).click();
+    // run through TDD table view
+    await page.getByText("Total rows 100.0k").click();
 
+    await expect(
+      page.getByText("No comparison dimension selected")
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "No comparison" }).nth(1).click();
+    await page.getByRole("menuitem", { name: "Domain Name" }).click();
+
+    await page.getByText("google.com", { exact: true }).click();
+    await page.getByText("instagram.com").click();
+    await page.getByText("news.google.com").click();
+
+    await expect(page.getByText(" Total rows 41.1k")).toBeVisible();
+
+    await page.getByRole("cell", { name: "Total rows" }).locator("div").click();
+
+    await page.getByRole("button", { name: "Total rows", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Avg Bid Price" }).click();
+
+    await expect(page.getByText(" Avg Bid Price $2.93")).toBeVisible();
+
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
+    });
+
+    await page.getByRole("button", { name: "Domain name" }).nth(1).click();
+    await page.getByRole("menuitem", { name: "Time" }).click();
+
+    await expect(page.getByText("-52.2%")).toBeVisible();
+
+    await page.getByRole("button", { name: "Edit metrics" }).click();
     /** walk through empty metrics def  */
     await runThroughEmptyMetricsFlows(page);
 

@@ -64,7 +64,7 @@ TableCells – the cell contents.
 
   $: selectedIndex = selectedValues
     .map((label) => {
-      return rows.findIndex((row) => row[dimensionName] === label);
+      return rows.findIndex((row) => row[dimensionColumnName] === label);
     })
     .filter((i) => i >= 0);
 
@@ -98,7 +98,8 @@ TableCells – the cell contents.
   $: dimensionColumn = columns?.find(
     (c) => c.name == dimensionColumnName
   ) as VirtualizedTableColumns;
-  $: measureColumns = columns?.filter((c) => c.name !== dimensionName) ?? [];
+  $: measureColumns =
+    columns?.filter((c) => c.name !== dimensionColumnName) ?? [];
 
   let horizontalScrolling = false;
 
