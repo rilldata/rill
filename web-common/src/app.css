@@ -19,10 +19,6 @@
     @apply bg-gray-100 dark:bg-gray-900;
   }
 
-  .surface-focus {
-    @apply bg-gray-600 dark:bg-gray-600;
-  }
-
   .surface-faint {
     @apply bg-gray-50 dark:bg-transparent;
   }

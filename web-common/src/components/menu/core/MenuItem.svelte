@@ -119,13 +119,21 @@
     : `${
         disabled ? "text-gray-500" : "focus:bg-gray-200 dark:focus:bg-gray-600"
       }`;
+
+  $: bgColor = dark
+    ? `${
+        hovered ? "bg-gray-600" : ""
+      }`
+    : `${
+      hovered ? "bg-gray-200" : ""
+      }`;
+
 </script>
 
 <button
   bind:this={element}
   {...ariaProperties}
   class:dark
-  class:surface-focus={hovered}
   style="--tw-ring-color: transparent; --flicker-color:{dark
     ? 'rgb(75, 85, 99)'
     : 'rgb(235, 235, 235)'}"
@@ -144,6 +152,7 @@
         ui-copy
         w-full
         {textColor}
+        {bgColor}
     "
   style:grid-template-columns="{icon ? "max-content" : ""} auto {$$slots[
     "right"
