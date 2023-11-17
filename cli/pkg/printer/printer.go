@@ -23,7 +23,6 @@ type Format int
 const (
 	Human Format = iota
 	JSON
-	CSV
 )
 
 func NewFormatValue(val Format, p *Format) *Format {
