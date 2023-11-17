@@ -323,10 +323,10 @@ mum,8.2`)
 }
 
 func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
-	file1 := filepath.Join("../../../testruntime/testdata/variable-schema", "data.parquet")
-	file2 := filepath.Join("../../../testruntime/testdata/variable-schema", "data1.parquet")
-	file3 := filepath.Join("../../../testruntime/testdata/variable-schema", "data2.parquet")
-	file4 := filepath.Join("../../../testruntime/testdata/variable-schema", "data3.parquet")
+	file1 := filepath.Join("../../testruntime/testdata/variable-schema", "data.parquet")
+	file2 := filepath.Join("../../testruntime/testdata/variable-schema", "data1.parquet")
+	file3 := filepath.Join("../../testruntime/testdata/variable-schema", "data2.parquet")
+	file4 := filepath.Join("../../testruntime/testdata/variable-schema", "data3.parquet")
 
 	type test struct {
 		files       [][]string

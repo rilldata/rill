@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -81,20 +82,35 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			})
 		}()
 
-		table, err := olap.InformationSchema().Lookup(ctx, temporaryTableName)
+		rows, err := olap.Execute(ctx, &drivers.Statement{
+			Query: fmt.Sprintf(`
+				SELECT column_name AS name, data_type AS type
+				FROM information_schema.columns
+				WHERE table_catalog = 'temp' AND table_name = '%s'`, temporaryTableName),
+			Priority:         priority,
+			ExecutionTimeout: defaultExecutionTimeout,
+		})
 		if err != nil {
 			return err
 		}
+		defer rows.Close()
 
-		q.Result = make([]*runtimev1.ProfileColumn, len(table.Schema.Fields))
-		for i := 0; i < len(table.Schema.Fields); i++ {
-			field := table.Schema.Fields[i]
-			pc := runtimev1.ProfileColumn{
-				Name: field.Name,
-				Type: field.Type.Code.String(),
+		var pcs []*runtimev1.ProfileColumn
+		i := 0
+		for rows.Next() {
+			pc := runtimev1.ProfileColumn{}
+			if err := rows.StructScan(&pc); err != nil {
+				return err
 			}
-			q.Result[i] = &pc
+			// TODO: Find a better way to handle this, this is ugly
+			if strings.Contains(pc.Type, "ENUM") {
+				pc.Type = "VARCHAR"
+			}
+			pcs = append(pcs, &pc)
+			i++
 		}
+
+		q.Result = pcs[0:i]
 		return nil
 	})
 }
