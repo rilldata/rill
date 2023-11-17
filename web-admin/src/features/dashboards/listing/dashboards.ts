@@ -16,6 +16,7 @@ import {
 import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import {
   createRuntimeServiceListResources,
+  getRuntimeServiceListResourcesQueryKey,
   V1ReconcileStatus,
 } from "@rilldata/web-common/runtime-client";
 import { invalidateMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation";
@@ -175,6 +176,8 @@ export function listenAndInvalidateDashboards(
       existingDashboards.add(name);
     }
 
+    let dashboardChanged = false;
+
     for (const dashboardResource of dashboardsResp.data) {
       const stateUpdatedOn = new Date(dashboardResource.meta.stateUpdatedOn);
 
@@ -188,7 +191,12 @@ export function listenAndInvalidateDashboards(
           refreshResource(queryClient, instanceId, dashboardResource).then(() =>
             invalidateMetricsViewData(queryClient, instanceId, false)
           );
+          dashboardChanged = true;
         }
+      }
+
+      if (!existingDashboards.has(dashboardResource.meta.name.name)) {
+        dashboardChanged = true;
       }
 
       existingDashboards.delete(dashboardResource.meta.name.name);
@@ -198,6 +206,13 @@ export function listenAndInvalidateDashboards(
     // cleanup of older dashboards
     for (const oldName of existingDashboards) {
       dashboards.delete(oldName);
+    }
+
+    if (dashboardChanged) {
+      // Temporary to refresh useDashboardsV2 from below
+      queryClient.resetQueries(
+        getRuntimeServiceListResourcesQueryKey(instanceId)
+      );
     }
   });
 }
