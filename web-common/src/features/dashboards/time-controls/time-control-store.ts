@@ -19,10 +19,7 @@ import {
   convertTimeRangePreset,
   getAdjustedFetchTime,
 } from "@rilldata/web-common/lib/time/ranges";
-import {
-  isoDurationToFullTimeRange,
-  ISODurationToTimeRangePreset,
-} from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   TimeComparisonOption,

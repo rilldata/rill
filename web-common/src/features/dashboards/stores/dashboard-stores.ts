@@ -9,7 +9,6 @@ import {
 } from "@rilldata/web-common/lib/arrayUtils";
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
-import { ISODurationToTimeRangePreset } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type {
   DashboardTimeControls,
   ScrubRange,
