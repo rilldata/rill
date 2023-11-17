@@ -20,7 +20,7 @@
   }
 
   .surface-focus {
-    @apply bg-gray-200 dark:bg-gray-600;
+    @apply bg-gray-600 dark:bg-gray-600;
   }
 
   .surface-faint {
