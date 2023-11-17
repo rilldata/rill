@@ -219,8 +219,6 @@
       element: th,
     });
 
-    console.log("called");
-
     if (maybeVal)
       th.innerHTML = maybeVal + `<span class="rt-column-resize"></span>`;
   }
