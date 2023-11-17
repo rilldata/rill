@@ -31,7 +31,8 @@ export function prepareSortedQueryBody(
   dimensionName: string,
   measureNames: string[],
   timeControls: TimeControlState,
-  sortMeasureName: string,
+  // Note: sortMeasureName may be null if we are sorting by dimension values
+  sortMeasureName: string | null,
   sortType: SortType,
   sortAscending: boolean,
   filterForDimension: V1MetricsViewFilter
@@ -45,7 +46,7 @@ export function prepareSortedQueryBody(
   // Benjamin and Egor put in a patch that will allow us to use the
   // dimension name as the measure name. This will need to be updated
   // once they have stabilized the API.
-  if (sortType === SortType.DIMENSION) {
+  if (sortType === SortType.DIMENSION || sortMeasureName === null) {
     sortMeasureName = dimensionName;
     // note also that we need to remove the comparison time range
     // when sorting by dimension values, or the query errors

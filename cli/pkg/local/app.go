@@ -44,9 +44,11 @@ const (
 
 // Default instance config on local.
 const (
-	DefaultInstanceID = "default"
-	DefaultOLAPDriver = "duckdb"
-	DefaultOLAPDSN    = "stage.db"
+	DefaultInstanceID   = "default"
+	DefaultOLAPDriver   = "duckdb"
+	DefaultOLAPDSN      = "main.db"
+	DefaultCatalogStore = "meta.db"
+	DefaultDBDir        = "tmp"
 )
 
 // App encapsulates the logic associated with configuring and running the UI and the runtime in a local environment.
@@ -66,7 +68,7 @@ type App struct {
 	activity              activity.Client
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
 	// Setup logger
 	logger, cleanupFn := initLogger(verbose, logFormat)
 	sugarLogger := logger.Sugar()
@@ -78,6 +80,31 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		ServiceName:     "rill-local",
 		ServiceVersion:  ver.String(),
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Get full path to project
+	projectPath, err = filepath.Abs(projectPath)
+	if err != nil {
+		return nil, err
+	}
+	dbDirPath := filepath.Join(projectPath, DefaultDBDir)
+	err = os.MkdirAll(dbDirPath, os.ModePerm) // Create project dir and db dir if it doesn't exist
+	if err != nil {
+		return nil, err
+	}
+
+	// old behaviour when data was stored in a stage.db file in the project directory.
+	// drop old file, remove this code after some time
+	_, err = os.Stat(filepath.Join(projectPath, "stage.db"))
+	if err == nil { // a old stage.db file exists
+		_ = os.Remove(filepath.Join(projectPath, "stage.db"))
+		_ = os.Remove(filepath.Join(projectPath, "stage.db.wal"))
+		logger.Named("console").Info("Dropping old stage.db file and rebuilding project")
+	}
+
+	parsedVariables, err := variable.Parse(variables)
 	if err != nil {
 		return nil, err
 	}
@@ -106,26 +133,11 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		return nil, err
 	}
 
-	// Get full path to project
-	projectPath, err = filepath.Abs(projectPath)
-	if err != nil {
-		return nil, err
-	}
-	err = os.MkdirAll(projectPath, os.ModePerm) // Create project dir if it doesn't exist
-	if err != nil {
-		return nil, err
-	}
-
 	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
-	isDefault := false
+	defaultOLAP := false
 	if olapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
-		isDefault = true
-		olapDSN = path.Join(projectPath, olapDSN)
-	}
-
-	parsedVariables, err := variable.Parse(variables)
-	if err != nil {
-		return nil, err
+		defaultOLAP = true
+		olapDSN = path.Join(dbDirPath, olapDSN)
 	}
 
 	if reset {
@@ -133,13 +145,14 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		if err != nil {
 			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
 		}
+		_ = os.RemoveAll(dbDirPath)
 	}
 
 	// Set default DuckDB pool size to 4
 	olapCfg := map[string]string{"dsn": olapDSN}
 	if olapDriver == "duckdb" {
 		olapCfg["pool_size"] = "4"
-		if !isDefault {
+		if !defaultOLAP {
 			olapCfg["error_on_incompatible_version"] = "true"
 		}
 	}
@@ -152,9 +165,10 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
-		ID:            DefaultInstanceID,
-		OLAPConnector: olapDriver,
-		RepoConnector: "repo",
+		ID:               DefaultInstanceID,
+		OLAPConnector:    olapDriver,
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
 			{
 				Type:   "file",
@@ -166,11 +180,15 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 				Name:   olapDriver,
 				Config: olapCfg,
 			},
+			{
+				Type:   "sqlite",
+				Name:   "catalog",
+				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?cache=shared", filepath.Join(dbDirPath, DefaultCatalogStore))},
+			},
 		},
-		Variables:    parsedVariables,
-		Annotations:  map[string]string{},
-		EmbedCatalog: olapDriver == "duckdb",
-		WatchRepo:    true,
+		Variables:   parsedVariables,
+		Annotations: map[string]string{},
+		WatchRepo:   true,
 		// ModelMaterializeDelaySeconds:     30, // TODO: Enable when we support skipping it for the initial load
 		IgnoreInitialInvalidProjectError: !isInit, // See ProjectParser reconciler for details
 	}
@@ -194,15 +212,6 @@ func NewApp(ctx context.Context, ver config.Version, verbose, strict, reset bool
 		activity:              client,
 	}
 
-	// Wait for the initial reconcile
-	if isInit {
-		err = app.AwaitInitialReconcile(strict)
-		if err != nil {
-			app.Close()
-			return nil, fmt.Errorf("reconcile project: %w", err)
-		}
-	}
-
 	return app, nil
 }
 
@@ -223,80 +232,6 @@ func (a *App) Close() error {
 	}
 
 	a.loggerCleanUp()
-	return nil
-}
-
-func (a *App) AwaitInitialReconcile(strict bool) (err error) {
-	defer func() {
-		if a.Context.Err() != nil {
-			a.Logger.Errorf("Hydration canceled")
-			err = nil
-		}
-	}()
-
-	controller, err := a.Runtime.Controller(a.Context, a.Instance.ID)
-	if err != nil {
-		return err
-	}
-
-	// We need to do some extra work to ensure we don't return until all resources have been reconciled.
-	// We can't call WaitUntilIdle until the parser has initially parsed and created the resources for the project.
-	// We know the global project parser is created immediately, and should only be IDLE initially or if a fatal error occurs with the watcher.
-	// So we poll for it's state to transition to Watching.
-	start := time.Now()
-	for {
-		if a.Context.Err() != nil {
-			return nil
-		}
-
-		if time.Since(start) >= 5*time.Second {
-			// Starting the watcher should take just a few ms. This is just meant to serve as an extra safety net in case something goes wrong.
-			return fmt.Errorf("timed out waiting for project parser to start watching")
-		}
-
-		r, err := controller.Get(a.Context, runtime.GlobalProjectParserName, false)
-		if err != nil {
-			return fmt.Errorf("could not find project parser: %w", err)
-		}
-
-		if r.Meta.ReconcileStatus == runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE && r.Meta.ReconcileError != "" {
-			return fmt.Errorf("parser failed: %s", r.Meta.ReconcileError)
-		}
-
-		if r.GetProjectParser().State.Watching {
-			break
-		}
-
-		time.Sleep(100 * time.Millisecond)
-	}
-
-	err = a.Runtime.WaitUntilIdle(a.Context, a.Instance.ID, true)
-	if err != nil {
-		return err
-	}
-
-	rs, err := controller.List(a.Context, "", false)
-	if err != nil {
-		return err
-	}
-
-	hasError := false
-	for _, r := range rs {
-		if r.Meta.ReconcileError != "" {
-			hasError = true
-			break
-		}
-	}
-
-	if hasError {
-		a.Logger.Named("console").Errorf("Hydration failed")
-		if strict {
-			return fmt.Errorf("strict mode exit")
-		}
-	} else {
-		a.Logger.Named("console").Infof("Hydration completed!")
-	}
-
 	return nil
 }
 

@@ -3,6 +3,7 @@ package duration
 import (
 	"testing"
 
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,12 +13,16 @@ func TestParseISO8601(t *testing.T) {
 		expected Duration
 		err      bool
 	}{
-		{from: "P2W", expected: Duration{Week: 2}},
-		{from: "P1Y2WT5M", expected: Duration{Year: 1, Week: 2, Minute: 5}},
+		{from: "P2W", expected: StandardDuration{Week: 2}},
+		{from: "P1Y2WT5M", expected: StandardDuration{Year: 1, Week: 2, Minute: 5}},
 		{from: "P1X", err: true},
-		{from: "inf", expected: Duration{Inf: true}},
-		{from: "Inf", expected: Duration{Inf: true}},
+		{from: "inf", expected: InfDuration{}},
+		{from: "Inf", expected: InfDuration{}},
 		{from: "infinity", err: true},
+		{from: "rill-TD", expected: TruncToDateDuration{timeutil.TimeGrainDay}},
+		{from: "TD", err: true},
+		{from: "rill-PM", expected: StandardDuration{Month: 1}},
+		{from: "PM", err: true},
 	}
 	for _, tt := range tests {
 		got, err := ParseISO8601(tt.from)

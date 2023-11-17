@@ -30,10 +30,10 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit env",
 			inst: &drivers.Instance{
-				OLAPConnector: "duckdb",
-				RepoConnector: "repo",
-				EmbedCatalog:  true,
-				Variables:     map[string]string{"connectors.s3.region": "us-east-1"},
+				OLAPConnector:    "duckdb",
+				RepoConnector:    "repo",
+				CatalogConnector: "catalog",
+				Variables:        map[string]string{"connectors.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -44,14 +44,19 @@ func TestRuntime_EditInstance(t *testing.T) {
 						Type:   "duckdb",
 						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
+					},
+					{
+						Type:   "sqlite",
+						Name:   "catalog",
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "duckdb",
-				RepoConnector: "repo",
-				EmbedCatalog:  true,
-				Variables:     map[string]string{"connectors.s3.region": "us-east-1"},
+				OLAPConnector:    "duckdb",
+				RepoConnector:    "repo",
+				CatalogConnector: "catalog",
+				Variables:        map[string]string{"connectors.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -62,6 +67,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 						Type:   "duckdb",
 						Name:   "duckdb",
 						Config: map[string]string{"dsn": ""},
+					},
+					{
+						Type:   "sqlite",
+						Name:   "catalog",
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
@@ -69,10 +79,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit drivers",
 			inst: &drivers.Instance{
-				OLAPConnector: "olap1",
-				RepoConnector: "repo1",
-				EmbedCatalog:  true,
-				Variables:     map[string]string{"host": "localhost"},
+				OLAPConnector:    "olap1",
+				RepoConnector:    "repo1",
+				CatalogConnector: "catalog1",
+				EmbedCatalog:     true,
+				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -87,10 +98,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "olap1",
-				RepoConnector: "repo1",
-				EmbedCatalog:  true,
-				Variables:     map[string]string{"host": "localhost"},
+				OLAPConnector:    "olap1",
+				RepoConnector:    "repo1",
+				CatalogConnector: "catalog1",
+				EmbedCatalog:     true,
+				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -108,10 +120,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit env and embed catalog",
 			inst: &drivers.Instance{
-				OLAPConnector: "duckdb",
-				RepoConnector: "repo",
-				EmbedCatalog:  true,
-				Variables:     map[string]string{"connectors.s3.region": "us-east-1"},
+				OLAPConnector:    "duckdb",
+				RepoConnector:    "repo",
+				CatalogConnector: "catalog",
+				EmbedCatalog:     true,
+				Variables:        map[string]string{"connectors.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -126,10 +139,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "duckdb",
-				RepoConnector: "repo",
-				EmbedCatalog:  true,
-				Variables:     map[string]string{"connectors.s3.region": "us-east-1"},
+				OLAPConnector:    "duckdb",
+				RepoConnector:    "repo",
+				CatalogConnector: "catalog",
+				EmbedCatalog:     true,
+				Variables:        map[string]string{"connectors.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -147,10 +161,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit olap dsn",
 			inst: &drivers.Instance{
-				OLAPConnector: "duckdb",
-				RepoConnector: "repo",
-				EmbedCatalog:  true,
-				Variables:     map[string]string{"host": "localhost"},
+				OLAPConnector:    "duckdb",
+				RepoConnector:    "repo",
+				CatalogConnector: "catalog",
+				EmbedCatalog:     true,
+				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -165,10 +180,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "duckdb",
-				RepoConnector: "repo",
-				EmbedCatalog:  true,
-				Variables:     map[string]string{"host": "localhost"},
+				OLAPConnector:    "duckdb",
+				RepoConnector:    "repo",
+				CatalogConnector: "catalog",
+				EmbedCatalog:     true,
+				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -186,10 +202,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit repo dsn",
 			inst: &drivers.Instance{
-				OLAPConnector: "duckdb",
-				RepoConnector: "repo",
-				EmbedCatalog:  true,
-				Variables:     map[string]string{"host": "localhost"},
+				OLAPConnector:    "duckdb",
+				RepoConnector:    "repo",
+				CatalogConnector: "catalog",
+				EmbedCatalog:     true,
+				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -204,10 +221,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "duckdb",
-				RepoConnector: "repo",
-				EmbedCatalog:  true,
-				Variables:     map[string]string{"host": "localhost"},
+				OLAPConnector:    "duckdb",
+				RepoConnector:    "repo",
+				CatalogConnector: "catalog",
+				EmbedCatalog:     true,
+				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -225,10 +243,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit annotations",
 			inst: &drivers.Instance{
-				OLAPConnector: "duckdb",
-				RepoConnector: "repo",
-				EmbedCatalog:  true,
-				Variables:     map[string]string{"host": "localhost"},
+				OLAPConnector:    "duckdb",
+				RepoConnector:    "repo",
+				CatalogConnector: "catalog",
+				EmbedCatalog:     true,
+				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -246,10 +265,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 				},
 			},
 			savedInst: &drivers.Instance{
-				OLAPConnector: "duckdb",
-				RepoConnector: "repo",
-				EmbedCatalog:  true,
-				Variables:     map[string]string{"host": "localhost"},
+				OLAPConnector:    "duckdb",
+				RepoConnector:    "repo",
+				CatalogConnector: "catalog",
+				EmbedCatalog:     true,
+				Variables:        map[string]string{"host": "localhost"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -316,7 +336,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.NoError(t, err)
 
 			// Verify db instances are correctly updated
-			newInst, err := rt.Instance(ctx, inst.ID)
+			newInst, err := rt.registryCache.store.FindInstance(ctx, inst.ID)
 			require.NoError(t, err)
 			require.Equal(t, inst.ID, newInst.ID)
 			require.Equal(t, tt.savedInst.OLAPConnector, newInst.OLAPConnector)
@@ -324,7 +344,9 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.True(t, connectorsEqual(tt.savedInst.Connectors[1], newInst.Connectors[1]))
 			require.Equal(t, tt.savedInst.RepoConnector, newInst.RepoConnector)
 			require.Equal(t, tt.savedInst.EmbedCatalog, newInst.EmbedCatalog)
+			require.Equal(t, tt.savedInst.CatalogConnector, newInst.CatalogConnector)
 			require.Greater(t, time.Since(newInst.CreatedOn), time.Since(newInst.UpdatedOn))
+			require.True(t, time.Since(newInst.UpdatedOn) < 10*time.Second)
 			require.Equal(t, tt.savedInst.Variables, newInst.Variables)
 
 			// Verify new olap connection is opened
@@ -477,7 +499,7 @@ func newTestRuntime(t *testing.T) *Runtime {
 			Name: "metastore",
 			// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
 			// "cache=shared" is needed to prevent threading problems.
-			Config: map[string]string{"dsn": "file:rill?mode=memory&cache=shared"},
+			Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 		},
 	}
 

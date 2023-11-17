@@ -7,6 +7,7 @@ import type {
   MetricsViewDimension,
   MetricsViewSpecMeasureV2,
   V1MetricsViewComparisonRow,
+  V1MetricsViewComparisonValue,
   V1MetricsViewFilter,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
@@ -17,7 +18,7 @@ import type { VirtualizedTableConfig } from "@rilldata/web-common/components/vir
 import type { SvelteComponent } from "svelte";
 import { getDimensionColumn } from "../dashboard-utils";
 import type { DimensionTableRow } from "./dimension-table-types";
-import { getFilterForDimension } from "../selectors";
+import { getFiltersForOtherDimensions } from "../selectors";
 import { SortType } from "../proto-state/derived-types";
 import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
@@ -26,10 +27,10 @@ import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/numb
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
-  filterForDimension,
-  searchText,
-  dimensionName
-) {
+  filterForDimension: V1MetricsViewFilter,
+  searchText: string,
+  dimensionName: string
+): V1MetricsViewFilter {
   const filterSet = JSON.parse(JSON.stringify(filterForDimension));
   const addNull = "null".includes(searchText);
   if (searchText !== "") {
@@ -64,7 +65,10 @@ export function getDimensionFilterWithSearch(
   searchText: string,
   dimensionName: string
 ) {
-  const filterForDimension = getFilterForDimension(filters, dimensionName);
+  const filterForDimension = getFiltersForOtherDimensions(
+    filters,
+    dimensionName
+  );
 
   return updateFilterOnSearch(filterForDimension, searchText, dimensionName);
 }
@@ -91,6 +95,10 @@ export function getComparisonProperties(
   measureName: string,
   selectedMeasure: MetricsViewSpecMeasureV2
 ): {
+  /**
+   * "component" in this context is a Svelte component that will be
+   * used to render the column header.
+   */
   component: typeof SvelteComponent;
   type: string;
   format: string;
@@ -107,7 +115,7 @@ export function getComparisonProperties(
     return {
       component: DeltaChange,
       type: "RILL_CHANGE",
-      format: selectedMeasure.formatPreset,
+      format: selectedMeasure.formatPreset ?? FormatPreset.HUMANIZE,
       description: "Change over comparison period",
     };
   } else if (measureName.includes("_percent_of_total")) {
@@ -118,6 +126,9 @@ export function getComparisonProperties(
       description: "Percent of total",
     };
   }
+  throw new Error(
+    "Invalid measure name, getComparisonProperties must only be called on context columns"
+  );
 }
 
 export function estimateColumnCharacterWidths(
@@ -218,7 +229,7 @@ export function estimateColumnSizes(
 export function prepareVirtualizedDimTableColumns(
   dash: MetricsExplorerEntity,
   allMeasures: MetricsViewSpecMeasureV2[],
-  referenceValues: { [key: string]: number },
+  measureTotals: { [key: string]: number },
   dimension: MetricsViewDimension,
   timeComparison: boolean,
   validPercentOfTotal: boolean
@@ -231,13 +242,14 @@ export function prepareVirtualizedDimTableColumns(
   const selectedMeasure = allMeasures.find(
     (m) => m.name === leaderboardMeasureName
   );
+
   const dimensionColumn = getDimensionColumn(dimension);
 
   // copy column names so we don't mutate the original
   const columnNames = [...dash.visibleMeasureKeys];
 
   // don't add context columns if sorting by dimension
-  if (sortType !== SortType.DIMENSION) {
+  if (selectedMeasure && sortType !== SortType.DIMENSION) {
     addContextColumnNames(
       columnNames,
       timeComparison,
@@ -248,20 +260,20 @@ export function prepareVirtualizedDimTableColumns(
   // Make dimension the first column
   columnNames.unshift(dimensionColumn);
 
-  return columnNames
+  const columns = columnNames
     .map((name) => {
       let highlight = false;
       if (sortType === SortType.DIMENSION) {
         highlight = name === dimensionColumn;
       } else {
         highlight =
-          name === selectedMeasure.name ||
+          name === selectedMeasure?.name ||
           name.endsWith("_delta") ||
           name.endsWith("_delta_perc") ||
           name.endsWith("_percent_of_total");
       }
 
-      let sorted = undefined;
+      let sorted;
       if (name.endsWith("_delta") && sortType === SortType.DELTA_ABSOLUTE) {
         sorted = sortDirection;
       } else if (
@@ -274,19 +286,23 @@ export function prepareVirtualizedDimTableColumns(
         sortType === SortType.PERCENT
       ) {
         sorted = sortDirection;
-      } else if (name === selectedMeasure.name && sortType === SortType.VALUE) {
+      } else if (
+        name === selectedMeasure?.name &&
+        sortType === SortType.VALUE
+      ) {
         sorted = sortDirection;
       }
 
+      let columnOut: VirtualizedTableColumns | undefined = undefined;
       if (measureNames.includes(name)) {
         // Handle all regular measures
         const measure = allMeasures.find((m) => m.name === name);
-        return {
+        columnOut = {
           name,
           type: "INT",
           label: measure?.label || measure?.expression,
           description: measure?.description,
-          total: referenceValues[measure.name] || 0,
+          total: measureTotals[measure?.name ?? ""] || 0,
           enableResize: false,
           format: measure?.formatPreset,
           highlight,
@@ -294,7 +310,7 @@ export function prepareVirtualizedDimTableColumns(
         };
       } else if (name === dimensionColumn) {
         // Handle dimension column
-        return {
+        columnOut = {
           name,
           type: "VARCHAR",
           label: dimension?.label,
@@ -302,10 +318,10 @@ export function prepareVirtualizedDimTableColumns(
           highlight,
           sorted,
         };
-      } else if (selectedMeasure) {
-        // Handle delta and delta_perc
+      } else if (selectedMeasure !== undefined) {
+        // Handle delta, delta_perc, and percent_of_total columns
         const comparison = getComparisonProperties(name, selectedMeasure);
-        return {
+        columnOut = {
           name,
           type: comparison.type,
           label: comparison.component,
@@ -316,9 +332,12 @@ export function prepareVirtualizedDimTableColumns(
           sorted,
         };
       }
-      return undefined;
+      return columnOut;
     })
-    .filter((column) => !!column);
+    .filter((column) => column !== undefined);
+
+  // cast is safe, because we filtered out undefined columns
+  return (columns as VirtualizedTableColumns[]) ?? [];
 }
 
 /**
@@ -334,6 +353,7 @@ export function addContextColumnNames(
   selectedMeasure: MetricsViewSpecMeasureV2
 ) {
   const name = selectedMeasure?.name;
+  if (!name) return;
 
   const sortByColumnIndex = columnNames.indexOf(name);
   // Add comparison columns if available
@@ -360,6 +380,15 @@ export function addContextColumnNames(
   }
 }
 
+function castUnknownToNumberOrNull(val: unknown): number | null {
+  if (typeof val === "number") return val;
+  if (val === null || val === undefined) return null;
+  console.warn(
+    `castUnknownNumberOrNull should only be used to cast unknowns that should be numbers, null, or undefined to numbers or null. Got: ${val}`
+  );
+  return val as number;
+}
+
 /**
  * This function prepares the data for the dimension table
  * from data returned by the createQueryServiceMetricsViewComparison
@@ -379,55 +408,86 @@ export function prepareDimensionTableRows(
 ): DimensionTableRow[] {
   if (!queryRows || !queryRows.length) return [];
 
-  const formattersForMeasures = Object.fromEntries(
-    allMeasuresForSpec.map((m) => [m.name, createMeasureValueFormatter(m)])
-  );
-
-  const tableRows: DimensionTableRow[] = queryRows.map((row) => {
-    if (!row.measureValues) return {};
-
-    const rawVals: [string, number][] = row.measureValues.map((m) => {
-      return [m.measureName ?? "", m.baseValue ? (m.baseValue as number) : 0];
-    });
-
-    const formattedVals: [string, string | number][] = rawVals.map(
-      ([name, val]) => ["__formatted_" + name, formattersForMeasures[name](val)]
+  const formattersForMeasures: { [key: string]: (val: number) => string } =
+    Object.fromEntries(
+      allMeasuresForSpec.map((m) => [m.name, createMeasureValueFormatter(m)])
     );
 
-    const rowOut: DimensionTableRow = Object.fromEntries([
-      [dimensionColumn, row.dimensionValue as string],
-      ...rawVals,
-      ...formattedVals,
-    ]);
+  const tableRows: DimensionTableRow[] = queryRows
+    .filter(
+      (row) => row.measureValues !== undefined && row.measureValues !== null
+    )
+    .map((row) => {
+      // cast is safe since we filtered out rows without measureValues
+      const measureValues = row.measureValues as V1MetricsViewComparisonValue[];
 
-    const activeMeasure = row.measureValues?.find(
-      (m) => m.measureName === activeMeasureName
-    );
+      const rawVals: [string, number | null][] = measureValues.map((m) => [
+        m.measureName?.toString() ?? "",
+        castUnknownToNumberOrNull(m.baseValue),
+      ]);
 
-    if (addDeltas && activeMeasure) {
-      rowOut[`${activeMeasureName}_delta`] = activeMeasure.deltaAbs
-        ? formattersForMeasures[activeMeasureName](activeMeasure.deltaAbs)
-        : PERC_DIFF.PREV_VALUE_NO_DATA;
+      const formattedVals: [string, string | number | PERC_DIFF][] =
+        rawVals.map(([name, val]) => [
+          "__formatted_" + name,
+          val !== null
+            ? formattersForMeasures[name](val)
+            : PERC_DIFF.CURRENT_VALUE_NO_DATA,
+        ]);
 
-      rowOut[`${activeMeasureName}_delta_perc`] = activeMeasure.deltaRel
-        ? formatMeasurePercentageDifference(activeMeasure.deltaRel as number)
-        : PERC_DIFF.PREV_VALUE_NO_DATA;
-    }
+      const rowOut: DimensionTableRow = Object.fromEntries([
+        [dimensionColumn, row.dimensionValue as string],
+        ...rawVals,
+        ...formattedVals,
+      ]);
 
-    if (addPercentOfTotal && activeMeasure) {
-      const value = activeMeasure.baseValue as number;
+      const activeMeasure = measureValues.find(
+        (m) => m.measureName === activeMeasureName
+      );
 
-      if (unfilteredTotal === 0 || !unfilteredTotal) {
-        rowOut[activeMeasureName + "_percent_of_total"] =
-          PERC_DIFF.CURRENT_VALUE_NO_DATA;
-      } else {
-        rowOut[activeMeasureName + "_percent_of_total"] =
-          formatMeasurePercentageDifference(value / unfilteredTotal);
+      if (addDeltas && activeMeasure) {
+        rowOut[`${activeMeasureName}_delta`] = castUnknownToNumberOrNull(
+          activeMeasure.deltaAbs
+        );
+
+        rowOut[`__formatted_${activeMeasureName}_delta`] =
+          activeMeasure.deltaAbs
+            ? formattersForMeasures[activeMeasureName](
+                activeMeasure.deltaAbs as number
+              )
+            : PERC_DIFF.PREV_VALUE_NO_DATA;
+
+        rowOut[`${activeMeasureName}_delta_perc`] = castUnknownToNumberOrNull(
+          activeMeasure.deltaRel
+        );
+
+        rowOut[`__formatted_${activeMeasureName}_delta_perc`] =
+          activeMeasure.deltaRel
+            ? formatMeasurePercentageDifference(
+                activeMeasure.deltaRel as number
+              )
+            : PERC_DIFF.PREV_VALUE_NO_DATA;
       }
-    }
 
-    return rowOut;
-  });
+      if (addPercentOfTotal && activeMeasure) {
+        const value = castUnknownToNumberOrNull(activeMeasure.baseValue);
+
+        if (value === null || unfilteredTotal === 0 || !unfilteredTotal) {
+          rowOut[activeMeasureName + "_percent_of_total"] =
+            PERC_DIFF.CURRENT_VALUE_NO_DATA;
+
+          rowOut[`__formatted_${activeMeasureName}_percent_of_total`] =
+            PERC_DIFF.CURRENT_VALUE_NO_DATA;
+        } else {
+          rowOut[activeMeasureName + "_percent_of_total"] =
+            value / unfilteredTotal;
+
+          rowOut[`__formatted_${activeMeasureName}_percent_of_total`] =
+            formatMeasurePercentageDifference(value / unfilteredTotal);
+        }
+      }
+
+      return rowOut;
+    });
   return tableRows;
 }
 
@@ -439,8 +499,8 @@ export function getSelectedRowIndicesFromFilters(
 ): number[] {
   const selectedDimValues =
     ((excludeMode
-      ? filters.exclude.find((d) => d.name === dimensionName)?.in
-      : filters.include.find((d) => d.name === dimensionName)
+      ? filters?.exclude?.find((d) => d.name === dimensionName)?.in
+      : filters?.include?.find((d) => d.name === dimensionName)
           ?.in) as string[]) ?? [];
 
   return selectedDimValues

@@ -12,11 +12,8 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
-	"go.uber.org/zap"
 )
 
 func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -141,15 +138,11 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telemetry) (map[string]string, error) {
-	// Create an ad-hoc file repo for projectPath
-	instanceID := "default"
-	repoHandle, err := drivers.Open("file", map[string]any{"dsn": projectPath}, false, activity.NewNoopClient(), zap.NewNop())
-	if err != nil {
-		return nil, fmt.Errorf("failed to open project repo: %w", err)
-	}
-	repo, _ := repoHandle.AsRepoStore(instanceID)
-
 	// Parse the project's connectors
+	repo, instanceID, err := cmdutil.RepoForProjectPath(projectPath)
+	if err != nil {
+		return nil, err
+	}
 	parser, err := rillv1.Parse(ctx, repo, instanceID, "duckdb", []string{"duckdb"})
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project: %w", err)

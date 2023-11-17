@@ -3,8 +3,8 @@ import { Readable, derived, writable } from "svelte/store";
 import {
   V1MetricsViewFilter,
   V1TimeSeriesValue,
+  createQueryServiceMetricsViewAggregation,
   createQueryServiceMetricsViewTimeSeries,
-  createQueryServiceMetricsViewToplist,
 } from "@rilldata/web-common/runtime-client";
 import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
 import {
@@ -14,7 +14,10 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import {
+  SortDirection,
+  SortType,
+} from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 
 export interface DimensionDataItem {
@@ -56,23 +59,29 @@ export function getDimensionValuesForComparison(
       useTimeControlStore(ctx),
     ],
     ([runtime, name, dashboardStore, timeControls], set) => {
+      const isValidMeasureList =
+        measures?.length > 0 && measures?.every((m) => m !== undefined);
+
+      if (!isValidMeasureList) return;
+
       const dimensionName = dashboardStore?.selectedComparisonDimension;
       const isInTimeDimensionView = dashboardStore?.expandedMeasureName;
 
-      let includedValues = [];
+      // Values to be compared
+      let comparisonValues: string[] = [];
       const dimensionFilters = dashboardStore?.filters?.include?.filter(
         (filter) => filter.name === dimensionName
       );
-      if (surface === "chart" && dimensionFilters?.length) {
-        // For TDD view max 11 allowed, for overview max 7 allowed
-        includedValues =
-          dimensionFilters[0]?.in.slice(0, isInTimeDimensionView ? 11 : 7) ||
-          [];
-      }
-
-      if (includedValues.length && surface === "chart") {
+      if (surface === "chart") {
+        if (dimensionFilters?.length) {
+          // For TDD view max 11 allowed, for overview max 7 allowed
+          comparisonValues = dimensionFilters[0]?.in.slice(
+            0,
+            isInTimeDimensionView ? 11 : 7
+          );
+        }
         return derived(
-          [writable(includedValues), writable(dashboardStore?.filters)],
+          [writable(comparisonValues), writable(dashboardStore?.filters)],
           ([values, filter]) => {
             return {
               values,
@@ -80,32 +89,37 @@ export function getDimensionValuesForComparison(
             };
           }
         ).subscribe(set);
-      } else {
+      } else if (surface === "table") {
+        let sortBy = isInTimeDimensionView
+          ? dashboardStore.expandedMeasureName
+          : dashboardStore.leaderboardMeasureName;
+        if (dashboardStore?.dashboardSortType === SortType.DIMENSION) {
+          sortBy = dimensionName;
+        }
+
         return derived(
-          createQueryServiceMetricsViewToplist(
+          createQueryServiceMetricsViewAggregation(
             runtime.instanceId,
             name,
             {
-              dimensionName: dimensionName,
-              measureNames: measures,
-              timeStart: timeControls.timeStart,
-              timeEnd: timeControls.timeEnd,
+              measures: measures.map((measure) => ({ name: measure })),
+              dimensions: [{ name: dimensionName }],
               filter: getDimensionFilterWithSearch(
                 dashboardStore?.filters,
                 dashboardStore?.dimensionSearchText,
                 dimensionName
               ),
-              limit: "250",
-              offset: "0",
+              timeStart: timeControls.timeStart,
+              timeEnd: timeControls.timeEnd,
               sort: [
                 {
-                  name: isInTimeDimensionView
-                    ? dashboardStore.expandedMeasureName
-                    : dashboardStore.leaderboardMeasureName,
-                  ascending:
-                    dashboardStore.sortDirection === SortDirection.ASCENDING,
+                  desc:
+                    dashboardStore.sortDirection === SortDirection.DESCENDING,
+                  name: sortBy,
                 },
               ],
+              limit: "250",
+              offset: "0",
             },
             {
               query: {
@@ -117,24 +131,24 @@ export function getDimensionValuesForComparison(
             }
           ),
           (topListData) => {
-            if (topListData?.isFetching)
+            if (topListData?.isFetching || !dimensionName)
               return {
                 values: [],
                 filter: dashboardStore?.filters,
               };
-            const columnName = topListData?.data?.meta[0]?.name;
+            const columnName =
+              topListData?.data?.schema?.fields?.[0]?.name || dimensionName;
             const totalValues = topListData?.data?.data?.map(
               (d) => d[measures[0]]
             ) as number[];
-            const topListValues = topListData?.data?.data.map(
+            const topListValues = topListData?.data?.data?.map(
               (d) => d[columnName]
-            );
+            ) as string[];
 
             const computedFilter = getFilterForComparedDimension(
               dimensionName,
               dashboardStore?.filters,
-              topListValues,
-              surface
+              topListValues
             );
 
             return {
@@ -178,7 +192,10 @@ export function getDimensionValueTimeSeries(
         timeStore?.selectedTimeRange?.interval ?? timeStore?.minTimeGrain;
       const zone = dashboardStore?.selectedTimezone;
 
-      if (!dimensionName) return;
+      const isValidMeasureList =
+        measures?.length > 0 && measures?.every((m) => m !== undefined);
+
+      if (!isValidMeasureList || !dimensionName) return;
       if (dashboardStore?.selectedScrubRange?.isScrubbing) return;
 
       return derived(

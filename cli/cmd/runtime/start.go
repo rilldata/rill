@@ -166,26 +166,14 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}()
 
-			// Init activity client and sink to collect and emit activity events
-			var sink activity.Sink
-			switch conf.ActivitySinkType {
-			case "", "noop":
-				sink = activity.NewNoopSink()
-			case "kafka":
-				sink, err = activity.NewKafkaSink(conf.ActivitySinkKafkaBrokers, conf.ActivitySinkKafkaTopic, logger)
-				if err != nil {
-					logger.Fatal("failed to create a kafka sink", zap.Error(err))
-				}
-			default:
-				logger.Fatal(fmt.Sprintf("unknown activity sink type: %s", conf.ActivitySinkType))
-			}
-			activityOpts := activity.BufferedClientOptions{
-				Sink:       sink,
-				SinkPeriod: time.Duration(conf.ActivitySinkPeriodMs) * time.Millisecond,
-				BufferSize: conf.ActivityMaxBufferSize,
-				Logger:     logger,
-			}
-			activityClient := activity.NewBufferedClient(activityOpts)
+			activityClient := activity.NewClientFromConf(
+				conf.ActivitySinkType,
+				conf.ActivitySinkPeriodMs,
+				conf.ActivityMaxBufferSize,
+				conf.ActivitySinkKafkaBrokers,
+				conf.ActivitySinkKafkaTopic,
+				logger,
+			)
 
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())

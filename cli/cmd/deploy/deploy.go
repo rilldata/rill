@@ -484,7 +484,7 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath, project
 	if err != nil {
 		return
 	}
-	parser, err := rillv1.Parse(ctx, repo, instanceID, "", nil)
+	parser, err := rillv1.Parse(ctx, repo, instanceID, "duckdb", []string{"duckdb"})
 	if err != nil {
 		return
 	}

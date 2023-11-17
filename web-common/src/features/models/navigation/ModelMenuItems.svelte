@@ -1,38 +1,22 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import { Divider, MenuItem } from "@rilldata/web-common/components/menu";
-  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
-  import {
-    getFileAPIPathFromNameAndType,
-    getFilePathFromNameAndType,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { useSchemaForTable } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
+  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { appScreen } from "@rilldata/web-common/layout/app-store";
-  import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
-  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import {
+    useCreateDashboardFromModelUIAction,
+    useModelSchemaIsReady,
+  } from "@rilldata/web-common/features/models/createDashboardFromModel";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
-  import {
-    MetricsEventScreenName,
-    MetricsEventSpace,
-  } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import {
-    createRuntimeServicePutFile,
-    V1ReconcileStatus,
-  } from "@rilldata/web-common/runtime-client";
+  import { MetricsEventSpace } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { deleteFileArtifact } from "../../entity-management/actions";
-  import { getName } from "../../entity-management/name-utils";
-  import { generateDashboardYAMLForModel } from "../../metrics-views/metrics-internal-store";
-  import { useModel, useModelFileNames } from "../selectors";
+  import { useModelFileNames } from "../selectors";
 
   export let modelName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
@@ -42,87 +26,31 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
-  const createFileMutation = createRuntimeServicePutFile();
-
   $: modelNames = useModelFileNames($runtime.instanceId);
-  $: dashboardNames = useDashboardFileNames($runtime.instanceId);
-  $: modelQuery = useModel($runtime.instanceId, modelName);
   $: modelHasError = getFileHasErrors(
     queryClient,
     $runtime.instanceId,
     modelPath
   );
-  $: modelIsIdle =
-    $modelQuery.data?.meta?.reconcileStatus ===
-    V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-  $: disableCreateDashboard = $modelHasError || !modelIsIdle;
-
-  $: modelSchema = useSchemaForTable(
+  $: modelSchemaIsReady = useModelSchemaIsReady(
+    queryClient,
     $runtime.instanceId,
-    $modelQuery.data?.model
+    modelName
+  );
+  $: disableCreateDashboard = $modelHasError || !$modelSchemaIsReady;
+
+  $: createDashboardFromModel = useCreateDashboardFromModelUIAction(
+    $runtime.instanceId,
+    modelName,
+    queryClient,
+    BehaviourEventMedium.Menu,
+    MetricsEventSpace.LeftPanel
   );
 
-  const createDashboardFromModel = async (modelName: string) => {
-    if (!$modelQuery.data?.model) {
-      return;
-    }
-
-    overlay.set({
-      title: "Creating a dashboard for " + modelName,
-    });
-    const newDashboardName = getName(
-      `${modelName}_dashboard`,
-      $dashboardNames.data
-    );
-    await waitUntil(() => !!$modelSchema.data?.schema);
-    const dashboardYAML = generateDashboardYAMLForModel(
-      modelName,
-      $modelSchema.data?.schema,
-      newDashboardName
-    );
-    $createFileMutation.mutate(
-      {
-        instanceId: $runtime.instanceId,
-        path: getFileAPIPathFromNameAndType(
-          newDashboardName,
-          EntityType.MetricsDefinition
-        ),
-        data: {
-          blob: dashboardYAML,
-          create: true,
-          createOnly: true,
-        },
-      },
-      {
-        onSuccess: async () => {
-          await waitForResource(
-            queryClient,
-            $runtime.instanceId,
-            getFilePathFromNameAndType(
-              newDashboardName,
-              EntityType.MetricsDefinition
-            )
-          );
-          goto(`/dashboard/${newDashboardName}`);
-          const previousActiveEntity = $appScreen?.type;
-          behaviourEvent.fireNavigationEvent(
-            newDashboardName,
-            BehaviourEventMedium.Menu,
-            MetricsEventSpace.LeftPanel,
-            previousActiveEntity,
-            MetricsEventScreenName.Dashboard
-          );
-        },
-        onError: (err) => {
-          console.error(err);
-        },
-        onSettled: () => {
-          overlay.set(null);
-          toggleMenu(); // unmount component
-        },
-      }
-    );
-  };
+  async function createDashboardFromModelHandler() {
+    await createDashboardFromModel();
+    toggleMenu();
+  }
 
   const handleDeleteModel = async (modelName: string) => {
     await deleteFileArtifact(
@@ -138,7 +66,7 @@
 <MenuItem
   disabled={disableCreateDashboard}
   icon
-  on:select={() => createDashboardFromModel(modelName)}
+  on:select={() => createDashboardFromModelHandler()}
   propogateSelect={false}
 >
   <Explore slot="icon" />
@@ -146,7 +74,7 @@
   <svelte:fragment slot="description">
     {#if $modelHasError}
       Model has errors
-    {:else if !modelIsIdle}
+    {:else if !$modelSchemaIsReady}
       Dependencies are being reconciled.
     {/if}
   </svelte:fragment>

@@ -6,6 +6,7 @@
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import {
     chartInteractionColumn,
     tableInteractionStore,
@@ -17,11 +18,16 @@
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
-  import type { TableData } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+  import type { TDDComparison, TableData } from "./types";
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let metricViewName;
 
+  const queryClient = useQueryClient();
+
   const timeDimensionDataStore = useTimeDimensionDataStore(getStateManagers());
+
   $: metaQuery = useMetaQuery(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
@@ -39,22 +45,31 @@
         ?.label ?? "";
   } else if ($timeDimensionDataStore?.comparing === "time") {
     dimensionLabel = "Time";
-  } else {
+  } else if ($timeDimensionDataStore?.comparing === "none") {
     dimensionLabel = "No Comparison";
   }
 
   // Create a copy of the data to avoid flashing of table in transient states
   let timeDimensionDataCopy: TableData;
+  let comparisonCopy: TDDComparison;
   $: if (
     $timeDimensionDataStore?.data &&
     $timeDimensionDataStore?.data?.columnHeaderData
   ) {
+    comparisonCopy = $timeDimensionDataStore?.comparing;
     timeDimensionDataCopy = $timeDimensionDataStore.data;
   }
   $: formattedData = timeDimensionDataCopy;
 
   $: excludeMode =
     $dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ?? false;
+
+  $: rowHeaderLabels =
+    formattedData?.rowHeaderData?.slice(1)?.map((row) => row[0]?.value) ?? [];
+
+  $: areAllTableRowsSelected = rowHeaderLabels?.every((val) =>
+    formattedData?.selectedValues?.includes(val)
+  );
 
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
 
@@ -82,6 +97,46 @@
       time: time,
     });
   }
+
+  function toggleFilter(e) {
+    cancelDashboardQueries(queryClient, metricViewName);
+    metricsExplorerStore.toggleFilter(metricViewName, dimensionName, e.detail);
+  }
+
+  function toggleAllSearchItems() {
+    cancelDashboardQueries(queryClient, metricViewName);
+    if (areAllTableRowsSelected) {
+      metricsExplorerStore.deselectItemsInFilter(
+        metricViewName,
+        dimensionName,
+        rowHeaderLabels
+      );
+      return;
+    } else {
+      metricsExplorerStore.selectItemsInFilter(
+        metricViewName,
+        dimensionName,
+        rowHeaderLabels
+      );
+    }
+  }
+
+  function togglePin() {
+    cancelDashboardQueries(queryClient, metricViewName);
+
+    const pinIndex = $dashboardStore?.pinIndex;
+    let newPinIndex = -1;
+
+    // Pin if some selected items are not pinned yet
+    if (pinIndex > -1 && pinIndex < formattedData?.selectedValues?.length - 1) {
+      newPinIndex = formattedData?.selectedValues?.length - 1;
+    }
+    // Pin if no items are pinned yet
+    else if (pinIndex === -1) {
+      newPinIndex = formattedData?.selectedValues?.length - 1;
+    }
+    metricsExplorerStore.setPinIndex(metricViewName, newPinIndex);
+  }
 </script>
 
 <TDDHeader
@@ -89,29 +144,55 @@
   {metricViewName}
   isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
   comparing={$timeDimensionDataStore?.comparing}
+  {areAllTableRowsSelected}
+  isRowsEmpty={!rowHeaderLabels.length}
   on:search={(e) => {
+    cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setSearchText(metricViewName, e.detail);
   }}
+  on:toggle-all-search-items={() => toggleAllSearchItems()}
 />
 
 {#if formattedData}
   <TDDTable
-    {dimensionName}
-    {metricViewName}
     {excludeMode}
     {dimensionLabel}
     {measureLabel}
+    sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
+    sortType={$dashboardStore.dashboardSortType}
+    comparing={comparisonCopy}
+    {timeFormatter}
+    tableData={formattedData}
+    highlightedCol={$chartInteractionColumn?.hover}
+    pinIndex={$dashboardStore?.pinIndex}
     scrubPos={{
       start: $chartInteractionColumn?.scrubStart,
       end: $chartInteractionColumn?.scrubEnd,
     }}
-    sortDirection={$dashboardStore.sortDirection === SortDirection.ASCENDING}
-    comparing={$timeDimensionDataStore?.comparing}
-    {timeFormatter}
-    data={formattedData}
-    highlightedCol={$chartInteractionColumn?.hover}
-    on:toggle-sort={() =>
-      metricsExplorerStore.toggleSort(metricViewName, SortType.VALUE)}
+    on:toggle-pin={togglePin}
+    on:toggle-filter={toggleFilter}
+    on:toggle-sort={(e) => {
+      cancelDashboardQueries(queryClient, metricViewName);
+      metricsExplorerStore.toggleSort(
+        metricViewName,
+        e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE
+      );
+    }}
     on:highlight={highlightCell}
   />
+{/if}
+
+{#if $timeDimensionDataStore?.comparing === "none"}
+  <!-- Get height by subtracting table and header heights -->
+  <div class="w-full" style:height="calc(100% - 200px)">
+    <div class="flex flex-col items-center justify-center h-full text-sm">
+      <Compare size="32px" />
+      <div class="font-semibold text-gray-600 mt-1">
+        No comparison dimension selected
+      </div>
+      <div class="text-gray-600">
+        To see more values, select a comparison dimension above.
+      </div>
+    </div>
+  </div>
 {/if}

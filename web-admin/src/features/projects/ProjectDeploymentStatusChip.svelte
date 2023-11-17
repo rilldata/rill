@@ -6,7 +6,7 @@
   import {
     getDashboardsForProject,
     useDashboardsStatus,
-  } from "@rilldata/web-admin/features/projects/dashboards";
+  } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -97,17 +97,6 @@
       textClass: "text-purple-600",
       wrapperClass: "bg-purple-50 border-purple-300",
     },
-    // [V1DeploymentStatus.DEPLOYMENT_STATUS_RECONCILING]: {
-    //   icon: Spinner,
-    //   iconProps: {
-    //     bg: "linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)",
-    //     className: "text-purple-600 hover:text-purple-500",
-    //     status: EntityStatus.Running,
-    //   },
-    //   text: "syncing",
-    //   textClass: "text-purple-600",
-    //   wrapperClass: "bg-purple-50 border-purple-300",
-    // },
     [V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR]: {
       icon: CancelCircle,
       iconProps: { className: "text-red-600 hover:text-red-500" },
@@ -142,14 +131,16 @@
   }
 </script>
 
-{#if deploymentStatus}
+{#if $deploymentStatusFromDashboards.isFetching && !$deploymentStatusFromDashboards?.data}
+  <div class="p-0.5">
+    <Spinner status={EntityStatus.Running} size="16px" />
+  </div>
+{:else if deploymentStatus}
   {#if iconOnly}
-    <div class="pb-0.5">
-      <svelte:component
-        this={currentStatusDisplay.icon}
-        {...currentStatusDisplay.iconProps}
-      />
-    </div>
+    <svelte:component
+      this={currentStatusDisplay.icon}
+      {...currentStatusDisplay.iconProps}
+    />
   {:else}
     <div
       class="flex space-x-1 items-center px-2 border rounded rounded-[20px] w-fit {currentStatusDisplay.wrapperClass} {iconOnly &&

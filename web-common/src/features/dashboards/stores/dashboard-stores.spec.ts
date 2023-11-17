@@ -24,8 +24,10 @@ import {
   TestTimeOffsetConstants,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import {
+  MetricsViewSpecComparisonMode,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -217,6 +219,8 @@ describe("dashboard-stores", () => {
       {
         ...AD_BIDS_INIT,
         defaultTimeRange: "PT6H",
+        defaultComparisonMode:
+          MetricsViewSpecComparisonMode.COMPARISON_MODE_UNSPECIFIED,
       },
       {
         timeRangeSummary: {
@@ -227,13 +231,8 @@ describe("dashboard-stores", () => {
       }
     );
 
-    assertMetricsView(AD_BIDS_NAME, undefined, {
-      name: TimeRangePreset.LAST_SIX_HOURS,
-      interval: V1TimeGrain.TIME_GRAIN_HOUR,
-      start: TestTimeOffsetConstants.LAST_6_HOURS,
-      end: TestTimeOffsetConstants.NOW,
-    });
-    const metrics = get(metricsExplorerStore).entities[AD_BIDS_NAME];
+    let metrics = get(metricsExplorerStore).entities[AD_BIDS_NAME];
+    // unspecified mode will default to time comparison
     expect(metrics.showTimeComparison).toBeTruthy();
     expect(metrics.selectedComparisonTimeRange.name).toBe("CONTIGUOUS");
     expect(metrics.selectedComparisonTimeRange.start).toEqual(
@@ -242,6 +241,52 @@ describe("dashboard-stores", () => {
     expect(metrics.selectedComparisonTimeRange.end).toEqual(
       TestTimeOffsetConstants.LAST_6_HOURS
     );
+    expect(metrics.selectedComparisonDimension).toBeUndefined();
+
+    metricsExplorerStore.remove(AD_BIDS_NAME);
+    metricsExplorerStore.init(
+      AD_BIDS_NAME,
+      {
+        ...AD_BIDS_INIT,
+        defaultTimeRange: "PT6H",
+        defaultComparisonMode:
+          MetricsViewSpecComparisonMode.COMPARISON_MODE_DIMENSION,
+      },
+      {
+        timeRangeSummary: {
+          min: TestTimeConstants.LAST_DAY.toISOString(),
+          max: TestTimeConstants.NOW.toISOString(),
+          interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+        },
+      }
+    );
+    metrics = get(metricsExplorerStore).entities[AD_BIDS_NAME];
+    expect(metrics.showTimeComparison).toBeFalsy();
+    // defaults to 1st dimension
+    expect(metrics.selectedComparisonDimension).toBe(
+      AD_BIDS_PUBLISHER_DIMENSION
+    );
+
+    metricsExplorerStore.remove(AD_BIDS_NAME);
+    metricsExplorerStore.init(
+      AD_BIDS_NAME,
+      {
+        ...AD_BIDS_INIT,
+        defaultTimeRange: "PT6H",
+        defaultComparisonMode:
+          MetricsViewSpecComparisonMode.COMPARISON_MODE_DIMENSION,
+        defaultComparisonDimension: AD_BIDS_DOMAIN_DIMENSION,
+      },
+      {
+        timeRangeSummary: {
+          min: TestTimeConstants.LAST_DAY.toISOString(),
+          max: TestTimeConstants.NOW.toISOString(),
+          interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
+        },
+      }
+    );
+    metrics = get(metricsExplorerStore).entities[AD_BIDS_NAME];
+    expect(metrics.selectedComparisonDimension).toBe(AD_BIDS_DOMAIN_DIMENSION);
   });
 
   describe("Restore invalid state", () => {

@@ -190,13 +190,6 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 		panic(err)
 	}
 
-	// One-off REST-only path for file export
-	// NOTE: It's local only and we should deprecate it in favor of a cloud-friendly alternative.
-	err = gwMux.HandlePath("GET", "/v1/instances/{instance_id}/table/{table_name}/export/{format}", auth.GatewayMiddleware(s.aud, s.ExportTable))
-	if err != nil {
-		panic(err)
-	}
-
 	// Call callback to register additional paths
 	// NOTE: This is so ugly, but not worth refactoring it properly right now.
 	httpMux := http.NewServeMux()

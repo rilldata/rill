@@ -62,7 +62,6 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac activity.Cli
 		return nil, err
 	}
 	rt.metastore = store
-
 	reg, ok := rt.metastore.AsRegistry()
 	if !ok {
 		return nil, fmt.Errorf("metastore must be a valid registry")

@@ -1,5 +1,8 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
+import {
+  getLastStateUpdatedOn,
+  resourcesStore,
+} from "@rilldata/web-common/features/entity-management/resources-store";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetResourceQueryKey,
@@ -78,12 +81,29 @@ async function invalidateResource(
 ) {
   refreshResource(queryClient, instanceId, resource);
 
-  if (resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE)
+  const lastStateUpdatedOn = getLastStateUpdatedOn(resource);
+  if (
+    resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE &&
+    !lastStateUpdatedOn
+  ) {
+    // When a resource is created it can send an event with status = IDLE just before it is queued for reconcile.
+    // So handle the case when it is 1st queued and status != IDLE
+    resourcesStore.setVersion(resource);
     return;
+  }
+
+  if (
+    resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE ||
+    lastStateUpdatedOn === resource.meta.stateUpdatedOn
+  )
+    return;
+
+  resourcesStore.setVersion(resource);
   const failed = !!resource.meta.reconcileError;
 
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
+    // eslint-disable-next-line no-fallthrough
     case ResourceKind.Model:
       return invalidateProfilingQueries(
         queryClient,
@@ -111,6 +131,7 @@ async function invalidateRemovedResource(
       "name.kind": resource.meta.name.kind,
     })
   );
+  resourcesStore.deleteResource(resource);
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:

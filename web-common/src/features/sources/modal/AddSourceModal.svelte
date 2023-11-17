@@ -1,5 +1,6 @@
 <script lang="ts">
   import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
+  import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
   import {
     createRuntimeServiceListConnectors,
     V1ConnectorSpec,
@@ -7,11 +8,11 @@
   import { createEventDispatcher } from "svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
-  import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
   import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
   import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
   import Https from "../../../components/icons/connectors/HTTPS.svelte";
   import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
+  import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
   import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
   import Postgres from "../../../components/icons/connectors/Postgres.svelte";
   import SQLite from "../../../components/icons/connectors/SQLite.svelte";
@@ -25,7 +26,6 @@
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RemoteSourceForm from "./RemoteSourceForm.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
 
   export let open: boolean;
 
@@ -167,17 +167,21 @@
     {:else if step === 2}
       {#if selectedConnector}
         {#if selectedConnector.name === "local_file"}
-          <LocalSourceUpload on:close={onCompleteDialog} />
+          <LocalSourceUpload on:close={onCompleteDialog} on:back={resetModal} />
         {:else}
           <RemoteSourceForm
             connector={selectedConnector}
             on:close={onCompleteDialog}
+            on:back={resetModal}
           />
         {/if}
       {/if}
 
       {#if requestConnector}
-        <RequestConnectorForm on:close={onCompleteDialog} />
+        <RequestConnectorForm
+          on:close={onCompleteDialog}
+          on:back={resetModal}
+        />
       {/if}
     {/if}
   </div>

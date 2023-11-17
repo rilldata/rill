@@ -6,23 +6,13 @@
     retainFeaturesFlags,
   } from "@rilldata/web-common/features/feature-flags";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
-  import {
-    QueryCache,
-    QueryClient,
-    QueryClientProvider,
-  } from "@tanstack/svelte-query";
-  import { globalErrorCallback } from "../features/errors/error-utils";
+  import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
+  import { createGlobalErrorCallback } from "../features/errors/error-utils";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
 
   const queryClient = new QueryClient({
-    queryCache: new QueryCache({
-      // Motivation:
-      // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
-      // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
-      onError: globalErrorCallback,
-    }),
     defaultOptions: {
       queries: {
         refetchOnMount: false,
@@ -32,8 +22,15 @@
       },
     },
   });
+  // Motivation:
+  // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
+  // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
+  queryClient.getQueryCache().config.onError =
+    createGlobalErrorCallback(queryClient);
 
   featureFlags.set({
+    // The admin server enables some dashboard features like scheduled reports and alerts
+    adminServer: true,
     // Set read-only mode so that the user can't edit the dashboard
     readOnly: true,
   });

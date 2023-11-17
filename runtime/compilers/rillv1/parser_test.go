@@ -94,6 +94,14 @@ measures:
     expression: count(*)
 first_day_of_week: 7
 first_month_of_year: 3
+available_time_ranges:
+  - P2W
+  - range: P4W
+  - range: P2M
+    comparison_offsets:
+      - P1M
+      - offset: P4M
+        range: P2M
 `,
 		// migration c1
 		`custom/c1.yml`: `
@@ -173,6 +181,17 @@ SELECT * FROM {{ ref "m2" }}
 				},
 				FirstDayOfWeek:   7,
 				FirstMonthOfYear: 3,
+				AvailableTimeRanges: []*runtimev1.MetricsViewSpec_AvailableTimeRange{
+					{Range: "P2W"},
+					{Range: "P4W"},
+					{
+						Range: "P2M",
+						ComparisonOffsets: []*runtimev1.MetricsViewSpec_AvailableComparisonOffset{
+							{Offset: "P1M"},
+							{Offset: "P4M", Range: "P2M"},
+						},
+					},
+				},
 			},
 		},
 		// migration c1
@@ -934,6 +953,43 @@ annotations:
 				ExportLimit:     10000,
 				EmailRecipients: []string{"jane@example.com"},
 				Annotations:     map[string]string{"foo": "bar"},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// dashboard d1
+		`dashboards/d1.yaml`: `
+model: d1
+dimensions:
+  - name: a
+measures:
+  - name: b
+    expression: count(*)
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
+			Refs:  nil, // NOTE: This is what we're testing – that it avoids inferring the missing "d1" as a self-reference
+			Paths: []string{"/dashboards/d1.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Table: "d1",
+				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					{Name: "a"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+					{Name: "b", Expression: "count(*)"},
+				},
 			},
 		},
 	}

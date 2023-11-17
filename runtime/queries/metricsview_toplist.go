@@ -178,12 +178,24 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		return "", nil, err
 	}
 
-	colName, err := metricsViewDimensionToSafeColumn(mv, q.DimensionName)
+	dim, err := metricsViewDimension(mv, q.DimensionName)
 	if err != nil {
 		return "", nil, err
 	}
+	rawColName := metricsViewDimensionColumn(dim)
+	colName := safeName(rawColName)
+	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
 
-	selectCols := []string{colName}
+	var selectCols []string
+	unnestClause := ""
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
+		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
+		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
+	} else {
+		selectCols = append(selectCols, colName)
+	}
+
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
 		selectCols = append(selectCols, expr)
@@ -232,11 +244,17 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %q WHERE %s GROUP BY %s %s %s OFFSET %d",
+	groupByCol := colName
+	if dim.Unnest && dialect != drivers.DialectDruid {
+		groupByCol = unnestColName
+	}
+
+	sql := fmt.Sprintf("SELECT %s FROM %s %s WHERE %s GROUP BY %s %s %s OFFSET %d",
 		strings.Join(selectCols, ", "),
-		mv.Table,
+		safeName(mv.Table),
+		unnestClause,
 		whereClause,
-		colName,
+		groupByCol,
 		orderClause,
 		limitClause,
 		q.Offset,

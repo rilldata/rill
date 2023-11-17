@@ -1,5 +1,5 @@
-import { DateTime } from "luxon";
 import { timeZoneNameToAbbreviationMap } from "@rilldata/web-common/lib/time/timezone/abbreviationMap";
+import { DateTime } from "luxon";
 
 export function removeLocalTimezoneOffset(dt: Date) {
   return new Date(dt.getTime() + dt.getTimezoneOffset() * 60000);
@@ -19,6 +19,10 @@ export function getLocalIANA(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
 }
 
+export function getUTCIANA(): string {
+  return "Etc/UTC";
+}
+
 export function getTimeZoneNameFromIANA(now: Date, iana: string): string {
   return DateTime.fromJSDate(now).setZone(iana).toFormat("ZZZZZ");
 }
@@ -35,6 +39,10 @@ export function getAbbreviationForIANA(now: Date, iana: string): string {
 
 export function getOffsetForIANA(now: Date, iana: string): string {
   return DateTime.fromJSDate(now).setZone(iana).toFormat("ZZ");
+}
+
+export function getHoursOffsetForIANA(now: Date, iana: string): number {
+  return DateTime.fromJSDate(now).setZone(iana).offset / 60;
 }
 
 export function getLabelForIANA(now: Date, iana: string) {

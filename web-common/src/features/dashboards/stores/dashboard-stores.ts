@@ -19,6 +19,7 @@ import type {
   V1ColumnTimeRangeResponse,
   V1MetricsView,
   V1MetricsViewFilter,
+  V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { derived, Readable, writable } from "svelte/store";
@@ -163,7 +164,7 @@ function syncDimensions(
 const metricViewReducers = {
   init(
     name: string,
-    metricsView: V1MetricsView,
+    metricsView: V1MetricsViewSpec,
     fullTimeRange: V1ColumnTimeRangeResponse | undefined
   ) {
     update((state) => {
@@ -191,6 +192,11 @@ const metricViewReducers = {
       for (const key in partial) {
         metricsExplorer[key] = partial[key];
       }
+      // this hack is needed since what is shown for comparison is not a single source
+      // TODO: use an enum and get rid of this
+      if (!partial.showTimeComparison) {
+        metricsExplorer.showTimeComparison = false;
+      }
       metricsExplorer.dimensionFilterExcludeMode =
         includeExcludeModeFromFilters(partial.filters);
     });
@@ -216,6 +222,21 @@ const metricViewReducers = {
   setExpandedMeasureName(name: string, measureName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.expandedMeasureName = measureName;
+
+      // If going into TDD view and already having a comparison dimension,
+      // then set the pinIndex
+      if (metricsExplorer.selectedComparisonDimension) {
+        metricsExplorer.pinIndex = getPinIndexForDimension(
+          metricsExplorer,
+          metricsExplorer.selectedComparisonDimension
+        );
+      }
+    });
+  },
+
+  setPinIndex(name: string, index: number) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pinIndex = index;
     });
   },
 
@@ -287,6 +308,10 @@ const metricViewReducers = {
         setDisplayComparison(metricsExplorer, false);
       }
       metricsExplorer.selectedComparisonDimension = dimensionName;
+      metricsExplorer.pinIndex = getPinIndexForDimension(
+        metricsExplorer,
+        dimensionName
+      );
     });
   },
 
@@ -408,7 +433,7 @@ const metricViewReducers = {
     });
   },
 
-  toggleFilter(name: string, dimensionName: string, dimensionValue: string) {
+  selectItemsInFilter(name: string, dimensionName: string, values: string[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
         dimensionName
@@ -421,29 +446,91 @@ const metricViewReducers = {
       ].findIndex((filter) => filter.name === dimensionName);
 
       if (dimensionEntryIndex >= 0) {
-        if (
-          removeIfExists(
-            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in,
-            (value) => value === dimensionValue
-          )
-        ) {
-          if (
-            metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in
-              .length === 0
-          ) {
-            metricsExplorer.filters[relevantFilterKey].splice(
-              dimensionEntryIndex,
-              1
-            );
-          }
-          return;
-        }
-
+        // preserve old selections and add only new ones
+        const oldValues = metricsExplorer.filters[relevantFilterKey][
+          dimensionEntryIndex
+        ].in as string[];
+        const newValues = values.filter((v) => !oldValues.includes(v));
         metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in.push(
-          dimensionValue
+          ...newValues
         );
       } else {
         metricsExplorer.filters[relevantFilterKey].push({
+          name: dimensionName,
+          in: values,
+        });
+      }
+    });
+  },
+
+  deselectItemsInFilter(name: string, dimensionName: string, values: string[]) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
+        dimensionName
+      )
+        ? "exclude"
+        : "include";
+
+      const dimensionEntryIndex = metricsExplorer.filters[
+        relevantFilterKey
+      ].findIndex((filter) => filter.name === dimensionName);
+
+      if (dimensionEntryIndex >= 0) {
+        // remove only deselected values
+        const oldValues = metricsExplorer.filters[relevantFilterKey][
+          dimensionEntryIndex
+        ].in as string[];
+        const newValues = oldValues.filter((v) => !values.includes(v));
+        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in =
+          newValues;
+      }
+    });
+  },
+
+  toggleFilter(
+    name: string,
+    dimensionName: string | undefined,
+    dimensionValue: string
+  ) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
+        dimensionName ?? ""
+      )
+        ? "exclude"
+        : "include";
+
+      const filters = metricsExplorer?.filters[relevantFilterKey];
+      // if there are no filters, or if the dimension name is not defined,
+      // there we cannot update anything.
+      if (filters === undefined || dimensionName === undefined) {
+        return;
+      }
+
+      const dimensionEntryIndex =
+        filters.findIndex((filter) => filter.name === dimensionName) ?? -1;
+
+      if (dimensionEntryIndex >= 0) {
+        const filtersIn = filters[dimensionEntryIndex].in;
+        if (filtersIn === undefined) return;
+
+        const index = filtersIn?.findIndex(
+          (value) => value === dimensionValue
+        ) as number;
+        if (index >= 0) {
+          filtersIn?.splice(index, 1);
+          if (filtersIn.length === 0) {
+            filters.splice(dimensionEntryIndex, 1);
+          }
+
+          // Only decrement pinIndex if the removed value was before the pinned value
+          if (metricsExplorer.pinIndex >= index) {
+            metricsExplorer.pinIndex--;
+          }
+          return;
+        }
+        filtersIn.push(dimensionValue);
+      } else {
+        filters.push({
           name: dimensionName,
           in: [dimensionValue],
         });
@@ -456,6 +543,7 @@ const metricViewReducers = {
       metricsExplorer.filters.include = [];
       metricsExplorer.filters.exclude = [];
       metricsExplorer.dimensionFilterExcludeMode.clear();
+      metricsExplorer.pinIndex = -1;
     });
   },
 
@@ -531,7 +619,7 @@ export function useDashboardStore(
   });
 }
 
-function setDisplayComparison(
+export function setDisplayComparison(
   metricsExplorer: MetricsExplorerEntity,
   showTimeComparison: boolean
 ) {
@@ -593,4 +681,28 @@ function setSelectedScrubRange(
   }
 
   metricsExplorer.selectedScrubRange = scrubRange;
+}
+
+function getPinIndexForDimension(
+  metricsExplorer: MetricsExplorerEntity,
+  dimensionName: string
+) {
+  const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
+    dimensionName
+  )
+    ? "exclude"
+    : "include";
+
+  const dimensionEntryIndex = metricsExplorer.filters[
+    relevantFilterKey
+  ].findIndex((filter) => filter.name === dimensionName);
+
+  if (dimensionEntryIndex >= 0) {
+    return (
+      metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex]?.in
+        ?.length - 1
+    );
+  }
+
+  return -1;
 }

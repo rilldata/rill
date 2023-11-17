@@ -30,7 +30,7 @@
 
   $: dashboardQuery = useDashboard($runtime.instanceId, metricViewName);
   $: dashboardIsIdle =
-    $dashboardQuery.data.meta.reconcileStatus ===
+    $dashboardQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
   function viewMetrics(metricViewName: string) {

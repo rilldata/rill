@@ -423,6 +423,13 @@ service AdminService {
       body: "*"
     };
   }
+
+  rpc Telemetry(TelemetryRequest) returns (TelemetryResponse) {
+    option (google.api.http) = {
+      post: "/v1/telemetry",
+      body: "*"
+    };
+  }
 }
 
 message PingRequest {}
@@ -1068,6 +1075,12 @@ message GenerateReportYAMLResponse {
   string yaml = 1;
 }
 
+message TelemetryRequest {
+  map<string, string> event = 1;
+}
+
+message TelemetryResponse {}
+
 message User {
   string id = 1;
   string email = 2;
@@ -1221,6 +1234,7 @@ message VirtualFile {
 message ReportOptions {
   string title = 1;
   string refresh_cron = 2;
+  string refresh_time_zone = 9;
   string query_name = 3;
   string query_args_json = 4;
   uint64 export_limit = 5;

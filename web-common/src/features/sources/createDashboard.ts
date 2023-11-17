@@ -1,9 +1,23 @@
+import { goto } from "$app/navigation";
+import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
 import {
   getFileAPIPathFromNameAndType,
   getFilePathFromNameAndType,
 } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
+import { useSource } from "@rilldata/web-common/features/sources/selectors";
+import { appScreen } from "@rilldata/web-common/layout/app-store";
+import { overlay } from "@rilldata/web-common/layout/overlay-store";
+import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+import {
+  MetricsEventScreenName,
+  MetricsEventSpace,
+} from "@rilldata/web-common/metrics/service/MetricsTypes";
 import {
   connectorServiceOLAPGetTable,
   RpcStatus,
@@ -16,6 +30,7 @@ import {
   MutationFunction,
   useQueryClient,
 } from "@tanstack/svelte-query";
+import { get } from "svelte/store";
 import { generateDashboardYAMLForModel } from "../metrics-views/metrics-internal-store";
 
 export interface CreateDashboardFromSourceRequest {
@@ -45,12 +60,13 @@ export const useCreateDashboardFromSource = <
   > = async (props) => {
     const { data } = props ?? {};
     const sourceName = data.sourceResource?.meta?.name?.name;
-    if (!sourceName) throw new Error("Source name is missing");
+    if (!sourceName)
+      throw new Error("Failed to create dashboard: Source name is missing");
     if (
       !data.sourceResource.source.state.connector ||
       !data.sourceResource.source.state.table
     )
-      throw new Error("Source is not ready");
+      throw new Error("Failed to create dashboard: Source is not ready");
 
     // first, create model from source
 
@@ -106,3 +122,56 @@ export const useCreateDashboardFromSource = <
     TContext
   >(mutationFn, mutationOptions);
 };
+
+/**
+ * Wrapper function that takes care of UI side effects on top of creating a dashboard from source.
+ * TODO: where would this go?
+ */
+export function useCreateDashboardFromSourceUIAction(
+  instanceId: string,
+  sourceName: string
+) {
+  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
+  const modelNames = useModelFileNames(instanceId);
+  const dashboardNames = useDashboardFileNames(instanceId);
+  const sourceQuery = useSource(instanceId, sourceName);
+
+  return async () => {
+    overlay.set({
+      title: "Creating a dashboard for " + sourceName,
+    });
+    const newModelName = getName(`${sourceName}_model`, get(modelNames).data);
+    const newDashboardName = getName(
+      `${sourceName}_dashboard`,
+      get(dashboardNames).data
+    );
+
+    // Wait for source query to have data
+    await waitUntil(() => !!get(sourceQuery).data);
+
+    try {
+      await get(createDashboardFromSourceMutation).mutateAsync({
+        data: {
+          instanceId,
+          sourceResource: get(sourceQuery).data,
+          newModelName,
+          newDashboardName,
+        },
+      });
+      goto(`/dashboard/${newDashboardName}`);
+      behaviourEvent.fireNavigationEvent(
+        newDashboardName,
+        BehaviourEventMedium.Menu,
+        MetricsEventSpace.LeftPanel,
+        get(appScreen)?.type,
+        MetricsEventScreenName.Dashboard
+      );
+      overlay.set(null);
+    } catch (err) {
+      overlay.set({
+        title: "Failed to create a dashboard for " + sourceName,
+        message: err.response?.data?.message ?? err.message,
+      });
+    }
+  };
+}

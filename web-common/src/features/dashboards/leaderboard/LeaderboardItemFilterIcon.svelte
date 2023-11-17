@@ -2,13 +2,11 @@
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
-  import Circle from "@rilldata/web-common/components/icons/Circle.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { CHECKMARK_COLORS } from "@rilldata/web-common/features/dashboards/config";
   export let selectionIndex: number;
   export let excluded = false;
   export let isBeingCompared = false;
-  export let defaultComparedIndex: number;
 
   $: selected = selectionIndex >= 0;
 
@@ -21,8 +19,6 @@
 <div style:width="22px" class="grid place-items-center">
   {#if selected && !excluded && isBeingCompared}
     <CheckCircle className={getColor(selectionIndex)} size="18px" />
-  {:else if isBeingCompared && defaultComparedIndex >= 0}
-    <Circle className={getColor(defaultComparedIndex)} size="16px" />
   {:else if selected && !excluded}
     <Check size="20px" />
   {:else if selected && excluded}

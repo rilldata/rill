@@ -3,7 +3,7 @@
 
   export let host: string;
   export let instanceId: string;
-  export let jwt: string = undefined;
+  export let jwt: string | undefined = undefined;
 
   $: runtime.set({
     host: host,

@@ -24,7 +24,7 @@
   <div class="flex gap-x-2 items-center">
     <DashboardIcon size={"14px"} className="text-slate-500" />
     <div class="text-gray-700 text-sm font-semibold group-hover:text-blue-600">
-      {title}
+      {title !== "" ? title : name}
     </div>
     {#if error !== ""}
       <Tag color="red">Error</Tag>
