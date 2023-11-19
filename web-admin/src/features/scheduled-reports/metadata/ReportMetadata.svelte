@@ -7,6 +7,7 @@
   import MenuItem from "@rilldata/web-common/components/menu-v2/MenuItem.svelte";
   import MenuItems from "@rilldata/web-common/components/menu-v2/MenuItems.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
+  import EditScheduledReportDialog from "@rilldata/web-common/features/dashboards/scheduled-reports/EditScheduledReportDialog.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -44,6 +45,12 @@
   // Actions
   const queryClient = useQueryClient();
   const deleteReport = createAdminServiceDeleteReport();
+
+  let showEditReportDialog = false;
+  function handleEditReport() {
+    showEditReportDialog = true;
+  }
+
   async function handleDeleteReport() {
     await $deleteReport.mutateAsync({
       organization,
@@ -101,6 +108,9 @@
             </IconButton>
           </MenuButton>
           <MenuItems>
+            <MenuItem as="button" on:click={handleEditReport}
+              >Edit report</MenuItem
+            >
             <!-- TODO: add an "are you sure?" confirmation dialog -->
             <MenuItem as="button" on:click={handleDeleteReport}
               >Delete report</MenuItem
@@ -157,4 +167,12 @@
       </div>
     </div>
   </div>
+{/if}
+
+{#if $reportQuery.data}
+  <EditScheduledReportDialog
+    open={showEditReportDialog}
+    reportSpec={$reportQuery.data.resource.report.spec}
+    on:close={() => (showEditReportDialog = false)}
+  />
 {/if}
