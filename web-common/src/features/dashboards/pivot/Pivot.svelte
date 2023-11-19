@@ -334,5 +334,6 @@
 
   :global(regular-table thead th) {
     height: var(--row-height);
+    user-select: none;
   }
 </style>
