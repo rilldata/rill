@@ -698,11 +698,6 @@ func (c *connection) convertToEnum(ctx context.Context, table, col string) error
 			switchErr = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("USE %s.%s", safeSQLName(currentDB), safeSQLName(currentSchema))})
 		}()
 
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("DROP TYPE %s", safeSQLName(enum))})
-		if err != nil && !strings.Contains(err.Error(), "does not exist") {
-			return fmt.Errorf("failed to drop enum %q: %w", enum, err)
-		}
-
 		err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE TYPE %s AS ENUM (SELECT DISTINCT %s FROM \"default\" WHERE %s IS NOT NULL)", safeSQLName(enum), safeSQLName(col), safeSQLName(col))})
 		if err != nil {
 			return fmt.Errorf("failed to create enum %q: %w", enum, err)
