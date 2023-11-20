@@ -382,3 +382,32 @@ func Test_connection_InsertTableAsSelectLimits(t *testing.T) {
 	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/test/data/AdBids.parquet')")
 	require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
 }
+
+func Test_connection_CastEnum(t *testing.T) {
+	temp := t.TempDir()
+	os.Mkdir(temp, fs.ModePerm)
+
+	dbPath := filepath.Join(temp, "view.db")
+	handle, err := Driver{}.Open(map[string]any{"dsn": dbPath, "external_table_storage": true}, false, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	c := handle.(*connection)
+	require.NoError(t, c.Migrate(context.Background()))
+	c.AsOLAP("default")
+
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "select 'hello' as name")
+	require.NoError(t, err)
+
+	err = c.InsertTableAsSelect(context.Background(), "test", false, "select 'world'")
+	require.NoError(t, err)
+
+	err = c.convertToEnum(context.Background(), "test", "name")
+	require.NoError(t, err)
+
+	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE column_name='name'"})
+	require.NoError(t, err)
+
+	var typ string
+	require.True(t, res.Next())
+	require.NoError(t, res.Scan(&typ))
+	require.Equal(t, "ENUM('hello', 'world')", typ)
+}

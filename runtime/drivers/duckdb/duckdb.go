@@ -20,7 +20,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
 	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -367,19 +366,19 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 	olap, _ := to.(*connection)
 	if c == to {
 		if from == to {
-			return transporter.NewDuckDBToDuckDB(olap, c.logger), true
+			return NewDuckDBToDuckDB(olap, c.logger), true
 		}
 		if from.Driver() == "motherduck" {
-			return transporter.NewMotherduckToDuckDB(from, olap, c.logger), true
+			return NewMotherduckToDuckDB(from, olap, c.logger), true
 		}
 		if store, ok := from.AsSQLStore(); ok {
-			return transporter.NewSQLStoreToDuckDB(store, olap, c.logger), true
+			return NewSQLStoreToDuckDB(store, olap, c.logger), true
 		}
 		if store, ok := from.AsObjectStore(); ok { // objectstore to duckdb transfer
-			return transporter.NewObjectStoreToDuckDB(store, olap, c.logger), true
+			return NewObjectStoreToDuckDB(store, olap, c.logger), true
 		}
 		if store, ok := from.AsFileStore(); ok {
-			return transporter.NewFileStoreToDuckDB(store, olap, c.logger), true
+			return NewFileStoreToDuckDB(store, olap, c.logger), true
 		}
 	}
 	return nil, false
