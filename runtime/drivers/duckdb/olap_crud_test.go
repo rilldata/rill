@@ -402,4 +402,12 @@ func Test_connection_CastEnum(t *testing.T) {
 
 	err = c.convertToEnum(context.Background(), "test", "name")
 	require.NoError(t, err)
+
+	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE column_name='name'"})
+	require.NoError(t, err)
+
+	var typ string
+	require.True(t, res.Next())
+	require.NoError(t, res.Scan(&typ))
+	require.Equal(t, "ENUM('hello', 'world')", typ)
 }
