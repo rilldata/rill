@@ -179,8 +179,6 @@
       const maybeWidth = getColumnWidth(x);
       if (maybeWidth) {
         th.style.width = `${maybeWidth}px`;
-        th.style.minWidth = `${maybeWidth}px`;
-        th.style.maxWidth = `${maybeWidth}px`;
       }
     }
 
@@ -197,7 +195,8 @@
       value: meta.value,
       element: th,
     });
-    if (maybeVal) th.innerHTML = maybeVal;
+    if (maybeVal)
+      th.innerHTML = maybeVal + `<span class="rt-column-resize"></span>`;
   }
 
   function style_row_corner(th: HTMLTableCellElement) {
@@ -210,8 +209,6 @@
       const maybeWidth = getRowHeaderWidth(x);
       if (maybeWidth) {
         th.style.width = `${maybeWidth}px`;
-        th.style.minWidth = `${maybeWidth}px`;
-        th.style.maxWidth = `${maybeWidth}px`;
       }
     }
 
@@ -221,7 +218,9 @@
       value: meta.value,
       element: th,
     });
-    if (maybeVal) th.innerHTML = maybeVal;
+
+    if (maybeVal)
+      th.innerHTML = maybeVal + `<span class="rt-column-resize"></span>`;
   }
 
   $: {
@@ -335,5 +334,6 @@
 
   :global(regular-table thead th) {
     height: var(--row-height);
+    user-select: none;
   }
 </style>
