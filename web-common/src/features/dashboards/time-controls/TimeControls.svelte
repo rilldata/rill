@@ -210,7 +210,6 @@
         showComparison={$timeControlsStore?.showComparison}
         selectedComparison={$timeControlsStore?.selectedComparisonTimeRange}
         zone={$dashboardStore?.selectedTimezone}
-        comparisonOptions={availableComparisons}
       />
     {/if}
     <TimeGrainSelector

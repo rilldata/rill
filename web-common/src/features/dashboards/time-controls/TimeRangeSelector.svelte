@@ -7,16 +7,12 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import DefaultTimeRangeMenuItem from "@rilldata/web-common/features/dashboards/time-controls/DefaultTimeRangeMenuItem.svelte";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { createTimeRangeStore } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
   import {
     ALL_TIME,
     DEFAULT_TIME_RANGES,
-    LATEST_WINDOW_TIME_RANGES,
-    PERIOD_TO_DATE_RANGES,
   } from "@rilldata/web-common/lib/time/config";
-  import {
-    getChildTimeRanges,
-    prettyFormatTimeRange,
-  } from "@rilldata/web-common/lib/time/ranges";
+  import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
   import {
     humaniseISODuration,
     ISODurationToTimeRangePreset,
@@ -24,7 +20,6 @@
   import {
     DashboardTimeControls,
     TimeRange,
-    TimeRangeOption,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
@@ -52,38 +47,14 @@
   const ctx = getStateManagers();
   const timeControlsStore = useTimeControlStore(ctx);
   const metaQuery = useMetaQuery(ctx);
+  const timeRangeStore = createTimeRangeStore(ctx);
 
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
 
-  let latestWindowTimeRanges: TimeRangeOption[];
-  let periodToDateTimeRanges: TimeRangeOption[];
-
   $: showDefaultItem =
     $metaQuery.data?.defaultTimeRange &&
     !($metaQuery.data?.defaultTimeRange in ISODurationToTimeRangePreset);
-
-  // get the available latest-window time ranges
-  $: if (boundaryStart && boundaryEnd) {
-    latestWindowTimeRanges = getChildTimeRanges(
-      boundaryStart,
-      boundaryEnd,
-      LATEST_WINDOW_TIME_RANGES,
-      minTimeGrain,
-      $dashboardStore?.selectedTimezone
-    );
-  }
-
-  // get the the available period-to-date time ranges
-  $: if (boundaryStart && boundaryEnd) {
-    periodToDateTimeRanges = getChildTimeRanges(
-      boundaryStart,
-      boundaryEnd,
-      PERIOD_TO_DATE_RANGES,
-      minTimeGrain,
-      $dashboardStore?.selectedTimezone
-    );
-  }
 
   $: hasSubRangeSelected = $dashboardStore?.selectedScrubRange?.end;
 
@@ -267,12 +238,9 @@
         isoDuration={$metaQuery.data?.defaultTimeRange}
       />
     {/if}
-    {#if latestWindowTimeRanges}
-      {#if latestWindowTimeRanges?.length}
-        <Divider />
-      {/if}
-
-      {#each latestWindowTimeRanges as timeRange}
+    {#if $timeRangeStore.latestWindowTimeRanges?.length}
+      <Divider />
+      {#each $timeRangeStore.latestWindowTimeRanges as timeRange}
         <MenuItem
           on:before-select={setIntermediateSelection(timeRange.name)}
           on:select={() =>
@@ -284,9 +252,9 @@
         </MenuItem>
       {/each}
     {/if}
-    {#if periodToDateTimeRanges}
+    {#if $timeRangeStore.periodToDateRanges?.length}
       <Divider />
-      {#each periodToDateTimeRanges as timeRange}
+      {#each $timeRangeStore.periodToDateRanges as timeRange}
         <MenuItem
           on:before-select={setIntermediateSelection(timeRange.name)}
           on:select={() =>

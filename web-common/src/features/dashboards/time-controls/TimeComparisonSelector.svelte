@@ -13,13 +13,18 @@ This component needs to do the following:
   } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { createTimeComparisonOptionsState } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
   import {
     NO_COMPARISON_LABEL,
     TIME_COMPARISON,
   } from "@rilldata/web-common/lib/time/config";
-  import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+  import {
+    DashboardTimeControls,
+    TimeComparisonOption,
+  } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import type { V1TimeGrain } from "../../../runtime-client";
@@ -38,10 +43,13 @@ This component needs to do the following:
   export let zone: string;
 
   export let showComparison = true;
-  export let selectedComparison;
-  export let comparisonOptions: TimeComparisonOption[];
+  export let selectedComparison: DashboardTimeControls;
 
   $: comparisonOption = selectedComparison?.name;
+
+  const comparisonOptionsStore = createTimeComparisonOptionsState(
+    getStateManagers()
+  );
 
   /** compile the comparison options */
   let options: {
@@ -49,8 +57,8 @@ This component needs to do the following:
     start: Date;
     end: Date;
   }[];
-  $: if (comparisonOptions !== undefined)
-    options = Object.entries(comparisonOptions)?.map(([key, value]) => {
+  $: options =
+    Object.entries($comparisonOptionsStore)?.map(([key, value]) => {
       const comparisonTimeRange = getComparisonRange(
         currentStart,
         currentEnd,
@@ -62,7 +70,7 @@ This component needs to do the following:
         start: comparisonTimeRange.start,
         end: comparisonTimeRange.end,
       };
-    });
+    }) ?? [];
 
   function onSelectCustomComparisonRange(
     startDate: string,
@@ -108,9 +116,10 @@ This component needs to do the following:
     }, 300);
   }
 
-  $: label = showComparison
-    ? TIME_COMPARISON[comparisonOption]?.label
-    : NO_COMPARISON_LABEL;
+  $: label =
+    showComparison && comparisonOption
+      ? TIME_COMPARISON[comparisonOption]?.label
+      : NO_COMPARISON_LABEL;
 
   $: intermediateSelection = showComparison
     ? comparisonOption
