@@ -41,21 +41,12 @@ export function isoDurationToTimeRange(
 
 export const ISODurationToTimeRangePreset: Partial<
   Record<TimeRangePreset, boolean>
-> = {
-  [TimeRangePreset.LAST_SIX_HOURS]: true,
-  [TimeRangePreset.LAST_24_HOURS]: true,
-  [TimeRangePreset.LAST_24_HOURS]: true,
-  [TimeRangePreset.LAST_7_DAYS]: true,
-  [TimeRangePreset.LAST_14_DAYS]: true,
-  [TimeRangePreset.LAST_4_WEEKS]: true,
-  [TimeRangePreset.LAST_12_MONTHS]: true,
-  [TimeRangePreset.ALL_TIME]: true,
-  [TimeRangePreset.TODAY]: true,
-  [TimeRangePreset.WEEK_TO_DATE]: true,
-  [TimeRangePreset.MONTH_TO_DATE]: true,
-  [TimeRangePreset.QUARTER_TO_DATE]: true,
-  [TimeRangePreset.YEAR_TO_DATE]: true,
-};
+> = {};
+for (const preset in TimeRangePreset) {
+  if (preset === "DEFAULT" || preset === "CUSTOM") continue;
+  ISODurationToTimeRangePreset[preset] = true;
+}
+
 export function isoDurationToFullTimeRange(
   isoDuration: string,
   start: Date,
@@ -76,7 +67,7 @@ export function isoDurationToFullTimeRange(
 
   const { startTime, endTime } = isoDurationToTimeRange(isoDuration, end, zone);
   return {
-    name: isoDuration,
+    name: isoDuration as TimeRangePreset,
     start: startTime,
     end: endTime,
   };

@@ -1,6 +1,7 @@
 import type { Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -174,6 +175,10 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
   const selectedTimeRange: DashboardTimeControls = {
     name: timeRange.name,
   } as DashboardTimeControls;
+  // backwards compatibility
+  if (timeRange.name && timeRange.name in TimeRangePreset) {
+    selectedTimeRange.name = TimeRangePreset[timeRange.name];
+  }
 
   if (timeRange.timeStart) {
     selectedTimeRange.start = fromTimeProto(timeRange.timeStart);
