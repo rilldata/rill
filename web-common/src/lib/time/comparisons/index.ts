@@ -1,3 +1,4 @@
+import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import { Duration, Interval } from "luxon";
 import { getTimeWidth, transformDate } from "../transforms";
 import {
@@ -27,7 +28,7 @@ export function getComparisonTransform(
     // map to a distinct Period-like TimeComparisonOption (e.g. "P1D")
     return {
       operationType: TimeOffsetType.SUBTRACT,
-      duration: comparison as TimeComparisonOption,
+      duration: TIME_COMPARISON[comparison].offsetIso,
     };
   }
 }
@@ -171,7 +172,11 @@ export function getAvailableComparisonsForTimeRange(
         // treat a custom comparison as contiguous.
         comparison
       ) &&
-        !isRangeLargerThanDuration(start, end, comparison))
+        !isRangeLargerThanDuration(
+          start,
+          end,
+          TIME_COMPARISON[comparison].offsetIso
+        ))
     );
   });
 
@@ -191,7 +196,11 @@ export function getTimeComparisonParametersForComponent(
   currentStart,
   currentEnd
 ) {
-  if (boundStart === undefined || currentStart === undefined) {
+  if (
+    comparisonOption === undefined ||
+    boundStart === undefined ||
+    currentStart === undefined
+  ) {
     return {
       start: undefined,
       end: undefined,

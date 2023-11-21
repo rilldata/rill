@@ -133,8 +133,8 @@ This component needs to do the following:
       <div class="flex items-center gap-x-3">
         <span class="ui-copy-icon"><ClockCircle size="16px" /></span>
         <span
-          style:transform="translateY(-1px)"
-          class="font-normal justify-center">{label}</span
+          class="font-normal justify-center"
+          style:transform="translateY(-1px)">{label}</span
         >
       </div>
     </SelectorButton>

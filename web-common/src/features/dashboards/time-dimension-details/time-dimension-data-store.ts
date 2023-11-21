@@ -393,13 +393,13 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         const currentRange = timeControls?.selectedTimeRange?.name;
 
         let currentLabel = "Custom Range";
-        if (currentRange in DEFAULT_TIME_RANGES)
+        if (currentRange && currentRange in DEFAULT_TIME_RANGES)
           currentLabel = DEFAULT_TIME_RANGES[currentRange].label;
 
         const comparisonRange = timeControls?.selectedComparisonTimeRange?.name;
         let comparisonLabel = "Custom Range";
 
-        if (comparisonRange in TIME_COMPARISON)
+        if (comparisonRange && comparisonRange in TIME_COMPARISON)
           comparisonLabel = TIME_COMPARISON[comparisonRange].label;
 
         data = prepareTimeData(

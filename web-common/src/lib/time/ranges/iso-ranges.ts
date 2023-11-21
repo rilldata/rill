@@ -39,18 +39,14 @@ export function isoDurationToTimeRange(
   };
 }
 
-export const ISODurationToTimeRangePreset: Record<
-  string,
-  keyof typeof TimeRangePreset
-> = {
-  PT6H: TimeRangePreset.LAST_SIX_HOURS,
-  PT24H: TimeRangePreset.LAST_24_HOURS,
-  P1D: TimeRangePreset.LAST_24_HOURS,
-  P7D: TimeRangePreset.LAST_7_DAYS,
-  P14D: TimeRangePreset.LAST_14_DAYS,
-  P4W: TimeRangePreset.LAST_4_WEEKS,
-  inf: TimeRangePreset.ALL_TIME,
-};
+export const ISODurationToTimeRangePreset: Partial<
+  Record<TimeRangePreset, boolean>
+> = {};
+for (const preset in TimeRangePreset) {
+  if (preset === "DEFAULT" || preset === "CUSTOM") continue;
+  ISODurationToTimeRangePreset[TimeRangePreset[preset]] = true;
+}
+
 export function isoDurationToFullTimeRange(
   isoDuration: string,
   start: Date,
@@ -62,7 +58,7 @@ export function isoDurationToFullTimeRange(
   }
   if (isoDuration in ISODurationToTimeRangePreset) {
     return convertTimeRangePreset(
-      ISODurationToTimeRangePreset[isoDuration],
+      isoDuration as TimeRangePreset,
       start,
       end,
       zone
@@ -71,7 +67,7 @@ export function isoDurationToFullTimeRange(
 
   const { startTime, endTime } = isoDurationToTimeRange(isoDuration, end, zone);
   return {
-    name: TimeRangePreset.DEFAULT,
+    name: isoDuration as TimeRangePreset,
     start: startTime,
     end: endTime,
   };
@@ -106,6 +102,8 @@ function getStartTimeTransformations(
 ): Array<RelativeTimeTransformation> {
   const duration = Duration.fromISO(isoDuration);
   const period = getSmallestUnit(duration);
+  if (!period) return [];
+
   return [
     {
       period, // this is the offset alias for the given time range alias
@@ -113,7 +111,7 @@ function getStartTimeTransformations(
     }, // truncation
     // then offset that by -1 of smallest period
     {
-      duration: subtractFromPeriod(duration, period).toISO(),
+      duration: subtractFromPeriod(duration, period).toISO() as string,
       operationType: TimeOffsetType.SUBTRACT,
     }, // operation
   ];
@@ -124,6 +122,8 @@ function getEndTimeTransformations(
 ): Array<RelativeTimeTransformation> {
   const duration = Duration.fromISO(isoDuration);
   const period = getSmallestUnit(duration);
+  if (!period) return [];
+
   return [
     {
       duration: period,
