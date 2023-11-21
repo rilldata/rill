@@ -9,7 +9,6 @@ import {
   history,
   historyKeymap,
   indentWithTab,
-  insertNewline,
 } from "@codemirror/commands";
 import {
   bracketMatching,
