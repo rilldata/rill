@@ -55,7 +55,7 @@ test.describe("leaderboard and dimension table sorting", () => {
       page.getByRole("button", { name: "null 32.9k" })
     );
 
-    // add pct of total context colum
+    // add pct of total context column
     await page.getByRole("button", { name: "Select a context column" }).click();
     await page.getByRole("menuitem", { name: "Percent of total" }).click();
 
@@ -186,7 +186,7 @@ test.describe("leaderboard and dimension table sorting", () => {
         .filter({ hasText: /^-14$/ })
         .getByRole("button", { name: "Filter dimension value" })
     );
-    // sort by absolute change TWICE to sort by absolute change descending
+    // sort by absolute change TWICE to sort by absolute change ascending
     await page.locator(".w-full > button:nth-child(2)").click();
     await assertAAboveB(
       page
@@ -201,7 +201,7 @@ test.describe("leaderboard and dimension table sorting", () => {
         .getByRole("button", { name: "Filter dimension value" })
     );
 
-    // sort by pct change ONCE to sort by pct change ascending
+    // sort by pct change ONCE to sort by pct change descending
     await page.locator("button:nth-child(3)").first().click();
     await assertAAboveB(
       page
@@ -214,7 +214,7 @@ test.describe("leaderboard and dimension table sorting", () => {
         .getByRole("button", { name: "Filter dimension value" })
     );
 
-    // sort by pct change TWICE to sort by pct change descending
+    // sort by pct change TWICE to sort by pct change ascending
     await page.locator("button:nth-child(3)").first().click();
     await assertAAboveB(
       page
@@ -227,7 +227,7 @@ test.describe("leaderboard and dimension table sorting", () => {
         .getByRole("button", { name: "Filter dimension value" })
     );
 
-    // sort by pct of total ONCE to sort by pct of total ascending
+    // sort by pct of total ONCE to sort by pct of total descending
     await page.locator("button:nth-child(4)").first().click();
     await assertAAboveB(
       page
@@ -239,7 +239,7 @@ test.describe("leaderboard and dimension table sorting", () => {
         .filter({ hasText: /^25%$/ })
         .getByRole("button", { name: "Filter dimension value" })
     );
-    // sort by pct of total TWICE to sort by pct of total descending
+    // sort by pct of total TWICE to sort by pct of total ascending
     await page.locator("button:nth-child(4)").first().click();
     await assertAAboveB(
       page
