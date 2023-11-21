@@ -45,7 +45,6 @@ export const base = () => [
   editorTheme(),
   lineStatus(),
   indentGuide(),
-
   highlightActiveLineGutter(),
   highlightSpecialChars(),
   history(),
