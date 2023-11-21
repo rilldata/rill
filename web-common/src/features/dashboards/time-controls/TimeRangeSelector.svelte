@@ -52,10 +52,6 @@
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
 
-  $: showDefaultItem =
-    $metaQuery.data?.defaultTimeRange &&
-    !($metaQuery.data?.defaultTimeRange in ISODurationToTimeRangePreset);
-
   $: hasSubRangeSelected = $dashboardStore?.selectedScrubRange?.end;
 
   function setIntermediateSelection(timeRangeName: string) {
@@ -224,7 +220,7 @@
         {allTime.label}
       </span>
     </MenuItem>
-    {#if showDefaultItem && $timeControlsStore.defaultTimeRange}
+    {#if $timeRangeStore.showDefaultItem}
       <DefaultTimeRangeMenuItem
         on:before-select={setIntermediateSelection(
           $metaQuery.data?.defaultTimeRange
