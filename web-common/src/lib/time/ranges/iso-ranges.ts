@@ -44,7 +44,7 @@ export const ISODurationToTimeRangePreset: Partial<
 > = {};
 for (const preset in TimeRangePreset) {
   if (preset === "DEFAULT" || preset === "CUSTOM") continue;
-  ISODurationToTimeRangePreset[preset] = true;
+  ISODurationToTimeRangePreset[TimeRangePreset[preset]] = true;
 }
 
 export function isoDurationToFullTimeRange(
