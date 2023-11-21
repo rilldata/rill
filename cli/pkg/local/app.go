@@ -9,8 +9,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -135,9 +137,16 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 
 	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
 	defaultOLAP := false
+	olapCfg := make(map[string]string)
 	if olapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
 		defaultOLAP = true
 		olapDSN = path.Join(dbDirPath, olapDSN)
+		val, err := isExternalStorageEnabled(dbDirPath, parsedVariables)
+		if err != nil {
+			return nil, err
+		}
+
+		olapCfg["external_table_storage"] = strconv.FormatBool(val)
 	}
 
 	if reset {
@@ -149,7 +158,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	}
 
 	// Set default DuckDB pool size to 4
-	olapCfg := map[string]string{"dsn": olapDSN}
+	olapCfg["dsn"] = olapDSN
 	if olapDriver == "duckdb" {
 		olapCfg["pool_size"] = "4"
 		if !defaultOLAP {
@@ -515,4 +524,30 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 		_ = logger.Sync()
 		luLogger.Close()
 	}
+}
+
+func isExternalStorageEnabled(dbPath string, variables map[string]string) (bool, error) {
+	// we can't always enable `external_table_storage` if the project dir already has a db file
+	// it could have been created with older logic where every source was a table in the main db
+	// if its not a fresh project we need a way to detect if `external_table_storage` was enabled before
+	_, err := os.Stat(filepath.Join(dbPath, DefaultOLAPDSN))
+	if err != nil {
+		// fresh project
+		// check if flag explicitly passed
+		val, ok := variables["connector.duckdb.external_table_storage"]
+		if !ok {
+			// mark enabled by default
+			return true, nil
+		}
+		return strconv.ParseBool(val)
+	}
+
+	fsRoot := os.DirFS(dbPath)
+	glob := path.Clean(path.Join("./", filepath.Join("*", "version.txt")))
+
+	matches, err := doublestar.Glob(fsRoot, glob)
+	if err != nil {
+		return false, err
+	}
+	return len(matches) > 0, nil
 }
