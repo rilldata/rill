@@ -70,14 +70,13 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
  * This higher-order function takes a measure spec and returns
  * a function appropriate for formatting values from that measure.
  *
- * As of October 2023, all measure values supplied to the client
- * are in the form of a number, so this formatting function will only
- * accept numeric inputs.
+ * As of Nov 2023, all measure values supplied to the client
+ * are in the form of a number or undefined for missing values.
  */
 export const createMeasureValueFormatter = (
   measureSpec: MetricsViewSpecMeasureV2,
   useUnabridged = false
-): ((value: number) => string) => {
+): ((value: number | undefined) => string | undefined) => {
   const humanizer = useUnabridged
     ? humanizeDataTypeUnabridged
     : humanizeDataType;
@@ -92,9 +91,14 @@ export const createMeasureValueFormatter = (
   // otherwise, use the humanize formatter.
   if (measureSpec.formatD3 !== undefined && measureSpec.formatD3 !== "") {
     try {
-      return d3format(measureSpec.formatD3);
+      const formatter = d3format(measureSpec.formatD3);
+      return (value: number | undefined) =>
+        value === undefined ? undefined : formatter(value);
     } catch (error) {
-      return (value: number) => humanizer(value, FormatPreset.HUMANIZE);
+      return (value: number | undefined) =>
+        value === undefined
+          ? undefined
+          : humanizer(value, FormatPreset.HUMANIZE);
     }
   }
 
@@ -103,5 +107,6 @@ export const createMeasureValueFormatter = (
     measureSpec.formatPreset && measureSpec.formatPreset !== ""
       ? (measureSpec.formatPreset as FormatPreset)
       : FormatPreset.HUMANIZE;
-  return (value: number) => humanizer(value, formatPreset);
+  return (value: number | undefined) =>
+    value === undefined ? undefined : humanizer(value, formatPreset);
 };

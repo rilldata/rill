@@ -67,7 +67,8 @@
   $: hoveredValue = measureValueFormatterUnabridged(value);
 
   const { shiftClickAction } = createShiftClickAction();
-  async function shiftClickHandler(number: string) {
+  async function shiftClickHandler(number: string | undefined) {
+    if (number === undefined) return;
     await navigator.clipboard.writeText(number);
     notifications.send({
       message: `copied dimension value "${number}" to clipboard`,
