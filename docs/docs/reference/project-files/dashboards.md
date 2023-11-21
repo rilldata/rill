@@ -39,6 +39,8 @@ _**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measur
   - _**`ignore`**_ — hides the measure _(optional)_ 
   - _**`valid_percent_of_total`**_ — a boolean indicating whether percent-of-total values should be rendered for this measure _(optional)_ 
   - _**`format_d3`**_ — controls the formatting of this measure in the dashboard using a [d3-format string](https://d3js.org/d3-format). If an invalid format string is supplied, measures will be formatted with `format_preset: humanize` (described below). Measures cannot have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
+    - **Example**: to show a measure using fixed point formatting with 2 digits after the decimal point, your measure specification would include: `format_d3: ".2f"`.
+    - **Example**: to show measure using grouped thousands with two significant digits, your measure specification would include: `format_d3: ",.2r"`.
   - _**`format_preset`**_ — controls the formatting of this measure in the dashboard according to option specified below. Measures cannot have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
     - _`humanize`_ — round off numbers in an opinionated way to thousands (K), millions (M), billions (B), etc
     - _`none`_ — raw output
