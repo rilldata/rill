@@ -68,14 +68,6 @@ export const base = () => [
     ...lintKeymap,
     indentWithTab,
   ]),
-  Prec.high(
-    keymap.of([
-      {
-        key: "Enter",
-        run: insertNewline,
-      },
-    ])
-  ),
   Prec.highest(
     keymap.of([
       {
