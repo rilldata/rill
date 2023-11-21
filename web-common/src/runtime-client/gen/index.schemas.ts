@@ -686,13 +686,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -714,6 +707,13 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export interface V1Report {
@@ -799,16 +799,6 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
 
-export interface V1ReconcileResponse {
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-}
-
 /**
  * - CODE_UNSPECIFIED: Unspecified error
  - CODE_SYNTAX: Code artifact failed to parse
@@ -851,6 +841,16 @@ Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
   endLocation?: V1ReconcileErrorCharLocation;
+}
+
+export interface V1ReconcileResponse {
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
 }
 
 export interface V1QueryResult {
@@ -1104,37 +1104,9 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  filter?: V1MetricsViewFilter;
-  priority?: number;
-}
-
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
-}
-
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  filter?: V1MetricsViewFilter;
-  timeZone?: string;
-  priority?: number;
 }
 
 export interface V1MetricsViewTimeRangeResponse {
@@ -1160,6 +1132,8 @@ export interface V1MetricsViewSpec {
   firstMonthOfYear?: number;
   defaultComparisonMode?: MetricsViewSpecComparisonMode;
   defaultComparisonDimension?: string;
+  /** List of available time ranges with comparison ranges that would replace the default list. */
+  availableTimeRanges?: MetricsViewSpecAvailableTimeRange[];
 }
 
 export interface V1MetricsViewState {
@@ -1181,6 +1155,34 @@ export interface V1MetricsViewRowsResponse {
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  filter?: V1MetricsViewFilter;
+  priority?: number;
+}
+
+export interface V1MetricsViewTimeSeriesRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  filter?: V1MetricsViewFilter;
+  timeZone?: string;
+  priority?: number;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1237,21 +1239,6 @@ export interface V1MetricsViewComparisonResponse {
   rows?: V1MetricsViewComparisonRow[];
 }
 
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  filter?: V1MetricsViewFilter;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-}
-
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1280,6 +1267,21 @@ export interface V1MetricsViewAggregationDimension {
   name?: string;
   timeGrain?: V1TimeGrain;
   timeZone?: string;
+}
+
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationRequest {
@@ -1575,6 +1577,11 @@ export interface V1Connector {
   config?: V1ConnectorConfig;
 }
 
+export interface V1CategoricalSummary {
+  topK?: V1TopK;
+  cardinality?: number;
+}
+
 export interface V1ColumnTopKResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
@@ -1695,11 +1702,6 @@ export interface V1ColumnCardinalityRequest {
   priority?: number;
 }
 
-export interface V1CategoricalSummary {
-  topK?: V1TopK;
-  cardinality?: number;
-}
-
 export interface V1CatalogEntry {
   name?: string;
   table?: V1Table;
@@ -1730,10 +1732,6 @@ export interface V1BucketPlannerState {
   region?: string;
 }
 
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
-}
-
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
@@ -1744,6 +1742,10 @@ export interface V1BucketExtractPolicy {
   rowsLimitBytes?: string;
   filesStrategy?: BucketExtractPolicyStrategy;
   filesLimit?: string;
+}
+
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
 }
 
 export interface V1BigQueryListTablesResponse {
@@ -1768,12 +1770,6 @@ export interface Runtimev1CharLocation {
   line?: number;
 }
 
-export interface RpcStatus {
-  code?: number;
-  message?: string;
-  details?: ProtobufAny[];
-}
-
 /**
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
@@ -1793,6 +1789,12 @@ export const ProtobufNullValue = {
 export interface ProtobufAny {
   "@type"?: string;
   [key: string]: unknown;
+}
+
+export interface RpcStatus {
+  code?: number;
+  message?: string;
+  details?: ProtobufAny[];
 }
 
 export interface TopKEntry {
@@ -1880,6 +1882,18 @@ export const MetricsViewSpecComparisonMode = {
   COMPARISON_MODE_TIME: "COMPARISON_MODE_TIME",
   COMPARISON_MODE_DIMENSION: "COMPARISON_MODE_DIMENSION",
 } as const;
+
+export interface MetricsViewSpecAvailableComparisonOffset {
+  offset?: string;
+  /** Used to override the range for the comparison with something other than the selected range. */
+  range?: string;
+}
+
+export interface MetricsViewSpecAvailableTimeRange {
+  range?: string;
+  /** Available comparison offsets for this time range. */
+  comparisonOffsets?: MetricsViewSpecAvailableComparisonOffset[];
+}
 
 export interface MetricsViewSecurity {
   access?: string;

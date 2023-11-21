@@ -62,9 +62,9 @@
     {:else}
       <div class="flex flex-col gap-y-2">
         <h2 class="text-lg font-semibold">Downloading report...</h2>
-        <CtaMessage
-          >If your download has failed, refresh the page to try again.</CtaMessage
-        >
+        <CtaMessage>
+          If your download fails, refresh the page to try again.
+        </CtaMessage>
       </div>
     {/if}
     <CtaButton

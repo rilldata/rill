@@ -199,7 +199,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "TIMESTAMP_NS":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "ENUM":
-		t.Code = runtimev1.Type_CODE_UNSPECIFIED // TODO - Consider how to handle enums
+		t.Code = runtimev1.Type_CODE_STRING // TODO - Consider how to handle enums
 	case "UUID":
 		t.Code = runtimev1.Type_CODE_UUID
 	case "JSON":
@@ -291,6 +291,8 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 			KeyType:   keyType,
 			ValueType: valType,
 		}
+	case "ENUM":
+		t.Code = runtimev1.Type_CODE_STRING // representing enums as strings for now
 	default:
 		return nil, fmt.Errorf("encountered unsupported duckdb type '%s'", dbt)
 	}

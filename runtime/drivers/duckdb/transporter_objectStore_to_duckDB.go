@@ -1,4 +1,4 @@
-package transporter
+package duckdb
 
 import (
 	"context"
@@ -37,6 +37,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		return err
 	}
 
+	t.logger.Info("source properties", zap.Any("srcProps", srcProps))
 	srcCfg, err := parseFileSourceProperties(srcProps)
 	if err != nil {
 		return err
@@ -114,6 +115,14 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		opts.Progress.Observe(size, drivers.ProgressUnitByte)
 		appendToTable = true
 	}
+	// convert to enum
+	for _, col := range srcCfg.CastToENUM {
+		conn, _ := t.to.(*connection)
+		err = conn.convertToEnum(ctx, sinkCfg.Table, col)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -172,6 +181,14 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 		t.logger.Info("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
 		opts.Progress.Observe(size, drivers.ProgressUnitByte)
 		appendToTable = true
+	}
+	// convert to enum
+	for _, col := range srcCfg.CastToENUM {
+		conn, _ := t.to.(*connection)
+		err = conn.convertToEnum(ctx, dbSink.Table, col)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
