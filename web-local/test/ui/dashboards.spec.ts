@@ -1,13 +1,15 @@
 import { expect, Page, test } from "@playwright/test";
-import { updateCodeEditor, waitForValidResource } from "./utils/commonHelpers";
+import { updateCodeEditor } from "./utils/commonHelpers";
 import {
   assertLeaderboards,
   clickOnFilter,
   createDashboardFromModel,
   createDashboardFromSource,
+  interactWithTimeRangeMenu,
   metricsViewRequestFilterMatcher,
   RequestMatcher,
   waitForComparisonTopLists,
+  waitForDashboard,
   waitForTimeSeries,
 } from "./utils/dashboardHelpers";
 import {
@@ -548,10 +550,6 @@ dimensions:
 
     await runThroughLeaderboardContextColumnFlows(page);
 
-    await runThroughDefaultTimeRanges(page);
-
-    await runThroughDefaultComparisons(page);
-
     // go back to the dashboard
 
     // TODO
@@ -883,239 +881,4 @@ async function runThroughEmptyMetricsFlows(page: Page) {
 
   // go back to the metrics page.
   await page.getByRole("button", { name: "Edit metrics" }).click();
-}
-
-async function runThroughDefaultTimeRanges(page: Page) {
-  /**
-   * SUBFLOW: Change default time range and assert it updates the selected range.
-   */
-
-  // Set a time range that is one of the supported presets
-  const docWithPresetDefaultTimeRange = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
-
-title: "AdBids_model_dashboard_rename"
-model: "AdBids_model"
-default_time_range: "P4W"
-smallest_time_grain: "week"
-timeseries: "timestamp"
-measures:
-  - label: Total rows
-    expression: count(*)
-    name: total_rows
-    description: Total number of records present
-dimensions:
-  - name: publisher
-    label: Publisher
-    column: publisher
-    description: ""
-  - name: domain
-    label: Domain Name
-    column: domain
-    description: ""
-        `;
-  await updateCodeEditor(page, docWithPresetDefaultTimeRange);
-  await waitForDashboard(page);
-  // Go to dashboard
-  await page.getByRole("button", { name: "Go to dashboard" }).click();
-
-  // Time range has changed
-  await expect(page.getByText("Last 4 Weeks")).toBeVisible();
-  // Data has changed as well
-  await expect(page.getByText("Total rows 26.7k")).toBeVisible();
-  await expect(page.getByText("Facebook 7.0k")).toBeVisible();
-  await page.getByRole("button", { name: "Edit metrics" }).click();
-
-  // Set a time range that is not one of the supported presets
-  const docWithCustomDefaultTimeRange = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
-
-title: "AdBids_model_dashboard_rename"
-model: "AdBids_model"
-default_time_range: "P2W"
-smallest_time_grain: "week"
-timeseries: "timestamp"
-measures:
-  - label: Total rows
-    expression: count(*)
-    name: total_rows
-    description: Total number of records present
-dimensions:
-  - name: publisher
-    label: Publisher
-    column: publisher
-    description: ""
-  - name: domain
-    label: Domain Name
-    column: domain
-    description: ""
-        `;
-  await updateCodeEditor(page, docWithCustomDefaultTimeRange);
-  await waitForDashboard(page);
-  // Go to dashboard
-  await page.getByRole("button", { name: "Go to dashboard" }).click();
-
-  // Time range has changed
-  await expect(page.getByText("Last 2 Weeks")).toBeVisible();
-  // Data has changed as well
-  await expect(page.getByText("Total rows 11.2k")).toBeVisible();
-  await expect(page.getByText("Facebook 2.9k")).toBeVisible();
-
-  // Select a different time range
-  await interactWithTimeRangeMenu(page, async () => {
-    await page.getByRole("menuitem", { name: "Last 7 Days" }).click();
-  });
-  // Wait for menu to close
-  await expect(
-    page.getByRole("menuitem", { name: "Last 7 Days" })
-  ).not.toBeVisible();
-  // Data has changed
-  await expect(page.getByText("Total rows 7.9k")).toBeVisible();
-  await expect(page.getByText("Facebook 2.0k")).toBeVisible();
-
-  // Last 2 weeks is still available in the menu
-  // Select a different time range
-  await interactWithTimeRangeMenu(page, async () => {
-    await page.getByRole("menuitem", { name: "Last 2 Weeks" }).click();
-  });
-  // Wait for menu to close
-  await expect(
-    page.getByRole("menuitem", { name: "Last 2 Weeks" })
-  ).not.toBeVisible();
-  // Data has changed
-  await expect(page.getByText("Total rows 11.2k")).toBeVisible();
-  await expect(page.getByText("Facebook 2.9k")).toBeVisible();
-
-  // Go back to metrics editor
-  await page.getByRole("button", { name: "Edit metrics" }).click();
-}
-
-async function runThroughDefaultComparisons(page: Page) {
-  /**
-   * SUBFLOW: Change default time comparison and assert it updates the selections.
-   */
-
-  // Set comparison to time
-  const docWithPresetDefaultTimeComparison = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
-
-title: "AdBids_model_dashboard_rename"
-model: "AdBids_model"
-default_time_range: "P4W"
-smallest_time_grain: "week"
-timeseries: "timestamp"
-default_comparison:
-  mode: time
-measures:
-  - label: Total rows
-    expression: count(*)
-    name: total_rows
-    description: Total number of records present
-dimensions:
-  - name: publisher
-    label: Publisher
-    column: publisher
-    description: ""
-  - name: domain
-    label: Domain Name
-    column: domain
-    description: ""
-        `;
-  await updateCodeEditor(page, docWithPresetDefaultTimeComparison);
-  await waitForDashboard(page);
-  // Go to dashboard
-  await page.getByRole("button", { name: "Go to dashboard" }).click();
-  // Comparison is selected
-  await expect(page.getByText("Comparing by Time")).toBeVisible();
-  // Go back to metrics editor
-  await page.getByRole("button", { name: "Edit metrics" }).click();
-
-  // Set comparison to dimension
-  const docWithPresetDefaultDimensionComparison = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
-
-title: "AdBids_model_dashboard_rename"
-model: "AdBids_model"
-default_time_range: "P4W"
-smallest_time_grain: "week"
-timeseries: "timestamp"
-default_comparison:
-  mode: dimension
-  dimension: publisher
-measures:
-  - label: Total rows
-    expression: count(*)
-    name: total_rows
-    description: Total number of records present
-dimensions:
-  - name: publisher
-    label: Publisher
-    column: publisher
-    description: ""
-  - name: domain
-    label: Domain Name
-    column: domain
-    description: ""
-        `;
-  await updateCodeEditor(page, docWithPresetDefaultDimensionComparison);
-  await waitForDashboard(page);
-  // Go to dashboard
-  await page.getByRole("button", { name: "Go to dashboard" }).click();
-  // Comparison is selected
-  await expect(page.getByText("Comparing by Publisher")).toBeVisible();
-  // Go back to metrics editor
-  await page.getByRole("button", { name: "Edit metrics" }).click();
-
-  // Set comparison to none
-  const docWithPresetDefaultNoComparison = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
-
-title: "AdBids_model_dashboard_rename"
-model: "AdBids_model"
-default_time_range: "P4W"
-smallest_time_grain: "week"
-timeseries: "timestamp"
-default_comparison:
-  mode: none
-measures:
-  - label: Total rows
-    expression: count(*)
-    name: total_rows
-    description: Total number of records present
-dimensions:
-  - name: publisher
-    label: Publisher
-    column: publisher
-    description: ""
-  - name: domain
-    label: Domain Name
-    column: domain
-    description: ""
-        `;
-  await updateCodeEditor(page, docWithPresetDefaultNoComparison);
-  await waitForDashboard(page);
-  // Go to dashboard
-  await page.getByRole("button", { name: "Go to dashboard" }).click();
-  // No Comparison
-  await expect(page.getByText("No Comparison")).toBeVisible();
-  // Go back to metrics editor
-  await page.getByRole("button", { name: "Edit metrics" }).click();
-}
-
-// Helper that opens the time range menu, calls your interactions, and then waits until the menu closes
-async function interactWithTimeRangeMenu(
-  page: Page,
-  cb: () => void | Promise<void>
-) {
-  // Open the menu
-  await page.getByLabel("Select time range").click();
-  // Run the defined interactions
-  await cb();
-  // Wait for menu to close
-  await expect(
-    page.getByRole("menu", { name: "Time range selector" })
-  ).not.toBeVisible();
-}
-
-async function waitForDashboard(page: Page) {
-  return waitForValidResource(
-    page,
-    "AdBids_model_dashboard",
-    "rill.runtime.v1.MetricsView"
-  );
 }

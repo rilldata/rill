@@ -1,5 +1,12 @@
+import {
+  timeComparisonOptionsSelector,
+  timeRangeSelectionsSelector,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
 import type { DashboardDataSources } from "./types";
-import { timeControlStateSelector } from "../../time-controls/time-control-store";
+import {
+  selectedTimeRangeSelector,
+  timeControlStateSelector,
+} from "../../time-controls/time-control-store";
 
 export const timeControlsState = (dashData: DashboardDataSources) =>
   timeControlStateSelector([
@@ -14,6 +21,28 @@ export const isTimeControlReady = (dashData: DashboardDataSources): boolean =>
 export const isTimeComparisonActive = (
   dashData: DashboardDataSources
 ): boolean => timeControlsState(dashData).showComparison === true;
+
+export const timeRangeSelectorState = (dashData: DashboardDataSources) =>
+  timeRangeSelectionsSelector([
+    dashData.metricsSpecQueryResult,
+    dashData.timeRangeSummary,
+    dashData.dashboard,
+  ]);
+
+export const timeComparisonOptionsState = (dashData: DashboardDataSources) =>
+  timeComparisonOptionsSelector([
+    dashData.metricsSpecQueryResult,
+    dashData.timeRangeSummary,
+    dashData.dashboard,
+    selectedTimeRangeState(dashData),
+  ]);
+
+export const selectedTimeRangeState = (dashData: DashboardDataSources) =>
+  selectedTimeRangeSelector([
+    dashData.metricsSpecQueryResult,
+    dashData.timeRangeSummary,
+    dashData.dashboard,
+  ]);
 
 export const timeRangeSelectors = {
   /**
@@ -30,4 +59,19 @@ export const timeRangeSelectors = {
    * Is the time comparison active?
    */
   isTimeComparisonActive,
+
+  /**
+   * Selection options for the time range selector
+   */
+  timeRangeSelectorState,
+
+  /**
+   * Selection options for the time comparison selector
+   */
+  timeComparisonOptionsState,
+
+  /**
+   * Full {@link DashboardTimeControls} filled in based on selected time range.
+   */
+  selectedTimeRangeState,
 };

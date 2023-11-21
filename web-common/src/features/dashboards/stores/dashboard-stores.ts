@@ -353,6 +353,7 @@ const metricViewReducers = {
     });
   },
 
+  // TODO: can the comparison validity be removed?
   selectTimeRange(
     name: string,
     timeRange: TimeRange,

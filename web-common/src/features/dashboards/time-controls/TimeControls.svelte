@@ -6,12 +6,12 @@
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { getAvailableComparisonsForTimeRange } from "@rilldata/web-common/lib/time/comparisons";
+  import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
   import {
     getDefaultTimeGrain,
     getAllowedTimeGrains,
   } from "@rilldata/web-common/lib/time/grains";
-  import {
+  import type {
     DashboardTimeControls,
     TimeComparisonOption,
     TimeGrain,
@@ -102,12 +102,17 @@
       baseTimeRange.end
     ).grain;
 
-    makeTimeSeriesTimeRangeAndUpdateAppState(
+    // Get valid option for the new time range
+    const validComparison = getValidComparisonOption(
+      $metaQuery.data,
       baseTimeRange,
-      defaultTimeGrain,
-      // reset the comparison range
-      undefined
+      $dashboardStore.selectedComparisonTimeRange?.name,
+      $timeControlsStore.allTimeRange
     );
+
+    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, defaultTimeGrain, {
+      name: validComparison,
+    } as DashboardTimeControls);
   }
 
   function onSelectTimeGrain(timeGrain: V1TimeGrain) {
@@ -152,22 +157,6 @@
       timeGrain,
       comparisonTimeRange,
       $timeControlsStore.allTimeRange
-    );
-  }
-
-  let availableComparisons;
-
-  $: if (allTimeRange?.start && $timeControlsStore.ready) {
-    availableComparisons = getAvailableComparisonsForTimeRange(
-      allTimeRange.start,
-      allTimeRange.end,
-      $timeControlsStore.selectedTimeRange.start,
-      $timeControlsStore.selectedTimeRange.end,
-      [...Object.values(TimeComparisonOption)],
-      [
-        $timeControlsStore.selectedComparisonTimeRange
-          ?.name as TimeComparisonOption,
-      ]
     );
   }
 </script>

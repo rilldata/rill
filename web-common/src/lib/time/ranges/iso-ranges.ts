@@ -8,6 +8,7 @@ import {
   RangePresetType,
   ReferencePoint,
   RelativeTimeTransformation,
+  TimeComparisonOption,
   TimeOffsetType,
   TimeRange,
   TimeRangeMeta,
@@ -51,7 +52,7 @@ for (const preset in TimeRangePreset) {
 }
 
 export function isoDurationToFullTimeRange(
-  isoDuration: string,
+  isoDuration: string | undefined,
   start: Date,
   end: Date,
   zone = "Etc/UTC"
@@ -100,9 +101,13 @@ export function getSmallestTimeGrain(isoDuration: string) {
   return undefined;
 }
 
-export function isoDurationToTimeRangeMeta(isoDuration: string): TimeRangeMeta {
+export function isoDurationToTimeRangeMeta(
+  isoDuration: string,
+  defaultComparison: TimeComparisonOption
+): TimeRangeMeta {
   return {
     label: `Last ${humaniseISODuration(isoDuration)}`,
+    defaultComparison,
     rangePreset: RangePresetType.OFFSET_ANCHORED,
     start: {
       reference: ReferencePoint.LATEST_DATA,

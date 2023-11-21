@@ -7,16 +7,12 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import DefaultTimeRangeMenuItem from "@rilldata/web-common/features/dashboards/time-controls/DefaultTimeRangeMenuItem.svelte";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { createTimeRangeStore } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
   import {
     ALL_TIME,
     DEFAULT_TIME_RANGES,
   } from "@rilldata/web-common/lib/time/config";
   import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
-  import {
-    humaniseISODuration,
-    ISODurationToTimeRangePreset,
-  } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+  import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import {
     DashboardTimeControls,
     TimeRange,
@@ -47,7 +43,11 @@
   const ctx = getStateManagers();
   const timeControlsStore = useTimeControlStore(ctx);
   const metaQuery = useMetaQuery(ctx);
-  const timeRangeStore = createTimeRangeStore(ctx);
+  const {
+    selectors: {
+      timeRangeSelectors: { timeRangeSelectorState },
+    },
+  } = ctx;
 
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
@@ -220,7 +220,7 @@
         {allTime.label}
       </span>
     </MenuItem>
-    {#if $timeRangeStore.showDefaultItem}
+    {#if $timeRangeSelectorState.showDefaultItem}
       <DefaultTimeRangeMenuItem
         on:before-select={setIntermediateSelection(
           $metaQuery.data?.defaultTimeRange
@@ -234,9 +234,9 @@
         isoDuration={$metaQuery.data?.defaultTimeRange}
       />
     {/if}
-    {#if $timeRangeStore.latestWindowTimeRanges?.length}
+    {#if $timeRangeSelectorState.latestWindowTimeRanges?.length}
       <Divider />
-      {#each $timeRangeStore.latestWindowTimeRanges as timeRange}
+      {#each $timeRangeSelectorState.latestWindowTimeRanges as timeRange}
         <MenuItem
           on:before-select={setIntermediateSelection(timeRange.name)}
           on:select={() =>
@@ -248,9 +248,9 @@
         </MenuItem>
       {/each}
     {/if}
-    {#if $timeRangeStore.periodToDateRanges?.length}
+    {#if $timeRangeSelectorState.periodToDateRanges?.length}
       <Divider />
-      {#each $timeRangeStore.periodToDateRanges as timeRange}
+      {#each $timeRangeSelectorState.periodToDateRanges as timeRange}
         <MenuItem
           on:before-select={setIntermediateSelection(timeRange.name)}
           on:select={() =>
@@ -261,8 +261,8 @@
           </span>
         </MenuItem>
       {/each}
-      <Divider />
     {/if}
+    <Divider />
     <CustomTimeRangeMenuItem
       on:select={() => {
         isCustomRangeOpen = !isCustomRangeOpen;

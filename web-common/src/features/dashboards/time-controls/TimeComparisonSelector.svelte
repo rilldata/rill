@@ -14,7 +14,6 @@ This component needs to do the following:
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { createTimeComparisonOptionsState } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
   import {
@@ -47,30 +46,11 @@ This component needs to do the following:
 
   $: comparisonOption = selectedComparison?.name;
 
-  const comparisonOptionsStore = createTimeComparisonOptionsState(
-    getStateManagers()
-  );
-
-  /** compile the comparison options */
-  let options: {
-    name: TimeComparisonOption;
-    start: Date;
-    end: Date;
-  }[];
-  $: options =
-    Object.entries($comparisonOptionsStore)?.map(([key, value]) => {
-      const comparisonTimeRange = getComparisonRange(
-        currentStart,
-        currentEnd,
-        value
-      );
-      return {
-        name: value,
-        key,
-        start: comparisonTimeRange.start,
-        end: comparisonTimeRange.end,
-      };
-    }) ?? [];
+  const {
+    selectors: {
+      timeRangeSelectors: { timeComparisonOptionsState },
+    },
+  } = getStateManagers();
 
   function onSelectCustomComparisonRange(
     startDate: string,
@@ -157,7 +137,7 @@ This component needs to do the following:
     on:escape={toggleFloatingElement}
     slot="floating-element"
   >
-    {#each options as option}
+    {#each $timeComparisonOptionsState as option}
       {@const preset = TIME_COMPARISON[option.name]}
       <MenuItem
         selected={option.name === intermediateSelection}
@@ -173,11 +153,11 @@ This component needs to do the following:
           {preset?.label || option.name}
         </span>
       </MenuItem>
-      {#if option.name === TimeComparisonOption.CONTIGUOUS && options.length > 2}
+      {#if option.name === TimeComparisonOption.CONTIGUOUS && $timeComparisonOptionsState.length > 2}
         <Divider />
       {/if}
     {/each}
-    {#if options.length >= 1}
+    {#if $timeComparisonOptionsState.length >= 1}
       <Divider />
     {/if}
 
