@@ -3,10 +3,11 @@
   import { writable } from "svelte/store";
   import Portal from "../Portal.svelte";
   import { FloatingElement } from "./index";
+  import type { FloatingElementRelationship } from "./types";
 
   export let location = "bottom";
   export let alignment = "middle";
-  export let relationship = "parent";
+  export let relationship: FloatingElementRelationship = "parent";
   export let distance = 0;
   export let pad = 8;
   export let suppress = false;
