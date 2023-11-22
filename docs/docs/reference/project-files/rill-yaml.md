@@ -15,13 +15,14 @@ The `rill.yaml` file contains metadata about your project.
   - _**`name`**_ — the mock user's name
   - _**`admin`**_ — whether or not the mock user is an admin
  
-## Project wide defaults
+## Project-wide defaults
 
-In `rill.yaml` you can specify project wide defaults that will be applied for all project files within a project.  
+In `rill.yaml`, you can specify project-wide defaults that will be applied for all resources within a project.  
 
-The individual project files will inherit any defaults that has been specified in `rill.yaml`. If the same property would be set in both `rill.yaml` and a specific project file the local setting in the project file would win. See the documentation for each individual project file for available properties.
+Individual resources will inherit any defaults that have been specified in `rill.yaml`. If the same property is set in both `rill.yaml` and a specific project file, the local setting in the project file takes precedence. See the documentation for each individual project file for available properties.
 
-The top level property is the project file name in pluralis such as `models`, `dashboards` and `sources`.  
+The top level property is the resource type in pluralis, such as `models`, `dashboards` and `sources`.  
+
 Example:
 ```
 title: My project
