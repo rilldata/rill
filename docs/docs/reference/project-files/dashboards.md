@@ -6,6 +6,12 @@ sidebar_position: 30
 
 In your Rill project directory, create a `<dashboard_name>.yaml` file in the `dashboards` directory. Rill will ingest the dashboard definition next time you run `rill start`.
 
+:::info Did you know?
+
+Files that are *nested at any level* under your `dashboards` directory will be assumed to be metric definitions.
+
+:::
+
 ## Properties
 
 _**`model`**_ — the model name powering the dashboard with no path _(required)_
@@ -57,3 +63,6 @@ _**`security`**_ - define a [security policy](../../develop/security) for the da
   - _**`include`**_ - List of dimension or measure names to include in the dashboard. If `include` is defined all other dimensions and measures are excluded. _(optional)_
     - **`if`** - Expression to decide if the column should be included or not. It can leverage templated user attributes. Needs to be a valid SQL expression that evaluates to a boolean. _(required)_
     - **`names`** - List of fields to include. Should match the `name` of one of the dashboard's dimensions or measures. _(required)_
+
+**`kind`**
+ — Can be one of `{source,model,dashboard}` and used by Rill to identify the resource kind. This property is optional and only necessary when the YAML file exists outside of the default location (e.g. a dashboard YAML outside of the `dashboards` directory).

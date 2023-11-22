@@ -9,3 +9,9 @@ Data transformations in Rill Developer are powered by DuckDB and their dialect o
 Please visit the [DuckDB documentation](https://duckdb.org/docs/sql/introduction) for insight into how to write your models.
 
 In your Rill project directory, create a `<model_name>.sql` file in the `models` directory containing a DuckDB SQL `SELECT` statement. Rill will automatically detect and parse the model next time you run `rill start`.
+
+:::info Did you know?
+
+Files that are *nested at any level* under your `models` directory will be assumed to be model definitions.
+
+:::
