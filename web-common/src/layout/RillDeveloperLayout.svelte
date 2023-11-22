@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -9,6 +10,7 @@
     duplicateSourceName,
     sourceImportedName,
   } from "@rilldata/web-common/features/sources/sources-store";
+  import { setTheme } from "@rilldata/web-common/features/themes/theme-actions";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
@@ -59,6 +61,11 @@
     let types = event?.dataTransfer?.types;
     return types && types.indexOf("Files") != -1;
   }
+
+  onMount(() => {
+    const primary = $page.url.searchParams.get("primary");
+    if (primary) setTheme({ primary });
+  });
 </script>
 
 <div class="body">

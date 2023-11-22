@@ -118,7 +118,7 @@ function gotoNewDashboardUrl(url: URL, newState: string, defaultState: string) {
   let newStateInUrl = "";
   // changed when filters etc are changed on the dashboard
 
-  const newUrl = getUrlForPath(url.pathname);
+  const newUrl = getUrlForPath(url.pathname, ["features", "primary"]);
 
   if (newState !== defaultState) {
     newStateInUrl = encodeURIComponent(newState);
