@@ -2482,8 +2482,16 @@ definitions:
   v1TelemetryRequest:
     type: object
     properties:
+      name:
+        type: string
+        title: Name passed to activity module's name arg
+      value:
+        type: number
+        format: float
+        title: Value passed to activity module's value arg
       event:
         type: object
+        title: Free form struct of the actual event
   v1TelemetryResponse:
     type: object
   v1TriggerReconcileResponse:

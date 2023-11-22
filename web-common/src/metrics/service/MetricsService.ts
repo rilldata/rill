@@ -73,13 +73,12 @@ export class MetricsService
   public loadCloudFields(fields: CloudMetricsFields) {
     this.commonFields = {
       // TODO: build_id and version
-      app_name: "rill-developer",
+      app_name: "rill-cloud",
       client_id: this.getOrSetClientID(),
       is_dev: fields.isDev,
       project_id: fields.projectId,
       user_id: fields.userId,
       analytics_enabled: true,
-      mode: "read-only",
     };
   }
 

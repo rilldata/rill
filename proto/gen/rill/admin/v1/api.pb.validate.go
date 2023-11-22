@@ -16784,6 +16784,10 @@ func (m *TelemetryRequest) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for Name
+
+	// no validation rules for Value
+
 	if all {
 		switch v := interface{}(m.GetEvent()).(type) {
 		case interface{ ValidateAll() error }:

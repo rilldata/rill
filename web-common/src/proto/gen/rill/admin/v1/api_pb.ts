@@ -5739,7 +5739,23 @@ export class GenerateReportYAMLResponse extends Message<GenerateReportYAMLRespon
  */
 export class TelemetryRequest extends Message<TelemetryRequest> {
   /**
-   * @generated from field: google.protobuf.Struct event = 1;
+   * Name passed to activity module's name arg
+   *
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * Value passed to activity module's value arg
+   *
+   * @generated from field: float value = 2;
+   */
+  value = 0;
+
+  /**
+   * Free form struct of the actual event
+   *
+   * @generated from field: google.protobuf.Struct event = 3;
    */
   event?: Struct;
 
@@ -5751,7 +5767,9 @@ export class TelemetryRequest extends Message<TelemetryRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.TelemetryRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "event", kind: "message", T: Struct },
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "value", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 3, name: "event", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): TelemetryRequest {

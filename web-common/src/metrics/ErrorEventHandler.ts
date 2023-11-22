@@ -1,11 +1,9 @@
-import { page } from "$app/stores";
 import type { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import type {
   CommonUserFields,
   MetricsEventSpace,
 } from "@rilldata/web-common/metrics/service/MetricsTypes";
-import { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/MetricsTypes";
-import { get } from "svelte/store";
+import type { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import type {
   SourceConnectionType,
   SourceErrorCodes,
@@ -39,28 +37,18 @@ export class ErrorEventHandler {
     ]);
   }
 
-  public fireErrorBoundaryEvent(api: string, status: string, message: string) {
+  public fireErrorBoundaryEvent(
+    api: string,
+    status: string,
+    message: string,
+    screenName: MetricsEventScreenName
+  ) {
     return this.metricsService.dispatch("errorBoundaryEvent", [
       this.commonUserMetrics,
-      this.getScreenNameFromPage(),
+      screenName,
       api,
       status,
       message,
     ]);
-  }
-
-  private getScreenNameFromPage() {
-    switch (get(page).route.id) {
-      case "/[organization]/[project]":
-        return MetricsEventScreenName.Project;
-      case "/[organization]/[project]/[dashboard]":
-        return MetricsEventScreenName.Dashboard;
-      case "/[organization]/[project]/[dashboard]/-/reports/[report]":
-        return MetricsEventScreenName.Report;
-      case "/[organization]/[project]/[dashboard]/-/reports/[report]/export":
-        return MetricsEventScreenName.ReportExport;
-      default:
-        return MetricsEventScreenName.Home; // acts a catch-all for now
-    }
   }
 }

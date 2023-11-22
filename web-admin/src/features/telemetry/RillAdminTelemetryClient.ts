@@ -7,7 +7,11 @@ export class RillAdminTelemetryClient implements TelemetryClient {
     try {
       const resp = await fetch(`${ADMIN_URL}/v1/telemetry`, {
         method: "POST",
-        body: JSON.stringify({ event }),
+        body: JSON.stringify({
+          name: event.app_name + "-ui-telemetry",
+          value: 1,
+          event,
+        }),
         credentials: "include",
       });
       if (!resp.ok)

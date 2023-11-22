@@ -15,7 +15,7 @@ func (s *Server) Telemetry(ctx context.Context, req *adminv1.TelemetryRequest) (
 			dims = append(dims, a)
 		}
 	}
-	s.uiActivity.Emit(ctx, "cloud-ui-telemetry", 1, dims...)
+	s.uiActivity.Emit(ctx, req.Name, float64(req.Value), dims...)
 	return &adminv1.TelemetryResponse{}, nil
 }
 

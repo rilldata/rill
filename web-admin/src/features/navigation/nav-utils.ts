@@ -1,3 +1,4 @@
+import { MetricsEventScreenName } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import type { Page } from "@sveltejs/kit";
 
 export function isOrganizationPage(page: Page): boolean {
@@ -17,4 +18,27 @@ export function isDashboardPage(page: Page): boolean {
 
 export function isReportPage(page: Page): boolean {
   return page.route.id === "/[organization]/[project]/-/reports/[report]";
+}
+
+export function isReportExportPage(page: Page): boolean {
+  return (
+    page.route.id ===
+    "/[organization]/[project]/[dashboard]/-/reports/[report]/export"
+  );
+}
+
+export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
+  switch (true) {
+    case isOrganizationPage(page):
+      return MetricsEventScreenName.Organization;
+    case isProjectPage(page):
+      return MetricsEventScreenName.Project;
+    case isDashboardPage(page):
+      return MetricsEventScreenName.Dashboard;
+    case isReportPage(page):
+      return MetricsEventScreenName.Report;
+    case isReportExportPage(page):
+      return MetricsEventScreenName.ReportExport;
+  }
+  return MetricsEventScreenName.Home;
 }

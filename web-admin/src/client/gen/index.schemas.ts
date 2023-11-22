@@ -274,6 +274,8 @@ export interface V1TelemetryResponse {
 export type V1TelemetryRequestEvent = { [key: string]: any };
 
 export interface V1TelemetryRequest {
+  name?: string;
+  value?: number;
   event?: V1TelemetryRequestEvent;
 }
 

@@ -1,5 +1,6 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { getScreenNameFromPage } from "@rilldata/web-admin/features/navigation/nav-utils";
 import { errorEvent } from "@rilldata/web-common/metrics/initMetrics";
 import type { Query } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -16,18 +17,22 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     const isDashboardPage =
       get(page).route.id === "/[organization]/[project]/[dashboard]";
 
+    console.log("createGlobalErrorCallback");
+    const screenName = getScreenNameFromPage(get(page));
     if (!error.response) {
       errorEvent?.fireErrorBoundaryEvent(
         query.queryKey[0] as string,
         "",
-        "unknown error"
+        "unknown error",
+        screenName
       );
       return;
     } else {
       errorEvent?.fireErrorBoundaryEvent(
         query.queryKey[0] as string,
         error.response?.status + "" ?? error.status,
-        (error.response?.data as RpcStatus)?.message ?? error.message
+        (error.response?.data as RpcStatus)?.message ?? error.message,
+        screenName
       );
     }
 
@@ -143,5 +148,41 @@ export function createErrorPagePropsFromRoutingError(
     statusCode: statusCode,
     header: "Sorry, unexpected error!",
     body: "Try refreshing the page, and reach out to us if that doesn't fix the error.",
+  };
+}
+
+export function addJavascriptErrorListeners() {
+  const errorHandler = (errorEvt: ErrorEvent) => {
+    console.log("error", errorEvt);
+    errorEvent?.fireErrorBoundaryEvent(
+      "",
+      "",
+      errorEvt.error?.stack ?? errorEvt.message,
+      getScreenNameFromPage(get(page))
+    );
+  };
+  const unhandledRejectionHandler = (rejectionEvent: PromiseRejectionEvent) => {
+    console.log("rejection", rejectionEvent);
+    let reason = "";
+    if (typeof rejectionEvent.reason === "string") {
+      reason = rejectionEvent.reason;
+    } else if (rejectionEvent.reason instanceof Error) {
+      reason = rejectionEvent.reason.stack;
+    } else {
+      reason = String.toString.apply(rejectionEvent.reason);
+    }
+    errorEvent?.fireErrorBoundaryEvent(
+      "",
+      "",
+      reason,
+      getScreenNameFromPage(get(page))
+    );
+  };
+
+  window.addEventListener("error", errorHandler);
+  window.addEventListener("unhandledrejection", unhandledRejectionHandler);
+  return () => {
+    window.removeEventListener("error", errorHandler);
+    window.removeEventListener("unhandledrejection", unhandledRejectionHandler);
   };
 }

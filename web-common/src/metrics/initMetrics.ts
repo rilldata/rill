@@ -3,7 +3,6 @@ import { ErrorEventHandler } from "@rilldata/web-common/metrics/ErrorEventHandle
 import { BehaviourEventFactory } from "@rilldata/web-common/metrics/service/BehaviourEventFactory";
 import { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import { ProductHealthEventFactory } from "@rilldata/web-common/metrics/service/ProductHealthEventFactory";
-import { RillAdminTelemetryClient } from "@rilldata/web-common/metrics/service/RillAdminTelemetryClient";
 import { RillIntakeClient } from "@rilldata/web-common/metrics/service/RillIntakeClient";
 import type { V1RuntimeGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
 import { ActiveEventHandler } from "./ActiveEventHandler";
@@ -30,14 +29,11 @@ export async function initMetrics(localConfig: V1RuntimeGetConfig) {
   errorEvent = new ErrorEventHandler(metricsService, commonUserMetrics);
 }
 
-export async function initCloudMetrics() {
-  metricsService = new MetricsService(new RillAdminTelemetryClient(), [
-    new ProductHealthEventFactory(),
-    new BehaviourEventFactory(),
-    new ErrorEventFactory(),
-  ]);
+// Setters used in cloud
+export function setMetricsService(ms: MetricsService) {
+  metricsService = ms;
+}
 
-  const commonUserMetrics = await collectCommonUserFields();
-  errorEvent = new ErrorEventHandler(metricsService, commonUserMetrics);
-  // TODO: add other handlers and callers
+export function setErrorEvent(ev: ErrorEventHandler) {
+  errorEvent = ev;
 }
