@@ -90,10 +90,7 @@
     </div>
 
     {#if showSourceTables}
-      <div
-        transition:slide={{ duration: LIST_SLIDE_DURATION }}
-        class="mt-2"
-      >
+      <div transition:slide={{ duration: LIST_SLIDE_DURATION }} class="mt-2">
         {#each $referencedWithMetadata as reference}
           <div>
             <WithModelResultTooltip {modelHasError}>
