@@ -110,7 +110,7 @@
     </Menu>
   </WithTogglableFloatingElement>
   {#if error}
-    <div in:slide|local={{ duration: 200 }} class="text-red-500 text-sm py-px">
+    <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
       {error}
     </div>
   {/if}

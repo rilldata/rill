@@ -194,7 +194,7 @@
             <div
               class="ml-2 ui-copy-muted line-clamp-2"
               style:font-size="11px"
-              transition:fade|local={{ duration: 200 }}
+              transition:fade={{ duration: 200 }}
             >
               Ingested on {formatRefreshedOn(source?.state?.refreshedOn)}
             </div>
@@ -243,7 +243,7 @@
               <div class="flex">
                 {#if isSourceUnsaved}<div
                     class="pr-1"
-                    transition:slideRight={{ duration: 250 }}
+                    transition:slideRight|global={{ duration: 250 }}
                   >
                     Save and
                   </div>{/if}

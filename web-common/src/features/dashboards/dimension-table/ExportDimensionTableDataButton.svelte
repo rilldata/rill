@@ -33,7 +33,7 @@
 
   // Only import the Scheduled Report dialog if in the Cloud context.
   // This ensures Rill Developer doesn't try and fail to import the admin-client.
-  let CreateScheduledReportDialog: typeof SvelteComponent | undefined;
+  let CreateScheduledReportDialog: typeof SvelteComponent<any> | undefined;
   onMount(async () => {
     if (includeScheduledReport) {
       CreateScheduledReportDialog = (

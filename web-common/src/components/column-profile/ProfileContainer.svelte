@@ -98,7 +98,7 @@
   {#if active && $$slots["details"]}
     <div
       class="w-full"
-      transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
+      transition:slide={{ duration: LIST_SLIDE_DURATION }}
     >
       <slot name="details" />
     </div>

@@ -264,7 +264,7 @@
           let:point
         >
           {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
-            <g transition:fly|local={{ duration: 100, x: -4 }}>
+            <g transition:fly={{ duration: 100, x: -4 }}>
               <text
                 class="fill-gray-600"
                 style:paint-order="stroke"
@@ -288,7 +288,7 @@
                 </text>
               {/if}
             </g>
-            <g transition:fly|local={{ duration: 100, x: -4 }}>
+            <g transition:fly={{ duration: 100, x: -4 }}>
               {#if isComparingDimension}
                 <DimensionValueMouseover
                   {point}

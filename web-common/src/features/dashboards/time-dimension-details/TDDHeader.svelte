@@ -142,7 +142,7 @@
       {#if !searchToggle}
         <button
           class="flex items-center ui-copy-icon"
-          in:fly={{ x: 10, duration: 300 }}
+          in:fly|global={{ x: 10, duration: 300 }}
           style:grid-column-gap=".2rem"
           on:click={() => (searchToggle = !searchToggle)}
         >
@@ -151,7 +151,7 @@
         </button>
       {:else}
         <div
-          transition:slideRight|local={{ leftOffset: 8 }}
+          transition:slideRight={{ leftOffset: 8 }}
           class="flex items-center gap-x-1"
         >
           <Search bind:value={searchText} on:input={onSearch} />

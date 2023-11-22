@@ -307,7 +307,7 @@
       selected={intermediateSelection === TimeRangePreset.CUSTOM}
     />
     {#if isCustomRangeOpen}
-      <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+      <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
         <CustomTimeRangeInput
           {boundaryStart}
           {boundaryEnd}

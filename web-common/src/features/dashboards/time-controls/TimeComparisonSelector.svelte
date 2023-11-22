@@ -179,7 +179,7 @@ This component needs to do the following:
       open={isCustomRangeOpen}
     />
     {#if isCustomRangeOpen}
-      <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+      <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
         <CustomTimeRangeInput
           {boundaryStart}
           {boundaryEnd}

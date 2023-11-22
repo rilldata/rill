@@ -387,7 +387,7 @@
         {#if isZoomed}
           <!-- fadeout gradients on each side? -->
           <rect
-            transition:fade
+            transition:fade|global
             x={$plotConfig.plotLeft}
             y={$plotConfig.plotTop}
             width={20}
@@ -395,7 +395,7 @@
             fill="url(#left-side)"
           />
           <rect
-            transition:fade
+            transition:fade|global
             x={$plotConfig.plotRight - 20}
             y={$plotConfig.plotTop}
             width={20}
@@ -439,8 +439,8 @@
           style:user-select="none"
           style:cursor="pointer"
           class="transition-color fill-gray-500 hover:fill-black"
-          in:fly={{ duration: 200, x: 16, delay: 200 }}
-          out:fly={{ duration: 200, x: 16 }}
+          in:fly|global={{ duration: 200, x: 16, delay: 200 }}
+          out:fly|global={{ duration: 200, x: 16 }}
           use:outline
           on:keydown={() => {
             /** no-op */
@@ -466,8 +466,8 @@
     -->
     <div
       slot="tooltip-content"
-      in:fly={{ duration: 100, y: 4 }}
-      out:fly={{ duration: 100, y: 4 }}
+      in:fly|global={{ duration: 100, y: 4 }}
+      out:fly|global={{ duration: 100, y: 4 }}
       style="
             display: grid; 
             justify-content: center; 

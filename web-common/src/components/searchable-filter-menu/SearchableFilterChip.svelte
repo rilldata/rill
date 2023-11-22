@@ -85,7 +85,7 @@ props as needed.
         </div>
       </div>
     </Chip>
-    <div slot="tooltip-content" transition:fly|local={{ duration: 300, y: 4 }}>
+    <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
       <TooltipContent maxWidth="400px">
         {tooltipText}
       </TooltipContent>

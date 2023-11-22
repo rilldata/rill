@@ -66,7 +66,7 @@
           </CollapsibleSectionTitle>
         </div>
         {#if showModelInformation}
-          <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
             <ModelInspectorHeader
               {modelName}
               containerWidth={$observedNode?.clientWidth}
@@ -88,7 +88,7 @@
         </div>
 
         {#if showColumns}
-          <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
             <ColumnProfile
               objectName={entry?.meta?.name?.name}
               indentLevel={0}

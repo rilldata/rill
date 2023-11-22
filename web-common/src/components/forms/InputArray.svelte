@@ -69,7 +69,7 @@
         </div>
         {#if errors[i]?.[accessorKey]}
           <div
-            in:slide|local={{ duration: 200 }}
+            in:slide={{ duration: 200 }}
             class="text-red-500 text-sm py-px"
           >
             {errors[i][accessorKey]}

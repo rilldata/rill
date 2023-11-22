@@ -111,7 +111,7 @@
     {/if}
     {#if searchBarOpen || (searchText && searchText !== "")}
       <div
-        transition:slideRight|local={{ leftOffset: 8 }}
+        transition:slideRight={{ leftOffset: 8 }}
         class="flex items-center gap-x-1"
       >
         <Search bind:value={searchText} on:input={onSearch} />
@@ -122,7 +122,7 @@
     {:else}
       <button
         class="flex items-center gap-x-1 text-gray-700"
-        in:fly={{ x: 10, duration: 300 }}
+        in:fly|global={{ x: 10, duration: 300 }}
         on:click={() => (searchBarOpen = !searchBarOpen)}
       >
         <SearchIcon size="16px" />
