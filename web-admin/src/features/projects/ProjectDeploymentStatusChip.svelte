@@ -69,7 +69,7 @@
   }
 
   type StatusDisplay = {
-    icon: typeof SvelteComponent;
+    icon: typeof SvelteComponent<any>;
     iconProps?: {
       [key: string]: unknown;
     };
