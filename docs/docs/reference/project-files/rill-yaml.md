@@ -21,14 +21,15 @@ In `rill.yaml`, you can specify project-wide defaults that will be applied for a
 
 Individual resources will inherit any defaults that have been specified in `rill.yaml`. If the same property is set in both `rill.yaml` and a specific project file, the local setting in the project file takes precedence. See the documentation for each individual project file for available properties.
 
-The top level property is the resource type in pluralis, such as `models`, `dashboards` and `sources`.  
+The top level property is the resource type in pluralis, such as `sources`, `models`, and `dashboards`.
 
 Example:
 ```
 title: My project
+models:
+  materialize: true
 dashboards:
   first_day_of_week: 7
   available_time_zones:
     - America/New_York
-models:
-  materialize: true
+```
