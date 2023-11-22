@@ -116,9 +116,27 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		}
 		return nil
 	}
-	if olap.Dialect() == drivers.DialectDuckDB {
-		// ""
 
+	if olap.Dialect() == drivers.DialectDuckDB {
+		return olap.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, conn *databasesql.Conn) error {
+			temporaryTableName := tempName("_for_pivot_")
+
+			err = olap.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("CREATE TEMPORARY TABLE %s AS %s", temporaryTableName, sqlString),
+				Args:     args,
+				Priority: priority,
+			})
+			if err != nil {
+				return err
+			}
+			defer func() {
+				_ = olap.Exec(ensuredCtx, &drivers.Statement{
+					Query: `DROP TABLE "` + temporaryTableName + `"`,
+				})
+			}()
+
+			return q.pivotOn(ctx, olap, temporaryTableName)
+		})
 	} else {
 		dbOnce.Do(func() {
 			handle, handleErr = duckdbolap.Driver{}.Open(map[string]any{"pool_size": 2}, false, activity.NewNoopClient(), zap.NewNop())
@@ -127,27 +145,28 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 			return handleErr
 		}
 
-		// handle, err := duckdbolap.Driver{}.Open(map[string]any{"pool_size": 2}, false, activity.NewNoopClient(), zap.NewNop())
-		// if err != nil {
-		// return err
-		// }
+		schema, data, err := olapQuery(ctx, olap, priority, sqlString, args)
+		if err != nil {
+			return err
+		}
+
 		duckDBOLAP, _ := handle.AsOLAP("")
 		err = duckDBOLAP.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, conn *databasesql.Conn) error {
 			return transporter.RawConn(conn, func(conn driver.Conn) error {
 				temporaryTableName := tempName("_for_pivot_")
-				qry, err := createTableQuery(schema, temporaryTableName)
+				createTableSQL, err := createDruidTableQuery(schema, temporaryTableName)
 				if err != nil {
 					return err
 				}
 
-				_, err = duckDBOLAP.Execute(ctx, &drivers.Statement{
-					Query: qry,
+				err = duckDBOLAP.Exec(ctx, &drivers.Statement{
+					Query: createTableSQL,
 				})
 				if err != nil {
 					return err
 				}
 				defer func() {
-					_, _ = duckDBOLAP.Execute(ensuredCtx, &drivers.Statement{
+					_ = duckDBOLAP.Exec(ensuredCtx, &drivers.Statement{
 						Query: `DROP TABLE "` + temporaryTableName + `"`,
 					})
 				}()
@@ -186,130 +205,6 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return err
 	}
 
-	var connErr error
-	var db *databasesql.DB
-	dbOnce.Do(func() {
-		connector, connErr = duckdb.NewConnector("", func(conn driver.ExecerContext) error {
-			_, err := conn.ExecContext(context.Background(), "INSTALL 'json'; LOAD 'json';", nil)
-			return err
-		})
-
-		db = databasesql.OpenDB(connector)
-		db.SetMaxOpenConns(1)
-	})
-	if connErr != nil {
-		return connErr
-	}
-
-	conn, err := connector.Connect(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	temporaryTableName := tempName("_for_pivot_")
-	qry, err := createTableQuery(schema, temporaryTableName)
-	if err != nil {
-		return err
-	}
-
-	_, err = db.ExecContext(ctx, qry)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_, _ = db.ExecContext(ctx, `DROP TABLE "`+temporaryTableName+`"`)
-	}()
-
-	appender, err := duckdb.NewAppenderFromConn(conn, "", temporaryTableName)
-	if err != nil {
-		return err
-	}
-	defer appender.Close()
-
-	batchSize := 10000
-	arr := make([]driver.Value, 0, len(schema.Fields))
-	count := 0
-	for _, row := range data {
-		for _, key := range schema.Fields {
-			arr = append(arr, row.Fields[key.Name].AsInterface())
-		}
-		err = appender.AppendRowArray(arr)
-		if err != nil {
-			return err
-		}
-		arr = arr[:0]
-		count++
-		if count >= batchSize {
-			appender.Flush()
-			count = 0
-		}
-	}
-	appender.Flush()
-
-	measureCols := make([]string, 0, len(q.Measures))
-	for _, m := range q.Measures {
-		sn := safeName(m.Name)
-		measureCols = append(measureCols, fmt.Sprintf("LAST(%s) as %s", sn, sn))
-	}
-
-	sortingCriteria := make([]string, 0, len(q.Sort))
-	for _, s := range q.Sort {
-		sortCriterion := safeName(s.Name)
-		if s.Desc {
-			sortCriterion += " DESC"
-		}
-		if olap.Dialect() == drivers.DialectDuckDB {
-			sortCriterion += " NULLS LAST"
-		}
-		sortingCriteria = append(sortingCriteria, sortCriterion)
-	}
-
-	orderClause := ""
-	if len(sortingCriteria) > 0 {
-		orderClause = "ORDER BY " + strings.Join(sortingCriteria, ", ")
-	}
-
-	var limitClause string
-	if q.Limit != nil {
-		if *q.Limit == 0 {
-			*q.Limit = 100
-		}
-		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
-	}
-
-	// execute duckdb pivot
-	//	PIVOT t ON year USING LAST(ap) ap;
-	pivotSQL := fmt.Sprintf("PIVOT %[1]s ON %[2]s USING %[3]s %[4]s %[5]s OFFSET %[6]d",
-		temporaryTableName,              // 1
-		strings.Join(q.PivotOn, ", "),   // 2
-		strings.Join(measureCols, ", "), // 3
-		orderClause,                     // 4
-		limitClause,                     // 5
-		q.Offset,                        // 6
-	)
-	schema, data, err = olapQuery(ctx, olap, priority, pivotSQL, nil)
-	// r, err := db.QueryContext(ctx, pivotSQL)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// schema, err = rowsToSchema(r)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// data, err = sqlRowsToData(r, schema)
-	// if err != nil {
-	// 	return err
-	// }
-
-	q.Result = &runtimev1.MetricsViewAggregationResponse{
-		Schema: schema,
-		Data:   data,
-	}
-
-	return nil
 }
 
 func (q *MetricsViewAggregation) pivotOn(ctx context.Context, olap drivers.OLAPStore, temporaryTableName string) error {
@@ -575,7 +470,7 @@ func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAg
 	}
 }
 
-func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {
+func createDruidTableQuery(schema *runtimev1.StructType, name string) (string, error) {
 	query := fmt.Sprintf("CREATE OR REPLACE TEMPORARY TABLE %s(", safeName(name))
 	for i, s := range schema.Fields {
 		i++
@@ -647,90 +542,4 @@ func pbTypeToDuckDB(t *runtimev1.Type) (string, error) {
 	default:
 		return "", fmt.Errorf("unknown type_code %s", code)
 	}
-}
-
-func sqlRowsToData(rows *databasesql.Rows, schema *runtimev1.StructType) ([]*structpb.Struct, error) {
-	var data []*structpb.Struct
-	for rows.Next() {
-		rowMap := make(map[string]any)
-		err := mapScan(rows, rowMap)
-		if err != nil {
-			return nil, err
-		}
-
-		rowStruct, err := pbutil.ToStruct(rowMap, schema)
-		if err != nil {
-			return nil, err
-		}
-
-		data = append(data, rowStruct)
-	}
-
-	err := rows.Err()
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
-}
-
-type ColScanner interface {
-	Columns() ([]string, error)
-	Scan(dest ...interface{}) error
-	Err() error
-}
-
-func mapScan(r ColScanner, dest map[string]interface{}) error {
-	// ignore r.started, since we needn't use reflect for anything.
-	columns, err := r.Columns()
-	if err != nil {
-		return err
-	}
-
-	values := make([]interface{}, len(columns))
-	for i := range values {
-		values[i] = new(interface{})
-	}
-
-	err = r.Scan(values...)
-	if err != nil {
-		return err
-	}
-
-	for i, column := range columns {
-		dest[column] = *(values[i].(*interface{}))
-	}
-
-	return r.Err()
-}
-
-func rowsToSchema00(r *databasesql.Rows) (*runtimev1.StructType, error) {
-	if r == nil {
-		return nil, nil
-	}
-
-	cts, err := r.ColumnTypes()
-	if err != nil {
-		return nil, err
-	}
-
-	fields := make([]*runtimev1.StructType_Field, len(cts))
-	for i, ct := range cts {
-		nullable, ok := ct.Nullable()
-		if !ok {
-			nullable = true
-		}
-
-		t, err := duckdbolap.DatabaseTypeToPB(ct.DatabaseTypeName(), nullable)
-		if err != nil {
-			return nil, err
-		}
-
-		fields[i] = &runtimev1.StructType_Field{
-			Name: ct.Name(),
-			Type: t,
-		}
-	}
-
-	return &runtimev1.StructType{Fields: fields}, nil
 }
