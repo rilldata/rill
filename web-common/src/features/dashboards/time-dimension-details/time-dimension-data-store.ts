@@ -81,7 +81,7 @@ function prepareDimensionData(
   if (!data || !totalsData || !measure || data?.length < selectedValues.length)
     return;
 
-  const formatter = createMeasureValueFormatter(measure);
+  const formatter = createMeasureValueFormatter<null | undefined>(measure);
   const measureName = measure?.name as string;
   const validPercentOfTotal = measure?.validPercentOfTotal as boolean;
 
@@ -198,7 +198,7 @@ function prepareTimeData(
 ): TableData {
   if (!data || !measure) return;
 
-  const formatter = createMeasureValueFormatter(measure);
+  const formatter = createMeasureValueFormatter<null | undefined>(measure);
   const measureName = measure?.name ?? "";
 
   /** Strip out data points out of chart view */

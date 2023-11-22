@@ -194,7 +194,8 @@
           <!-- FIXME: I can't select the big number by the measure id. -->
           <MeasureBigNumber
             {measure}
-            value={$totalsQuery?.data?.data?.[measure?.name ?? ""] ?? 0}
+            value={// catch nulls and pass only undefined to the component
+            $totalsQuery?.data?.data?.[measure?.name ?? ""] ?? undefined}
             withTimeseries={false}
             status={$totalsQuery?.isFetching
               ? EntityStatus.Running

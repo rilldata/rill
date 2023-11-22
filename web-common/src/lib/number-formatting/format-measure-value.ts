@@ -70,13 +70,20 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
  * This higher-order function takes a measure spec and returns
  * a function appropriate for formatting values from that measure.
  *
- * As of Nov 2023, all measure values supplied to the client
- * are in the form of a number or undefined for missing values.
+ * You may optionally add type paramaters to allow non-numeric null
+ * undefined values to be passed through unmodified.
+ * - `createMeasureValueFormatter<null | undefined>(measureSpec)` will pass through null and undefined values unchanged
+ * - `createMeasureValueFormatter<null>(measureSpec)` will pass through null values unchanged
+ * - `createMeasureValueFormatter<undefined>(measureSpec)` will pass through undefined values unchanged
+ *
+ *
+ * FIXME: we want to remove the need for this to *ever* accept undefined values,
+ * as we switch to always using `null` to represent missing values.
  */
-export const createMeasureValueFormatter = (
+export function createMeasureValueFormatter<T extends null | undefined = never>(
   measureSpec: MetricsViewSpecMeasureV2,
   useUnabridged = false
-): ((value: number | undefined) => string | undefined) => {
+): (value: number | T) => string | T {
   const humanizer = useUnabridged
     ? humanizeDataTypeUnabridged
     : humanizeDataType;
@@ -84,7 +91,9 @@ export const createMeasureValueFormatter = (
   // Return and empty string if measureSpec is not provided.
   // This may e.g. be the case during the initial render of a dashboard,
   // when a measureSpec has not yet loaded from a metadata query.
-  if (measureSpec === undefined) return (_value: number) => "";
+  if (measureSpec === undefined) {
+    return (value: number | T) => (typeof value === "number" ? "" : value);
+  }
 
   // Use the d3 formatter if it is provided and valid
   // (d3 throws an error if the format is invalid).
@@ -92,13 +101,13 @@ export const createMeasureValueFormatter = (
   if (measureSpec.formatD3 !== undefined && measureSpec.formatD3 !== "") {
     try {
       const formatter = d3format(measureSpec.formatD3);
-      return (value: number | undefined) =>
-        value === undefined ? undefined : formatter(value);
+      return (value: number | T) =>
+        typeof value === "number" ? formatter(value) : value;
     } catch (error) {
-      return (value: number | undefined) =>
-        value === undefined
-          ? undefined
-          : humanizer(value, FormatPreset.HUMANIZE);
+      return (value: number | T) =>
+        typeof value === "number"
+          ? humanizer(value, FormatPreset.HUMANIZE)
+          : value;
     }
   }
 
@@ -107,6 +116,7 @@ export const createMeasureValueFormatter = (
     measureSpec.formatPreset && measureSpec.formatPreset !== ""
       ? (measureSpec.formatPreset as FormatPreset)
       : FormatPreset.HUMANIZE;
-  return (value: number | undefined) =>
-    value === undefined ? undefined : humanizer(value, formatPreset);
-};
+
+  return (value: number | T) =>
+    typeof value === "number" ? humanizer(value, formatPreset) : value;
+}
