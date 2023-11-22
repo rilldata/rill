@@ -1,35 +1,25 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Menu from "@rilldata/web-common/components/menu-v2/Menu.svelte";
   import MenuButton from "@rilldata/web-common/components/menu-v2/MenuButton.svelte";
   import MenuItem from "@rilldata/web-common/components/menu-v2/MenuItem.svelte";
   import MenuItems from "@rilldata/web-common/components/menu-v2/MenuItems.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import EditScheduledReportDialog from "@rilldata/web-common/features/dashboards/scheduled-reports/EditScheduledReportDialog.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import {
-    getRuntimeServiceGetResourceQueryKey,
-    getRuntimeServiceListResourcesQueryKey,
-  } from "@rilldata/web-common/runtime-client";
+  import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import cronstrue from "cronstrue";
-  import {
-    createAdminServiceDeleteReport,
-    createAdminServiceTriggerReport,
-  } from "../../../client";
+  import { createAdminServiceDeleteReport } from "../../../client";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
   import { useReport, useReportDashboardName } from "../selectors";
   import MetadataLabel from "./MetadataLabel.svelte";
   import MetadataValue from "./MetadataValue.svelte";
   import ReportOwnerBlock from "./ReportOwnerBlock.svelte";
+  import RunNowButton from "./RunNowButton.svelte";
   import { exportFormatToPrettyString, formatNextRunOn } from "./utils";
 
   export let organization: string;
@@ -56,46 +46,6 @@
   // Actions
   const queryClient = useQueryClient();
   const deleteReport = createAdminServiceDeleteReport();
-
-  const triggerReport = createAdminServiceTriggerReport();
-
-  async function handleRunNow() {
-    const lastExecution =
-      $reportQuery.data?.resource.report.state.executionHistory[0];
-    await $triggerReport.mutateAsync({
-      organization,
-      project,
-      name: report,
-      data: undefined,
-    });
-
-    notifications.send({
-      message: "Triggered an ad-hoc run of this report.",
-      type: "success",
-    });
-
-    // Invalidate the resource query so that the new run shows up in the recent history table
-    queryClient.invalidateQueries(
-      getRuntimeServiceGetResourceQueryKey($runtime.instanceId, {
-        "name.name": report,
-        "name.kind": ResourceKind.Report,
-      })
-    );
-
-    // In case the new run hasn't shown up yet, wait for it to appear
-    while (
-      $reportQuery.data.resource.report.state.executionHistory[0] ===
-      lastExecution
-    ) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      queryClient.invalidateQueries(
-        getRuntimeServiceGetResourceQueryKey($runtime.instanceId, {
-          "name.name": report,
-          "name.kind": ResourceKind.Report,
-        })
-      );
-    }
-  }
 
   let showEditReportDialog = false;
   function handleEditReport() {
@@ -152,19 +102,7 @@
           {$reportQuery.data.resource.report.spec.title}
         </h1>
         <div class="grow" />
-        <Tooltip distance={8}>
-          <Button
-            type="primary"
-            on:click={handleRunNow}
-            disabled={$triggerReport.isLoading}
-          >
-            Run now
-          </Button>
-          <TooltipContent slot="tooltip-content">
-            Run this report immediately. A new report will be generated and
-            emailed to recipients.
-          </TooltipContent>
-        </Tooltip>
+        <RunNowButton {organization} {project} {report} />
         <Menu>
           <MenuButton>
             <IconButton>
