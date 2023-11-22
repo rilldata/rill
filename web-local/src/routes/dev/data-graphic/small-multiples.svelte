@@ -81,7 +81,7 @@
           >
             <Body bottomBorder>
               {#if hovered}
-                <g transition:fade={{ duration: 100 }}>
+                <g transition:fade|global={{ duration: 100 }}>
                   <Area
                     {data}
                     xAccessor="period"
@@ -104,7 +104,7 @@
               </g>
             {/if}
             {#if mouseoverValue?.x}
-              <g transition:fade={{ duration: 50 }}>
+              <g transition:fade|global={{ duration: 50 }}>
                 <WithBisector
                   {data}
                   value={mouseoverValue.x}
