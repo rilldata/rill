@@ -14,3 +14,20 @@ The `rill.yaml` file contains metadata about your project.
   - _**`email`**_ — the mock user's email _(required)_
   - _**`name`**_ — the mock user's name
   - _**`admin`**_ — whether or not the mock user is an admin
+ 
+## Project wide defaults
+
+In `rill.yaml` you can specify project wide defaults that will be applied for all project files within a project.  
+
+The individual project files will inherit any defaults that has been specified in `rill.yaml`. If the same property would be set in both `rill.yaml` and a specific project file the local setting in the project file would win. See the documentation for each individual project file for available properties.
+
+The top level property is the project file name in pluralis such as `models`, `dashboards` and `sources`.  
+Example:
+```
+title: My project
+dashboards:
+  first_day_of_week: 7
+  available_time_zones:
+    - America/New_York
+models:
+  materialize: true
