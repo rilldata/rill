@@ -26,6 +26,7 @@ message Resource {
     PullTrigger pull_trigger = 6;
     RefreshTrigger refresh_trigger = 7;
     BucketPlanner bucket_planner = 8;
+    Theme theme = 11;
   }
 }
 
@@ -300,6 +301,27 @@ message BucketExtractPolicy {
   Strategy files_strategy = 3;
   uint64 files_limit = 4;
 }
+
+message Theme {
+  ThemeSpec spec = 1;
+  ThemeState state = 2;
+}
+
+message ThemeSpec {
+  message Color {
+    float red = 1;
+    float green = 2;
+    float blue = 3;
+    float alpha = 4;
+  }
+  message Colors {
+    optional Color primary = 1;
+    optional Color secondary = 2;
+  }
+  Colors colors = 1;
+}
+
+message ThemeState {}
 
 message Schedule {
   string cron = 1;

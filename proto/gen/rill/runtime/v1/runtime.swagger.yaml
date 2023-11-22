@@ -2508,6 +2508,28 @@ definitions:
         type: string
       type:
         $ref: '#/definitions/runtimev1Type'
+  ThemeSpecColor:
+    type: object
+    properties:
+      red:
+        type: number
+        format: float
+      green:
+        type: number
+        format: float
+      blue:
+        type: number
+        format: float
+      alpha:
+        type: number
+        format: float
+  ThemeSpecColors:
+    type: object
+    properties:
+      primary:
+        $ref: '#/definitions/ThemeSpecColor'
+      secondary:
+        $ref: '#/definitions/ThemeSpecColor'
   TimeRangeSummaryInterval:
     type: object
     properties:
@@ -4436,6 +4458,8 @@ definitions:
         $ref: '#/definitions/v1RefreshTrigger'
       bucketPlanner:
         $ref: '#/definitions/v1BucketPlanner'
+      theme:
+        $ref: '#/definitions/v1Theme'
   v1ResourceEvent:
     type: string
     enum:
@@ -4718,6 +4742,20 @@ definitions:
         type: array
         items:
           type: object
+  v1Theme:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ThemeSpec'
+      state:
+        $ref: '#/definitions/v1ThemeState'
+  v1ThemeSpec:
+    type: object
+    properties:
+      colors:
+        $ref: '#/definitions/ThemeSpecColors'
+  v1ThemeState:
+    type: object
   v1TimeGrain:
     type: string
     enum:

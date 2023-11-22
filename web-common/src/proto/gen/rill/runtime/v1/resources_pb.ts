@@ -108,6 +108,12 @@ export class Resource extends Message<Resource> {
      */
     value: BucketPlanner;
     case: "bucketPlanner";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.Theme theme = 11;
+     */
+    value: Theme;
+    case: "theme";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<Resource>) {
@@ -128,6 +134,7 @@ export class Resource extends Message<Resource> {
     { no: 6, name: "pull_trigger", kind: "message", T: PullTrigger, oneof: "resource" },
     { no: 7, name: "refresh_trigger", kind: "message", T: RefreshTrigger, oneof: "resource" },
     { no: 8, name: "bucket_planner", kind: "message", T: BucketPlanner, oneof: "resource" },
+    { no: 11, name: "theme", kind: "message", T: Theme, oneof: "resource" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Resource {
@@ -2203,6 +2210,215 @@ proto3.util.setEnumType(BucketExtractPolicy_Strategy, "rill.runtime.v1.BucketExt
   { no: 1, name: "STRATEGY_HEAD" },
   { no: 2, name: "STRATEGY_TAIL" },
 ]);
+
+/**
+ * @generated from message rill.runtime.v1.Theme
+ */
+export class Theme extends Message<Theme> {
+  /**
+   * @generated from field: rill.runtime.v1.ThemeSpec spec = 1;
+   */
+  spec?: ThemeSpec;
+
+  /**
+   * @generated from field: rill.runtime.v1.ThemeState state = 2;
+   */
+  state?: ThemeState;
+
+  constructor(data?: PartialMessage<Theme>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Theme";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spec", kind: "message", T: ThemeSpec },
+    { no: 2, name: "state", kind: "message", T: ThemeState },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Theme {
+    return new Theme().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Theme {
+    return new Theme().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Theme {
+    return new Theme().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Theme | PlainMessage<Theme> | undefined, b: Theme | PlainMessage<Theme> | undefined): boolean {
+    return proto3.util.equals(Theme, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeSpec
+ */
+export class ThemeSpec extends Message<ThemeSpec> {
+  /**
+   * @generated from field: rill.runtime.v1.ThemeSpec.Colors colors = 1;
+   */
+  colors?: ThemeSpec_Colors;
+
+  constructor(data?: PartialMessage<ThemeSpec>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeSpec";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "colors", kind: "message", T: ThemeSpec_Colors },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec {
+    return new ThemeSpec().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeSpec {
+    return new ThemeSpec().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeSpec {
+    return new ThemeSpec().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeSpec | PlainMessage<ThemeSpec> | undefined, b: ThemeSpec | PlainMessage<ThemeSpec> | undefined): boolean {
+    return proto3.util.equals(ThemeSpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeSpec.Color
+ */
+export class ThemeSpec_Color extends Message<ThemeSpec_Color> {
+  /**
+   * @generated from field: float red = 1;
+   */
+  red = 0;
+
+  /**
+   * @generated from field: float green = 2;
+   */
+  green = 0;
+
+  /**
+   * @generated from field: float blue = 3;
+   */
+  blue = 0;
+
+  /**
+   * @generated from field: float alpha = 4;
+   */
+  alpha = 0;
+
+  constructor(data?: PartialMessage<ThemeSpec_Color>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeSpec.Color";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "red", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 2, name: "green", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 3, name: "blue", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+    { no: 4, name: "alpha", kind: "scalar", T: 2 /* ScalarType.FLOAT */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec_Color {
+    return new ThemeSpec_Color().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeSpec_Color {
+    return new ThemeSpec_Color().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeSpec_Color {
+    return new ThemeSpec_Color().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeSpec_Color | PlainMessage<ThemeSpec_Color> | undefined, b: ThemeSpec_Color | PlainMessage<ThemeSpec_Color> | undefined): boolean {
+    return proto3.util.equals(ThemeSpec_Color, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeSpec.Colors
+ */
+export class ThemeSpec_Colors extends Message<ThemeSpec_Colors> {
+  /**
+   * @generated from field: optional rill.runtime.v1.ThemeSpec.Color primary = 1;
+   */
+  primary?: ThemeSpec_Color;
+
+  /**
+   * @generated from field: optional rill.runtime.v1.ThemeSpec.Color secondary = 2;
+   */
+  secondary?: ThemeSpec_Color;
+
+  constructor(data?: PartialMessage<ThemeSpec_Colors>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeSpec.Colors";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "primary", kind: "message", T: ThemeSpec_Color, opt: true },
+    { no: 2, name: "secondary", kind: "message", T: ThemeSpec_Color, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeSpec_Colors {
+    return new ThemeSpec_Colors().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeSpec_Colors {
+    return new ThemeSpec_Colors().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeSpec_Colors {
+    return new ThemeSpec_Colors().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeSpec_Colors | PlainMessage<ThemeSpec_Colors> | undefined, b: ThemeSpec_Colors | PlainMessage<ThemeSpec_Colors> | undefined): boolean {
+    return proto3.util.equals(ThemeSpec_Colors, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ThemeState
+ */
+export class ThemeState extends Message<ThemeState> {
+  constructor(data?: PartialMessage<ThemeState>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ThemeState";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ThemeState {
+    return new ThemeState().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ThemeState {
+    return new ThemeState().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ThemeState {
+    return new ThemeState().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ThemeState | PlainMessage<ThemeState> | undefined, b: ThemeState | PlainMessage<ThemeState> | undefined): boolean {
+    return proto3.util.equals(ThemeState, a, b);
+  }
+}
 
 /**
  * @generated from message rill.runtime.v1.Schedule

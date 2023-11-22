@@ -477,12 +477,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -511,6 +505,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeRange {
   start?: string;
   end?: string;
@@ -518,6 +518,19 @@ export interface V1TimeRange {
   isoOffset?: string;
   roundToGrain?: V1TimeGrain;
   timeZone?: string;
+}
+
+export interface V1ThemeState {
+  [key: string]: any;
+}
+
+export interface V1ThemeSpec {
+  colors?: ThemeSpecColors;
+}
+
+export interface V1Theme {
+  spec?: V1ThemeSpec;
+  state?: V1ThemeState;
 }
 
 export type V1TableRowsResponseDataItem = { [key: string]: any };
@@ -686,6 +699,20 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -719,19 +746,6 @@ export interface V1ReportState {
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
-}
-
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
 }
 
 export interface V1RenameFileResponse {
@@ -1109,6 +1123,19 @@ export interface V1MetricsViewTimeSeriesResponse {
   data?: V1TimeSeriesValue[];
 }
 
+export interface V1MetricsViewTimeSeriesRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  filter?: V1MetricsViewFilter;
+  timeZone?: string;
+  priority?: number;
+}
+
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
 }
@@ -1172,19 +1199,6 @@ export interface V1MetricsViewToplistRequest {
   priority?: number;
 }
 
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  filter?: V1MetricsViewFilter;
-  timeZone?: string;
-  priority?: number;
-}
-
 export interface V1MetricsViewRowsRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1239,6 +1253,21 @@ export interface V1MetricsViewComparisonResponse {
   rows?: V1MetricsViewComparisonRow[];
 }
 
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  filter?: V1MetricsViewFilter;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1267,21 +1296,6 @@ export interface V1MetricsViewAggregationDimension {
   name?: string;
   timeGrain?: V1TimeGrain;
   timeZone?: string;
-}
-
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  filter?: V1MetricsViewFilter;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationRequest {
@@ -1577,11 +1591,6 @@ export interface V1Connector {
   config?: V1ConnectorConfig;
 }
 
-export interface V1CategoricalSummary {
-  topK?: V1TopK;
-  cardinality?: number;
-}
-
 export interface V1ColumnTopKResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
@@ -1702,6 +1711,11 @@ export interface V1ColumnCardinalityRequest {
   priority?: number;
 }
 
+export interface V1CategoricalSummary {
+  topK?: V1TopK;
+  cardinality?: number;
+}
+
 export interface V1CatalogEntry {
   name?: string;
   table?: V1Table;
@@ -1806,6 +1820,18 @@ export interface TimeRangeSummaryInterval {
   months?: number;
   days?: number;
   micros?: string;
+}
+
+export interface ThemeSpecColor {
+  red?: number;
+  green?: number;
+  blue?: number;
+  alpha?: number;
+}
+
+export interface ThemeSpecColors {
+  primary?: ThemeSpecColor;
+  secondary?: ThemeSpecColor;
 }
 
 export interface StructTypeField {

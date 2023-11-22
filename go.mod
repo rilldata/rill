@@ -98,6 +98,7 @@ require (
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/jackc/pgtype v1.12.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
+	github.com/mazznoer/csscolorparser v0.1.3 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	google.golang.org/genproto v0.0.0-20230731193218-e0aa005b6bdf // indirect
 )
