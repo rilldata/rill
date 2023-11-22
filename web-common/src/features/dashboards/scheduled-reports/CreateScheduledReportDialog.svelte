@@ -17,7 +17,6 @@
     V1ExportFormat,
   } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { getStateManagers } from "../state-managers/state-managers";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import {
     convertFormValuesToCronExpression,
@@ -99,10 +98,6 @@
   });
 
   const { isSubmitting, form } = formState;
-
-  const ctx = getStateManagers();
-  const dashboardStore = ctx.dashboardStore;
-  $: dashboardTimeZone = $dashboardStore?.selectedTimezone ?? "";
 </script>
 
 <Dialog {open}>

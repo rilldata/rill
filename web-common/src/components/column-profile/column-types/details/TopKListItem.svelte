@@ -10,13 +10,10 @@
 
   const dispatch = createEventDispatcher();
 
-  let hovered = false;
   const onHover = () => {
-    hovered = true;
     dispatch("focus");
   };
   const onLeave = () => {
-    hovered = false;
     dispatch("blur");
   };
 </script>

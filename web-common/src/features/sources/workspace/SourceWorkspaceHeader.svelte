@@ -22,7 +22,6 @@
     createRuntimeServiceRefreshAndReconcile,
     V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
-  import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
   import { WithTogglableFloatingElement } from "../../../components/floating-element";
@@ -182,7 +181,6 @@
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
     {...{ titleInput: sourceName, onChangeCallback }}
-    appRunning={$appQueryStatusStore}
     let:width={headerWidth}
   >
     <svelte:fragment slot="workspace-controls">

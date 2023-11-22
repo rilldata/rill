@@ -78,7 +78,7 @@
     {:else}
       {#each $table.getRowModel().rows as row}
         <tr>
-          {#each row.getVisibleCells() as cell, i}
+          {#each row.getVisibleCells() as cell}
             <td class="hover:bg-slate-50">
               <svelte:component
                 this={flexRender(cell.column.columnDef.cell, cell.getContext())}

@@ -33,7 +33,6 @@
   let parent;
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
 <div class:inline bind:this={parent}>
   <slot
     {active}

@@ -50,7 +50,7 @@ and the menu closes.
     }}
     on:escape={handleClose}
   >
-    {#each options as { main, right, callback }, i}
+    {#each options as { main, right, callback }}
       <MenuItem
         on:select={createOnClickHandler(callback, handleClose)}
         focusOnMount={false}

@@ -51,9 +51,6 @@
   export let mouseover = false;
   export let smooth = true;
 
-  export let separate = true;
-  $: separateQuantity = separate ? 0.25 : 0;
-
   export let xAccessor: string;
   export let yAccessor: string;
 

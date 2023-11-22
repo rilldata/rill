@@ -32,5 +32,6 @@ module.exports = {
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
     "@typescript-eslint/ban-ts-comment": "warn",
+    "svelte/no-at-html-tags": "warn",
   },
 };

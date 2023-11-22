@@ -8,7 +8,6 @@
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
@@ -92,7 +91,6 @@
 
 <WorkspaceHeader
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
-  appRunning={$appQueryStatusStore}
   let:width
 >
   <svelte:fragment slot="workspace-controls">

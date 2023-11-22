@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { VirtualizedTableColumns } from "../../../types";
   import { createEventDispatcher } from "svelte";
+  import type { VirtualizedTableColumns } from "../../../types";
   import Cell from "../core/Cell.svelte";
   import ColumnHeader from "../core/ColumnHeader.svelte";
   import Row from "../core/Row.svelte";
@@ -57,7 +57,7 @@
   style:width="{totalWidth}px"
 >
   <div class="w-full sticky relative top-0 z-10">
-    {#each reconciledColumns as { columnProfile, virtualColumn }, i (columnProfile.name + "-pinned")}
+    {#each reconciledColumns as { columnProfile, virtualColumn } (columnProfile.name + "-pinned")}
       <ColumnHeader
         header={{
           start: virtualColumn.start,
