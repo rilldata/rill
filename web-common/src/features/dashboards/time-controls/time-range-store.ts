@@ -93,6 +93,7 @@ export function timeRangeSelectionsSelector([
     periodToDateRanges = PERIOD_TO_DATE_RANGES;
   }
 
+  console.log(latestWindowTimeRanges, periodToDateRanges);
   return {
     latestWindowTimeRanges: getChildTimeRanges(
       allTimeRange.start,

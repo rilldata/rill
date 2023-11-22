@@ -155,8 +155,7 @@
       metricViewName,
       timeRange,
       timeGrain,
-      comparisonTimeRange,
-      $timeControlsStore.allTimeRange
+      comparisonTimeRange
     );
   }
 </script>

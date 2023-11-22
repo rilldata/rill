@@ -353,13 +353,11 @@ const metricViewReducers = {
     });
   },
 
-  // TODO: can the comparison validity be removed?
   selectTimeRange(
     name: string,
     timeRange: TimeRange,
     timeGrain: V1TimeGrain,
-    comparisonTimeRange: DashboardTimeControls | undefined,
-    allTimeRange: TimeRange
+    comparisonTimeRange: DashboardTimeControls | undefined
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       if (!timeRange.name) return;
@@ -372,31 +370,7 @@ const metricViewReducers = {
         interval: timeGrain,
       };
 
-      if (!comparisonTimeRange) {
-        // when switching time range we reset comparison time range
-        // get the default for the new time range and set it only if is valid
-        const comparisonOption = DEFAULT_TIME_RANGES[timeRange.name]
-          ?.defaultComparison as TimeComparisonOption;
-        const range = getTimeComparisonParametersForComponent(
-          comparisonOption,
-          allTimeRange.start,
-          allTimeRange.end,
-          timeRange.start,
-          timeRange.end
-        );
-
-        if (range.isComparisonRangeAvailable) {
-          metricsExplorer.selectedComparisonTimeRange = {
-            start: range.start,
-            end: range.end,
-            name: comparisonOption,
-          };
-        } else {
-          metricsExplorer.selectedComparisonTimeRange = undefined;
-        }
-      } else {
-        metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
-      }
+      metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
 
       setDisplayComparison(
         metricsExplorer,

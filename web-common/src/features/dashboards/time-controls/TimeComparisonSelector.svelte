@@ -115,6 +115,7 @@ This component needs to do the following:
   <Tooltip distance={8} suppress={active}>
     <SelectorButton
       {active}
+      label="Select time comparison option"
       on:click={() => {
         toggleFloatingElement();
       }}

@@ -37,6 +37,7 @@ export const timeComparisonOptionsState = (dashData: DashboardDataSources) =>
     selectedTimeRangeState(dashData),
   ]);
 
+// TODO: use this in place of timeControlStore
 export const selectedTimeRangeState = (dashData: DashboardDataSources) =>
   selectedTimeRangeSelector([
     dashData.metricsSpecQueryResult,

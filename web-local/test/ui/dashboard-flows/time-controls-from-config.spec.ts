@@ -24,8 +24,8 @@ test.describe("time controls settings from dashboard config", () => {
     // Time range has changed
     await expect(page.getByText("Last 4 Weeks")).toBeVisible();
     // Data has changed as well
-    await expect(page.getByText("Total rows 26.7k")).toBeVisible();
-    await expect(page.getByText("Facebook 7.0k")).toBeVisible();
+    await expect(page.getByText("Total rows 26.7k -4.7k -15%")).toBeVisible();
+    await expect(page.getByText("Facebook 7.0k 66%")).toBeVisible();
     await page.getByRole("button", { name: "Edit metrics" }).click();
 
     // Set a time range that is one of the period to date preset
@@ -40,8 +40,8 @@ test.describe("time controls settings from dashboard config", () => {
     // Time range has changed
     await expect(page.getByText("Week to Date")).toBeVisible();
     // Data has changed as well
-    await expect(page.getByText("Total rows 3.7k")).toBeVisible();
-    await expect(page.getByText("Facebook 948")).toBeVisible();
+    await expect(page.getByText("Total rows 3.4k +156 4%")).toBeVisible();
+    await expect(page.getByText("Facebook 889 4%")).toBeVisible();
 
     // Select a different time range
     await interactWithTimeRangeMenu(page, async () => {
@@ -52,21 +52,9 @@ test.describe("time controls settings from dashboard config", () => {
       page.getByRole("menuitem", { name: "Last 7 Days" })
     ).not.toBeVisible();
     // Data has changed
-    await expect(page.getByText("Total rows 7.9k")).toBeVisible();
-    await expect(page.getByText("Facebook 2.0k")).toBeVisible();
-
-    // Last 2 weeks is still available in the menu
-    // Select a different time range
-    await interactWithTimeRangeMenu(page, async () => {
-      await page.getByRole("menuitem", { name: "Last 2 Weeks" }).click();
-    });
-    // Wait for menu to close
-    await expect(
-      page.getByRole("menuitem", { name: "Last 2 Weeks" })
-    ).not.toBeVisible();
-    // Data has changed
-    await expect(page.getByText("Total rows 11.2k")).toBeVisible();
-    await expect(page.getByText("Facebook 2.9k")).toBeVisible();
+    await expect(page.getByText("Total rows 7.9k -15 ~0%")).toBeVisible();
+    await expect(page.getByText("Facebook 2.0k -2%")).toBeVisible();
+    await page.getByRole("button", { name: "Edit metrics" }).click();
 
     // Set a time range that is not one of the supported presets
     await updateCodeEditor(page, getDashboardYaml(`default_time_range: "P2W"`));
@@ -77,8 +65,8 @@ test.describe("time controls settings from dashboard config", () => {
     // Time range has changed
     await expect(page.getByText("Last 2 Weeks")).toBeVisible();
     // Data has changed as well
-    await expect(page.getByText("Total rows 11.2k")).toBeVisible();
-    await expect(page.getByText("Facebook 2.9k")).toBeVisible();
+    await expect(page.getByText("Total rows 11.2k -4.4k -28%")).toBeVisible();
+    await expect(page.getByText("Facebook 2.9k -29%")).toBeVisible();
   });
 
   test("default_comparison", async ({ page }) => {
@@ -145,9 +133,70 @@ available_time_ranges:
       - rill-PW
   - P4W
   - rill-WTD
-  - rill-MTD
-`)
+  - rill-MTD`)
     );
+    await waitForDashboard(page);
+    // Go to dashboard
+    await page.getByRole("button", { name: "Go to dashboard" }).click();
+
+    // Open the time range menu
+    await page.getByLabel("Select time range").click();
+    // Assert the options available
+    await expect(page.getByText("All Time")).toBeVisible();
+    await expect(page.getByText("Last 6 Hours")).toBeVisible();
+    await expect(page.getByText("Last 5 Days")).toBeVisible();
+    await expect(page.getByText("Last 4 Weeks")).toBeVisible();
+    await expect(page.getByText("Week To Date")).toBeVisible();
+    await expect(page.getByText("Month To Date")).toBeVisible();
+    // Select Last 6 hours
+    await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
+    // Wait for time range menu to close
+    await expect(
+      page.getByRole("menu", { name: "Time range selector" })
+    ).not.toBeVisible();
+    // Assert data has changed
+    await expect(page.getByText("Total rows 251 -37 -12%")).toBeVisible();
+    await expect(page.getByText("Facebook 63 -14%")).toBeVisible();
+
+    // Open the time comparison
+    await page.getByLabel("Select time comparison option").click();
+    // Assert the options available
+    await expect(page.getByText("Last Period")).toBeVisible();
+    await expect(page.getByText("Previous day")).toBeVisible();
+    await expect(page.getByText("Previous week")).toBeVisible();
+    await expect(page.getByText("Previous month")).toBeVisible();
+    // Select Last 6 hours
+    await page.getByRole("menuitem", { name: "Previous week" }).click();
+    // Wait for time range menu to close
+    await expect(
+      page.getByRole("menu", { name: "Time comparison selector" })
+    ).not.toBeVisible();
+    // Assert data has changed
+    await expect(page.getByText("Total rows 251 -48 -16%")).toBeVisible();
+    await expect(page.getByText("Facebook 63 -30%")).toBeVisible();
+
+    // Select Last 5 days
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "Last 5 Days" }).click();
+    });
+    // Assert data has changed
+    await expect(page.getByText("Total rows 4.8k -857 -15%")).toBeVisible();
+    await expect(page.getByText("Facebook 1.2k -17%")).toBeVisible();
+
+    // Open the time comparison
+    await page.getByLabel("Select time comparison option").click();
+    // Assert the options available
+    await expect(page.getByText("Last Period")).toBeVisible();
+    await expect(page.getByText("Previous week")).toBeVisible();
+    // Select Last 6 hours
+    await page.getByRole("menuitem", { name: "Last Period" }).click();
+    // Wait for time range menu to close
+    await expect(
+      page.getByRole("menu", { name: "Time comparison selector" })
+    ).not.toBeVisible();
+    // Assert data has changed
+    await expect(page.getByText("Total rows 4.8k -829 -14%")).toBeVisible();
+    await expect(page.getByText("Facebook 1.2k -14%")).toBeVisible();
   });
 });
 
