@@ -14,7 +14,7 @@ import (
 )
 
 // rawConn is similar to *sql.Conn.Raw, but additionally unwraps otelsql (which we use for instrumentation).
-func rawConn(conn *sql.Conn, f func(driver.Conn) error) error {
+func RawConn(conn *sql.Conn, f func(driver.Conn) error) error {
 	return conn.Raw(func(raw any) error {
 		// For details, see: https://github.com/XSAM/otelsql/issues/98
 		if c, ok := raw.(interface{ Raw() driver.Conn }); ok {
