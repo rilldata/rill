@@ -96,7 +96,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 		}
 
 		if create {
-			err = s.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
+			err = s.to.CreateTableAsSelect(ctx, "", "", sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
 			create = false
 		} else {
 			err = s.to.InsertTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
@@ -121,8 +121,9 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 		s.logger.Info("records to be ingested", zap.Uint64("rows", total))
 		p.Target(int64(total), drivers.ProgressUnitRecord)
 	}
+	tmptable := fmt.Sprintf("__%s_tmp_postgres", table)
 	// create table
-	qry, err := createTableQuery(schema, table)
+	qry, err := createTableQuery(schema, tmptable)
 	if err != nil {
 		return err
 	}
@@ -131,9 +132,9 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 		return err
 	}
 
-	return s.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+	err = s.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
 		return rawConn(conn, func(conn driver.Conn) error {
-			a, err := duckdb.NewAppenderFromConn(conn, "", table)
+			a, err := duckdb.NewAppenderFromConn(conn, "", tmptable)
 			if err != nil {
 				return err
 			}
@@ -173,6 +174,12 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 			}
 		})
 	})
+	if err != nil {
+		return err
+	}
+
+	// copy data from temp table to target table
+	return s.to.CreateTableAsSelect(ctx, "", "", table, false, fmt.Sprintf("SELECT * FROM %s", tmptable))
 }
 
 func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {

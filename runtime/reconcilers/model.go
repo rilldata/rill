@@ -457,5 +457,5 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 		defer cancel()
 	}
 
-	return olap.CreateTableAsSelect(ctx, tableName, view, sql)
+	return olap.CreateTableAsSelect(ctx, "", "", tableName, view, sql)
 }

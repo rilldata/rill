@@ -97,7 +97,7 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 		srcCfg.SQL = sql
 	}
 
-	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, srcCfg.SQL)
+	return t.to.CreateTableAsSelect(ctx, "", "", sinkCfg.Table, false, srcCfg.SQL)
 }
 
 // rewriteLocalPaths rewrites a DuckDB SQL statement such that relative paths become absolute paths relative to the basePath,

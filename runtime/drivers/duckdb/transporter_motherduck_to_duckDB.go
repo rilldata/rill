@@ -41,15 +41,15 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 
 	config := t.from.Config()
 	err = t.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
-		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database();"})
+		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database(),current_schema();"})
 		if err != nil {
 			return err
 		}
 		defer res.Close()
 
 		res.Next()
-		var localDB string
-		if err := res.Scan(&localDB); err != nil {
+		var localDB, localSchema string
+		if err := res.Scan(&localDB, &localSchema); err != nil {
 			return err
 		}
 
@@ -119,8 +119,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 
 		userQuery := strings.TrimSpace(srcCfg.SQL)
 		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
-		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s);", safeName(localDB), safeName(sinkCfg.Table), userQuery)
-		return t.to.Exec(ctx, &drivers.Statement{Query: query})
+		return t.to.CreateTableAsSelect(ctx, localDB, localSchema, sinkCfg.Table, false, userQuery)
 	})
 	return err
 }
