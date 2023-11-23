@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Switch } from "@rilldata/web-common/components/button";
+  import { Switch } from "@rilldata/web-common/components/button";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
@@ -13,6 +13,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -137,13 +138,7 @@
   {#if comparing === "dimension"}
     <div class="flex items-center mr-4 gap-x-3" style:cursor="pointer">
       {#if !isRowsEmpty}
-        <Button
-          type="text"
-          compact={true}
-          on:click={() => dispatch("toggle-all-search-items")}
-        >
-          {areAllTableRowsSelected ? "Deselect all" : "Select all"}
-        </Button>
+        <SelectAllButton {areAllTableRowsSelected} on:toggle-all-search-items />
       {/if}
 
       {#if !searchToggle}

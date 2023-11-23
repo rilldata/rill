@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Switch } from "@rilldata/web-common/components/button";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Back from "@rilldata/web-common/components/icons/Back.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
@@ -10,6 +9,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import SelectAllButton from "./SelectAllButton.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -108,13 +108,7 @@
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
   <div class="flex items-center gap-x-5 cursor-pointer h-9">
     {#if !isRowsEmpty}
-      <Button
-        type="text"
-        compact={true}
-        on:click={() => dispatch("toggle-all-search-items")}
-      >
-        {areAllTableRowsSelected ? "Deselect all" : "Select all"}
-      </Button>
+      <SelectAllButton {areAllTableRowsSelected} on:toggle-all-search-items />
     {/if}
     {#if searchBarOpen || (searchText && searchText !== "")}
       <div
