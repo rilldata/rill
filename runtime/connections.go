@@ -224,6 +224,8 @@ func (r *Runtime) connectorConfig(ctx context.Context, instanceID, name string) 
 	case "motherduck":
 		setIfNil(cfg, "token", vars["token"])
 		setIfNil(cfg, "dsn", "")
+	case "snowflake":
+		setIfNil(cfg, "dsn", "")
 	}
 
 	// Apply built-in connector config
