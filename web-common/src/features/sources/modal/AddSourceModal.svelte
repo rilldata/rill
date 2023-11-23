@@ -120,16 +120,6 @@
       Add a source
     {:else if step === 2}
       <h2 class="flex gap-x-1 items-center">
-        <button
-          on:click={resetModal}
-          class="text-gray-500 text-sm font-semibold hover:text-gray-700"
-        >
-          Add a source
-        </button>
-        <CaretDownIcon
-          size="14px"
-          className="transform -rotate-90 text-gray-500"
-        />
         <span>
           {#if selectedConnector}
             {selectedConnector?.displayName}
@@ -157,7 +147,7 @@
           {/each}
         </div>
       {/if}
-      <div>
+      <div class="text-slate-500">
         Don't see what you're looking for? <button
           on:click={goToRequestConnector}
           class="text-blue-500 hover:text-blue-600 font-medium"
