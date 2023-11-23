@@ -794,5 +794,4 @@ func createQuery(db, schema, table, sql string, view bool) string {
 		tbl = "TABLE"
 	}
 	return fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s)", tbl, fullName, sql)
-
 }
