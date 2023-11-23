@@ -76,8 +76,15 @@
 
   function closeSearchBar() {
     searchText = "";
-    searchToggle = !searchToggle;
-    onSearch();
+    searchToggle = false;
+    dispatch("search", searchText);
+  }
+
+  function onSubmit() {
+    if (!areAllTableRowsSelected) {
+      dispatch("toggle-all-search-items");
+      closeSearchBar();
+    }
   }
 
   function toggleFilterMode() {
@@ -129,9 +136,9 @@
 
   {#if comparing === "dimension"}
     <div class="flex items-center mr-4 gap-x-3" style:cursor="pointer">
-      {#if searchText && !isRowsEmpty}
+      {#if !isRowsEmpty}
         <Button
-          type="secondary"
+          type="text"
           compact={true}
           on:click={() => dispatch("toggle-all-search-items")}
         >
@@ -154,7 +161,11 @@
           transition:slideRight|local={{ leftOffset: 8 }}
           class="flex items-center gap-x-1"
         >
-          <Search bind:value={searchText} on:input={onSearch} />
+          <Search
+            bind:value={searchText}
+            on:input={onSearch}
+            on:submit={onSubmit}
+          />
           <button
             class="ui-copy-icon"
             style:cursor="pointer"

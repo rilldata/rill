@@ -7,6 +7,7 @@
   import TDDTable from "./TDDTable.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
   import {
     chartInteractionColumn,
     tableInteractionStore,
@@ -111,6 +112,9 @@
         dimensionName,
         rowHeaderLabels
       );
+      notifications.send({
+        message: `Removed ${rowHeaderLabels.length} items from filter`,
+      });
       return;
     } else {
       metricsExplorerStore.selectItemsInFilter(
@@ -118,6 +122,10 @@
         dimensionName,
         rowHeaderLabels
       );
+
+      notifications.send({
+        message: `Added ${rowHeaderLabels.length} items to filter`,
+      });
     }
   }
 
@@ -136,6 +144,17 @@
       newPinIndex = formattedData?.selectedValues?.length - 1;
     }
     metricsExplorerStore.setPinIndex(metricViewName, newPinIndex);
+  }
+
+  function handleKeyDown(e) {
+    if (comparisonCopy !== "dimension") return;
+    // Select all items on Meta+A
+    if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+      if (e.target.tagName === "INPUT") return;
+      e.preventDefault();
+      if (areAllTableRowsSelected) return;
+      toggleAllSearchItems();
+    }
   }
 </script>
 
@@ -196,3 +215,5 @@
     </div>
   </div>
 {/if}
+
+<svelte:window on:keydown={handleKeyDown} />

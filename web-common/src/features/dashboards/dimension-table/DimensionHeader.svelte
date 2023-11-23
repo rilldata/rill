@@ -72,6 +72,13 @@
     searchBarOpen = false;
   }
 
+  function onSubmit() {
+    if (!areAllTableRowsSelected) {
+      dispatch("toggle-all-search-items");
+      closeSearchBar();
+    }
+  }
+
   const goBackToLeaderboard = () => {
     if ($sortedByDimensionValue) {
       toggleSort(SortType.VALUE);
@@ -100,9 +107,9 @@
 
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
   <div class="flex items-center gap-x-5 cursor-pointer h-9">
-    {#if searchText && !isRowsEmpty}
+    {#if !isRowsEmpty}
       <Button
-        type="secondary"
+        type="text"
         compact={true}
         on:click={() => dispatch("toggle-all-search-items")}
       >
@@ -114,7 +121,11 @@
         transition:slideRight|local={{ leftOffset: 8 }}
         class="flex items-center gap-x-1"
       >
-        <Search bind:value={searchText} on:input={onSearch} />
+        <Search
+          bind:value={searchText}
+          on:input={onSearch}
+          on:submit={onSubmit}
+        />
         <button class="ui-copy-icon" on:click={() => closeSearchBar()}>
           <Close />
         </button>
