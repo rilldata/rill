@@ -129,6 +129,12 @@
     --color-primary-800: #1e40af;
     --color-primary-900: #1e3a8a;
     --color-primary-950: #172554;
+
+    --color-primary-graph-line: 224, 60%, 55%;
+    --color-primary-graph-area: 217, 70%, 80%;
+
+    --color-secondary-gradient-max: 300;
+    --color-secondary-gradient-min: 1;
   }
 
   h1,

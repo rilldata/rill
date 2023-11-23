@@ -64,7 +64,13 @@
 
   onMount(() => {
     const primary = $page.url.searchParams.get("primary");
-    if (primary) setTheme({ primary });
+    if (!primary) return;
+
+    setTheme({
+      primary,
+      secondary: $page.url.searchParams.get("secondary"),
+      mode: $page.url.searchParams.get("mode"),
+    });
   });
 </script>
 

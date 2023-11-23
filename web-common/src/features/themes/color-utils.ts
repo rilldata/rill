@@ -40,7 +40,7 @@ export function RGBToHSL(rgb: ThemeColor): ThemeColor {
     }
   }
 
-  return [h * 360, s * 100, v * 100];
+  return [Math.round(h * 360), Math.round(s * 100), Math.round(v * 100)];
 }
 
 const HexRegex = /[a-f0-9]{6}|[a-f0-9]{3}/i;
@@ -67,4 +67,10 @@ export function HexToRGB(hex: string): ThemeColor {
   const b = integer & 0xff;
 
   return [r, g, b];
+}
+
+export function HexToHSL(hex: string): ThemeColor {
+  const hsl = RGBToHSL(HexToRGB(hex));
+  console.log("hex", hsl);
+  return hsl;
 }
