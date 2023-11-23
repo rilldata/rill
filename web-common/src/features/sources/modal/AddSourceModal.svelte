@@ -6,7 +6,6 @@
     V1ConnectorSpec,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
-  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
   import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
   import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
