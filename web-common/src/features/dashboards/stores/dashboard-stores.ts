@@ -443,21 +443,24 @@ const metricViewReducers = {
         ? "exclude"
         : "include";
 
-      const dimensionEntryIndex = metricsExplorer.filters[
-        relevantFilterKey
-      ].findIndex((filter) => filter.name === dimensionName);
+      const filters = metricsExplorer?.filters[relevantFilterKey];
+      // if there are no filters, or if the dimension name is not defined,
+      // there we cannot update anything.
+      if (filters === undefined || dimensionName === undefined) {
+        return;
+      }
+
+      const dimensionEntryIndex = filters?.findIndex(
+        (filter) => filter.name === dimensionName
+      );
 
       if (dimensionEntryIndex >= 0) {
         // preserve old selections and add only new ones
-        const oldValues = metricsExplorer.filters[relevantFilterKey][
-          dimensionEntryIndex
-        ].in as string[];
+        const oldValues = filters[dimensionEntryIndex].in as string[];
         const newValues = values.filter((v) => !oldValues.includes(v));
-        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in.push(
-          ...newValues
-        );
+        filters[dimensionEntryIndex].in?.push(...newValues);
       } else {
-        metricsExplorer.filters[relevantFilterKey].push({
+        filters?.push({
           name: dimensionName,
           in: values,
         });
@@ -473,18 +476,27 @@ const metricViewReducers = {
         ? "exclude"
         : "include";
 
-      const dimensionEntryIndex = metricsExplorer.filters[
-        relevantFilterKey
-      ].findIndex((filter) => filter.name === dimensionName);
+      const filters = metricsExplorer?.filters[relevantFilterKey];
+      // if there are no filters, or if the dimension name is not defined,
+      // there we cannot update anything.
+      if (filters === undefined || dimensionName === undefined) {
+        return;
+      }
+
+      const dimensionEntryIndex = filters.findIndex(
+        (filter) => filter.name === dimensionName
+      );
 
       if (dimensionEntryIndex >= 0) {
         // remove only deselected values
-        const oldValues = metricsExplorer.filters[relevantFilterKey][
-          dimensionEntryIndex
-        ].in as string[];
+        const oldValues = filters[dimensionEntryIndex].in as string[];
         const newValues = oldValues.filter((v) => !values.includes(v));
-        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in =
-          newValues;
+
+        if (newValues.length) {
+          filters[dimensionEntryIndex].in = newValues;
+        } else {
+          filters.splice(dimensionEntryIndex, 1);
+        }
       }
     });
   },
