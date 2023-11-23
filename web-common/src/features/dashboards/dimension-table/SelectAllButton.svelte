@@ -6,7 +6,7 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import { createEventDispatcher } from "svelte";
 
-  export let areAllTableRowsSelected: Boolean;
+  export let areAllTableRowsSelected: boolean;
 
   const dispatch = createEventDispatcher();
 </script>
