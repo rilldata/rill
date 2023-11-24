@@ -39,6 +39,17 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		return err
 	}
 
+	// we first ingest data in a temporary table in the main db
+	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs which takes care
+	// whether table goes in main db or in separate table specific db
+	tmpTable := fmt.Sprintf("__%s_tmp_postgres", sinkCfg.Table)
+	defer func() {
+		// ensure temporary table is cleaned
+		if err := t.to.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable), Priority: 100}); err != nil {
+			t.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
+		}
+	}()
+
 	config := t.from.Config()
 	err = t.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database(),current_schema();"})
@@ -119,8 +130,13 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 
 		userQuery := strings.TrimSpace(srcCfg.SQL)
 		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
-		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s);", safeName(localDB), safeName(sinkCfg.Table), userQuery)
+		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s);", safeName(localDB), safeName(localSchema), safeName(tmpTable), userQuery)
 		return t.to.Exec(ctx, &drivers.Statement{Query: query})
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	// copy data from temp table to target table
+	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", tmpTable))
 }

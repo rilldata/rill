@@ -131,21 +131,21 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 		return err
 	}
 
-	return s.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
-		// create table
-		if err := s.to.Exec(ctx, &drivers.Statement{Query: qry}); err != nil {
-			return err
+	// create table
+	if err := s.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1}); err != nil {
+		return err
+	}
+
+	defer func() {
+		// ensure temporary table is cleaned
+		if err := s.to.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable), Priority: 100}); err != nil {
+			s.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
 		}
+	}()
 
-		defer func() {
-			// ensure temporary table is cleaned
-			if err := s.to.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable), Priority: 100}); err != nil {
-				s.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
-			}
-		}()
-
+	err = s.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
 		// append data using appender API
-		err = rawConn(conn, func(conn driver.Conn) error {
+		return rawConn(conn, func(conn driver.Conn) error {
 			a, err := duckdb.NewAppenderFromConn(conn, "", tmpTable)
 			if err != nil {
 				return err
@@ -185,13 +185,13 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 				}
 			}
 		})
-		if err != nil {
-			return err
-		}
-
-		// copy data from temp table to target table
-		return s.to.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", tmpTable))
 	})
+	if err != nil {
+		return err
+	}
+
+	// copy data from temp table to target table
+	return s.to.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", tmpTable))
 }
 
 func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {

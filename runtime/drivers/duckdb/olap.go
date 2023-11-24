@@ -39,9 +39,8 @@ func (c *connection) Dialect() drivers.Dialect {
 
 func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
 	// Check not nested
-	conn := connFromContext(ctx)
-	if conn != nil {
-		return fn(ctx, contextWithConn(context.Background(), conn), conn.Conn)
+	if connFromContext(ctx) != nil {
+		panic("nested WithConnection")
 	}
 
 	// Acquire connection
