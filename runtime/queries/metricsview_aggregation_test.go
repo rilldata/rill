@@ -385,6 +385,8 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure(t *testing.T) {
 	require.Equal(t, "google.com", fieldsToString(rows[i], "dom"))
 }
 
+// remove 'Ignore_' for testing in a local environment
+// later these tests will be used in CI
 func Ignore_TestMetricsViewsAggregation_Druid(t *testing.T) {
 	dialOpts := []grpc.DialOption{grpc.WithInsecure()}
 
@@ -498,9 +500,6 @@ func Ignore_TestMetricsViewsAggregation_Druid_pivot(t *testing.T) {
 			{
 				Name: "publisher",
 			},
-			{
-				Name: "__time",
-			},
 		},
 		PivotOn: []string{
 			"__time",
@@ -526,13 +525,11 @@ func Ignore_TestMetricsViewsAggregation_Druid_pivot(t *testing.T) {
 	}
 	require.Equal(t, 4, len(resp.Schema.Fields))
 	require.Equal(t, "publisher", resp.Schema.Fields[0].Name)
-	require.Equal(t, "2022-01-01_bp", resp.Schema.Fields[1].Name)
-	require.Equal(t, "2022-02-01_bp", resp.Schema.Fields[2].Name)
-	require.Equal(t, "2022-03-01_bp", resp.Schema.Fields[3].Name)
+	require.Equal(t, "2022-01-01 00:00:00_bp", resp.Schema.Fields[1].Name)
+	require.Equal(t, "2022-02-01 00:00:00_bp", resp.Schema.Fields[2].Name)
+	require.Equal(t, "2022-03-01 00:00:00_bp", resp.Schema.Fields[3].Name)
 
 	i := 0
-	require.Equal(t, "", fieldsToString(rows[i], "publisher"))
-	i++
 	require.Equal(t, "Facebook", fieldsToString(rows[i], "publisher"))
 	i++
 	require.Equal(t, "Google", fieldsToString(rows[i], "publisher"))
@@ -540,6 +537,8 @@ func Ignore_TestMetricsViewsAggregation_Druid_pivot(t *testing.T) {
 	require.Equal(t, "Microsoft", fieldsToString(rows[i], "publisher"))
 	i++
 	require.Equal(t, "Yahoo", fieldsToString(rows[i], "publisher"))
+	i++
+	require.Equal(t, "", fieldsToString(rows[i], "publisher"))
 }
 
 func fieldsToString(row *structpb.Struct, args ...string) string {

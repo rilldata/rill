@@ -39,7 +39,7 @@ type MetricsViewAggregation struct {
 	Offset             int64                                        `json:"offset,omitempty"`
 	MetricsView        *runtimev1.MetricsViewSpec                   `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity         `json:"security"`
-	PivotOn            []string                                     `json:"pviot_on,omitempty"`
+	PivotOn            []string                                     `json:"pivot_on,omitempty"`
 
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
@@ -146,7 +146,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	duckDBOLAP, _ := handle.AsOLAP("")
 	err = duckDBOLAP.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, conn *databasesql.Conn) error {
 		temporaryTableName := tempName("_for_pivot_")
-		createTableSQL, err := createDruidTableQuery(schema, temporaryTableName)
+		createTableSQL, err := transporter.CreateTableQuery(schema, temporaryTableName)
 		if err != nil {
 			return err
 		}
@@ -446,79 +446,5 @@ func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAg
 		return fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR)))", safeName(colName), convertToDruidTimeFloorSpecifier(dim.TimeGrain)), []any{dim.TimeZone}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", dialect)
-	}
-}
-
-func createDruidTableQuery(schema *runtimev1.StructType, name string) (string, error) {
-	query := fmt.Sprintf("CREATE OR REPLACE TEMPORARY TABLE %s(", safeName(name))
-	for i, s := range schema.Fields {
-		i++
-		duckDBType, err := pbTypeToDuckDB(s.Type)
-		if err != nil {
-			return "", err
-		}
-		query += fmt.Sprintf("%s %s", safeName(s.Name), duckDBType)
-		if i != len(schema.Fields) {
-			query += ","
-		}
-	}
-	query += ")"
-	return query, nil
-}
-
-func pbTypeToDuckDB(t *runtimev1.Type) (string, error) {
-	code := t.Code
-	switch code {
-	case runtimev1.Type_CODE_UNSPECIFIED:
-		return "", fmt.Errorf("unspecified code")
-	case runtimev1.Type_CODE_BOOL:
-		return "BOOLEAN", nil
-	case runtimev1.Type_CODE_INT8:
-		return "TINYINT", nil
-	case runtimev1.Type_CODE_INT16:
-		return "SMALLINT", nil
-	case runtimev1.Type_CODE_INT32:
-		return "INTEGER", nil
-	case runtimev1.Type_CODE_INT64:
-		return "BIGINT", nil
-	case runtimev1.Type_CODE_INT128:
-		return "HUGEINT", nil
-	case runtimev1.Type_CODE_UINT8:
-		return "UTINYINT", nil
-	case runtimev1.Type_CODE_UINT16:
-		return "USMALLINT", nil
-	case runtimev1.Type_CODE_UINT32:
-		return "UINTEGER", nil
-	case runtimev1.Type_CODE_UINT64:
-		return "UBIGINT", nil
-	case runtimev1.Type_CODE_FLOAT32:
-		return "FLOAT", nil
-	case runtimev1.Type_CODE_FLOAT64:
-		return "DOUBLE", nil
-	case runtimev1.Type_CODE_TIMESTAMP:
-		return "TIMESTAMP", nil
-	case runtimev1.Type_CODE_DATE:
-		return "DATE", nil
-	case runtimev1.Type_CODE_TIME:
-		return "TIME", nil
-	case runtimev1.Type_CODE_STRING:
-		return "VARCHAR", nil
-	case runtimev1.Type_CODE_BYTES:
-		return "BLOB", nil
-	case runtimev1.Type_CODE_ARRAY:
-		return "", fmt.Errorf("array is not supported")
-	case runtimev1.Type_CODE_STRUCT:
-		return "", fmt.Errorf("struct is not supported")
-	case runtimev1.Type_CODE_MAP:
-		return "", fmt.Errorf("map is not supported")
-	case runtimev1.Type_CODE_DECIMAL:
-		return "DECIMAL", nil
-	case runtimev1.Type_CODE_JSON:
-		// keeping type as json but appending varchar using the appender API causes duckdb invalid vector error intermittently
-		return "VARCHAR", nil
-	case runtimev1.Type_CODE_UUID:
-		return "UUID", nil
-	default:
-		return "", fmt.Errorf("unknown type_code %s", code)
 	}
 }

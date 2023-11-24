@@ -122,7 +122,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 		p.Target(int64(total), drivers.ProgressUnitRecord)
 	}
 	// create table
-	qry, err := createTableQuery(schema, table)
+	qry, err := CreateTableQuery(schema, table)
 	if err != nil {
 		return err
 	}
@@ -175,7 +175,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	})
 }
 
-func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {
+func CreateTableQuery(schema *runtimev1.StructType, name string) (string, error) {
 	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s(", safeName(name))
 	for i, s := range schema.Fields {
 		i++
