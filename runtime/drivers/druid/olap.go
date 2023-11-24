@@ -22,7 +22,7 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, database, schema, name string, view bool, sql string) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
 	panic("not implemented")
 }
 

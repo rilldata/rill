@@ -68,7 +68,7 @@ func Test_connection_CreateTableAsSelect(t *testing.T) {
 	sql := "SELECT 1"
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			err := tt.c.CreateTableAsSelect(ctx, "", "", tt.name, tt.view, sql)
+			err := tt.c.CreateTableAsSelect(ctx, tt.name, tt.view, sql)
 			require.NoError(t, err)
 			res, err := tt.c.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %q", tt.name)})
 			require.NoError(t, err)
@@ -106,10 +106,10 @@ func Test_connection_CreateTableAsSelectMultipleTimes(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "", "", "test-select-multiple", false, "select 1")
+	err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", false, "select 1")
 	require.NoError(t, err)
 	time.Sleep(2 * time.Millisecond)
-	err = c.CreateTableAsSelect(context.Background(), "", "", "test-select-multiple", false, "select 'hello'")
+	err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", false, "select 'hello'")
 	require.NoError(t, err)
 
 	dirs, err := os.ReadDir(filepath.Join(temp, "test-select-multiple"))
@@ -119,7 +119,7 @@ func Test_connection_CreateTableAsSelectMultipleTimes(t *testing.T) {
 		names = append(names, dir.Name())
 	}
 
-	err = c.CreateTableAsSelect(context.Background(), "", "", "test-select-multiple", false, "select fail query")
+	err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", false, "select fail query")
 	require.Error(t, err)
 
 	dirs, err = os.ReadDir(filepath.Join(temp, "test-select-multiple"))
@@ -151,7 +151,7 @@ func Test_connection_DropTable(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "", "", "test-drop", false, "select 1")
+	err = c.CreateTableAsSelect(context.Background(), "test-drop", false, "select 1")
 	require.NoError(t, err)
 
 	err = c.DropTable(context.Background(), "test-drop", false)
@@ -179,7 +179,7 @@ func Test_connection_InsertTableAsSelect(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "", "", "test-insert", false, "select 1")
+	err = c.CreateTableAsSelect(context.Background(), "test-insert", false, "select 1")
 	require.NoError(t, err)
 
 	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "select 2")
@@ -208,7 +208,7 @@ func Test_connection_RenameTable(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "", "", "test-rename", false, "select 1")
+	err = c.CreateTableAsSelect(context.Background(), "test-rename", false, "select 1")
 	require.NoError(t, err)
 
 	err = c.RenameTable(context.Background(), "test-rename", "rename-test", false)
@@ -234,10 +234,10 @@ func Test_connection_RenameToExistingTable(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "", "", "source", false, "SELECT 1 AS data")
+	err = c.CreateTableAsSelect(context.Background(), "source", false, "SELECT 1 AS data")
 	require.NoError(t, err)
 
-	err = c.CreateTableAsSelect(context.Background(), "", "", "_tmp_source", false, "SELECT 2 AS DATA")
+	err = c.CreateTableAsSelect(context.Background(), "_tmp_source", false, "SELECT 2 AS DATA")
 	require.NoError(t, err)
 
 	err = c.RenameTable(context.Background(), "_tmp_source", "source", false)
@@ -263,7 +263,7 @@ func Test_connection_AddTableColumn(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "", "", "test alter column", false, "select 1 as data")
+	err = c.CreateTableAsSelect(context.Background(), "test alter column", false, "select 1 as data")
 	require.NoError(t, err)
 
 	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE table_name='test alter column' AND table_catalog = 'view'"})
@@ -292,10 +292,10 @@ func Test_connection_RenameToExistingTableOld(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "", "", "source", false, "SELECT 1 AS data")
+	err = c.CreateTableAsSelect(context.Background(), "source", false, "SELECT 1 AS data")
 	require.NoError(t, err)
 
-	err = c.CreateTableAsSelect(context.Background(), "", "", "_tmp_source", false, "SELECT 2 AS DATA")
+	err = c.CreateTableAsSelect(context.Background(), "_tmp_source", false, "SELECT 2 AS DATA")
 	require.NoError(t, err)
 
 	err = c.RenameTable(context.Background(), "_tmp_source", "source", false)
@@ -350,12 +350,12 @@ func Test_connection_CreateTableAsSelectStorageLimits(t *testing.T) {
 	sql := "SELECT * from read_parquet('../../../web-local/test/data/AdBids.parquet')"
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			err := tt.c.CreateTableAsSelect(ctx, "", "", tt.name, tt.view, sql)
+			err := tt.c.CreateTableAsSelect(ctx, tt.name, tt.view, sql)
 			if err != nil { // ingestion mostly completes in less than 5 seconds before the limit is checked
 				require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
 			}
 
-			err = tt.c.CreateTableAsSelect(ctx, "", "", tt.name, tt.view, sql)
+			err = tt.c.CreateTableAsSelect(ctx, tt.name, tt.view, sql)
 			require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
 		})
 	}
@@ -371,7 +371,7 @@ func Test_connection_InsertTableAsSelectLimits(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "", "", "test-insert", false, "SELECT * from read_parquet('../../../web-local/test/data/AdBids.parquet')")
+	err = c.CreateTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/test/data/AdBids.parquet')")
 	require.NoError(t, err)
 
 	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/test/data/AdBids.parquet')")
@@ -394,7 +394,7 @@ func Test_connection_CastEnum(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "", "", "test", false, "select 'hello' as name")
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "select 'hello' as name")
 	require.NoError(t, err)
 
 	err = c.InsertTableAsSelect(context.Background(), "test", false, "select 'world'")

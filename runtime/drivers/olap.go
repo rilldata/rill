@@ -29,9 +29,7 @@ type OLAPStore interface {
 	InformationSchema() InformationSchema
 	EstimateSize() (int64, bool)
 
-	// CreateTableAsSelect creates table/view in the given database and schema using the sql provided.
-	// If database/schema is empty, then the default database/schema is used.
-	CreateTableAsSelect(ctx context.Context, database, schema, name string, view bool, sql string) error
+	CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error
 	InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error
 	DropTable(ctx context.Context, name string, view bool) error
 	// RenameTable is force rename

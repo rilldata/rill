@@ -64,7 +64,7 @@ func (t *fileStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps ma
 		return err
 	}
 
-	err = t.to.CreateTableAsSelect(ctx, "", "", sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
+	err = t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
 	if err != nil {
 		return err
 	}

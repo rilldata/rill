@@ -106,7 +106,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 			}
 
 			defer func(ctx context.Context) { // revert back to localdb
-				err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s;", safeName(localDB))})
+				err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema))})
 				if err != nil {
 					t.logger.Error("failed to switch to local database", zap.Error(err))
 				}
@@ -119,7 +119,8 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 
 		userQuery := strings.TrimSpace(srcCfg.SQL)
 		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
-		return t.to.CreateTableAsSelect(ctx, localDB, localSchema, sinkCfg.Table, false, userQuery)
+		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s AS (%s);", safeName(localDB), safeName(sinkCfg.Table), userQuery)
+		return t.to.Exec(ctx, &drivers.Statement{Query: query})
 	})
 	return err
 }

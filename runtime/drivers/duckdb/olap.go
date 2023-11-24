@@ -40,15 +40,16 @@ func (c *connection) Dialect() drivers.Dialect {
 func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
 	// Check not nested
 	conn := connFromContext(ctx)
-	if conn == nil {
-		// Acquire connection
-		acq, release, err := c.acquireOLAPConn(ctx, priority, longRunning, tx)
-		if err != nil {
-			return err
-		}
-		defer func() { _ = release() }()
-		conn = acq
+	if conn != nil {
+		return fn(ctx, contextWithConn(context.Background(), conn), conn.Conn)
 	}
+
+	// Acquire connection
+	conn, release, err := c.acquireOLAPConn(ctx, priority, longRunning, tx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
 
 	// Call fn with connection embedded in context
 	wrappedCtx := contextWithConn(ctx, conn)
@@ -265,14 +266,19 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, database, schema, name string, view bool, sql string) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
 	c.logger.Info("create table", zap.String("name", name), zap.Bool("view", view))
-	if view || !c.config.ExtTableStorage {
-		qry := createQuery(database, schema, name, sql, view)
-		c.logger.Info("query", zap.String("query", qry))
-		return c.execWithLimits(ctx, &drivers.Statement{
-			Query:    qry,
+	if view {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s)", safeSQLName(name), sql),
 			Priority: 1,
+		})
+	}
+	if !c.config.ExtTableStorage {
+		return c.execWithLimits(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s)", safeSQLName(name), sql),
+			Priority:    1,
+			LongRunning: true,
 		})
 	}
 
@@ -315,7 +321,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, database, schema, 
 
 		// create view query
 		err = c.Exec(ctx, &drivers.Statement{
-			Query: createQuery(database, schema, name, fmt.Sprintf("SELECT * FROM %s.default", safeSQLName(db)), true),
+			Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT * FROM %s.default", safeSQLName(name), safeSQLName(db)),
 		})
 		if err != nil {
 			c.detachAndRemoveFile(ensuredCtx, db, dbFile)
@@ -775,23 +781,4 @@ func safeSQLString(name string) string {
 		return name
 	}
 	return fmt.Sprintf("'%s'", strings.ReplaceAll(name, "'", "''"))
-}
-
-func createQuery(db, schema, table, sql string, view bool) string {
-	var fullName string
-	if db != "" {
-		fullName = fmt.Sprintf("%s.", safeSQLName(db))
-	}
-	if schema != "" {
-		fullName = fmt.Sprintf("%s%s.", fullName, safeSQLName(schema))
-	}
-	fullName = fmt.Sprintf("%s%s", fullName, safeSQLName(table))
-
-	var tbl string
-	if view {
-		tbl = "VIEW"
-	} else {
-		tbl = "TABLE"
-	}
-	return fmt.Sprintf("CREATE OR REPLACE %s %s AS (%s)", tbl, fullName, sql)
 }
