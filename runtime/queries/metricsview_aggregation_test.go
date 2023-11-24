@@ -6,11 +6,15 @@ import (
 	"strings"
 	"testing"
 
+	// "github.com/golang/protobuf/proto"
+	// garuntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	// "github.com/grpc-ecosystem/grpc-gateway/utilities"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
@@ -379,6 +383,163 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure(t *testing.T) {
 
 	i := 0
 	require.Equal(t, "google.com", fieldsToString(rows[i], "dom"))
+}
+
+func Ignore_TestMetricsViewsAggregation_Druid(t *testing.T) {
+	dialOpts := []grpc.DialOption{grpc.WithInsecure()}
+
+	conn, err := grpc.Dial(":49009", dialOpts...)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	defer conn.Close()
+
+	client := runtimev1.NewQueryServiceClient(conn)
+	req := &runtimev1.MetricsViewAggregationRequest{
+		InstanceId:  "default",
+		MetricsView: "test_data_test",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "publisher",
+			},
+			{
+				Name:      "__time",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "bp",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "publisher",
+			},
+			{
+				Name: "__time",
+			},
+		},
+	}
+
+	resp, err := client.MetricsViewAggregation(context.Background(), req)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	rows := resp.Data
+
+	for _, s := range resp.Schema.Fields {
+		fmt.Printf("%v ", s.Name)
+	}
+	fmt.Println()
+	for i, row := range resp.Data {
+		for _, s := range resp.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[s.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	i := 0
+	require.Equal(t, ",2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, ",2022-02-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, ",2022-03-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Facebook,2022-02-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Facebook,2022-03-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Google,2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Google,2022-02-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Google,2022-03-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Microsoft,2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Microsoft,2022-02-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Microsoft,2022-03-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	i++
+	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+}
+
+func Ignore_TestMetricsViewsAggregation_Druid_pivot(t *testing.T) {
+	dialOpts := []grpc.DialOption{grpc.WithInsecure()}
+
+	conn, err := grpc.Dial(":49009", dialOpts...)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	defer conn.Close()
+
+	client := runtimev1.NewQueryServiceClient(conn)
+	req := &runtimev1.MetricsViewAggregationRequest{
+		InstanceId:  "default",
+		MetricsView: "test_data_test",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "publisher",
+			},
+			{
+				Name:      "__time",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "bp",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "publisher",
+			},
+			{
+				Name: "__time",
+			},
+		},
+		PivotOn: []string{
+			"__time",
+		},
+	}
+
+	resp, err := client.MetricsViewAggregation(context.Background(), req)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	rows := resp.Data
+
+	for _, s := range resp.Schema.Fields {
+		fmt.Printf("%v ", s.Name)
+	}
+	fmt.Println()
+	for i, row := range resp.Data {
+		for _, s := range resp.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[s.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	require.Equal(t, 4, len(resp.Schema.Fields))
+	require.Equal(t, "publisher", resp.Schema.Fields[0].Name)
+	require.Equal(t, "2022-01-01_bp", resp.Schema.Fields[1].Name)
+	require.Equal(t, "2022-02-01_bp", resp.Schema.Fields[2].Name)
+	require.Equal(t, "2022-03-01_bp", resp.Schema.Fields[3].Name)
+
+	i := 0
+	require.Equal(t, "", fieldsToString(rows[i], "publisher"))
+	i++
+	require.Equal(t, "Facebook", fieldsToString(rows[i], "publisher"))
+	i++
+	require.Equal(t, "Google", fieldsToString(rows[i], "publisher"))
+	i++
+	require.Equal(t, "Microsoft", fieldsToString(rows[i], "publisher"))
+	i++
+	require.Equal(t, "Yahoo", fieldsToString(rows[i], "publisher"))
 }
 
 func fieldsToString(row *structpb.Struct, args ...string) string {

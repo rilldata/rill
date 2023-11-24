@@ -2,33 +2,29 @@ package queries
 
 import (
 	"context"
+	databasesql "database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 
+	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	duckdbolap "github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-
 	"go.uber.org/zap"
-
-	databasesql "database/sql"
-	"database/sql/driver"
-	"sync"
-
-	"github.com/marcboeker/go-duckdb"
-	"github.com/rilldata/rill/runtime/pkg/pbutil"
-	"google.golang.org/protobuf/types/known/structpb"
 )
 
 var (
 	dbOnce    sync.Once
-	connector driver.Connector
+	handle    drivers.Handle
+	errHandle error
 )
 
 type MetricsViewAggregation struct {
@@ -79,9 +75,6 @@ func (q *MetricsViewAggregation) UnmarshalResult(v any) error {
 	q.Result = res
 	return nil
 }
-
-var handle drivers.Handle
-var handleErr error
 
 func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	olap, release, err := rt.OLAP(ctx, instanceID)
@@ -137,74 +130,75 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 
 			return q.pivotOn(ctx, olap, temporaryTableName)
 		})
-	} else {
-		dbOnce.Do(func() {
-			handle, handleErr = duckdbolap.Driver{}.Open(map[string]any{"pool_size": 2}, false, activity.NewNoopClient(), zap.NewNop())
-		})
-		if handleErr != nil {
-			return handleErr
-		}
+	}
+	dbOnce.Do(func() {
+		handle, errHandle = duckdbolap.Driver{}.Open(map[string]any{"pool_size": 10}, false, activity.NewNoopClient(), zap.NewNop())
+	})
+	if errHandle != nil {
+		return errHandle
+	}
 
-		schema, data, err := olapQuery(ctx, olap, priority, sqlString, args)
+	schema, data, err := olapQuery(ctx, olap, priority, sqlString, args)
+	if err != nil {
+		return err
+	}
+
+	duckDBOLAP, _ := handle.AsOLAP("")
+	err = duckDBOLAP.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, conn *databasesql.Conn) error {
+		temporaryTableName := tempName("_for_pivot_")
+		createTableSQL, err := createDruidTableQuery(schema, temporaryTableName)
 		if err != nil {
 			return err
 		}
 
-		duckDBOLAP, _ := handle.AsOLAP("")
-		err = duckDBOLAP.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, conn *databasesql.Conn) error {
-			return transporter.RawConn(conn, func(conn driver.Conn) error {
-				temporaryTableName := tempName("_for_pivot_")
-				createTableSQL, err := createDruidTableQuery(schema, temporaryTableName)
-				if err != nil {
-					return err
-				}
-
-				err = duckDBOLAP.Exec(ctx, &drivers.Statement{
-					Query: createTableSQL,
-				})
-				if err != nil {
-					return err
-				}
-				defer func() {
-					_ = duckDBOLAP.Exec(ensuredCtx, &drivers.Statement{
-						Query: `DROP TABLE "` + temporaryTableName + `"`,
-					})
-				}()
-
-				appender, err := duckdb.NewAppenderFromConn(conn, "", temporaryTableName)
-				if err != nil {
-					return err
-				}
-				defer appender.Close()
-
-				batchSize := 10000
-				arr := make([]driver.Value, 0, len(schema.Fields))
-				count := 0
-				for _, row := range data {
-					for _, key := range schema.Fields {
-						arr = append(arr, row.Fields[key.Name].AsInterface())
-					}
-					err = appender.AppendRowArray(arr)
-					if err != nil {
-						return err
-					}
-					arr = arr[:0]
-					count++
-					if count >= batchSize {
-						appender.Flush()
-						count = 0
-					}
-				}
-				appender.Flush()
-
-				q.pivotOn(ctx, duckDBOLAP, temporaryTableName)
-
-				return nil
-			})
+		err = duckDBOLAP.Exec(ctx, &drivers.Statement{
+			Query: createTableSQL,
 		})
-		return err
-	}
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = duckDBOLAP.Exec(ensuredCtx, &drivers.Statement{
+				Query: `DROP TABLE "` + temporaryTableName + `"`,
+			})
+		}()
 
+		err = transporter.RawConn(conn, func(conn driver.Conn) error {
+			appender, err := duckdb.NewAppenderFromConn(conn, "", temporaryTableName)
+			if err != nil {
+				return err
+			}
+			defer appender.Close()
+
+			batchSize := 10000
+			arr := make([]driver.Value, 0, len(schema.Fields))
+			count := 0
+			for _, row := range data {
+				for _, key := range schema.Fields {
+					arr = append(arr, row.Fields[key.Name].AsInterface())
+				}
+				err = appender.AppendRowArray(arr)
+				if err != nil {
+					return err
+				}
+				arr = arr[:0]
+				count++
+				if count >= batchSize {
+					appender.Flush()
+					count = 0
+				}
+			}
+			appender.Flush()
+
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		return q.pivotOn(ctx, duckDBOLAP, temporaryTableName)
+	})
+	return err
 }
 
 func (q *MetricsViewAggregation) pivotOn(ctx context.Context, olap drivers.OLAPStore, temporaryTableName string) error {
@@ -250,24 +244,9 @@ func (q *MetricsViewAggregation) pivotOn(ctx context.Context, olap drivers.OLAPS
 		q.Offset,                        // 6
 	)
 	schema, data, err := olapQuery(ctx, olap, int(q.Priority), pivotSQL, nil)
-	// rows, err := olap.Execute(ctx, &drivers.Statement{
-	// 	Query: pivotSQL,
-	// })
-	// // r, err := db.QueryContext(ctx, pivotSQL)
 	if err != nil {
 		return err
 	}
-	// defer rows.Close()
-
-	// schema, err = rowsToSchema(r)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// data, err = sqlRowsToData(r, schema)
-	// if err != nil {
-	// 	return err
-	// }
 
 	q.Result = &runtimev1.MetricsViewAggregationResponse{
 		Schema: schema,
