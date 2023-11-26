@@ -32,7 +32,7 @@
     "@storybook/svelte-vite": "^7.0.18",
     "@storybook/testing-library": "^0.0.14-next.2",
     "@tanstack/svelte-query": "npm:@rilldata/svelte-query@4.29.20-0.0.2",
-    "@tanstack/svelte-table": "^8.9.4",
+    "@tanstack/svelte-table": "^8.9.5",
     "@testing-library/svelte": "^4.0.0",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
