@@ -24,8 +24,7 @@ interface NotificationMessage {
   options?: NotificationOptions;
 }
 
-// No need to export after we deprecate the Node backend
-export interface NotificationOptions {
+interface NotificationOptions {
   width?: number;
   persisted?: boolean;
 }
