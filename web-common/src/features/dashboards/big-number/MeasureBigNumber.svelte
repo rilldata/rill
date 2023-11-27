@@ -185,8 +185,16 @@
   </button>
 </Tooltip>
 
-<style lang="postcss">
+<style>
   .big-number:hover {
-    @apply ui-card;
+    /* ui-card */
+    background: var(
+      --gradient_white-slate50,
+      linear-gradient(180deg, #fff 0%, #f8fafc 100%)
+    );
+    box-shadow: 0px 4px 6px 0px rgba(15, 23, 42, 0.09),
+      0px 0px 0px 1px rgba(15, 23, 42, 0.06),
+      0px 1px 3px 0px rgba(15, 23, 42, 0.04),
+      0px 2px 3px 0px rgba(15, 23, 42, 0.03);
   }
 </style>

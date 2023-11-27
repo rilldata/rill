@@ -7,10 +7,12 @@ import {
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
-  DashboardTimeControls,
-  ScrubRange,
   TimeComparisonOption,
   TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
+import type {
+  DashboardTimeControls,
+  ScrubRange,
 } from "@rilldata/web-common/lib/time/types";
 import {
   MetricsViewFilter,
@@ -53,7 +55,7 @@ export function getProtoFromDashboardState(
 
   const state: PartialMessage<DashboardState> = {};
   if (metrics.filters) {
-    state.filters = toFiltersProto(metrics.filters) as any;
+    state.filters = toFiltersProto(metrics.filters);
   }
   if (metrics.selectedTimeRange) {
     state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
@@ -123,8 +125,8 @@ function protoToBase64(proto: Uint8Array) {
 
 function toFiltersProto(filters: V1MetricsViewFilter) {
   return new MetricsViewFilter({
-    include: toFilterCondProto(filters.include) as any,
-    exclude: toFilterCondProto(filters.exclude) as any,
+    include: toFilterCondProto(filters.include ?? []),
+    exclude: toFilterCondProto(filters.exclude ?? []),
   });
 }
 
@@ -136,8 +138,8 @@ function toTimeRangeProto(range: DashboardTimeControls) {
     range.name === TimeRangePreset.CUSTOM ||
     range.name === TimeComparisonOption.CUSTOM
   ) {
-    timeRangeArgs.timeStart = toTimeProto(range.start);
-    timeRangeArgs.timeEnd = toTimeProto(range.end);
+    if (range.start) timeRangeArgs.timeStart = toTimeProto(range.start);
+    if (range.end) timeRangeArgs.timeEnd = toTimeProto(range.end);
   }
   return new DashboardTimeRange(timeRangeArgs);
 }
@@ -190,7 +192,7 @@ function toFilterCondProto(conds: Array<MetricsViewFilterCond>) {
       new MetricsViewFilter_Cond({
         name: include.name,
         like: include.like,
-        in: include.in.map(
+        in: include.in?.map(
           (v) =>
             (v === null
               ? new Value({
@@ -204,7 +206,7 @@ function toFilterCondProto(conds: Array<MetricsViewFilterCond>) {
                     case: "stringValue",
                     value: v as string,
                   },
-                })) as any
+                })) ?? []
         ),
       })
   );

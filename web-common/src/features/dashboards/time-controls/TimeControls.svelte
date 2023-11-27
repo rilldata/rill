@@ -16,7 +16,7 @@
     TimeComparisonOption,
     TimeGrain,
     TimeRange,
-    TimeRangeType,
+    TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -90,7 +90,7 @@
     new Date($timeControlsStore.timeEnd)
   );
 
-  function onSelectTimeRange(name: TimeRangeType, start: Date, end: Date) {
+  function onSelectTimeRange(name: TimeRangePreset, start: Date, end: Date) {
     baseTimeRange = {
       name,
       start: new Date(start),

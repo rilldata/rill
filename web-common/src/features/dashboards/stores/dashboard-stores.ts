@@ -361,6 +361,8 @@ const metricViewReducers = {
     allTimeRange: TimeRange
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      if (!timeRange.name) return;
+
       // Reset scrub when range changes
       setSelectedScrubRange(metricsExplorer, undefined);
 

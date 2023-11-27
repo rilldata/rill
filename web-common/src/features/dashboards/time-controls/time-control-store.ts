@@ -185,7 +185,7 @@ function calculateTimeRangePartial(
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain
-): TimeRangeState {
+): TimeRangeState | undefined {
   if (!metricsExplorer.selectedTimeRange) return undefined;
 
   const selectedTimeRange = getTimeRange(
@@ -293,6 +293,8 @@ function getTimeRange(
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls
 ) {
+  if (!metricsExplorer.selectedTimeRange) return undefined;
+
   let timeRange: DashboardTimeControls;
 
   if (metricsExplorer.selectedTimeRange?.name === TimeRangePreset.CUSTOM) {
@@ -303,15 +305,9 @@ function getTimeRange(
       end: new Date(metricsExplorer.selectedTimeRange.end),
     };
   } else if (
-    metricsExplorer.selectedTimeRange?.name === TimeRangePreset.DEFAULT
+    metricsExplorer.selectedTimeRange?.name &&
+    metricsExplorer.selectedTimeRange?.name in DEFAULT_TIME_RANGES
   ) {
-    /** set the time range to the fixed custom time range */
-    timeRange = {
-      name: TimeRangePreset.DEFAULT,
-      start: defaultTimeRange.start,
-      end: defaultTimeRange.end,
-    };
-  } else {
     /** rebuild off of relative time range */
     timeRange = convertTimeRangePreset(
       metricsExplorer.selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
@@ -319,6 +315,13 @@ function getTimeRange(
       allTimeRange.end,
       metricsExplorer.selectedTimezone
     );
+  } else {
+    /** set the time range to the fixed custom time range */
+    timeRange = {
+      name: defaultTimeRange.name,
+      start: defaultTimeRange.start,
+      end: defaultTimeRange.end,
+    };
   }
 
   return timeRange;
@@ -360,12 +363,13 @@ function getComparisonTimeRange(
   timeRange: DashboardTimeControls,
   comparisonTimeRange: DashboardTimeControls
 ) {
-  if (!comparisonTimeRange) return undefined;
+  if (!comparisonTimeRange || !timeRange.name) return undefined;
 
   let selectedComparisonTimeRange: DashboardTimeControls;
   if (!comparisonTimeRange?.name) {
-    const comparisonOption = DEFAULT_TIME_RANGES[timeRange.name]
-      ?.defaultComparison as TimeComparisonOption;
+    const comparisonOption = DEFAULT_TIME_RANGES[
+      timeRange.name as TimeComparisonOption
+    ]?.defaultComparison as TimeComparisonOption;
     const range = getTimeComparisonParametersForComponent(
       comparisonOption,
       allTimeRange.start,

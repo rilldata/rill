@@ -9,7 +9,6 @@ import {
   getRuntimeServiceListResourcesQueryKey,
   V1ReconcileStatus,
   V1Resource,
-  V1ResourceEvent,
 } from "@rilldata/web-common/runtime-client";
 import {
   invalidateMetricsViewData,
@@ -50,16 +49,17 @@ export function invalidateResourceResponse(
     return;
   }
 
+  // Reconcile does a soft delete 1st by populating deletedOn
+  // We then get an event with DELETE after reconcile ends, but without a resource object.
+  // So we need to check for deletedOn to be able to use resource.meta, especially the filePaths
+  const isSoftDelete = !!res.resource?.meta?.deletedOn;
+
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here
-  switch (res.event) {
-    case V1ResourceEvent.RESOURCE_EVENT_WRITE:
-      invalidateResource(queryClient, instanceId, res.resource);
-      break;
-
-    case V1ResourceEvent.RESOURCE_EVENT_DELETE:
-      invalidateRemovedResource(queryClient, instanceId, res.resource);
-      break;
+  if (isSoftDelete) {
+    invalidateRemovedResource(queryClient, instanceId, res.resource);
+  } else {
+    invalidateResource(queryClient, instanceId, res.resource);
   }
 
   // only re-fetch list queries for kinds in `MainResources`

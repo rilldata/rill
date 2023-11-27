@@ -30,43 +30,58 @@
     );
   }
 
-  function formatForSelector(measure: MetricsViewSpecMeasureV2) {
-    if (!measure) return undefined;
+  function measureKeyAndMain(measure: MetricsViewSpecMeasureV2) {
+    // CAST SAFETY: measure expression must exist!
+    const main = (
+      measure.label?.length ? measure.label : measure.expression
+    ) as string;
     return {
-      ...measure,
-      key: measure.name,
-      main: measure.label?.length ? measure.label : measure.expression,
+      main,
+      // CAST SAFETY: measure expression must exist!
+      key: measure.name ?? (measure.expression as string),
     };
   }
 
-  let [send, receive] = crossfade({ fallback: fly });
+  function formatForSelector(
+    measure: MetricsViewSpecMeasureV2
+  ): (MetricsViewSpecMeasureV2 & { key: string; main: string }) | undefined {
+    if (!measure) return undefined;
+    return {
+      ...measure,
+      ...measureKeyAndMain(measure),
+    };
+  }
+
+  let [send, receive] = crossfade({
+    fallback: (node, _params, _intro) => fly(node),
+  });
 
   /** this should be a single element */
   // reset selections based on the active leaderboard measure
   let activeLeaderboardMeasure: ReturnType<typeof formatForSelector>;
+
+  $: unformattedMeasure =
+    measures?.length && metricsExplorer?.leaderboardMeasureName
+      ? measures.find(
+          (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
+        )
+      : undefined;
+
   $: activeLeaderboardMeasure =
-    measures?.length &&
-    metricsExplorer?.leaderboardMeasureName &&
-    formatForSelector(
-      measures.find(
-        (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
-      ) ?? undefined
-    );
+    unformattedMeasure && formatForSelector(unformattedMeasure);
 
   /** this controls the animation direction */
 
   $: options =
     measures?.map((measure) => {
-      let main = measure.label?.length ? measure.label : measure.expression;
       return {
         ...measure,
-        key: measure.name,
-        main,
+        ...measureKeyAndMain(measure),
       };
     }) || [];
 
   /** set the selection only if measures is not undefined */
-  $: selection = measures ? activeLeaderboardMeasure : [];
+  $: selection = unformattedMeasure && measureKeyAndMain(unformattedMeasure);
 
   $: validPercentOfTotal =
     activeLeaderboardMeasure?.validPercentOfTotal || false;

@@ -8,7 +8,6 @@ import type { TimeControlState } from "@rilldata/web-common/features/dashboards/
 import {
   TimeComparisonOption,
   TimeRangePreset,
-  TimeRangeType,
 } from "@rilldata/web-common/lib/time/types";
 import type {
   V1MetricsViewComparisonRequest,
@@ -17,22 +16,6 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, Readable } from "svelte/store";
-
-// Temporary. A future PR will add iso to the selection itself.
-const TIME_RANGES_TO_ISO: Record<TimeRangeType, string> = {
-  [TimeRangePreset.ALL_TIME]: "inf",
-  [TimeRangePreset.LAST_SIX_HOURS]: "PT6H",
-  [TimeRangePreset.LAST_24_HOURS]: "PT24H",
-  [TimeRangePreset.LAST_7_DAYS]: "P7D",
-  [TimeRangePreset.LAST_14_DAYS]: "P14D",
-  [TimeRangePreset.LAST_4_WEEKS]: "P4W",
-  [TimeRangePreset.LAST_12_MONTHS]: "P12M",
-  [TimeRangePreset.TODAY]: "rill-TD",
-  [TimeRangePreset.WEEK_TO_DATE]: "rill-WTD",
-  [TimeRangePreset.MONTH_TO_DATE]: "rill-MTD",
-  [TimeRangePreset.QUARTER_TO_DATE]: "rill-QTD",
-  [TimeRangePreset.YEAR_TO_DATE]: "rill-YTD",
-};
 
 export function getDimensionTableExportArgs(
   ctx: StateManagers
@@ -103,8 +86,7 @@ function getTimeRange(
       break;
 
     default:
-      timeRange.isoDuration =
-        TIME_RANGES_TO_ISO[timeControlState.selectedTimeRange.name];
+      timeRange.isoDuration = timeControlState.selectedTimeRange.name;
       break;
   }
 

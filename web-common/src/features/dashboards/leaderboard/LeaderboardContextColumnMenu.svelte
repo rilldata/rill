@@ -16,7 +16,9 @@
 
   const handleContextValueButtonGroupClick = (evt) => {
     const value: SelectMenuItem = evt.detail;
-    const key = value.key;
+    // CAST SAFETY: the value.key passed up from the evt must
+    // be a LeaderboardContextColumn
+    const key = value.key as LeaderboardContextColumn;
     metricsExplorerStore.setContextColumn(metricViewName, key);
   };
 
@@ -43,11 +45,10 @@
     },
   ];
 
-  let selection: SelectMenuItem;
-
+  // CAST SAFETY: the selection will always be one of the options
   $: selection = options.find(
-    (option) => option.key === metricsExplorer?.leaderboardContextColumn
-  );
+    (option) => option.key === metricsExplorer.leaderboardContextColumn
+  ) as SelectMenuItem;
 </script>
 
 <SelectMenu
