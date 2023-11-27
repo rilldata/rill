@@ -42,11 +42,11 @@ function setPrimaryColor(primary: string, mode: string | null) {
       break;
   }
 
-  console.log(
-    primary,
-    mode,
-    Object.values(colors).map((c) => `${c.hex()}`)
-  );
+  // console.log(
+  //   primary,
+  //   mode,
+  //   Object.values(colors).map((c) => `${c.hex()}`)
+  // );
   const root = document.querySelector(":root") as HTMLElement;
 
   for (let i = 0; i < TailwindColorSpacing.length; i++) {
@@ -84,10 +84,12 @@ function setSecondaryColor(secondary: string, variance: number) {
 
 function themeColorToHSLString(color: Color) {
   const [h, s, l] = color.hsl();
-  return `${Number.isNaN(h) ? 0 : h * 360}, ${s * 100}%, ${l * 100}%`;
+  return `${Number.isNaN(h) ? 0 : h * 360}, ${Math.round(
+    s * 100
+  )}%, ${Math.round(l * 100)}%`;
 }
 
-function copySaturationAndLightness(input: Color) {
+export function copySaturationAndLightness(input: Color) {
   const colors = new Array<Color>(TailwindColorSpacing.length);
   for (let i = 0; i < DefaultPrimaryColors.length; i++) {
     colors[i] = chroma.hsl(

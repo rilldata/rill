@@ -6,6 +6,7 @@
     generateColorPaletteUsingScale,
     generateColorPaletteUsingScaleDifferentStartAndEnd,
   } from "@rilldata/web-common/features/themes/color-palette";
+  import { copySaturationAndLightness } from "@rilldata/web-common/features/themes/theme-actions";
   import chroma, { Color } from "chroma-js";
 
   let input = "darkred";
@@ -18,7 +19,15 @@
     try {
       palettes = [
         {
-          title: `Palette based on lightness scale from white -> ${input} -> black`,
+          title: "Copy saturation and lightness from blue palette (default)",
+          palette: copySaturationAndLightness(chroma(input)),
+        },
+        {
+          title: "Lighten and darken with fixed position (mode=v1)",
+          palette: generateColorPaletteUsingScale(chroma(input)),
+        },
+        {
+          title: `Palette based on lightness scale from white -> ${input} -> black (mode=v2)`,
           palette: generateColorPaletteUsingScale(chroma(input)),
         },
         {
