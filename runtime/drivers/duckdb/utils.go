@@ -1,4 +1,4 @@
-package transporter
+package duckdb
 
 import (
 	"database/sql"
@@ -64,6 +64,7 @@ type fileSourceProperties struct {
 	Format                string         `mapstructure:"format"`
 	AllowSchemaRelaxation bool           `mapstructure:"allow_schema_relaxation"`
 	BatchSize             string         `mapstructure:"batch_size"`
+	CastToENUM            []string       `mapstructure:"cast_to_enum"`
 
 	// Backwards compatibility
 	HivePartitioning            *bool  `mapstructure:"hive_partitioning"`

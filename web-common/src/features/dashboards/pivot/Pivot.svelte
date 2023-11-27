@@ -74,6 +74,12 @@
           structuredClone(LOADING_CELL)
         );
       }
+      // Replace null values inside the header with null placeholders
+      // Assumes that the second item in the array is always the measure
+      // value
+      else if (r?.[1]?.value === null) {
+        row_headers[i][1].value = NULL_CELL;
+      }
     });
 
     let data = getBodyData({ x0, x1, y0, y1 });
@@ -173,8 +179,6 @@
       const maybeWidth = getColumnWidth(x);
       if (maybeWidth) {
         th.style.width = `${maybeWidth}px`;
-        th.style.minWidth = `${maybeWidth}px`;
-        th.style.maxWidth = `${maybeWidth}px`;
       }
     }
 
@@ -191,7 +195,8 @@
       value: meta.value,
       element: th,
     });
-    if (maybeVal) th.innerHTML = maybeVal;
+    if (maybeVal)
+      th.innerHTML = maybeVal + `<span class="rt-column-resize"></span>`;
   }
 
   function style_row_corner(th: HTMLTableCellElement) {
@@ -204,8 +209,6 @@
       const maybeWidth = getRowHeaderWidth(x);
       if (maybeWidth) {
         th.style.width = `${maybeWidth}px`;
-        th.style.minWidth = `${maybeWidth}px`;
-        th.style.maxWidth = `${maybeWidth}px`;
       }
     }
 
@@ -215,7 +218,9 @@
       value: meta.value,
       element: th,
     });
-    if (maybeVal) th.innerHTML = maybeVal;
+
+    if (maybeVal)
+      th.innerHTML = maybeVal + `<span class="rt-column-resize"></span>`;
   }
 
   $: {
@@ -329,5 +334,6 @@
 
   :global(regular-table thead th) {
     height: var(--row-height);
+    user-select: none;
   }
 </style>

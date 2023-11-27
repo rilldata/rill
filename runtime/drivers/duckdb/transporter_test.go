@@ -1,4 +1,4 @@
-package transporter_test
+package duckdb_test
 
 import (
 	"context"
@@ -9,8 +9,7 @@ import (
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
-	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
-	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
+	"github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -158,7 +157,7 @@ mum,8.2`)
 			mockConnector.mockIterator = &mockIterator{batches: test.files}
 			olap := runOLAPStore(t)
 			ctx := context.Background()
-			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
+			tr := duckdb.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
 			var src map[string]any
 			if test.query {
@@ -303,7 +302,7 @@ mum,8.2`)
 			mockConnector.mockIterator = &mockIterator{batches: test.files}
 			olap := runOLAPStore(t)
 			ctx := context.Background()
-			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
+			tr := duckdb.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
 			var src map[string]any
 			if test.query {
@@ -324,10 +323,10 @@ mum,8.2`)
 }
 
 func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
-	file1 := filepath.Join("../../../testruntime/testdata/variable-schema", "data.parquet")
-	file2 := filepath.Join("../../../testruntime/testdata/variable-schema", "data1.parquet")
-	file3 := filepath.Join("../../../testruntime/testdata/variable-schema", "data2.parquet")
-	file4 := filepath.Join("../../../testruntime/testdata/variable-schema", "data3.parquet")
+	file1 := filepath.Join("../../testruntime/testdata/variable-schema", "data.parquet")
+	file2 := filepath.Join("../../testruntime/testdata/variable-schema", "data1.parquet")
+	file3 := filepath.Join("../../testruntime/testdata/variable-schema", "data2.parquet")
+	file4 := filepath.Join("../../testruntime/testdata/variable-schema", "data3.parquet")
 
 	type test struct {
 		files       [][]string
@@ -402,7 +401,7 @@ func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
 			mockConnector.mockIterator = &mockIterator{batches: test.files}
 			olap := runOLAPStore(t)
 			ctx := context.Background()
-			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
+			tr := duckdb.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
 			var src map[string]any
 			if test.query {
@@ -544,7 +543,7 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 			mockConnector.mockIterator = m
 			olap := runOLAPStore(t)
 			ctx := context.Background()
-			tr := transporter.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
+			tr := duckdb.NewObjectStoreToDuckDB(mockConnector, olap, zap.NewNop())
 
 			var src map[string]any
 			if test.query {

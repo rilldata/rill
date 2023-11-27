@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -100,6 +101,10 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			pc := runtimev1.ProfileColumn{}
 			if err := rows.StructScan(&pc); err != nil {
 				return err
+			}
+			// TODO: Find a better way to handle this, this is ugly
+			if strings.Contains(pc.Type, "ENUM") {
+				pc.Type = "VARCHAR"
 			}
 			pcs = append(pcs, &pc)
 			i++

@@ -23,7 +23,7 @@
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
 
   export let measure: MetricsViewSpecMeasureV2;
-  export let value: number;
+  export let value: number | null;
   export let comparisonOption: TimeComparisonOption | undefined = undefined;
   export let comparisonValue: number | undefined = undefined;
   export let comparisonPercChange: number | undefined = undefined;
@@ -34,16 +34,20 @@
 
   const dispatch = createEventDispatcher();
 
-  $: measureValueFormatter = createMeasureValueFormatter(measure);
+  $: measureValueFormatter = createMeasureValueFormatter<null>(measure);
 
-  $: measureValueFormatterUnabridged = createMeasureValueFormatter(
+  // this is used to show the full value in tooltips when the user hovers
+  // over the number. If not present, we'll use the string "no data"
+  $: measureValueFormatterUnabridged = createMeasureValueFormatter<null>(
     measure,
     true
   );
 
   $: name = measure?.label || measure?.expression;
 
-  $: valueIsPresent = value !== undefined && value !== null;
+  $: if (value === undefined) {
+    value = null;
+  }
 
   const [send, receive] = crossfade({
     fallback: (node: Element, params: CrossfadeParams) =>
@@ -51,7 +55,7 @@
   });
 
   $: diff =
-    valueIsPresent && comparisonValue !== undefined
+    value !== null && comparisonValue !== undefined
       ? value - comparisonValue
       : 0;
   $: noChange = !comparisonValue;
@@ -64,10 +68,11 @@
   /** when the measure is a percentage, we don't show a percentage change. */
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
-  $: hoveredValue = measureValueFormatterUnabridged(value);
+  $: hoveredValue = measureValueFormatterUnabridged(value) ?? "no data";
 
   const { shiftClickAction } = createShiftClickAction();
-  async function shiftClickHandler(number: string) {
+  async function shiftClickHandler(number: string | undefined) {
+    if (number === undefined) return;
     await navigator.clipboard.writeText(number);
     notifications.send({
       message: `copied dimension value "${number}" to clipboard`,
@@ -112,7 +117,7 @@
         style:font-weight="light"
       >
         <div>
-          {#if valueIsPresent && status === EntityStatus.Idle}
+          {#if value !== null && status === EntityStatus.Idle}
             <div class="w-max">
               <WithTween {value} tweenProps={{ duration: 500 }} let:output>
                 {measureValueFormatter(output)}
@@ -123,9 +128,11 @@
                 {#if comparisonValue != null}
                   <div
                     on:mouseenter={() =>
-                      (hoveredValue = measureValueFormatterUnabridged(diff))}
+                      (hoveredValue =
+                        measureValueFormatterUnabridged(diff) ?? "no data")}
                     on:mouseleave={() =>
-                      (hoveredValue = measureValueFormatterUnabridged(value))}
+                      (hoveredValue =
+                        measureValueFormatterUnabridged(value) ?? "no data")}
                     class="w-max text-sm ui-copy-inactive"
                     class:font-semibold={isComparisonPositive}
                   >
@@ -148,7 +155,8 @@
                         )
                       ))}
                     on:mouseleave={() =>
-                      (hoveredValue = measureValueFormatterUnabridged(value))}
+                      (hoveredValue =
+                        measureValueFormatterUnabridged(value) ?? "no data")}
                     class="w-max text-sm
               {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
                   >
@@ -176,7 +184,7 @@
             >
               <Spinner status={EntityStatus.Running} />
             </div>
-          {:else if !valueIsPresent}
+          {:else if value === null}
             <span class="ui-copy-disabled-faint italic text-sm">no data</span>
           {/if}
         </div>
@@ -185,8 +193,16 @@
   </button>
 </Tooltip>
 
-<style lang="postcss">
+<style>
   .big-number:hover {
-    @apply ui-card;
+    /* ui-card */
+    background: var(
+      --gradient_white-slate50,
+      linear-gradient(180deg, #fff 0%, #f8fafc 100%)
+    );
+    box-shadow: 0px 4px 6px 0px rgba(15, 23, 42, 0.09),
+      0px 0px 0px 1px rgba(15, 23, 42, 0.06),
+      0px 1px 3px 0px rgba(15, 23, 42, 0.04),
+      0px 2px 3px 0px rgba(15, 23, 42, 0.03);
   }
 </style>

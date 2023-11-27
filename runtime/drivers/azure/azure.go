@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
@@ -228,6 +230,16 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 	}
 	defer bucketObj.Close()
 
+	var batchSize datasize.ByteSize
+	if conf.BatchSize == "-1" {
+		batchSize = math.MaxInt64 // download everything in one batch
+	} else {
+		batchSize, err = datasize.ParseString(conf.BatchSize)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// prepare fetch configs
 	opts := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
@@ -236,6 +248,8 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		GlobPageSize:          conf.GlobPageSize,
 		GlobPattern:           conf.url.Path,
 		ExtractPolicy:         conf.extractPolicy,
+		BatchSizeBytes:        int64(batchSize.Bytes()),
+		KeepFilesUntilClose:   conf.BatchSize == "-1",
 	}
 
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
@@ -281,6 +295,7 @@ type sourceProperties struct {
 	GlobMaxObjectsMatched int            `mapstructure:"glob.max_objects_matched"`
 	GlobMaxObjectsListed  int64          `mapstructure:"glob.max_objects_listed"`
 	GlobPageSize          int            `mapstructure:"glob.page_size"`
+	BatchSize             string         `mapstructure:"batch_size"`
 	url                   *globutil.URL
 	extractPolicy         *rillblob.ExtractPolicy
 }

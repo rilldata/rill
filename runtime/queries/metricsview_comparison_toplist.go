@@ -250,7 +250,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	} else {
 		selectCols = append(selectCols, colName)
 	}
-	labelCols = []string{dimLabel}
+	labelCols = []string{fmt.Sprintf("%s as %s", safeName(dim.Name), dimLabel)}
 
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
@@ -569,6 +569,8 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	if q.Limit > 0 {
 		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
 		twiceTheLimitClause = fmt.Sprintf(" LIMIT %d", q.Limit*2)
+	} else if q.Limit == 0 {
+		twiceTheLimitClause = fmt.Sprintf(" LIMIT %d", 100_000) // use Druid limit
 	}
 
 	baseLimitClause := ""
@@ -665,34 +667,41 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		/*
 			Example of the SQL query:
 
-			SELECT a."user",
-			       ANY_VALUE(a."measure"),
-			       ANY_VALUE(b."measure"),
-			       ANY_VALUE(a."measure" - b."measure"),
-			       ANY_VALUE(SAFE_DIVIDE(a."measure" - b."measure", CAST(a."measure" AS DOUBLE)))
-			FROM
-			  (SELECT "user",
-			          sum(added)
-			   FROM "wikipedia"
-			   WHERE 1=1
-			   GROUP BY "user"
-			   ORDER BY 2
-			   LIMIT 10) b
-			LEFT OUTER JOIN
-			  (SELECT "user",
-			          sum(added)
-			   FROM "wikipedia"
-			   WHERE 1=1
-			   GROUP BY "user"
-			   ORDER BY "measure"
-			   LIMIT 10) a ON a."user" = b."user"
-			WHERE
-			  b."user" IS NOT NULL
-			GROUP BY 1
+			WITH base AS (
+				SELECT "user",
+					sum(added) measure
+				FROM "wikipedia"
+				WHERE 1=1
+				GROUP BY "user"
+				ORDER BY 2
+				LIMIT 10000
+				OFFSET 100
+			),
+			comparison AS (
+				SELECT "user",
+					sum(added) measure
+				FROM "wikipedia"
+				WHERE 1=1
+					AND "user" IN (SELECT "user" FROM base)
+				GROUP BY "user"
+				ORDER BY 2
+				LIMIT 10000
+			)
+			SELECT
+				base."user",
+				ANY_VALUE(base."measure"),
+				ANY_VALUE(comparison."measure"),
+				ANY_VALUE(base."measure" - comparison."measure"),
+				ANY_VALUE(SAFE_DIVIDE(base."measure" - comparison."measure", CAST(comparison."measure" AS DOUBLE)))
+			FROM base LEFT JOIN comparison
+			ON base."user" = comparison."user"
+			GROUP BY 1 -- Druid doesn't support ORDER BY non-time columns without GROUP BY
 			ORDER BY 2
-			LIMIT 10
+			LIMIT 100
+			OFFSET 100
+
+			Apache Druid requires that one part of the JOIN fits in memory, that can be achieved by pushing down the limit clause to a subquery (works only if the sorting is based entirely on a single subquery result)
 		*/
-		// Apache Druid requires that one part of the JOIN fits in memory, that can be achieved by pushing down the limit clause to a subquery (works only if the sorting is based entirely on a single subquery result)
 		leftSubQueryAlias := "base"
 		rightSubQueryAlias := "comparison"
 		leftWhereClause := baseWhereClause
@@ -706,25 +715,17 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		}
 
 		sql = fmt.Sprintf(`
-				SELECT %[11]s.%[2]s, %[9]s FROM 
-					(
-						SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s %[10]s OFFSET %[8]d 
-					) %[11]s
-				LEFT OUTER JOIN
-					(
-						SELECT %[1]s FROM %[3]s WHERE %[5]s GROUP BY %[2]s
-					) %[12]s
-				ON
-						base.%[2]s = comparison.%[2]s
-				WHERE %[12]s.%[2]s IS NOT NULL
+				WITH %[11]s AS (
+					SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s %[10]s OFFSET %[8]d 
+				), %[12]s AS (
+					SELECT %[1]s FROM %[3]s WHERE %[5]s AND %[2]s IN (SELECT %[2]s FROM %[11]s) GROUP BY %[2]s 
+				)
+				SELECT %[11]s.%[2]s AS %[14]s, %[9]s FROM %[11]s LEFT JOIN %[12]s ON base.%[2]s = comparison.%[2]s
 				GROUP BY 1
-				ORDER BY
-					%[6]s
+				ORDER BY %[6]s
 				%[7]s
-				OFFSET
-					%[8]d
-				`,
-
+				OFFSET %[8]d
+			`,
 			subSelectClause,     // 1
 			colName,             // 2
 			safeName(mv.Table),  // 3
@@ -738,6 +739,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			leftSubQueryAlias,   // 11
 			rightSubQueryAlias,  // 12
 			subQueryOrderClause, // 13
+			finalDimName,        // 14
 		)
 	}
 

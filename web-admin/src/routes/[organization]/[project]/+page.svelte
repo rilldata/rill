@@ -18,13 +18,13 @@
   <title>{project} overview - Rill</title>
 </svelte:head>
 <VerticalScrollContainer>
-  <ContentContainer>
-    <div class="flex flex-col items-center gap-y-4">
-      {#if isProjectDeployed}
+  {#if isProjectHibernating}
+    <RedeployProjectCta {organization} {project} />
+  {:else if isProjectDeployed}
+    <ContentContainer>
+      <div class="flex flex-col items-center gap-y-4">
         <DashboardsTable {organization} {project} />
-      {:else if isProjectHibernating}
-        <RedeployProjectCta {organization} {project} />
-      {/if}
-    </div>
-  </ContentContainer>
+      </div>
+    </ContentContainer>
+  {/if}
 </VerticalScrollContainer>

@@ -2359,6 +2359,25 @@ definitions:
           type: object
           $ref: '#/definitions/SecurityFieldCondition'
     title: Security for the metrics view
+  MetricsViewSpecAvailableComparisonOffset:
+    type: object
+    properties:
+      offset:
+        type: string
+      range:
+        type: string
+        description: Used to override the range for the comparison with something other than the selected range.
+  MetricsViewSpecAvailableTimeRange:
+    type: object
+    properties:
+      range:
+        type: string
+      comparisonOffsets:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecAvailableComparisonOffset'
+        description: Available comparison offsets for this time range.
   MetricsViewSpecComparisonMode:
     type: string
     enum:
@@ -3603,6 +3622,12 @@ definitions:
       defaultComparisonDimension:
         type: string
         title: If comparison mode is dimension then this determines which is the default dimension
+      availableTimeRanges:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecAvailableTimeRange'
+        description: List of available time ranges with comparison ranges that would replace the default list.
   v1MetricsViewState:
     type: object
     properties:

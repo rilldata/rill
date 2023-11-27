@@ -21,6 +21,12 @@
       inputElement.focus();
     });
   }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+    }
+  }
 </script>
 
 <div class="flex flex-col gap-y-2">
@@ -45,6 +51,7 @@
     bind:value
     on:input
     on:change
+    on:keydown={handleKeyDown}
     {id}
     name={id}
     type="text"

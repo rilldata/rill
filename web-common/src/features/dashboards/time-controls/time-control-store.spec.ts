@@ -18,7 +18,10 @@ import {
   getLocalUserPreferences,
   initLocalUserPreferenceStore,
 } from "@rilldata/web-common/features/dashboards/user-preferences";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import {
+  TimeComparisonOption,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -197,7 +200,7 @@ describe("time-control-store", () => {
     assertComparisonStartAndEnd(
       get(timeControlsStore),
       // Sets to default comparison
-      "P1D",
+      "rill-PD",
       "2022-03-29T01:00:00.000Z",
       "2022-03-30T01:00:00.000Z",
       "2022-03-29T00:00:00.000Z",
@@ -223,7 +226,7 @@ describe("time-control-store", () => {
     assertComparisonStartAndEnd(
       get(timeControlsStore),
       // Sets to the one selected
-      "P1W",
+      "rill-PW",
       "2022-03-18T00:00:00.000Z",
       "2022-03-25T00:00:00.000Z",
       "2022-03-17T00:00:00.000Z",
@@ -274,7 +277,7 @@ describe("time-control-store", () => {
     assertComparisonStartAndEnd(
       get(timeControlsStore),
       // Sets to default comparison
-      "P1D",
+      "rill-PD",
       "2022-03-29T00:30:00.000Z",
       "2022-03-30T00:30:00.000Z",
       "2022-03-28T23:30:00.000Z",
@@ -299,7 +302,7 @@ describe("time-control-store", () => {
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
     metricsExplorerStore.displayTimeComparison(AD_BIDS_NAME, true);
     metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {
-      name: "P1M",
+      name: TimeComparisonOption.MONTH,
     } as any);
 
     metricsExplorerStore.setSelectedScrubRange(AD_BIDS_NAME, {
@@ -318,7 +321,7 @@ describe("time-control-store", () => {
     assertComparisonStartAndEnd(
       get(timeControlsStore),
       // Sets to default comparison
-      "P1M",
+      "rill-PM",
       "2021-12-01T00:00:00.000Z",
       "2022-02-28T00:00:00.001Z",
       "2021-11-30T00:00:00.000Z",
@@ -341,7 +344,7 @@ describe("time-control-store", () => {
     assertComparisonStartAndEnd(
       get(timeControlsStore),
       // Sets to default comparison
-      "P1M",
+      "rill-PM",
       "2022-01-01T00:00:00.000Z",
       "2022-01-10T00:00:00.000Z",
       "2021-11-30T00:00:00.000Z",
@@ -394,7 +397,7 @@ describe("time-control-store", () => {
     });
     await waitForDefaultUpdate(timeControlsStore, "2022-03-21T00:00:00.000Z");
     expect(get(timeControlsStore).defaultTimeRange).toEqual({
-      name: TimeRangePreset.DEFAULT,
+      name: "P2W",
       start: new Date("2022-03-21T00:00:00.000Z"),
       end: new Date("2022-04-04T00:00:00.000Z"),
     });

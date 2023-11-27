@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/admin/server/cookies"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -27,6 +28,7 @@ import (
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -70,11 +72,13 @@ type Server struct {
 	issuer        *runtimeauth.Issuer
 	urls          *externalURLs
 	limiter       ratelimit.Limiter
+	// Activity specifically for events from UI
+	uiActivity activity.Client
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, opts *Options) (*Server, error) {
+func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, uiActivity activity.Client, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
@@ -109,6 +113,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		issuer:        issuer,
 		urls:          newURLRegistry(opts),
 		limiter:       limiter,
+		uiActivity:    uiActivity,
 	}, nil
 }
 
@@ -293,6 +298,15 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
+}
+
+func (s *Server) Telemetry(ctx context.Context, req *adminv1.TelemetryRequest) (*adminv1.TelemetryResponse, error) {
+	dims := make([]attribute.KeyValue, 0)
+	for k, v := range req.Event {
+		dims = append(dims, attribute.String(k, v))
+	}
+	s.uiActivity.Emit(ctx, "cloud-ui-telemetry", 1, dims...)
+	return &adminv1.TelemetryResponse{}, nil
 }
 
 func timeoutSelector(fullMethodName string) time.Duration {

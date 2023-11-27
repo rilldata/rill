@@ -235,7 +235,8 @@
     <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
     {#each renderedMeasures as measure (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
-      {@const bigNum = totals?.[measure.name]}
+      <!-- for bigNum, catch nulls and convert to undefined.  -->
+      {@const bigNum = totals?.[measure.name] ?? undefined}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
       {@const comparisonPercChange =
         comparisonValue && bigNum !== undefined && bigNum !== null

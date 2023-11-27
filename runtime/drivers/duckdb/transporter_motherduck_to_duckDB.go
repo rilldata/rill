@@ -1,4 +1,4 @@
-package transporter
+package duckdb
 
 import (
 	"context"

@@ -26,6 +26,7 @@
           reportTime: info.row.original.reportTime,
           timeZone:
             $reportQuery.data.resource.report.spec.refreshSchedule.timeZone,
+          adhoc: info.row.original.adhoc,
           errorMessage: info.row.original.errorMessage,
         }),
     },
