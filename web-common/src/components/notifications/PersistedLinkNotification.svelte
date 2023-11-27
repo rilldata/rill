@@ -16,7 +16,7 @@
   transition:scale={{ duration: 200, start: 0.98, opacity: 0 }}
   class="fixed bottom-10 left-1/2 -translate-x-1/2 py-0.5 bg-gray-800 rounded-sm shadow flex items-center"
 >
-  <div class="flex px-4 py-1.5 gap-x-1.5">
+  <div class="flex items-center px-4 py-1.5 gap-x-1.5">
     <Check size="18px" className="text-white" />
     <span class="text-gray-50 text-sm">
       {message}
