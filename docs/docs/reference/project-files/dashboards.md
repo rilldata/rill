@@ -65,4 +65,4 @@ _**`security`**_ - define a [security policy](../../develop/security) for the da
     - **`names`** - List of fields to include. Should match the `name` of one of the dashboard's dimensions or measures. _(required)_
 
 **`kind`**
- — Can be one of `{source,model,dashboard}` and used by Rill to identify the resource kind. This property is optional and only necessary when the YAML file exists outside of the default location (e.g. a dashboard YAML outside of the `dashboards` directory).
+ — This property is used by Rill to identify the resource kind. For dashboard YAML files that exist **outside** of the default location (i.e. `dashboards` directory), this value must be set and should be `dashboard`. Alternative values can include `source` and `model`. _(optional)_

@@ -11,7 +11,7 @@ rill project reconcile [<project-name>] [flags]
 
 :::warning Deprecation Notice 
 
-This is a **legacy** command that's been preserved for backwards compatibility. *Starting in Rill v0.37.0 and newer*, we recommend using the [rill project refresh](refresh.md) and [rill project reset](reset.md) commands to refresh and reset / redeploy your projects respectively.
+This is a **legacy** command that's been preserved for backwards compatibility. *Starting in Rill v0.37.0 and newer*, we recommend using the [rill project refresh](refresh.md) and [rill project reset](reset.md) commands to refresh and reset/redeploy your projects respectively.
 
 :::
 

@@ -33,7 +33,7 @@ path: /path/to/data.csv
 
 Rill will ingest the data next time you run `rill start`.
 
-Note that if you provide a relative path, *the path should be relative to your Rill project root* (where your `rill.yaml` file is located), **not** relative to the `sources` directory.
+Note that if you provide a relative path, _the path should be relative to your Rill project root_ (where your `rill.yaml` file is located), **not** relative to the `sources` directory.
 
 :::tip Source Properties
 

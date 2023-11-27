@@ -101,4 +101,4 @@ duckdb:
 ```
 
 **`kind`**
- — Can be one of `{source,model,dashboard}` and used by Rill to identify the resource kind. This property is optional and only necessary when the YAML file exists outside of the default location (e.g. a source YAML outside of the `sources` directory).
+ — This property is used by Rill to identify the resource kind. For source YAML files that exist **outside** of the default location (i.e. `sources` directory), this value must be set and should be `source`. Alternative values can include `model` and `dashboard`. _(optional)_
