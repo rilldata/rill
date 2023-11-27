@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -24,11 +23,10 @@
       </TooltipShortcutContainer>
     {/if}
   </TooltipContent>
-  <Button
-    type="text"
-    compact={true}
+  <button
+    class="h-6 px-1.5 rounded-sm hover:bg-gray-200 text-gray-700"
     on:click={() => dispatch("toggle-all-search-items")}
   >
     {areAllTableRowsSelected ? "Deselect all" : "Select all"}
-  </Button>
+  </button>
 </Tooltip>
