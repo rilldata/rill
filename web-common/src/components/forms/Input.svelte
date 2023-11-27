@@ -23,7 +23,7 @@
 </script>
 
 <div class="flex flex-row items-center pb-2 gap-x-1">
-  <label for={id} class="text-gray-800 text-sm">{label}</label>
+  <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
   {#if hint}
     <Tooltip location="right" alignment="middle" distance={8}>
       <div class="text-gray-500" style="transform:translateY(-.5px)">
