@@ -117,14 +117,14 @@
       });
       return;
     } else {
-      metricsExplorerStore.selectItemsInFilter(
+      const newValuesSelected = metricsExplorerStore.selectItemsInFilter(
         metricViewName,
         dimensionName,
         rowHeaderLabels
       );
 
       notifications.send({
-        message: `Added ${rowHeaderLabels.length} items to filter`,
+        message: `Added ${newValuesSelected} items to filter`,
       });
     }
   }

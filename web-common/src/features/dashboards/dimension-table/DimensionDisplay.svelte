@@ -121,13 +121,13 @@
       });
       return;
     } else {
-      metricsExplorerStore.selectItemsInFilter(
+      const newValuesSelected = metricsExplorerStore.selectItemsInFilter(
         $metricsViewName,
         dimensionName,
         labels
       );
       notifications.send({
-        message: `Added ${labels.length} items to filter`,
+        message: `Added ${newValuesSelected} items to filter`,
       });
     }
   }

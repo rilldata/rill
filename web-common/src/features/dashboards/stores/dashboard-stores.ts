@@ -435,7 +435,12 @@ const metricViewReducers = {
     });
   },
 
-  selectItemsInFilter(name: string, dimensionName: string, values: string[]) {
+  selectItemsInFilter(
+    name: string,
+    dimensionName: string,
+    values: string[]
+  ): number {
+    let newValuesSelected = 0;
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
         dimensionName
@@ -458,14 +463,17 @@ const metricViewReducers = {
         // preserve old selections and add only new ones
         const oldValues = filters[dimensionEntryIndex].in as string[];
         const newValues = values.filter((v) => !oldValues.includes(v));
+        newValuesSelected = newValues.length;
         filters[dimensionEntryIndex].in?.push(...newValues);
       } else {
+        newValuesSelected = values.length;
         filters?.push({
           name: dimensionName,
           in: values,
         });
       }
     });
+    return newValuesSelected;
   },
 
   deselectItemsInFilter(name: string, dimensionName: string, values: string[]) {
