@@ -1,32 +1,21 @@
-import type { ThemeColor } from "@rilldata/web-common/features/themes/color-utils";
-import convert from "color-convert";
+import chroma, { Color } from "chroma-js";
 
-export type TailwindColors = {
-  50: ThemeColor;
-  100: ThemeColor;
-  200: ThemeColor;
-  300: ThemeColor;
-  400: ThemeColor;
-  500: ThemeColor;
-  600: ThemeColor;
-  700: ThemeColor;
-  800: ThemeColor;
-  900: ThemeColor;
-  950: ThemeColor;
-};
+export const TailwindColorSpacing = [
+  50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950,
+];
 
 // should match web-common/src/app.css
 // storing the HSL values to easily swap just the Hue from the theme config
-export const DefaultPrimaryColors: TailwindColors = {
-  50: convert.hex.hsl("eff6ff"),
-  100: convert.hex.hsl("dbeafe"),
-  200: convert.hex.hsl("bfdbfe"),
-  300: convert.hex.hsl("93c5fd"),
-  400: convert.hex.hsl("60a5fa"),
-  500: convert.hex.hsl("3b82f6"),
-  600: convert.hex.hsl("2563eb"),
-  700: convert.hex.hsl("1d4ed8"),
-  800: convert.hex.hsl("1e40af"),
-  900: convert.hex.hsl("1e3a8a"),
-  950: convert.hex.hsl("172554"),
-};
+export const DefaultPrimaryColors: Array<Color> = [
+  chroma("eff6ff"), // 50
+  chroma("dbeafe"), // 100
+  chroma("bfdbfe"), // 200
+  chroma("93c5fd"), // 300
+  chroma("60a5fa"), // 400
+  chroma("3b82f6"), // 500
+  chroma("2563eb"), // 600
+  chroma("1d4ed8"), // 700
+  chroma("1e40af"), // 800
+  chroma("1e3a8a"), // 900
+  chroma("172554"), // 950
+];

@@ -1,10 +1,10 @@
 import {
   DefaultPrimaryColors,
-  TailwindColors,
+  TailwindColorSpacing,
 } from "@rilldata/web-common/features/themes/color-config";
 import { generateColorGradients } from "@rilldata/web-common/features/themes/color-gradient-generator";
-import type { ThemeColor } from "@rilldata/web-common/features/themes/color-utils";
-import convert from "color-convert";
+import { generateColorPaletteUsingScale } from "@rilldata/web-common/features/themes/color-palette";
+import chroma, { Color } from "chroma-js";
 
 const PrimaryCSSVariablePrefix = "--color-primary-";
 const SecondaryCSSVariablePrefix = "--color-secondary-";
@@ -25,61 +25,51 @@ export function setTheme({
   }
 }
 
-function copySaturationAndLightness(hsl: ThemeColor) {
-  const colors = {} as TailwindColors;
-  for (const shade in DefaultPrimaryColors) {
-    colors[shade] = [
-      hsl[0],
-      DefaultPrimaryColors[shade][1],
-      DefaultPrimaryColors[shade][2],
-    ];
-  }
-  return colors;
-}
-
 function setPrimaryColor(primary: string, mode: string | null) {
-  const primaryHsl = convert.hex.hsl(primary);
-  let colors: TailwindColors;
+  const primaryColor = chroma(primary);
+  let colors: Array<Color>;
   switch (mode) {
-    case "smart":
-      colors = generateColorGradients(primaryHsl);
+    case "v1":
+      colors = generateColorGradients(primaryColor);
       break;
 
-    //TODO: alternatives,
-    //      https://www.npmjs.com/package/apca-w3
-    //      https://gka.github.io/chroma.js/
+    case "v2":
+      colors = generateColorPaletteUsingScale(primaryColor);
+      break;
 
     default:
-      colors = copySaturationAndLightness(primaryHsl);
+      colors = copySaturationAndLightness(primaryColor);
       break;
   }
 
   console.log(
     primary,
     mode,
-    Object.values(colors).map((c) => `${c}`)
+    Object.values(colors).map((c) => `${c.hex()}`)
   );
   const root = document.querySelector(":root") as HTMLElement;
 
-  for (const shade in colors) {
+  for (let i = 0; i < TailwindColorSpacing.length; i++) {
+    console.log(TailwindColorSpacing[i], colors[i]?.hex());
     root.style.setProperty(
-      `${PrimaryCSSVariablePrefix}${shade}`,
-      `hsl(${themeColorToHSLString(colors[shade])})`
+      `${PrimaryCSSVariablePrefix}${TailwindColorSpacing[i]}`,
+      `hsl(${themeColorToHSLString(colors[i])})`
     );
   }
 
   root.style.setProperty(
     `${PrimaryCSSVariablePrefix}graph-line`,
-    themeColorToHSLString(colors["600"])
+    themeColorToHSLString(colors[TailwindColorSpacing.indexOf(600)])
   );
   root.style.setProperty(
     `${PrimaryCSSVariablePrefix}area-area`,
-    themeColorToHSLString(colors["800"])
+    themeColorToHSLString(colors[TailwindColorSpacing.indexOf(800)])
   );
 }
 
 function setSecondaryColor(secondary: string, variance: number) {
-  const [hue] = convert.hex.hsl(secondary);
+  const secondaryColor = chroma(secondary);
+  const [hue] = secondaryColor.hsl();
   const root = document.querySelector(":root") as HTMLElement;
 
   root.style.setProperty(
@@ -92,6 +82,19 @@ function setSecondaryColor(secondary: string, variance: number) {
   );
 }
 
-function themeColorToHSLString(color: ThemeColor) {
-  return `${color[0]}, ${color[1]}%, ${color[2]}%`;
+function themeColorToHSLString(color: Color) {
+  const [h, s, l] = color.hsl();
+  return `${Number.isNaN(h) ? 0 : h * 360}, ${s * 100}%, ${l * 100}%`;
+}
+
+function copySaturationAndLightness(input: Color) {
+  const colors = new Array<Color>(TailwindColorSpacing.length);
+  for (let i = 0; i < DefaultPrimaryColors.length; i++) {
+    colors[i] = chroma.hsl(
+      input.hsl()[0],
+      DefaultPrimaryColors[i].hsl()[1],
+      DefaultPrimaryColors[i].hsl()[2]
+    );
+  }
+  return colors;
 }
