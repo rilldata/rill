@@ -6,7 +6,6 @@
 -->
 <script lang="ts">
   export let label: string;
-  export let isHidden = false;
   export let values: string[];
   export let show = 1;
   export let labelMaxWidth = "160px";
@@ -36,9 +35,6 @@
       <div class="italic">
         +{whatsLeft} other{#if whatsLeft !== 1}s{/if}
       </div>
-    {/if}
-    {#if isHidden}
-      <div class="italic">(hidden)</div>
     {/if}
   </div>
 </div>

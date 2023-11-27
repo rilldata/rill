@@ -22,14 +22,6 @@ export const excludeChipColors = {
   outlineClass: "outline-gray-400 dark:outline-gray-500",
 };
 
-export const hiddenChipColors = {
-  bgBaseClass: "surface",
-  bgHoverClass: "surface",
-  textClass: "text-gray-500",
-  bgActiveClass: "surface",
-  outlineClass: "outline-white",
-};
-
 export const disabledChipColors = {
   bgBaseClass: "bg-blue-50 dark:bg-blue-600",
   bgHoverClass: "bg-blue-50 dark:bg-blue-600",
