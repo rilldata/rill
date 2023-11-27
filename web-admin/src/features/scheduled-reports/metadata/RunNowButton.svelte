@@ -57,7 +57,7 @@
   >
     Run now
   </Button>
-  <TooltipContent slot="tooltip-content">
+  <TooltipContent slot="tooltip-content" maxWidth="300px">
     Run this report immediately. A new report will be generated and emailed to
     recipients.
   </TooltipContent>
