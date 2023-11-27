@@ -5,10 +5,10 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
-    createQueryServiceExport,
     V1ExportFormat,
+    createQueryServiceExport,
   } from "@rilldata/web-common/runtime-client";
-  import { onMount, SvelteComponent } from "svelte";
+  import { SvelteComponent, onMount } from "svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import exportToplist from "./export-toplist";
 
@@ -37,7 +37,9 @@
   onMount(async () => {
     if (includeScheduledReport) {
       CreateScheduledReportDialog = (
-        await import("../scheduled-reports/CreateScheduledReportDialog.svelte")
+        await import(
+          "../../scheduled-reports/CreateScheduledReportDialog.svelte"
+        )
       ).default;
     }
   });
