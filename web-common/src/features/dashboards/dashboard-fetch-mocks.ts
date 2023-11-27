@@ -4,7 +4,6 @@ import type {
   V1MetricsViewSpec,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
-import { wait } from "@testing-library/user-event/dist/utils";
 import { afterAll, beforeAll, vi } from "vitest";
 
 export class DashboardFetchMocks {
@@ -89,7 +88,8 @@ export class DashboardFetchMocks {
         break;
     }
 
-    await wait(1);
+    // wait a tick
+    await new Promise((resolve) => setTimeout(resolve, 1));
 
     return {
       ready: true,
