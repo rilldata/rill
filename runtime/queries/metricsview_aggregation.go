@@ -16,7 +16,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	duckdbolap "github.com/rilldata/rill/runtime/drivers/duckdb"
-	"github.com/rilldata/rill/runtime/drivers/duckdb/transporter"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
 )
@@ -146,7 +145,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	duckDBOLAP, _ := handle.AsOLAP("")
 	err = duckDBOLAP.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, conn *databasesql.Conn) error {
 		temporaryTableName := tempName("_for_pivot_")
-		createTableSQL, err := transporter.CreateTableQuery(schema, temporaryTableName)
+		createTableSQL, err := duckdbolap.CreateTableQuery(schema, temporaryTableName)
 		if err != nil {
 			return err
 		}
@@ -163,7 +162,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 			})
 		}()
 
-		err = transporter.RawConn(conn, func(conn driver.Conn) error {
+		err = duckdbolap.RawConn(conn, func(conn driver.Conn) error {
 			appender, err := duckdb.NewAppenderFromConn(conn, "", temporaryTableName)
 			if err != nil {
 				return err
