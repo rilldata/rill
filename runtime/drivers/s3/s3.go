@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -46,6 +47,15 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			Hint:        "Rill will use the default region in your local AWS config, unless set here.",
+		},
+		{
+			Key:         "endpoint",
+			DisplayName: "Endpoint URL",
+			Description: "Override S3 Endpoint URL",
+			Placeholder: "https://my.s3.server.com",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			Hint:        "Overrides the S3 endpoint to connect to. This should only be used to connect to S3-compatible services, such as Cloudflare R2 or MinIO.",
 		},
 		{
 			Key:         "aws.credentials",
@@ -292,9 +302,14 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 		return nil, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
 	}
 
-	batchSize, err := datasize.ParseString(conf.BatchSize)
-	if err != nil {
-		return nil, err
+	var batchSize datasize.ByteSize
+	if conf.BatchSize == "-1" {
+		batchSize = math.MaxInt64 // download everything in one batch
+	} else {
+		batchSize, err = datasize.ParseString(conf.BatchSize)
+		if err != nil {
+			return nil, err
+		}
 	}
 	// prepare fetch configs
 	opts := rillblob.Options{
@@ -305,6 +320,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 		GlobPattern:           conf.url.Path,
 		ExtractPolicy:         conf.extractPolicy,
 		BatchSizeBytes:        int64(batchSize.Bytes()),
+		KeepFilesUntilClose:   conf.BatchSize == "-1",
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)

@@ -1,6 +1,7 @@
 import type { Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -57,6 +58,7 @@ export function getDashboardStateFromProto(
   };
 
   if (dashboard.filters) {
+    entity.filters ??= {};
     entity.filters.include = fromFiltersProto(dashboard.filters.include);
     entity.filters.exclude = fromFiltersProto(dashboard.filters.exclude);
   }
@@ -70,7 +72,7 @@ export function getDashboardStateFromProto(
   entity.selectedTimeRange = dashboard.timeRange
     ? fromTimeRangeProto(dashboard.timeRange)
     : undefined;
-  if (dashboard.timeGrain && dashboard.timeRange) {
+  if (dashboard.timeGrain && entity.selectedTimeRange) {
     entity.selectedTimeRange.interval = fromTimeGrainProto(dashboard.timeGrain);
   }
 
@@ -88,14 +90,22 @@ export function getDashboardStateFromProto(
   }
   if (dashboard.selectedDimension) {
     entity.selectedDimensionName = dashboard.selectedDimension;
+  } else {
+    entity.selectedDimensionName = undefined;
   }
   if (dashboard.expandedMeasure) {
     entity.expandedMeasureName = dashboard.expandedMeasure;
+  } else {
+    entity.expandedMeasureName = undefined;
   }
   if (dashboard.comparisonDimension) {
     entity.selectedComparisonDimension = dashboard.comparisonDimension;
+  } else {
+    entity.selectedComparisonDimension = undefined;
   }
-
+  if (dashboard.pinIndex !== undefined) {
+    entity.pinIndex = dashboard.pinIndex;
+  }
   if (dashboard.selectedTimezone) {
     entity.selectedTimezone = dashboard.selectedTimezone;
   }
@@ -103,8 +113,8 @@ export function getDashboardStateFromProto(
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
     entity.visibleMeasureKeys = new Set(
-      metricsView.measures.map((measure) => measure.name)
-    );
+      metricsView.measures?.map((measure) => measure.name) ?? []
+    ) as Set<string>;
   } else if (dashboard.visibleMeasures) {
     entity.allMeasuresVisible = false;
     entity.visibleMeasureKeys = new Set(dashboard.visibleMeasures);
@@ -113,8 +123,8 @@ export function getDashboardStateFromProto(
   if (dashboard.allDimensionsVisible) {
     entity.allDimensionsVisible = true;
     entity.visibleDimensionKeys = new Set(
-      metricsView.dimensions.map((measure) => measure.name)
-    );
+      metricsView.dimensions?.map((measure) => measure.name) ?? []
+    ) as Set<string>;
   } else if (dashboard.visibleDimensions) {
     entity.allDimensionsVisible = false;
     entity.visibleDimensionKeys = new Set(dashboard.visibleDimensions);
@@ -165,8 +175,11 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
   const selectedTimeRange: DashboardTimeControls = {
     name: timeRange.name,
   } as DashboardTimeControls;
+  // backwards compatibility
+  if (timeRange.name && timeRange.name in TimeRangePreset) {
+    selectedTimeRange.name = TimeRangePreset[timeRange.name];
+  }
 
-  selectedTimeRange.name = timeRange.name;
   if (timeRange.timeStart) {
     selectedTimeRange.start = fromTimeProto(timeRange.timeStart);
   }

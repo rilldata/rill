@@ -59,9 +59,9 @@
   let latestWindowTimeRanges: TimeRangeOption[];
   let periodToDateTimeRanges: TimeRangeOption[];
 
-  $: showDefaultItem = !(
-    $metaQuery.data?.defaultTimeRange in ISODurationToTimeRangePreset
-  );
+  $: showDefaultItem =
+    $metaQuery.data?.defaultTimeRange &&
+    !($metaQuery.data?.defaultTimeRange in ISODurationToTimeRangePreset);
 
   // get the available latest-window time ranges
   $: if (boundaryStart && boundaryEnd) {
@@ -194,11 +194,12 @@
             <!-- This conditional shouldn't be necessary because there should always be a selected (at least default) time range -->
             {#if intermediateSelection === TimeRangePreset.CUSTOM}
               Custom range
-            {:else if currentSelection === TimeRangePreset.DEFAULT}
-              Last {humaniseISODuration($metaQuery.data?.defaultTimeRange)}
-            {:else if currentSelection in DEFAULT_TIME_RANGES}
-              {DEFAULT_TIME_RANGES[$timeControlsStore?.selectedTimeRange?.name]
-                .label}
+            {:else if currentSelection}
+              {#if currentSelection in DEFAULT_TIME_RANGES}
+                {DEFAULT_TIME_RANGES[currentSelection].label}
+              {:else}
+                Last {humaniseISODuration(currentSelection)}
+              {/if}
             {:else}
               Select a time range
             {/if}
@@ -254,13 +255,15 @@
     </MenuItem>
     {#if showDefaultItem && $timeControlsStore.defaultTimeRange}
       <DefaultTimeRangeMenuItem
-        on:before-select={setIntermediateSelection(TimeRangePreset.DEFAULT)}
+        on:before-select={setIntermediateSelection(
+          $metaQuery.data?.defaultTimeRange
+        )}
         on:select={() =>
           onSelectRelativeTimeRange(
             $timeControlsStore.defaultTimeRange,
             toggleFloatingElement
           )}
-        selected={intermediateSelection === TimeRangePreset.DEFAULT}
+        selected={intermediateSelection === $metaQuery.data?.defaultTimeRange}
         isoDuration={$metaQuery.data?.defaultTimeRange}
       />
     {/if}

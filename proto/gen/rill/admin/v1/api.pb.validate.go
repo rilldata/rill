@@ -16762,6 +16762,210 @@ var _ interface {
 	ErrorName() string
 } = GenerateReportYAMLResponseValidationError{}
 
+// Validate checks the field values on TelemetryRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *TelemetryRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TelemetryRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// TelemetryRequestMultiError, or nil if none found.
+func (m *TelemetryRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TelemetryRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Event
+
+	if len(errors) > 0 {
+		return TelemetryRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// TelemetryRequestMultiError is an error wrapping multiple validation errors
+// returned by TelemetryRequest.ValidateAll() if the designated constraints
+// aren't met.
+type TelemetryRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TelemetryRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TelemetryRequestMultiError) AllErrors() []error { return m }
+
+// TelemetryRequestValidationError is the validation error returned by
+// TelemetryRequest.Validate if the designated constraints aren't met.
+type TelemetryRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TelemetryRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TelemetryRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TelemetryRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TelemetryRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TelemetryRequestValidationError) ErrorName() string { return "TelemetryRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e TelemetryRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTelemetryRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TelemetryRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TelemetryRequestValidationError{}
+
+// Validate checks the field values on TelemetryResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *TelemetryResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on TelemetryResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// TelemetryResponseMultiError, or nil if none found.
+func (m *TelemetryResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *TelemetryResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return TelemetryResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// TelemetryResponseMultiError is an error wrapping multiple validation errors
+// returned by TelemetryResponse.ValidateAll() if the designated constraints
+// aren't met.
+type TelemetryResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m TelemetryResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m TelemetryResponseMultiError) AllErrors() []error { return m }
+
+// TelemetryResponseValidationError is the validation error returned by
+// TelemetryResponse.Validate if the designated constraints aren't met.
+type TelemetryResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TelemetryResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TelemetryResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TelemetryResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TelemetryResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TelemetryResponseValidationError) ErrorName() string {
+	return "TelemetryResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e TelemetryResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTelemetryResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TelemetryResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TelemetryResponseValidationError{}
+
 // Validate checks the field values on User with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
 // encountered is returned, or nil if there are no violations.
@@ -18989,6 +19193,8 @@ func (m *ReportOptions) validate(all bool) error {
 	// no validation rules for Title
 
 	// no validation rules for RefreshCron
+
+	// no validation rules for RefreshTimeZone
 
 	// no validation rules for QueryName
 

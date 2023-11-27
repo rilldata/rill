@@ -36,6 +36,7 @@ type MetricsViewYAML struct {
 		Property    string // For backwards compatibility
 		Description string
 		Ignore      bool `yaml:"ignore"`
+		Unnest      bool
 	}
 	Measures []*struct {
 		Name                string
@@ -59,7 +60,102 @@ type MetricsViewYAML struct {
 			Condition string `yaml:"if"`
 		}
 	}
+	DefaultComparison struct {
+		Mode      string `yaml:"mode"`
+		Dimension string `yaml:"dimension"`
+	} `yaml:"default_comparison"`
+	AvailableTimeRanges []AvailableTimeRange `yaml:"available_time_ranges"`
 }
+
+type AvailableTimeRange struct {
+	Range             string
+	ComparisonOffsets []AvailableComparisonOffset
+}
+type tmpAvailableTimeRange struct {
+	Range             string                      `yaml:"range"`
+	ComparisonOffsets []AvailableComparisonOffset `yaml:"comparison_offsets"`
+}
+
+func (t *AvailableTimeRange) UnmarshalYAML(v *yaml.Node) error {
+	// This adds support for mixed definition
+	// EG:
+	// available_time_ranges:
+	//   - P1W
+	//   - range: P4W
+	//     comparison_ranges ...
+	if v == nil {
+		return nil
+	}
+
+	switch v.Kind {
+	case yaml.ScalarNode:
+		t.Range = v.Value
+
+	case yaml.MappingNode:
+		// avoid infinite loop by using a separate struct
+		tmp := &tmpAvailableTimeRange{}
+		err := v.Decode(tmp)
+		if err != nil {
+			return err
+		}
+		t.Range = tmp.Range
+		t.ComparisonOffsets = tmp.ComparisonOffsets
+
+	default:
+		return fmt.Errorf("available_time_range entry should be either a string or an object")
+	}
+
+	return nil
+}
+
+type AvailableComparisonOffset struct {
+	Offset string
+	Range  string
+}
+type tmpAvailableComparisonOffset struct {
+	Offset string `yaml:"offset"`
+	Range  string `yaml:"range"`
+}
+
+func (o *AvailableComparisonOffset) UnmarshalYAML(v *yaml.Node) error {
+	// This adds support for mixed definition
+	// EG:
+	// comparison_offsets:
+	//   - rill-PY
+	//   - offset: rill-PM
+	//     range: P2M
+	if v == nil {
+		return nil
+	}
+
+	switch v.Kind {
+	case yaml.ScalarNode:
+		o.Offset = v.Value
+
+	case yaml.MappingNode:
+		// avoid infinite loop by using a separate struct
+		tmp := &tmpAvailableComparisonOffset{}
+		err := v.Decode(tmp)
+		if err != nil {
+			return err
+		}
+		o.Offset = tmp.Offset
+		o.Range = tmp.Range
+
+	default:
+		return fmt.Errorf("comparison_offsets entry should be either a string or an object")
+	}
+
+	return nil
+}
+
+var comparisonModesMap = map[string]runtimev1.MetricsViewSpec_ComparisonMode{
+	"":          runtimev1.MetricsViewSpec_COMPARISON_MODE_UNSPECIFIED,
+	"none":      runtimev1.MetricsViewSpec_COMPARISON_MODE_NONE,
+	"time":      runtimev1.MetricsViewSpec_COMPARISON_MODE_TIME,
+	"dimension": runtimev1.MetricsViewSpec_COMPARISON_MODE_DIMENSION,
+}
+var validComparisonModes = []string{"none", "time", "dimension"}
 
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
@@ -180,6 +276,39 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		return fmt.Errorf("must define at least one measure")
 	}
 
+	tmp.DefaultComparison.Mode = strings.ToLower(tmp.DefaultComparison.Mode)
+	if _, ok := comparisonModesMap[tmp.DefaultComparison.Mode]; !ok {
+		return fmt.Errorf("invalid mode: %q. allowed values: %s", tmp.DefaultComparison.Mode, strings.Join(validComparisonModes, ","))
+	}
+	if tmp.DefaultComparison.Dimension != "" {
+		if ok := names[tmp.DefaultComparison.Dimension]; !ok {
+			return fmt.Errorf("default comparison dimension %q doesn't exist", tmp.DefaultComparison.Dimension)
+		}
+	}
+
+	if tmp.AvailableTimeRanges != nil {
+		for _, r := range tmp.AvailableTimeRanges {
+			_, err := duration.ParseISO8601(r.Range)
+			if err != nil {
+				return fmt.Errorf("invalid range in available_time_ranges: %w", err)
+			}
+
+			for _, o := range r.ComparisonOffsets {
+				_, err := duration.ParseISO8601(o.Offset)
+				if err != nil {
+					return fmt.Errorf("invalid offset in comparison_offsets: %w", err)
+				}
+
+				if o.Range != "" {
+					_, err := duration.ParseISO8601(o.Range)
+					if err != nil {
+						return fmt.Errorf("invalid range in comparison_offsets: %w", err)
+					}
+				}
+			}
+		}
+	}
+
 	if tmp.Security != nil {
 		templateData := TemplateData{User: map[string]interface{}{
 			"name":   "dummy",
@@ -292,6 +421,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			Column:      dim.Column,
 			Label:       dim.Label,
 			Description: dim.Description,
+			Unnest:      dim.Unnest,
 		})
 	}
 
@@ -309,6 +439,29 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			FormatD3:            measure.FormatD3,
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
+	}
+
+	spec.DefaultComparisonMode = comparisonModesMap[tmp.DefaultComparison.Mode]
+	if tmp.DefaultComparison.Dimension != "" {
+		spec.DefaultComparisonDimension = tmp.DefaultComparison.Dimension
+	}
+
+	if tmp.AvailableTimeRanges != nil {
+		for _, r := range tmp.AvailableTimeRanges {
+			t := &runtimev1.MetricsViewSpec_AvailableTimeRange{
+				Range: r.Range,
+			}
+			if r.ComparisonOffsets != nil {
+				t.ComparisonOffsets = make([]*runtimev1.MetricsViewSpec_AvailableComparisonOffset, len(r.ComparisonOffsets))
+				for i, o := range r.ComparisonOffsets {
+					t.ComparisonOffsets[i] = &runtimev1.MetricsViewSpec_AvailableComparisonOffset{
+						Offset: o.Offset,
+						Range:  o.Range,
+					}
+				}
+			}
+			spec.AvailableTimeRanges = append(spec.AvailableTimeRanges, t)
+		}
 	}
 
 	if tmp.Security != nil {

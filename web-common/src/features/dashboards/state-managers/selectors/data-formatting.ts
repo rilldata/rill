@@ -1,5 +1,5 @@
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-import type { SelectorFnArgs } from "./types";
+import type { DashboardDataSources } from "./types";
 import { activeMeasure } from "./active-measure";
 import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
@@ -7,7 +7,7 @@ export const formattingSelectors = {
   /**
    * the currently active measure's format preset.
    */
-  activeMeasureFormatPreset: (args: SelectorFnArgs): FormatPreset =>
+  activeMeasureFormatPreset: (args: DashboardDataSources): FormatPreset =>
     (activeMeasure(args)?.formatPreset as FormatPreset) ??
     FormatPreset.HUMANIZE,
 
@@ -16,6 +16,6 @@ export const formattingSelectors = {
    * according to the active measure's format specification,
    * whether it's a d3 format string or a format preset.
    */
-  activeMeasureFormatter: (args: SelectorFnArgs) =>
+  activeMeasureFormatter: (args: DashboardDataSources) =>
     createMeasureValueFormatter(activeMeasure(args)),
 };

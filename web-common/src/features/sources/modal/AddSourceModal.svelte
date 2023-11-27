@@ -1,17 +1,17 @@
 <script lang="ts">
   import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
+  import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
   import {
     createRuntimeServiceListConnectors,
     V1ConnectorSpec,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
-  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
-  import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
   import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
   import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
   import Https from "../../../components/icons/connectors/HTTPS.svelte";
   import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
+  import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
   import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
   import Postgres from "../../../components/icons/connectors/Postgres.svelte";
   import SQLite from "../../../components/icons/connectors/SQLite.svelte";
@@ -25,7 +25,6 @@
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RemoteSourceForm from "./RemoteSourceForm.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
 
   export let open: boolean;
 
@@ -120,16 +119,6 @@
       Add a source
     {:else if step === 2}
       <h2 class="flex gap-x-1 items-center">
-        <button
-          on:click={resetModal}
-          class="text-gray-500 text-sm font-semibold hover:text-gray-700"
-        >
-          Add a source
-        </button>
-        <CaretDownIcon
-          size="14px"
-          className="transform -rotate-90 text-gray-500"
-        />
         <span>
           {#if selectedConnector}
             {selectedConnector?.displayName}
@@ -157,7 +146,7 @@
           {/each}
         </div>
       {/if}
-      <div>
+      <div class="text-slate-500">
         Don't see what you're looking for? <button
           on:click={goToRequestConnector}
           class="text-blue-500 hover:text-blue-600 font-medium"
@@ -167,17 +156,21 @@
     {:else if step === 2}
       {#if selectedConnector}
         {#if selectedConnector.name === "local_file"}
-          <LocalSourceUpload on:close={onCompleteDialog} />
+          <LocalSourceUpload on:close={onCompleteDialog} on:back={resetModal} />
         {:else}
           <RemoteSourceForm
             connector={selectedConnector}
             on:close={onCompleteDialog}
+            on:back={resetModal}
           />
         {/if}
       {/if}
 
       {#if requestConnector}
-        <RequestConnectorForm on:close={onCompleteDialog} />
+        <RequestConnectorForm
+          on:close={onCompleteDialog}
+          on:back={resetModal}
+        />
       {/if}
     {/if}
   </div>

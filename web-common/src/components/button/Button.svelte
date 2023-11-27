@@ -1,7 +1,8 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
 
-  export let type: "primary" | "secondary" | "highlighted" | "text" = "primary";
+  export let type: "primary" | "secondary" | "highlighted" | "text" | "dashed" =
+    "primary";
   export let status: "info" | "error" = "info";
   export let disabled = false;
   export let compact = false;
@@ -26,6 +27,8 @@
       highlighted:
         "text-gray-500 border border-gray-200 hover:bg-gray-200 hover:text-gray-600 hover:border-gray-200 focus:ring-blue-300 shadow-lg rounded-sm h-8 ",
       text: "text-gray-900 hover:bg-gray-300 focus:ring-blue-300",
+      dashed:
+        "text-gray-800 border border-dashed rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-gray-700 hover:border-gray-300 focus:ring-blue-300 ",
     },
     error: {
       primary:
@@ -45,24 +48,28 @@
     customClasses = undefined,
   }) {
     return `
-  ${compact ? "px-2 py-0.5" : "px-3 py-0.5"} text-xs font-normal leading-snug
- flex flex-row gap-x-2 items-center transition-transform duration-100
+  ${compact ? "px-2" : "px-3"} py-0.5 text-xs font-normal leading-snug
+ flex flex-row gap-x-2 min-w-fit items-center justify-center transition-transform duration-100
   focus:outline-none focus:ring-2
   ${customClasses ? customClasses : levels[status][type]}
   ${disabledClasses}
+  ${
+    type === "highlighted"
+      ? "min-h-[32px]"
+      : compact
+      ? "h-auto"
+      : "min-h-[28px]"
+  }
   `;
   }
-
-  const height = type === "highlighted" ? "32px" : compact ? "auto" : "28px";
 </script>
 
 <button
-  style:height
   {disabled}
   class={buttonClasses({ type, compact, status })}
   on:click={handleClick}
-  type={submitForm && "submit"}
-  form={submitForm && form}
+  type={submitForm ? "submit" : "button"}
+  form={submitForm ? form : undefined}
   aria-label={label}
 >
   <slot />

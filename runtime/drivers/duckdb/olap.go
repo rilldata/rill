@@ -630,14 +630,130 @@ func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Sta
 	return err
 }
 
-func fileSize(paths []string) int64 {
-	var size int64
-	for _, path := range paths {
-		if info, err := os.Stat(path); err == nil { // ignoring error since only error possible is *PathError
-			size += info.Size()
+// convertToEnum converts a varchar col in table to an enum type.
+// Generally to be used for low cardinality varchar columns although not enforced here.
+func (c *connection) convertToEnum(ctx context.Context, table, col string) error {
+	if !c.config.ExtTableStorage {
+		return fmt.Errorf("`cast_to_enum` is only supported when `external_table_storage` is enabled")
+	}
+	c.logger.Info("convert column to enum", zap.String("table", table), zap.String("col", col))
+
+	version, exist, err := c.tableVersion(table)
+	if err != nil {
+		return err
+	}
+
+	if !exist {
+		return fmt.Errorf("table %q does not exist", table)
+	}
+
+	dbName := dbName(table, version)
+	enum := fmt.Sprintf("%s_enum", col)
+
+	var switchErr error
+	err = c.WithConnection(ctx, 100, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+		// check that atleast one non nil value exists in the column
+		res, err := c.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT (SELECT count(%s) FROM %s.default WHERE %s IS NOT NULL) > 0 AS cnt", safeSQLName(col), safeSQLName(dbName), safeSQLName(col))})
+		if err != nil {
+			return err
+		}
+
+		var exists bool
+		if res.Next() {
+			if err := res.Scan(&exists); err != nil {
+				_ = res.Close()
+				return err
+			}
+		}
+		_ = res.Close()
+		if !exists {
+			return fmt.Errorf("column %q can't be converted to enum, has zero non null values", col)
+		}
+
+		// scan current db and current schema
+		res, err = c.Execute(ctx, &drivers.Statement{Query: "SELECT current_database(), current_schema()"})
+		if err != nil {
+			return err
+		}
+
+		var currentDB, currentSchema string
+		if res.Next() {
+			if err := res.Scan(&currentDB, &currentSchema); err != nil {
+				_ = res.Close()
+				return err
+			}
+		}
+		_ = res.Close()
+
+		// switch to source db
+		// this is only required since duckdb has bugs around db scoped custom types
+		// TODO: remove this when https://github.com/duckdb/duckdb/pull/9622 is released
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s", dbName)})
+		if err != nil {
+			return fmt.Errorf("failed switch db %q: %w", dbName, err)
+		}
+		defer func() {
+			// switch to original db, notice `db.schema` just doing USE db switches context to `main` schema in the current db if doing `USE main`
+			// we want to switch to original db and schema
+			switchErr = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("USE %s.%s", safeSQLName(currentDB), safeSQLName(currentSchema))})
+		}()
+
+		err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE TYPE %s AS ENUM (SELECT DISTINCT %s FROM \"default\" WHERE %s IS NOT NULL)", safeSQLName(enum), safeSQLName(col), safeSQLName(col))})
+		if err != nil {
+			return fmt.Errorf("failed to create enum %q: %w", enum, err)
+		}
+
+		err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("ALTER TABLE \"default\" ALTER COLUMN %s SET TYPE %s", safeSQLName(col), safeSQLName(enum))})
+		if err != nil {
+			return fmt.Errorf("failed to alter table %q: %w", table, err)
+		}
+
+		// recreate view to propagate schema changes
+		// NOTE :: db name need to be appened in the view query else query fails when switching to main db
+		return c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s.%s AS SELECT * FROM %s.default", safeSQLName(currentDB), safeSQLName(currentSchema), safeSQLName(table), safeSQLName(dbName))})
+	})
+	if switchErr != nil {
+		c.logger.Error("failed switch db to main, reopening db", zap.Error(switchErr))
+		// if switching to main fails all subsequent queries would fail so we reopen db
+		_ = c.reopenDB()
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
+	if r == nil {
+		return nil, nil
+	}
+
+	cts, err := r.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+
+	fields := make([]*runtimev1.StructType_Field, len(cts))
+	for i, ct := range cts {
+		nullable, ok := ct.Nullable()
+		if !ok {
+			nullable = true
+		}
+
+		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
+		if err != nil {
+			return nil, err
+		}
+
+		fields[i] = &runtimev1.StructType_Field{
+			Name: ct.Name(),
+			Type: t,
 		}
 	}
-	return size
+
+	return &runtimev1.StructType{Fields: fields}, nil
 }
 
 func dbName(name, version string) string {

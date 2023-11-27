@@ -99,7 +99,9 @@
   const shiftClick = async () => {
     let exportedValue = formatDataTypeAsDuckDbQueryString(value, type);
     await navigator.clipboard.writeText(exportedValue);
-    notifications.send({ message: `copied value to clipboard` });
+    notifications.send({
+      message: `copied value "${exportedValue}" to clipboard`,
+    });
     // update this to set the active animation in the tooltip text
   };
 </script>

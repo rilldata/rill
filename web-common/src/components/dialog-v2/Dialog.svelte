@@ -13,15 +13,19 @@
   let width = widthOverride ?? "max-w-lg w-full";
 </script>
 
-<Dialog {open} on:close class="fixed inset-0 flex items-center justify-center">
+<Dialog
+  {open}
+  on:close
+  class="fixed inset-0 flex items-center justify-center z-50"
+>
   <DialogOverlay
     class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
   />
   <div
-    class="transform p-6 bg-white rounded-sm border border-slate-300 flex flex-col {width}"
+    class="transform p-6 bg-white rounded-md border border-slate-300 flex flex-col shadow-lg {width}"
   >
     <DialogTitle
-      class="text-gray-800 text-lg font-semibold leading-7 {titleMarginBottom}"
+      class="text-gray-900 text-lg font-semibold leading-7 {titleMarginBottom}"
     >
       <slot name="title" />
     </DialogTitle>

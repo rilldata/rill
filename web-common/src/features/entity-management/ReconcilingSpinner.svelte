@@ -18,7 +18,7 @@
   <div class="flex flex-col gap-y-1">
     {#each $reconcilingItems as reconcilingItem}
       <div>
-        Ingesting {KindToName[reconcilingItem.kind]}
+        Ingesting {KindToName[reconcilingItem.kind ?? ""]}
         <span class="font-mono font-medium">{reconcilingItem.name}</span>
       </div>
     {/each}

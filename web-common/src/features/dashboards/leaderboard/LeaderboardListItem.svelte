@@ -22,23 +22,31 @@
   import ContextColumnValue from "./ContextColumnValue.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
 
+  export let dimensionName: string;
+
   export let itemData: LeaderboardItemData;
   $: label = itemData.dimensionValue;
   $: measureValue = itemData.value;
   $: selected = itemData.selectedIndex >= 0;
   $: comparisonValue = itemData.prevValue;
-
-  export let atLeastOneActive = false;
-  export let isBeingCompared = false;
-  export let filterExcludeMode;
+  $: pctOfTotal = itemData.pctOfTotal;
 
   const {
-    numberFormat: { activeMeasureFormatter },
-    activeMeasure: { isSummableMeasure },
-  } = getStateManagers().selectors;
+    selectors: {
+      numberFormat: { activeMeasureFormatter },
+      activeMeasure: { isSummableMeasure },
+      dimensionFilters: { atLeastOneSelection, isFilterExcludeMode },
+      comparison: { isBeingCompared: isBeingComparedReadable },
+    },
+    actions: {
+      dimensionsFilter: { toggleDimensionValueSelection },
+    },
+  } = getStateManagers();
 
+  $: isBeingCompared = $isBeingComparedReadable(dimensionName);
+  $: filterExcludeMode = $isFilterExcludeMode(dimensionName);
+  $: atLeastOneActive = $atLeastOneSelection(dimensionName);
   /** for summable measures, this is the value we use to calculate the bar % to fill */
-  export let referenceValue;
 
   $: formattedValue = measureValue
     ? $activeMeasureFormatter(measureValue)
@@ -56,16 +64,8 @@
     ? (filterExcludeMode && selected) || (!filterExcludeMode && !selected)
     : false;
 
-  let renderedBarValue = 0; // should be between 0 and 1.
-  $: {
-    renderedBarValue = $isSummableMeasure
-      ? referenceValue
-        ? (measureValue || 0) / referenceValue
-        : 0
-      : 0;
-    // if this somehow creates an NaN, let's set it to 0.
-    renderedBarValue = !isNaN(renderedBarValue) ? renderedBarValue : 0;
-  }
+  $: renderedBarValue = $isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
+
   $: color = excluded
     ? "ui-measure-bar-excluded"
     : selected
@@ -102,9 +102,7 @@
     on:blur={onLeave}
     on:click={(e) => {
       if (e.shiftKey) return;
-      dispatch("select-item", {
-        label,
-      });
+      toggleDimensionValueSelection(dimensionName, label);
     }}
     on:focus={onHover}
     on:keydown
@@ -118,7 +116,6 @@
       {isBeingCompared}
       {excluded}
       selectionIndex={itemData?.selectedIndex}
-      defaultComparedIndex={itemData?.defaultComparedIndex}
     />
     <BarAndLabel
       {color}

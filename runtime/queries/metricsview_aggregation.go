@@ -299,17 +299,27 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	selectCols := make([]string, 0, cols)
 
 	groupCols := make([]string, 0, len(q.Dimensions))
+	unnestClauses := make([]string, 0)
 	args := []any{}
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-			col, err := metricsViewDimensionToSafeColumn(mv, d.Name)
+			dim, err := metricsViewDimension(mv, d.Name)
 			if err != nil {
 				return "", nil, err
 			}
+			rawColName := metricsViewDimensionColumn(dim)
+			col := safeName(rawColName)
 
-			selectCols = append(selectCols, fmt.Sprintf("%s as %s", col, safeName(d.Name)))
-			groupCols = append(groupCols, col)
+			if dim.Unnest && dialect != drivers.DialectDruid {
+				// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
+				unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
+				selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, col))
+				unnestClauses = append(unnestClauses, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), col, unnestColName))
+			} else {
+				selectCols = append(selectCols, fmt.Sprintf("%s as %s", col, safeName(d.Name)))
+				groupCols = append(groupCols, col)
+			}
 			continue
 		}
 
@@ -356,7 +366,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	whereClause := ""
 	if mv.TimeDimension != "" {
 		timeCol := safeName(mv.TimeDimension)
-		clause, err := timeRangeClause(q.TimeRange, dialect, timeCol, &args)
+		clause, err := timeRangeClause(q.TimeRange, mv, dialect, timeCol, &args)
 		if err != nil {
 			return "", nil, err
 		}
@@ -397,19 +407,22 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
+
 	var sql string
 	if q.PivotOn != nil {
-		// select m1, m2, d1, d2 from t where d1 = 'a' group by d1, d2
-		sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s %[4]s",
-			strings.Join(selectCols, ", "), // 1
-			safeName(mv.Table),             // 2
-			whereClause,                    // 3
-			groupClause,                    // 4
+		// select m1, m2, d1, d2 from t, lateral unnest(t.d1) tbl(unnested_d1_) where d1 = 'a' group by d1, d2
+		sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s %[4]s %[5]s",
+			strings.Join(selectCols, ", "),  // 1
+			safeName(mv.Table),              // 2
+			strings.Join(unnestClauses, ""), // 3
+			whereClause,                     // 4
+			groupClause,                     // 5
 		)
 	} else {
-		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s OFFSET %d",
+		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s OFFSET %d",
 			strings.Join(selectCols, ", "),
 			safeName(mv.Table),
+			strings.Join(unnestClauses, ""),
 			whereClause,
 			groupClause,
 			orderClause,

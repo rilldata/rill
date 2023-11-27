@@ -2363,6 +2363,33 @@ definitions:
           type: object
           $ref: '#/definitions/SecurityFieldCondition'
     title: Security for the metrics view
+  MetricsViewSpecAvailableComparisonOffset:
+    type: object
+    properties:
+      offset:
+        type: string
+      range:
+        type: string
+        description: Used to override the range for the comparison with something other than the selected range.
+  MetricsViewSpecAvailableTimeRange:
+    type: object
+    properties:
+      range:
+        type: string
+      comparisonOffsets:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecAvailableComparisonOffset'
+        description: Available comparison offsets for this time range.
+  MetricsViewSpecComparisonMode:
+    type: string
+    enum:
+      - COMPARISON_MODE_UNSPECIFIED
+      - COMPARISON_MODE_NONE
+      - COMPARISON_MODE_TIME
+      - COMPARISON_MODE_DIMENSION
+    default: COMPARISON_MODE_UNSPECIFIED
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -2374,6 +2401,8 @@ definitions:
         type: string
       description:
         type: string
+      unnest:
+        type: boolean
     title: Dimensions are columns to filter and group by
   MetricsViewSpecMeasureV2:
     type: object
@@ -3595,6 +3624,18 @@ definitions:
         type: integer
         format: int64
         description: Month number to use as the base for time aggregations by year. Defaults to 1 (January).
+      defaultComparisonMode:
+        $ref: '#/definitions/MetricsViewSpecComparisonMode'
+        description: Selected default comparison mode.
+      defaultComparisonDimension:
+        type: string
+        title: If comparison mode is dimension then this determines which is the default dimension
+      availableTimeRanges:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecAvailableTimeRange'
+        description: List of available time ranges with comparison ranges that would replace the default list.
   v1MetricsViewState:
     type: object
     properties:

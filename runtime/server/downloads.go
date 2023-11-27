@@ -293,6 +293,18 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			MetricsView:         mv,
 			ResolvedMVSecurity:  security,
 		}
+	case *runtimev1.Query_TableRowsRequest:
+		r := v.TableRowsRequest
+		if !auth.GetClaims(req.Context()).CanInstance(r.InstanceId, auth.ReadOLAP) {
+			http.Error(w, "action not allowed", http.StatusUnauthorized)
+			return
+		}
+
+		q = &queries.TableHead{
+			TableName: r.TableName,
+			Limit:     int(r.Limit),
+			Result:    nil,
+		}
 	default:
 		http.Error(w, fmt.Sprintf("unsupported request type: %s", reflect.TypeOf(v).Name()), http.StatusBadRequest)
 		return

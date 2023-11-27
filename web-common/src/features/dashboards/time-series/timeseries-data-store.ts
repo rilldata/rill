@@ -1,7 +1,5 @@
-import {
-  StateManagers,
-  memoizeMetricsStore,
-} from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { derived, type Readable } from "svelte/store";
@@ -79,6 +77,13 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
   return derived(
     [useMetaQuery(ctx), useTimeControlStore(ctx), ctx.dashboardStore],
     ([metricsView, timeControls, dashboardStore], set) => {
+      if (!timeControls.ready || timeControls.isFetching) {
+        set({
+          isFetching: true,
+        });
+        return;
+      }
+
       const showComparison = timeControls.showComparison;
       const interval =
         timeControls.selectedTimeRange?.interval ?? timeControls.minTimeGrain;
@@ -154,7 +159,11 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
 
           if (!primary?.data || !primaryTotal?.data || !unfilteredTotal?.data) {
             return {
-              isFetching: metricsView.isFetching,
+              isFetching:
+                metricsView.isFetching ||
+                primary?.isFetching ||
+                primaryTotal?.isFetching ||
+                unfilteredTotal?.isFetching,
             };
           }
 

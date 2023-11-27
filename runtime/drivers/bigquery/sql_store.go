@@ -50,9 +50,11 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 
 	var client *bigquery.Client
 	var it *bigquery.RowIterator
+	var fallbackToQueryExecution bool
 
 	match := selectQueryRegex.FindStringSubmatch(srcProps.SQL)
-	if match != nil {
+	queryIsSelectAll := match != nil
+	if queryIsSelectAll {
 		// "SELECT * FROM `project_id.dataset.table`" statement so storage api might be used
 		// project_id and backticks are optional
 		fullTableName := match[1]
@@ -81,8 +83,25 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 			return nil, err
 		}
 
-		it = client.DatasetInProject(projectID, dataset).Table(tableID).Read(ctx)
-	} else {
+		table := client.DatasetInProject(projectID, dataset).Table(tableID)
+		// extract source metadata to ensure the source is a regular table or a snapshot
+		// as storage api doesn't support other types
+		metadata, err := table.Metadata(ctx)
+		if err != nil {
+			client.Close()
+			return nil, fmt.Errorf("source metadata cannot be extracted: %w", err)
+		}
+		if metadata.Type == bigquery.RegularTable || metadata.Type == bigquery.Snapshot {
+			it = table.Read(ctx)
+		} else {
+			c.logger.Info("source is not a regular table or a snapshot, falling back to a query execution")
+			fallbackToQueryExecution = true
+			client.Close()
+		}
+	}
+
+	if !queryIsSelectAll || fallbackToQueryExecution {
+		// storage api cannot be used, switching to a query execution
 		now := time.Now()
 
 		client, err = createClient(ctx, srcProps.ProjectID, opts)
@@ -98,10 +117,11 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		q := client.Query(srcProps.SQL)
 		it, err = q.Read(ctx)
 
-		if err != nil && !strings.Contains(err.Error(), "Response too large to return") {
+		if err != nil && strings.Contains(err.Error(), "Response too large to return") {
 			// https://cloud.google.com/knowledge/kb/bigquery-response-too-large-to-return-consider-setting-allowlargeresults-to-true-in-your-job-configuration-000004266
 			client.Close()
-			return nil, fmt.Errorf("response too large, consider ingesting the entire table with 'select * from `project_id.dataset.tablename`'")
+			return nil, fmt.Errorf("response too large, consider converting the source to a table and " +
+				"ingesting the entire table with 'select * from `project_id.dataset.tablename`'")
 		}
 
 		if err != nil && !strings.Contains(err.Error(), "Syntax error") {
@@ -111,9 +131,9 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 			// the query results are always cached in a temporary table that storage api can use
 			// there are some exceptions when results aren't cached
 			// so we also try without storage api
-			client, err = bigquery.NewClient(ctx, srcProps.ProjectID, opts...)
+			client, err = createClient(ctx, srcProps.ProjectID, opts)
 			if err != nil {
-				return nil, fmt.Errorf("failed to create bigquery client: %w", err)
+				return nil, err
 			}
 
 			q := client.Query(srcProps.SQL)
@@ -168,10 +188,6 @@ type fileIterator struct {
 // Close implements drivers.FileIterator.
 func (f *fileIterator) Close() error {
 	return os.Remove(f.tempFilePath)
-}
-
-// KeepFilesUntilClose implements drivers.FileIterator.
-func (f *fileIterator) KeepFilesUntilClose(keepFilesUntilClose bool) {
 }
 
 // Next implements drivers.FileIterator.

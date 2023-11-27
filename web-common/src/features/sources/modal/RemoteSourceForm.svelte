@@ -72,16 +72,16 @@
 
 <div class="h-full w-full flex flex-col">
   <form
-    on:submit|preventDefault={handleSubmit}
+    class="pb-5 flex-grow overflow-y-auto"
     id="remote-source-{connector.name}-form"
-    class="pb-2 flex-grow overflow-y-auto"
+    on:submit|preventDefault={handleSubmit}
   >
-    <div class="pb-2">
+    <div class="pb-2 text-slate-500">
       Need help? Refer to our
       <a
         href="https://docs.rilldata.com/develop/import-data"
-        target="_blank"
-        rel="noreferrer">docs</a
+        rel="noreferrer"
+        target="_blank">docs</a
       > for more information.
     </div>
     {#if rpcError}
@@ -97,7 +97,7 @@
     {#each connectorProperties as property}
       {@const label =
         property.displayName + (property.nullable ? " (optional)" : "")}
-      <div class="py-2">
+      <div class="py-1.5">
         {#if property.type === ConnectorSpecPropertyType.TYPE_STRING}
           <Input
             id={toYupFriendlyKey(property.key)}
@@ -131,11 +131,12 @@
   </form>
   <div class="flex items-center space-x-2">
     <div class="grow" />
+    <Button on:click={() => dispatch("back")} type="secondary">Back</Button>
     <Button
-      type="primary"
-      submitForm
-      form="remote-source-{connector.name}-form"
       disabled={$isSubmitting}
+      form="remote-source-{connector.name}-form"
+      submitForm
+      type="primary"
     >
       Add source
     </Button>

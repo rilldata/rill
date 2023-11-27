@@ -4,7 +4,6 @@
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
   import { createAdminServiceGetProject } from "../../../client";
   import DashboardsTable from "../../../features/dashboards/listing/DashboardsTable.svelte";
-  import ProjectHero from "../../../features/projects/ProjectHero.svelte";
   import RedeployProjectCta from "../../../features/projects/RedeployProjectCTA.svelte";
 
   $: organization = $page.params.organization;
@@ -19,14 +18,13 @@
   <title>{project} overview - Rill</title>
 </svelte:head>
 <VerticalScrollContainer>
-  <ContentContainer>
-    <div class="flex flex-col gap-y-4 items-start w-full">
-      <ProjectHero {organization} {project} />
-      {#if isProjectDeployed}
+  {#if isProjectHibernating}
+    <RedeployProjectCta {organization} {project} />
+  {:else if isProjectDeployed}
+    <ContentContainer>
+      <div class="flex flex-col items-center gap-y-4">
         <DashboardsTable {organization} {project} />
-      {:else if isProjectHibernating}
-        <RedeployProjectCta {organization} {project} />
-      {/if}
-    </div>
-  </ContentContainer>
+      </div>
+    </ContentContainer>
+  {/if}
 </VerticalScrollContainer>

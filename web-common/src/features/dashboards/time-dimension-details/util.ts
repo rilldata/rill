@@ -20,6 +20,8 @@ export function safeFormatter(formatter) {
   return (value) => {
     if (value === undefined) {
       return undefined;
+    } else if (value === null) {
+      return null;
     } else {
       return formatter(value);
     }
@@ -40,14 +42,14 @@ export function getClassForCell(
       doubleHighlighted: "bg-slate-200",
     },
     scrubbed: {
-      base: "!bg-blue-50",
-      highlighted: "!bg-blue-100",
-      doubleHighlighted: "!bg-blue-200",
+      base: "bg-blue-50",
+      highlighted: "bg-blue-100",
+      doubleHighlighted: "bg-blue-200",
     },
     default: {
-      base: "!bg-white",
-      highlighted: "!bg-gray-100",
-      doubleHighlighted: "!bg-gray-200",
+      base: "bg-white",
+      highlighted: "bg-gray-100",
+      doubleHighlighted: "bg-gray-200",
     },
   };
 

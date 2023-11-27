@@ -1,12 +1,14 @@
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { resourcesStore } from "@rilldata/web-common/features/entity-management/resources-store";
+import {
+  getLastStateUpdatedOn,
+  resourcesStore,
+} from "@rilldata/web-common/features/entity-management/resources-store";
 import type { V1WatchResourcesResponse } from "@rilldata/web-common/runtime-client";
 import {
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
   V1ReconcileStatus,
   V1Resource,
-  V1ResourceEvent,
 } from "@rilldata/web-common/runtime-client";
 import {
   invalidateMetricsViewData,
@@ -47,16 +49,17 @@ export function invalidateResourceResponse(
     return;
   }
 
+  // Reconcile does a soft delete 1st by populating deletedOn
+  // We then get an event with DELETE after reconcile ends, but without a resource object.
+  // So we need to check for deletedOn to be able to use resource.meta, especially the filePaths
+  const isSoftDelete = !!res.resource?.meta?.deletedOn;
+
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here
-  switch (res.event) {
-    case V1ResourceEvent.RESOURCE_EVENT_WRITE:
-      invalidateResource(queryClient, instanceId, res.resource);
-      break;
-
-    case V1ResourceEvent.RESOURCE_EVENT_DELETE:
-      invalidateRemovedResource(queryClient, instanceId, res.resource);
-      break;
+  if (isSoftDelete) {
+    invalidateRemovedResource(queryClient, instanceId, res.resource);
+  } else {
+    invalidateResource(queryClient, instanceId, res.resource);
   }
 
   // only re-fetch list queries for kinds in `MainResources`
@@ -78,12 +81,29 @@ async function invalidateResource(
 ) {
   refreshResource(queryClient, instanceId, resource);
 
-  if (resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE)
+  const lastStateUpdatedOn = getLastStateUpdatedOn(resource);
+  if (
+    resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE &&
+    !lastStateUpdatedOn
+  ) {
+    // When a resource is created it can send an event with status = IDLE just before it is queued for reconcile.
+    // So handle the case when it is 1st queued and status != IDLE
+    resourcesStore.setVersion(resource);
     return;
+  }
+
+  if (
+    resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE ||
+    lastStateUpdatedOn === resource.meta.stateUpdatedOn
+  )
+    return;
+
+  resourcesStore.setVersion(resource);
   const failed = !!resource.meta.reconcileError;
 
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
+    // eslint-disable-next-line no-fallthrough
     case ResourceKind.Model:
       return invalidateProfilingQueries(
         queryClient,
@@ -111,6 +131,7 @@ async function invalidateRemovedResource(
       "name.kind": resource.meta.name.kind,
     })
   );
+  resourcesStore.deleteResource(resource);
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:

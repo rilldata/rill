@@ -52,7 +52,7 @@
 <svelte:window on:keydown={onKeydown} />
 <header
   class="grid items-center content-stretch justify-between pl-4 border-b border-gray-300"
-  style:grid-template-columns="[title] auto [controls] auto"
+  style:grid-template-columns="[title] minmax(0, 1fr) [controls] auto"
   style:height="var(--header-height)"
   use:listenToNodeResize
 >
@@ -60,7 +60,7 @@
     {#if titleInput !== undefined && titleInput !== null}
       <h1
         style:font-size="16px"
-        class="w-full overflow-x-hidden grid grid-flow-col justify-start items-center gap-x-1"
+        class="grid grid-flow-col justify-start items-center gap-x-1 overflow-hidden"
       >
         <Tooltip
           distance={8}
@@ -72,7 +72,6 @@
             autocomplete="off"
             disabled={!editable}
             id="model-title-input"
-            class:text-overflow-ellipsis={!editable}
             bind:this={titleInputElement}
             on:focus={() => {
               editingTitle = true;
@@ -84,7 +83,7 @@
                 editingTitle = true;
               }
             }}
-            class="w-full text-overflow-ellipses whitespace-wrap bg-transparent border border-transparent border-2 {editable
+            class="bg-transparent border border-transparent border-2 {editable
               ? 'hover:border-gray-400 cursor-pointer'
               : ''} rounded pl-2 pr-2"
             class:font-bold={editingTitle === false}
