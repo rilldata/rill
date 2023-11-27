@@ -683,7 +683,7 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 			nullable = true
 		}
 
-		t, err := DatabaseTypeToPB(ct.DatabaseTypeName(), nullable)
+		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
 		if err != nil {
 			return nil, err
 		}

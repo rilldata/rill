@@ -91,7 +91,7 @@ func TestDatabaseTypeToPB(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		output, err := DatabaseTypeToPB(test.input, true)
+		output, err := databaseTypeToPB(test.input, true)
 		require.NoError(t, err)
 		require.Equal(t, test.output, output)
 	}
