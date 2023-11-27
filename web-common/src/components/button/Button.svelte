@@ -68,8 +68,8 @@
   {disabled}
   class={buttonClasses({ type, compact, status })}
   on:click={handleClick}
-  type={submitForm && "submit"}
-  form={submitForm && form}
+  type={submitForm ? "submit" : "button"}
+  form={submitForm ? form : undefined}
   aria-label={label}
 >
   <slot />

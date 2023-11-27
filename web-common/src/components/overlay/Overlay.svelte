@@ -9,7 +9,10 @@
   // We'll need a better solution than this!
   function captureKeydown(event) {
     // capture all events
-    document.activeElement.blur();
+
+    // FIXME: `.blur()` doesn't exist on activeElement --
+    // What was the intent here @djbarnwal?
+    // document.activeElement.blur();
     event.preventDefault();
   }
 

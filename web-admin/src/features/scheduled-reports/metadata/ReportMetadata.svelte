@@ -19,6 +19,7 @@
   import MetadataLabel from "./MetadataLabel.svelte";
   import MetadataValue from "./MetadataValue.svelte";
   import ReportOwnerBlock from "./ReportOwnerBlock.svelte";
+  import RunNowButton from "./RunNowButton.svelte";
   import { exportFormatToPrettyString, formatNextRunOn } from "./utils";
 
   export let organization: string;
@@ -100,7 +101,8 @@
         <h1 class="text-gray-700 text-lg font-bold">
           {$reportQuery.data.resource.report.spec.title}
         </h1>
-        <!-- <div class="grow" /> -->
+        <div class="grow" />
+        <RunNowButton {organization} {project} {report} />
         <Menu>
           <MenuButton>
             <IconButton>
