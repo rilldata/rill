@@ -34,7 +34,7 @@
     {/each}
     {#if values.length > 1}
       <div class="italic">
-        + {whatsLeft} other{#if whatsLeft !== 1}s{/if}
+        +{whatsLeft} other{#if whatsLeft !== 1}s{/if}
       </div>
     {/if}
     {#if isHidden}
