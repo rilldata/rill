@@ -630,37 +630,6 @@ func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Sta
 	return err
 }
 
-func RowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
-	if r == nil {
-		return nil, nil
-	}
-
-	cts, err := r.ColumnTypes()
-	if err != nil {
-		return nil, err
-	}
-
-	fields := make([]*runtimev1.StructType_Field, len(cts))
-	for i, ct := range cts {
-		nullable, ok := ct.Nullable()
-		if !ok {
-			nullable = true
-		}
-
-		t, err := DatabaseTypeToPB(ct.DatabaseTypeName(), nullable)
-		if err != nil {
-			return nil, err
-		}
-
-		fields[i] = &runtimev1.StructType_Field{
-			Name: ct.Name(),
-			Type: t,
-		}
-	}
-
-	return &runtimev1.StructType{Fields: fields}, nil
-}
-
 func fileSize(paths []string) int64 {
 	var size int64
 	for _, path := range paths {
