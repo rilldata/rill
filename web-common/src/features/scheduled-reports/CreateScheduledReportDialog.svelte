@@ -89,7 +89,13 @@
         dispatch("close");
         notifications.send({
           message: "Report created",
-          type: "success",
+          link: {
+            href: `/${organization}/${project}/-/reports`,
+            text: "Go to scheduled reports",
+          },
+          options: {
+            persistedLink: true,
+          },
         });
       } catch (e) {
         // showing error below
