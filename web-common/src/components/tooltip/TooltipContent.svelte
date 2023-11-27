@@ -1,5 +1,10 @@
 <script lang="ts">
-  export let maxWidth: string | undefined = undefined;
+  /**
+   * The maximum width of the tooltip content.
+   * Defaults to 400px, which is the most commonly
+   * used width for tooltips in the app.
+   */
+  export let maxWidth = "400px";
 </script>
 
 <div
