@@ -1,7 +1,6 @@
 <script lang="ts">
   import { cubicOut as easing } from "svelte/easing";
   import { tweened } from "svelte/motion";
-  import type { BarAndLabelTweenParameterOptions } from "./types";
 
   export let value = 0;
   export let color;
@@ -10,12 +9,11 @@
   export let showHover = false;
   export let customBackgroundColor = undefined;
   export let justify: string | boolean = "end"; // or left
-  export let tweenParameters: BarAndLabelTweenParameterOptions<number> = {
+  export let tweenParameters = {
     duration: 500,
-    easing,
   };
 
-  let finalParameters: BarAndLabelTweenParameterOptions<number> = {
+  let finalParameters = {
     ...{ duration: 500, easing },
     ...tweenParameters,
   };
