@@ -5,6 +5,7 @@ This component needs to do the following:
 3. update comparisons on user interactions
 -->
 <script lang="ts">
+  import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
   import { IconSpaceFixer } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
@@ -34,7 +35,7 @@ This component needs to do the following:
 
   const TIME = "Time";
 
-  let dimensions = [];
+  let dimensions: MetricsViewSpecDimensionV2[] | undefined = [];
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
@@ -46,13 +47,15 @@ This component needs to do the following:
   let searchText = "";
 
   function getLabelForDimension(dimension: string) {
-    return dimensions.find((d) => d.name === dimension)?.label;
+    if (!dimensions) return dimension;
+    const dimensionObj = dimensions.find((d) => d.name === dimension);
+    return dimensionObj?.label || dimension;
   }
 
   /** compile the comparison options */
-  $: options = dimensions.map((d) => ({
+  $: options = (dimensions || []).map((d) => ({
     name: d.name,
-    label: d.label,
+    label: d.label || d.name,
   }));
 
   $: menuOptions = matchSorter(options, searchText, { keys: ["label"] });
