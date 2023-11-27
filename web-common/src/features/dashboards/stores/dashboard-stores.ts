@@ -7,12 +7,9 @@ import {
   getMapFromArray,
   removeIfExists,
 } from "@rilldata/web-common/lib/arrayUtils";
-import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
-import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import type {
   DashboardTimeControls,
   ScrubRange,
-  TimeComparisonOption,
   TimeRange,
 } from "@rilldata/web-common/lib/time/types";
 import type {
