@@ -95,7 +95,7 @@ export class IntTimesPowerOfTenFormatter implements Formatter {
         // valid inputs must already be close to a single digit
         //  integer multiple of a power of ten
         if (!closeToIntTimesPowerOfTen(x)) {
-          const msg = `recieved invalid input for IntTimesPowerOfTenFormatter: ${x}`;
+          const msg = `received invalid input for IntTimesPowerOfTenFormatter: ${x}`;
           if (onInvalidInput === "consoleWarn") {
             console.warn(msg);
           } else {
