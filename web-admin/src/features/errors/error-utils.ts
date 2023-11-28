@@ -20,7 +20,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     console.log("createGlobalErrorCallback");
     const screenName = getScreenNameFromPage(get(page));
     if (!error.response) {
-      errorEvent?.fireErrorBoundaryEvent(
+      errorEvent?.fireHTTPErrorBoundaryEvent(
         query.queryKey[0] as string,
         "",
         "unknown error",
@@ -28,7 +28,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       );
       return;
     } else {
-      errorEvent?.fireErrorBoundaryEvent(
+      errorEvent?.fireHTTPErrorBoundaryEvent(
         query.queryKey[0] as string,
         error.response?.status + "" ?? error.status,
         (error.response?.data as RpcStatus)?.message ?? error.message,
@@ -153,28 +153,26 @@ export function createErrorPagePropsFromRoutingError(
 
 export function addJavascriptErrorListeners() {
   const errorHandler = (errorEvt: ErrorEvent) => {
-    console.log("error", errorEvt);
-    errorEvent?.fireErrorBoundaryEvent(
-      "",
-      "",
-      errorEvt.error?.stack ?? errorEvt.message,
+    errorEvent?.fireJavascriptErrorBoundaryEvent(
+      errorEvt.error?.stack ?? "",
+      errorEvt.message,
       getScreenNameFromPage(get(page))
     );
   };
   const unhandledRejectionHandler = (rejectionEvent: PromiseRejectionEvent) => {
-    console.log("rejection", rejectionEvent);
-    let reason = "";
+    let stack = "";
+    let message = "";
     if (typeof rejectionEvent.reason === "string") {
-      reason = rejectionEvent.reason;
+      message = rejectionEvent.reason;
     } else if (rejectionEvent.reason instanceof Error) {
-      reason = rejectionEvent.reason.stack;
+      stack = rejectionEvent.reason.stack ?? "";
+      message = rejectionEvent.reason.message;
     } else {
-      reason = String.toString.apply(rejectionEvent.reason);
+      message = String.toString.apply(rejectionEvent.reason);
     }
-    errorEvent?.fireErrorBoundaryEvent(
-      "",
-      "",
-      reason,
+    errorEvent?.fireJavascriptErrorBoundaryEvent(
+      stack,
+      message,
       getScreenNameFromPage(get(page))
     );
   };

@@ -40,5 +40,5 @@ export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
     case isReportExportPage(page):
       return MetricsEventScreenName.ReportExport;
   }
-  return MetricsEventScreenName.Home;
+  return MetricsEventScreenName.Unknown;
 }

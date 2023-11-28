@@ -27,11 +27,18 @@ export interface SourceErrorEvent extends MetricsEvent {
   glob: boolean;
 }
 
-export interface ErrorBoundaryEvent extends MetricsEvent {
+export interface HTTPErrorEvent extends MetricsEvent {
   action: ErrorEventAction;
   screen_name: MetricsEventScreenName;
   api: string;
   status: string;
+  message: string;
+}
+
+export interface JavascriptErrorEvent extends MetricsEvent {
+  action: ErrorEventAction;
+  screen_name: MetricsEventScreenName;
+  stack: string;
   message: string;
 }
 
@@ -61,7 +68,7 @@ export class ErrorEventFactory extends MetricsEventFactory {
     return event;
   }
 
-  public errorBoundaryEvent(
+  public httpErrorEvent(
     commonFields: CommonFields,
     commonUserFields: CommonUserFields,
     screen_name: MetricsEventScreenName,
@@ -73,11 +80,30 @@ export class ErrorEventFactory extends MetricsEventFactory {
       "error",
       commonFields,
       commonUserFields
-    ) as ErrorBoundaryEvent;
+    ) as HTTPErrorEvent;
     event.action = ErrorEventAction.ErrorBoundary;
     event.screen_name = screen_name;
     event.api = api;
     event.status = status;
+    event.message = message;
+    return event;
+  }
+
+  public javascriptErrorEvent(
+    commonFields: CommonFields,
+    commonUserFields: CommonUserFields,
+    screen_name: MetricsEventScreenName,
+    stack: string,
+    message: string
+  ) {
+    const event = this.getBaseMetricsEvent(
+      "error",
+      commonFields,
+      commonUserFields
+    ) as JavascriptErrorEvent;
+    event.action = ErrorEventAction.ErrorBoundary;
+    event.screen_name = screen_name;
+    event.stack = stack;
     event.message = message;
     return event;
   }

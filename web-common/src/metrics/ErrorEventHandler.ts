@@ -37,17 +37,30 @@ export class ErrorEventHandler {
     ]);
   }
 
-  public fireErrorBoundaryEvent(
+  public fireHTTPErrorBoundaryEvent(
     api: string,
     status: string,
     message: string,
     screenName: MetricsEventScreenName
   ) {
-    return this.metricsService.dispatch("errorBoundaryEvent", [
+    return this.metricsService.dispatch("httpErrorEvent", [
       this.commonUserMetrics,
       screenName,
       api,
       status,
+      message,
+    ]);
+  }
+
+  public fireJavascriptErrorBoundaryEvent(
+    stack: string,
+    message: string,
+    screenName: MetricsEventScreenName
+  ) {
+    return this.metricsService.dispatch("javascriptErrorEvent", [
+      this.commonUserMetrics,
+      screenName,
+      stack,
       message,
     ]);
   }
