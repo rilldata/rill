@@ -1,11 +1,11 @@
 <script lang="ts">
   import TimePicker from "@rilldata/web-common/components/forms/TimePicker.svelte";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
-  import InputArray from "../../../components/forms/InputArray.svelte";
-  import InputV2 from "../../../components/forms/InputV2.svelte";
-  import Select from "../../../components/forms/Select.svelte";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import { useDashboard } from "../selectors";
+  import InputArray from "../../components/forms/InputArray.svelte";
+  import InputV2 from "../../components/forms/InputV2.svelte";
+  import Select from "../../components/forms/Select.svelte";
+  import { runtime } from "../../runtime-client/runtime-store";
+  import { useDashboard } from "../dashboards/selectors";
   import { makeTimeZoneOptions } from "./time-utils";
 
   export let formId: string;

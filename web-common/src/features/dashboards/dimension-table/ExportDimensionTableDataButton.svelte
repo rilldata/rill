@@ -37,7 +37,9 @@
   onMount(async () => {
     if (includeScheduledReport) {
       CreateScheduledReportDialog = (
-        await import("../scheduled-reports/CreateScheduledReportDialog.svelte")
+        await import(
+          "../../scheduled-reports/CreateScheduledReportDialog.svelte"
+        )
       ).default;
     }
   });

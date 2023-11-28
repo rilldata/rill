@@ -7,8 +7,8 @@
   import MenuItem from "@rilldata/web-common/components/menu-v2/MenuItem.svelte";
   import MenuItems from "@rilldata/web-common/components/menu-v2/MenuItems.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
-  import EditScheduledReportDialog from "@rilldata/web-common/features/dashboards/scheduled-reports/EditScheduledReportDialog.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import EditScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/EditScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -19,6 +19,7 @@
   import MetadataLabel from "./MetadataLabel.svelte";
   import MetadataValue from "./MetadataValue.svelte";
   import ReportOwnerBlock from "./ReportOwnerBlock.svelte";
+  import RunNowButton from "./RunNowButton.svelte";
   import { exportFormatToPrettyString, formatNextRunOn } from "./utils";
 
   export let organization: string;
@@ -100,7 +101,8 @@
         <h1 class="text-gray-700 text-lg font-bold">
           {$reportQuery.data.resource.report.spec.title}
         </h1>
-        <!-- <div class="grow" /> -->
+        <div class="grow" />
+        <RunNowButton {organization} {project} {report} />
         <Menu>
           <MenuButton>
             <IconButton>

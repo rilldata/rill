@@ -16,6 +16,12 @@ export const formattingSelectors = {
    * according to the active measure's format specification,
    * whether it's a d3 format string or a format preset.
    */
-  activeMeasureFormatter: (args: DashboardDataSources) =>
-    createMeasureValueFormatter(activeMeasure(args)),
+  activeMeasureFormatter: (args: DashboardDataSources) => {
+    const measure = activeMeasure(args);
+    if (measure === undefined) {
+      return (_value: number | undefined) => undefined;
+    }
+
+    return createMeasureValueFormatter(measure);
+  },
 };

@@ -435,7 +435,12 @@ const metricViewReducers = {
     });
   },
 
-  selectItemsInFilter(name: string, dimensionName: string, values: string[]) {
+  selectItemsInFilter(
+    name: string,
+    dimensionName: string,
+    values: string[]
+  ): number {
+    let newValuesSelected = 0;
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
         dimensionName
@@ -443,26 +448,32 @@ const metricViewReducers = {
         ? "exclude"
         : "include";
 
-      const dimensionEntryIndex = metricsExplorer.filters[
-        relevantFilterKey
-      ].findIndex((filter) => filter.name === dimensionName);
+      const filters = metricsExplorer?.filters[relevantFilterKey];
+      // if there are no filters, or if the dimension name is not defined,
+      // there we cannot update anything.
+      if (filters === undefined || dimensionName === undefined) {
+        return;
+      }
+
+      const dimensionEntryIndex = filters?.findIndex(
+        (filter) => filter.name === dimensionName
+      );
 
       if (dimensionEntryIndex >= 0) {
         // preserve old selections and add only new ones
-        const oldValues = metricsExplorer.filters[relevantFilterKey][
-          dimensionEntryIndex
-        ].in as string[];
+        const oldValues = filters[dimensionEntryIndex].in as string[];
         const newValues = values.filter((v) => !oldValues.includes(v));
-        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in.push(
-          ...newValues
-        );
+        newValuesSelected = newValues.length;
+        filters[dimensionEntryIndex].in?.push(...newValues);
       } else {
-        metricsExplorer.filters[relevantFilterKey].push({
+        newValuesSelected = values.length;
+        filters?.push({
           name: dimensionName,
           in: values,
         });
       }
     });
+    return newValuesSelected;
   },
 
   deselectItemsInFilter(name: string, dimensionName: string, values: string[]) {
@@ -473,18 +484,27 @@ const metricViewReducers = {
         ? "exclude"
         : "include";
 
-      const dimensionEntryIndex = metricsExplorer.filters[
-        relevantFilterKey
-      ].findIndex((filter) => filter.name === dimensionName);
+      const filters = metricsExplorer?.filters[relevantFilterKey];
+      // if there are no filters, or if the dimension name is not defined,
+      // there we cannot update anything.
+      if (filters === undefined || dimensionName === undefined) {
+        return;
+      }
+
+      const dimensionEntryIndex = filters.findIndex(
+        (filter) => filter.name === dimensionName
+      );
 
       if (dimensionEntryIndex >= 0) {
         // remove only deselected values
-        const oldValues = metricsExplorer.filters[relevantFilterKey][
-          dimensionEntryIndex
-        ].in as string[];
+        const oldValues = filters[dimensionEntryIndex].in as string[];
         const newValues = oldValues.filter((v) => !values.includes(v));
-        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in =
-          newValues;
+
+        if (newValues.length) {
+          filters[dimensionEntryIndex].in = newValues;
+        } else {
+          filters.splice(dimensionEntryIndex, 1);
+        }
       }
     });
   },
