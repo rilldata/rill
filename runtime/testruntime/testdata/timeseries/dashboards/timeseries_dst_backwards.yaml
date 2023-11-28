@@ -1,7 +1,7 @@
 # Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
 title: timeseries_dst
-model: timeseries_dst_model
+model: timeseries_dst_backwards_model
 timeseries: timestamp
 measures:
   - label: Total records

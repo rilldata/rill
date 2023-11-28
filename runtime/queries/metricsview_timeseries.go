@@ -176,7 +176,6 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 			Ts:      timestamppb.New(t),
 			Records: records,
 		})
-		fmt.Println("timeseries", start.UTC(), t.UTC(), t.In(tz).IsDST(), addTo(t, dur, tz).UTC())
 		start = addTo(t, dur, tz)
 	}
 	if q.TimeEnd != nil && nullRecords != nil {
@@ -373,7 +372,6 @@ func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, s
 			Records: nullRecords,
 		})
 		start = addTo(start, d, tz)
-		fmt.Println("addNulls", start.UTC(), d.Add(start).UTC())
 	}
 	return data
 }
@@ -381,7 +379,7 @@ func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, s
 func addTo(t time.Time, d duration.Duration, tz *time.Location) time.Time {
 	nt := d.Add(t.In(tz)).In(time.UTC)
 	if t.Equal(nt) {
-		// edge case when adding an hour to a time that will be moved back will
+		// edge case when adding an hour to a time that will be moved back
 		return d.Add(t)
 	}
 	return nt
