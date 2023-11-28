@@ -27,7 +27,7 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "dsn",
-			DisplayName: "Snowflake DSN",
+			DisplayName: "Snowflake Connection String",
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			Href:        "https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_Parameters",
