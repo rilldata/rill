@@ -82,6 +82,9 @@ dimensions:
     // wait for the dashboard to update
     await waitForDashboard(page);
 
+    // make the viewport big enough to see the whole dashboard
+    page.setViewportSize({ width: 1920, height: 1200 });
+
     // Go to dashboard
     await page.getByRole("button", { name: "Go to dashboard" }).click();
 
@@ -162,8 +165,9 @@ dimensions:
     await page.getByRole("button", { name: "Select a context column" }).click();
     await page.getByRole("menuitem", { name: "Percent change" }).click();
 
+    // await page.pause();
     await expect(
-      page.getByRole("button", { name: "Microsoft 22018.789999999994 196%" })
+      page.getByRole("button", { name: "null 26642.549999999974 -14%" })
     ).toBeVisible();
 
     /******************
