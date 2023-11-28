@@ -32,11 +32,21 @@ func BakeQuery(qry *runtimev1.Query) (string, error) {
 		return "", err
 	}
 
+	data, err = gzipCompress(data)
+	if err != nil {
+		return "", err
+	}
+
 	return base64.URLEncoding.EncodeToString(data), nil
 }
 
 func UnbakeQuery(bakedQry string) (*runtimev1.Query, error) {
 	data, err := base64.URLEncoding.DecodeString(bakedQry)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = gzipDecompress(data)
 	if err != nil {
 		return nil, err
 	}
