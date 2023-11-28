@@ -2,6 +2,7 @@ package queries_test
 
 import (
 	"context"
+	"fmt"
 	// "fmt"
 	"testing"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestMetricsViewsTimeseries_month_grain(t *testing.T) {
@@ -146,7 +148,7 @@ func TestMetricsViewsTimeseries_year_grain_IST(t *testing.T) {
 	assertTimeSeriesResponse(t, q.Result, []string{"2022-12-31T18:30:00Z", "2023-12-31T18:30:00Z"})
 }
 
-func TestMetricsViewTimeSeries_DayLightSavings(t *testing.T) {
+func TestMetricsViewTimeSeries_DayLightSavings_Continuous_Daily(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
@@ -173,8 +175,59 @@ func TestMetricsViewTimeSeries_DayLightSavings(t *testing.T) {
 		"2023-11-05T04:00:00Z",
 		"2023-11-06T05:00:00Z",
 	})
+}
 
-	q = &queries.MetricsViewTimeSeries{
+func TestMetricsViewTimeSeries_DayLightSavings_Sparse_Daily(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_year"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView()
+
+	q := &queries.MetricsViewTimeSeries{
+		MeasureNames: []string{"total_records"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "label",
+					In:   []*structpb.Value{toStructpbValue(t, "sparse_day")},
+				},
+			},
+		},
+		MetricsViewName: "timeseries_dst",
+		MetricsView:     mv.Spec,
+		TimeStart:       parseTime(t, "2023-11-03T04:00:00.000Z"),
+		TimeEnd:         parseTime(t, "2023-11-07T05:00:00.000Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		TimeZone:        "America/New_York",
+		Limit:           250,
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	assertTimeSeriesResponse(t, q.Result, []string{
+		"2023-11-03T04:00:00Z",
+		"2023-11-04T04:00:00Z",
+		"2023-11-05T04:00:00Z",
+		"2023-11-06T05:00:00Z",
+	})
+	require.NotNil(t, q.Result.Data[0].Records.AsMap()["total_records"])
+	require.Nil(t, q.Result.Data[1].Records.AsMap()["total_records"])
+	require.NotNil(t, q.Result.Data[2].Records.AsMap()["total_records"])
+	require.Nil(t, q.Result.Data[3].Records.AsMap()["total_records"])
+}
+
+func TestMetricsViewTimeSeries_DayLightSavings_Continuous_Hourly(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_year"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView()
+
+	q := &queries.MetricsViewTimeSeries{
 		MeasureNames:    []string{"total_records"},
 		MetricsViewName: "timeseries_dst",
 		MetricsView:     mv.Spec,
@@ -189,9 +242,53 @@ func TestMetricsViewTimeSeries_DayLightSavings(t *testing.T) {
 	assertTimeSeriesResponse(t, q.Result, []string{
 		"2023-11-05T03:00:00Z",
 		"2023-11-05T04:00:00Z",
+		"2023-11-05T05:00:00Z",
 		"2023-11-05T06:00:00Z",
 		"2023-11-05T07:00:00Z",
 	})
+}
+
+func TestMetricsViewTimeSeries_DayLightSavings_Sparse_Hourly(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_year"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView()
+
+	q := &queries.MetricsViewTimeSeries{
+		MeasureNames: []string{"total_records"},
+		Filter: &runtimev1.MetricsViewFilter{
+			Include: []*runtimev1.MetricsViewFilter_Cond{
+				{
+					Name: "label",
+					In:   []*structpb.Value{toStructpbValue(t, "sparse_hour")},
+				},
+			},
+		},
+		MetricsViewName: "timeseries_dst",
+		MetricsView:     mv.Spec,
+		TimeStart:       parseTime(t, "2023-11-05T03:00:00.000Z"),
+		TimeEnd:         parseTime(t, "2023-11-05T08:00:00.000Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
+		TimeZone:        "America/New_York",
+		Limit:           250,
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	assertTimeSeriesResponse(t, q.Result, []string{
+		"2023-11-05T03:00:00Z",
+		"2023-11-05T04:00:00Z",
+		"2023-11-05T05:00:00Z",
+		"2023-11-05T06:00:00Z",
+		"2023-11-05T07:00:00Z",
+	})
+	require.NotNil(t, q.Result.Data[0].Records.AsMap()["total_records"])
+	require.Nil(t, q.Result.Data[1].Records.AsMap()["total_records"])
+	require.NotNil(t, q.Result.Data[2].Records.AsMap()["total_records"])
+	require.Nil(t, q.Result.Data[3].Records.AsMap()["total_records"])
+	require.NotNil(t, q.Result.Data[4].Records.AsMap()["total_records"])
 }
 
 func assertTimeSeriesResponse(t *testing.T, res *runtimev1.MetricsViewTimeSeriesResponse, expected []string) {
@@ -199,6 +296,13 @@ func assertTimeSeriesResponse(t *testing.T, res *runtimev1.MetricsViewTimeSeries
 	actual := make([]string, 0)
 	for _, r := range res.Data {
 		actual = append(actual, r.Ts.AsTime().Format(time.RFC3339))
+		fmt.Println(r.Ts.AsTime().Format(time.RFC3339), r.Records.AsMap())
 	}
 	require.ElementsMatch(t, actual, expected)
+}
+
+func toStructpbValue(t *testing.T, v any) *structpb.Value {
+	sv, err := structpb.NewValue(v)
+	require.NoError(t, err)
+	return sv
 }

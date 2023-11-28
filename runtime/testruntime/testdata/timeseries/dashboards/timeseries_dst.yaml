@@ -11,12 +11,8 @@ measures:
     format_preset: humanize
     valid_percent_of_total: true
 dimensions:
-  - name: minute
-    column: minute
-  - name: hour
-    column: hour
-  - name: day
-    column: day
+  - name: label
+    column: label
 available_time_zones:
   - America/Los_Angeles
   - America/Chicago

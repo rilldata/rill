@@ -176,6 +176,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 			Ts:      timestamppb.New(t),
 			Records: records,
 		})
+		fmt.Println("timeseries", start.UTC(), t.UTC(), t.In(tz).IsDST(), addTo(t, dur, tz).UTC())
 		start = addTo(t, dur, tz)
 	}
 	if q.TimeEnd != nil && nullRecords != nil {
@@ -295,7 +296,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 	var sql string
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		args = append([]any{timezone, timezone}, args...)
+		args = append([]any{timezone}, args...)
 		sql = q.buildDuckDBSQL(args, mv, tsAlias, selectCols, whereClause)
 	case drivers.DialectDruid:
 		args = append([]any{timezone}, args...)
@@ -332,7 +333,7 @@ func (q *MetricsViewTimeSeries) buildDruidSQL(args []any, mv *runtimev1.MetricsV
 }
 
 func (q *MetricsViewTimeSeries) buildDuckDBSQL(args []any, mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause string) string {
-	dateTruncSpecifier := convertToDateTruncSpecifier(q.TimeGranularity)
+	dateTruncSpecifier := "1 " + convertToDateTruncSpecifier(q.TimeGranularity)
 
 	shift := "0 DAY"
 	if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_WEEK && mv.FirstDayOfWeek > 1 {
@@ -344,7 +345,7 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(args []any, mv *runtimev1.Metrics
 	}
 
 	sql := fmt.Sprintf(
-		`SELECT timezone(?, date_trunc('%[1]s', timezone(?, %[2]s::TIMESTAMPTZ) + INTERVAL %[7]s) - INTERVAL %[7]s) as %[3]s, %[4]s FROM %[5]s WHERE %[6]s GROUP BY 1 ORDER BY 1`,
+		`SELECT (time_bucket(INTERVAL '%[1]s', %[2]s::TIMESTAMPTZ + INTERVAL %[7]s, ?) - INTERVAL %[7]s) as %[3]s, %[4]s FROM %[5]s WHERE %[6]s GROUP BY 1 ORDER BY 1`,
 		dateTruncSpecifier,             // 1
 		safeName(mv.TimeDimension),     // 2
 		tsAlias,                        // 3
@@ -367,30 +368,21 @@ func generateNullRecords(schema *runtimev1.StructType) *structpb.Struct {
 
 func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, start, end time.Time, d duration.Duration, tz *time.Location) []*runtimev1.TimeSeriesValue {
 	for start.Before(end) {
-		ns := addTo(start, d, tz)
-		nstz := ns.In(tz)
-		stz := start.In(tz)
-		if stz.IsDST() && !nstz.IsDST() && stz.Hour() == nstz.Hour() {
-			// the hour of DST roll over
-			start = ns
-			continue
-		}
-
-		if nstz.Equal(stz) {
-			// handle the hour after the DST roll over
-			start = addTo(start, duration.StandardDuration{Hour: 2}, tz)
-			continue
-		}
-
 		data = append(data, &runtimev1.TimeSeriesValue{
 			Ts:      timestamppb.New(start),
 			Records: nullRecords,
 		})
-		start = ns
+		start = addTo(start, d, tz)
+		fmt.Println("addNulls", start.UTC(), d.Add(start).UTC())
 	}
 	return data
 }
 
-func addTo(start time.Time, d duration.Duration, tz *time.Location) time.Time {
-	return d.Add(start.In(tz)).In(time.UTC)
+func addTo(t time.Time, d duration.Duration, tz *time.Location) time.Time {
+	nt := d.Add(t.In(tz)).In(time.UTC)
+	if t.Equal(nt) {
+		// edge case when adding an hour to a time that will be moved back will
+		return d.Add(t)
+	}
+	return nt
 }
