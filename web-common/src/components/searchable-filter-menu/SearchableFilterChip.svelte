@@ -71,13 +71,13 @@ props as needed.
     suppress={active}
   >
     <!-- TODO: Switch to Measure colors once Theming supports it -->
-    <Chip 
-    extraRounded={false} 
-    {label} 
-    outline={true} 
-    {active}
-    {...defaultChipColors}
-    on:click={toggleFloatingElement}
+    <Chip
+      extraRounded={false}
+      {label}
+      outline={true}
+      {active}
+      {...defaultChipColors}
+      on:click={toggleFloatingElement}
     >
       <div slot="body" class="flex gap-x-2">
         <div

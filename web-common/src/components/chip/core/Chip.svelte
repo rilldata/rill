@@ -46,7 +46,7 @@
     {bgHoverClass} 
     {active ? bgActiveClass : bgBaseClass}
     {outline ? outlineClass : ''}
-    {(active && outline) ? outlineActiveClass: ''} 
+    {active && outline ? outlineActiveClass : ''} 
   "
     style:grid-template-columns="{$$slots.icon || removable
       ? "max-content"

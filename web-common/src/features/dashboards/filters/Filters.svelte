@@ -109,7 +109,7 @@ The main feature-set component for dashboard filters
             ),
             selectedValues: dimensionValues.in as any[],
             filterType: "exclude",
-        };
+          };
         }) ?? [];
 
     currentDimensionFilters = [
@@ -171,7 +171,7 @@ The main feature-set component for dashboard filters
             {searchedValues}
           >
             <svelte:fragment slot="body-tooltip-content">
-                Click to edit the the filters in this dimension
+              Click to edit the the filters in this dimension
             </svelte:fragment>
           </RemovableListChip>
         </div>
