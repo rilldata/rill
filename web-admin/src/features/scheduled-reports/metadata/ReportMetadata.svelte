@@ -7,8 +7,8 @@
   import MenuItem from "@rilldata/web-common/components/menu-v2/MenuItem.svelte";
   import MenuItems from "@rilldata/web-common/components/menu-v2/MenuItems.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
-  import EditScheduledReportDialog from "@rilldata/web-common/features/dashboards/scheduled-reports/EditScheduledReportDialog.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
+  import EditScheduledReportDialog from "@rilldata/web-common/features/scheduled-reports/EditScheduledReportDialog.svelte";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
