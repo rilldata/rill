@@ -114,7 +114,7 @@ export function getYupSchema(connector: V1ConnectorSpec) {
             "Source name must start with a letter or underscore and contain only letters, numbers, and underscores"
           )
           .required("Source name is required"),
-        database_url: yup.string(),
+        dsn: yup.string(),
       });
     case "athena":
       return yup.object().shape({

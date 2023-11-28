@@ -6,7 +6,6 @@ import (
 	sqld "database/sql/driver"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -52,7 +51,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 
 	db, err := sql.Open("snowflake", dsn)
 	if err != nil {
-		log.Fatalf("failed to connect. %v, err: %v", dsn, err)
+		return nil, err
 	}
 
 	ctx = sf.WithOriginalTimestamp(sf.WithArrowAllocator(sf.WithArrowBatches(ctx), memory.DefaultAllocator))
@@ -69,13 +68,20 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		return err
 	})
 	if err != nil {
-		rows.Close()
 		conn.Close()
 		db.Close()
-		log.Fatalf("unable to run the query. err: %v", err)
+		return nil, err
 	}
 
 	batches, err := rows.(sf.SnowflakeRows).GetArrowBatches()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(batches) == 0 {
+		// empty result
+		return nil, fmt.Errorf("no results found for the query")
+	}
 
 	// the number of returned rows is unknown at this point, only the number of batches and output files
 	p.Target(1, drivers.ProgressUnitFile)
@@ -115,6 +121,10 @@ func (f *fileIterator) Close() error {
 // Next implements drivers.FileIterator.
 // Query result is written to a single parquet file.
 func (f *fileIterator) Next() ([]string, error) {
+	if f.downloaded {
+		return nil, io.EOF
+	}
+
 	// close db resources early
 	defer func() {
 		f.rows.Close()
@@ -122,9 +132,6 @@ func (f *fileIterator) Next() ([]string, error) {
 		f.db.Close()
 	}()
 
-	if f.downloaded {
-		return nil, io.EOF
-	}
 	f.logger.Info("downloading results in parquet file", observability.ZapCtx(f.ctx))
 
 	// create a temp file
@@ -141,11 +148,6 @@ func (f *fileIterator) Next() ([]string, error) {
 		f.logger.Info("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
 	}()
 
-	if len(f.batches) == 0 {
-		// empty result
-		return nil, nil
-	}
-
 	firstBatch, err := f.batches[0].Fetch()
 	if err != nil {
 		return nil, err
@@ -153,7 +155,7 @@ func (f *fileIterator) Next() ([]string, error) {
 
 	if len(*firstBatch) == 0 {
 		// empty result
-		return nil, nil
+		return nil, fmt.Errorf("no results found for the query")
 	}
 
 	// common schema
@@ -181,10 +183,10 @@ func (f *fileIterator) Next() ([]string, error) {
 	// since batches are organized as a slice and every batch caches its content
 	for _, batch := range f.batches {
 		records, err := batch.Fetch()
-		f.totalRecords += int64(batch.GetRowCount())
 		if err != nil {
 			return nil, err
 		}
+		f.totalRecords += int64(batch.GetRowCount())
 		for _, rec := range *records {
 			if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
 				writer.NewBufferedRowGroup()
