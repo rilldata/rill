@@ -5,6 +5,7 @@ import type {
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { afterAll, beforeAll, vi } from "vitest";
+import { asyncWait } from "../../lib/waitUtils";
 
 export class DashboardFetchMocks {
   private responses = new Map<string, any>();
@@ -89,7 +90,7 @@ export class DashboardFetchMocks {
     }
 
     // wait a tick
-    await new Promise((resolve) => setTimeout(resolve, 1));
+    await asyncWait(1);
 
     return {
       ready: true,
