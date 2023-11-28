@@ -484,9 +484,7 @@ dimensions:
     // Can do better table checking in the future when table is refactored to use proper row setup
     // For now, just check the dimensions
     await expect(
-      page
-        .getByRole("button", { name: "Filter dimension value" })
-        .filter({ hasText: "Microsoft" })
+      page.locator("button").filter({ hasText: /^Microsoft$/ })
     ).toBeVisible();
 
     // TODO when table is better formatted
@@ -496,8 +494,8 @@ dimensions:
 
     // Click a table value to filter
     await page
-      .getByRole("button", { name: "Filter dimension value" })
-      .filter({ hasText: "Microsoft" })
+      .locator("button")
+      .filter({ hasText: /^Microsoft$/ })
       .click();
 
     // Check that filter was applied

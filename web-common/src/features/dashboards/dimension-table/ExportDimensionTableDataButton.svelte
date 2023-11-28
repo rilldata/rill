@@ -8,7 +8,7 @@
     V1ExportFormat,
     createQueryServiceExport,
   } from "@rilldata/web-common/runtime-client";
-  import { SvelteComponent, onMount } from "svelte";
+  import { onMount } from "svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import exportToplist from "./export-toplist";
 
@@ -33,7 +33,7 @@
 
   // Only import the Scheduled Report dialog if in the Cloud context.
   // This ensures Rill Developer doesn't try and fail to import the admin-client.
-  let CreateScheduledReportDialog: typeof SvelteComponent | undefined;
+  let CreateScheduledReportDialog;
   onMount(async () => {
     if (includeScheduledReport) {
       CreateScheduledReportDialog = (
