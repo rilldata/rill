@@ -35,7 +35,6 @@ are details left to the consumer of the component; this component should remain 
   export let label: string | undefined = undefined;
 
   const dispatch = createEventDispatcher();
-  let active = false;
 
   const excludeStore: Writable<boolean> = writable(excludeMode);
   $: excludeStore.set(excludeMode);
