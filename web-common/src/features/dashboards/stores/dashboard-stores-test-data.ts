@@ -108,8 +108,6 @@ export const AD_BIDS_DEFAULT_TIME_RANGE = {
 export const AD_BIDS_DEFAULT_URL_TIME_RANGE = {
   name: TimeRangePreset.ALL_TIME,
   interval: V1TimeGrain.TIME_GRAIN_HOUR,
-  start: undefined,
-  end: undefined,
 };
 
 export const AD_BIDS_INIT: V1MetricsViewSpec = {

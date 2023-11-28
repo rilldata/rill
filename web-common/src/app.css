@@ -19,10 +19,6 @@
     @apply bg-gray-100 dark:bg-gray-900;
   }
 
-  .surface-focus {
-    @apply bg-gray-200 dark:bg-gray-600;
-  }
-
   .surface-faint {
     @apply bg-gray-50 dark:bg-transparent;
   }
@@ -113,14 +109,6 @@
 
   .ui-editor-border-error {
     border-color: var(--ui-editor-error-foreground);
-  }
-
-  .ui-card {
-    background: var(--gradient_white-slate50, linear-gradient(180deg, #FFF 0%, #F8FAFC 100%));
-    box-shadow: 0px 4px 6px 0px rgba(15, 23, 42, 0.09), 
-    0px 0px 0px 1px rgba(15, 23, 42, 0.06), 
-    0px 1px 3px 0px rgba(15, 23, 42, 0.04), 
-    0px 2px 3px 0px rgba(15, 23, 42, 0.03); 
   }
 }
 
