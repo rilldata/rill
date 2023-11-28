@@ -160,8 +160,8 @@ export function timeComparisonOptionsSelector([
   const timeComparisonOptions = getAvailableComparisonsForTimeRange(
     allTimeRange.start,
     allTimeRange.end,
-    explorer.selectedTimeRange.start,
-    explorer.selectedTimeRange.end,
+    selectedTimeRange.start,
+    selectedTimeRange.end,
     allOptions,
     [explorer.selectedComparisonTimeRange?.name as TimeComparisonOption]
   );
@@ -210,7 +210,6 @@ export function getValidComparisonOption(
     selectedTimeRange.start,
     selectedTimeRange.end
   );
-  console.log(prevComparisonOption, existing, existingComparison);
   // if currently selected comparison option is in allowed list and is valid select it
   if (existing && existingComparison.isComparisonRangeAvailable) {
     return prevComparisonOption;
