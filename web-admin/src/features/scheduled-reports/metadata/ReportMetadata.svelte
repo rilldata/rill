@@ -15,7 +15,11 @@
   import cronstrue from "cronstrue";
   import { createAdminServiceDeleteReport } from "../../../client";
   import ProjectAccessControls from "../../projects/ProjectAccessControls.svelte";
-  import { useReport, useReportDashboardName } from "../selectors";
+  import {
+    useIsReportCreatedByCode,
+    useReport,
+    useReportDashboardName,
+  } from "../selectors";
   import MetadataLabel from "./MetadataLabel.svelte";
   import MetadataValue from "./MetadataValue.svelte";
   import ReportOwnerBlock from "./ReportOwnerBlock.svelte";
@@ -27,6 +31,10 @@
   export let report: string;
 
   $: reportQuery = useReport($runtime.instanceId, report);
+  $: isReportCreatedByCode = useIsReportCreatedByCode(
+    $runtime.instanceId,
+    report
+  );
 
   // Get dashboard
   $: dashboardName = useReportDashboardName($runtime.instanceId, report);
@@ -103,22 +111,24 @@
         </h1>
         <div class="grow" />
         <RunNowButton {organization} {project} {report} />
-        <Menu>
-          <MenuButton>
-            <IconButton>
-              <ThreeDot size="16px" />
-            </IconButton>
-          </MenuButton>
-          <MenuItems>
-            <MenuItem as="button" on:click={handleEditReport}
-              >Edit report</MenuItem
-            >
-            <!-- TODO: add an "are you sure?" confirmation dialog -->
-            <MenuItem as="button" on:click={handleDeleteReport}
-              >Delete report</MenuItem
-            >
-          </MenuItems>
-        </Menu>
+        {#if !$isReportCreatedByCode.data}
+          <Menu>
+            <MenuButton>
+              <IconButton>
+                <ThreeDot size="16px" />
+              </IconButton>
+            </MenuButton>
+            <MenuItems>
+              <MenuItem as="button" on:click={handleEditReport}
+                >Edit report</MenuItem
+              >
+              <!-- TODO: add an "are you sure?" confirmation dialog -->
+              <MenuItem as="button" on:click={handleDeleteReport}
+                >Delete report</MenuItem
+              >
+            </MenuItems>
+          </Menu>
+        {/if}
       </div>
     </div>
 
