@@ -6,6 +6,12 @@ sidebar_position: 10
 
 In your Rill project directory, create a `<source_name>.yaml` file in the `sources` directory containing a `type` and location (`uri` or `path`). Rill will automatically detect and ingest the source next time you run `rill start`.
 
+:::info Did you know?
+
+Files that are *nested at any level* under your `sources` directory will be assumed to be source definitions.
+
+:::
+
 ## Properties
 
 **`type`**
@@ -93,3 +99,6 @@ duckdb:
   delim: "'|'"
   columns: "columns={'FlightDate': 'DATE', 'UniqueCarrier': 'VARCHAR', 'OriginCityName': 'VARCHAR', 'DestCityName': 'VARCHAR'}"
 ```
+
+**`kind`**
+ — This property is used by Rill to identify the resource kind. For source YAML files that exist **outside** of the default location (i.e. `sources` directory), this value must be set and should be `source`. Alternative values can include `model` and `dashboard`. _(optional)_
