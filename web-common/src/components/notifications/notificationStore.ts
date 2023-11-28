@@ -3,7 +3,7 @@ import { derived, writable } from "svelte/store";
 
 const NOTIFICATION_TIMEOUT = 2000;
 
-interface NotificationStore extends Readable<object> {
+interface NotificationStore extends Readable<NotificationMessage> {
   timeoutID: ReturnType<typeof setTimeout>;
   send: (args: NotificationMessageArguments) => void;
   clear: () => void;
