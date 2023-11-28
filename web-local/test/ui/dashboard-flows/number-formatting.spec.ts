@@ -2,7 +2,7 @@ import { createDashboardFromModel } from "../utils/dashboardHelpers";
 import { createAdBidsModel } from "../utils/dataSpecifcHelpers";
 import { test, expect } from "@playwright/test";
 import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
-import { updateCodeEditor } from "../utils/commonHelpers";
+import { updateCodeEditor, waitForDashboard } from "../utils/commonHelpers";
 
 test.describe("smoke tests for number formatting", () => {
   startRuntimeForEachTest();
@@ -22,65 +22,71 @@ test.describe("smoke tests for number formatting", () => {
     await createAdBidsModel(page);
     await createDashboardFromModel(page, "AdBids_model");
 
-    // This is a metrics spec with all available formatting options
-    const formatterFlowDashboard = `# Visit https://title: "AdBids_model_dashboard"
-    model: "AdBids_model"
-    default_time_range: ""
-    smallest_time_grain: ""
-    timeseries: "timestamp"
-    measures:
-      - label: humanized default
-        expression: count(*)
-        name: total_rows
-        description: Total number of records present
-      - label: USD
-        expression: sum(bid_price)
-        name: total_bid_price
-        format_preset: currency_usd
-        valid_percent_of_total: true
-      - label: humanized chosen
-        expression: sum(bid_price)
-        name: total_humanize
-        format_preset: humanize
-        valid_percent_of_total: true
-      - label: No Format
-        expression: sum(bid_price)
-        name: total_none
-        format_preset: none
-        valid_percent_of_total: true
-      - label: percentage
-        expression: sum(bid_price)
-        name: total_percentage
-        format_preset: percentage
-        valid_percent_of_total: true
-      - label: interval_ms
-        expression: sum(bid_price)
-        name: total_interval_ms
-        format_preset: interval_ms
-        valid_percent_of_total: true
-      - label: d3 fixed
-        expression: sum(bid_price)
-        name: total_d3_fixed_points
-        format_d3: ".3f"
-        valid_percent_of_total: true
-    dimensions:
-      - name: publisher
-        label: Publisher
-        column: publisher
-        description: ""
-      - name: domain
-        label: Domain
-        column: domain
-        description: ""
-        
-        `;
-
     // open metrics editor
     await page.getByRole("button", { name: "Edit Metrics" }).click();
+
+    // This is a metrics spec with all available formatting options
+    const formatterFlowDashboard = `# Visit https://title: "AdBids_model_dashboard"
+model: "AdBids_model"
+default_time_range: ""
+smallest_time_grain: ""
+timeseries: "timestamp"
+measures:
+- label: humanized default
+  expression: count(*)
+  name: total_rows
+  description: Total number of records present
+- label: USD
+  expression: sum(bid_price)
+  name: total_bid_price
+  format_preset: currency_usd
+  valid_percent_of_total: true
+- label: humanized chosen
+  expression: sum(bid_price)
+  name: total_humanize
+  format_preset: humanize
+  valid_percent_of_total: true
+- label: No Format
+  expression: sum(bid_price)
+  name: total_none
+  format_preset: none
+  valid_percent_of_total: true
+- label: percentage
+  expression: sum(bid_price)
+  name: total_percentage
+  format_preset: percentage
+  valid_percent_of_total: true
+- label: interval_ms
+  expression: sum(bid_price)
+  name: total_interval_ms
+  format_preset: interval_ms
+  valid_percent_of_total: true
+- label: d3 fixed
+  expression: sum(bid_price)
+  name: total_d3_fixed_points
+  format_d3: ".3f"
+  valid_percent_of_total: true
+dimensions:
+- name: publisher
+  label: Publisher
+  column: publisher
+  description: ""
+- name: domain
+  label: Domain
+  column: domain
+  description: ""
+`;
+
     // update the code editor with the new spec
     await updateCodeEditor(page, formatterFlowDashboard);
+    // wait for the dashboard to update
+    await waitForDashboard(page);
+
     // Go to dashboard
     await page.getByRole("button", { name: "Go to dashboard" }).click();
+
+    // wait a tick for the dash to update
+    await page.waitForTimeout(50);
 
     /******************
      * check big nums

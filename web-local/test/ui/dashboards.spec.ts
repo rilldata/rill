@@ -1,5 +1,5 @@
 import { expect, Page, test } from "@playwright/test";
-import { updateCodeEditor, waitForValidResource } from "./utils/commonHelpers";
+import { updateCodeEditor, waitForDashboard } from "./utils/commonHelpers";
 import {
   assertLeaderboards,
   clickOnFilter,
@@ -1110,12 +1110,4 @@ async function interactWithTimeRangeMenu(
   await expect(
     page.getByRole("menu", { name: "Time range selector" })
   ).not.toBeVisible();
-}
-
-async function waitForDashboard(page: Page) {
-  return waitForValidResource(
-    page,
-    "AdBids_model_dashboard",
-    "rill.runtime.v1.MetricsView"
-  );
 }
