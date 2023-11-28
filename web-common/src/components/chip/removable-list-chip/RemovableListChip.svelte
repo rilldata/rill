@@ -35,7 +35,6 @@ are details left to the consumer of the component; this component should remain 
   export let label: string | undefined = undefined;
 
   const dispatch = createEventDispatcher();
-
   let active = false;
 
   const excludeStore: Writable<boolean> = writable(excludeMode);
@@ -44,6 +43,7 @@ are details left to the consumer of the component; this component should remain 
 
 <WithTogglableFloatingElement
   let:toggleFloatingElement
+  let:active
   distance={8}
   alignment="start"
 >
@@ -75,6 +75,7 @@ are details left to the consumer of the component; this component should remain 
         label={name}
         values={selectedValues}
         show={1}
+        {active}
       />
     </Chip>
     <div slot="tooltip-content" transition:fly|local={{ duration: 100, y: 4 }}>
