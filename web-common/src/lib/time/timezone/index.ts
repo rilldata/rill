@@ -63,3 +63,7 @@ export function getDateMonthYearForTimezone(date: Date, timezone: string) {
   const year = timeZoneDate.year;
   return { day, month, year };
 }
+
+export function getLabelInZone(now: Date, iana: string, format: any) {
+  return DateTime.fromJSDate(now).setZone(iana).toLocaleString(format);
+}

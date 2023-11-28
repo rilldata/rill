@@ -7,6 +7,7 @@
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
+  import { getLabelInZone } from "@rilldata/web-common/lib/time/timezone";
   import type {
     MetricsViewSpecMeasureV2,
     V1TimeGrain,
@@ -64,7 +65,7 @@
   export let scrubEnd;
 
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
-    v.toString();
+    getLabelInZone(v, zone, undefined);
 
   $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
   $: numberKind = numberKindForMeasure(measure);
@@ -231,8 +232,8 @@
       <ChartBody
         {data}
         {dimensionData}
-        isHovering={hoveredTime}
         dimensionValue={$tableInteractionStore?.dimensionValue}
+        isHovering={hoveredTime}
         {scrubEnd}
         {scrubStart}
         {showComparison}
