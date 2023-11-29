@@ -26,5 +26,10 @@
       "package.json",
       "web-local/package.json"
     ]
+  },
+  "overrides": {
+    "@rgossiaux/svelte-headlessui": {
+      "svelte": "^4.0.0"
+    }
   }
 }
