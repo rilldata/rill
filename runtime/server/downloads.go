@@ -440,6 +440,7 @@ func gzipCompress(v []byte) ([]byte, error) {
 	w := gzip.NewWriter(&b)
 	_, err := w.Write(v)
 	if err != nil {
+		_ = w.Close()
 		return nil, err
 	}
 	err = w.Close()
