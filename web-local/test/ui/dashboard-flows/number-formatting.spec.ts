@@ -1,8 +1,11 @@
-import { createDashboardFromModel } from "../utils/dashboardHelpers";
+import {
+  createDashboardFromModel,
+  waitForDashboard,
+} from "../utils/dashboardHelpers";
 import { createAdBidsModel } from "../utils/dataSpecifcHelpers";
 import { test, expect } from "@playwright/test";
 import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
-import { updateCodeEditor, waitForDashboard } from "../utils/commonHelpers";
+import { updateCodeEditor } from "../utils/commonHelpers";
 
 test.describe("smoke tests for number formatting", () => {
   startRuntimeForEachTest();

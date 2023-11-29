@@ -85,11 +85,3 @@ export async function waitForValidResource(
     }
   });
 }
-
-export async function waitForDashboard(page: Page) {
-  return waitForValidResource(
-    page,
-    "AdBids_model_dashboard",
-    "rill.runtime.v1.MetricsView"
-  );
-}
