@@ -31,6 +31,7 @@ export type MetricsActionDefinition = ExtractActionTypeDefinitions<
 export interface CloudMetricsFields {
   isDev: boolean;
   projectId: string;
+  organizationId: string;
   userId: string;
 }
 
@@ -77,6 +78,7 @@ export class MetricsService
       client_id: this.getOrSetClientID(),
       is_dev: fields.isDev,
       project_id: fields.projectId,
+      organization_id: fields.organizationId,
       user_id: fields.userId,
       analytics_enabled: true,
     };

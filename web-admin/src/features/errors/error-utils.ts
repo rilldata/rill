@@ -17,7 +17,6 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     const isDashboardPage =
       get(page).route.id === "/[organization]/[project]/[dashboard]";
 
-    console.log("createGlobalErrorCallback");
     const screenName = getScreenNameFromPage(get(page));
     if (!error.response) {
       errorEvent?.fireHTTPErrorBoundaryEvent(

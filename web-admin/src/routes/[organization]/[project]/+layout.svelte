@@ -29,6 +29,7 @@
     metricsService.loadCloudFields({
       isDev: window.location.host.startsWith("localhost"),
       projectId: $page.params.project,
+      organizationId: $page.params.organization,
       userId: $user.data?.user?.id,
     });
   }
