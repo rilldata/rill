@@ -5,10 +5,7 @@
  * - there's some legacy stuff that needs to get deprecated out of this.
  * - we need tests for this.
  */
-import {
-  getSmallestTimeGrain,
-  ISODurationToTimeRangePreset,
-} from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { getSmallestTimeGrain } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   addZoneOffset,
   getDateMonthYearForTimezone,
@@ -396,11 +393,7 @@ export function getAdjustedChartTime(
     start = getStartOfPeriod(start, grainDuration, zone);
     start = getOffset(start, offsetDuration, TimeOffsetType.ADD);
     adjustedEnd = getEndOfPeriod(adjustedEnd, grainDuration, zone);
-  } else if (
-    timePreset &&
-    timePreset !== TimeRangePreset.CUSTOM &&
-    !(timePreset in ISODurationToTimeRangePreset)
-  ) {
+  } else if (timePreset && timePreset === TimeRangePreset.DEFAULT) {
     // For default presets the iso range can be mixed. There the offset added will be the smallest unit in the range.
     // But for the graph we need the offset based on selected grain.
     const smallestTimeGrain = getSmallestTimeGrain(defaultTimeRange);

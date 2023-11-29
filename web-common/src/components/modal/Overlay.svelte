@@ -2,7 +2,7 @@
   import { fade } from "svelte/transition";
 
   export let bgColor = "bg-gray-900/30";
-  export let element;
+  export let element: HTMLDivElement | undefined = undefined;
 </script>
 
 <div

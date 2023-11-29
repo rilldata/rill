@@ -70,7 +70,7 @@
     // Note: we pass the dispatch function here so that the subbutton
     // the subbutton can dispatch events "from" the parent button group.
     // Since the subbutton is slotted into the parent button group,
-    // the wrapper div in the parent button group does not recieve
+    // the wrapper div in the parent button group does not receive
     // the event normally and cannot forward it.
     dispatch,
   });

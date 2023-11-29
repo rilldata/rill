@@ -18,7 +18,6 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import type { SvelteComponent } from "svelte";
 
   export let organization: string;
   export let project: string;
@@ -69,7 +68,7 @@
   }
 
   type StatusDisplay = {
-    icon: typeof SvelteComponent;
+    icon: any; // SvelteComponent
     iconProps?: {
       [key: string]: unknown;
     };
