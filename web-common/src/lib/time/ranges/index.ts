@@ -5,10 +5,7 @@
  * - there's some legacy stuff that needs to get deprecated out of this.
  * - we need tests for this.
  */
-import {
-  getSmallestTimeGrain,
-  ISODurationToTimeRangePreset,
-} from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import { getSmallestTimeGrain } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   addZoneOffset,
   getDateMonthYearForTimezone,
