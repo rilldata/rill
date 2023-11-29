@@ -1017,19 +1017,17 @@ colors:
 			Name:  ResourceName{Kind: ResourceKindTheme, Name: "t1"},
 			Paths: []string{"/themes/t1.yaml"},
 			ThemeSpec: &runtimev1.ThemeSpec{
-				Colors: &runtimev1.ThemeSpec_Colors{
-					Primary: &runtimev1.ThemeSpec_Color{
-						Red:   1,
-						Green: 0,
-						Blue:  0,
-						Alpha: 1,
-					},
-					Secondary: &runtimev1.ThemeSpec_Color{
-						Red:   0.5019608,
-						Green: 0.5019608,
-						Blue:  0.5019608,
-						Alpha: 1,
-					},
+				PrimaryColor: &runtimev1.Color{
+					Red:   1,
+					Green: 0,
+					Blue:  0,
+					Alpha: 1,
+				},
+				SecondaryColor: &runtimev1.Color{
+					Red:   0.5019608,
+					Green: 0.5019608,
+					Blue:  0.5019608,
+					Alpha: 1,
 				},
 			},
 		},
