@@ -95,6 +95,8 @@ This component needs to do the following:
           toggleFloatingElement();
         }}
         {label}
+        {active}
+        outline={true}
       >
         <div slot="body" class="flex gap-x-2">
           <div
