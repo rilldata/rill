@@ -1,4 +1,4 @@
-<script context="module">
+<script lang="ts" context="module">
   // only one at a time
   const globalActiveMenu = writable<string | undefined>(undefined);
 </script>
