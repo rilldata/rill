@@ -5,7 +5,7 @@
   export let project: string;
   export let ownerId: string;
 
-  const ownerName = useReportOwnerName(organization, project, ownerId);
+  $: ownerName = useReportOwnerName(organization, project, ownerId);
 </script>
 
 {#if $ownerName.isSuccess}

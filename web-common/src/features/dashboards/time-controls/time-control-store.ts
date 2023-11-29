@@ -140,10 +140,12 @@ export const timeControlStateSelector = ([
   if (!timeRangeState) {
     return {
       ready: false,
+      isFetching: false,
     };
   }
 
   const comparisonTimeRangeState = calculateComparisonTimeRangePartial(
+    metricsView,
     metricsExplorer,
     allTimeRange,
     timeRangeState
@@ -232,11 +234,13 @@ function calculateTimeRangePartial(
  * Also adds start, end and their adjusted counterparts as strings ready to use in requests.
  */
 function calculateComparisonTimeRangePartial(
+  metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
   allTimeRange: DashboardTimeControls,
   timeRangeState: TimeRangeState
 ): ComparisonTimeRangeState {
   const selectedComparisonTimeRange = getComparisonTimeRange(
+    metricsView,
     metricsExplorer,
     allTimeRange,
     timeRangeState.selectedTimeRange,
@@ -304,17 +308,23 @@ function getTimeRange(
       start: new Date(metricsExplorer.selectedTimeRange.start),
       end: new Date(metricsExplorer.selectedTimeRange.end),
     };
-  } else if (
-    metricsExplorer.selectedTimeRange?.name &&
-    metricsExplorer.selectedTimeRange?.name in DEFAULT_TIME_RANGES
-  ) {
-    /** rebuild off of relative time range */
-    timeRange = convertTimeRangePreset(
-      metricsExplorer.selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
-      allTimeRange.start,
-      allTimeRange.end,
-      metricsExplorer.selectedTimezone
-    );
+  } else if (metricsExplorer.selectedTimeRange?.name) {
+    if (metricsExplorer.selectedTimeRange?.name in DEFAULT_TIME_RANGES) {
+      /** rebuild off of relative time range */
+      timeRange = convertTimeRangePreset(
+        metricsExplorer.selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
+        allTimeRange.start,
+        allTimeRange.end,
+        metricsExplorer.selectedTimezone
+      );
+    } else {
+      timeRange = isoDurationToFullTimeRange(
+        metricsExplorer.selectedTimeRange?.name,
+        allTimeRange.start,
+        allTimeRange.end,
+        metricsExplorer.selectedTimezone
+      );
+    }
   } else {
     /** set the time range to the fixed custom time range */
     timeRange = {
@@ -358,6 +368,7 @@ function getTimeGrain(
 }
 
 function getComparisonTimeRange(
+  metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
   allTimeRange: DashboardTimeControls,
   timeRange: DashboardTimeControls,
@@ -371,7 +382,10 @@ function getComparisonTimeRange(
       timeRange.name as TimeComparisonOption
     ]?.defaultComparison as TimeComparisonOption;
     const range = getTimeComparisonParametersForComponent(
-      comparisonOption,
+      comparisonOption ??
+        metricsView.availableTimeRanges?.find(
+          (tr) => tr.range === timeRange.name
+        )?.comparisonOffsets?.[0].offset,
       allTimeRange.start,
       allTimeRange.end,
       timeRange.start,
@@ -405,4 +419,35 @@ function getComparisonTimeRange(
   }
 
   return selectedComparisonTimeRange;
+}
+
+/**
+ * Fills in start and end dates based on selected time range and all time range.
+ */
+export function selectedTimeRangeSelector([
+  metricsView,
+  timeRangeResponse,
+  explorer,
+]: [
+  QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
+  QueryObserverResult<V1ColumnTimeRangeResponse, unknown>,
+  MetricsExplorerEntity
+]) {
+  if (!metricsView.data || !timeRangeResponse.data?.timeRangeSummary) {
+    return undefined;
+  }
+
+  const allTimeRange = {
+    name: TimeRangePreset.ALL_TIME,
+    start: new Date(timeRangeResponse.data.timeRangeSummary.min),
+    end: new Date(timeRangeResponse.data.timeRangeSummary.max),
+  };
+  const defaultTimeRange = isoDurationToFullTimeRange(
+    metricsView.data.defaultTimeRange,
+    allTimeRange.start,
+    allTimeRange.end,
+    explorer.selectedTimezone
+  );
+
+  return getTimeRange(explorer, allTimeRange, defaultTimeRange);
 }

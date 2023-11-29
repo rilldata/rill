@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Switch } from "@rilldata/web-common/components/button";
+  import { Switch } from "@rilldata/web-common/components/button";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
@@ -13,6 +13,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -76,8 +77,15 @@
 
   function closeSearchBar() {
     searchText = "";
-    searchToggle = !searchToggle;
-    onSearch();
+    searchToggle = false;
+    dispatch("search", searchText);
+  }
+
+  function onSubmit() {
+    if (!areAllTableRowsSelected) {
+      dispatch("toggle-all-search-items");
+      closeSearchBar();
+    }
   }
 
   function toggleFilterMode() {
@@ -129,14 +137,8 @@
 
   {#if comparing === "dimension"}
     <div class="flex items-center mr-4 gap-x-3" style:cursor="pointer">
-      {#if searchText && !isRowsEmpty}
-        <Button
-          type="secondary"
-          compact={true}
-          on:click={() => dispatch("toggle-all-search-items")}
-        >
-          {areAllTableRowsSelected ? "Deselect all" : "Select all"}
-        </Button>
+      {#if !isRowsEmpty}
+        <SelectAllButton {areAllTableRowsSelected} on:toggle-all-search-items />
       {/if}
 
       {#if !searchToggle}
@@ -154,7 +156,11 @@
           transition:slideRight={{ leftOffset: 8 }}
           class="flex items-center gap-x-1"
         >
-          <Search bind:value={searchText} on:input={onSearch} />
+          <Search
+            bind:value={searchText}
+            on:input={onSearch}
+            on:submit={onSubmit}
+          />
           <button
             class="ui-copy-icon"
             style:cursor="pointer"

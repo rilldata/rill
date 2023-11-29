@@ -139,6 +139,16 @@ func (r *MetricsViewReconciler) validate(ctx context.Context, mv *runtimev1.Metr
 		}
 	}
 
+	if mv.DefaultTheme != "" {
+		_, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: mv.DefaultTheme}, false)
+		if err != nil {
+			if errors.Is(err, drivers.ErrNotFound) {
+				return fmt.Errorf("theme %q does not exist", mv.DefaultTheme)
+			}
+			return fmt.Errorf("could not find theme %q: %w", mv.DefaultTheme, err)
+		}
+	}
+
 	return errors.Join(errs...)
 }
 

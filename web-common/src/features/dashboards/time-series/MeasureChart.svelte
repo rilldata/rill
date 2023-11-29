@@ -66,7 +66,7 @@
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
     v.toString();
 
-  $: mouseoverFormat = createMeasureValueFormatter(measure);
+  $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
   $: numberKind = numberKindForMeasure(measure);
 
   export let tweenProps = { duration: 400, easing: cubicOut };

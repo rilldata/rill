@@ -21,12 +21,16 @@ Manage projects
 
 ### SEE ALSO
 
-* [rill](../cli.md)	 - Rill CLI
-* [rill project delete](delete.md)	 - Delete the project
-* [rill project edit](edit.md)	 - Edit the project details
-* [rill project list](list.md)	 - List all the projects
-* [rill project reconcile](reconcile.md)	 - Send trigger to deployment
-* [rill project rename](rename.md)	 - Rename project
-* [rill project show](show.md)	 - Show project details
-* [rill project status](status.md)	 - Project deployment status
+* [rill](../cli.md)	                               - Rill CLI
+* [rill project delete](delete.md)	                   - Delete the project
+* [rill project describe](describe.md)                 - Retrieve detailed state for a resource
+* [rill project edit](edit.md)	                   - Edit the project details
+* [rill project list](list.md)	                   - List all the projects
+* [rill project logs](logs.md)	                   - Show project logs
+* [rill project refresh](refresh.md)	             - Refresh project
+* [rill project rename](rename.md)	                   - Rename project
+* [rill project reset](reset.md)	                   - Reset project
+* [rill project show](show.md)	                   - Show project details
+* [rill project status](status.md)	                   - Project deployment status
+* [rill project reconcile (deprecated)](reconcile.md)	 - Send trigger to deployment
 
