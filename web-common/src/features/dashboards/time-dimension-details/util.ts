@@ -12,22 +12,6 @@ export function transposeArray(arr, rowCount, columnCount) {
   return columnarBody;
 }
 
-/**
- * This formatter is less strict and
- * returns undefined if the input is undefined
- * */
-export function safeFormatter(formatter) {
-  return (value) => {
-    if (value === undefined) {
-      return undefined;
-    } else if (value === null) {
-      return null;
-    } else {
-      return formatter(value);
-    }
-  };
-}
-
 export function getClassForCell(
   palette: "fixed" | "scrubbed" | "default",
   highlightedRow,

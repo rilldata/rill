@@ -193,7 +193,6 @@ mum,8.2`)
 			require.Equal(t, test.colCount, colCount)
 		})
 	}
-
 }
 
 func TestIterativeCSVIngestionWithVariableSchemaError(t *testing.T) {
@@ -319,7 +318,6 @@ mum,8.2`)
 			}
 		})
 	}
-
 }
 
 func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {

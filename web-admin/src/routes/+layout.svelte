@@ -1,5 +1,6 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
+  import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import {
     featureFlags,
@@ -7,7 +8,11 @@
   } from "@rilldata/web-common/features/feature-flags";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
-  import { createGlobalErrorCallback } from "../features/errors/error-utils";
+  import { onMount } from "svelte";
+  import {
+    addJavascriptErrorListeners,
+    createGlobalErrorCallback,
+  } from "../features/errors/error-utils";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
@@ -37,6 +42,9 @@
 
   beforeNavigate(retainFeaturesFlags);
   clearViewedAsUserAfterNavigate(queryClient);
+  initCloudMetrics();
+
+  onMount(() => addJavascriptErrorListeners());
 </script>
 
 <svelte:head>

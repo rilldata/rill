@@ -6,7 +6,6 @@
     V1ConnectorSpec,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
-  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
   import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
   import GoogleCloudStorage from "../../../components/icons/connectors/GoogleCloudStorage.svelte";
@@ -15,6 +14,7 @@
   import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
   import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
   import Postgres from "../../../components/icons/connectors/Postgres.svelte";
+  import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
   import SQLite from "../../../components/icons/connectors/SQLite.svelte";
   import { appScreen } from "../../../layout/app-store";
   import { behaviourEvent } from "../../../metrics/initMetrics";
@@ -43,6 +43,7 @@
     "motherduck",
     "postgres",
     "sqlite",
+    "snowflake",
     "local_file",
     "https",
   ];
@@ -57,6 +58,7 @@
     motherduck: MotherDuck,
     postgres: Postgres,
     sqlite: SQLite,
+    snowflake: Snowflake,
     local_file: LocalFile,
     https: Https,
   };
@@ -120,16 +122,6 @@
       Add a source
     {:else if step === 2}
       <h2 class="flex gap-x-1 items-center">
-        <button
-          on:click={resetModal}
-          class="text-gray-500 text-sm font-semibold hover:text-gray-700"
-        >
-          Add a source
-        </button>
-        <CaretDownIcon
-          size="14px"
-          className="transform -rotate-90 text-gray-500"
-        />
         <span>
           {#if selectedConnector}
             {selectedConnector?.displayName}
@@ -157,7 +149,7 @@
           {/each}
         </div>
       {/if}
-      <div>
+      <div class="text-slate-500">
         Don't see what you're looking for? <button
           on:click={goToRequestConnector}
           class="text-blue-500 hover:text-blue-600 font-medium"

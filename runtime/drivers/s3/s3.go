@@ -49,6 +49,15 @@ var spec = drivers.Spec{
 			Hint:        "Rill will use the default region in your local AWS config, unless set here.",
 		},
 		{
+			Key:         "endpoint",
+			DisplayName: "Endpoint URL",
+			Description: "Override S3 Endpoint URL",
+			Placeholder: "https://my.s3.server.com",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			Hint:        "Overrides the S3 endpoint to connect to. This should only be used to connect to S3-compatible services, such as Cloudflare R2 or MinIO.",
+		},
+		{
 			Key:         "aws.credentials",
 			DisplayName: "AWS credentials",
 			Description: "AWS credentials inferred from your local environment.",

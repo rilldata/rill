@@ -9,15 +9,14 @@
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import { Button } from "../../../components/button";
-  import { notifications } from "../../../components/notifications";
-  import { getLocalIANA } from "../../../lib/time/timezone";
+  import { Button } from "../../components/button";
+  import { notifications } from "../../components/notifications";
+  import { getLocalIANA } from "../../lib/time/timezone";
   import {
-    getRuntimeServiceListResourcesQueryKey,
     V1ExportFormat,
-  } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import { getStateManagers } from "../state-managers/state-managers";
+    getRuntimeServiceListResourcesQueryKey,
+  } from "../../runtime-client";
+  import { runtime } from "../../runtime-client/runtime-store";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import {
     convertFormValuesToCronExpression,
@@ -90,7 +89,13 @@
         dispatch("close");
         notifications.send({
           message: "Report created",
-          type: "success",
+          link: {
+            href: `/${organization}/${project}/-/reports`,
+            text: "Go to scheduled reports",
+          },
+          options: {
+            persistedLink: true,
+          },
         });
       } catch (e) {
         // showing error below
@@ -99,10 +104,6 @@
   });
 
   const { isSubmitting, form } = formState;
-
-  const ctx = getStateManagers();
-  const dashboardStore = ctx.dashboardStore;
-  $: dashboardTimeZone = $dashboardStore?.selectedTimezone ?? "";
 </script>
 
 <Dialog {open}>
