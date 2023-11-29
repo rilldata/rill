@@ -2699,6 +2699,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	}
 
+	// no validation rules for DefaultTheme
+
 	if len(errors) > 0 {
 		return MetricsViewSpecMultiError(errors)
 	}

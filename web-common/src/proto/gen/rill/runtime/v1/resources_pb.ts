@@ -970,6 +970,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
    */
   availableTimeRanges: MetricsViewSpec_AvailableTimeRange[] = [];
 
+  /**
+   * Default theme to apply
+   *
+   * @generated from field: string default_theme = 17;
+   */
+  defaultTheme = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -994,6 +1001,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 14, name: "default_comparison_mode", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_ComparisonMode) },
     { no: 15, name: "default_comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "available_time_ranges", kind: "message", T: MetricsViewSpec_AvailableTimeRange, repeated: true },
+    { no: 17, name: "default_theme", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec {

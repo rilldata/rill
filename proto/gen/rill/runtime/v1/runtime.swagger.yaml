@@ -3650,6 +3650,9 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewSpecAvailableTimeRange'
         description: List of available time ranges with comparison ranges that would replace the default list.
+      defaultTheme:
+        type: string
+        title: Default theme to apply
   v1MetricsViewState:
     type: object
     properties:

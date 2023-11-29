@@ -618,7 +618,7 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 			}
 		}
 
-		// Rule 2: If it's a metrics view and there's a model or source with that name, use it
+		// Rule 2: If it's a metrics view and there's a model, source or a theme with that name, use it
 		if r.Name.Kind == ResourceKindMetricsView {
 			n := ResourceName{Kind: ResourceKindModel, Name: ref.Name}
 			if _, ok := p.Resources[n.Normalized()]; ok {

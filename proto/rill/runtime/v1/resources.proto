@@ -203,6 +203,8 @@ message MetricsViewSpec {
   string default_comparison_dimension = 15;
   // List of available time ranges with comparison ranges that would replace the default list.
   repeated AvailableTimeRange available_time_ranges = 16;
+  // Default theme to apply
+  string default_theme = 17;
 }
 
 message MetricsViewState {

@@ -1161,6 +1161,7 @@ export interface V1MetricsViewSpec {
   defaultComparisonDimension?: string;
   /** List of available time ranges with comparison ranges that would replace the default list. */
   availableTimeRanges?: MetricsViewSpecAvailableTimeRange[];
+  defaultTheme?: string;
 }
 
 export interface V1MetricsViewState {
