@@ -64,10 +64,5 @@ func (r *ThemeReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{}
 	}
 
-	err = r.C.UpdateState(ctx, self.Meta.Name, self)
-	if err != nil {
-		return runtime.ReconcileResult{Err: err}
-	}
-
 	return runtime.ReconcileResult{}
 }

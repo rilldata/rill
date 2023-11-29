@@ -52,19 +52,18 @@ func (p *Parser) parseTheme(ctx context.Context, node *Node) error {
 		return err
 	}
 
-	r.ThemeSpec.Colors = &runtimev1.ThemeSpec_Colors{}
 	if hasPc {
-		r.ThemeSpec.Colors.Primary = toThemeColor(pc)
+		r.ThemeSpec.PrimaryColor = toThemeColor(pc)
 	}
 	if hasSc {
-		r.ThemeSpec.Colors.Secondary = toThemeColor(sc)
+		r.ThemeSpec.SecondaryColor = toThemeColor(sc)
 	}
 
 	return nil
 }
 
-func toThemeColor(c csscolorparser.Color) *runtimev1.ThemeSpec_Color {
-	return &runtimev1.ThemeSpec_Color{
+func toThemeColor(c csscolorparser.Color) *runtimev1.Color {
+	return &runtimev1.Color{
 		Red:   float32(c.R),
 		Green: float32(c.G),
 		Blue:  float32(c.B),

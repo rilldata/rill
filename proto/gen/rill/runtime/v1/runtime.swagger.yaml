@@ -2508,28 +2508,6 @@ definitions:
         type: string
       type:
         $ref: '#/definitions/runtimev1Type'
-  ThemeSpecColor:
-    type: object
-    properties:
-      red:
-        type: number
-        format: float
-      green:
-        type: number
-        format: float
-      blue:
-        type: number
-        format: float
-      alpha:
-        type: number
-        format: float
-  ThemeSpecColors:
-    type: object
-    properties:
-      primary:
-        $ref: '#/definitions/ThemeSpecColor'
-      secondary:
-        $ref: '#/definitions/ThemeSpecColor'
   TimeRangeSummaryInterval:
     type: object
     properties:
@@ -2706,6 +2684,21 @@ definitions:
       cardinality:
         type: number
         format: double
+  v1Color:
+    type: object
+    properties:
+      red:
+        type: number
+        format: float
+      green:
+        type: number
+        format: float
+      blue:
+        type: number
+        format: float
+      alpha:
+        type: number
+        format: float
   v1ColumnCardinalityRequest:
     type: object
     properties:
@@ -4755,8 +4748,10 @@ definitions:
   v1ThemeSpec:
     type: object
     properties:
-      colors:
-        $ref: '#/definitions/ThemeSpecColors'
+      primaryColor:
+        $ref: '#/definitions/v1Color'
+      secondaryColor:
+        $ref: '#/definitions/v1Color'
   v1ThemeState:
     type: object
   v1TimeGrain:

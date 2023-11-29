@@ -5,6 +5,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/time_grain.proto";
+import "rill/runtime/v1/colors.proto";
 
 enum ReconcileStatus {
   RECONCILE_STATUS_UNSPECIFIED = 0;
@@ -310,17 +311,8 @@ message Theme {
 }
 
 message ThemeSpec {
-  message Color {
-    float red = 1;
-    float green = 2;
-    float blue = 3;
-    float alpha = 4;
-  }
-  message Colors {
-    optional Color primary = 1;
-    optional Color secondary = 2;
-  }
-  Colors colors = 1;
+  optional Color primary_color = 1;
+  optional Color secondary_color = 2;
 }
 
 message ThemeState {}
