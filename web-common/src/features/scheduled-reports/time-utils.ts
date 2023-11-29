@@ -3,7 +3,7 @@ import {
   getAbbreviationForIANA,
   getLocalIANA,
   getUTCIANA,
-} from "../../../lib/time/timezone";
+} from "../../lib/time/timezone";
 
 export function getTodaysDayOfWeek(): string {
   return DateTime.now().toLocaleString({ weekday: "long" });

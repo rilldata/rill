@@ -13,13 +13,17 @@ This component needs to do the following:
   } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { getComparisonRange } from "@rilldata/web-common/lib/time/comparisons";
   import {
     NO_COMPARISON_LABEL,
     TIME_COMPARISON,
   } from "@rilldata/web-common/lib/time/config";
-  import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+  import {
+    DashboardTimeControls,
+    TimeComparisonOption,
+  } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
   import type { V1TimeGrain } from "../../../runtime-client";
@@ -38,31 +42,15 @@ This component needs to do the following:
   export let zone: string;
 
   export let showComparison = true;
-  export let selectedComparison;
-  export let comparisonOptions: TimeComparisonOption[];
+  export let selectedComparison: DashboardTimeControls;
 
   $: comparisonOption = selectedComparison?.name;
 
-  /** compile the comparison options */
-  let options: {
-    name: TimeComparisonOption;
-    start: Date;
-    end: Date;
-  }[];
-  $: if (comparisonOptions !== undefined)
-    options = Object.entries(comparisonOptions)?.map(([key, value]) => {
-      const comparisonTimeRange = getComparisonRange(
-        currentStart,
-        currentEnd,
-        value
-      );
-      return {
-        name: value,
-        key,
-        start: comparisonTimeRange.start,
-        end: comparisonTimeRange.end,
-      };
-    });
+  const {
+    selectors: {
+      timeRangeSelectors: { timeComparisonOptionsState },
+    },
+  } = getStateManagers();
 
   function onSelectCustomComparisonRange(
     startDate: string,
@@ -108,9 +96,10 @@ This component needs to do the following:
     }, 300);
   }
 
-  $: label = showComparison
-    ? TIME_COMPARISON[comparisonOption]?.label
-    : NO_COMPARISON_LABEL;
+  $: label =
+    showComparison && comparisonOption
+      ? TIME_COMPARISON[comparisonOption]?.label
+      : NO_COMPARISON_LABEL;
 
   $: intermediateSelection = showComparison
     ? comparisonOption
@@ -126,6 +115,7 @@ This component needs to do the following:
   <Tooltip distance={8} suppress={active}>
     <SelectorButton
       {active}
+      label="Select time comparison option"
       on:click={() => {
         toggleFloatingElement();
       }}
@@ -148,7 +138,7 @@ This component needs to do the following:
     on:escape={toggleFloatingElement}
     slot="floating-element"
   >
-    {#each options as option}
+    {#each $timeComparisonOptionsState as option}
       {@const preset = TIME_COMPARISON[option.name]}
       <MenuItem
         selected={option.name === intermediateSelection}
@@ -164,11 +154,11 @@ This component needs to do the following:
           {preset?.label || option.name}
         </span>
       </MenuItem>
-      {#if option.name === TimeComparisonOption.CONTIGUOUS && options.length > 2}
+      {#if option.name === TimeComparisonOption.CONTIGUOUS && $timeComparisonOptionsState.length > 2}
         <Divider />
       {/if}
     {/each}
-    {#if options.length >= 1}
+    {#if $timeComparisonOptionsState.length >= 1}
       <Divider />
     {/if}
 

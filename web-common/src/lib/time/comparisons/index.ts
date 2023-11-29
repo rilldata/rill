@@ -190,7 +190,7 @@ export function getAvailableComparisonsForTimeRange(
 
 /** A convenience function that gets comparison range and states whether it is within bounds. */
 export function getTimeComparisonParametersForComponent(
-  comparisonOption: TimeComparisonOption,
+  comparisonOption: TimeComparisonOption | undefined,
   boundStart,
   boundEnd,
   currentStart,
