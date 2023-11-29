@@ -75,7 +75,7 @@ jobs:
         run: |-
           npx prettier --check "web-common/**/*"
           npx eslint web-common --quiet
-          npx svelte-check --threshold error --workspace web-common --no-tsconfig --ignore "src/components/(data-graphic|column-profile),src/features/models/workspace/inspector,src/**/workspace,src/features/dashboards/(time-series|time-controls),src/layout/navigation/NavigationEntry.svelte"
+          npx svelte-check --threshold error --workspace web-common --no-tsconfig --ignore "src/components/(data-graphic|column-profile),src/**/workspace,src/features/dashboards/(time-series|time-controls),src/layout/navigation/NavigationEntry.svelte"
 
       - name: Prettier checks and lint for web local
         if: steps.filter.outputs.local == 'true'
