@@ -24,7 +24,9 @@
       e.target.value = metricsDefName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, metricsDefName, $allNamesQuery.data)) {
+    if (
+      isDuplicateName(e.target.value, metricsDefName, $allNamesQuery.data ?? [])
+    ) {
       notifications.send({
         message: `Name ${e.target.value} is already in use`,
       });
