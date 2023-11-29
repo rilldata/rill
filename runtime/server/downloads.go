@@ -46,13 +46,14 @@ func UnbakeQuery(bakedQry string) (*runtimev1.Query, error) {
 		return nil, err
 	}
 
-	data, err = gzipDecompress(data)
+	uncompressed, err := gzipDecompress(data)
 	if err != nil {
-		return nil, err
+		// NOTE (2023-11-29): Backwards compatibility for when we didn't gzip baked queries. We can remove this in a few months.
+		uncompressed = data
 	}
 
 	qry := &runtimev1.Query{}
-	if err := proto.Unmarshal(data, qry); err != nil {
+	if err := proto.Unmarshal(uncompressed, qry); err != nil {
 		return nil, err
 	}
 
