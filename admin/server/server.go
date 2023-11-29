@@ -28,7 +28,6 @@ import (
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -298,15 +297,6 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
-}
-
-func (s *Server) Telemetry(ctx context.Context, req *adminv1.TelemetryRequest) (*adminv1.TelemetryResponse, error) {
-	dims := make([]attribute.KeyValue, 0)
-	for k, v := range req.Event {
-		dims = append(dims, attribute.String(k, v))
-	}
-	s.uiActivity.Emit(ctx, "cloud-ui-telemetry", 1, dims...)
-	return &adminv1.TelemetryResponse{}, nil
 }
 
 func timeoutSelector(fullMethodName string) time.Duration {

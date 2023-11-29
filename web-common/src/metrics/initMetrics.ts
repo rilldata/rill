@@ -16,15 +16,24 @@ export let behaviourEvent: BehaviourEventHandler;
 export let errorEvent: ErrorEventHandler;
 
 export async function initMetrics(localConfig: V1RuntimeGetConfig) {
-  metricsService = new MetricsService(localConfig, new RillIntakeClient(), [
+  metricsService = new MetricsService(new RillIntakeClient(), [
     new ProductHealthEventFactory(),
     new BehaviourEventFactory(),
     new ErrorEventFactory(),
   ]);
-  await metricsService.loadCommonFields();
+  metricsService.loadLocalFields(localConfig);
 
   const commonUserMetrics = await collectCommonUserFields();
   actionEvent = new ActiveEventHandler(metricsService, commonUserMetrics);
   behaviourEvent = new BehaviourEventHandler(metricsService, commonUserMetrics);
   errorEvent = new ErrorEventHandler(metricsService, commonUserMetrics);
+}
+
+// Setters used in cloud
+export function setMetricsService(ms: MetricsService) {
+  metricsService = ms;
+}
+
+export function setErrorEvent(ev: ErrorEventHandler) {
+  errorEvent = ev;
 }

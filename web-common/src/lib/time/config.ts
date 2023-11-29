@@ -19,6 +19,8 @@ import {
   TimeTruncationType,
 } from "./types";
 
+export type TimeRangeMetaSet = Partial<Record<TimeRangePreset, TimeRangeMeta>>;
+
 /**
  * The "latest" window time ranges are defined as a set of time ranges that are
  * anchored to the latest data point in the dataset with a conceptually-fixed
@@ -30,7 +32,7 @@ import {
  * may be during an incomplete period. For now, we are truncating to a reasonable
  * periodicity (e.g. to the start of the hour) and then applying the offset.
  */
-export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
+export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.LAST_SIX_HOURS]: {
     label: "Last 6 Hours",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
@@ -196,9 +198,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
  * Like the latest window ranges, wetruncate the latest data point datetime to the
  * start of a reasonable period for now.
  */
-export const PERIOD_TO_DATE_RANGES: Partial<
-  Record<TimeRangePreset, TimeRangeMeta>
-> = {
+export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.TODAY]: {
     label: "Today",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
@@ -317,9 +317,7 @@ export const DEFAULT = {
 };
 
 // TODO: get rid of Partial here
-export const DEFAULT_TIME_RANGES: Partial<
-  Record<TimeRangePreset, TimeRangeMeta>
-> = {
+export const DEFAULT_TIME_RANGES: TimeRangeMetaSet = {
   ...LATEST_WINDOW_TIME_RANGES,
   ...PERIOD_TO_DATE_RANGES,
   [TimeRangePreset.ALL_TIME]: ALL_TIME,

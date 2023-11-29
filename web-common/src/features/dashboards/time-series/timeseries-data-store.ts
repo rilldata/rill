@@ -64,7 +64,11 @@ function createMetricsViewTimeSeries(
         },
         {
           query: {
-            enabled: !!timeControls.ready && !!ctx.dashboardStore,
+            enabled:
+              !!timeControls.ready &&
+              !!ctx.dashboardStore &&
+              // in case of comparison, we need to wait for the comparison start time to be available
+              (!isComparison || !!timeControls.comparisonAdjustedStart),
             queryClient: ctx.queryClient,
             keepPreviousData: true,
           },
