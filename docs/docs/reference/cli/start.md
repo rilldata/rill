@@ -13,14 +13,14 @@ rill start [<path>] [flags]
 
 ```
       --no-open             Do not open browser
-      --db string           Database DSN (default "stage.db")
+      --db string           Database DSN (default "main.db")
       --db-driver string    Database driver (default "duckdb")
       --port int            Port for HTTP (default 9009)
       --port-grpc int       Port for gRPC (internal) (default 49009)
       --readonly            Show only dashboards in UI
       --no-ui               Serve only the backend
       --verbose             Sets the log level to debug
-      --strict              Exit if project has build errors
+      --reset               Clear and re-ingest source data
       --log-format string   Log format (options: "console", "json") (default "console")
   -e, --env strings         Set project variables
 ```

@@ -3,7 +3,7 @@ title: rill project refresh
 ---
 ## rill project refresh
 
-Refresh the data in your project
+Refresh the project's data sources
 
 ```
 rill project refresh [<project-name>] [flags]
@@ -12,9 +12,9 @@ rill project refresh [<project-name>] [flags]
 ### Flags
 
 ```
-      --project string           Project name
-      --path string              Project directory (default ".")
-      --source strings           Refresh specific source(s)
+      --project string   Project name
+      --path string      Project directory (default ".")
+      --source strings   Refresh specific source(s)
 ```
 
 ### Global flags
@@ -29,4 +29,4 @@ rill project refresh [<project-name>] [flags]
 ### SEE ALSO
 
 * [rill project](project.md)	 - Manage projects
-* [rill project reset](reset.md) - Reset project
+
