@@ -2,12 +2,11 @@ package project
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func SearchCmd(cfg *config.Config) *cobra.Command {
+func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pageSize uint32
 	var pageToken string
 
@@ -17,6 +16,7 @@ func SearchCmd(cfg *config.Config) *cobra.Command {
 		Short: "Search projects by pattern",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			cfg := ch.Config
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -33,11 +33,15 @@ func SearchCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			if len(res.Names) == 0 {
-				cmdutil.PrintlnWarn("No projects found")
+				ch.Printer.PrintlnWarn("No projects found")
 				return nil
 			}
 
-			cmdutil.TablePrinter(res.Names)
+			err = ch.Printer.PrintResource(res.Names)
+			if err != nil {
+				return err
+			}
+
 			if res.NextPageToken != "" {
 				cmd.Println()
 				cmd.Printf("Next page token: %s\n", res.NextPageToken)

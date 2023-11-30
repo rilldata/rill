@@ -33,7 +33,13 @@ path: /path/to/data.csv
 
 Rill will ingest the data next time you run `rill start`.
 
-Note that if you provide a relative path, the path should be relative to your Rill project root (where your `rill.yaml` file is located), not relative to the `sources` directory.
+Note that if you provide a relative path, _the path should be relative to your Rill project root_ (where your `rill.yaml` file is located), **not** relative to the `sources` directory.
+
+:::tip Source Properties
+
+For more details about available configurations and properties, check our [Source YAML](../reference/project-files/sources) reference page.
+
+:::
 
 ## Adding a remote source
 
@@ -57,7 +63,11 @@ You can also push filters to your source definition using inline editing. Common
 - Push transformations for key fields to source (particularly casting time fields, data types)
 - Resolve ingestion issues by declaring types (examples: STRUCT with different values to VARCHAR, fields mixed with INT and VARCHAR values)
 
-For details about all available properties for all remote connectors, see the syntax [reference](../reference/project-files/sources).
+:::tip Source Properties
+
+For more details about available configurations and properties, check our [Source YAML](../reference/project-files/sources) reference page.
+
+:::
 
 ## Authenticating remote sources
 

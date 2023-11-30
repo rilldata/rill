@@ -4,6 +4,7 @@ import type {
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
+import { waitForValidResource } from "web-local/test/ui/utils/commonHelpers";
 import { clickMenuButton, openEntityMenu } from "./helpers";
 
 export async function createDashboardFromSource(page: Page, source: string) {
@@ -152,5 +153,28 @@ export function metricsViewRequestFilterMatcher(
           .get(label)
           ?.in.every((val) => values.indexOf(val) >= 0) ?? false
     )
+  );
+}
+
+// Helper that opens the time range menu, calls your interactions, and then waits until the menu closes
+export async function interactWithTimeRangeMenu(
+  page: Page,
+  cb: () => void | Promise<void>
+) {
+  // Open the menu
+  await page.getByLabel("Select time range").click();
+  // Run the defined interactions
+  await cb();
+  // Wait for menu to close
+  await expect(
+    page.getByRole("menu", { name: "Time range selector" })
+  ).not.toBeVisible();
+}
+
+export async function waitForDashboard(page: Page) {
+  return waitForValidResource(
+    page,
+    "AdBids_model_dashboard",
+    "rill.runtime.v1.MetricsView"
   );
 }

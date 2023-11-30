@@ -6,18 +6,18 @@
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
-  import { Button } from "../../../components/button";
-  import { notifications } from "../../../components/notifications";
-  import { getAbbreviationForIANA } from "../../../lib/time/timezone";
+  import { Button } from "../../components/button";
+  import { notifications } from "../../components/notifications";
+  import { getAbbreviationForIANA } from "../../lib/time/timezone";
   import {
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
     V1ExportFormat,
     V1ReportSpec,
     V1ReportSpecAnnotations,
-  } from "../../../runtime-client";
-  import { runtime } from "../../../runtime-client/runtime-store";
-  import { ResourceKind } from "../../entity-management/resource-selectors";
+  } from "../../runtime-client";
+  import { runtime } from "../../runtime-client/runtime-store";
+  import { ResourceKind } from "../entity-management/resource-selectors";
   import BaseScheduledReportForm from "./BaseScheduledReportForm.svelte";
   import {
     convertFormValuesToCronExpression,
