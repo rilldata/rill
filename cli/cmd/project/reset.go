@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func ResetCmd(cfg *config.Config) *cobra.Command {
+func ResetCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 	var force bool
+	cfg := ch.Config
 
 	resetCmd := &cobra.Command{
 		Use:               "reset [<project-name>]",

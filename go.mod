@@ -29,6 +29,7 @@ require (
 	github.com/eapache/go-resiliency v1.3.0
 	github.com/envoyproxy/protoc-gen-validate v1.0.1
 	github.com/fatih/color v1.15.0
+	github.com/frankban/quicktest v1.14.4
 	github.com/go-git/go-git/v5 v5.7.0
 	github.com/go-logr/zapr v1.2.4
 	github.com/go-playground/validator/v10 v10.14.0
@@ -106,10 +107,13 @@ require (
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/jackc/pgtype v1.12.0 // indirect
+	github.com/kr/pretty v0.3.1 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mazznoer/csscolorparser v0.1.3 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
+	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	google.golang.org/genproto v0.0.0-20230731193218-e0aa005b6bdf // indirect
 )
 

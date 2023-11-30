@@ -4,18 +4,18 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func AddCmd(cfg *config.Config) *cobra.Command {
+func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	addCmd := &cobra.Command{
 		Use:   "add <org> <domain> <role>",
 		Args:  cobra.ExactArgs(3),
 		Short: "Whitelist users from a domain",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			cfg := ch.Config
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -27,9 +27,9 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 			domain := args[1]
 			role := args[2]
 
-			cmdutil.PrintlnWarn(fmt.Sprintf("Warn: Whitelisting will give all users from domain %q access to the organization %q as %s", domain, org, role))
+			ch.Printer.PrintlnWarn(fmt.Sprintf("Warn: Whitelisting will give all users from domain %q access to the organization %q as %s", domain, org, role))
 			if !cmdutil.ConfirmPrompt("Do you want to continue", "", false) {
-				cmdutil.PrintlnWarn("Aborted")
+				ch.Printer.PrintlnWarn("Aborted")
 				return nil
 			}
 
@@ -42,7 +42,7 @@ func AddCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Success")
+			ch.Printer.PrintlnSuccess("Success")
 
 			return nil
 		},

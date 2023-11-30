@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func RemoveCmd(cfg *config.Config) *cobra.Command {
+func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
+	cfg := ch.Config
 	removeCmd := &cobra.Command{
 		Use:   "remove <email-domain>",
 		Args:  cobra.ExactArgs(1),
@@ -33,9 +33,8 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnWarn(fmt.Sprintf("New users with email addresses ending in %q will no longer automatically be added to %q. "+
+			ch.Printer.PrintlnWarn(fmt.Sprintf("New users with email addresses ending in %q will no longer automatically be added to %q. "+
 				"Existing users previously added through this policy will keep their access. (To remove users, use `rill user remove`.)", domain, cfg.Org))
-
 			return nil
 		},
 	}

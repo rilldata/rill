@@ -12,10 +12,9 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/briandowns/spinner"
-	"github.com/fatih/color"
-	"github.com/lensesio/tableprinter"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -27,6 +26,11 @@ const (
 	TSFormatLayout     = "2006-01-02 15:04:05"
 	defaultProjectName = "rill-untitled"
 )
+
+type Helper struct {
+	Config  *config.Config
+	Printer *printer.Printer
+}
 
 type PreRunCheck func(cmd *cobra.Command, args []string) error
 
@@ -74,17 +78,6 @@ func Spinner(prefix string) *spinner.Spinner {
 	}
 
 	return sp
-}
-
-func TablePrinter(v interface{}) {
-	var b strings.Builder
-	tableprinter.Print(&b, v)
-	fmt.Fprint(os.Stdout, b.String())
-}
-
-func PrintlnSuccess(str string) {
-	boldGreen := color.New(color.FgGreen).Add(color.Bold)
-	boldGreen.Fprintln(color.Output, str)
 }
 
 // Create admin client
@@ -201,36 +194,46 @@ func OrgExists(ctx context.Context, c *client.Client, name string) (bool, error)
 	return true, nil
 }
 
-func PrintlnWarn(str string) {
-	boldYellow := color.New(color.FgYellow).Add(color.Bold)
-	boldYellow.Fprintln(color.Output, str)
-}
-
-func PrintUsers(users []*adminv1.User) {
+func PrintUsers(p *printer.Printer, users []*adminv1.User) error {
 	if len(users) == 0 {
-		PrintlnWarn("No users found")
-		return
+		p.PrintlnWarn("No users found")
+		return nil
 	}
 
-	TablePrinter(toUsersTable(users))
+	err := p.PrintResource(toUsersTable(users))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return nil
 }
 
-func PrintMembers(members []*adminv1.Member) {
+func PrintMembers(p *printer.Printer, members []*adminv1.Member) error {
 	if len(members) == 0 {
-		PrintlnWarn("No members found")
-		return
+		p.PrintlnWarn("No members found")
+		return nil
 	}
 
-	TablePrinter(toMemberTable(members))
+	err := p.PrintResource(toMemberTable(members))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func PrintInvites(invites []*adminv1.UserInvite) {
+func PrintInvites(p *printer.Printer, invites []*adminv1.UserInvite) error {
 	if len(invites) == 0 {
-		return
+		return nil
 	}
 
-	PrintlnSuccess("Pending user invites")
-	TablePrinter(toInvitesTable(invites))
+	p.PrintlnSuccess("Pending user invites")
+	err := p.PrintResource(toInvitesTable(invites))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func toUsersTable(users []*adminv1.User) []*user {
