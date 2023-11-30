@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"math/big"
 	"os"
 	"regexp"
@@ -347,11 +346,11 @@ func (f *fileIterator) downloadAsJSONFile() error {
 			if !ok {
 				continue
 			}
-			num, _ := r.Float64()
-			if math.IsInf(num, 0) {
-				row[f] = r.FloatString(38)
-			} else {
+			num, exact := r.Float64()
+			if exact {
 				row[f] = num
+			} else { // number doesn't fit in float so cast to string,
+				row[f] = r.FloatString(38)
 			}
 		}
 
