@@ -6,9 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -18,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func ConfigureCmd(cfg *config.Config) *cobra.Command {
+func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectPath, projectName, subPath string
 	var redeploy bool
 
@@ -26,7 +24,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 		Use:   "configure",
 		Short: "Configures connector variables for all sources",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			warn := color.New(color.Bold).Add(color.FgYellow)
+			cfg := ch.Config
 			if projectPath != "" {
 				var err error
 				projectPath, err = fileutil.ExpandHome(projectPath)
@@ -47,8 +45,8 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				warn.Printf("Directory at %q doesn't contain a valid Rill project.\n\n", fullpath)
-				warn.Printf("Run `rill env configure` from a Rill project directory or use `--path` to pass a project path.\n")
+				ch.Printer.PrintlnWarn(fmt.Sprintf("Directory at %q doesn't contain a valid Rill project.\n", fullpath))
+				ch.Printer.PrintlnWarn("Run `rill env configure` from a Rill project directory or use `--path` to pass a project path.")
 				return nil
 			}
 
@@ -112,7 +110,7 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to update variables %w", err)
 			}
-			cmdutil.PrintlnSuccess("Updated project variables")
+			ch.Printer.PrintlnSuccess("Updated project variables")
 
 			if !cmd.Flags().Changed("redeploy") {
 				redeploy = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redeploy)
@@ -121,10 +119,10 @@ func ConfigureCmd(cfg *config.Config) *cobra.Command {
 			if redeploy {
 				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: cfg.Org, Project: projectName})
 				if err != nil {
-					warn.Printf("Redeploy trigger failed. Trigger redeploy again with `rill project reconcile --reset=true` if required.\n")
+					ch.Printer.PrintlnWarn("Redeploy trigger failed. Trigger redeploy again with `rill project reconcile --reset=true` if required.")
 					return err
 				}
-				cmdutil.PrintlnSuccess("Redeploy triggered successfully.")
+				ch.Printer.PrintlnSuccess("Redeploy triggered successfully.")
 			}
 			return nil
 		},

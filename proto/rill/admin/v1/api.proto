@@ -1076,7 +1076,12 @@ message GenerateReportYAMLResponse {
 }
 
 message TelemetryRequest {
-  map<string, string> event = 1;
+  // Name passed to activity module's name arg
+  string name = 1;
+  // Value passed to activity module's value arg
+  float value = 2;
+  // Free form struct of the actual event
+  google.protobuf.Struct event = 3;
 }
 
 message TelemetryResponse {}

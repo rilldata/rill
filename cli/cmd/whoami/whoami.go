@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 // VersionCmd represents the version command
-func WhoamiCmd(cfg *config.Config) *cobra.Command {
+func WhoamiCmd(ch *cmdutil.Helper) *cobra.Command {
+	cfg := ch.Config
+
 	whoamiCmd := &cobra.Command{
 		Use:               "whoami",
 		Short:             "Show current user",

@@ -1,9 +1,14 @@
 ---
+note: GENERATED. DO NOT EDIT.
 title: rill project reset
 ---
 ## rill project reset
 
-Trigger a new deployment and/or reset your project
+Re-deploy project
+
+### Synopsis
+
+Create a new deployment for the project (and tear down the current one)
 
 ```
 rill project reset [<project-name>] [flags]
@@ -12,9 +17,9 @@ rill project reset [<project-name>] [flags]
 ### Flags
 
 ```
-      --project string           Project name
-      --path string              Project directory (default ".")
-      --force                    Force reset even if project is already deployed
+      --project string   Project name
+      --path string      Project directory (default ".")
+      --force            Force reset even if project is already deployed
 ```
 
 ### Global flags
@@ -28,5 +33,5 @@ rill project reset [<project-name>] [flags]
 
 ### SEE ALSO
 
-* [rill project](project.md)	     - Manage projects
-* [rill project refresh](refresh.md) - Refresh project
+* [rill project](project.md)	 - Manage projects
+

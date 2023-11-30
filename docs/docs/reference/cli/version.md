@@ -1,13 +1,10 @@
 ---
+note: GENERATED. DO NOT EDIT.
 title: rill version
 ---
 ## rill version
 
-Show rill version
-
-### Synopsis
-
-A longer description
+Show Rill version
 
 ```
 rill version [flags]
