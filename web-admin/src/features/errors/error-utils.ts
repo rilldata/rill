@@ -1,6 +1,10 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
-import { getScreenNameFromPage } from "@rilldata/web-admin/features/navigation/nav-utils";
+import {
+  getScreenNameFromPage,
+  isDashboardPage,
+  isProjectPage,
+} from "@rilldata/web-admin/features/navigation/nav-utils";
 import { errorEvent } from "@rilldata/web-common/metrics/initMetrics";
 import type { Query } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -13,10 +17,6 @@ import { ErrorStoreState, errorStore } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
   return (error: AxiosError, query: Query) => {
-    const isProjectPage = get(page).route.id === "/[organization]/[project]";
-    const isDashboardPage =
-      get(page).route.id === "/[organization]/[project]/[dashboard]";
-
     const screenName = getScreenNameFromPage(get(page));
     if (!error.response) {
       errorEvent?.fireHTTPErrorBoundaryEvent(
@@ -36,7 +36,8 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     }
 
     // Special handling for some errors on the Project page
-    if (isProjectPage && error.response?.status === 400) {
+    const onProjectPage = isProjectPage(get(page));
+    if (onProjectPage && error.response?.status === 400) {
       // If "repository not found", ignore the error and show the page
       if (
         (error.response.data as RpcStatus).message === "repository not found"
@@ -52,7 +53,8 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     }
 
     // Special handling for some errors on the Dashboard page
-    if (isDashboardPage) {
+    const onDashboardPage = isDashboardPage(get(page));
+    if (onDashboardPage) {
       // If a dashboard wasn't found, let +page.svelte handle the error.
       // Because the project may be reconciling, in which case we want to show a loading spinner not a 404.
       if (
