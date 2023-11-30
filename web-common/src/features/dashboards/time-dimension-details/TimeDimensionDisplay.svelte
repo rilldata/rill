@@ -3,6 +3,9 @@
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { timeFormat } from "d3-time-format";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -17,7 +20,6 @@
     SortDirection,
     SortType,
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-  import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import type { TDDComparison, TableData } from "./types";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
@@ -28,10 +30,13 @@
   const queryClient = useQueryClient();
 
   const timeDimensionDataStore = useTimeDimensionDataStore(getStateManagers());
+  const timeControlStore = useTimeControlStore(getStateManagers());
 
   $: metaQuery = useMetaQuery(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
+
+  $: timeGrain = $timeControlStore.selectedTimeRange?.interval;
 
   // Get labels for table headers
   $: measureLabel =
@@ -75,14 +80,9 @@
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
 
   // Create a time formatter for the column headers
-  $: timeFormatter = (columnHeaders?.length &&
-    createTimeFormat(
-      [
-        new Date(columnHeaders[0]?.value),
-        new Date(columnHeaders[columnHeaders?.length - 1]?.value),
-      ],
-      columnHeaders?.length
-    )[0]) as (d: Date) => string;
+  $: timeFormatter = timeFormat(
+    timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M"
+  ) as (d: Date) => string;
 
   function highlightCell(e) {
     const { x, y } = e.detail;
