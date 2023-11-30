@@ -3,7 +3,7 @@ title: rill project logs
 ---
 ## rill project logs
 
-Show project logs (up to 10k rows)
+Show project logs
 
 ```
 rill project logs [<project-name>] [flags]
@@ -30,3 +30,4 @@ rill project logs [<project-name>] [flags]
 ### SEE ALSO
 
 * [rill project](project.md)	 - Manage projects
+
