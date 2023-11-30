@@ -999,6 +999,11 @@ export class GetDeploymentCredentialsRequest extends Message<GetDeploymentCreden
   branch = "";
 
   /**
+   * @generated from field: uint32 ttl_seconds = 7;
+   */
+  ttlSeconds = 0;
+
+  /**
    * @generated from oneof rill.admin.v1.GetDeploymentCredentialsRequest.for
    */
   for: {
@@ -1009,10 +1014,16 @@ export class GetDeploymentCredentialsRequest extends Message<GetDeploymentCreden
     case: "userId";
   } | {
     /**
-     * @generated from field: google.protobuf.Struct attrs = 5;
+     * @generated from field: string user_email = 6;
+     */
+    value: string;
+    case: "userEmail";
+  } | {
+    /**
+     * @generated from field: google.protobuf.Struct attributes = 5;
      */
     value: Struct;
-    case: "attrs";
+    case: "attributes";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<GetDeploymentCredentialsRequest>) {
@@ -1026,8 +1037,10 @@ export class GetDeploymentCredentialsRequest extends Message<GetDeploymentCreden
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
-    { no: 5, name: "attrs", kind: "message", T: Struct, oneof: "for" },
+    { no: 6, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
+    { no: 5, name: "attributes", kind: "message", T: Struct, oneof: "for" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentCredentialsRequest {
@@ -1057,14 +1070,19 @@ export class GetDeploymentCredentialsResponse extends Message<GetDeploymentCrede
   runtimeHost = "";
 
   /**
-   * @generated from field: string runtime_instance_id = 2;
+   * @generated from field: string instance_id = 2;
    */
-  runtimeInstanceId = "";
+  instanceId = "";
 
   /**
-   * @generated from field: string jwt = 3;
+   * @generated from field: string access_token = 3;
    */
-  jwt = "";
+  accessToken = "";
+
+  /**
+   * @generated from field: uint32 ttl_seconds = 4;
+   */
+  ttlSeconds = 0;
 
   constructor(data?: PartialMessage<GetDeploymentCredentialsResponse>) {
     super();
@@ -1075,8 +1093,9 @@ export class GetDeploymentCredentialsResponse extends Message<GetDeploymentCrede
   static readonly typeName = "rill.admin.v1.GetDeploymentCredentialsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "runtime_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "runtime_instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "jwt", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetDeploymentCredentialsResponse {
@@ -1093,6 +1112,172 @@ export class GetDeploymentCredentialsResponse extends Message<GetDeploymentCrede
 
   static equals(a: GetDeploymentCredentialsResponse | PlainMessage<GetDeploymentCredentialsResponse> | undefined, b: GetDeploymentCredentialsResponse | PlainMessage<GetDeploymentCredentialsResponse> | undefined): boolean {
     return proto3.util.equals(GetDeploymentCredentialsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetIFrameRequest
+ */
+export class GetIFrameRequest extends Message<GetIFrameRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: string branch = 3;
+   */
+  branch = "";
+
+  /**
+   * @generated from field: string kind = 4;
+   */
+  kind = "";
+
+  /**
+   * @generated from field: string resource = 5;
+   */
+  resource = "";
+
+  /**
+   * @generated from field: uint32 ttl_seconds = 6;
+   */
+  ttlSeconds = 0;
+
+  /**
+   * @generated from field: string state = 7;
+   */
+  state = "";
+
+  /**
+   * @generated from field: map<string, string> query = 8;
+   */
+  query: { [key: string]: string } = {};
+
+  /**
+   * @generated from oneof rill.admin.v1.GetIFrameRequest.for
+   */
+  for: {
+    /**
+     * @generated from field: string user_id = 9;
+     */
+    value: string;
+    case: "userId";
+  } | {
+    /**
+     * @generated from field: string user_email = 10;
+     */
+    value: string;
+    case: "userEmail";
+  } | {
+    /**
+     * @generated from field: google.protobuf.Struct attributes = 11;
+     */
+    value: Struct;
+    case: "attributes";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<GetIFrameRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetIFrameRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "resource", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "query", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 9, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
+    { no: 10, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "for" },
+    { no: 11, name: "attributes", kind: "message", T: Struct, oneof: "for" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIFrameRequest {
+    return new GetIFrameRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetIFrameRequest {
+    return new GetIFrameRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetIFrameRequest {
+    return new GetIFrameRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetIFrameRequest | PlainMessage<GetIFrameRequest> | undefined, b: GetIFrameRequest | PlainMessage<GetIFrameRequest> | undefined): boolean {
+    return proto3.util.equals(GetIFrameRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetIFrameResponse
+ */
+export class GetIFrameResponse extends Message<GetIFrameResponse> {
+  /**
+   * @generated from field: string iframe_src = 1;
+   */
+  iframeSrc = "";
+
+  /**
+   * @generated from field: string runtime_host = 2;
+   */
+  runtimeHost = "";
+
+  /**
+   * @generated from field: string instance_id = 3;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string access_token = 4;
+   */
+  accessToken = "";
+
+  /**
+   * @generated from field: uint32 ttl_seconds = 5;
+   */
+  ttlSeconds = 0;
+
+  constructor(data?: PartialMessage<GetIFrameResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetIFrameResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "iframe_src", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "runtime_host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "ttl_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIFrameResponse {
+    return new GetIFrameResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetIFrameResponse {
+    return new GetIFrameResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetIFrameResponse {
+    return new GetIFrameResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetIFrameResponse | PlainMessage<GetIFrameResponse> | undefined, b: GetIFrameResponse | PlainMessage<GetIFrameResponse> | undefined): boolean {
+    return proto3.util.equals(GetIFrameResponse, a, b);
   }
 }
 

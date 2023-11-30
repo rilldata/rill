@@ -2791,6 +2791,8 @@ func (m *GetDeploymentCredentialsRequest) validate(all bool) error {
 
 	// no validation rules for Branch
 
+	// no validation rules for TtlSeconds
+
 	switch v := m.For.(type) {
 	case *GetDeploymentCredentialsRequest_UserId:
 		if v == nil {
@@ -2804,7 +2806,19 @@ func (m *GetDeploymentCredentialsRequest) validate(all bool) error {
 			errors = append(errors, err)
 		}
 		// no validation rules for UserId
-	case *GetDeploymentCredentialsRequest_Attrs:
+	case *GetDeploymentCredentialsRequest_UserEmail:
+		if v == nil {
+			err := GetDeploymentCredentialsRequestValidationError{
+				field:  "For",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for UserEmail
+	case *GetDeploymentCredentialsRequest_Attributes:
 		if v == nil {
 			err := GetDeploymentCredentialsRequestValidationError{
 				field:  "For",
@@ -2817,11 +2831,11 @@ func (m *GetDeploymentCredentialsRequest) validate(all bool) error {
 		}
 
 		if all {
-			switch v := interface{}(m.GetAttrs()).(type) {
+			switch v := interface{}(m.GetAttributes()).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, GetDeploymentCredentialsRequestValidationError{
-						field:  "Attrs",
+						field:  "Attributes",
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -2829,16 +2843,16 @@ func (m *GetDeploymentCredentialsRequest) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, GetDeploymentCredentialsRequestValidationError{
-						field:  "Attrs",
+						field:  "Attributes",
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
 				}
 			}
-		} else if v, ok := interface{}(m.GetAttrs()).(interface{ Validate() error }); ok {
+		} else if v, ok := interface{}(m.GetAttributes()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return GetDeploymentCredentialsRequestValidationError{
-					field:  "Attrs",
+					field:  "Attributes",
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -2955,9 +2969,11 @@ func (m *GetDeploymentCredentialsResponse) validate(all bool) error {
 
 	// no validation rules for RuntimeHost
 
-	// no validation rules for RuntimeInstanceId
+	// no validation rules for InstanceId
 
-	// no validation rules for Jwt
+	// no validation rules for AccessToken
+
+	// no validation rules for TtlSeconds
 
 	if len(errors) > 0 {
 		return GetDeploymentCredentialsResponseMultiError(errors)
@@ -3040,6 +3056,304 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetDeploymentCredentialsResponseValidationError{}
+
+// Validate checks the field values on GetIFrameRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GetIFrameRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetIFrameRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetIFrameRequestMultiError, or nil if none found.
+func (m *GetIFrameRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetIFrameRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
+	// no validation rules for Branch
+
+	// no validation rules for Kind
+
+	// no validation rules for Resource
+
+	// no validation rules for TtlSeconds
+
+	// no validation rules for State
+
+	// no validation rules for Query
+
+	switch v := m.For.(type) {
+	case *GetIFrameRequest_UserId:
+		if v == nil {
+			err := GetIFrameRequestValidationError{
+				field:  "For",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for UserId
+	case *GetIFrameRequest_UserEmail:
+		if v == nil {
+			err := GetIFrameRequestValidationError{
+				field:  "For",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for UserEmail
+	case *GetIFrameRequest_Attributes:
+		if v == nil {
+			err := GetIFrameRequestValidationError{
+				field:  "For",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetAttributes()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, GetIFrameRequestValidationError{
+						field:  "Attributes",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, GetIFrameRequestValidationError{
+						field:  "Attributes",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetAttributes()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return GetIFrameRequestValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return GetIFrameRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetIFrameRequestMultiError is an error wrapping multiple validation errors
+// returned by GetIFrameRequest.ValidateAll() if the designated constraints
+// aren't met.
+type GetIFrameRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetIFrameRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetIFrameRequestMultiError) AllErrors() []error { return m }
+
+// GetIFrameRequestValidationError is the validation error returned by
+// GetIFrameRequest.Validate if the designated constraints aren't met.
+type GetIFrameRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetIFrameRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetIFrameRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetIFrameRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetIFrameRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetIFrameRequestValidationError) ErrorName() string { return "GetIFrameRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e GetIFrameRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetIFrameRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetIFrameRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetIFrameRequestValidationError{}
+
+// Validate checks the field values on GetIFrameResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *GetIFrameResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetIFrameResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetIFrameResponseMultiError, or nil if none found.
+func (m *GetIFrameResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetIFrameResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for IframeSrc
+
+	// no validation rules for RuntimeHost
+
+	// no validation rules for InstanceId
+
+	// no validation rules for AccessToken
+
+	// no validation rules for TtlSeconds
+
+	if len(errors) > 0 {
+		return GetIFrameResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetIFrameResponseMultiError is an error wrapping multiple validation errors
+// returned by GetIFrameResponse.ValidateAll() if the designated constraints
+// aren't met.
+type GetIFrameResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetIFrameResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetIFrameResponseMultiError) AllErrors() []error { return m }
+
+// GetIFrameResponseValidationError is the validation error returned by
+// GetIFrameResponse.Validate if the designated constraints aren't met.
+type GetIFrameResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetIFrameResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetIFrameResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetIFrameResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetIFrameResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetIFrameResponseValidationError) ErrorName() string {
+	return "GetIFrameResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetIFrameResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetIFrameResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetIFrameResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetIFrameResponseValidationError{}
 
 // Validate checks the field values on ListServicesRequest with the rules
 // defined in the proto definition for this message. If any rules are

@@ -2,7 +2,10 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -159,6 +162,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.project", req.Project),
 		attribute.String("args.branch", req.Branch),
+		attribute.String("args.ttl_seconds", strconv.FormatUint(uint64(req.TtlSeconds), 10)),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
@@ -190,31 +194,43 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	var attr map[string]any
 	switch forVal := req.For.(type) {
 	case *adminv1.GetDeploymentCredentialsRequest_UserId:
-		forOrgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, proj.OrganizationID, forVal.UserId)
+		attr, err = s.getAttributesFor(ctx, forVal.UserId, proj.OrganizationID, proj.ID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-
-		forProjPerms, err := s.admin.ProjectPermissionsForUser(ctx, proj.ID, forVal.UserId, forOrgPerms)
+	case *adminv1.GetDeploymentCredentialsRequest_UserEmail:
+		user, err := s.admin.DB.FindUserByEmail(ctx, forVal.UserEmail)
+		if errors.Is(err, database.ErrNotFound) {
+			attr = map[string]any{
+				"email":  forVal.UserEmail,
+				"domain": forVal.UserEmail[strings.LastIndex(forVal.UserEmail, "@")+1:],
+				"admin":  false,
+			}
+			break
+		}
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-
-		attr, err = s.jwtAttributesForUser(ctx, forVal.UserId, proj.OrganizationID, forProjPerms)
+		attr, err = s.getAttributesFor(ctx, user.ID, proj.OrganizationID, proj.ID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-	case *adminv1.GetDeploymentCredentialsRequest_Attrs:
-		attr = forVal.Attrs.AsMap()
+	case *adminv1.GetDeploymentCredentialsRequest_Attributes:
+		attr = forVal.Attributes.AsMap()
 	default:
 		return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
+	}
+
+	ttlDuration := time.Hour
+	if req.TtlSeconds > 0 {
+		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
 	}
 
 	// Generate JWT
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: prodDepl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
-		TTL:         time.Hour,
+		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtimeauth.Permission{
 			prodDepl.RuntimeInstanceID: {
 				// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
@@ -233,8 +249,27 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	s.admin.Used.Deployment(prodDepl.ID)
 
 	return &adminv1.GetDeploymentCredentialsResponse{
-		RuntimeHost:       prodDepl.RuntimeHost,
-		RuntimeInstanceId: prodDepl.RuntimeInstanceID,
-		Jwt:               jwt,
+		RuntimeHost: prodDepl.RuntimeHost,
+		InstanceId:  prodDepl.RuntimeInstanceID,
+		AccessToken: jwt,
+		TtlSeconds:  uint32(ttlDuration.Seconds()),
 	}, nil
+}
+
+func (s *Server) getAttributesFor(ctx context.Context, userID, orgID, projID string) (map[string]any, error) {
+	forOrgPerms, err := s.admin.OrganizationPermissionsForUser(ctx, orgID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	forProjPerms, err := s.admin.ProjectPermissionsForUser(ctx, projID, userID, forOrgPerms)
+	if err != nil {
+		return nil, err
+	}
+
+	attr, err := s.jwtAttributesForUser(ctx, userID, orgID, forProjPerms)
+	if err != nil {
+		return nil, err
+	}
+	return attr, nil
 }
