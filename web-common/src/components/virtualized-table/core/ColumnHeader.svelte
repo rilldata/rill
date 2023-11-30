@@ -29,7 +29,7 @@
   export let enableResize = true;
   export let isSelected = false;
   export let highlight = false;
-  export let sorted: SortDirection = undefined;
+  export let sorted: SortDirection | undefined = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();

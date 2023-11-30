@@ -4,6 +4,8 @@
   import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
 
   export let block = false;
+  // FIXME: 99% sure that `disabled` is only ever
+  // false and can be simplified out of the codebase
   export let disabled = false;
   export let tailwindClasses = "";
   export let activeTailwindClasses = "";
@@ -46,7 +48,7 @@
   class="
 {block ? 'flex w-full h-full px-2' : 'inline-flex w-max rounded px-1'} 
   items-center gap-x-1 justify-between
-  {classes[level]}
+  {level ? classes[level] : ''}
   {tailwindClasses}
   {active && !disabled ? activeTailwindClasses : ''}
 
