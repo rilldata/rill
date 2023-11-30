@@ -410,12 +410,14 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	var sql string
 	if q.PivotOn != nil {
 		// select m1, m2, d1, d2 from t, lateral unnest(t.d1) tbl(unnested_d1_) where d1 = 'a' group by d1, d2
-		sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s %[4]s %[5]s",
+		sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s %[7]s",
 			strings.Join(selectCols, ", "),  // 1
 			safeName(mv.Table),              // 2
 			strings.Join(unnestClauses, ""), // 3
 			whereClause,                     // 4
 			groupClause,                     // 5
+			orderClause,                     // 6
+			limitClause,                     // 7
 		)
 	} else {
 		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s OFFSET %d",
