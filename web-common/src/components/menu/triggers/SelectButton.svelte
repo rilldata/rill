@@ -4,9 +4,9 @@
   import CaretDownIcon from "../../icons/CaretDownIcon.svelte";
 
   export let block = false;
-  export let disabled: boolean;
-  export let tailwindClasses: string = undefined;
-  export let activeTailwindClasses: string = undefined;
+  export let disabled = false;
+  export let tailwindClasses = "";
+  export let activeTailwindClasses = "";
   export let active = false;
   export let level: undefined | "error" = undefined;
   // used as aria-label
