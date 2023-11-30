@@ -3,6 +3,7 @@
 title: timeseries_dst
 model: timeseries_dst_backwards_model
 timeseries: timestamp
+first_day_of_week: 7
 measures:
   - label: Total records
     expression: count(*)

@@ -527,7 +527,7 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 			case runtimev1.Type_CODE_UINT64:
 				recordBuilder.Field(idx).(*array.Uint64Builder).Append(uint64(v.GetNumberValue()))
 			case runtimev1.Type_CODE_INT128:
-				recordBuilder.Field(idx).(*array.Float64Builder).Append((v.GetNumberValue()))
+				recordBuilder.Field(idx).(*array.Float64Builder).Append(v.GetNumberValue())
 			case runtimev1.Type_CODE_FLOAT32:
 				recordBuilder.Field(idx).(*array.Float32Builder).Append(float32(v.GetNumberValue()))
 			case runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:

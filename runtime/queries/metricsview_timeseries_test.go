@@ -2,6 +2,7 @@ package queries_test
 
 import (
 	"context"
+	"fmt"
 	// "fmt"
 	"testing"
 	"time"
@@ -147,12 +148,41 @@ func TestMetricsViewsTimeseries_year_grain_IST(t *testing.T) {
 	assertTimeSeriesResponse(t, q.Result, []string{"2022-12-31T18:30:00Z", "2023-12-31T18:30:00Z"})
 }
 
+func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Weekly(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_dst_backwards"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView()
+
+	q := &queries.MetricsViewTimeSeries{
+		MeasureNames:    []string{"total_records"},
+		MetricsViewName: "timeseries_dst_backwards",
+		MetricsView:     mv.Spec,
+		TimeStart:       parseTime(t, "2023-10-28T04:00:00.000Z"),
+		TimeEnd:         parseTime(t, "2023-11-19T05:00:00.000Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
+		TimeZone:        "America/New_York",
+		Limit:           250,
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	assertTimeSeriesResponse(t, q.Result, []string{
+		"2023-10-22T04:00:00Z",
+		"2023-10-29T04:00:00Z",
+		"2023-11-05T04:00:00Z",
+		"2023-11-12T05:00:00Z",
+	})
+}
+
 func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_year"}, false)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_dst_backwards"}, false)
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
@@ -181,7 +211,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t *testing.
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_year"}, false)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_dst_backwards"}, false)
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
@@ -222,7 +252,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t *tes
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_year"}, false)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_dst_backwards"}, false)
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
@@ -252,7 +282,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_year"}, false)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_dst_backwards"}, false)
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
@@ -290,12 +320,41 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing
 	require.NotNil(t, q.Result.Data[4].Records.AsMap()["total_records"])
 }
 
+func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_dst_forwards"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView()
+
+	q := &queries.MetricsViewTimeSeries{
+		MeasureNames:    []string{"total_records"},
+		MetricsViewName: "timeseries_dst_forwards",
+		MetricsView:     mv.Spec,
+		TimeStart:       parseTime(t, "2023-02-26T05:00:00.000Z"),
+		TimeEnd:         parseTime(t, "2023-03-26T04:00:00.000Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
+		TimeZone:        "America/New_York",
+		Limit:           250,
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	assertTimeSeriesResponse(t, q.Result, []string{
+		"2023-02-26T05:00:00Z",
+		"2023-03-05T05:00:00Z",
+		"2023-03-12T05:00:00Z",
+		"2023-03-19T04:00:00Z",
+	})
+}
+
 func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Daily(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_year"}, false)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_dst_forwards"}, false)
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
@@ -324,7 +383,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t *testing.T
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_year"}, false)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_dst_forwards"}, false)
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
@@ -365,7 +424,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t *test
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_year"}, false)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_dst_forwards"}, false)
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
@@ -395,7 +454,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_year"}, false)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_dst_forwards"}, false)
 	require.NoError(t, err)
 	mv := r.GetMetricsView()
 
@@ -438,6 +497,7 @@ func assertTimeSeriesResponse(t *testing.T, res *runtimev1.MetricsViewTimeSeries
 	actual := make([]string, 0)
 	for _, r := range res.Data {
 		actual = append(actual, r.Ts.AsTime().Format(time.RFC3339))
+		fmt.Println(r.Ts.AsTime().UTC(), r.Records.AsMap())
 	}
 	require.ElementsMatch(t, actual, expected)
 }

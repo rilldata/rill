@@ -295,8 +295,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 	var sql string
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		args = append([]any{timezone}, args...)
-		sql = q.buildDuckDBSQL(args, mv, tsAlias, selectCols, whereClause)
+		sql = q.buildDuckDBSQL(mv, tsAlias, selectCols, whereClause, timezone)
 	case drivers.DialectDruid:
 		args = append([]any{timezone}, args...)
 		sql = q.buildDruidSQL(args, mv, tsAlias, selectCols, whereClause)
@@ -331,28 +330,59 @@ func (q *MetricsViewTimeSeries) buildDruidSQL(args []any, mv *runtimev1.MetricsV
 	return sql
 }
 
-func (q *MetricsViewTimeSeries) buildDuckDBSQL(args []any, mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause string) string {
+func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, timezone string) string {
 	dateTruncSpecifier := "1 " + convertToDateTruncSpecifier(q.TimeGranularity)
 
-	shift := "0 DAY"
+	shift := ""
+	subshift := ""
 	if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_WEEK && mv.FirstDayOfWeek > 1 {
 		offset := 8 - mv.FirstDayOfWeek
 		shift = fmt.Sprintf("%d DAY", offset)
+		subshift = "1 HOUR"
 	} else if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_YEAR && mv.FirstMonthOfYear > 1 {
 		offset := 13 - mv.FirstMonthOfYear
 		shift = fmt.Sprintf("%d MONTH", offset)
+		subshift = "1 DAY"
 	}
 
-	sql := fmt.Sprintf(
-		`SELECT (time_bucket(INTERVAL '%[1]s', %[2]s::TIMESTAMPTZ + INTERVAL %[7]s, ?) - INTERVAL %[7]s) as %[3]s, %[4]s FROM %[5]s WHERE %[6]s GROUP BY 1 ORDER BY 1`,
-		dateTruncSpecifier,             // 1
-		safeName(mv.TimeDimension),     // 2
-		tsAlias,                        // 3
-		strings.Join(selectCols, ", "), // 4
-		safeName(mv.Table),             // 5
-		whereClause,                    // 6
-		shift,                          // 7
-	)
+	sql := ""
+	if shift == "" {
+		sql = fmt.Sprintf(
+			`
+SELECT
+  time_bucket(INTERVAL '%[1]s', %[2]s::TIMESTAMPTZ, '%[7]s') as %[3]s,
+  %[4]s
+FROM %[5]s
+WHERE %[6]s
+GROUP BY 1 ORDER BY 1`,
+			dateTruncSpecifier,             // 1
+			safeName(mv.TimeDimension),     // 2
+			tsAlias,                        // 3
+			strings.Join(selectCols, ", "), // 4
+			safeName(mv.Table),             // 5
+			whereClause,                    // 6
+			timezone,                       // 7
+		)
+	} else {
+		sql = fmt.Sprintf(
+			`
+SELECT
+  time_bucket(INTERVAL %[8]s, time_bucket(INTERVAL '%[1]s', %[2]s::TIMESTAMPTZ + INTERVAL %[8]s, '%[7]s') - INTERVAL %[9]s, '%[7]s') as %[3]s,
+  %[4]s
+FROM %[5]s
+WHERE %[6]s
+GROUP BY 1 ORDER BY 1`,
+			dateTruncSpecifier,             // 1
+			safeName(mv.TimeDimension),     // 2
+			tsAlias,                        // 3
+			strings.Join(selectCols, ", "), // 4
+			safeName(mv.Table),             // 5
+			whereClause,                    // 6
+			timezone,                       // 7
+			shift,                          // 8
+			subshift,                       // 9
+		)
+	}
 
 	return sql
 }
