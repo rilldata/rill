@@ -8,7 +8,6 @@ import {
 } from "@rilldata/web-common/features/themes/color-utils";
 import type { ThemeColor } from "@rilldata/web-common/features/themes/color-utils";
 import type { V1Color, V1Theme } from "@rilldata/web-common/runtime-client";
-import chroma from "chroma-js";
 
 const PrimaryCSSVariablePrefix = "--color-primary-";
 const SecondaryCSSVariablePrefix = "--color-secondary-";
@@ -65,10 +64,6 @@ function themeColorToHSLString([h, s, l]: ThemeColor) {
 
 export function copySaturationAndLightness(input: V1Color) {
   const [hue] = RGBToHSL(convertColor(input));
-  console.log(
-    hue,
-    chroma.rgb(input.red * 256, input.green * 256, input.blue * 256).hsl()
-  );
   const colors = new Array<ThemeColor>(TailwindColorSpacing.length);
   for (let i = 0; i < DefaultPrimaryColors.length; i++) {
     colors[i] = [hue, DefaultPrimaryColors[i][1], DefaultPrimaryColors[i][2]];
