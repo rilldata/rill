@@ -14,7 +14,7 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/XSAM/otelsql v0.23.0
 	github.com/alicebob/miniredis v2.5.0+incompatible
-	github.com/apache/arrow/go/v13 v13.0.0
+	github.com/apache/arrow/go/v12 v12.0.1
 	github.com/apache/calcite-avatica-go/v5 v5.2.0
 	github.com/aws/aws-sdk-go v1.44.314
 	github.com/aws/aws-sdk-go-v2/service/athena v1.31.6
@@ -50,6 +50,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
 	github.com/marcboeker/go-duckdb v1.5.2
+	github.com/mazznoer/csscolorparser v0.1.3
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.15.1
 	github.com/redis/go-redis/v9 v9.0.2
@@ -98,7 +99,7 @@ require (
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.0.0 // indirect
-	github.com/apache/arrow/go/v12 v12.0.1 // indirect
+	github.com/apache/arrow/go/v13 v13.0.0 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
@@ -107,7 +108,6 @@ require (
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/jackc/pgtype v1.12.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/mazznoer/csscolorparser v0.1.3 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	google.golang.org/genproto v0.0.0-20230731193218-e0aa005b6bdf // indirect
@@ -279,7 +279,7 @@ require (
 	modernc.org/token v1.1.0 // indirect
 )
 
-replace github.com/apache/calcite-avatica-go/v5 v5.2.0 => github.com/rilldata/calcite-avatica-go/v5 v5.0.0-20230621112535-eea498ff2a3d
+replace github.com/apache/calcite-avatica-go/v5 v5.2.0 => github.com/rilldata/calcite-avatica-go/v5 v5.0.0-20231129075938-4645f00ea1f7
 
 // revert to original SDK once this PR is merged : https://github.com/googleapis/google-cloud-go/pull/8506
 replace cloud.google.com/go/bigquery v1.53.0 => github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20230830110740-57fe623cde03
