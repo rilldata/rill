@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -14,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func StatusCmd(cfg *config.Config) *cobra.Command {
+func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, path string
 
 	statusCmd := &cobra.Command{
@@ -22,6 +21,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Project deployment status",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -48,7 +48,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// 1. Print project info
-			cmdutil.PrintlnSuccess("Project info\n")
+			ch.Printer.PrintlnSuccess("Project info\n")
 			fmt.Printf("  Name: %s\n", proj.Project.Name)
 			fmt.Printf("  Organization: %v\n", proj.Project.OrgName)
 			fmt.Printf("  Public: %v\n", proj.Project.Public)
@@ -62,7 +62,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// 2. Print deployment info
-			cmdutil.PrintlnSuccess("\nDeployment info\n")
+			ch.Printer.PrintlnSuccess("\nDeployment info\n")
 			fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
 			fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 			fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
@@ -110,8 +110,11 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				table = append(table, newResourceTableRow(r))
 			}
 
-			cmdutil.PrintlnSuccess("\nResources\n")
-			cmdutil.TablePrinter(table)
+			ch.Printer.PrintlnSuccess("\nResources\n")
+			err = ch.Printer.PrintResource(table)
+			if err != nil {
+				return err
+			}
 
 			if parser.State != nil && len(parser.State.ParseErrors) != 0 {
 				var table []*parseErrorTableRow
@@ -119,8 +122,11 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 					table = append(table, newParseErrorTableRow(e))
 				}
 
-				cmdutil.PrintlnSuccess("\nParse errors\n")
-				cmdutil.TablePrinter(table)
+				ch.Printer.PrintlnSuccess("\nParse errors\n")
+				err = ch.Printer.PrintResource(table)
+				if err != nil {
+					return err
+				}
 			}
 
 			return nil

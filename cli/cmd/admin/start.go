@@ -14,7 +14,7 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
@@ -75,12 +75,14 @@ type Config struct {
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
-func StartCmd(cliCfg *config.Config) *cobra.Command {
+func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "start [jobs|server|worker]",
 		Short: "Start admin service",
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			cliCfg := ch.Config
+			printer := ch.Printer
 			// Load .env (note: fails silently if .env has errors)
 			_ = godotenv.Load()
 
@@ -88,7 +90,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			var conf Config
 			err := envconfig.Process("rill_admin", &conf)
 			if err != nil {
-				fmt.Printf("failed to load config: %s\n", err.Error())
+				printer.Printf("failed to load config: %s\n", err.Error())
 				os.Exit(1)
 			}
 
@@ -97,7 +99,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			cfg.Level.SetLevel(conf.LogLevel)
 			logger, err := cfg.Build()
 			if err != nil {
-				fmt.Printf("error: failed to create logger: %s\n", err.Error())
+				printer.Printf("error: failed to create logger: %s\n", err.Error())
 				os.Exit(1)
 			}
 
@@ -114,12 +116,12 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Validate frontend and external URLs
 			_, err = url.Parse(conf.FrontendURL)
 			if err != nil {
-				fmt.Printf("error: invalid frontend URL: %s\n", err.Error())
+				printer.Printf("error: invalid frontend URL: %s\n", err.Error())
 				os.Exit(1)
 			}
 			_, err = url.Parse(conf.ExternalURL)
 			if err != nil {
-				fmt.Printf("error: invalid external URL: %s\n", err.Error())
+				printer.Printf("error: invalid external URL: %s\n", err.Error())
 				os.Exit(1)
 			}
 			_, err = url.Parse(conf.ExternalGRPCURL)

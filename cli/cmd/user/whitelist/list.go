@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func ListCmd(cfg *config.Config) *cobra.Command {
+func ListCmd(ch *cmdutil.Helper) *cobra.Command {
+	cfg := ch.Config
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List whitelisted email domains for the org",
@@ -28,12 +28,12 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if len(whitelistedDomains.Domains) > 0 {
-				cmdutil.PrintlnSuccess(fmt.Sprintf("Whitelisted email domains for %q:", cfg.Org))
+				ch.Printer.PrintlnSuccess(fmt.Sprintf("Whitelisted email domains for %q:", cfg.Org))
 				for _, d := range whitelistedDomains.Domains {
-					cmdutil.PrintlnSuccess(fmt.Sprintf("%q (%q)", d.Domain, d.Role))
+					ch.Printer.PrintlnSuccess(fmt.Sprintf("%q (%q)", d.Domain, d.Role))
 				}
 			} else {
-				cmdutil.PrintlnSuccess(fmt.Sprintf("No whitelisted email domains for %q", cfg.Org))
+				ch.Printer.PrintlnSuccess(fmt.Sprintf("No whitelisted email domains for %q", cfg.Org))
 			}
 			return nil
 		},

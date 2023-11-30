@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func RefreshCmd(cfg *config.Config) *cobra.Command {
+func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 	var source []string
+	cfg := ch.Config
 
 	refreshCmd := &cobra.Command{
 		Use:               "refresh [<project-name>]",
