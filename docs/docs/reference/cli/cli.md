@@ -1,4 +1,5 @@
 ---
+note: GENERATED. DO NOT EDIT.
 title: CLI usage
 sidebar_position: 15
 ---

@@ -27,3 +27,7 @@ go run ./cli
 # To run start:
 go run ./cli start --project dev-project
 ```
+
+## Generating CLI reference docs
+
+See `../docs/README.md` for details about the generated CLI reference docs.
