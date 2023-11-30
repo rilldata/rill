@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/apache/arrow/go/v14/arrow/memory"
@@ -171,9 +170,6 @@ func (f *fileIterator) Next() ([]string, error) {
 		),
 		pqarrow.NewArrowWriterProperties(pqarrow.WithStoreSchema()))
 	if err != nil {
-		if strings.Contains(err.Error(), "not implemented: support for DECIMAL256") {
-			return nil, fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to STRING or NUMERIC (if loss of precision is acceptable) in the submitted query")
-		}
 		return nil, err
 	}
 	defer writer.Close()
