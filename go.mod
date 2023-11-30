@@ -283,7 +283,7 @@ require (
 	modernc.org/token v1.1.0 // indirect
 )
 
-replace github.com/apache/calcite-avatica-go/v5 v5.2.0 => github.com/rilldata/calcite-avatica-go/v5 v5.0.0-20230621112535-eea498ff2a3d
+replace github.com/apache/calcite-avatica-go/v5 v5.2.0 => github.com/rilldata/calcite-avatica-go/v5 v5.0.0-20231129075938-4645f00ea1f7
 
 // using a patch with changes to support decimal256
 // revert to original SDK on next duckDB release
