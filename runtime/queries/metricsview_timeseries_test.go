@@ -2,7 +2,6 @@ package queries_test
 
 import (
 	"context"
-	"fmt"
 	// "fmt"
 	"testing"
 	"time"
@@ -497,7 +496,6 @@ func assertTimeSeriesResponse(t *testing.T, res *runtimev1.MetricsViewTimeSeries
 	actual := make([]string, 0)
 	for _, r := range res.Data {
 		actual = append(actual, r.Ts.AsTime().Format(time.RFC3339))
-		fmt.Println(r.Ts.AsTime().UTC(), r.Records.AsMap())
 	}
 	require.ElementsMatch(t, actual, expected)
 }
