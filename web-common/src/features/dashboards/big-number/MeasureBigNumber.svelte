@@ -68,7 +68,15 @@
   /** when the measure is a percentage, we don't show a percentage change. */
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
-  $: hoveredValue = measureValueFormatterUnabridged(value) ?? "no data";
+  const getTooltipValue = (val: number | null) => {
+    return (
+      (measureIsPercentage
+        ? measureValueFormatter(val)
+        : measureValueFormatterUnabridged(val)) ?? "no data"
+    );
+  };
+
+  $: hoveredValue = getTooltipValue(value);
 
   const { shiftClickAction } = createShiftClickAction();
   async function shiftClickHandler(number: string | undefined) {
@@ -127,12 +135,9 @@
               <div class="flex items-baseline gap-x-3">
                 {#if comparisonValue != null}
                   <div
-                    on:mouseenter={() =>
-                      (hoveredValue =
-                        measureValueFormatterUnabridged(diff) ?? "no data")}
+                    on:mouseenter={() => (hoveredValue = getTooltipValue(diff))}
                     on:mouseleave={() =>
-                      (hoveredValue =
-                        measureValueFormatterUnabridged(value) ?? "no data")}
+                      (hoveredValue = getTooltipValue(value))}
                     class="w-max text-sm ui-copy-inactive"
                     class:font-semibold={isComparisonPositive}
                   >
@@ -155,8 +160,7 @@
                         )
                       ))}
                     on:mouseleave={() =>
-                      (hoveredValue =
-                        measureValueFormatterUnabridged(value) ?? "no data")}
+                      (hoveredValue = getTooltipValue(value))}
                     class="w-max text-sm
               {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
                   >
