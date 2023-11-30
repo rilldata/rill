@@ -1,7 +1,8 @@
 <script lang="ts">
   import Notification from "./Notification.svelte";
-  import notificationStore from "./notificationStore";
+  import PersistedLinkNotification from "./PersistedLinkNotification.svelte";
   import PersistedNotification from "./PersistedNotification.svelte";
+  import notificationStore from "./notificationStore";
 </script>
 
 {#key $notificationStore.id}
@@ -11,6 +12,12 @@
         <div slot="title">{$notificationStore.message}</div>
         <div slot="body">{$notificationStore.detail}</div>
       </PersistedNotification>
+    {:else if $notificationStore.options.persistedLink}
+      <PersistedLinkNotification
+        message={$notificationStore.message}
+        link={$notificationStore.link}
+        on:clear={() => notificationStore.clear()}
+      />
     {:else}
       <Notification location="bottom" {...$notificationStore.options}>
         {$notificationStore.message}

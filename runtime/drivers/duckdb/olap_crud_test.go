@@ -411,3 +411,38 @@ func Test_connection_CastEnum(t *testing.T) {
 	require.NoError(t, res.Scan(&typ))
 	require.Equal(t, "ENUM('hello', 'world')", typ)
 }
+
+func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
+	temp := t.TempDir()
+	require.NoError(t, os.Mkdir(filepath.Join(temp, "default"), fs.ModePerm))
+	dbPath := filepath.Join(temp, "default", "normal.db")
+	handle, err := Driver{}.Open(map[string]any{"dsn": dbPath}, false, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	normalConn := handle.(*connection)
+	normalConn.AsOLAP("default")
+	require.NoError(t, normalConn.Migrate(context.Background()))
+
+	ctx := context.Background()
+	sql := `
+		-- lets write a stupid query
+		with r as (select 1 as id ) 	
+		select * from r
+		-- that was a stupid query
+		-- I hope to write not so stupid query
+	`
+	err = normalConn.CreateTableAsSelect(ctx, "test", false, sql)
+	require.NoError(t, err)
+
+	err = normalConn.CreateTableAsSelect(ctx, "test_view", true, sql)
+	require.NoError(t, err)
+
+	sql = `
+		with r as (select 1 as id ) 	
+		select * from r
+	`
+	err = normalConn.CreateTableAsSelect(ctx, "test", false, sql)
+	require.NoError(t, err)
+
+	err = normalConn.CreateTableAsSelect(ctx, "test_view", true, sql)
+	require.NoError(t, err)
+}

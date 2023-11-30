@@ -16,7 +16,8 @@ func ResetCmd(ch *cmdutil.Helper) *cobra.Command {
 	resetCmd := &cobra.Command{
 		Use:               "reset [<project-name>]",
 		Args:              cobra.MaximumNArgs(1),
-		Short:             "Reset project",
+		Short:             "Re-deploy project",
+		Long:              "Create a new deployment for the project (and tear down the current one)",
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()

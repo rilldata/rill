@@ -12,7 +12,7 @@ In Rill, your dashboards are defined by _metric definitions_. Metric definitions
 * _**Dimensions**_ - Categorical columns from your data model whose values are shown in _leaderboards_ and allow you to look at segments and filter the data.
 
 :::tip Dashboard Properties
-For details about all available properties, see the syntax [reference](../reference/project-files/dashboards).
+For more details about available configurations and properties, check our [Dashboard YAML](../reference/project-files/dashboards) reference page.
 :::
 
 ## Creating valid metrics

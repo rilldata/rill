@@ -16,7 +16,7 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	refreshCmd := &cobra.Command{
 		Use:               "refresh [<project-name>]",
 		Args:              cobra.MaximumNArgs(1),
-		Short:             "Refresh project",
+		Short:             "Refresh the project's data sources",
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
