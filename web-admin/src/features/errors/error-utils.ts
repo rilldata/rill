@@ -1,5 +1,6 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
 import {
   getScreenNameFromPage,
   isDashboardPage,
@@ -33,6 +34,12 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
         (error.response?.data as RpcStatus)?.message ?? error.message,
         screenName
       );
+    }
+
+    // If unauthorized to the admin server, redirect to login page
+    if (isAdminServerQuery(query) && error.response?.status === 401) {
+      goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
+      return;
     }
 
     // Special handling for some errors on the Project page
@@ -69,12 +76,6 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       if (error.response?.status === 401) {
         return;
       }
-    }
-
-    // If Unauthorized, redirect to login page
-    if (error.response?.status === 401) {
-      goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
-      return;
     }
 
     // Create a pretty message for the error page
