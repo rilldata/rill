@@ -1,4 +1,12 @@
+import type { V1Color } from "@rilldata/web-common/runtime-client";
+
 export type ThemeColor = [number, number, number];
+
+export function convertColor(color: V1Color): ThemeColor {
+  return [color.red ?? 0, color.green ?? 0, color.blue ?? 0].map(
+    (c) => c * 256
+  ) as ThemeColor;
+}
 
 export function RGBToHSL(rgb: ThemeColor): ThemeColor {
   let rdif: number;
@@ -40,7 +48,7 @@ export function RGBToHSL(rgb: ThemeColor): ThemeColor {
     }
   }
 
-  return [Math.round(h * 360), Math.round(s * 100), Math.round(v * 100)];
+  return [h, s, v];
 }
 
 const HexRegex = /[a-f0-9]{6}|[a-f0-9]{3}/i;
@@ -70,7 +78,5 @@ export function HexToRGB(hex: string): ThemeColor {
 }
 
 export function HexToHSL(hex: string): ThemeColor {
-  const hsl = RGBToHSL(HexToRGB(hex));
-  console.log("hex", hsl);
-  return hsl;
+  return RGBToHSL(HexToRGB(hex));
 }
