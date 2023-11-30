@@ -14,7 +14,9 @@ Files that are *nested at any level* under your `dashboards` directory will be a
 
 ## Properties
 
-**`model`** — the model name powering the dashboard with no path _(required)_
+**`model`** — the model/table name powering the dashboard with no path _(required)_
+
+**`table`** - alias for the model property and can be used interchangeably _(optional)_
 
 **`title`** — the display name for the dashboard _(required)_
 
