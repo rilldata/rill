@@ -38,7 +38,9 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
 
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {
-      goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
+      goto(
+        `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`
+      );
       return;
     }
 
