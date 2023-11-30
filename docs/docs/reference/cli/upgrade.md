@@ -1,12 +1,18 @@
 ---
-title: rill version
+title: rill upgrade
 ---
-## rill version
+## rill upgrade
 
-Show Rill version
+Upgrade Rill to the latest version
 
 ```
-rill version [flags]
+rill upgrade [flags]
+```
+
+### Flags
+
+```
+      --nightly   Install the latest nightly build
 ```
 
 ### Global flags
