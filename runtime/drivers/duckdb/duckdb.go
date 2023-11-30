@@ -402,7 +402,15 @@ func (c *connection) reopenDB() error {
 	}
 
 	// Queries to run when a new DuckDB connection is opened.
-	bootQueries := []string{
+	var bootQueries []string
+
+	// Add custom boot queries before any other (e.g. to override the extensions repository)
+	if c.config.BootQueries != "" {
+		bootQueries = append(bootQueries, c.config.BootQueries)
+	}
+
+	// Add required boot queries
+	bootQueries = append(bootQueries,
 		"INSTALL 'json'",
 		"LOAD 'json'",
 		"INSTALL 'icu'",
@@ -415,16 +423,12 @@ func (c *connection) reopenDB() error {
 		"LOAD 'sqlite'",
 		"SET max_expression_depth TO 250",
 		"SET timezone='UTC'",
-	}
+	)
 
 	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.
 	// Hack: Using AllowHostAccess as a proxy indicator for a hosted environment.
 	if !c.config.AllowHostAccess {
 		bootQueries = append(bootQueries, "SET preserve_insertion_order TO false")
-	}
-
-	if c.config.BootQueries != "" {
-		bootQueries = append(bootQueries, c.config.BootQueries)
 	}
 
 	// DuckDB extensions need to be loaded separately on each connection, but the built-in connection pool in database/sql doesn't enable that.
