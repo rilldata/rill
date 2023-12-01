@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -31,31 +32,35 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 		return nil, fmt.Errorf("the property 'database_url' is required for Postgres. Provide 'database_url' in the YAML properties or pass '--env connector.postgres.database_url=...' to 'rill start'")
 	}
 
-	conn, err := pgx.Connect(ctx, dsn)
+	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
+		return nil, err
+	}
+
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		pool.Close()
 		return nil, err
 	}
 
 	res, err := conn.Query(ctx, srcProps.SQL)
 	if err != nil {
-		conn.Close(ctx)
+		conn.Release()
+		pool.Close()
 		return nil, err
 	}
 
-	schema, mappers, err := rowsToSchema(res)
-	if err != nil {
-		res.Close()
-		conn.Close(ctx)
-		return nil, err
+	iter := &rowIterator{
+		conn: conn,
+		rows: res,
+		pool: pool,
 	}
 
-	return &rowIterator{
-		conn:         conn,
-		rows:         res,
-		schema:       schema,
-		fieldMappers: mappers,
-		row:          make([]sqldriver.Value, len(schema.Fields)),
-	}, nil
+	if err := iter.setSchema(ctx); err != nil {
+		iter.Close()
+		return nil, err
+	}
+	return iter, nil
 }
 
 // QueryAsFiles implements drivers.SQLStore
@@ -64,8 +69,9 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 }
 
 type rowIterator struct {
-	conn   *pgx.Conn
+	conn   *pgxpool.Conn
 	rows   pgx.Rows
+	pool   *pgxpool.Pool
 	schema *runtimev1.StructType
 
 	row          []sqldriver.Value
@@ -75,7 +81,9 @@ type rowIterator struct {
 // Close implements drivers.RowIterator.
 func (r *rowIterator) Close() error {
 	r.rows.Close()
-	return r.conn.Close(context.Background())
+	r.conn.Release()
+	r.pool.Close()
+	return nil
 }
 
 // Next implements drivers.RowIterator.
@@ -123,25 +131,30 @@ func (r *rowIterator) Size(unit drivers.ProgressUnit) (uint64, bool) {
 
 var _ drivers.RowIterator = &rowIterator{}
 
-func rowsToSchema(r pgx.Rows) (*runtimev1.StructType, []mapper, error) {
-	fds := r.FieldDescriptions()
-	conn := r.Conn()
+func (r *rowIterator) setSchema(ctx context.Context) error {
+	fds := r.rows.FieldDescriptions()
+	conn := r.rows.Conn()
 	if conn == nil {
 		// not possible but keeping it for graceful failures
-		return nil, nil, fmt.Errorf("nil pgx conn")
+		return fmt.Errorf("nil pgx conn")
 	}
 
 	mappers := make([]mapper, len(fds))
 	fields := make([]*runtimev1.StructType_Field, len(fds))
 	typeMap := conn.TypeMap()
+	oidToMapperMap := getOidToMapperMap()
 	for i, fd := range fds {
-		dt, err := columnTypeDatabaseTypeName(typeMap, fds[i].DataTypeOID)
-		if err != nil {
-			return nil, nil, err
+		dt := columnTypeDatabaseTypeName(typeMap, fds[i].DataTypeOID)
+		if dt == "" {
+			var err error
+			dt, err = r.registerIfEnum(ctx, oidToMapperMap, fds[i].DataTypeOID)
+			if err != nil {
+				return err
+			}
 		}
 		mapper, ok := oidToMapperMap[dt]
 		if !ok {
-			return nil, nil, fmt.Errorf("datatype %q is not supported", dt)
+			return fmt.Errorf("datatype %q is not supported", dt)
 		}
 		mappers[i] = mapper
 		fields[i] = &runtimev1.StructType_Field{
@@ -150,15 +163,49 @@ func rowsToSchema(r pgx.Rows) (*runtimev1.StructType, []mapper, error) {
 		}
 	}
 
-	return &runtimev1.StructType{Fields: fields}, mappers, nil
+	r.schema = &runtimev1.StructType{Fields: fields}
+	r.fieldMappers = mappers
+	r.row = make([]sqldriver.Value, len(r.schema.Fields))
+	return nil
+}
+
+func (r *rowIterator) registerIfEnum(ctx context.Context, oidToMapperMap map[string]mapper, oid uint32) (string, error) {
+	// custom datatypes are not supported
+	// but it is possible to support enum with this approach
+	newConn, err := r.pool.Acquire(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer newConn.Release()
+
+	var isEnum bool
+	var typName string
+	err = newConn.QueryRow(ctx, "SELECT typtype = 'e' AS isEnum, typname FROM pg_type WHERE oid = $1", oid).Scan(&isEnum, &typName)
+	if err != nil {
+		return "", err
+	}
+
+	if !isEnum {
+		return "", fmt.Errorf("custom datatypes are not supported")
+	}
+
+	dataType, err := newConn.Conn().LoadType(ctx, typName)
+	if err != nil {
+		return "", err
+	}
+
+	r.rows.Conn().TypeMap().RegisterType(dataType)
+	oidToMapperMap[typName] = &charMapper{}
+	register(oidToMapperMap, typName, &charMapper{})
+	return typName, nil
 }
 
 // columnTypeDatabaseTypeName returns the database system type name. If the name is unknown the OID is returned.
-func columnTypeDatabaseTypeName(typeMap *pgtype.Map, datatypeOID uint32) (string, error) {
+func columnTypeDatabaseTypeName(typeMap *pgtype.Map, datatypeOID uint32) string {
 	if dt, ok := typeMap.TypeForOID(datatypeOID); ok {
-		return strings.ToLower(dt.Name), nil
+		return strings.ToLower(dt.Name)
 	}
-	return "", fmt.Errorf("custom datatypes are not supported")
+	return ""
 }
 
 type sourceProperties struct {
