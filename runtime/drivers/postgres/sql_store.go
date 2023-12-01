@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -143,11 +144,30 @@ func (r *rowIterator) setSchema(ctx context.Context) error {
 	fields := make([]*runtimev1.StructType_Field, len(fds))
 	typeMap := conn.TypeMap()
 	oidToMapperMap := getOidToMapperMap()
+
+	var newConn *pgxpool.Conn
+	defer func() {
+		if newConn != nil {
+			newConn.Release()
+		}
+	}()
 	for i, fd := range fds {
 		dt := columnTypeDatabaseTypeName(typeMap, fds[i].DataTypeOID)
 		if dt == "" {
 			var err error
-			dt, err = r.registerIfEnum(ctx, oidToMapperMap, fds[i].DataTypeOID)
+			if newConn == nil {
+				// acquire another connection
+				ctxWithTimeOut, cancel := context.WithTimeout(ctx, time.Minute)
+				defer cancel()
+				newConn, err = r.pool.Acquire(ctxWithTimeOut)
+				if err != nil {
+					if errors.Is(err, context.DeadlineExceeded) {
+						return fmt.Errorf("postgres connector require 2 connections. Set `max_connections` to atleast 2")
+					}
+					return err
+				}
+			}
+			dt, err = r.registerIfEnum(ctx, newConn.Conn(), oidToMapperMap, fds[i].DataTypeOID)
 			if err != nil {
 				return err
 			}
@@ -169,18 +189,12 @@ func (r *rowIterator) setSchema(ctx context.Context) error {
 	return nil
 }
 
-func (r *rowIterator) registerIfEnum(ctx context.Context, oidToMapperMap map[string]mapper, oid uint32) (string, error) {
+func (r *rowIterator) registerIfEnum(ctx context.Context, conn *pgx.Conn, oidToMapperMap map[string]mapper, oid uint32) (string, error) {
 	// custom datatypes are not supported
 	// but it is possible to support enum with this approach
-	newConn, err := r.pool.Acquire(ctx)
-	if err != nil {
-		return "", err
-	}
-	defer newConn.Release()
-
 	var isEnum bool
 	var typName string
-	err = newConn.QueryRow(ctx, "SELECT typtype = 'e' AS isEnum, typname FROM pg_type WHERE oid = $1", oid).Scan(&isEnum, &typName)
+	err := conn.QueryRow(ctx, "SELECT typtype = 'e' AS isEnum, typname FROM pg_type WHERE oid = $1", oid).Scan(&isEnum, &typName)
 	if err != nil {
 		return "", err
 	}
@@ -189,7 +203,7 @@ func (r *rowIterator) registerIfEnum(ctx context.Context, oidToMapperMap map[str
 		return "", fmt.Errorf("custom datatypes are not supported")
 	}
 
-	dataType, err := newConn.Conn().LoadType(ctx, typName)
+	dataType, err := conn.LoadType(ctx, typName)
 	if err != nil {
 		return "", err
 	}
