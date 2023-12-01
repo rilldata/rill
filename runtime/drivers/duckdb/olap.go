@@ -265,17 +265,18 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
+// We add a \n at the end of the any user query to ensure any comment at the end of model doesn't make the query incomplete.
 func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
 	c.logger.Info("create table", zap.String("name", name), zap.Bool("view", view))
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s)", safeSQLName(name), sql),
+			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s\n)", safeSQLName(name), sql),
 			Priority: 1,
 		})
 	}
 	if !c.config.ExtTableStorage {
 		return c.execWithLimits(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s)", safeSQLName(name), sql),
+			Query:       fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n)", safeSQLName(name), sql),
 			Priority:    1,
 			LongRunning: true,
 		})
@@ -305,7 +306,7 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 		}
 
 		// Enforce storage limits
-		if err := c.execWithLimits(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE %s.default AS (%s)", safeSQLName(db), sql)}); err != nil {
+		if err := c.execWithLimits(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE %s.default AS (%s\n)", safeSQLName(db), sql)}); err != nil {
 			c.detachAndRemoveFile(ensuredCtx, db, dbFile)
 			return fmt.Errorf("create: create %q.default table failed: %w", db, err)
 		}

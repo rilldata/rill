@@ -1,5 +1,8 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { getScreenNameFromPage } from "@rilldata/web-admin/features/navigation/nav-utils";
+import { errorEvent } from "@rilldata/web-common/metrics/initMetrics";
+import type { Query } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
@@ -9,12 +12,28 @@ import { ADMIN_URL } from "../../client/http-client";
 import { ErrorStoreState, errorStore } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
-  return (error: AxiosError) => {
+  return (error: AxiosError, query: Query) => {
     const isProjectPage = get(page).route.id === "/[organization]/[project]";
     const isDashboardPage =
       get(page).route.id === "/[organization]/[project]/[dashboard]";
 
-    if (!error.response) return;
+    const screenName = getScreenNameFromPage(get(page));
+    if (!error.response) {
+      errorEvent?.fireHTTPErrorBoundaryEvent(
+        query.queryKey[0] as string,
+        "",
+        "unknown error",
+        screenName
+      );
+      return;
+    } else {
+      errorEvent?.fireHTTPErrorBoundaryEvent(
+        query.queryKey[0] as string,
+        error.response?.status + "" ?? error.status,
+        (error.response?.data as RpcStatus)?.message ?? error.message,
+        screenName
+      );
+    }
 
     // Special handling for some errors on the Project page
     if (isProjectPage && error.response?.status === 400) {
@@ -128,5 +147,39 @@ export function createErrorPagePropsFromRoutingError(
     statusCode: statusCode,
     header: "Sorry, unexpected error!",
     body: "Try refreshing the page, and reach out to us if that doesn't fix the error.",
+  };
+}
+
+export function addJavascriptErrorListeners() {
+  const errorHandler = (errorEvt: ErrorEvent) => {
+    errorEvent?.fireJavascriptErrorBoundaryEvent(
+      errorEvt.error?.stack ?? "",
+      errorEvt.message,
+      getScreenNameFromPage(get(page))
+    );
+  };
+  const unhandledRejectionHandler = (rejectionEvent: PromiseRejectionEvent) => {
+    let stack = "";
+    let message = "";
+    if (typeof rejectionEvent.reason === "string") {
+      message = rejectionEvent.reason;
+    } else if (rejectionEvent.reason instanceof Error) {
+      stack = rejectionEvent.reason.stack ?? "";
+      message = rejectionEvent.reason.message;
+    } else {
+      message = String.toString.apply(rejectionEvent.reason);
+    }
+    errorEvent?.fireJavascriptErrorBoundaryEvent(
+      stack,
+      message,
+      getScreenNameFromPage(get(page))
+    );
+  };
+
+  window.addEventListener("error", errorHandler);
+  window.addEventListener("unhandledrejection", unhandledRejectionHandler);
+  return () => {
+    window.removeEventListener("error", errorHandler);
+    window.removeEventListener("unhandledrejection", unhandledRejectionHandler);
   };
 }

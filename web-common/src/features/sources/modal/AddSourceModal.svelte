@@ -14,6 +14,7 @@
   import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
   import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
   import Postgres from "../../../components/icons/connectors/Postgres.svelte";
+  import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
   import SQLite from "../../../components/icons/connectors/SQLite.svelte";
   import { appScreen } from "../../../layout/app-store";
   import { behaviourEvent } from "../../../metrics/initMetrics";
@@ -42,6 +43,7 @@
     "motherduck",
     "postgres",
     "sqlite",
+    "snowflake",
     "local_file",
     "https",
   ];
@@ -56,6 +58,7 @@
     motherduck: MotherDuck,
     postgres: Postgres,
     sqlite: SQLite,
+    snowflake: Snowflake,
     local_file: LocalFile,
     https: Https,
   };

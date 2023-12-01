@@ -29,6 +29,7 @@ type MetricsViewYAML struct {
 	AvailableTimeZones []string         `yaml:"available_time_zones"`
 	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
+	DefaultTheme       string           `yaml:"default_theme"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string
@@ -392,6 +393,9 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	node.Refs = append(node.Refs, ResourceName{Name: table})
+	if tmp.DefaultTheme != "" {
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
+	}
 
 	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -410,6 +414,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.AvailableTimeZones = tmp.AvailableTimeZones
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
+	spec.DefaultTheme = tmp.DefaultTheme
 
 	for _, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {

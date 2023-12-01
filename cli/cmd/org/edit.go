@@ -4,15 +4,15 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func EditCmd(cfg *config.Config) *cobra.Command {
+func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var orgName, description string
+	cfg := ch.Config
 
 	editCmd := &cobra.Command{
 		Use:   "edit [<org-name>]",
@@ -75,9 +75,8 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Updated organization")
-			cmdutil.TablePrinter(toRow(updatedOrg.Organization))
-			return nil
+			ch.Printer.PrintlnSuccess("Updated organization")
+			return ch.Printer.PrintResource([]*organization{toRow(updatedOrg.Organization)})
 		},
 	}
 	editCmd.Flags().SortFlags = false

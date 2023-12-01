@@ -6,13 +6,13 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 )
 
 const installScriptURL = "https://cdn.rilldata.com/install.sh"
 
-func UpgradeCmd(cfg *config.Config) *cobra.Command {
+func UpgradeCmd(ch *cmdutil.Helper) *cobra.Command {
 	var nightly bool
 
 	upgradeCmd := &cobra.Command{

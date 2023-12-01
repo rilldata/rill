@@ -78,7 +78,7 @@ func TestAnalyze(t *testing.T) {
 					tc.want.Config = map[string]any{}
 				}
 				require.ElementsMatch(t, tc.want.Refs, got.Refs)
-				require.Equal(t, tc.want.Variables, got.Variables)
+				require.ElementsMatch(t, tc.want.Variables, got.Variables)
 				require.Equal(t, tc.want.Config, got.Config)
 				require.Equal(t, tc.want.UsesTemplating, got.UsesTemplating)
 				require.Equal(t, tc.want.ResolvedWithPlaceholders, strings.TrimSpace(got.ResolvedWithPlaceholders))

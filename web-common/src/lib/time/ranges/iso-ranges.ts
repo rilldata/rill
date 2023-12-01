@@ -5,9 +5,13 @@ import {
   transformDate,
 } from "@rilldata/web-common/lib/time/transforms";
 import {
+  RangePresetType,
+  ReferencePoint,
   RelativeTimeTransformation,
+  TimeComparisonOption,
   TimeOffsetType,
   TimeRange,
+  TimeRangeMeta,
   TimeRangePreset,
   TimeTruncationType,
 } from "@rilldata/web-common/lib/time/types";
@@ -48,7 +52,7 @@ for (const preset in TimeRangePreset) {
 }
 
 export function isoDurationToFullTimeRange(
-  isoDuration: string,
+  isoDuration: string | undefined,
   start: Date,
   end: Date,
   zone = "Etc/UTC"
@@ -95,6 +99,25 @@ export function getSmallestTimeGrain(isoDuration: string) {
   }
 
   return undefined;
+}
+
+export function isoDurationToTimeRangeMeta(
+  isoDuration: string,
+  defaultComparison: TimeComparisonOption
+): TimeRangeMeta {
+  return {
+    label: `Last ${humaniseISODuration(isoDuration)}`,
+    defaultComparison,
+    rangePreset: RangePresetType.OFFSET_ANCHORED,
+    start: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: getStartTimeTransformations(isoDuration),
+    },
+    end: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: getEndTimeTransformations(isoDuration),
+    },
+  };
 }
 
 function getStartTimeTransformations(

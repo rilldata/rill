@@ -10,7 +10,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/redis/go-redis/v9"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -37,6 +37,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
+	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
 )
@@ -89,11 +90,12 @@ type Config struct {
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
-func StartCmd(cliCfg *config.Config) *cobra.Command {
+func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start stand-alone runtime server",
 		Run: func(cmd *cobra.Command, args []string) {
+			cliCfg := ch.Config
 			// Load .env (note: fails silently if .env has errors)
 			_ = godotenv.Load()
 

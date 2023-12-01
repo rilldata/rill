@@ -63,3 +63,19 @@ export function useReportOwnerName(
     }
   );
 }
+
+export function useIsReportCreatedByCode(instanceId: string, name: string) {
+  return createRuntimeServiceGetResource(
+    instanceId,
+    {
+      "name.name": name,
+      "name.kind": ResourceKind.Report,
+    },
+    {
+      query: {
+        select: (data) =>
+          !data.resource.report.spec.annotations["admin_owner_user_id"],
+      },
+    }
+  );
+}

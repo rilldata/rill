@@ -1084,6 +1084,104 @@ measures:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
+func TestDashboardTheme(t *testing.T) {
+	// Create source and model
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5
+`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+		"/models/bar.sql": `SELECT * FROM foo`,
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+default_theme: t1
+dimensions:
+- column: b
+measures:
+- expression: count(*)
+`,
+		`themes/t1.yaml`: `
+kind: theme
+colors:
+  primary: red
+  secondary: grey
+`,
+	})
+
+	theme := &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: "t1"},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/themes/t1.yaml"},
+		},
+		Resource: &runtimev1.Resource_Theme{
+			Theme: &runtimev1.Theme{
+				Spec: &runtimev1.ThemeSpec{
+					PrimaryColor: &runtimev1.Color{
+						Red:   1,
+						Green: 0,
+						Blue:  0,
+						Alpha: 1,
+					},
+					SecondaryColor: &runtimev1.Color{
+						Red:   0.5019608,
+						Green: 0.5019608,
+						Blue:  0.5019608,
+						Alpha: 1,
+					},
+				},
+			},
+		},
+	}
+	mv, metricsRes := newMetricsView("dash", "bar", []string{"count(*)"}, []string{"b"})
+	metricsRes.Meta.Refs = append(metricsRes.Meta.Refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: "t1"})
+	mv.GetSpec().DefaultTheme = "t1"
+	mv.GetState().ValidSpec.DefaultTheme = "t1"
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+	testruntime.RequireResource(t, rt, id, theme)
+	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	// make the theme invalid
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		`themes/t1.yaml`: `
+kind: theme
+colors:
+  primary: xxx
+  secondary: xxx
+`,
+	})
+	mv.State = &runtimev1.MetricsViewState{}
+	metricsRes.Meta.ReconcileError = `could not find theme "t1"`
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 2, 1)
+	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	// make the theme valid
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		`themes/t1.yaml`: `
+kind: theme
+colors:
+  primary: red
+  secondary: grey
+`,
+	})
+	mv, metricsRes = newMetricsView("dash", "bar", []string{"count(*)"}, []string{"b"})
+	metricsRes.Meta.Refs = append(metricsRes.Meta.Refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: "t1"})
+	mv.GetSpec().DefaultTheme = "t1"
+	mv.GetState().ValidSpec.DefaultTheme = "t1"
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+	testruntime.RequireResource(t, rt, id, metricsRes)
+}
+
 func must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)

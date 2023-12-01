@@ -10,7 +10,7 @@ It will show an error message if passed in.
   import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
   import { slide } from "svelte/transition";
 
-  export let error: LineStatus | V1ReconcileError = undefined;
+  export let error: LineStatus | V1ReconcileError | undefined = undefined;
   export let height = "calc(100vh - var(--header-height))";
 </script>
 

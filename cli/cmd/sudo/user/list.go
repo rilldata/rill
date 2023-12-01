@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func ListCmd(cfg *config.Config) *cobra.Command {
+func ListCmd(ch *cmdutil.Helper) *cobra.Command {
+	cfg := ch.Config
 	var projectName string
 	var pageSize uint32
 	var pageToken string
@@ -37,7 +37,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				cmdutil.PrintMembers(members.Members)
+				cmdutil.PrintMembers(ch.Printer, members.Members)
 				if members.NextPageToken != "" {
 					cmd.Println()
 					cmd.Printf("Next page token: usr%s\n", members.NextPageToken)
@@ -52,7 +52,7 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				cmdutil.PrintMembers(members.Members)
+				cmdutil.PrintMembers(ch.Printer, members.Members)
 				if members.NextPageToken != "" {
 					cmd.Println()
 					cmd.Printf("Next page token: usr%s\n", members.NextPageToken)
