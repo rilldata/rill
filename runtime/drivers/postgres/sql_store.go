@@ -156,14 +156,8 @@ func (r *rowIterator) setSchema(ctx context.Context) error {
 		if dt == "" {
 			var err error
 			if newConn == nil {
-				// acquire another connection
-				ctxWithTimeOut, cancel := context.WithTimeout(ctx, time.Minute)
-				defer cancel()
-				newConn, err = r.pool.Acquire(ctxWithTimeOut)
+				newConn, err = r.acquireConn(ctx)
 				if err != nil {
-					if errors.Is(err, context.DeadlineExceeded) {
-						return fmt.Errorf("postgres connector require 2 connections. Set `max_connections` to atleast 2")
-					}
 					return err
 				}
 			}
@@ -212,6 +206,21 @@ func (r *rowIterator) registerIfEnum(ctx context.Context, conn *pgx.Conn, oidToM
 	oidToMapperMap[typName] = &charMapper{}
 	register(oidToMapperMap, typName, &charMapper{})
 	return typName, nil
+}
+
+func (r *rowIterator) acquireConn(ctx context.Context) (*pgxpool.Conn, error) {
+	// acquire another connection
+	ctxWithTimeOut, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+
+	conn, err := r.pool.Acquire(ctxWithTimeOut)
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, fmt.Errorf("postgres connector require 2 connections. Set `max_connections` to atleast 2")
+		}
+		return nil, err
+	}
+	return conn, nil
 }
 
 // columnTypeDatabaseTypeName returns the database system type name. If the name is unknown the OID is returned.
