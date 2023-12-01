@@ -28,8 +28,25 @@ const testCases: [number, number][] = [
   [710.7237956, -7],
   [-710.7237956, -7],
 
-  [79879879710.7237, -4], // NOTE: most digits representable in js
-  [-79879879710.7237, -4], // NOTE: most digits representable in js
+  // NOTE: most digits representable in js
+  [79879879710.7237, -4],
+  [-79879879710.7237, -4],
+
+  // NOTE: this number is too small to represent in js,
+  // so it will be rounded to zero
+  [2.2247239873252e-3523, 0],
+
+  // Smallest positive number that can be represented in js
+  [Number.MIN_VALUE, -324],
+  [-Number.MIN_VALUE, -324],
+
+  // Largest number that can be represented in js, 1.7976931348623157e+308
+  [Number.MAX_VALUE, 292],
+  [-Number.MAX_VALUE, 292],
+
+  // number that can be represented in js once rounded,
+  // which has more digits than can be stored
+  [2.2247239873252e-308, -324],
 ];
 
 describe("smallestPrecisionMagnitude", () => {
@@ -37,8 +54,11 @@ describe("smallestPrecisionMagnitude", () => {
     expect(() => smallestPrecisionMagnitude("foo" as any)).toThrow();
     expect(() => smallestPrecisionMagnitude(undefined as any)).toThrow();
   });
-  it("returns the order of magnitude of the most precise digit in each number", () => {
-    testCases.forEach(([input, output]) => {
+  testCases.forEach(([input, output]) => {
+    it(`returns the order of magnitude of the most precise digit in each number ${[
+      input,
+      output,
+    ]}`, () => {
       expect(smallestPrecisionMagnitude(input)).toBe(output);
     });
   });
