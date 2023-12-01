@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/apache/arrow/go/v14/arrow"
 	"github.com/apache/arrow/go/v14/arrow/memory"
 	"github.com/apache/arrow/go/v14/parquet"
 	"github.com/apache/arrow/go/v14/parquet/compress"
@@ -159,6 +160,11 @@ func (f *fileIterator) Next() ([]string, error) {
 
 	// common schema
 	schema := (*firstBatch)[0].Schema()
+	for _, f := range schema.Fields() {
+		if f.Type.ID() == arrow.TIME32 || f.Type.ID() == arrow.TIME64 {
+			return nil, fmt.Errorf("TIME type isn't supported, consider excluding it")
+		}
+	}
 
 	writer, err := pqarrow.NewFileWriter(schema, fw,
 		parquet.NewWriterProperties(
