@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import { fly, slide } from "svelte/transition";
   import BarAndLabel from "../../../components/BarAndLabel.svelte";
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
@@ -83,16 +82,13 @@
       message: `copied dimension value "${truncatedLabel}" to clipboard`,
     });
   }
-  const dispatch = createEventDispatcher();
 
   let hovered = false;
   const onHover = () => {
     hovered = true;
-    dispatch("focus");
   };
   const onLeave = () => {
     hovered = false;
-    dispatch("blur");
   };
 </script>
 
