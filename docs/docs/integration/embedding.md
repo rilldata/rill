@@ -47,6 +47,8 @@ To issue service token for an existing service account, use the following comman
 rill service token issue <service_name> [--org "My Organization"]
 ```
 
+See the reference docs for more details on managing [service account and token](../reference/cli/service).
+
 ### Backend: Build an iframe URL
 The backend needs to use the service token to request an iframe URL from `admin.rilldata.com`. The iframe URL is then used to embed the dashboard in the customer's application.
 Here's a minimal example POST call to `admin.rilldata.com` to get an iframe URL:
