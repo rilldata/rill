@@ -11,6 +11,7 @@ func UserCmd(cfg *config.Config) *cobra.Command {
 		Short: "Manage users",
 	}
 
+	userCmd.AddCommand(ListCmd(cfg))
 	userCmd.AddCommand(SearchCmd(cfg))
 	userCmd.AddCommand(AssumeCmd(cfg))
 	userCmd.AddCommand(UnassumeCmd(cfg))

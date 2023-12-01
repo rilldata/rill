@@ -8,7 +8,7 @@ import (
 )
 
 func ListCmd(cfg *config.Config) *cobra.Command {
-	addCmd := &cobra.Command{
+	listCmd := &cobra.Command{
 		Use:   "list",
 		Args:  cobra.NoArgs,
 		Short: "List superusers",
@@ -31,5 +31,5 @@ func ListCmd(cfg *config.Config) *cobra.Command {
 			return nil
 		},
 	}
-	return addCmd
+	return listCmd
 }
