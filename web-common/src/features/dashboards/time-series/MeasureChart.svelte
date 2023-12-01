@@ -7,7 +7,6 @@
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
-  import { getLabelInZone } from "@rilldata/web-common/lib/time/timezone";
   import type {
     MetricsViewSpecMeasureV2,
     V1TimeGrain,
@@ -65,7 +64,7 @@
   export let scrubEnd;
 
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
-    getLabelInZone(v, zone, undefined);
+    v.toString();
 
   $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
   $: numberKind = numberKindForMeasure(measure);

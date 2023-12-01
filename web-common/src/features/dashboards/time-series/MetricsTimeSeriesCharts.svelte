@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { getLabelInZone } from "@rilldata/web-common/lib/time/timezone";
   import { runtime } from "../../../runtime-client/runtime-store";
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
@@ -285,9 +284,8 @@
             {showComparison}
             mouseoverTimeFormat={(value) => {
               /** format the date according to the time grain */
-              return getLabelInZone(
-                new Date(value),
-                $dashboardStore?.selectedTimezone,
+              return new Date(value).toLocaleDateString(
+                undefined,
                 TIME_GRAIN[interval].formatDate
               );
             }}
