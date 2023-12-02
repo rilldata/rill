@@ -1,5 +1,6 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
+  import { page } from "$app/stores";
   import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import {
@@ -9,11 +10,11 @@
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import { QueryClient, QueryClientProvider } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
+  import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
   import {
     addJavascriptErrorListeners,
     createGlobalErrorCallback,
   } from "../features/errors/error-utils";
-  import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
 
@@ -45,6 +46,8 @@
   initCloudMetrics();
 
   onMount(() => addJavascriptErrorListeners());
+
+  $: isEmbed = $page.url.pathname === "/-/embed";
 </script>
 
 <svelte:head>
@@ -54,7 +57,9 @@
 <RillTheme>
   <QueryClientProvider client={queryClient}>
     <main class="flex flex-col h-screen">
-      <TopNavigationBar />
+      {#if !isEmbed}
+        <TopNavigationBar />
+      {/if}
       <div class="flex-grow overflow-hidden">
         <ErrorBoundary>
           <slot />
