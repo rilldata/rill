@@ -18,10 +18,6 @@
   export let bgClass = "bg-gray-100";
   export let top = "var(--header-height)";
 
-  window.addEventListener("popstate", () => {
-    console.log("------------------------ POPSTATE");
-  });
-
   const inspectorLayout = localStorageStore<LayoutElement>(assetID, {
     value: inspector ? DEFAULT_INSPECTOR_WIDTH : 0,
     visible: true,
