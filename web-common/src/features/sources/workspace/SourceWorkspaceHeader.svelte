@@ -18,9 +18,9 @@
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
+    V1SourceV2,
     createRuntimeServiceGetFile,
     createRuntimeServiceRefreshAndReconcile,
-    V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
@@ -173,6 +173,8 @@
 
   $: hasErrors = getFileHasErrors(queryClient, $runtime.instanceId, filePath);
 
+  let headerWidth: number;
+
   function isHeaderWidthSmall(width: number) {
     return width < 800;
   }
@@ -181,7 +183,7 @@
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
     {...{ titleInput: sourceName, onChangeCallback }}
-    let:width={headerWidth}
+    on:resize={(e) => (headerWidth = e.detail.width)}
   >
     <svelte:fragment slot="workspace-controls">
       {#if $refreshSourceMutation.isLoading}

@@ -7,7 +7,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { dynamicTextInputWidth } from "@rilldata/web-common/lib/actions/dynamic-text-input-width";
-  import { getContext } from "svelte";
+  import { createEventDispatcher, getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
   import type { Writable } from "svelte/store";
   import SourceUnsavedIndicator from "../../features/sources/editor/SourceUnsavedIndicator.svelte";
@@ -17,7 +17,8 @@
   export let titleInput;
   export let editable = true;
   export let showInspectorToggle = true;
-  export let width: number | undefined = undefined;
+
+  const dispatch = createEventDispatcher();
 
   let titleInputElement;
   let editingTitle = false;
@@ -41,7 +42,12 @@
     }
   }
 
+  function dispatchWidth(width: number) {
+    dispatch("resize", { width: width });
+  }
+
   $: width = $observedNode?.getBoundingClientRect()?.width;
+  $: dispatchWidth(width);
 
   function onInput(
     event: Event & {
