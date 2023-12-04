@@ -468,10 +468,8 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.Superuser(ctx) {
-		if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers {
-			return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
-		}
+	if !claims.Superuser(ctx) && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
 	}
 
 	token, err := unmarshalPageToken(req.PageToken)

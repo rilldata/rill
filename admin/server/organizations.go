@@ -211,11 +211,8 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 	}
 
 	claims := auth.GetClaims(ctx)
-
-	if !claims.Superuser(ctx) {
-		if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
-			return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
-		}
+	if !claims.Superuser(ctx) && !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
 	}
 
 	token, err := unmarshalPageToken(req.PageToken)

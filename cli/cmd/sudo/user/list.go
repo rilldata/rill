@@ -1,8 +1,6 @@
 package user
 
 import (
-	"context"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -10,13 +8,12 @@ import (
 
 func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	cfg := ch.Config
-	var projectName string
 	var pageSize uint32
 	var pageToken string
 
 	listCmd := &cobra.Command{
-		Use:   "list",
-		Args:  cobra.NoArgs,
+		Use:   "list <org> [project]",
+		Args:  cobra.MatchAll(cobra.MinimumNArgs(1), cobra.MaximumNArgs(2)),
 		Short: "List users",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -26,9 +23,15 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			defer client.Close()
 
+			orgName := args[0]
+			projectName := ""
+			if len(args) == 2 {
+				projectName = args[1]
+			}
+
 			if projectName != "" {
 				members, err := client.ListProjectMembers(ctx, &adminv1.ListProjectMembersRequest{
-					Organization: cfg.Org,
+					Organization: orgName,
 					Project:      projectName,
 					PageSize:     pageSize,
 					PageToken:    pageToken,
@@ -47,8 +50,8 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 					cmd.Printf("Next page token: usr%s\n", members.NextPageToken)
 				}
 			} else {
-				members, err := client.ListOrganizationMembers(context.Background(), &adminv1.ListOrganizationMembersRequest{
-					Organization: cfg.Org,
+				members, err := client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+					Organization: orgName,
 					PageSize:     pageSize,
 					PageToken:    pageToken,
 				})
@@ -71,8 +74,6 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
-	listCmd.Flags().StringVar(&cfg.Org, "org", cfg.Org, "Organization")
-	listCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	listCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of users to return per page")
 	listCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
