@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
@@ -13,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func LogsCmd(cfg *config.Config) *cobra.Command {
+func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, path string
 	var follow bool
 	var tail int
@@ -23,6 +22,7 @@ func LogsCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Show project logs",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -54,7 +54,7 @@ func LogsCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
-				cmdutil.PrintlnWarn(fmt.Sprintf("Deployment status not OK: %s", depl.Status.String()))
+				ch.Printer.PrintlnWarn(fmt.Sprintf("Deployment status not OK: %s", depl.Status.String()))
 				return nil
 			}
 

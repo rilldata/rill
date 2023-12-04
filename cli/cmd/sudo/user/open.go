@@ -6,16 +6,17 @@ import (
 
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/cli/pkg/browser"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 )
 
-func OpenCmd(cfg *config.Config) *cobra.Command {
+func OpenCmd(ch *cmdutil.Helper) *cobra.Command {
 	openCmd := &cobra.Command{
 		Use:   "open",
 		Args:  cobra.NoArgs,
 		Short: "Open browser as the current user",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			authURL := cfg.AdminURL
 			if strings.Contains(authURL, "http://localhost:9090") {
 				authURL = "http://localhost:8080"

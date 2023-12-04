@@ -10,7 +10,7 @@ and the menu closes.
   import type { Alignment, Location } from "../../floating-element/types";
 
   export let options = [];
-  export let dark: boolean = undefined;
+  export let dark: boolean | undefined = undefined;
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
   export let distance = 16;

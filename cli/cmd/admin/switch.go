@@ -16,13 +16,14 @@ const (
 	devAdminURL     = "http://localhost:9090"
 )
 
-func SwitchCmd(cfg *config.Config) *cobra.Command {
+func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 	var env string
 	switchCmd := &cobra.Command{
 		Use:   "switch {stage|prod|dev}",
 		Short: "switch",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			if len(args) > 0 {
 				env = args[0]
 			}
@@ -61,8 +62,8 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 
 			cfg.AdminURL = url
 
-			cmdutil.PrintlnSuccess(fmt.Sprintf("Set default env to %q, url is %q", env, url))
-			err = auth.SelectOrgFlow(cmd.Context(), cfg)
+			ch.Printer.PrintlnSuccess(fmt.Sprintf("Set default env to %q, url is %q", env, url))
+			err = auth.SelectOrgFlow(cmd.Context(), ch)
 			if err != nil {
 				return err
 			}

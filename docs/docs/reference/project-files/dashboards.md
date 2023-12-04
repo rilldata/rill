@@ -28,7 +28,8 @@ _**`dimensions`**_ — for exploring [segments](../../develop/metrics-dashboard#
   - _**`column`**_ — a categorical column _(required)_ 
   - _**`name`**_ — a stable identifier for the dimension _(optional)_
   - _**`label`**_ — a label for your dashboard dimension _(optional)_ 
-  - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_ 
+  - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_
+  - _**`unnest`**_ - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match _(optional)_
   - _**`ignore`**_ — hides the dimension _(optional)_ 
 
 _**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measures) of columns from your data model  _(required)_

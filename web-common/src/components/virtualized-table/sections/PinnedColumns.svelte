@@ -5,6 +5,7 @@
   import ColumnHeader from "../core/ColumnHeader.svelte";
   import Row from "../core/Row.svelte";
   import type { PinnedColumnSide } from "../types";
+  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
 
   const dispatch = createEventDispatcher();
 

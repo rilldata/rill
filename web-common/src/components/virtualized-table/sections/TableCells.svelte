@@ -18,8 +18,6 @@
 
   const getCellProps = (virtRow: VirtualItem, virtCol: VirtualItem) => {
     const column = columns[virtCol.index];
-    if (!column) return;
-
     const columnName = column.name;
     const value = rows[virtRow.index][columnName];
     return {

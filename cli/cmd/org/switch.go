@@ -5,13 +5,14 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func SwitchCmd(cfg *config.Config) *cobra.Command {
+func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
+	cfg := ch.Config
+
 	switchCmd := &cobra.Command{
 		Use:   "switch [<org-name>]",
 		Short: "Switch to other organization",
@@ -50,7 +51,7 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 			}
 			cfg.Org = defaultOrg
 
-			fmt.Printf("Set default organization to %q.\n", defaultOrg)
+			ch.Printer.Printf("Set default organization to %q.\n", defaultOrg)
 			return nil
 		},
 	}

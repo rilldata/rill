@@ -17,7 +17,7 @@
   export let titleInput;
   export let editable = true;
   export let showInspectorToggle = true;
-  export let width: number = undefined;
+  export let width: number | undefined = undefined;
 
   let titleInputElement;
   let editingTitle = false;
@@ -42,6 +42,17 @@
   }
 
   $: width = $observedNode?.getBoundingClientRect()?.width;
+
+  function onInput(
+    event: Event & {
+      currentTarget: EventTarget & HTMLInputElement;
+    } & { target: EventTarget & HTMLInputElement }
+  ) {
+    if (editable) {
+      titleInputValue = event?.target?.value;
+      editingTitle = true;
+    }
+  }
 </script>
 
 <svelte:window on:keydown={onKeydown} />
@@ -71,11 +82,7 @@
             on:focus={() => {
               editingTitle = true;
             }}
-            on:input={() => {
-              if (editable) {
-                editingTitle = true;
-              }
-            }}
+            on:input={onInput}
             class="bg-transparent border border-transparent border-2 {editable
               ? 'hover:border-gray-400 cursor-pointer'
               : ''} rounded pl-2 pr-2"

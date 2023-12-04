@@ -18,7 +18,7 @@
   export let row;
   export let column;
   export let value;
-  export let formattedValue;
+  export let formattedValue = null;
   export let type;
   export let barValue = 0;
   export let rowActive = false;

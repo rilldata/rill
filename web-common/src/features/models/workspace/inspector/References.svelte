@@ -14,19 +14,22 @@
   } from "@rilldata/web-common/runtime-client";
   import * as classes from "@rilldata/web-local/lib/util/component-classes";
   import { getContext } from "svelte";
-  import { derived, writable } from "svelte/store";
+  import { Writable, derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { getTableReferences } from "../../utils/get-table-references";
   import { getMatchingReferencesAndEntries } from "./utils";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
+  import type { QueryHighlightState } from "../../query-highlight-store";
 
   export let modelName: string;
 
   let showSourceTables = true;
   let modelHasError = false;
 
-  const queryHighlight = getContext("rill:app:query-highlight");
+  const queryHighlight: Writable<QueryHighlightState> = getContext(
+    "rill:app:query-highlight"
+  );
 
   $: getModelFile = createRuntimeServiceGetFile(
     $runtime?.instanceId,

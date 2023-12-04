@@ -11,8 +11,8 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
-    createRuntimeServiceGetFile,
     V1Resource,
+    createRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
@@ -40,7 +40,7 @@
   let isValidModel = false;
   $: if ($allModels?.data?.entries) {
     isValidModel = $allModels?.data.some(
-      (model) => model.meta.name.name === modelName
+      (model) => model?.meta?.name?.name === modelName
     );
   }
 
@@ -87,7 +87,7 @@
           </CollapsibleSectionTitle>
         </div>
 
-        {#if showColumns}
+        {#if showColumns && entry?.meta?.name?.name}
           <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
             <ColumnProfile
               objectName={entry?.meta?.name?.name}
