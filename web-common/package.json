@@ -48,7 +48,6 @@
     "date-fns": "^2.30.0",
     "eslint": "^8.16.0",
     "eslint-config-prettier": "^8.3.0",
-    "jest": "^27.5.1",
     "litepicker": "^2.0.12",
     "luxon": "^3.4.3",
     "match-sorter": "^6.3.1",
