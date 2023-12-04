@@ -19,6 +19,8 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
   - _`athena`_ - a data store defined in Amazon Athena
   - _`postgres`_ - data stored in Postgres
   - _`sqlite`_ - data stored in SQLite
+  - _`snowflake`_ - data stored in Snowflake
+  - _`bigquery`_ - data stored in BigQuery
 
 **`uri`**
  —  the URI of the remote connector you are using for the source _(required for type: http, s3, gcs)_. Rill also supports glob patterns as part of the URI for S3 and GCS.
@@ -31,7 +33,7 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
 - _`/path/to/file.csv`_ —  the path to your file
 
 **`sql`**
-- Optionally sets the SQL query to extract data from a SQL source (DuckDB/Motherduck/Athena/BigQuery/Postrgres/SQLite) 
+- Optionally sets the SQL query to extract data from a SQL source (DuckDB/Motherduck/Athena/BigQuery/Postrgres/SQLite/Snowflake) 
 
 **`region`**
  — Optionally sets the cloud region of the bucket or Athena you want to connect to. Only available for S3 and Athena.
@@ -93,3 +95,5 @@ duckdb:
   delim: "'|'"
   columns: "columns={'FlightDate': 'DATE', 'UniqueCarrier': 'VARCHAR', 'OriginCityName': 'VARCHAR', 'DestCityName': 'VARCHAR'}"
 ```
+
+**`dsn`** - Optionally set Snowflake connection string. Refer Snowflake [docs](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) for format
