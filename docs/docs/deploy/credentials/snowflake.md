@@ -13,7 +13,7 @@ How you configure access to Snowflake depends on whether you are developing a pr
 
 ### Configure credentials for local development
 
-When developing a project locally, Rill uses the credentials passed via a source config `dsn`(Snowflake connection string) field or via `--env connector.snowflake.dsn=...` while running `rill start`. 
+When developing a project locally, Rill uses the credentials passed via a source config `dsn` (Snowflake connection string) field or via `--env connector.snowflake.dsn=...` while running `rill start`. 
 Rill uses the following [format](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) of Snowflake connection string:
 ```
 my_user_name:my_password@ac123456/my_database/my_schema?warehouse=my_warehouse&role=my_user_role
