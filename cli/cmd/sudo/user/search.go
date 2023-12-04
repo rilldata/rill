@@ -2,12 +2,11 @@ package user
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func SearchCmd(cfg *config.Config) *cobra.Command {
+func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pageSize uint32
 	var pageToken string
 
@@ -16,6 +15,7 @@ func SearchCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Search users by email pattern (use % as wildcard)",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			ctx := cmd.Context()
 
 			client, err := cmdutil.Client(cfg)
@@ -33,7 +33,10 @@ func SearchCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintUsers(res.Users)
+			err = cmdutil.PrintUsers(ch.Printer, res.Users)
+			if err != nil {
+				return err
+			}
 
 			if res.NextPageToken != "" {
 				cmd.Println()

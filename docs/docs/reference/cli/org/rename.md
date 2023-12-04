@@ -1,4 +1,5 @@
 ---
+note: GENERATED. DO NOT EDIT.
 title: rill org rename
 ---
 ## rill org rename
@@ -14,6 +15,7 @@ rill org rename [flags]
 ```
       --org string        Current Org Name
       --new-name string   New Org Name
+      --force             Force rename org without confirmation prompt
 ```
 
 ### Global flags

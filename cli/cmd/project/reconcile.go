@@ -4,15 +4,15 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func ReconcileCmd(cfg *config.Config) *cobra.Command {
+func ReconcileCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 	var refresh, reset, force bool
 	var refreshSources []string
+	cfg := ch.Config
 
 	reconcileCmd := &cobra.Command{
 		Use:               "reconcile [<project-name>]",

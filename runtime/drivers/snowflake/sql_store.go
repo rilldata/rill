@@ -7,13 +7,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
-	"github.com/apache/arrow/go/v12/arrow/memory"
-	"github.com/apache/arrow/go/v12/parquet"
-	"github.com/apache/arrow/go/v12/parquet/compress"
-	"github.com/apache/arrow/go/v12/parquet/pqarrow"
+	"github.com/apache/arrow/go/v14/arrow/memory"
+	"github.com/apache/arrow/go/v14/parquet"
+	"github.com/apache/arrow/go/v14/parquet/compress"
+	"github.com/apache/arrow/go/v14/parquet/pqarrow"
 	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -171,9 +170,6 @@ func (f *fileIterator) Next() ([]string, error) {
 		),
 		pqarrow.NewArrowWriterProperties(pqarrow.WithStoreSchema()))
 	if err != nil {
-		if strings.Contains(err.Error(), "not implemented: support for DECIMAL256") {
-			return nil, fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to STRING or NUMERIC (if loss of precision is acceptable) in the submitted query")
-		}
 		return nil, err
 	}
 	defer writer.Close()

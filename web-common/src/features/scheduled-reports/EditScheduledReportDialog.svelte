@@ -8,7 +8,6 @@
   import * as yup from "yup";
   import { Button } from "../../components/button";
   import { notifications } from "../../components/notifications";
-  import { getAbbreviationForIANA } from "../../lib/time/timezone";
   import {
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
@@ -52,12 +51,7 @@
       timeOfDay: getTimeOfDayFromCronExpression(
         reportSpec.refreshSchedule?.cron as string
       ),
-      timeZone: reportSpec.refreshSchedule?.timeZone
-        ? getAbbreviationForIANA(
-            new Date(),
-            reportSpec.refreshSchedule.timeZone
-          )
-        : "",
+      timeZone: reportSpec.refreshSchedule?.timeZone as string, // all UI-created reports have a timeZone
       exportFormat:
         reportSpec.exportFormat ?? V1ExportFormat.EXPORT_FORMAT_UNSPECIFIED,
       exportLimit: reportSpec.exportLimit === "0" ? "" : reportSpec.exportLimit,

@@ -27,7 +27,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
 
   export let metricsName: string;
-  export let view: EditorView = undefined;
+  export let view: EditorView | undefined = undefined;
 
   $: models = useModelFileNames($runtime.instanceId);
 
@@ -53,21 +53,20 @@
     const schemaResp = await queryClient.fetchQuery({
       queryKey: getConnectorServiceOLAPGetTableQueryKey({
         instanceId,
-        table: model.resource.model.state.table,
-        connector: model.resource.model.state.connector,
+        table: model?.resource?.model?.state?.table,
+        connector: model?.resource?.model?.state?.connector,
       }),
       queryFn: () =>
         connectorServiceOLAPGetTable({
           instanceId,
-          table: model.resource.model.state.table,
-          connector: model.resource.model.state.connector,
+          table: model?.resource?.model?.state?.table,
+          connector: model?.resource?.model?.state?.connector,
         }),
     });
 
-    const dashboardYAML = generateDashboardYAMLForModel(
-      modelName,
-      schemaResp.schema
-    );
+    const dashboardYAML = schemaResp?.schema
+      ? generateDashboardYAMLForModel(modelName, schemaResp?.schema)
+      : "";
 
     await runtimeServicePutFile(
       $runtime.instanceId,
@@ -86,7 +85,7 @@
     /**
      * go ahead and optimistically update the editor view.
      */
-    view.dispatch({
+    view?.dispatch({
       changes: {
         from: 0,
         to: view.state.doc.length,
@@ -117,7 +116,7 @@
      * a debounce annotation here to tell the MetricsWorkspace
      * not to debounce this update.
      */
-    view.dispatch({
+    view?.dispatch({
       changes: {
         from: 0,
         to: view.state.doc.length,
@@ -146,7 +145,7 @@
       on:escape={toggleFloatingElement}
       slot="floating-element"
     >
-      {#each $models?.data as model}
+      {#each $models?.data ?? [] as model}
         <MenuItem
           on:select={() => {
             onAutogenerateConfigFromModel(model);
