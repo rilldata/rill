@@ -14,13 +14,6 @@
     "test:watch": "npm run test -- --watch",
     "manual-publish": "./build-tools/npm_publish.sh"
   },
-  "files": [
-    "dist",
-    "build",
-    "static",
-    "package.json",
-    "package-lock.json"
-  ],
   "devDependencies": {
     "@babel/core": "^7.17.8",
     "@babel/preset-env": "^7.16.11",

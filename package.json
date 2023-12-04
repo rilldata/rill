@@ -17,16 +17,6 @@
     "clean": "rm -rf dev-project",
     "test": "npm run test -w web-common && npm run test -w web-local && npm run test -w web-auth"
   },
-  "pkg": {
-    "scripts": "web-local/dist/**/*.js",
-    "assets": [
-      "node_modules/**/*",
-      "web-local/build/**/*",
-      "web-local/dist/runtime/*",
-      "package.json",
-      "web-local/package.json"
-    ]
-  },
   "overrides": {
     "@rgossiaux/svelte-headlessui": {
       "svelte": "^4.0.0"
