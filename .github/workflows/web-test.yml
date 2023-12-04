@@ -82,7 +82,7 @@ jobs:
         run: |-
           npx prettier --check "web-local/**/*"
           npx eslint web-local --quiet
-          npx svelte-check --workspace web-local --no-tsconfig --ignore "src/routes/dev,src/routes/\(application\)/(dashboard|model|source)/[name]"
+          npx svelte-check --workspace web-local --no-tsconfig --ignore "src/routes/dev,src/routes/\(application\)/dashboard/[name]"
 
       - name: Prettier checks and lint for web admin
         if: steps.filter.outputs.admin == 'true'
