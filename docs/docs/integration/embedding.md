@@ -89,7 +89,7 @@ The response will contain an iframe URL that can be used to embed the dashboard 
 The frontend just need to use the iframeSrc to embed the dashboard in the customer's application. Here's an example of how to embed the dashboard using iframe:
 
 ```html
-<iframe src="<iframeSrc>" width="100%" height="1000" frameborder="0" ></iframe>
+<iframe title="rill-dashboard" src="<iframeSrc>" width="100%" height="1000" style="border:0;" />
 ```
 
 ### Example
@@ -97,13 +97,13 @@ Here's an example of how to create a dashboard component in a React application:
 
 ```jsx
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 
-const Dashboard = () => {
+const RillDashboard = () => {
   const [iframeUrl, setIframeUrl] = useState('');
 
   useEffect(() => {
-    const getIframeUrl = async () => {
+      const { userEmail } = useUser();
+      const getIframeUrl = async () => {
       const response = await fetch(
         `https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe`,
         {
@@ -114,7 +114,7 @@ const Dashboard = () => {
           },
           body: JSON.stringify({
             resource: '<dashboard-name>',
-            user_email: '<user-email>',
+            user_email: userEmail,
           }),
         }
       );
@@ -122,16 +122,15 @@ const Dashboard = () => {
       setIframeUrl(resp.iframeSrc);
     };
     getIframeUrl();
-  }, []);
+  }, [userEmail]);
 
   return (
-    <iframe
+    <iframe title="rill-dashboard"
       src={iframeUrl}
       width="100%"
-      height="1000"
-      frameborder="0"
-      allowfullscreen
-    ></iframe>
+      height="1000" 
+      style="border:0;"
+    />
   );
 };
 
