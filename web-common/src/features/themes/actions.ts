@@ -24,6 +24,7 @@ function setPrimaryColor(primary: V1Color) {
   const colors = copySaturationAndLightness(primary);
 
   const root = document.querySelector(ThemeBoundrySelector) as HTMLElement;
+  if (!root) return;
 
   for (let i = 0; i < TailwindColorSpacing.length; i++) {
     root.style.setProperty(
@@ -49,6 +50,7 @@ function setPrimaryColor(primary: V1Color) {
 function setSecondaryColor(secondary: V1Color, variance: number) {
   const [hue] = RGBToHSL(convertColor(secondary));
   const root = document.querySelector(ThemeBoundrySelector) as HTMLElement;
+  if (!root) return;
 
   root.style.setProperty(
     `${SecondaryCSSVariablePrefix}gradient-max`,

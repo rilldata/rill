@@ -89,8 +89,6 @@
       </div>
     {/if}
 
-    <!--    <Spinner size="24px" status={EntityStatus.Running} />-->
-
     {#if mockUserHasNoAccess}
       <div class="mb-3" />
     {:else}
