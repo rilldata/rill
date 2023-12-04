@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -257,6 +258,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				group.Go(func() error { return srv.ServeGRPC(cctx) })
 				group.Go(func() error { return srv.ServeHTTP(cctx) })
+				group.Go(func() error { return debugserver.ServeHTTP(cctx) })
 			}
 
 			// Init and run worker

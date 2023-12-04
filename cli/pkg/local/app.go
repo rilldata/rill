@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -62,13 +63,14 @@ type App struct {
 	BaseLogger            *zap.Logger
 	Version               config.Version
 	Verbose               bool
+	Debug                 bool
 	ProjectPath           string
 	observabilityShutdown observability.ShutdownFunc
 	loggerCleanUp         func()
 	activity              activity.Client
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
 	// Setup logger
 	logger, cleanupFn := initLogger(verbose, logFormat)
 	sugarLogger := logger.Sugar()
@@ -206,6 +208,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 		BaseLogger:            logger,
 		Version:               ver,
 		Verbose:               verbose,
+		Debug:                 debug,
 		ProjectPath:           projectPath,
 		observabilityShutdown: shutdown,
 		loggerCleanUp:         cleanupFn,
@@ -298,6 +301,11 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 			mux.Handle("/local/track", a.trackingHandler(inf))
 		})
 	})
+
+	// Start debug server on port 6060
+	if a.Debug {
+		group.Go(func() error { return debugserver.ServeHTTP(ctx) })
+	}
 
 	// Open the browser when health check succeeds
 	go a.pollServer(ctx, httpPort, enableUI && openBrowser)
