@@ -20,7 +20,6 @@
   import type { LeaderboardItemData } from "./leaderboard-utils";
   import ContextColumnValue from "./ContextColumnValue.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
-  import { onDestroy, onMount } from "svelte";
 
   export let dimensionName: string;
 
@@ -91,13 +90,6 @@
   const onLeave = () => {
     hovered = false;
   };
-
-  onMount(() => {
-    console.log("mounting leaderboard list item", label, measureValue);
-  });
-  onDestroy(() => {
-    console.log("destroy list item", label, measureValue);
-  });
 </script>
 
 <Tooltip location="right">
