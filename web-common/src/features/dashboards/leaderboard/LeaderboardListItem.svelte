@@ -20,6 +20,7 @@
   import type { LeaderboardItemData } from "./leaderboard-utils";
   import ContextColumnValue from "./ContextColumnValue.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
+  import { onDestroy, onMount } from "svelte";
 
   export let dimensionName: string;
 
@@ -90,6 +91,13 @@
   const onLeave = () => {
     hovered = false;
   };
+
+  onMount(() => {
+    console.log("mounting leaderboard list item", label, measureValue);
+  });
+  onDestroy(() => {
+    console.log("destroy list item", label, measureValue);
+  });
 </script>
 
 <Tooltip location="right">
@@ -138,14 +146,22 @@
         <div
           class="justify-self-end overflow-hidden ui-copy-number flex gap-x-4 items-baseline"
         >
+          <!--
+            FIXME: "local" default in svelte 4.0, remove after upgrading
+            https://github.com/sveltejs/svelte/issues/6812#issuecomment-1593551644
+          -->
           <div
             class="flex items-baseline gap-x-1"
-            in:fly={{ duration: 200, y: 4 }}
+            in:fly|local={{ duration: 200, y: 4 }}
           >
             {#if showPreviousTimeValue}
+              <!--
+              FIXME: "local" default in svelte 4.0, remove after upgrading
+              https://github.com/sveltejs/svelte/issues/6812#issuecomment-1593551644
+            -->
               <span
                 class="inline-block opacity-50"
-                transition:slideRight={{ duration: LIST_SLIDE_DURATION }}
+                transition:slideRight|local={{ duration: LIST_SLIDE_DURATION }}
               >
                 {previousValueString}
                 →
