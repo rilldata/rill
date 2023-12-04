@@ -32,14 +32,18 @@ function setPrimaryColor(primary: V1Color) {
     );
   }
 
-  root.style.setProperty(
-    `${PrimaryCSSVariablePrefix}graph-line`,
-    themeColorToHSLString(colors[TailwindColorSpacing.indexOf(600)])
-  );
-  root.style.setProperty(
-    `${PrimaryCSSVariablePrefix}area-area`,
-    themeColorToHSLString(colors[TailwindColorSpacing.indexOf(800)])
-  );
+  const [hue] = RGBToHSL(convertColor(primary));
+  const hueVal = Math.round(hue) + "";
+  [
+    "--color-primary-graph-line",
+    "--color-primary-graph-area",
+    "--color-primary-graph-scrubbing-line",
+    "--color-primary-graph-scrubbing-area",
+    "--color-primary-scrub-box",
+    "--color-primary-scrub-area-0",
+    "--color-primary-scrub-area-1",
+    "--color-primary-scrub-area-2",
+  ].forEach((cssVar) => root.style.setProperty(cssVar, hueVal));
 }
 
 function setSecondaryColor(secondary: V1Color, variance: number) {
@@ -57,9 +61,7 @@ function setSecondaryColor(secondary: V1Color, variance: number) {
 }
 
 function themeColorToHSLString([h, s, l]: ThemeColor) {
-  return `${Number.isNaN(h) ? 0 : h * 360}, ${Math.round(
-    s * 100
-  )}%, ${Math.round(l * 100)}%`;
+  return `${Number.isNaN(h) ? 0 : h}, ${Math.round(s)}%, ${Math.round(l)}%`;
 }
 
 export function copySaturationAndLightness(input: V1Color) {

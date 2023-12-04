@@ -9,46 +9,42 @@ export function convertColor(color: V1Color): ThemeColor {
 }
 
 export function RGBToHSL(rgb: ThemeColor): ThemeColor {
-  let rdif: number;
-  let gdif: number;
-  let bdif: number;
-  let h = 0;
-  let s: number;
-
   const r = rgb[0] / 255;
   const g = rgb[1] / 255;
   const b = rgb[2] / 255;
-  const v = Math.max(r, g, b);
-  const diff = v - Math.min(r, g, b);
-  const diffc = function (c: number) {
-    return (v - c) / 6 / diff + 1 / 2;
-  };
+  const min = Math.min(r, g, b);
+  const max = Math.max(r, g, b);
+  const delta = max - min;
+  let h: number;
+  let s: number;
 
-  if (diff === 0) {
+  if (max === min) {
     h = 0;
-    s = 0;
-  } else {
-    s = diff / v;
-    rdif = diffc(r);
-    gdif = diffc(g);
-    bdif = diffc(b);
-
-    if (r === v) {
-      h = bdif - gdif;
-    } else if (g === v) {
-      h = 1 / 3 + rdif - bdif;
-    } else if (b === v) {
-      h = 2 / 3 + gdif - rdif;
-    }
-
-    if (h < 0) {
-      h += 1;
-    } else if (h > 1) {
-      h -= 1;
-    }
+  } else if (r === max) {
+    h = (g - b) / delta;
+  } else if (g === max) {
+    h = 2 + (b - r) / delta;
+  } else if (b === max) {
+    h = 4 + (r - g) / delta;
   }
 
-  return [h, s, v];
+  h = Math.min(h * 60, 360);
+
+  if (h < 0) {
+    h += 360;
+  }
+
+  const l = (min + max) / 2;
+
+  if (max === min) {
+    s = 0;
+  } else if (l <= 0.5) {
+    s = delta / (max + min);
+  } else {
+    s = delta / (2 - max - min);
+  }
+
+  return [h, s * 100, l * 100];
 }
 
 const HexRegex = /[a-f0-9]{6}|[a-f0-9]{3}/i;

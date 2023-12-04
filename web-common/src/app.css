@@ -118,6 +118,7 @@
 
     /* Defaults for the theme. This will be overridden based on the selected theme.
        Should match src/features/themes/color-config.ts */
+    /* Primary colors */
     --color-primary-50: #eff6ff;
     --color-primary-100: #dbeafe;
     --color-primary-200: #bfdbfe;
@@ -130,9 +131,17 @@
     --color-primary-900: #1e3a8a;
     --color-primary-950: #172554;
 
-    --color-primary-graph-line: 224, 60%, 55%;
-    --color-primary-graph-area: 217, 70%, 80%;
+    --color-primary-graph-line: 224;
+    --color-primary-graph-area: 217;
 
+    --color-primary-graph-scrubbing-line: 217;
+    --color-primary-graph-scrubbing-area: 225;
+    --color-primary-scrub-box: 213;
+    --color-primary-scrub-area-0: 221;
+    --color-primary-scrub-area-1: 221;
+    --color-primary-scrub-area-2: 221;
+
+    /* Secondary Colors */
     --color-secondary-gradient-max: 300;
     --color-secondary-gradient-min: 1;
   }
