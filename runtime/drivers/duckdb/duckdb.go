@@ -181,6 +181,8 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 
 	go c.periodicallyEmitStats(time.Minute)
 
+	go c.periodicallyCheckConnDurations(time.Minute)
+
 	return c, nil
 }
 
@@ -290,6 +292,10 @@ type connection struct {
 	dbReopen    bool
 	dbErr       error
 	shared      bool
+	// State for maintaining connection acquire times, which enables periodically checking for hanging DuckDB queries (we have previously seen deadlocks in DuckDB).
+	connTimesMu sync.Mutex
+	nextConnID  int
+	connTimes   map[int]time.Time
 	// Cancellable context to control internal processes like emitting the stats
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -654,8 +660,17 @@ func (c *connection) acquireConn(ctx context.Context, tx bool) (*sqlx.Conn, func
 		return nil, nil, err
 	}
 
+	c.connTimesMu.Lock()
+	connID := c.nextConnID
+	c.nextConnID++
+	c.connTimes[connID] = time.Now()
+	c.connTimesMu.Unlock()
+
 	release := func() error {
 		err := conn.Close()
+		c.connTimesMu.Lock()
+		delete(c.connTimes, connID)
+		c.connTimesMu.Unlock()
 		releaseTx()
 		c.dbCond.L.Lock()
 		c.dbConnCount--
@@ -772,6 +787,29 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 		case <-c.ctx.Done():
 			statTicker.Stop()
 			return
+		}
+	}
+}
+
+// maxAcquiredConnDuration is the maximum duration a connection can be held for before we consider it potentially hanging/deadlocked.
+const maxAcquiredConnDuration = 1 * time.Hour
+
+// periodicallyCheckConnDurations periodically checks the durations of all acquired connections and logs a warning if any have been held for longer than maxAcquiredConnDuration.
+func (c *connection) periodicallyCheckConnDurations(d time.Duration) {
+	connDurationTicker := time.NewTicker(d)
+	defer connDurationTicker.Stop()
+	for {
+		select {
+		case <-c.ctx.Done():
+			connDurationTicker.Stop()
+			return
+		case <-connDurationTicker.C:
+			c.connTimesMu.Lock()
+			for connID, connTime := range c.connTimes {
+				if time.Since(connTime) > maxAcquiredConnDuration {
+					c.logger.Error("duckdb: a connection has been held for more longer than the maximum allowed duration", zap.Int("conn_id", connID), zap.Duration("duration", time.Since(connTime)))
+				}
+			}
 		}
 	}
 }
