@@ -333,16 +333,19 @@ func (q *MetricsViewTimeSeries) buildDruidSQL(args []any, mv *runtimev1.MetricsV
 func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, timezone string) string {
 	dateTruncSpecifier := "1 " + convertToDateTruncSpecifier(q.TimeGranularity)
 
-	shift := ""
-	subshift := ""
+	shift := ""    // shift to accommodate FirstDayOfWeek or FirstMonthOfYear
+	subshift := "" // shift that is slightly smaller than shift. this along with time_bucket achieves a full offset
+	trunc := ""    // truncation that maintains time zone offsets
 	if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_WEEK && mv.FirstDayOfWeek > 1 {
 		offset := 8 - mv.FirstDayOfWeek
 		shift = fmt.Sprintf("%d DAY", offset)
-		subshift = "1 HOUR"
+		subshift = fmt.Sprintf("INTERVAL %d DAY + INTERVAL 12 HOUR", offset-1)
+		trunc = "1 DAY"
 	} else if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_YEAR && mv.FirstMonthOfYear > 1 {
 		offset := 13 - mv.FirstMonthOfYear
 		shift = fmt.Sprintf("%d MONTH", offset)
-		subshift = "1 DAY"
+		subshift = fmt.Sprintf("INTERVAL %d MONTH + INTERVAL 15 DAY", offset-1)
+		trunc = "1 MONTH"
 	}
 
 	sql := ""
@@ -367,7 +370,11 @@ GROUP BY 1 ORDER BY 1`,
 		sql = fmt.Sprintf(
 			`
 SELECT
-  time_bucket(INTERVAL %[8]s, time_bucket(INTERVAL '%[1]s', %[2]s::TIMESTAMPTZ + INTERVAL %[8]s, '%[7]s') - INTERVAL %[9]s, '%[7]s') as %[3]s,
+  time_bucket(
+    INTERVAL %[10]s,
+    time_bucket(INTERVAL '%[1]s', %[2]s::TIMESTAMPTZ + INTERVAL %[8]s, '%[7]s') - (%[9]s),
+    '%[7]s'
+  ) as %[3]s,
   %[4]s
 FROM %[5]s
 WHERE %[6]s
@@ -381,6 +388,7 @@ GROUP BY 1 ORDER BY 1`,
 			timezone,                       // 7
 			shift,                          // 8
 			subshift,                       // 9
+			trunc,                          // 10
 		)
 	}
 
