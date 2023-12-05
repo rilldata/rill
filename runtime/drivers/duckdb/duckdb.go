@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	databasesql "database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -312,8 +313,13 @@ func (c *connection) Config() map[string]any {
 func (c *connection) Close() error {
 	c.cancel()
 	_ = c.registration.Unregister()
-	// detach all attached DBs otherwise duckdb leaks memory
-	c.detachAllDBs()
+
+	// Gracefully detach all databases (otherwise DuckDB may leak memory)
+	_ = c.WithConnection(context.Background(), 9000, true, false, func(ctx, ensuredCtx context.Context, conn *databasesql.Conn) error {
+		c.detachAllDBs(ctx, conn)
+		return nil
+	})
+
 	return c.db.Close()
 }
 
@@ -392,9 +398,14 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 func (c *connection) reopenDB() error {
 	// If c.db is already open, close it first
 	if c.db != nil {
-		// detach all attached DBs otherwise duckdb leaks memory
-		c.detachAllDBs()
-		err := c.db.Close()
+		// Try to detach all attached DBs (otherwise DuckDB leaks memory)
+		conn, err := c.db.Conn(context.Background())
+		if err == nil { // If it's so broken we can't get a conn, we'll just risk a leak
+			c.detachAllDBs(context.Background(), conn)
+			conn.Close()
+		}
+
+		err = c.db.Close()
 		if err != nil {
 			return err
 		}
@@ -766,7 +777,7 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 }
 
 // detachAllDBs detaches all attached dbs if external_table_storage config is true
-func (c *connection) detachAllDBs() {
+func (c *connection) detachAllDBs(ctx context.Context, conn *databasesql.Conn) {
 	if !c.config.ExtTableStorage {
 		return
 	}
@@ -790,7 +801,7 @@ func (c *connection) detachAllDBs() {
 		}
 
 		db := dbName(entry.Name(), version)
-		_, err = c.db.ExecContext(context.Background(), fmt.Sprintf("DETACH %s", safeSQLName(db)))
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("DETACH %s", safeSQLName(db)))
 		if err != nil {
 			c.logger.Error("detach failed", zap.String("db", db), zap.Error(err))
 		}
@@ -807,6 +818,13 @@ func (c *connection) logLimits(conn *sqlx.Conn) {
 	_ = row.Scan(&threads)
 
 	c.logger.Info("duckdb limits", zap.String("memory", memory), zap.String("threads", threads))
+}
+
+// fatalInternalError logs a critical internal error and exits the process.
+// This is used for errors that are completely unrecoverable.
+// Ideally, we should refactor to cleanup/reopen/rebuild so that we don't need this.
+func (c *connection) fatalInternalError(err error) {
+	c.logger.Fatal("duckdb: critical internal error", zap.Error(err))
 }
 
 // Regex to parse human-readable size returned by DuckDB
