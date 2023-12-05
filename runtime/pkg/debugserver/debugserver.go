@@ -10,9 +10,7 @@ import (
 	_ "net/http/pprof"
 )
 
-const port = 6060
-
-func ServeHTTP(ctx context.Context) error {
+func ServeHTTP(ctx context.Context, port int) error {
 	srv := &http.Server{} // An empty server will serve http.DefaultServeMux
 	return graceful.ServeHTTP(ctx, srv, port)
 }
