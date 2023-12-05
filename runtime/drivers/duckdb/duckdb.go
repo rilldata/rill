@@ -136,6 +136,7 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 		driverConfig:   cfgMap,
 		driverName:     d.name,
 		shared:         shared,
+		connTimes:      make(map[int]time.Time),
 		ctx:            ctx,
 		cancel:         cancel,
 	}
