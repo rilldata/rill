@@ -79,9 +79,14 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 			return fmt.Errorf("failed to load motherduck extension %w", err)
 		}
 
-		err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("PRAGMA MD_CONNECT('token=%s');", token)})
-		if err != nil {
-			if !strings.Contains(err.Error(), "already connected") {
+		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("SET motherduck_token='%s'", token)}); err != nil {
+			if !strings.Contains(err.Error(), "can only be set during initialization") {
+				return fmt.Errorf("failed to set motherduck token %w", err)
+			}
+		}
+
+		if err = t.to.Exec(ctx, &drivers.Statement{Query: "ATTACH 'md:'"}); err != nil {
+			if !strings.Contains(err.Error(), "already attached") {
 				return fmt.Errorf("failed to connect to motherduck %w", err)
 			}
 		}
