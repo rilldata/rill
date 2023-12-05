@@ -97,12 +97,13 @@ Here's an example of how to create a dashboard component in a React application:
 
 ```jsx
 import React, { useEffect, useState } from 'react';
+import { useUser } from '../hooks/useUser';
 
 const RillDashboard = () => {
   const [iframeUrl, setIframeUrl] = useState('');
-
+  const { userEmail } = useUser();
+    
   useEffect(() => {
-      const { userEmail } = useUser();
       const getIframeUrl = async () => {
       const response = await fetch(
         `https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe`,
