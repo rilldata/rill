@@ -103,13 +103,24 @@ async function invalidateResource(
 
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
-    // eslint-disable-next-line no-fallthrough
+      if (resource.source?.state?.table)
+        // make sure table is populated
+        return invalidateProfilingQueries(
+          queryClient,
+          resource.meta.name.name,
+          failed
+        );
+      break;
+
     case ResourceKind.Model:
-      return invalidateProfilingQueries(
-        queryClient,
-        resource.meta.name.name,
-        failed
-      );
+      if (resource.model?.state?.table)
+        // make sure table is populated
+        return invalidateProfilingQueries(
+          queryClient,
+          resource.meta.name.name,
+          failed
+        );
+      break;
 
     case ResourceKind.MetricsView:
       return invalidateMetricsViewData(
@@ -132,16 +143,17 @@ async function invalidateRemovedResource(
     })
   );
   resourcesStore.deleteResource(resource);
+  // cancel queries to make sure any pending
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:
-      queryClient.removeQueries({
+      queryClient.cancelQueries({
         predicate: (query) => isProfilingQuery(query, resource.meta.name.name),
       });
       break;
 
     case ResourceKind.MetricsView:
-      queryClient.removeQueries({
+      queryClient.cancelQueries({
         predicate: (query) =>
           invalidationForMetricsViewData(query, resource.meta.name.name),
       });
