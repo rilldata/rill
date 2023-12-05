@@ -102,7 +102,7 @@ import { useUser } from '../hooks/useUser';
 const RillDashboard = () => {
   const [iframeUrl, setIframeUrl] = useState('');
   const { userEmail } = useUser();
-    
+
   useEffect(() => {
       const getIframeUrl = async () => {
       const response = await fetch(
