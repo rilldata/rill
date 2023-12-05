@@ -3,6 +3,7 @@ package queries_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -145,10 +146,6 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
 		},
-		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: timestamppb.New(maxTime),
-			End:   ctr.Result.Max,
-		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "dom",
@@ -157,13 +154,23 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 			},
 		},
 		Limit: 250,
+		MeasureFilter: &runtimev1.MeasureFilter{
+			Entry: &runtimev1.MeasureFilter_MeasureFilterEntry{
+				MeasureFilterEntry: &runtimev1.MeasureFilterEntry{
+					Measure:    &runtimev1.MetricsViewAggregationMeasure{Name: "measure_1"},
+					Expression: " > 3.25",
+				},
+			},
+		},
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
+	require.Len(t, q.Result.Rows, 3)
 	require.NotEmpty(t, "sports.yahoo.com", q.Result.Rows[0].DimensionValue)
-	require.NotEmpty(t, "news.yahoo.com", q.Result.Rows[1].DimensionValue)
+	require.NotEmpty(t, "news.google.com", q.Result.Rows[1].DimensionValue)
+	require.NotEmpty(t, "instagram.com", q.Result.Rows[2].DimensionValue)
 }
 
 func TestMetricsViewsComparison_measure_order(t *testing.T) {
@@ -214,6 +221,59 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
+	require.NotEmpty(t, "facebook.com", q.Result.Rows[0].DimensionValue)
+	require.NotEmpty(t, "msn.com", q.Result.Rows[1].DimensionValue)
+}
+
+func TestMetricsViewsComparison_measure_filters(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	ctr := &queries.ColumnTimeRange{
+		TableName:  "ad_bids",
+		ColumnName: "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
+	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView()
+
+	q := &queries.MetricsViewComparison{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		MetricsView: mv.Spec,
+		TimeRange: &runtimev1.TimeRange{
+			Start: ctr.Result.Min,
+			End:   timestamppb.New(maxTime),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(maxTime),
+			End:   ctr.Result.Max,
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name: "measure_1",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Desc: true,
+			},
+		},
+		Limit: 250,
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fmt.Println(q.Result.Rows)
 	require.NotEmpty(t, "facebook.com", q.Result.Rows[0].DimensionValue)
 	require.NotEmpty(t, "msn.com", q.Result.Rows[1].DimensionValue)
 }

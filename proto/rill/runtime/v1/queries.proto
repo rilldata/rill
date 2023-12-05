@@ -479,6 +479,37 @@ message MetricsViewTimeRangeResponse {
   TimeRangeSummary time_range_summary = 1;
 }
 
+message MeasureFilter {
+  oneof entry {
+    MeasureFilterEntry MeasureFilterEntry = 1;
+    MeasureFilterExpression MeasureFilterExpression = 2;
+  }
+}
+
+message MeasureFilterEntry {
+  enum ColumnType {
+    COLUMN_TYPE_UNSPECIFIED = 0;
+    COLUMN_TYPE_PREVIOUS = 1;
+    COLUMN_TYPE_DELTA_ABSOLUTE = 2;
+    COLUMN_TYPE_DELTA_RELATIVE = 3;
+  }
+
+  MetricsViewAggregationMeasure measure = 1;
+  string expression = 2;
+  ColumnType column_type = 3;
+}
+
+message MeasureFilterExpression {
+  enum Joiner {
+    JOINER_UNSPECIFIED = 0;
+    JOINER_OR = 2;
+    JOINER_AND = 3;
+  }
+
+  repeated MeasureFilter entries = 1;
+  Joiner joiner = 2;
+}
+
 // **********
 // Profiling APIs
 // **********

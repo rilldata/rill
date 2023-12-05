@@ -6,15 +6,14 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	// Load IANA time zone data
+	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
 )
 
 type MetricsViewComparison struct {
@@ -30,6 +29,7 @@ type MetricsViewComparison struct {
 	MetricsView         *runtimev1.MetricsViewSpec                 `json:"-"`
 	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity       `json:"security"`
 	Exact               bool                                       `json:"exact"`
+	MeasureFilter       *runtimev1.MeasureFilter                   `json:"measure_filter,omitempty"`
 
 	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
 }
@@ -301,6 +301,15 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		args = append(args, clauseArgs...)
 	}
 
+	havingClause := ""
+	if q.MeasureFilter != nil {
+		havingClause, err = buildHavingClause(q.MeasureFilter, mv)
+		if err != nil {
+			return "", nil, err
+		}
+		havingClause = "HAVING " + havingClause
+	}
+
 	orderClause := "true"
 	for _, s := range q.Sort {
 		if s.Name == q.DimensionName {
@@ -337,7 +346,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	if export {
 		labelSelectClause := strings.Join(labelCols, ", ")
 		sql = fmt.Sprintf(
-			`SELECT %[9]s FROM (SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d)`,
+			`SELECT %[9]s FROM (SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s %[10]s ORDER BY %[5]s %[6]s OFFSET %[7]d)`,
 			selectClause,       // 1
 			groupByCol,         // 2
 			safeName(mv.Table), // 3
@@ -347,10 +356,11 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 			q.Offset,           // 7
 			unnestClause,       // 8
 			labelSelectClause,  // 9
+			havingClause,       // 10
 		)
 	} else {
 		sql = fmt.Sprintf(
-			`SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d`,
+			`SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s %[9]s ORDER BY %[5]s %[6]s OFFSET %[7]d`,
 			selectClause,       // 1
 			groupByCol,         // 2
 			safeName(mv.Table), // 3
@@ -359,8 +369,10 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 			limitClause,        // 6
 			q.Offset,           // 7
 			unnestClause,       // 8
+			havingClause,       // 9
 		)
 	}
+	fmt.Println(sql, args)
 
 	return sql, args, nil
 }
@@ -742,6 +754,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			finalDimName,        // 14
 		)
 	}
+	fmt.Println(sql, args)
 
 	return sql, args, nil
 }
@@ -958,4 +971,43 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {
 
 func isTimeRangeNil(tr *runtimev1.TimeRange) bool {
 	return tr == nil || (tr.Start == nil && tr.End == nil)
+}
+
+func buildHavingClause(filter *runtimev1.MeasureFilter, mv *runtimev1.MetricsViewSpec) (string, error) {
+	sql := ""
+	switch e := filter.Entry.(type) {
+	case *runtimev1.MeasureFilter_MeasureFilterEntry:
+		switch e.MeasureFilterEntry.Measure.BuiltinMeasure {
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
+			expr, err := metricsViewMeasureExpression(mv, e.MeasureFilterEntry.Measure.Name)
+			if err != nil {
+				return "", err
+			}
+			sql = expr + e.MeasureFilterEntry.Expression
+			// TODO: comparison
+
+			// TODO: others
+		}
+
+	case *runtimev1.MeasureFilter_MeasureFilterExpression:
+		exprs := make([]string, len(e.MeasureFilterExpression.Entries))
+		for i, e := range e.MeasureFilterExpression.Entries {
+			expr, err := buildHavingClause(e, mv)
+			if err != nil {
+				return "", err
+			}
+			exprs[i] = expr
+		}
+		joiner := ""
+		switch e.MeasureFilterExpression.Joiner {
+		case runtimev1.MeasureFilterExpression_JOINER_UNSPECIFIED:
+		case runtimev1.MeasureFilterExpression_JOINER_OR:
+			joiner = " OR "
+		case runtimev1.MeasureFilterExpression_JOINER_AND:
+			joiner = " AND "
+		}
+		sql = strings.Join(exprs, joiner)
+	}
+
+	return sql, nil
 }

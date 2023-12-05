@@ -7159,6 +7159,466 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewTimeRangeResponseValidationError{}
 
+// Validate checks the field values on MeasureFilter with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *MeasureFilter) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MeasureFilter with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in MeasureFilterMultiError, or
+// nil if none found.
+func (m *MeasureFilter) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MeasureFilter) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	switch v := m.Entry.(type) {
+	case *MeasureFilter_MeasureFilterEntry:
+		if v == nil {
+			err := MeasureFilterValidationError{
+				field:  "Entry",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMeasureFilterEntry()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MeasureFilterValidationError{
+						field:  "MeasureFilterEntry",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MeasureFilterValidationError{
+						field:  "MeasureFilterEntry",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMeasureFilterEntry()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MeasureFilterValidationError{
+					field:  "MeasureFilterEntry",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *MeasureFilter_MeasureFilterExpression:
+		if v == nil {
+			err := MeasureFilterValidationError{
+				field:  "Entry",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetMeasureFilterExpression()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MeasureFilterValidationError{
+						field:  "MeasureFilterExpression",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MeasureFilterValidationError{
+						field:  "MeasureFilterExpression",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetMeasureFilterExpression()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MeasureFilterValidationError{
+					field:  "MeasureFilterExpression",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return MeasureFilterMultiError(errors)
+	}
+
+	return nil
+}
+
+// MeasureFilterMultiError is an error wrapping multiple validation errors
+// returned by MeasureFilter.ValidateAll() if the designated constraints
+// aren't met.
+type MeasureFilterMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MeasureFilterMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MeasureFilterMultiError) AllErrors() []error { return m }
+
+// MeasureFilterValidationError is the validation error returned by
+// MeasureFilter.Validate if the designated constraints aren't met.
+type MeasureFilterValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MeasureFilterValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MeasureFilterValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MeasureFilterValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MeasureFilterValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MeasureFilterValidationError) ErrorName() string { return "MeasureFilterValidationError" }
+
+// Error satisfies the builtin error interface
+func (e MeasureFilterValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMeasureFilter.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MeasureFilterValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MeasureFilterValidationError{}
+
+// Validate checks the field values on MeasureFilterEntry with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MeasureFilterEntry) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MeasureFilterEntry with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MeasureFilterEntryMultiError, or nil if none found.
+func (m *MeasureFilterEntry) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MeasureFilterEntry) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetMeasure()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MeasureFilterEntryValidationError{
+					field:  "Measure",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MeasureFilterEntryValidationError{
+					field:  "Measure",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMeasure()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MeasureFilterEntryValidationError{
+				field:  "Measure",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for Expression
+
+	// no validation rules for ColumnType
+
+	if len(errors) > 0 {
+		return MeasureFilterEntryMultiError(errors)
+	}
+
+	return nil
+}
+
+// MeasureFilterEntryMultiError is an error wrapping multiple validation errors
+// returned by MeasureFilterEntry.ValidateAll() if the designated constraints
+// aren't met.
+type MeasureFilterEntryMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MeasureFilterEntryMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MeasureFilterEntryMultiError) AllErrors() []error { return m }
+
+// MeasureFilterEntryValidationError is the validation error returned by
+// MeasureFilterEntry.Validate if the designated constraints aren't met.
+type MeasureFilterEntryValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MeasureFilterEntryValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MeasureFilterEntryValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MeasureFilterEntryValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MeasureFilterEntryValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MeasureFilterEntryValidationError) ErrorName() string {
+	return "MeasureFilterEntryValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MeasureFilterEntryValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMeasureFilterEntry.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MeasureFilterEntryValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MeasureFilterEntryValidationError{}
+
+// Validate checks the field values on MeasureFilterExpression with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MeasureFilterExpression) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MeasureFilterExpression with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MeasureFilterExpressionMultiError, or nil if none found.
+func (m *MeasureFilterExpression) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MeasureFilterExpression) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetEntries() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MeasureFilterExpressionValidationError{
+						field:  fmt.Sprintf("Entries[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MeasureFilterExpressionValidationError{
+						field:  fmt.Sprintf("Entries[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MeasureFilterExpressionValidationError{
+					field:  fmt.Sprintf("Entries[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for Joiner
+
+	if len(errors) > 0 {
+		return MeasureFilterExpressionMultiError(errors)
+	}
+
+	return nil
+}
+
+// MeasureFilterExpressionMultiError is an error wrapping multiple validation
+// errors returned by MeasureFilterExpression.ValidateAll() if the designated
+// constraints aren't met.
+type MeasureFilterExpressionMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MeasureFilterExpressionMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MeasureFilterExpressionMultiError) AllErrors() []error { return m }
+
+// MeasureFilterExpressionValidationError is the validation error returned by
+// MeasureFilterExpression.Validate if the designated constraints aren't met.
+type MeasureFilterExpressionValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MeasureFilterExpressionValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MeasureFilterExpressionValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MeasureFilterExpressionValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MeasureFilterExpressionValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MeasureFilterExpressionValidationError) ErrorName() string {
+	return "MeasureFilterExpressionValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MeasureFilterExpressionValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMeasureFilterExpression.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MeasureFilterExpressionValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MeasureFilterExpressionValidationError{}
+
 // Validate checks the field values on ColumnRollupIntervalRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
