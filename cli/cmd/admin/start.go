@@ -40,7 +40,7 @@ type Config struct {
 	Jobs                     []string               `split_words:"true"`
 	HTTPPort                 int                    `default:"8080" split_words:"true"`
 	GRPCPort                 int                    `default:"9090" split_words:"true"`
-	DebugPort                int                    `default:"6060" split_words:"true"`
+	DebugPort                int                    `split_words:"true"`
 	LogLevel                 zapcore.Level          `default:"info" split_words:"true"`
 	MetricsExporter          observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter           observability.Exporter `default:"" split_words:"true"`
