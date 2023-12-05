@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import { fly, slide } from "svelte/transition";
   import BarAndLabel from "../../../components/BarAndLabel.svelte";
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
@@ -83,16 +82,13 @@
       message: `copied dimension value "${truncatedLabel}" to clipboard`,
     });
   }
-  const dispatch = createEventDispatcher();
 
   let hovered = false;
   const onHover = () => {
     hovered = true;
-    dispatch("focus");
   };
   const onLeave = () => {
     hovered = false;
-    dispatch("blur");
   };
 </script>
 
@@ -142,14 +138,22 @@
         <div
           class="justify-self-end overflow-hidden ui-copy-number flex gap-x-4 items-baseline"
         >
+          <!--
+            FIXME: "local" default in svelte 4.0, remove after upgrading
+            https://github.com/sveltejs/svelte/issues/6812#issuecomment-1593551644
+          -->
           <div
             class="flex items-baseline gap-x-1"
-            in:fly={{ duration: 200, y: 4 }}
+            in:fly|local={{ duration: 200, y: 4 }}
           >
             {#if showPreviousTimeValue}
+              <!--
+              FIXME: "local" default in svelte 4.0, remove after upgrading
+              https://github.com/sveltejs/svelte/issues/6812#issuecomment-1593551644
+            -->
               <span
                 class="inline-block opacity-50"
-                transition:slideRight={{ duration: LIST_SLIDE_DURATION }}
+                transition:slideRight|local={{ duration: LIST_SLIDE_DURATION }}
               >
                 {previousValueString}
                 →
