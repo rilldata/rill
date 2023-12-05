@@ -270,8 +270,9 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	c.logger.Info("create table", zap.String("name", name), zap.Bool("view", view))
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s\n)", safeSQLName(name), sql),
-			Priority: 1,
+			Query:       fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s\n)", safeSQLName(name), sql),
+			Priority:    1,
+			LongRunning: true,
 		})
 	}
 	if !c.config.ExtTableStorage {
@@ -342,8 +343,9 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 	c.logger.Info("drop table", zap.String("name", name), zap.Bool("view", view))
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name)),
-			Priority: 100,
+			Query:       fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name)),
+			Priority:    100,
+			LongRunning: true,
 		})
 	}
 	if !c.config.ExtTableStorage {
@@ -534,12 +536,11 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(oldName), safeSQLName(newName)),
 			Priority:    100,
-			LongRunning: !view,
+			LongRunning: true,
 		})
 	}
 
-	longRunning := !(view && existing.View)
-	return c.WithConnection(ctx, 100, longRunning, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
+	return c.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
 		// The newName may currently be occupied by a name of another type than oldName.
 		var existingTyp string
 		if existing.View {
@@ -716,7 +717,7 @@ func (c *connection) convertToEnum(ctx context.Context, table, col string) error
 	if switchErr != nil {
 		c.logger.Error("failed switch db to main, reopening db", zap.Error(switchErr))
 		// if switching to main fails all subsequent queries would fail so we reopen db
-		_ = c.reopenDB()
+		_ = c.reopenDB() // TODO: NOT SAFE!
 	}
 
 	if err != nil {

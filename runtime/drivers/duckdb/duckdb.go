@@ -770,11 +770,13 @@ func (c *connection) detachAllDBs() {
 	if !c.config.ExtTableStorage {
 		return
 	}
+
 	entries, err := os.ReadDir(c.config.ExtStoragePath)
 	if err != nil {
 		c.logger.Error("unable to read ExtStoragePath", zap.String("path", c.config.ExtStoragePath), zap.Error(err))
 		return
 	}
+
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
