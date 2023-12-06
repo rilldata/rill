@@ -252,7 +252,7 @@
         stroke-width={strokeWidth}
       />
     </g>
-    <g on:mouseup={() => onMouseUp()} opacity={isScrubbing ? "0.4" : "0.2"}>
+    <g role="presentation" on:mouseup={() => onMouseUp()} opacity={isScrubbing ? "0.4" : "0.2"}>
       <rect
         class:rect-shadow={isScrubbing}
         x={Math.min(xStart, xEnd)}

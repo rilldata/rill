@@ -53,6 +53,7 @@
 
 <ModalContainer on:cancel {focusTriggerOnClose}>
   <div
+    role="presentation"
     class="grid place-items-center w-screen h-screen"
     on:mousedown|self={() => {
       dispatch("cancel");

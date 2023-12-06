@@ -44,6 +44,7 @@
     {#if $inspectorLayout.visible}
       <Portal>
         <div
+          role="separator"
           class="fixed drawer-handler w-4 hover:cursor-col-resize translate-x-2 h-screen"
           style:right="{$visibilityTween * $inspectorWidth}px"
           style:top="var(--header-height)"

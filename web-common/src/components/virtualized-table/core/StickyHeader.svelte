@@ -72,6 +72,8 @@
     <slot />
     {#if enableResize}
       <div
+        role="columnheader"
+        tabindex="0"
         use:dragTableCell
         on:resize
         on:dblclick={() => {

@@ -59,6 +59,7 @@ Otherwise, the page will jump around as the data is fetched.
 </script>
 
 <div
+  role="group"
   on:mouseleave={() => {
     focusPoint = undefined;
   }}

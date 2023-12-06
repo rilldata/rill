@@ -19,7 +19,7 @@
   import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
   import { createEventDispatcher } from "svelte";
   import { lastKnownPosition } from "./time-dimension-data-store";
-  import type { TableData, TablePosition, TDDComparison } from "./types";
+  import type { TDDComparison, TableData, TablePosition } from "./types";
 
   export let dimensionLabel: string;
   export let measureLabel: string;
@@ -355,6 +355,8 @@
 </script>
 
 <div
+  role="grid"
+  tabindex="0"
   on:mouseleave={resetHighlight}
   style:height={comparing === "none" ? "80px" : "calc(100% - 50px)"}
   style={cssVarStyles}

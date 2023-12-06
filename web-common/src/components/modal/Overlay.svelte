@@ -6,6 +6,7 @@
 </script>
 
 <div
+  role="presentation"
   transition:fade|global={{ duration: 100 }}
   bind:this={element}
   part="overlay"

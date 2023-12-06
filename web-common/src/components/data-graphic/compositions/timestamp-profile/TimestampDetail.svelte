@@ -300,6 +300,7 @@
   />
   <Tooltip location="right" alignment="center" distance={32}>
     <svg
+      role="img"
       {width}
       {height}
       style:cursor={setCursor($isZooming, $isScrolling)}
@@ -429,6 +430,8 @@
       <!-- scrub-clearing click region -->
       {#if zoomedXStart && zoomedXEnd}
         <text
+          role="button"
+          tabindex=0
           font-size={fontSize}
           x={$plotConfig.plotRight}
           y={fontSize}

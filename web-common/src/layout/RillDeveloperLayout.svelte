@@ -72,6 +72,7 @@
   <SourceImportedModal open={!!$sourceImportedName} />
 
   <div
+    role="application"
     class="index-body absolute w-screen h-screen"
     on:dragenter|preventDefault|stopPropagation
     on:dragleave|preventDefault|stopPropagation

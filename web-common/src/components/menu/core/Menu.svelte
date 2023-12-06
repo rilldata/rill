@@ -128,6 +128,8 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div
+  role="menu"
+  tabindex="0"
   style:max-width={maxWidth}
   style:min-height={minHeight}
   style:max-height={maxHeight}
