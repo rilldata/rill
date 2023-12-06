@@ -811,6 +811,7 @@ func (c *connection) periodicallyCheckConnDurations(d time.Duration) {
 					c.logger.Error("duckdb: a connection has been held for more longer than the maximum allowed duration", zap.Int("conn_id", connID), zap.Duration("duration", time.Since(connTime)))
 				}
 			}
+			c.connTimesMu.Unlock()
 		}
 	}
 }
