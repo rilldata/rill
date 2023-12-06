@@ -143,7 +143,8 @@ async function invalidateRemovedResource(
     })
   );
   resourcesStore.deleteResource(resource);
-  // cancel queries to make sure any pending
+  // cancel queries to make sure any pending requests are cancelled.
+  // There could still be some errors because of the race condition between a view/table deleted and we getting the event
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:
