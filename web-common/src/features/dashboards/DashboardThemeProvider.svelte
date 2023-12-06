@@ -11,11 +11,8 @@
   $: themeFromUrl = $page.url.searchParams.get("theme");
 
   let theme: ReturnType<typeof useTheme>;
-  $: if (themeFromUrl || $metaQuery.data?.defaultTheme)
-    theme = useTheme(
-      $runtime.instanceId,
-      themeFromUrl ?? $metaQuery.data?.defaultTheme
-    );
+  $: themeName = themeFromUrl ?? $metaQuery.data?.defaultTheme;
+  $: if (themeName) theme = useTheme($runtime.instanceId, themeName);
 
   $: if ($theme?.data?.theme) {
     setTheme($theme.data.theme);

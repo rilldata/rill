@@ -1,6 +1,6 @@
 import {
   HexToHSL,
-  ThemeColor,
+  HSLColor,
 } from "@rilldata/web-common/features/themes/color-utils";
 
 export const TailwindColorSpacing = [
@@ -9,7 +9,7 @@ export const TailwindColorSpacing = [
 
 // should match web-common/src/app.css
 // storing the HSL values to easily swap just the Hue from the theme config
-export const DefaultPrimaryColors: Array<ThemeColor> = [
+export const DefaultPrimaryColors: Array<HSLColor> = [
   HexToHSL("eff6ff"), // 50
   HexToHSL("dbeafe"), // 100
   HexToHSL("bfdbfe"), // 200

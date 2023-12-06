@@ -1,21 +1,22 @@
 import type { V1Color } from "@rilldata/web-common/runtime-client";
 
-export type ThemeColor = [number, number, number];
+export type HSLColor = [number, number, number];
+export type RGBColor = [number, number, number];
 
-export function convertColor(color: V1Color): ThemeColor {
+export function convertColor(color: V1Color): RGBColor {
   return [color.red ?? 0, color.green ?? 0, color.blue ?? 0].map(
     (c) => c * 256
-  ) as ThemeColor;
+  ) as RGBColor;
 }
 
-export function RGBToHSL(rgb: ThemeColor): ThemeColor {
+export function RGBToHSL(rgb: RGBColor): HSLColor {
   const r = rgb[0] / 255;
   const g = rgb[1] / 255;
   const b = rgb[2] / 255;
   const min = Math.min(r, g, b);
   const max = Math.max(r, g, b);
   const delta = max - min;
-  let h: number;
+  let h = 0;
   let s: number;
 
   if (max === min) {
@@ -48,7 +49,7 @@ export function RGBToHSL(rgb: ThemeColor): ThemeColor {
 }
 
 const HexRegex = /[a-f0-9]{6}|[a-f0-9]{3}/i;
-export function HexToRGB(hex: string): ThemeColor {
+export function HexToRGB(hex: string): RGBColor {
   const match = (hex as any).toString(16).match(HexRegex);
   if (!match) {
     return [0, 0, 0];
@@ -73,6 +74,6 @@ export function HexToRGB(hex: string): ThemeColor {
   return [r, g, b];
 }
 
-export function HexToHSL(hex: string): ThemeColor {
+export function HexToHSL(hex: string): HSLColor {
   return RGBToHSL(HexToRGB(hex));
 }
