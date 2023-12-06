@@ -3,23 +3,31 @@
   import Home from "@rilldata/web-common/components/icons/Home.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import ViewAsUserChip from "../../features/view-as-user/ViewAsUserChip.svelte";
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
+  import { useDashboardV2 } from "../dashboards/listing/dashboards";
+  import { timeAgo } from "../dashboards/listing/utils";
   import ShareDashboardButton from "../dashboards/share/ShareDashboardButton.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
   import { isDashboardPage, isProjectPage } from "./nav-utils";
 
+  const user = createAdminServiceGetCurrentUser();
+
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+  $: dashboardName = $page.params.dashboard;
+
   $: onProjectPage = isProjectPage($page);
   $: onDashboardPage = isDashboardPage($page);
 
-  const user = createAdminServiceGetCurrentUser();
+  $: dashboard = useDashboardV2($runtime?.instanceId, dashboardName);
+  $: lastRefreshedDate = new Date($dashboard.data.refreshedOn);
 </script>
 
 <div
@@ -55,6 +63,11 @@
       <ShareProjectButton {organization} {project} />
     {/if}
     {#if onDashboardPage}
+      {#if lastRefreshedDate}
+        <div class="text-[11px] text-gray-600">
+          Last refreshed {timeAgo(lastRefreshedDate)}
+        </div>
+      {/if}
       <ShareDashboardButton />
     {/if}
     {#if $user.isSuccess}

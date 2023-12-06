@@ -253,3 +253,31 @@ export function useDashboardsV2(
     },
   });
 }
+
+export function useDashboardV2(
+  instanceId: string,
+  name: string
+): CreateQueryResult<DashboardResource> {
+  return createRuntimeServiceListResources(instanceId, undefined, {
+    query: {
+      enabled: !!instanceId && !!name,
+      select: (data) => {
+        const dashboard = data.resources.find(
+          (res) => res.meta.name.name === name
+        );
+
+        // Extract table name from dashboard metadata
+        const refName = dashboard.meta.refs[0];
+        const refTable = data.resources.find(
+          (r) => r.meta?.name?.name === refName?.name
+        );
+
+        // Add the "refreshedOn" attribute
+        const refreshedOn =
+          refTable?.model?.state.refreshedOn ||
+          refTable?.source?.state.refreshedOn;
+        return { resource: dashboard, refreshedOn };
+      },
+    },
+  });
+}
