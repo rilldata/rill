@@ -4,7 +4,7 @@
     createAdminServiceGetProject,
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
-  import { getDashboardsForProject } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
+  import { getDashboardsForProject } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import ProjectErrored from "@rilldata/web-admin/features/projects/ProjectErrored.svelte";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";

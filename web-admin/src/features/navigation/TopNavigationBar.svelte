@@ -9,7 +9,7 @@
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
-  import { useDashboardV2 } from "../dashboards/listing/dashboards";
+  import { useDashboardV2 } from "../dashboards/listing/selectors";
   import { timeAgo } from "../dashboards/listing/utils";
   import ShareDashboardButton from "../dashboards/share/ShareDashboardButton.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
