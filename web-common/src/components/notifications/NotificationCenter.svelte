@@ -7,12 +7,12 @@
 
 {#key $notificationStore.id}
   {#if $notificationStore.id}
-    {#if $notificationStore.options.persisted}
+    {#if $notificationStore?.options?.persisted}
       <PersistedNotification on:clear={() => notificationStore.clear()}>
         <div slot="title">{$notificationStore.message}</div>
         <div slot="body">{$notificationStore.detail}</div>
       </PersistedNotification>
-    {:else if $notificationStore.options.persistedLink}
+    {:else if $notificationStore?.options?.persistedLink && $notificationStore.link}
       <PersistedLinkNotification
         message={$notificationStore.message}
         link={$notificationStore.link}

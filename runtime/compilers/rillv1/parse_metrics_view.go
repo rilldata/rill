@@ -199,7 +199,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	if tmp.DefaultTimeRange != "" {
-		_, err := duration.ParseISO8601(tmp.DefaultTimeRange)
+		_, err := parseISO8601(tmp.DefaultTimeRange)
 		if err != nil {
 			return fmt.Errorf(`invalid "default_time_range": %w`, err)
 		}
@@ -289,19 +289,19 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 	if tmp.AvailableTimeRanges != nil {
 		for _, r := range tmp.AvailableTimeRanges {
-			_, err := duration.ParseISO8601(r.Range)
+			_, err := parseISO8601(r.Range)
 			if err != nil {
 				return fmt.Errorf("invalid range in available_time_ranges: %w", err)
 			}
 
 			for _, o := range r.ComparisonOffsets {
-				_, err := duration.ParseISO8601(o.Offset)
+				_, err := parseISO8601(o.Offset)
 				if err != nil {
 					return fmt.Errorf("invalid offset in comparison_offsets: %w", err)
 				}
 
 				if o.Range != "" {
-					_, err := duration.ParseISO8601(o.Range)
+					_, err := parseISO8601(o.Range)
 					if err != nil {
 						return fmt.Errorf("invalid range in comparison_offsets: %w", err)
 					}
@@ -523,4 +523,20 @@ func parseTimeGrain(s string) (runtimev1.TimeGrain, error) {
 	default:
 		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, fmt.Errorf("invalid time grain %q", s)
 	}
+}
+
+// parseISO8601 is a wrapper around duration.ParseISO8601 that disallows grains < minute
+func parseISO8601(isoDuration string) (duration.Duration, error) {
+	d, err := duration.ParseISO8601(isoDuration)
+	if err != nil {
+		return d, err
+	}
+
+	if sd, ok := d.(duration.StandardDuration); ok {
+		if sd.Second != 0 {
+			return sd, fmt.Errorf("durations with seconds is not supported")
+		}
+	}
+
+	return d, nil
 }

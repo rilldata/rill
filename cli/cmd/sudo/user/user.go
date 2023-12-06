@@ -11,6 +11,7 @@ func UserCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "Manage users",
 	}
 
+	userCmd.AddCommand(ListCmd(ch))
 	userCmd.AddCommand(SearchCmd(ch))
 	userCmd.AddCommand(AssumeCmd(ch))
 	userCmd.AddCommand(UnassumeCmd(ch))

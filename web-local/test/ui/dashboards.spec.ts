@@ -203,11 +203,11 @@ test.describe("dashboard", () => {
       .click();
 
     /*
-      There is a bug where if you programmatically click the Time Range Selector button right after clicking the "Last Period" menu item,
+      There is a bug where if you programmatically click the Time Range Selector button right after clicking the "Previous Period" menu item,
       the comparison menu closes, the time range menu opens, and then the comparison menu opens again. You can reproduce with a script like this in console
       after opening up comparison menu when "no comparison" is selected:
       (() => {
-        document.evaluate("//button[contains(., 'last period')]", document, null, XPathResult.ANY_TYPE, null ).iterateNext().click();
+        document.evaluate("//button[contains(., 'previous period')]", document, null, XPathResult.ANY_TYPE, null ).iterateNext().click();
         document.querySelector('[aria-label="Select time range"]').click();
       })()
 

@@ -168,9 +168,13 @@ available_time_ranges:
     await page.getByLabel("Select time comparison option").click();
     // Assert the options available
     await Promise.all(
-      ["Last Period", "Previous day", "Previous week", "Previous month"].map(
-        (label) =>
-          expect(page.getByRole("menuitem", { name: label })).toBeVisible()
+      [
+        "Previous Period",
+        "Previous day",
+        "Previous week",
+        "Previous month",
+      ].map((label) =>
+        expect(page.getByRole("menuitem", { name: label })).toBeVisible()
       )
     );
     // Select Previous week
@@ -195,12 +199,12 @@ available_time_ranges:
     await page.getByLabel("Select time comparison option").click();
     // Assert the options available
     await Promise.all(
-      ["Last Period", "Previous week"].map((label) =>
+      ["Previous Period", "Previous week"].map((label) =>
         expect(page.getByRole("menuitem", { name: label })).toBeVisible()
       )
     );
     // Select Last 6 hours
-    await page.getByRole("menuitem", { name: "Last Period" }).click();
+    await page.getByRole("menuitem", { name: "Previous Period" }).click();
     // Wait for time range menu to close
     await expect(
       page.getByRole("menu", { name: "Time comparison selector" })

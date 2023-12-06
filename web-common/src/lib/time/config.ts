@@ -335,6 +335,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,
     label: "minute",
     duration: Period.MINUTE,
+    d3format: "%M:%S",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -347,6 +348,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_HOUR,
     label: "hour",
     duration: Period.HOUR,
+    d3format: "%H:%M",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -358,6 +360,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_DAY,
     label: "day",
     duration: Period.DAY,
+    d3format: "%b %d",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -368,6 +371,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_WEEK,
     label: "week",
     duration: Period.WEEK,
+    d3format: "%b %d",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -378,6 +382,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_MONTH,
     label: "month",
     duration: Period.MONTH,
+    d3format: "%b '%y",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -387,6 +392,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_QUARTER,
     label: "quarter",
     duration: Period.QUARTER,
+    d3format: "%b '%y",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -396,6 +402,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_YEAR,
     label: "year",
     duration: Period.YEAR,
+    d3format: "%Y",
     formatDate: {
       year: "numeric",
     },
@@ -405,7 +412,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
 /** The default configurations for time comparisons. */
 export const TIME_COMPARISON = {
   [TimeComparisonOption.CONTIGUOUS]: {
-    label: "Last period",
+    label: "Previous period",
     shorthand: "prev. period",
     description: "Compare the current time range to the previous time range",
     comparisonType: TimeComparisonOption.CONTIGUOUS,

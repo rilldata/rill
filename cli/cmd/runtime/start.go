@@ -14,6 +14,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -48,6 +49,7 @@ import (
 type Config struct {
 	HTTPPort                int                    `default:"8080" split_words:"true"`
 	GRPCPort                int                    `default:"9090" split_words:"true"`
+	DebugPort               int                    `default:"6060" split_words:"true"`
 	LogLevel                zapcore.Level          `default:"info" split_words:"true"`
 	MetricsExporter         observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter          observability.Exporter `default:"" split_words:"true"`
@@ -235,6 +237,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
 			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
+			if conf.DebugPort != 0 {
+				group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
+			}
 			err = group.Wait()
 			if err != nil {
 				logger.Error("server crashed", zap.Error(err))

@@ -40,7 +40,7 @@
   let isValidModel = false;
   $: if ($allModels?.data?.entries) {
     isValidModel = $allModels?.data.some(
-      (model) => model.meta.name.name === modelName
+      (model) => model?.meta?.name?.name === modelName
     );
   }
 
@@ -87,7 +87,7 @@
           </CollapsibleSectionTitle>
         </div>
 
-        {#if showColumns}
+        {#if showColumns && entry?.meta?.name?.name}
           <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
             <ColumnProfile
               objectName={entry?.meta?.name?.name}
