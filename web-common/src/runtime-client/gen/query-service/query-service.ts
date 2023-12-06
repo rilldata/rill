@@ -63,6 +63,7 @@ import type {
   V1TableRowsResponse,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
+import type { ErrorType } from "../../http-client";
 
 /**
  * @summary Get cardinality for a column
@@ -94,7 +95,7 @@ export const getQueryServiceColumnCardinalityQueryKey = (
 
 export const getQueryServiceColumnCardinalityQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnCardinality>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -133,14 +134,14 @@ export const getQueryServiceColumnCardinalityQueryOptions = <
 export type QueryServiceColumnCardinalityQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnCardinality>>
 >;
-export type QueryServiceColumnCardinalityQueryError = RpcStatus;
+export type QueryServiceColumnCardinalityQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary Get cardinality for a column
  */
 export const createQueryServiceColumnCardinality = <
   TData = Awaited<ReturnType<typeof queryServiceColumnCardinality>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -198,7 +199,7 @@ export const getQueryServiceTableColumnsQueryKey = (
 
 export const getQueryServiceTableColumnsQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceTableColumns>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -236,14 +237,14 @@ export const getQueryServiceTableColumnsQueryOptions = <
 export type QueryServiceTableColumnsQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceTableColumns>>
 >;
-export type QueryServiceTableColumnsQueryError = RpcStatus;
+export type QueryServiceTableColumnsQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary TableColumns returns column profiles
  */
 export const createQueryServiceTableColumns = <
   TData = Awaited<ReturnType<typeof queryServiceTableColumns>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -303,7 +304,7 @@ export const getQueryServiceColumnDescriptiveStatisticsQueryKey = (
 
 export const getQueryServiceColumnDescriptiveStatisticsQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -351,14 +352,15 @@ export const getQueryServiceColumnDescriptiveStatisticsQueryOptions = <
 export type QueryServiceColumnDescriptiveStatisticsQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>
 >;
-export type QueryServiceColumnDescriptiveStatisticsQueryError = RpcStatus;
+export type QueryServiceColumnDescriptiveStatisticsQueryError =
+  ErrorType<RpcStatus>;
 
 /**
  * @summary Get basic stats for a numeric column like min, max, mean, stddev, etc
  */
 export const createQueryServiceColumnDescriptiveStatistics = <
   TData = Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -404,7 +406,7 @@ export const queryServiceExport = (
 };
 
 export const getQueryServiceExportMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -437,13 +439,13 @@ export type QueryServiceExportMutationResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceExport>>
 >;
 export type QueryServiceExportMutationBody = QueryServiceExportBody;
-export type QueryServiceExportMutationError = RpcStatus;
+export type QueryServiceExportMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary Export builds a URL to download the results of a query as a file.
  */
 export const createQueryServiceExport = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -486,7 +488,7 @@ export const getQueryServiceMetricsViewAggregationQueryKey = (
 
 export const getQueryServiceMetricsViewAggregationQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsView: string,
@@ -533,14 +535,14 @@ export const getQueryServiceMetricsViewAggregationQueryOptions = <
 export type QueryServiceMetricsViewAggregationQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>
 >;
-export type QueryServiceMetricsViewAggregationQueryError = RpcStatus;
+export type QueryServiceMetricsViewAggregationQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
  */
 export const createQueryServiceMetricsViewAggregation = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsView: string,
@@ -596,7 +598,7 @@ export const getQueryServiceMetricsViewComparisonQueryKey = (
 
 export const getQueryServiceMetricsViewComparisonQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsViewName: string,
@@ -643,11 +645,11 @@ export const getQueryServiceMetricsViewComparisonQueryOptions = <
 export type QueryServiceMetricsViewComparisonQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>
 >;
-export type QueryServiceMetricsViewComparisonQueryError = RpcStatus;
+export type QueryServiceMetricsViewComparisonQueryError = ErrorType<RpcStatus>;
 
 export const createQueryServiceMetricsViewComparison = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsViewName: string,
@@ -706,7 +708,7 @@ export const getQueryServiceMetricsViewRowsQueryKey = (
 
 export const getQueryServiceMetricsViewRowsQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsViewName: string,
@@ -753,14 +755,14 @@ export const getQueryServiceMetricsViewRowsQueryOptions = <
 export type QueryServiceMetricsViewRowsQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewRows>>
 >;
-export type QueryServiceMetricsViewRowsQueryError = RpcStatus;
+export type QueryServiceMetricsViewRowsQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
  */
 export const createQueryServiceMetricsViewRows = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsViewName: string,
@@ -819,7 +821,7 @@ export const getQueryServiceMetricsViewTimeRangeQueryKey = (
 
 export const getQueryServiceMetricsViewTimeRangeQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsViewName: string,
@@ -866,14 +868,14 @@ export const getQueryServiceMetricsViewTimeRangeQueryOptions = <
 export type QueryServiceMetricsViewTimeRangeQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>
 >;
-export type QueryServiceMetricsViewTimeRangeQueryError = RpcStatus;
+export type QueryServiceMetricsViewTimeRangeQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
  */
 export const createQueryServiceMetricsViewTimeRange = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsViewName: string,
@@ -933,7 +935,7 @@ export const getQueryServiceMetricsViewTimeSeriesQueryKey = (
 
 export const getQueryServiceMetricsViewTimeSeriesQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsViewName: string,
@@ -980,7 +982,7 @@ export const getQueryServiceMetricsViewTimeSeriesQueryOptions = <
 export type QueryServiceMetricsViewTimeSeriesQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>
 >;
-export type QueryServiceMetricsViewTimeSeriesQueryError = RpcStatus;
+export type QueryServiceMetricsViewTimeSeriesQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary MetricsViewTimeSeries returns time series for the measures in the metrics view.
@@ -988,7 +990,7 @@ It's a convenience API for querying a metrics view.
  */
 export const createQueryServiceMetricsViewTimeSeries = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsViewName: string,
@@ -1048,7 +1050,7 @@ export const getQueryServiceMetricsViewToplistQueryKey = (
 
 export const getQueryServiceMetricsViewToplistQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsViewName: string,
@@ -1095,7 +1097,7 @@ export const getQueryServiceMetricsViewToplistQueryOptions = <
 export type QueryServiceMetricsViewToplistQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>
 >;
-export type QueryServiceMetricsViewToplistQueryError = RpcStatus;
+export type QueryServiceMetricsViewToplistQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
@@ -1103,7 +1105,7 @@ It's a convenience API for querying a metrics view.
  */
 export const createQueryServiceMetricsViewToplist = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsViewName: string,
@@ -1163,7 +1165,7 @@ export const getQueryServiceMetricsViewTotalsQueryKey = (
 
 export const getQueryServiceMetricsViewTotalsQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTotals>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsViewName: string,
@@ -1210,7 +1212,7 @@ export const getQueryServiceMetricsViewTotalsQueryOptions = <
 export type QueryServiceMetricsViewTotalsQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceMetricsViewTotals>>
 >;
-export type QueryServiceMetricsViewTotalsQueryError = RpcStatus;
+export type QueryServiceMetricsViewTotalsQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary MetricsViewTotals returns totals over a time period for the measures in a metrics view.
@@ -1218,7 +1220,7 @@ It's a convenience API for querying a metrics view.
  */
 export const createQueryServiceMetricsViewTotals = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTotals>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   metricsViewName: string,
@@ -1278,7 +1280,7 @@ export const getQueryServiceColumnNullCountQueryKey = (
 
 export const getQueryServiceColumnNullCountQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnNullCount>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -1317,14 +1319,14 @@ export const getQueryServiceColumnNullCountQueryOptions = <
 export type QueryServiceColumnNullCountQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnNullCount>>
 >;
-export type QueryServiceColumnNullCountQueryError = RpcStatus;
+export type QueryServiceColumnNullCountQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary Get the number of nulls in a column
  */
 export const createQueryServiceColumnNullCount = <
   TData = Awaited<ReturnType<typeof queryServiceColumnNullCount>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -1384,7 +1386,7 @@ export const getQueryServiceColumnNumericHistogramQueryKey = (
 
 export const getQueryServiceColumnNumericHistogramQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -1427,14 +1429,14 @@ export const getQueryServiceColumnNumericHistogramQueryOptions = <
 export type QueryServiceColumnNumericHistogramQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>
 >;
-export type QueryServiceColumnNumericHistogramQueryError = RpcStatus;
+export type QueryServiceColumnNumericHistogramQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary Get the histogram for values in a column
  */
 export const createQueryServiceColumnNumericHistogram = <
   TData = Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -1493,7 +1495,7 @@ export const getQueryServiceColumnRollupIntervalQueryKey = (
 
 export const getQueryServiceColumnRollupIntervalQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -1540,14 +1542,14 @@ export const getQueryServiceColumnRollupIntervalQueryOptions = <
 export type QueryServiceColumnRollupIntervalQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>
 >;
-export type QueryServiceColumnRollupIntervalQueryError = RpcStatus;
+export type QueryServiceColumnRollupIntervalQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
  */
 export const createQueryServiceColumnRollupInterval = <
   TData = Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -1607,7 +1609,7 @@ export const getQueryServiceTableRowsQueryKey = (
 
 export const getQueryServiceTableRowsQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceTableRows>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -1646,14 +1648,14 @@ export const getQueryServiceTableRowsQueryOptions = <
 export type QueryServiceTableRowsQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceTableRows>>
 >;
-export type QueryServiceTableRowsQueryError = RpcStatus;
+export type QueryServiceTableRowsQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary TableRows returns table rows
  */
 export const createQueryServiceTableRows = <
   TData = Awaited<ReturnType<typeof queryServiceTableRows>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -1713,7 +1715,7 @@ export const getQueryServiceColumnRugHistogramQueryKey = (
 
 export const getQueryServiceColumnRugHistogramQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -1752,14 +1754,14 @@ export const getQueryServiceColumnRugHistogramQueryOptions = <
 export type QueryServiceColumnRugHistogramQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>
 >;
-export type QueryServiceColumnRugHistogramQueryError = RpcStatus;
+export type QueryServiceColumnRugHistogramQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary Get outliers for a numeric column
  */
 export const createQueryServiceColumnRugHistogram = <
   TData = Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -1819,7 +1821,7 @@ export const getQueryServiceColumnTimeGrainQueryKey = (
 
 export const getQueryServiceColumnTimeGrainQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -1858,14 +1860,14 @@ export const getQueryServiceColumnTimeGrainQueryOptions = <
 export type QueryServiceColumnTimeGrainQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>
 >;
-export type QueryServiceColumnTimeGrainQueryError = RpcStatus;
+export type QueryServiceColumnTimeGrainQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary Estimates the smallest time grain present in the column
  */
 export const createQueryServiceColumnTimeGrain = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -1925,7 +1927,7 @@ export const getQueryServiceTableCardinalityQueryKey = (
 
 export const getQueryServiceTableCardinalityQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceTableCardinality>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -1964,14 +1966,14 @@ export const getQueryServiceTableCardinalityQueryOptions = <
 export type QueryServiceTableCardinalityQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceTableCardinality>>
 >;
-export type QueryServiceTableCardinalityQueryError = RpcStatus;
+export type QueryServiceTableCardinalityQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary TableCardinality returns row count
  */
 export const createQueryServiceTableCardinality = <
   TData = Awaited<ReturnType<typeof queryServiceTableCardinality>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -2031,7 +2033,7 @@ export const getQueryServiceColumnTimeRangeQueryKey = (
 
 export const getQueryServiceColumnTimeRangeQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTimeRange>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -2070,14 +2072,14 @@ export const getQueryServiceColumnTimeRangeQueryOptions = <
 export type QueryServiceColumnTimeRangeQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnTimeRange>>
 >;
-export type QueryServiceColumnTimeRangeQueryError = RpcStatus;
+export type QueryServiceColumnTimeRangeQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary Get the time range summaries (min, max) for a column
  */
 export const createQueryServiceColumnTimeRange = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTimeRange>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -2136,7 +2138,7 @@ export const getQueryServiceColumnTimeSeriesQueryKey = (
 
 export const getQueryServiceColumnTimeSeriesQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -2183,14 +2185,14 @@ export const getQueryServiceColumnTimeSeriesQueryOptions = <
 export type QueryServiceColumnTimeSeriesQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>
 >;
-export type QueryServiceColumnTimeSeriesQueryError = RpcStatus;
+export type QueryServiceColumnTimeSeriesQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary Generate time series for the given measures (aggregation expressions) along with the sparkline timeseries
  */
 export const createQueryServiceColumnTimeSeries = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -2250,7 +2252,7 @@ export const getQueryServiceColumnTopKQueryKey = (
 
 export const getQueryServiceColumnTopKQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTopK>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -2293,7 +2295,7 @@ export const getQueryServiceColumnTopKQueryOptions = <
 export type QueryServiceColumnTopKQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceColumnTopK>>
 >;
-export type QueryServiceColumnTopKQueryError = RpcStatus;
+export type QueryServiceColumnTopKQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary Get TopK elements from a table for a column given an agg function
@@ -2301,7 +2303,7 @@ agg function and k are optional, defaults are count(*) and 50 respectively
  */
 export const createQueryServiceColumnTopK = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTopK>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   tableName: string,
@@ -2347,7 +2349,7 @@ export const queryServiceQuery = (
 };
 
 export const getQueryServiceQueryMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -2380,13 +2382,13 @@ export type QueryServiceQueryMutationResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceQuery>>
 >;
 export type QueryServiceQueryMutationBody = QueryServiceQueryBody;
-export type QueryServiceQueryMutationError = RpcStatus;
+export type QueryServiceQueryMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary Query runs a SQL query against the instance's OLAP datastore.
  */
 export const createQueryServiceQuery = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -2416,7 +2418,7 @@ export const queryServiceQueryBatch = (
 };
 
 export const getQueryServiceQueryBatchMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -2449,13 +2451,13 @@ export type QueryServiceQueryBatchMutationResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceQueryBatch>>
 >;
 export type QueryServiceQueryBatchMutationBody = QueryServiceQueryBatchBody;
-export type QueryServiceQueryBatchMutationError = RpcStatus;
+export type QueryServiceQueryBatchMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary Batch request with different queries
  */
 export const createQueryServiceQueryBatch = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<

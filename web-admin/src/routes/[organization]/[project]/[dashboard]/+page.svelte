@@ -15,7 +15,6 @@
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client";
-  import type { QueryError } from "@rilldata/web-common/runtime-client/error";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { errorStore } from "../../../../features/errors/error-store";
@@ -71,8 +70,7 @@
 
   $: dashboard = useDashboard(instanceId, dashboardName);
   $: isDashboardNotFound =
-    $dashboard.isError &&
-    ($dashboard.error as QueryError)?.response?.status === 404;
+    $dashboard.isError && $dashboard.error?.response?.status === 404;
   // We check for metricsView.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid dashboards, allowing display even when the current dashboard spec is invalid
   // and a meta.reconcileError exists.
