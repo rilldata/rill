@@ -321,8 +321,13 @@ func (c *connection) Close() error {
 	c.cancel()
 	_ = c.registration.Unregister()
 
+	// Set a 1 minute timeout for closing the DB.
+	// This is likely excessive, but some DuckDB checkpoint cases  can take a while.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
 	// Gracefully detach all databases (otherwise DuckDB may leak memory)
-	_ = c.WithConnection(context.Background(), 9000, true, false, func(ctx, ensuredCtx context.Context, conn *databasesql.Conn) error {
+	_ = c.WithConnection(ctx, 9000, true, false, func(ctx, ensuredCtx context.Context, conn *databasesql.Conn) error {
 		c.detachAllDBs(ctx, conn)
 		return nil
 	})
@@ -802,7 +807,6 @@ func (c *connection) periodicallyCheckConnDurations(d time.Duration) {
 	for {
 		select {
 		case <-c.ctx.Done():
-			connDurationTicker.Stop()
 			return
 		case <-connDurationTicker.C:
 			c.connTimesMu.Lock()
