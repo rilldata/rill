@@ -410,6 +410,7 @@ func Test_connection_CastEnum(t *testing.T) {
 	require.True(t, res.Next())
 	require.NoError(t, res.Scan(&typ))
 	require.Equal(t, "ENUM('hello', 'world')", typ)
+	require.NoError(t, res.Close())
 }
 
 func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
