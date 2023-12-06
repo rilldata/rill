@@ -193,34 +193,44 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 	}
 
 	var attr map[string]any
-	switch forVal := req.For.(type) {
-	case *adminv1.GetDeploymentCredentialsRequest_UserId:
-		attr, err = s.getAttributesFor(ctx, forVal.UserId, proj.OrganizationID, proj.ID)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	case *adminv1.GetDeploymentCredentialsRequest_UserEmail:
-		user, err := s.admin.DB.FindUserByEmail(ctx, forVal.UserEmail)
-		// if email is not found in the database, we assume it is a non-admin user
-		if errors.Is(err, database.ErrNotFound) {
-			attr = map[string]any{
-				"email":  forVal.UserEmail,
-				"domain": forVal.UserEmail[strings.LastIndex(forVal.UserEmail, "@")+1:],
-				"admin":  false,
+	if req.For != nil {
+		switch forVal := req.For.(type) {
+		case *adminv1.GetDeploymentCredentialsRequest_UserId:
+			attr, err = s.getAttributesFor(ctx, forVal.UserId, proj.OrganizationID, proj.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
 			}
-			break
+		case *adminv1.GetDeploymentCredentialsRequest_UserEmail:
+			user, err := s.admin.DB.FindUserByEmail(ctx, forVal.UserEmail)
+			// if email is not found in the database, we assume it is a non-admin user
+			if errors.Is(err, database.ErrNotFound) {
+				attr = map[string]any{
+					"email":  forVal.UserEmail,
+					"domain": forVal.UserEmail[strings.LastIndex(forVal.UserEmail, "@")+1:],
+					"admin":  false,
+				}
+				break
+			}
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			attr, err = s.getAttributesFor(ctx, user.ID, proj.OrganizationID, proj.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		case *adminv1.GetDeploymentCredentialsRequest_Attributes:
+			attr = forVal.Attributes.AsMap()
+		default:
+			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 		}
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+	}
+	// if no attributes found, we add standard non-admin user attrs to ensure security policies are applied correctly
+	if len(attr) == 0 {
+		attr = map[string]any{
+			"email":  "",
+			"domain": "",
+			"admin":  false,
 		}
-		attr, err = s.getAttributesFor(ctx, user.ID, proj.OrganizationID, proj.ID)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	case *adminv1.GetDeploymentCredentialsRequest_Attributes:
-		attr = forVal.Attributes.AsMap()
-	default:
-		return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 	}
 
 	ttlDuration := time.Hour
@@ -300,34 +310,44 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 	}
 
 	var attr map[string]any
-	switch forVal := req.For.(type) {
-	case *adminv1.GetIFrameRequest_UserId:
-		attr, err = s.getAttributesFor(ctx, forVal.UserId, proj.OrganizationID, proj.ID)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	case *adminv1.GetIFrameRequest_UserEmail:
-		user, err := s.admin.DB.FindUserByEmail(ctx, forVal.UserEmail)
-		// if email is not found in the database, we assume it is a non-admin user
-		if errors.Is(err, database.ErrNotFound) {
-			attr = map[string]any{
-				"email":  forVal.UserEmail,
-				"domain": forVal.UserEmail[strings.LastIndex(forVal.UserEmail, "@")+1:],
-				"admin":  false,
+	if req.For != nil {
+		switch forVal := req.For.(type) {
+		case *adminv1.GetIFrameRequest_UserId:
+			attr, err = s.getAttributesFor(ctx, forVal.UserId, proj.OrganizationID, proj.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
 			}
-			break
+		case *adminv1.GetIFrameRequest_UserEmail:
+			user, err := s.admin.DB.FindUserByEmail(ctx, forVal.UserEmail)
+			// if email is not found in the database, we assume it is a non-admin user
+			if errors.Is(err, database.ErrNotFound) {
+				attr = map[string]any{
+					"email":  forVal.UserEmail,
+					"domain": forVal.UserEmail[strings.LastIndex(forVal.UserEmail, "@")+1:],
+					"admin":  false,
+				}
+				break
+			}
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			attr, err = s.getAttributesFor(ctx, user.ID, proj.OrganizationID, proj.ID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		case *adminv1.GetIFrameRequest_Attributes:
+			attr = forVal.Attributes.AsMap()
+		default:
+			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 		}
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
+	}
+	// if no attributes found, we add standard non-admin user attrs to ensure security policies are applied correctly
+	if len(attr) == 0 {
+		attr = map[string]any{
+			"email":  "",
+			"domain": "",
+			"admin":  false,
 		}
-		attr, err = s.getAttributesFor(ctx, user.ID, proj.OrganizationID, proj.ID)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	case *adminv1.GetIFrameRequest_Attributes:
-		attr = forVal.Attributes.AsMap()
-	default:
-		return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 	}
 
 	// default here is higher than GetDeploymentCredentials as most embedders probably won't implement refresh and state management
