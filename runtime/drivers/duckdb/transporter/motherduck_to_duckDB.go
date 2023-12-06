@@ -39,6 +39,22 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		return err
 	}
 
+	// we first ingest data in a temporary table in the main db
+	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs which takes care
+	// whether table goes in main db or in separate table specific db
+	tmpTable := fmt.Sprintf("__%s_tmp_postgres", sinkCfg.Table)
+	defer func() {
+		// ensure temporary table is cleaned
+		err := t.to.Exec(context.Background(), &drivers.Statement{
+			Query:       fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable),
+			Priority:    100,
+			LongRunning: true,
+		})
+		if err != nil {
+			t.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
+		}
+	}()
+
 	config := t.from.Config()
 	err = t.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database();"})

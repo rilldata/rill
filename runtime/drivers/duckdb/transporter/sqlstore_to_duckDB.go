@@ -127,11 +127,26 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 		return err
 	}
 
-	if err := s.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1}); err != nil {
+	// create table
+	err = s.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1, LongRunning: true})
+	if err != nil {
 		return err
 	}
 
-	return s.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+	defer func() {
+		// ensure temporary table is cleaned
+		err := s.to.Exec(context.Background(), &drivers.Statement{
+			Query:       fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable),
+			Priority:    100,
+			LongRunning: true,
+		})
+		if err != nil {
+			s.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
+		}
+	}()
+
+	err = s.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+		// append data using appender API
 		return rawConn(conn, func(conn driver.Conn) error {
 			a, err := duckdb.NewAppenderFromConn(conn, "", table)
 			if err != nil {

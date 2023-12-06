@@ -269,8 +269,9 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	c.logger.Info("create table", zap.String("name", name), zap.Bool("view", view))
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s)", safeSQLName(name), sql),
-			Priority: 1,
+			Query:       fmt.Sprintf("CREATE OR REPLACE VIEW %s AS (%s\n)", safeSQLName(name), sql),
+			Priority:    1,
+			LongRunning: true,
 		})
 	}
 	if !c.config.ExtTableStorage {
@@ -341,8 +342,9 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 	c.logger.Info("drop table", zap.String("name", name), zap.Bool("view", view))
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name)),
-			Priority: 100,
+			Query:       fmt.Sprintf("DROP VIEW IF EXISTS %s", safeSQLName(name)),
+			Priority:    100,
+			LongRunning: true,
 		})
 	}
 	if !c.config.ExtTableStorage {
@@ -533,12 +535,11 @@ func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string
 		return c.Exec(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("ALTER %s %s RENAME TO %s", typ, safeSQLName(oldName), safeSQLName(newName)),
 			Priority:    100,
-			LongRunning: !view,
+			LongRunning: true,
 		})
 	}
 
-	longRunning := !(view && existing.View)
-	return c.WithConnection(ctx, 100, longRunning, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
+	return c.WithConnection(ctx, 100, true, true, func(ctx, ensuredCtx context.Context, conn *dbsql.Conn) error {
 		// The newName may currently be occupied by a name of another type than oldName.
 		var existingTyp string
 		if existing.View {
@@ -628,6 +629,98 @@ func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Sta
 		return drivers.ErrStorageLimitExceeded
 	}
 	return err
+}
+
+// convertToEnum converts a varchar col in table to an enum type.
+// Generally to be used for low cardinality varchar columns although not enforced here.
+func (c *connection) convertToEnum(ctx context.Context, table, col string) error {
+	if !c.config.ExtTableStorage {
+		return fmt.Errorf("`cast_to_enum` is only supported when `external_table_storage` is enabled")
+	}
+	c.logger.Info("convert column to enum", zap.String("table", table), zap.String("col", col))
+
+	version, exist, err := c.tableVersion(table)
+	if err != nil {
+		return err
+	}
+
+	if !exist {
+		return fmt.Errorf("table %q does not exist", table)
+	}
+
+	dbName := dbName(table, version)
+	enum := fmt.Sprintf("%s_enum", col)
+
+	err = c.WithConnection(ctx, 100, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+		// check that atleast one non nil value exists in the column
+		res, err := c.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT (SELECT count(%s) FROM %s.default WHERE %s IS NOT NULL) > 0 AS cnt", safeSQLName(col), safeSQLName(dbName), safeSQLName(col))})
+		if err != nil {
+			return err
+		}
+
+		var exists bool
+		if res.Next() {
+			if err := res.Scan(&exists); err != nil {
+				_ = res.Close()
+				return err
+			}
+		}
+		_ = res.Close()
+		if !exists {
+			return fmt.Errorf("column %q can't be converted to enum, has zero non null values", col)
+		}
+
+		// scan current db and current schema
+		res, err = c.Execute(ctx, &drivers.Statement{Query: "SELECT current_database(), current_schema()"})
+		if err != nil {
+			return err
+		}
+
+		var currentDB, currentSchema string
+		if res.Next() {
+			if err := res.Scan(&currentDB, &currentSchema); err != nil {
+				_ = res.Close()
+				return err
+			}
+		}
+		_ = res.Close()
+
+		// switch to source db
+		// this is only required since duckdb has bugs around db scoped custom types
+		// TODO: remove this when https://github.com/duckdb/duckdb/pull/9622 is released
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s", dbName)})
+		if err != nil {
+			return fmt.Errorf("failed switch db %q: %w", dbName, err)
+		}
+		defer func() {
+			// switch to original db, notice `db.schema` just doing USE db switches context to `main` schema in the current db if doing `USE main`
+			// we want to switch to original db and schema
+			err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("USE %s.%s", safeSQLName(currentDB), safeSQLName(currentSchema))})
+			if err != nil {
+				// This should NEVER happen
+				c.fatalInternalError(fmt.Errorf("failed to switch back from db %q: %w", dbName, err))
+			}
+		}()
+
+		err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE TYPE %s AS ENUM (SELECT DISTINCT %s FROM \"default\" WHERE %s IS NOT NULL)", safeSQLName(enum), safeSQLName(col), safeSQLName(col))})
+		if err != nil {
+			return fmt.Errorf("failed to create enum %q: %w", enum, err)
+		}
+
+		err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("ALTER TABLE \"default\" ALTER COLUMN %s SET TYPE %s", safeSQLName(col), safeSQLName(enum))})
+		if err != nil {
+			return fmt.Errorf("failed to alter table %q: %w", table, err)
+		}
+
+		// recreate view to propagate schema changes
+		// NOTE :: db name need to be appened in the view query else query fails when switching to main db
+		return c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s.%s AS SELECT * FROM %s.default", safeSQLName(currentDB), safeSQLName(currentSchema), safeSQLName(table), safeSQLName(dbName))})
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {

@@ -2,6 +2,7 @@ package duckdb
 
 import (
 	"context"
+	databasesql "database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -136,6 +137,7 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 		driverConfig:   cfgMap,
 		driverName:     d.name,
 		shared:         shared,
+		connTimes:      make(map[int]time.Time),
 		ctx:            ctx,
 		cancel:         cancel,
 	}
@@ -180,6 +182,8 @@ func (d Driver) Open(cfgMap map[string]any, shared bool, ac activity.Client, log
 	}
 
 	go c.periodicallyEmitStats(time.Minute)
+
+	go c.periodicallyCheckConnDurations(time.Minute)
 
 	return c, nil
 }
@@ -290,6 +294,10 @@ type connection struct {
 	dbReopen    bool
 	dbErr       error
 	shared      bool
+	// State for maintaining connection acquire times, which enables periodically checking for hanging DuckDB queries (we have previously seen deadlocks in DuckDB).
+	connTimesMu sync.Mutex
+	nextConnID  int
+	connTimes   map[int]time.Time
 	// Cancellable context to control internal processes like emitting the stats
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -311,10 +319,14 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
+	// Gracefully detach all databases (otherwise DuckDB may leak memory)
+	_ = c.WithConnection(context.Background(), 9000, true, false, func(ctx, ensuredCtx context.Context, conn *databasesql.Conn) error {
+		c.detachAllDBs(ctx, conn)
+		return nil
+	})
+
 	c.cancel()
 	_ = c.registration.Unregister()
-	// detach all attached DBs otherwise duckdb leaks memory
-	c.detachAllDBs()
 	return c.db.Close()
 }
 
@@ -393,9 +405,14 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 func (c *connection) reopenDB() error {
 	// If c.db is already open, close it first
 	if c.db != nil {
-		// detach all attached DBs otherwise duckdb leaks memory
-		c.detachAllDBs()
-		err := c.db.Close()
+		// Try to detach all attached DBs (otherwise DuckDB leaks memory)
+		conn, err := c.db.Conn(context.Background())
+		if err == nil { // If it's so broken we can't get a conn, we'll just risk a leak
+			c.detachAllDBs(context.Background(), conn)
+			conn.Close()
+		}
+
+		err = c.db.Close()
 		if err != nil {
 			return err
 		}
@@ -640,8 +657,17 @@ func (c *connection) acquireConn(ctx context.Context, tx bool) (*sqlx.Conn, func
 		return nil, nil, err
 	}
 
+	c.connTimesMu.Lock()
+	connID := c.nextConnID
+	c.nextConnID++
+	c.connTimes[connID] = time.Now()
+	c.connTimesMu.Unlock()
+
 	release := func() error {
 		err := conn.Close()
+		c.connTimesMu.Lock()
+		delete(c.connTimes, connID)
+		c.connTimesMu.Unlock()
 		releaseTx()
 		c.dbCond.L.Lock()
 		c.dbConnCount--
@@ -762,16 +788,41 @@ func (c *connection) periodicallyEmitStats(d time.Duration) {
 	}
 }
 
+// maxAcquiredConnDuration is the maximum duration a connection can be held for before we consider it potentially hanging/deadlocked.
+const maxAcquiredConnDuration = 1 * time.Hour
+
+// periodicallyCheckConnDurations periodically checks the durations of all acquired connections and logs a warning if any have been held for longer than maxAcquiredConnDuration.
+func (c *connection) periodicallyCheckConnDurations(d time.Duration) {
+	connDurationTicker := time.NewTicker(d)
+	defer connDurationTicker.Stop()
+	for {
+		select {
+		case <-c.ctx.Done():
+			return
+		case <-connDurationTicker.C:
+			c.connTimesMu.Lock()
+			for connID, connTime := range c.connTimes {
+				if time.Since(connTime) > maxAcquiredConnDuration {
+					c.logger.Error("duckdb: a connection has been held for more longer than the maximum allowed duration", zap.Int("conn_id", connID), zap.Duration("duration", time.Since(connTime)))
+				}
+			}
+			c.connTimesMu.Unlock()
+		}
+	}
+}
+
 // detachAllDBs detaches all attached dbs if external_table_storage config is true
-func (c *connection) detachAllDBs() {
+func (c *connection) detachAllDBs(ctx context.Context, conn *databasesql.Conn) {
 	if !c.config.ExtTableStorage {
 		return
 	}
+
 	entries, err := os.ReadDir(c.config.ExtStoragePath)
 	if err != nil {
 		c.logger.Error("unable to read ExtStoragePath", zap.String("path", c.config.ExtStoragePath), zap.Error(err))
 		return
 	}
+
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -785,7 +836,7 @@ func (c *connection) detachAllDBs() {
 		}
 
 		db := dbName(entry.Name(), version)
-		_, err = c.db.ExecContext(context.Background(), fmt.Sprintf("DETACH %s", safeSQLName(db)))
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("DETACH %s", safeSQLName(db)))
 		if err != nil {
 			c.logger.Error("detach failed", zap.String("db", db), zap.Error(err))
 		}
@@ -802,6 +853,13 @@ func (c *connection) logLimits(conn *sqlx.Conn) {
 	_ = row.Scan(&threads)
 
 	c.logger.Info("duckdb limits", zap.String("memory", memory), zap.String("threads", threads))
+}
+
+// fatalInternalError logs a critical internal error and exits the process.
+// This is used for errors that are completely unrecoverable.
+// Ideally, we should refactor to cleanup/reopen/rebuild so that we don't need this.
+func (c *connection) fatalInternalError(err error) {
+	c.logger.Fatal("duckdb: critical internal error", zap.Error(err))
 }
 
 // Regex to parse human-readable size returned by DuckDB
