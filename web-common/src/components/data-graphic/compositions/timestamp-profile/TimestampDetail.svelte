@@ -431,7 +431,7 @@
       {#if zoomedXStart && zoomedXEnd}
         <text
           role="button"
-          tabindex=0
+          tabindex="0"
           font-size={fontSize}
           x={$plotConfig.plotRight}
           y={fontSize}
