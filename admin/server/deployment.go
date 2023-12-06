@@ -3,13 +3,13 @@ package server
 import (
 	"context"
 	"errors"
-	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
