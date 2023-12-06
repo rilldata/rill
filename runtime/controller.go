@@ -234,18 +234,17 @@ func (c *Controller) Run(ctx context.Context) error {
 				stop = true
 			}
 		case <-hangingTicker.C: // It's time to check for hanging canceled reconciles
-			var hangingName *runtimev1.ResourceName
+			var hanging []*runtimev1.ResourceName
 			c.mu.RLock()
 			for _, inv := range c.invocations {
-				if !inv.cancelledOn.IsZero() && time.Since(inv.cancelledOn) > reconcileCancelationTimeout {
-					hangingName = inv.name
-					break
+				if !inv.cancelledOn.IsZero() && time.Since(inv.cancelledOn) >= reconcileCancelationTimeout {
+					hanging = append(hanging, inv.name)
 				}
 			}
 			c.mu.RUnlock()
 
-			if hangingName != nil {
-				loopErr = fmt.Errorf("reconcile for resource \"%s/%s\" has hung for more than %v after cancelation", hangingName.Kind, hangingName.Name, reconcileCancelationTimeout)
+			if len(hanging) != 0 {
+				loopErr = fmt.Errorf("reconciles for resources %v have hung for more than %s after cancelation", hanging, reconcileCancelationTimeout.String())
 				stop = true
 				break
 			}
