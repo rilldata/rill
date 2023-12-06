@@ -855,13 +855,6 @@ func (c *connection) logLimits(conn *sqlx.Conn) {
 	c.logger.Info("duckdb limits", zap.String("memory", memory), zap.String("threads", threads))
 }
 
-// fatalInternalError logs a critical internal error and exits the process.
-// This is used for errors that are completely unrecoverable.
-// Ideally, we should refactor to cleanup/reopen/rebuild so that we don't need this.
-func (c *connection) fatalInternalError(err error) {
-	c.logger.Fatal("duckdb: critical internal error", zap.Error(err))
-}
-
 // Regex to parse human-readable size returned by DuckDB
 // nolint
 var humanReadableSizeRegex = regexp.MustCompile(`^([\d.]+)\s*(\S+)$`)

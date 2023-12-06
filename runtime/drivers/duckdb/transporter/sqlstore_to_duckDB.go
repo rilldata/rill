@@ -121,8 +121,12 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 		s.logger.Info("records to be ingested", zap.Uint64("rows", total))
 		p.Target(int64(total), drivers.ProgressUnitRecord)
 	}
-	// create table
-	qry, err := createTableQuery(schema, table)
+	// we first ingest data in a temporary table in the main db
+	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs which takes care
+	// whether table goes in main db or in separate table specific db
+	tmpTable := fmt.Sprintf("__%s_tmp_postgres", table)
+	// generate create table query
+	qry, err := createTableQuery(schema, tmpTable)
 	if err != nil {
 		return err
 	}
@@ -148,7 +152,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	err = s.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
 		// append data using appender API
 		return rawConn(conn, func(conn driver.Conn) error {
-			a, err := duckdb.NewAppenderFromConn(conn, "", table)
+			a, err := duckdb.NewAppenderFromConn(conn, "", tmpTable)
 			if err != nil {
 				return err
 			}
@@ -188,6 +192,12 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 			}
 		})
 	})
+	if err != nil {
+		return err
+	}
+
+	// copy data from temp table to target table
+	return s.to.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", tmpTable))
 }
 
 func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {
