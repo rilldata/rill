@@ -23,17 +23,17 @@ props as needed.
 -->
 <script lang="ts">
   import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
+  import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
-  import { createEventDispatcher } from "svelte";
 
+  import { IconSpaceFixer } from "@rilldata/web-common/components/button";
+  import { Chip } from "@rilldata/web-common/components/chip";
+  import { defaultChipColors } from "@rilldata/web-common/components/chip/chip-types";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import SearchableFilterDropdown from "./SearchableFilterDropdown.svelte";
-  import { Chip } from "@rilldata/web-common/components/chip";
-  import { defaultChipColors } from "@rilldata/web-common/components/chip/chip-types";
-  import { IconSpaceFixer } from "@rilldata/web-common/components/button";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
 
   export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: boolean[];
@@ -53,12 +53,10 @@ props as needed.
       );
     }
   }
-  let active = false;
 </script>
 
 <WithTogglableFloatingElement
   alignment="start"
-  bind:active
   distance={8}
   let:toggleFloatingElement
   let:active

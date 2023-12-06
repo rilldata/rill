@@ -49,13 +49,8 @@
   $: width = $observedNode?.getBoundingClientRect()?.width;
   $: dispatchWidth(width);
 
-  function onInput(
-    event: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    } & { target: EventTarget & HTMLInputElement }
-  ) {
+  function onInput() {
     if (editable) {
-      titleInputValue = event?.target?.value;
       editingTitle = true;
     }
   }
