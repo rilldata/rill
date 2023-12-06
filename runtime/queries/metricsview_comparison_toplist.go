@@ -303,11 +303,13 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 
 	havingClause := ""
 	if q.MeasureFilter != nil {
-		havingClause, err = buildHavingClause(q.MeasureFilter, mv)
+		var havingClauseArgs []any
+		havingClause, havingClauseArgs, err = buildHavingClause(q.MeasureFilter, mv)
 		if err != nil {
 			return "", nil, err
 		}
 		havingClause = "HAVING " + havingClause
+		args = append(args, havingClauseArgs...)
 	}
 
 	orderClause := "true"
@@ -971,43 +973,4 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {
 
 func isTimeRangeNil(tr *runtimev1.TimeRange) bool {
 	return tr == nil || (tr.Start == nil && tr.End == nil)
-}
-
-func buildHavingClause(filter *runtimev1.MeasureFilter, mv *runtimev1.MetricsViewSpec) (string, error) {
-	sql := ""
-	switch e := filter.Entry.(type) {
-	case *runtimev1.MeasureFilter_MeasureFilterEntry:
-		switch e.MeasureFilterEntry.Measure.BuiltinMeasure {
-		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
-			expr, err := metricsViewMeasureExpression(mv, e.MeasureFilterEntry.Measure.Name)
-			if err != nil {
-				return "", err
-			}
-			sql = expr + e.MeasureFilterEntry.Expression
-			// TODO: comparison
-
-			// TODO: others
-		}
-
-	case *runtimev1.MeasureFilter_MeasureFilterExpression:
-		exprs := make([]string, len(e.MeasureFilterExpression.Entries))
-		for i, e := range e.MeasureFilterExpression.Entries {
-			expr, err := buildHavingClause(e, mv)
-			if err != nil {
-				return "", err
-			}
-			exprs[i] = expr
-		}
-		joiner := ""
-		switch e.MeasureFilterExpression.Joiner {
-		case runtimev1.MeasureFilterExpression_JOINER_UNSPECIFIED:
-		case runtimev1.MeasureFilterExpression_JOINER_OR:
-			joiner = " OR "
-		case runtimev1.MeasureFilterExpression_JOINER_AND:
-			joiner = " AND "
-		}
-		sql = strings.Join(exprs, joiner)
-	}
-
-	return sql, nil
 }

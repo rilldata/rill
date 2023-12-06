@@ -493,10 +493,20 @@ message MeasureFilterEntry {
     COLUMN_TYPE_DELTA_ABSOLUTE = 2;
     COLUMN_TYPE_DELTA_RELATIVE = 3;
   }
+  enum OperationType {
+    OPERATION_TYPE_UNSPECIFIED = 0;
+    OPERATION_TYPE_EQUALS = 1;
+    OPERATION_TYPE_NOT_EQUALS = 2;
+    OPERATION_TYPE_LESSER = 3;
+    OPERATION_TYPE_LESSER_OR_EQUALS = 4;
+    OPERATION_TYPE_GREATER = 5;
+    OPERATION_TYPE_GREATER_OR_EQUALS = 6;
+  }
 
   MetricsViewAggregationMeasure measure = 1;
-  string expression = 2;
-  ColumnType column_type = 3;
+  OperationType operation_type = 2;
+  google.protobuf.Value value = 3;
+  ColumnType column_type = 4;
 }
 
 message MeasureFilterExpression {

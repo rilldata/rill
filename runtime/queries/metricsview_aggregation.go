@@ -25,6 +25,7 @@ type MetricsViewAggregation struct {
 	Offset             int64                                        `json:"offset,omitempty"`
 	MetricsView        *runtimev1.MetricsViewSpec                   `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity         `json:"security"`
+	MeasureFilter      *runtimev1.MeasureFilter                     `json:"measure_filter,omitempty"`
 
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
@@ -222,6 +223,18 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		whereClause = "WHERE 1=1" + whereClause
 	}
 
+	havingClause := ""
+	if q.MeasureFilter != nil {
+		var havingClauseArgs []any
+		var err error
+		havingClause, havingClauseArgs, err = buildHavingClause(q.MeasureFilter, mv)
+		if err != nil {
+			return "", nil, err
+		}
+		havingClause = "HAVING " + havingClause
+		args = append(args, havingClauseArgs...)
+	}
+
 	sortingCriteria := make([]string, 0, len(q.Sort))
 	for _, s := range q.Sort {
 		sortCriterion := safeName(s.Name)
@@ -246,16 +259,18 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s OFFSET %d",
+	sql := fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
 		strings.Join(selectCols, ", "),
 		safeName(mv.Table),
 		strings.Join(unnestClauses, ""),
 		whereClause,
 		groupClause,
+		havingClause,
 		orderClause,
 		limitClause,
 		q.Offset,
 	)
+	fmt.Println(sql, args)
 
 	return sql, args, nil
 }

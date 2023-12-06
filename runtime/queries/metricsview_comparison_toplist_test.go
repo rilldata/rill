@@ -3,7 +3,6 @@ package queries_test
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"github.com/xuri/excelize/v2"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	// Register drivers
@@ -146,6 +146,10 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
 		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(maxTime),
+			End:   ctr.Result.Max,
+		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "dom",
@@ -154,23 +158,13 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 			},
 		},
 		Limit: 250,
-		MeasureFilter: &runtimev1.MeasureFilter{
-			Entry: &runtimev1.MeasureFilter_MeasureFilterEntry{
-				MeasureFilterEntry: &runtimev1.MeasureFilterEntry{
-					Measure:    &runtimev1.MetricsViewAggregationMeasure{Name: "measure_1"},
-					Expression: " > 3.25",
-				},
-			},
-		},
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
-	require.Len(t, q.Result.Rows, 3)
 	require.NotEmpty(t, "sports.yahoo.com", q.Result.Rows[0].DimensionValue)
-	require.NotEmpty(t, "news.google.com", q.Result.Rows[1].DimensionValue)
-	require.NotEmpty(t, "instagram.com", q.Result.Rows[2].DimensionValue)
+	require.NotEmpty(t, "news.yahoo.com", q.Result.Rows[1].DimensionValue)
 }
 
 func TestMetricsViewsComparison_measure_order(t *testing.T) {
@@ -256,26 +250,32 @@ func TestMetricsViewsComparison_measure_filters(t *testing.T) {
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
 		},
-		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: timestamppb.New(maxTime),
-			End:   ctr.Result.Max,
-		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_1",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Name: "dom",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
 				Desc: true,
 			},
 		},
 		Limit: 250,
+		MeasureFilter: &runtimev1.MeasureFilter{
+			Entry: &runtimev1.MeasureFilter_MeasureFilterEntry{
+				MeasureFilterEntry: &runtimev1.MeasureFilterEntry{
+					Measure:       &runtimev1.MetricsViewAggregationMeasure{Name: "measure_1"},
+					OperationType: runtimev1.MeasureFilterEntry_OPERATION_TYPE_GREATER,
+					Value:         structpb.NewNumberValue(3.25),
+				},
+			},
+		},
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
-	fmt.Println(q.Result.Rows)
-	require.NotEmpty(t, "facebook.com", q.Result.Rows[0].DimensionValue)
-	require.NotEmpty(t, "msn.com", q.Result.Rows[1].DimensionValue)
+	require.Len(t, q.Result.Rows, 3)
+	require.NotEmpty(t, "sports.yahoo.com", q.Result.Rows[0].DimensionValue)
+	require.NotEmpty(t, "news.google.com", q.Result.Rows[1].DimensionValue)
+	require.NotEmpty(t, "instagram.com", q.Result.Rows[2].DimensionValue)
 }
 
 func TestMetricsViewsCompariso_export_xlsx(t *testing.T) {

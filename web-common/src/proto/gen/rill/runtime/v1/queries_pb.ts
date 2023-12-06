@@ -2307,12 +2307,17 @@ export class MeasureFilterEntry extends Message<MeasureFilterEntry> {
   measure?: MetricsViewAggregationMeasure;
 
   /**
-   * @generated from field: string expression = 2;
+   * @generated from field: rill.runtime.v1.MeasureFilterEntry.OperationType operation_type = 2;
    */
-  expression = "";
+  operationType = MeasureFilterEntry_OperationType.UNSPECIFIED;
 
   /**
-   * @generated from field: rill.runtime.v1.MeasureFilterEntry.ColumnType column_type = 3;
+   * @generated from field: google.protobuf.Value value = 3;
+   */
+  value?: Value;
+
+  /**
+   * @generated from field: rill.runtime.v1.MeasureFilterEntry.ColumnType column_type = 4;
    */
   columnType = MeasureFilterEntry_ColumnType.UNSPECIFIED;
 
@@ -2325,8 +2330,9 @@ export class MeasureFilterEntry extends Message<MeasureFilterEntry> {
   static readonly typeName = "rill.runtime.v1.MeasureFilterEntry";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "measure", kind: "message", T: MetricsViewAggregationMeasure },
-    { no: 2, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "column_type", kind: "enum", T: proto3.getEnumType(MeasureFilterEntry_ColumnType) },
+    { no: 2, name: "operation_type", kind: "enum", T: proto3.getEnumType(MeasureFilterEntry_OperationType) },
+    { no: 3, name: "value", kind: "message", T: Value },
+    { no: 4, name: "column_type", kind: "enum", T: proto3.getEnumType(MeasureFilterEntry_ColumnType) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MeasureFilterEntry {
@@ -2376,6 +2382,56 @@ proto3.util.setEnumType(MeasureFilterEntry_ColumnType, "rill.runtime.v1.MeasureF
   { no: 1, name: "COLUMN_TYPE_PREVIOUS" },
   { no: 2, name: "COLUMN_TYPE_DELTA_ABSOLUTE" },
   { no: 3, name: "COLUMN_TYPE_DELTA_RELATIVE" },
+]);
+
+/**
+ * @generated from enum rill.runtime.v1.MeasureFilterEntry.OperationType
+ */
+export enum MeasureFilterEntry_OperationType {
+  /**
+   * @generated from enum value: OPERATION_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: OPERATION_TYPE_EQUALS = 1;
+   */
+  EQUALS = 1,
+
+  /**
+   * @generated from enum value: OPERATION_TYPE_NOT_EQUALS = 2;
+   */
+  NOT_EQUALS = 2,
+
+  /**
+   * @generated from enum value: OPERATION_TYPE_LESSER = 3;
+   */
+  LESSER = 3,
+
+  /**
+   * @generated from enum value: OPERATION_TYPE_LESSER_OR_EQUALS = 4;
+   */
+  LESSER_OR_EQUALS = 4,
+
+  /**
+   * @generated from enum value: OPERATION_TYPE_GREATER = 5;
+   */
+  GREATER = 5,
+
+  /**
+   * @generated from enum value: OPERATION_TYPE_GREATER_OR_EQUALS = 6;
+   */
+  GREATER_OR_EQUALS = 6,
+}
+// Retrieve enum metadata with: proto3.getEnumType(MeasureFilterEntry_OperationType)
+proto3.util.setEnumType(MeasureFilterEntry_OperationType, "rill.runtime.v1.MeasureFilterEntry.OperationType", [
+  { no: 0, name: "OPERATION_TYPE_UNSPECIFIED" },
+  { no: 1, name: "OPERATION_TYPE_EQUALS" },
+  { no: 2, name: "OPERATION_TYPE_NOT_EQUALS" },
+  { no: 3, name: "OPERATION_TYPE_LESSER" },
+  { no: 4, name: "OPERATION_TYPE_LESSER_OR_EQUALS" },
+  { no: 5, name: "OPERATION_TYPE_GREATER" },
+  { no: 6, name: "OPERATION_TYPE_GREATER_OR_EQUALS" },
 ]);
 
 /**

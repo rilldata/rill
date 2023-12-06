@@ -292,6 +292,73 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev
 	return fmt.Sprintf("AND (%s) ", condsClause), args, nil
 }
 
+func buildHavingClause(filter *runtimev1.MeasureFilter, mv *runtimev1.MetricsViewSpec) (string, []any, error) {
+	sql := ""
+	args := make([]any, 0)
+	switch e := filter.Entry.(type) {
+	case *runtimev1.MeasureFilter_MeasureFilterEntry:
+		switch e.MeasureFilterEntry.Measure.BuiltinMeasure {
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
+			expr, err := metricsViewMeasureExpression(mv, e.MeasureFilterEntry.Measure.Name)
+			if err != nil {
+				return "", args, err
+			}
+			sql = fmt.Sprintf(`%s %s ?`, expr, measureFilterClauseOperation(e.MeasureFilterEntry))
+			arg, err := pbutil.FromValue(e.MeasureFilterEntry.Value)
+			if err != nil {
+				return "", args, err
+			}
+			args = append(args, arg)
+			// TODO: comparison
+
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
+			//TODO: impl
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
+			//TODO: impl
+		}
+
+	case *runtimev1.MeasureFilter_MeasureFilterExpression:
+		exprs := make([]string, len(e.MeasureFilterExpression.Entries))
+		for i, e := range e.MeasureFilterExpression.Entries {
+			expr, subArgs, err := buildHavingClause(e, mv)
+			if err != nil {
+				return "", args, err
+			}
+			args = append(args, subArgs...)
+			exprs[i] = expr
+		}
+		joiner := ""
+		switch e.MeasureFilterExpression.Joiner {
+		case runtimev1.MeasureFilterExpression_JOINER_UNSPECIFIED:
+		case runtimev1.MeasureFilterExpression_JOINER_OR:
+			joiner = " OR "
+		case runtimev1.MeasureFilterExpression_JOINER_AND:
+			joiner = " AND "
+		}
+		sql = strings.Join(exprs, joiner)
+	}
+
+	return sql, args, nil
+}
+
+func measureFilterClauseOperation(e *runtimev1.MeasureFilterEntry) string {
+	switch e.OperationType {
+	case runtimev1.MeasureFilterEntry_OPERATION_TYPE_EQUALS:
+		return "="
+	case runtimev1.MeasureFilterEntry_OPERATION_TYPE_NOT_EQUALS:
+		return "!="
+	case runtimev1.MeasureFilterEntry_OPERATION_TYPE_LESSER:
+		return "<"
+	case runtimev1.MeasureFilterEntry_OPERATION_TYPE_LESSER_OR_EQUALS:
+		return "<="
+	case runtimev1.MeasureFilterEntry_OPERATION_TYPE_GREATER:
+		return ">"
+	case runtimev1.MeasureFilterEntry_OPERATION_TYPE_GREATER_OR_EQUALS:
+		return ">="
+	}
+	return "=" // TODO: handle unknown operation type
+}
+
 func repeatString(val string, n int) []string {
 	res := make([]string, n)
 	for i := 0; i < n; i++ {
@@ -527,7 +594,7 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 			case runtimev1.Type_CODE_UINT64:
 				recordBuilder.Field(idx).(*array.Uint64Builder).Append(uint64(v.GetNumberValue()))
 			case runtimev1.Type_CODE_INT128:
-				recordBuilder.Field(idx).(*array.Float64Builder).Append((v.GetNumberValue()))
+				recordBuilder.Field(idx).(*array.Float64Builder).Append(v.GetNumberValue())
 			case runtimev1.Type_CODE_FLOAT32:
 				recordBuilder.Field(idx).(*array.Float32Builder).Append(float32(v.GetNumberValue()))
 			case runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:
