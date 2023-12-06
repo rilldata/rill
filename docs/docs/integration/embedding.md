@@ -5,6 +5,9 @@ sidebar_label: "Embed Dashboards"
 sidebar_position: 10
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 ## Embedding dashboards
 
 ### Introduction
@@ -41,37 +44,220 @@ Use rill cli to create a service token for your organization. You can create a n
 rill service create <service_name> [--org "My Organization"]
 ```
 
-To issue service token for an existing service account, use the following command:
+:::caution
 
-```bash
-rill service token issue <service_name> [--org "My Organization"]
-```
+The service account provides admin-level access to the org and should be handled confidentially and NOT integrated in a frontend / other user-facing code.
+
+:::
 
 See the reference docs for more details on managing [service account and token](../reference/cli/service).
 
 ### Backend: Build an iframe URL
 The backend needs to use the service token to request an iframe URL from `admin.rilldata.com`. The iframe URL is then used to embed the dashboard in the customer's application.
-Here's a minimal example POST call to `admin.rilldata.com` to get an iframe URL:
+Here are examples of how to get an iframe URL using different languages:
+
+<Tabs>
+  <TabItem value="curl" label="Curl" default>
 
 ```bash
-
 curl -X POST --location 'https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe' \
 --header 'Content-Type: application/json' \
 --header 'Authorization: Bearer <rill-svc-token>' \
 --data-raw '{
-    "resource": "<dashboard-name>",
-    "user_email":"<user-email>"
+"resource": "<dashboard-name>",
+"user_email":"<user-email>"
 }'
 ```
+  </TabItem>
+  <TabItem value="js" label="Javascript">
+    JavaScript (Node.js) with Express.js
+
+```js
+const express = require('express');
+const fetch = require('node-fetch');
+const app = express();
+app.use(express.json());
+
+app.post('/api/getIframeUrl', async (req, res) => {
+    const dashboardName = req.body.resource;
+    try {
+        const response = await fetch('https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer <rill-svc-token>`,
+            },
+            body: JSON.stringify({
+                resource: dashboardName,
+                user_email: '<user-email>',
+            }),
+        });
+        const data = await response.json();
+        res.json({ iframeSrc: data.resp.body });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+const PORT = 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+    Python with Flask
+
+```python
+from flask import Flask, request, jsonify
+import requests
+
+app = Flask(__name__)
+
+@app.route('/api/getIframeUrl', methods=['POST'])
+def get_iframe_url():
+    dashboard_name = request.json.get('resource')
+    try:
+        response = requests.post(
+            'https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer <rill-svc-token>',
+            },
+            json={
+                'resource': dashboard_name,
+                'user_email': '<user-email>',
+            }
+        )
+        response.raise_for_status()
+        data = response.json()
+        return jsonify(iframeSrc=data['resp']['body'])
+    except requests.RequestException as e:
+        return jsonify(error=str(e)), 500
+
+if __name__ == '__main__':
+    app.run(port=3000)
+
+```
+  </TabItem>
+  <TabItem value="go" label="Go">
+    Go with net/http
+
+```go
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
+func getIframeUrl(w http.ResponseWriter, r *http.Request) {
+	var reqBody map[string]string
+	json.NewDecoder(r.Body).Decode(&reqBody)
+	dashboardName := reqBody["resource"]
+
+	requestBody, err := json.Marshal(map[string]string{
+		"resource":   dashboardName,
+		"user_email": "<user-email>",
+	})
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := http.Post("https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe", "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var respBody map[string]map[string]map[string]string
+	json.Unmarshal(body, &respBody)
+	iFrameResp := respBody["resp"]["body"]
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(iFrameResp)
+}
+
+func main() {
+	http.HandleFunc("/api/getIframeUrl", getIframeUrl)
+	fmt.Println("Server started at port 3000")
+	http.ListenAndServe(":3000", nil)
+}
+```
+  </TabItem>
+
+  <TabItem value="java" label="Java">
+    Java With Spring Boot 
+
+```java
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import java.util.Map;
+
+@RestController
+public class DashboardController {
+
+    @PostMapping("/api/getIframeUrl")
+    public ResponseEntity<?> getIframeUrl(@RequestBody Map<String, Object> payload) {
+        String dashboardName = (String) payload.get("resource");
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+        headers.set("Authorization", "Bearer <rill-svc-token>");
+
+        Map<String, Object> request = Map.of(
+                "resource", dashboardName,
+                "user_email", "<user-email>"
+        );
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<Map> response = restTemplate.postForEntity("https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe", entity, Map.class);
+
+        Map<String, Object> resp = (Map<String, Object>) response.getBody().get("resp");
+        Map<String, String> responseBody = Map.of("iframe", (String) ((Map<String, Object>) resp.get("body")));
+
+        return ResponseEntity.ok(responseBody);
+    }
+}
+```
+  </TabItem>
+
+</Tabs>
+
+
 
 The API accepts the following parameters:
 
-| Parameter | Description                                      | Required           |
-| --- |--------------------------------------------------|--------------------|
-| resource | The name of the dashboard to embed               | Yes                |
-| user_email | The email of the user to embed the dashboard for | Yes                |
-| ttl_seconds | The time to live for the iframe URL             | No (Default: 86400) |
+| Parameter | Description                                                                                                                                                                           | Required                        |
+| --- |---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------|
+| resource | The name of the dashboard to embed                                                                                                                                                    | Yes                             |
+| user_email | The email of the user to embed the dashboard for                                                                                                                                      | Yes (either this or `attributes`) |
+| attributes | Json payload to be put in the access token, used to pass custom attributes to the dashboard for enforcing policies | No (either this or `user_email`)  |  
+| ttl_seconds | The time to live for the iframe URL                                                                                                                                                   | No (Default: 86400)             |
 
+:::tip
+
+Use `"attributes": {}` for no user context.
+
+:::
 
 The response will contain an iframe URL that can be used to embed the dashboard in the customer's application. Here's an example response:
 
@@ -93,7 +279,7 @@ The frontend just need to use the iframeSrc to embed the dashboard in the custom
 ```
 
 ### Example
-Here's an example of how to create a dashboard component in a React application:
+Here's an example of how to create a dashboard component in a React application, this component will fetch the iframe URL from the backend and embed the dashboard in the frontend:
 
 ```jsx
 import React, { useEffect, useState } from 'react';
@@ -105,23 +291,26 @@ const RillDashboard = () => {
 
   useEffect(() => {
       const getIframeUrl = async () => {
-      const response = await fetch(
-        `https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer <rill-svc-token>`,
-          },
-          body: JSON.stringify({
-            resource: '<dashboard-name>',
-            user_email: userEmail,
-          }),
-        }
-      );
-      const resp = await response.json();
-      setIframeUrl(resp.iframeSrc);
-    };
+          try {
+              const response = await fetch(`/api/getIframeUrl`, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                      resource: dashboardName,
+                      user_email: '<user-email>',
+                  }),
+              });
+              if (!response.ok) {
+                  throw new Error('Network response was not ok');
+              }
+              const { iframeSrc } = await response.json().iframeSrc;
+              setIframeUrl(iframeSrc);
+          } catch (err) {
+              console.error(err);
+          }
+      };
     getIframeUrl();
   }, [userEmail]);
 

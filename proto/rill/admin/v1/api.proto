@@ -554,7 +554,7 @@ message GetDeploymentCredentialsRequest {
   uint32 ttl_seconds = 7;
   oneof for {
     string user_id = 4;
-    string user_email = 6;
+    string user_email = 6 [(validate.rules).string.email = true];
     google.protobuf.Struct attributes = 5;
   }
 }
@@ -577,7 +577,7 @@ message GetIFrameRequest {
   map<string, string> query = 8;
   oneof for {
     string user_id = 9;
-    string user_email = 10;
+    string user_email = 10 [(validate.rules).string.email = true];
     google.protobuf.Struct attributes = 11;
   }
 }
