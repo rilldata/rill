@@ -162,7 +162,7 @@ func (f *fileIterator) Next() ([]string, error) {
 	schema := (*firstBatch)[0].Schema()
 	for _, f := range schema.Fields() {
 		if f.Type.ID() == arrow.TIME32 || f.Type.ID() == arrow.TIME64 {
-			return nil, fmt.Errorf("TIME data type (column %q) is not currently supported, " +
+			return nil, fmt.Errorf("TIME data type (column %q) is not currently supported, "+
 				"consider excluding it or casting it to another data type", f.Name)
 		}
 	}
