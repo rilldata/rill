@@ -86,18 +86,11 @@
     }
   };
 
-  let headerWidth: number;
-
-  function isHeaderWidthSmall(width: number) {
-    return width < 800;
-  }
-
   $: titleInput = modelName;
 </script>
 
 <WorkspaceHeader
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
-  on:resize={(e) => (headerWidth = e.detail.width)}
 >
   <svelte:fragment slot="workspace-controls">
     <IconButton
@@ -120,7 +113,7 @@
     <PanelCTA side="right">
       <ModelWorkspaceCTAs
         availableDashboards={$availableDashboards?.data}
-        collapse={isHeaderWidthSmall(headerWidth)}
+        {collapse}
         modelHasError={$modelHasError}
         {modelName}
         suppressTooltips={contextMenuOpen}
