@@ -6,35 +6,34 @@
   import { DynamicallyPlacedLabel } from "@rilldata/web-common/components/data-graphic/guides";
   import { INTEGERS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { justEnoughPrecision } from "@rilldata/web-common/lib/formatters";
+  import type { V1NumericStatistics } from "@rilldata/web-common/runtime-client";
   import { format } from "d3-format";
 
-  export let min: number;
-  export let max: number;
-  export let q25: number;
-  export let q50: number;
-  export let q75: number;
-  export let mean: number;
+  export let summary: V1NumericStatistics | undefined;
+
   export let rowHeight = 24;
   export let type: string;
 
   $: formatter = INTEGERS.has(type) ? format(".0f") : justEnoughPrecision;
-  $: values = [
-    { label: "min", value: min, format: formatter },
-    { label: "q25", value: q25, format: formatter },
-    { label: "q50", value: q50, format: formatter },
-    {
-      label: "q75",
-      value: q75,
-      format: formatter,
-    },
+  $: values = summary
+    ? [
+        { label: "min", value: summary.min, format: formatter },
+        { label: "q25", value: summary.q25, format: formatter },
+        { label: "q50", value: summary.q50, format: formatter },
+        {
+          label: "q75",
+          value: summary.q75,
+          format: formatter,
+        },
 
-    { label: "max", value: max, format: formatter },
-    {
-      label: "mean",
-      value: mean,
-      format: justEnoughPrecision,
-    },
-  ].reverse();
+        { label: "max", value: summary.max, format: formatter },
+        {
+          label: "mean",
+          value: summary.mean,
+          format: justEnoughPrecision,
+        },
+      ].reverse()
+    : undefined;
 </script>
 
 {#if values}
