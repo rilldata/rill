@@ -4,7 +4,7 @@
   export let size = "1em";
   export let status: EntityStatus = EntityStatus.Idle;
   export let bg =
-    "linear-gradient(to left, hsla(300, 100%, 50%, .5), hsla(1, 100%, 50%, .5))";
+    "linear-gradient(to left, hsla(var(--color-secondary-gradient-max), 100%, 50%, .5), hsla(var(--color-secondary-gradient-min), 100%, 50%, .5))";
   export let duration = 500;
 </script>
 
