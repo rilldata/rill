@@ -29,11 +29,6 @@ if (process.env["STORYBOOK_MODE"] === "true") {
 export default defineConfig(({ mode }) => {
   if (mode === "test") {
     alias.push({
-      find: /^svelte$/,
-      replacement: "/../node_modules/svelte/index.mjs",
-    });
-
-    alias.push({
       find: "$app/environment",
       replacement: "/../web-common/.storybook/app-environment.mock.ts",
     });
