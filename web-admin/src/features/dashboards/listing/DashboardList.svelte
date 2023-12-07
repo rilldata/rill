@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
+  import { useDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
   import DashboardIcon from "@rilldata/web-common/components/icons/DashboardIcon.svelte";
   import { Tag } from "@rilldata/web-common/components/tag";
