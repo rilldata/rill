@@ -229,6 +229,7 @@ export interface DashboardResource {
   refreshedOn: string;
 }
 
+// This iteration of `useDashboards` returns the above `DashboardResource` type, which includes `refreshedOn`
 export function useDashboardsV2(
   instanceId: string
 ): CreateQueryResult<DashboardResource[]> {
@@ -254,6 +255,7 @@ export function useDashboardsV2(
   });
 }
 
+// This iteration of `useDashboard` returns the above `DashboardResource` type, which includes `refreshedOn`
 export function useDashboardV2(
   instanceId: string,
   name: string
