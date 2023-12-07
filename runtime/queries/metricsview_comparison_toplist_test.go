@@ -283,9 +283,9 @@ func TestMetricsViewsComparison_measure_filters(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	require.Len(t, q.Result.Rows, 3)
-	require.NotEmpty(t, "sports.yahoo.com", q.Result.Rows[0].DimensionValue)
-	require.NotEmpty(t, "news.google.com", q.Result.Rows[1].DimensionValue)
-	require.NotEmpty(t, "instagram.com", q.Result.Rows[2].DimensionValue)
+	require.Equal(t, "sports.yahoo.com", q.Result.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, "news.google.com", q.Result.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, "instagram.com", q.Result.Rows[2].DimensionValue.GetStringValue())
 }
 
 func TestMetricsViewsComparison_measure_filters_with_compare(t *testing.T) {
@@ -357,9 +357,9 @@ func TestMetricsViewsComparison_measure_filters_with_compare(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	require.Len(t, q.Result.Rows, 3)
-	require.NotEmpty(t, "sports.yahoo.com", q.Result.Rows[0].DimensionValue)
-	require.NotEmpty(t, "news.google.com", q.Result.Rows[1].DimensionValue)
-	require.NotEmpty(t, "instagram.com", q.Result.Rows[2].DimensionValue)
+	require.Equal(t, "sports.yahoo.com", q.Result.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, "news.google.com", q.Result.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, "instagram.com", q.Result.Rows[2].DimensionValue.GetStringValue())
 }
 
 func TestMetricsViewsCompariso_export_xlsx(t *testing.T) {

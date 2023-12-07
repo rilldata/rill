@@ -26,6 +26,7 @@ type MetricsViewToplist struct {
 	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
 	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
+	MeasureFilter      *runtimev1.MeasureFilter             `json:"measure_filter,omitempty"`
 
 	Result *runtimev1.MetricsViewToplistResponse `json:"-"`
 }
@@ -223,6 +224,17 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		args = append(args, clauseArgs...)
 	}
 
+	havingClause := ""
+	if q.MeasureFilter != nil {
+		var havingClauseArgs []any
+		havingClause, havingClauseArgs, err = buildHavingClause(q.MeasureFilter, mv, false)
+		if err != nil {
+			return "", nil, err
+		}
+		havingClause = "HAVING " + havingClause
+		args = append(args, havingClauseArgs...)
+	}
+
 	sortingCriteria := make([]string, 0, len(q.Sort))
 	for _, s := range q.Sort {
 		sortCriterion := safeName(s.Name)
@@ -249,16 +261,18 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		groupByCol = unnestColName
 	}
 
-	sql := fmt.Sprintf("SELECT %s FROM %s %s WHERE %s GROUP BY %s %s %s OFFSET %d",
+	sql := fmt.Sprintf("SELECT %s FROM %s %s WHERE %s GROUP BY %s %s %s %s OFFSET %d",
 		strings.Join(selectCols, ", "),
 		safeName(mv.Table),
 		unnestClause,
 		whereClause,
 		groupByCol,
+		havingClause,
 		orderClause,
 		limitClause,
 		q.Offset,
 	)
+	fmt.Println(sql, args)
 
 	return sql, args, nil
 }
