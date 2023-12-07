@@ -43,9 +43,9 @@ export function initialResourceStatusStore(
     ([resourceName, projectParserResp]) => {
       if (
         !projectParserResp.data ||
-        projectParserResp.data.projectParser.state.parseErrors.filter(
+        (projectParserResp?.data?.projectParser?.state?.parseErrors?.filter(
           (s) => s.filePath === filePath
-        ).length > 0
+        ).length ?? 0) > 0
       ) {
         return ResourceStatus.Errored;
       }
@@ -105,12 +105,17 @@ export function resourceStatusStore(
       )
         return { status: ResourceStatus.Busy };
 
+      const changed =
+        !lastUpdatedOn ||
+        (res.data?.meta?.stateUpdatedOn
+          ? res.data?.meta?.stateUpdatedOn > lastUpdatedOn
+          : undefined);
+
       return {
         status: !res.data?.meta?.reconcileError
           ? ResourceStatus.Idle
           : ResourceStatus.Errored,
-        changed:
-          !lastUpdatedOn || res.data?.meta?.stateUpdatedOn > lastUpdatedOn,
+        changed,
       };
     }
   );
@@ -143,13 +148,18 @@ export function waitForResourceUpdate(
       if (status.status === ResourceStatus.Busy) return;
       if (timer) clearTimeout(timer);
 
+      const do_end =
+        status.status === ResourceStatus.Idle &&
+        status.changed !== undefined &&
+        status.changed;
+
       if (idled) {
-        end(status.status === ResourceStatus.Idle && status.changed);
+        end(do_end);
         return;
       } else {
         idled = true;
         timer = setTimeout(() => {
-          end(status.status === ResourceStatus.Idle && status.changed);
+          end(do_end);
         }, 500);
       }
     });

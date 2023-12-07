@@ -21,7 +21,8 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: activeTimeGrain = $timeControlsStore.selectedTimeRange?.interval;
-  $: activeTimeGrainLabel = TIME_GRAIN[activeTimeGrain]?.label;
+  $: activeTimeGrainLabel =
+    activeTimeGrain && TIME_GRAIN[activeTimeGrain]?.label;
 
   $: timeGrains = timeGrainOptions
     ? timeGrainOptions
