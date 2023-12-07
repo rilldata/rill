@@ -173,17 +173,13 @@
 
   $: hasErrors = getFileHasErrors(queryClient, $runtime.instanceId, filePath);
 
-  let headerWidth: number;
-
   function isHeaderWidthSmall(width: number) {
     return width < 800;
   }
 </script>
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
-  <WorkspaceHeader
-    {...{ titleInput: sourceName, onChangeCallback }}
-  >
+  <WorkspaceHeader {...{ titleInput: sourceName, onChangeCallback }}>
     <svelte:fragment slot="workspace-controls">
       {#if $refreshSourceMutation.isLoading}
         Refreshing...
