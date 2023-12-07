@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/server"
 	admincli "github.com/rilldata/rill/cli/cmd/admin"
-	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -120,8 +120,21 @@ func CheckServerStatus(srv *server.Server) error {
 	resultChan := make(chan error, 1)
 
 	go func() {
-		_, err := srv.Ping(ctx, &adminv1.PingRequest{})
-		resultChan <- err
+		resp, err := http.Get("http://localhost:8080/v1/ping")
+		if err != nil {
+			resultChan <- err
+			return
+		}
+		defer resp.Body.Close()
+
+		// Additional check for response status, if needed
+		if resp.StatusCode != http.StatusOK {
+			resultChan <- fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+			return
+		}
+
+		// If everything's fine, signal no error
+		resultChan <- nil
 	}()
 
 	select {
