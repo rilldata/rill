@@ -21,6 +21,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
+  import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
 
   const queryClient = useQueryClient();
 
@@ -97,7 +98,9 @@
       {#key metricViewName}
         <DashboardStateProvider {metricViewName}>
           <DashboardURLStateProvider {metricViewName}>
-            <Dashboard {metricViewName} />
+            <DashboardThemeProvider>
+              <Dashboard {metricViewName} />
+            </DashboardThemeProvider>
           </DashboardURLStateProvider>
         </DashboardStateProvider>
       {/key}

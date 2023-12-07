@@ -31,6 +31,7 @@ const UsedResourceKinds: {
   [kind in ResourceKind]?: true;
 } = {
   [ResourceKind.ProjectParser]: true,
+  [ResourceKind.Theme]: true,
   ...MainResourceKinds,
 };
 
