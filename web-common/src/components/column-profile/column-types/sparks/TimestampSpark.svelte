@@ -31,8 +31,8 @@
   // export let zoomWindowXMin: Date = undefined;
   // export let zoomWindowXMax: Date = undefined;
 
-  export let xAccessor: string = undefined;
-  export let yAccessor: string = undefined;
+  export let xAccessor: string | undefined = undefined;
+  export let yAccessor: string | undefined = undefined;
 
   // rowsize for table
 
