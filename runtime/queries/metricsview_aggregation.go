@@ -227,7 +227,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	if q.MeasureFilter != nil {
 		var havingClauseArgs []any
 		var err error
-		havingClause, havingClauseArgs, err = buildHavingClause(q.MeasureFilter, mv)
+		havingClause, havingClauseArgs, err = buildHavingClause(q.MeasureFilter, mv, false)
 		if err != nil {
 			return "", nil, err
 		}

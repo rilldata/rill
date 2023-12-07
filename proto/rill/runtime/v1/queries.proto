@@ -480,19 +480,31 @@ message MetricsViewTimeRangeResponse {
 }
 
 message MeasureFilter {
+  MeasureFilterExpression expression = 1;
+}
+
+message MeasureFilterNode {
   oneof entry {
-    MeasureFilterEntry MeasureFilterEntry = 1;
+    MeasureFilterMeasure MeasureFilterMeasure = 1;
     MeasureFilterExpression MeasureFilterExpression = 2;
+    google.protobuf.Value Value = 3;
+    MeasureFilterNode MeasureFilterNode = 4;
   }
 }
 
-message MeasureFilterEntry {
+message MeasureFilterMeasure {
   enum ColumnType {
     COLUMN_TYPE_UNSPECIFIED = 0;
     COLUMN_TYPE_PREVIOUS = 1;
     COLUMN_TYPE_DELTA_ABSOLUTE = 2;
     COLUMN_TYPE_DELTA_RELATIVE = 3;
   }
+
+  MetricsViewAggregationMeasure measure = 1;
+  ColumnType column_type = 2;
+}
+
+message MeasureFilterExpression {
   enum OperationType {
     OPERATION_TYPE_UNSPECIFIED = 0;
     OPERATION_TYPE_EQUALS = 1;
@@ -501,23 +513,13 @@ message MeasureFilterEntry {
     OPERATION_TYPE_LESSER_OR_EQUALS = 4;
     OPERATION_TYPE_GREATER = 5;
     OPERATION_TYPE_GREATER_OR_EQUALS = 6;
+    OPERATION_TYPE_OR = 7;
+    OPERATION_TYPE_AND = 8;
+    OPERATION_TYPE_BETWEEN = 9;
   }
 
-  MetricsViewAggregationMeasure measure = 1;
+  repeated MeasureFilterNode entries = 1;
   OperationType operation_type = 2;
-  google.protobuf.Value value = 3;
-  ColumnType column_type = 4;
-}
-
-message MeasureFilterExpression {
-  enum Joiner {
-    JOINER_UNSPECIFIED = 0;
-    JOINER_OR = 2;
-    JOINER_AND = 3;
-  }
-
-  repeated MeasureFilter entries = 1;
-  Joiner joiner = 2;
 }
 
 // **********

@@ -57,12 +57,22 @@ func TestMetricsViewAggregation_measure_filters(t *testing.T) {
 		},
 		Limit: &lmt,
 		MeasureFilter: &runtimev1.MeasureFilter{
-			Entry: &runtimev1.MeasureFilter_MeasureFilterEntry{
-				MeasureFilterEntry: &runtimev1.MeasureFilterEntry{
-					Measure:       &runtimev1.MetricsViewAggregationMeasure{Name: "measure_1"},
-					OperationType: runtimev1.MeasureFilterEntry_OPERATION_TYPE_GREATER,
-					Value:         structpb.NewNumberValue(3.25),
+			Expression: &runtimev1.MeasureFilterExpression{
+				Entries: []*runtimev1.MeasureFilterNode{
+					{
+						Entry: &runtimev1.MeasureFilterNode_MeasureFilterMeasure{
+							MeasureFilterMeasure: &runtimev1.MeasureFilterMeasure{
+								Measure: &runtimev1.MetricsViewAggregationMeasure{Name: "measure_1"},
+							},
+						},
+					},
+					{
+						Entry: &runtimev1.MeasureFilterNode_Value{
+							Value: structpb.NewNumberValue(3.25),
+						},
+					},
 				},
+				OperationType: runtimev1.MeasureFilterExpression_OPERATION_TYPE_GREATER,
 			},
 		},
 	}

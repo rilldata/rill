@@ -259,12 +259,96 @@ func TestMetricsViewsComparison_measure_filters(t *testing.T) {
 		},
 		Limit: 250,
 		MeasureFilter: &runtimev1.MeasureFilter{
-			Entry: &runtimev1.MeasureFilter_MeasureFilterEntry{
-				MeasureFilterEntry: &runtimev1.MeasureFilterEntry{
-					Measure:       &runtimev1.MetricsViewAggregationMeasure{Name: "measure_1"},
-					OperationType: runtimev1.MeasureFilterEntry_OPERATION_TYPE_GREATER,
-					Value:         structpb.NewNumberValue(3.25),
+			Expression: &runtimev1.MeasureFilterExpression{
+				Entries: []*runtimev1.MeasureFilterNode{
+					{
+						Entry: &runtimev1.MeasureFilterNode_MeasureFilterMeasure{
+							MeasureFilterMeasure: &runtimev1.MeasureFilterMeasure{
+								Measure: &runtimev1.MetricsViewAggregationMeasure{Name: "measure_1"},
+							},
+						},
+					},
+					{
+						Entry: &runtimev1.MeasureFilterNode_Value{
+							Value: structpb.NewNumberValue(3.25),
+						},
+					},
 				},
+				OperationType: runtimev1.MeasureFilterExpression_OPERATION_TYPE_GREATER,
+			},
+		},
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	require.Len(t, q.Result.Rows, 3)
+	require.NotEmpty(t, "sports.yahoo.com", q.Result.Rows[0].DimensionValue)
+	require.NotEmpty(t, "news.google.com", q.Result.Rows[1].DimensionValue)
+	require.NotEmpty(t, "instagram.com", q.Result.Rows[2].DimensionValue)
+}
+
+func TestMetricsViewsComparison_measure_filters_with_compare(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	ctr := &queries.ColumnTimeRange{
+		TableName:  "ad_bids",
+		ColumnName: "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
+	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView()
+
+	q := &queries.MetricsViewComparison{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		MetricsView: mv.Spec,
+		TimeRange: &runtimev1.TimeRange{
+			Start: ctr.Result.Min,
+			End:   timestamppb.New(maxTime),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(maxTime),
+			End:   ctr.Result.Max,
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name: "dom",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
+				Desc: true,
+			},
+		},
+		Limit: 250,
+		MeasureFilter: &runtimev1.MeasureFilter{
+			Expression: &runtimev1.MeasureFilterExpression{
+				Entries: []*runtimev1.MeasureFilterNode{
+					{
+						Entry: &runtimev1.MeasureFilterNode_MeasureFilterMeasure{
+							MeasureFilterMeasure: &runtimev1.MeasureFilterMeasure{
+								Measure:    &runtimev1.MetricsViewAggregationMeasure{Name: "measure_1"},
+								ColumnType: runtimev1.MeasureFilterMeasure_COLUMN_TYPE_DELTA_RELATIVE,
+							},
+						},
+					},
+					{
+						Entry: &runtimev1.MeasureFilterNode_Value{
+							Value: structpb.NewNumberValue(1),
+						},
+					},
+				},
+				OperationType: runtimev1.MeasureFilterExpression_OPERATION_TYPE_GREATER,
 			},
 		},
 	}

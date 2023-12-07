@@ -304,7 +304,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	havingClause := ""
 	if q.MeasureFilter != nil {
 		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildHavingClause(q.MeasureFilter, mv)
+		havingClause, havingClauseArgs, err = buildHavingClause(q.MeasureFilter, mv, false)
 		if err != nil {
 			return "", nil, err
 		}
@@ -440,7 +440,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		var labelTuple string
 		if dialect != drivers.DialectDruid {
 			columnsTuple = fmt.Sprintf(
-				"base.%[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
+				"sum(base.%[1]s) as %[1]s, sum(comparison.%[1]s) AS %[2]s, sum(base.%[1]s - comparison.%[1]s) AS %[3]s, sum((base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE) AS %[4]s",
 				safeName(m.Name),
 				safeName(m.Name+"__previous"),
 				safeName(m.Name+"__delta_abs"),
@@ -522,6 +522,17 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		comparisonWhereClause += " " + clause
 
 		args = append(args, clauseArgs...)
+	}
+
+	havingClause := ""
+	if q.MeasureFilter != nil {
+		var havingClauseArgs []any
+		havingClause, havingClauseArgs, err = buildHavingClause(q.MeasureFilter, mv, true)
+		if err != nil {
+			return "", nil, err
+		}
+		havingClause = "HAVING " + havingClause
+		args = append(args, havingClauseArgs...)
 	}
 
 	err = validateSort(q.Sort)
@@ -655,6 +666,8 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
+		GROUP BY 1
+		%[16]s
 		ORDER BY
 			%[6]s
 		%[7]s
@@ -676,6 +689,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			comparisonLimitClause, // 13
 			unnestClause,          // 14
 			groupByCol,            // 15
+			havingClause,          // 16
 		)
 	} else {
 		/*
