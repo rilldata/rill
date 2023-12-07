@@ -121,20 +121,8 @@ func CheckServerStatus(srv *server.Server) error {
 
 	go func() {
 		resp, err := http.Get("http://localhost:8080/v1/ping")
-		if err != nil {
-			resultChan <- err
-			return
-		}
+		resultChan <- err
 		defer resp.Body.Close()
-
-		// Additional check for response status, if needed
-		if resp.StatusCode != http.StatusOK {
-			resultChan <- fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-			return
-		}
-
-		// If everything's fine, signal no error
-		resultChan <- nil
 	}()
 
 	select {
