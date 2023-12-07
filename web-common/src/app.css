@@ -117,7 +117,7 @@
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
 
     /* Defaults for the theme. This will be overridden based on the selected theme.
-       Should match src/features/themes/color-config.ts */
+       Should match the color palette blue from tailwind */
     /* Primary colors */
     --color-primary-50: #eff6ff;
     --color-primary-100: #dbeafe;

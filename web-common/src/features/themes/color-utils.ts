@@ -9,6 +9,8 @@ export function convertColor(color: V1Color): RGBColor {
   ) as RGBColor;
 }
 
+// These methods are copied over from color-convert.
+// Just for these 2 methods, it didnt make sense to add a dependency.
 export function RGBToHSL(rgb: RGBColor): HSLColor {
   const r = rgb[0] / 255;
   const g = rgb[1] / 255;

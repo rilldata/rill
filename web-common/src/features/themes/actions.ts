@@ -1,9 +1,7 @@
-import {
-  DefaultPrimaryColors,
-  TailwindColorSpacing,
-} from "@rilldata/web-common/features/themes/color-config";
+import { TailwindColorSpacing } from "@rilldata/web-common/features/themes/color-config";
 import {
   convertColor,
+  HexToHSL,
   RGBToHSL,
 } from "@rilldata/web-common/features/themes/color-utils";
 import type { HSLColor } from "@rilldata/web-common/features/themes/color-utils";
@@ -21,11 +19,10 @@ export function setTheme(theme: V1Theme) {
 }
 
 function setPrimaryColor(primary: V1Color) {
-  const colors = generateColorPalette(primary);
-
   const root = document.querySelector(ThemeBoundarySelector) as HTMLElement;
   if (!root) return;
 
+  const colors = generateColorPalette(primary, getDefaultPrimaryColors());
   for (let i = 0; i < TailwindColorSpacing.length; i++) {
     root.style.setProperty(
       `${PrimaryCSSVariablePrefix}${TailwindColorSpacing[i]}`,
@@ -66,14 +63,26 @@ function themeColorToHSLString([h, s, l]: HSLColor) {
   return `${Number.isNaN(h) ? 0 : h}, ${Math.round(s)}%, ${Math.round(l)}%`;
 }
 
+// Get the default primary color defined in app.css
+function getDefaultPrimaryColors() {
+  const style = getComputedStyle(document.documentElement);
+  return TailwindColorSpacing.map((c) => {
+    const hex = style.getPropertyValue(`${PrimaryCSSVariablePrefix}${c}`);
+    return HexToHSL(hex.substring(1));
+  });
+}
+
 /**
  * Right now copies over saturation and lightness from the default primary color of blue, keeping the hue from input
  */
-export function generateColorPalette(input: V1Color) {
+export function generateColorPalette(
+  input: V1Color,
+  defaultColors: Array<HSLColor>
+) {
   const [hue] = RGBToHSL(convertColor(input));
   const colors = new Array<HSLColor>(TailwindColorSpacing.length);
-  for (let i = 0; i < DefaultPrimaryColors.length; i++) {
-    colors[i] = [hue, DefaultPrimaryColors[i][1], DefaultPrimaryColors[i][2]];
+  for (let i = 0; i < defaultColors.length; i++) {
+    colors[i] = [hue, defaultColors[i][1], defaultColors[i][2]];
   }
   return colors;
 }
