@@ -9,13 +9,6 @@
   import type { V1NumericStatistics } from "@rilldata/web-common/runtime-client";
   import { format } from "d3-format";
 
-  // export let min: number;
-  // export let max: number;
-  // export let q25: number;
-  // export let q50: number;
-  // export let q75: number;
-  // export let mean: number;
-
   export let summary: V1NumericStatistics | undefined;
 
   export let rowHeight = 24;
