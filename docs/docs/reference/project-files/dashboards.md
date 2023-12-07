@@ -24,6 +24,8 @@ _**`first_month_of_year`**_ — the first month of the year for time grain aggre
 
 _**`available_time_zones`**_ — time zones that should be pinned to the top of the time zone selector _(optional)_. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). By adding one or more time zones will make the dashboard time zone aware and allow users to change current time zone within the dashboard.
 
+_**`default_theme`**_ — default theme to apply to the dashboard _(optional)_. A valid theme must be defined in the project. Check [themes](./themes.md) for more information.
+
 _**`dimensions`**_ — for exploring [segments](../../develop/metrics-dashboard#dimensions) and filtering the dashboard _(required)_
   - _**`column`**_ — a categorical column _(required)_ 
   - _**`name`**_ — a stable identifier for the dimension _(optional)_
