@@ -78,7 +78,7 @@ const fetch = require('node-fetch');
 const app = express();
 app.use(express.json());
 
-app.post('/api/getIframeUrl', async (req, res) => {
+app.post('/api/rill/iframe', async (req, res) => {
     const dashboardName = req.body.resource;
     try {
         const response = await fetch('https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe', {
@@ -93,7 +93,7 @@ app.post('/api/getIframeUrl', async (req, res) => {
             }),
         });
         const data = await response.json();
-        res.json({ iframeSrc: data.resp.body });
+        res.json({ iframeResp: data.resp.body });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -115,8 +115,8 @@ import requests
 
 app = Flask(__name__)
 
-@app.route('/api/getIframeUrl', methods=['POST'])
-def get_iframe_url():
+@app.route('/api/rill/iframe', methods=['POST'])
+def get_rill_iframe():
     dashboard_name = request.json.get('resource')
     try:
         response = requests.post(
@@ -132,7 +132,7 @@ def get_iframe_url():
         )
         response.raise_for_status()
         data = response.json()
-        return jsonify(iframeSrc=data['resp']['body'])
+        return jsonify(iframeResp=data['resp']['body'])
     except requests.RequestException as e:
         return jsonify(error=str(e)), 500
 
@@ -155,7 +155,7 @@ import (
 	"net/http"
 )
 
-func getIframeUrl(w http.ResponseWriter, r *http.Request) {
+func getRillIframe(w http.ResponseWriter, r *http.Request) {
 	var reqBody map[string]string
 	json.NewDecoder(r.Body).Decode(&reqBody)
 	dashboardName := reqBody["resource"]
@@ -192,7 +192,7 @@ func getIframeUrl(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/api/getIframeUrl", getIframeUrl)
+	http.HandleFunc("api/rill/iframe", getRillIframe)
 	fmt.Println("Server started at port 3000")
 	http.ListenAndServe(":3000", nil)
 }
@@ -215,8 +215,8 @@ import java.util.Map;
 @RestController
 public class DashboardController {
 
-    @PostMapping("/api/getIframeUrl")
-    public ResponseEntity<?> getIframeUrl(@RequestBody Map<String, Object> payload) {
+    @PostMapping("/api/rill/iframe")
+    public ResponseEntity<?> getRillIframe(@RequestBody Map<String, Object> payload) {
         String dashboardName = (String) payload.get("resource");
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", "application/json");
@@ -232,7 +232,7 @@ public class DashboardController {
         ResponseEntity<Map> response = restTemplate.postForEntity("https://admin.rilldata.com/v1/organizations/<org-name>/projects/<project-name>/iframe", entity, Map.class);
 
         Map<String, Object> resp = (Map<String, Object>) response.getBody().get("resp");
-        Map<String, String> responseBody = Map.of("iframe", (String) ((Map<String, Object>) resp.get("body")));
+        Map<String, String> responseBody = Map.of("iframeResp", (String) ((Map<String, Object>) resp.get("body")));
 
         return ResponseEntity.ok(responseBody);
     }
@@ -253,13 +253,7 @@ The API accepts the following parameters:
 | attributes | Json payload to be put in the access token, used to pass attributes to the dashboard for enforcing policies. When using this make sure to pass all the attributes used in your security policy | No (either this or `user_email`) |
 | ttl_seconds | The time to live for the iframe URL                                                                                                                                                            | No (Default: 86400)              |
 
-:::tip
-
-Use `"attributes": {}` for no user context.
-
-:::
-
-The response will contain an iframe URL that can be used to embed the dashboard in the customer's application. Here's an example response:
+The response will contain an `iframeSrc` that can be used to embed the dashboard in the customer's application along with `ttlSeconds` for which the iframe url will be valid after which it needs to be fetched again. Here's an example response:
 
 ```json
 {
@@ -283,23 +277,21 @@ Here's an example of how to create a dashboard component in a React application,
 
 ```jsx
 import React, { useEffect, useState } from 'react';
-import { useUser } from '../hooks/useUser';
 
 const RillDashboard = () => {
   const [iframeUrl, setIframeUrl] = useState('');
-  const { userEmail } = useUser();
 
   useEffect(() => {
       const getIframeUrl = async () => {
           try {
-              const response = await fetch(`/api/getIframeUrl`, {
+              // call the backend to get the iframe URL, see the "Backend: Build an iframe URL" section for details and examples
+              const response = await fetch(`/api/rill/iframe`, {
                   method: 'POST',
                   headers: {
                       'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
                       resource: dashboardName,
-                      user_email: '<user-email>',
                   }),
               });
               if (!response.ok) {
@@ -312,7 +304,7 @@ const RillDashboard = () => {
           }
       };
     getIframeUrl();
-  }, [userEmail]);
+  }, []);
 
   return (
     <iframe title="rill-dashboard"
