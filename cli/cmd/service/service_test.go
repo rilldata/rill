@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	qt "github.com/frankban/quicktest"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/cli/cmd/org"
@@ -17,12 +16,12 @@ import (
 	"github.com/rilldata/rill/cli/pkg/mock"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
 func TestServiceWorkflow(t *testing.T) {
-	c := qt.New(t)
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 
@@ -32,7 +31,7 @@ func TestServiceWorkflow(t *testing.T) {
 	// Get Admin service
 	adm, err := mock.AdminService(ctx, logger, pg.DatabaseURL)
 	defer adm.Close()
-	c.Assert(err, qt.IsNil)
+	require.NoError(t, err)
 	db := adm.DB
 
 	// create mock admin user
@@ -41,16 +40,16 @@ func TestServiceWorkflow(t *testing.T) {
 		DisplayName:         "admin",
 		QuotaSingleuserOrgs: 3,
 	})
-	c.Assert(err, qt.IsNil)
+	require.NoError(t, err)
 
 	// issue admin and viewer tokens
 	adminAuthToken, err := adm.IssueUserAuthToken(ctx, adminUser.ID, database.AuthClientIDRillWeb, "test", nil, nil)
-	c.Assert(err, qt.IsNil)
-	c.Assert(adminAuthToken, qt.Not(qt.IsNil))
+	require.NoError(t, err)
+	require.NotNil(t, adminAuthToken)
 
 	// Create mock admin server
 	srv, err := mock.AdminServer(ctx, logger, adm)
-	c.Assert(err, qt.IsNil)
+	require.NoError(t, err)
 
 	// Make errgroup for running the processes
 	ctx = graceful.WithCancelOnTerminate(ctx)
@@ -59,7 +58,7 @@ func TestServiceWorkflow(t *testing.T) {
 	group.Go(func() error { return srv.ServeGRPC(cctx) })
 	group.Go(func() error { return srv.ServeHTTP(cctx) })
 	err = mock.CheckServerStatus(srv)
-	c.Assert(err, qt.IsNil)
+	require.NoError(t, err)
 
 	var buf bytes.Buffer
 	format := printer.Human
@@ -80,7 +79,7 @@ func TestServiceWorkflow(t *testing.T) {
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{"--name", "myorg"})
 	err = cmd.Execute()
-	c.Assert(err, qt.IsNil)
+	require.NoError(t, err)
 
 	// Create service
 	serviceName := "myservice"
@@ -91,13 +90,13 @@ func TestServiceWorkflow(t *testing.T) {
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{serviceName})
 	err = cmd.Execute()
-	c.Assert(err, qt.IsNil)
+	require.NoError(t, err)
 
 	expectedServiceMsg := []string{`Created service "myservice" in org "myorg".`}
 	bufSlice := strings.Split(buf.String(), "\n")
 	// Should we check for Access token as well?
-	c.Assert(bufSlice, qt.HasLen, 3)
-	c.Assert(bufSlice[0], qt.Contains, expectedServiceMsg[0])
+	require.Equal(t, len(bufSlice), 3)
+	require.Contains(t, bufSlice[0], expectedServiceMsg[0])
 
 	// Create one more service in same org
 	cmd = CreateCmd(helper)
@@ -105,7 +104,7 @@ func TestServiceWorkflow(t *testing.T) {
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{"myservice1"})
 	err = cmd.Execute()
-	c.Assert(err, qt.IsNil)
+	require.NoError(t, err)
 
 	// List service in org
 	buf.Reset()
@@ -118,14 +117,14 @@ func TestServiceWorkflow(t *testing.T) {
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{})
 	err = cmd.Execute()
-	c.Assert(err, qt.IsNil)
+	require.NoError(t, err)
 	expectedServices := []string{"myservice", "myservice1"}
 	serviceList := []Service{}
 	err = json.Unmarshal([]byte(buf.String()), &serviceList)
-	c.Assert(err, qt.IsNil)
-	c.Assert(serviceList, qt.HasLen, 2)
+	require.NoError(t, err)
+	require.Equal(t, len(serviceList), 2)
 	for _, service := range serviceList {
-		c.Assert(expectedServices, qt.Contains, service.Name)
+		require.Contains(t, expectedServices, service.Name)
 	}
 
 	// Delete service
@@ -137,9 +136,9 @@ func TestServiceWorkflow(t *testing.T) {
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{"myservice"})
 	err = cmd.Execute()
-	c.Assert(err, qt.IsNil)
+	require.NoError(t, err)
 	expectedMsg := fmt.Sprintf("Deleted service: %q\n", serviceName)
-	c.Assert(buf.String(), qt.Equals, expectedMsg)
+	require.Equal(t, buf.String(), expectedMsg)
 
 	// List service in org after delete
 	buf.Reset()
@@ -151,14 +150,14 @@ func TestServiceWorkflow(t *testing.T) {
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{})
 	err = cmd.Execute()
-	c.Assert(err, qt.IsNil)
+	require.NoError(t, err)
 	serviceList = []Service{}
 	err = json.Unmarshal([]byte(buf.String()), &serviceList)
-	c.Assert(err, qt.IsNil)
-	c.Assert(serviceList, qt.HasLen, 1)
+	require.NoError(t, err)
+	require.Equal(t, len(serviceList), 1)
 	expectedServices = []string{"myservice1"}
 	for _, service := range serviceList {
-		c.Assert(expectedServices, qt.Contains, service.Name)
+		require.Contains(t, expectedServices, service.Name)
 	}
 
 	// Rename service
@@ -170,14 +169,14 @@ func TestServiceWorkflow(t *testing.T) {
 	cmd.SetErr(&buf)
 	cmd.SetArgs([]string{"myservice1", "--new-name", "myservice2"})
 	err = cmd.Execute()
-	c.Assert(err, qt.IsNil)
+	require.NoError(t, err)
 	expectedServices = []string{"myservice2"}
 	serviceList = []Service{}
 	err = json.Unmarshal([]byte(buf.String()), &serviceList)
-	c.Assert(err, qt.IsNil)
-	c.Assert(serviceList, qt.HasLen, 1)
+	require.NoError(t, err)
+	require.Equal(t, len(serviceList), 1)
 	for _, service := range serviceList {
-		c.Assert(expectedServices, qt.Contains, service.Name)
+		require.Contains(t, expectedServices, service.Name)
 	}
 }
 
