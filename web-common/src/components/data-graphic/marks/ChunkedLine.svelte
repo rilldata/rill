@@ -23,6 +23,10 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     lineFactory,
     pathIsDefined,
   } from "@rilldata/web-common/components/data-graphic/utils";
+  import {
+    AreaSubRangeColor,
+    MainLineSubRangeColor,
+  } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { interpolatePath } from "d3-interpolate-path";
   import { getContext } from "svelte";
@@ -39,8 +43,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
 
   export let stopOpacity = 0.3;
   // FIXME – this is a different prop than elsewhere
-  export let lineColor = "hsla(217,60%, 55%, 1)";
-  export let areaColor = "hsla(217,70%, 80%, .4)";
+  export let lineColor = MainLineSubRangeColor;
+  export let areaColor = AreaSubRangeColor;
   export let lineClasses = "";
 
   const id = guidGenerator();
@@ -108,13 +112,13 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       width="1.5"
       class={lineClasses}
       height={Math.abs($yScale(0) - $yScale(singleton[yAccessor]))}
-      fill="hsla(217,60%, 55%, .5)"
+      fill={lineColor}
     />
     <circle
       cx={$xScale(singleton[xAccessor])}
       cy={$yScale(singleton[yAccessor])}
       r="1.5"
-      fill="hsla(217,60%, 55%, .5)"
+      fill={lineColor}
     />
   {/each}
   <g>
