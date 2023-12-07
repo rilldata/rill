@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
+  import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createAdminServiceGetProject } from "../../client";
   import ProjectDeploymentStatusChip from "./ProjectDeploymentStatusChip.svelte";

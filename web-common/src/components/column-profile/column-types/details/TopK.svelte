@@ -26,7 +26,7 @@
 
   const { shiftClickAction } = createShiftClickAction();
 
-  export let topK: TopKEntry[];
+  export let topK: TopKEntry[] | undefined;
   export let totalRows: number;
   export let k = 15;
   export let type: string;
@@ -35,10 +35,12 @@
 
   $: smallestPercentage =
     topK && topK.length
-      ? Math.min(...topK.slice(0, 5).map((entry) => entry.count / totalRows))
+      ? Math.min(
+          ...topK.slice(0, 5).map((entry) => (entry?.count ?? 0) / totalRows)
+        )
       : undefined;
   $: formatPercentage =
-    smallestPercentage < 0.01
+    smallestPercentage && smallestPercentage < 0.01
       ? format("0.2%")
       : smallestPercentage
       ? format("0.1%")

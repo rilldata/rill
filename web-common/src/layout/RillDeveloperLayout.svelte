@@ -91,3 +91,10 @@
 </div>
 
 <NotificationCenter />
+
+<style>
+  /* Prevent trackpad navigation (like other code editors, like vscode.dev). */
+  :global(body) {
+    overscroll-behavior: none;
+  }
+</style>

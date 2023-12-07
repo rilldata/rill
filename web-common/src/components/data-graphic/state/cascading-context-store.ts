@@ -1,7 +1,7 @@
 import { get, writable } from "svelte/store";
 import { setContext, getContext, hasContext } from "svelte";
 
-export function pruneProps<T>(props: T): T {
+export function pruneProps<T extends object>(props: T): T {
   return Object.keys(props).reduce((next, prop) => {
     if (props[prop] !== undefined) next[prop] = props[prop];
     return next;
@@ -27,7 +27,7 @@ function addDerivations(store, derivations) {
  * reactive data viz component compositions.
  * Most consumers of the data graphic components won't need to worry about this store.
  */
-export function cascadingContextStore<Props, StoreValue>(
+export function cascadingContextStore<Props extends object, StoreValue>(
   namespace: string,
   props: Props,
   derivations = {}

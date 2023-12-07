@@ -3,6 +3,12 @@
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import type { PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
+  import {
+    ScrubArea0Color,
+    ScrubArea1Color,
+    ScrubArea2Color,
+    ScrubBoxColor,
+  } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { getBisectedTimeFromCordinates } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { createEventDispatcher, getContext } from "svelte";
   import type { Writable } from "svelte/store";
@@ -240,7 +246,7 @@
         x2={xStart}
         {y1}
         {y2}
-        stroke="#60A5FA"
+        stroke={ScrubBoxColor}
         stroke-width={strokeWidth}
       />
       <line
@@ -248,7 +254,7 @@
         x2={xEnd}
         {y1}
         {y2}
-        stroke="#60A5FA"
+        stroke={ScrubBoxColor}
         stroke-width={strokeWidth}
       />
     </g>
@@ -270,10 +276,10 @@
 {/if}
 
 <defs>
-  <linearGradient id="scrubbing-gradient" gradientUnits="userSpaceOnUse">
-    <stop stop-color="#558AFF" />
-    <stop offset="0.36" stop-color="#4881FF" />
-    <stop offset="1" stop-color="#2563EB" />
+  <linearGradient gradientUnits="userSpaceOnUse" id="scrubbing-gradient">
+    <stop stop-color={ScrubArea0Color} />
+    <stop offset="0.36" stop-color={ScrubArea1Color} />
+    <stop offset="1" stop-color={ScrubArea2Color} />
   </linearGradient>
 </defs>
 

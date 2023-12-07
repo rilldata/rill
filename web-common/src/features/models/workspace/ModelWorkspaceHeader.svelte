@@ -115,7 +115,8 @@
       </svelte:fragment>
     </IconButton>
   </svelte:fragment>
-  <svelte:fragment slot="cta">
+  <svelte:fragment slot="cta" let:width>
+    {@const collapse = width < 800}
     <PanelCTA side="right">
       <ModelWorkspaceCTAs
         availableDashboards={$availableDashboards?.data}

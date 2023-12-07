@@ -35,10 +35,11 @@ Otherwise, the page will jump around as the data is fetched.
   import { fade, fly } from "svelte/transition";
   import SummaryNumberPlot from "./SummaryNumberPlot.svelte";
   import TopK from "./TopK.svelte";
+  import type { NumericPlotPoint } from "@rilldata/web-common/components/data-graphic/functional-components/types";
 
   export let data: NumericHistogramBinsBin[];
   export let rug: NumericOutliersOutlier[];
-  export let summary: V1NumericStatistics;
+  export let summary: V1NumericStatistics | undefined;
   export let topK: TopKEntry[];
   export let totalRows: number;
   export let type: string;
@@ -53,7 +54,7 @@ Otherwise, the page will jump around as the data is fetched.
   // the data has been fetched.
   let rowHeight = 24;
 
-  let focusPoint = undefined;
+  let focusPoint: NumericPlotPoint | undefined = undefined;
   // reset focus point once the mode changes.
   $: if (summaryMode !== "summary") focusPoint = undefined;
 </script>
@@ -215,7 +216,7 @@ Otherwise, the page will jump around as the data is fetched.
                   opacity={0.8}
                   >({justEnoughPrecision(point?.low)}, {justEnoughPrecision(
                     point?.high
-                  )}{point?.high === data.at(-1).high ? ")" : "]"}</text
+                  )}{point?.high === data.at(-1)?.high ? ")" : "]"}</text
                 >
                 <text
                   use:outline
@@ -277,16 +278,7 @@ Otherwise, the page will jump around as the data is fetched.
         {#if summaryMode === "summary" && summary}
           {@const rowHeight = 24}
           <div class="pt-1">
-            <SummaryNumberPlot
-              {rowHeight}
-              min={summary?.min}
-              max={summary?.max}
-              mean={summary?.mean}
-              q25={summary?.q25}
-              q50={summary?.q50}
-              q75={summary?.q75}
-              {type}
-            />
+            <SummaryNumberPlot {rowHeight} {summary} {type} />
           </div>
         {:else if topK && summaryMode === "topk"}
           <div class="pt-1 px-1">

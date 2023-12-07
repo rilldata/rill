@@ -70,8 +70,8 @@
   export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
 
   /** rollup grain, time range, etc. */
-  export let rollupTimeGrain: V1TimeGrain;
-  export let estimatedSmallestTimeGrain: V1TimeGrain;
+  export let rollupTimeGrain: V1TimeGrain | undefined;
+  export let estimatedSmallestTimeGrain: V1TimeGrain | undefined;
 
   let devicePixelRatio = 1;
   onMount(() => {

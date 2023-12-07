@@ -183,7 +183,6 @@
 <div class="grid items-center" style:grid-template-columns="auto max-content">
   <WorkspaceHeader
     {...{ titleInput: sourceName, onChangeCallback }}
-    on:resize={(e) => (headerWidth = e.detail.width)}
   >
     <svelte:fragment slot="workspace-controls">
       {#if $refreshSourceMutation.isLoading}
@@ -202,7 +201,7 @@
         </div>
       {/if}
     </svelte:fragment>
-    <svelte:fragment slot="cta">
+    <svelte:fragment slot="cta" let:width={headerWidth}>
       <PanelCTA side="right">
         <Button
           disabled={!isSourceUnsaved}

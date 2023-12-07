@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/server"
 	admincli "github.com/rilldata/rill/cli/cmd/admin"
-	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -114,20 +114,21 @@ func (m *mockGithub) InstallationToken(ctx context.Context, installationID int64
 	return "", nil
 }
 
-func CheckServerStatus(srv *server.Server) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+func CheckServerStatus() error {
+	client := &http.Client{}
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	resultChan := make(chan error, 1)
-
-	go func() {
-		_, err := srv.Ping(ctx, &adminv1.PingRequest{})
-		resultChan <- err
-	}()
-
-	select {
-	case err := <-resultChan:
-		return err
-	case <-ctx.Done():
-		return fmt.Errorf("server is not responding within the timeout period")
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("server took too long to start")
+		default:
+			resp, err := client.Get("http://localhost:8080/v1/ping")
+			if err == nil {
+				resp.Body.Close()
+				return nil
+			}
+			time.Sleep(100 * time.Millisecond) // Wait and retry
+		}
 	}
 }
