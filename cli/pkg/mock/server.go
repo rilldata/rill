@@ -121,8 +121,8 @@ func CheckServerStatus(srv *server.Server) error {
 
 	go func() {
 		resp, err := http.Get("http://localhost:8080/v1/ping")
-		resultChan <- err
 		defer resp.Body.Close()
+		resultChan <- err
 	}()
 
 	select {
