@@ -58,7 +58,7 @@ func TestOrganizationWorkflow(t *testing.T) {
 
 	group.Go(func() error { return srv.ServeGRPC(cctx) })
 	group.Go(func() error { return srv.ServeHTTP(cctx) })
-	err = mock.CheckServerStatus(srv)
+	err = mock.CheckServerStatus()
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
