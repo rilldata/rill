@@ -71,6 +71,7 @@ import type {
   V1UnpackExampleResponse,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
+import type { ErrorType } from "../../http-client";
 
 /**
  * @summary ListConnectors returns a description of all the connectors implemented in the runtime,
@@ -90,7 +91,7 @@ export const getRuntimeServiceListConnectorsQueryKey = () => {
 
 export const getRuntimeServiceListConnectorsQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
@@ -117,7 +118,7 @@ export const getRuntimeServiceListConnectorsQueryOptions = <
 export type RuntimeServiceListConnectorsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceListConnectors>>
 >;
-export type RuntimeServiceListConnectorsQueryError = RpcStatus;
+export type RuntimeServiceListConnectorsQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary ListConnectors returns a description of all the connectors implemented in the runtime,
@@ -125,7 +126,7 @@ including their schema and validation rules
  */
 export const createRuntimeServiceListConnectors = <
   TData = Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
@@ -160,7 +161,7 @@ export const runtimeServiceDeleteFileAndReconcile = (
 };
 
 export const getRuntimeServiceDeleteFileAndReconcileMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -194,13 +195,14 @@ export type RuntimeServiceDeleteFileAndReconcileMutationResult = NonNullable<
 >;
 export type RuntimeServiceDeleteFileAndReconcileMutationBody =
   V1DeleteFileAndReconcileRequest;
-export type RuntimeServiceDeleteFileAndReconcileMutationError = RpcStatus;
+export type RuntimeServiceDeleteFileAndReconcileMutationError =
+  ErrorType<RpcStatus>;
 
 /**
  * @summary DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
  */
 export const createRuntimeServiceDeleteFileAndReconcile = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -235,7 +237,7 @@ export const getRuntimeServiceIssueDevJWTQueryKey = (
 
 export const getRuntimeServiceIssueDevJWTQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceIssueDevJWT>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: RuntimeServiceIssueDevJWTParams,
   options?: {
@@ -265,11 +267,11 @@ export const getRuntimeServiceIssueDevJWTQueryOptions = <
 export type RuntimeServiceIssueDevJWTQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceIssueDevJWT>>
 >;
-export type RuntimeServiceIssueDevJWTQueryError = RpcStatus;
+export type RuntimeServiceIssueDevJWTQueryError = ErrorType<RpcStatus>;
 
 export const createRuntimeServiceIssueDevJWT = <
   TData = Awaited<ReturnType<typeof runtimeServiceIssueDevJWT>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: RuntimeServiceIssueDevJWTParams,
   options?: {
@@ -312,7 +314,7 @@ export const getRuntimeServiceListExamplesQueryKey = () => {
 
 export const getRuntimeServiceListExamplesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListExamples>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof runtimeServiceListExamples>>,
@@ -339,14 +341,14 @@ export const getRuntimeServiceListExamplesQueryOptions = <
 export type RuntimeServiceListExamplesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceListExamples>>
 >;
-export type RuntimeServiceListExamplesQueryError = RpcStatus;
+export type RuntimeServiceListExamplesQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary ListExamples lists all the examples embedded into binary
  */
 export const createRuntimeServiceListExamples = <
   TData = Awaited<ReturnType<typeof runtimeServiceListExamples>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof runtimeServiceListExamples>>,
@@ -389,7 +391,7 @@ export const getRuntimeServiceListInstancesQueryKey = (
 
 export const getRuntimeServiceListInstancesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListInstances>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: RuntimeServiceListInstancesParams,
   options?: {
@@ -419,14 +421,14 @@ export const getRuntimeServiceListInstancesQueryOptions = <
 export type RuntimeServiceListInstancesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceListInstances>>
 >;
-export type RuntimeServiceListInstancesQueryError = RpcStatus;
+export type RuntimeServiceListInstancesQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary ListInstances lists all the instances currently managed by the runtime
  */
 export const createRuntimeServiceListInstances = <
   TData = Awaited<ReturnType<typeof runtimeServiceListInstances>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: RuntimeServiceListInstancesParams,
   options?: {
@@ -467,7 +469,7 @@ export const runtimeServiceCreateInstance = (
 };
 
 export const getRuntimeServiceCreateInstanceMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -500,13 +502,13 @@ export type RuntimeServiceCreateInstanceMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceCreateInstance>>
 >;
 export type RuntimeServiceCreateInstanceMutationBody = V1CreateInstanceRequest;
-export type RuntimeServiceCreateInstanceMutationError = RpcStatus;
+export type RuntimeServiceCreateInstanceMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary CreateInstance creates a new instance
  */
 export const createRuntimeServiceCreateInstance = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -541,7 +543,7 @@ export const getRuntimeServiceGetInstanceQueryKey = (instanceId: string) => {
 
 export const getRuntimeServiceGetInstanceQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetInstance>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   options?: {
@@ -576,14 +578,14 @@ export const getRuntimeServiceGetInstanceQueryOptions = <
 export type RuntimeServiceGetInstanceQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetInstance>>
 >;
-export type RuntimeServiceGetInstanceQueryError = RpcStatus;
+export type RuntimeServiceGetInstanceQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary GetInstance returns information about a specific instance
  */
 export const createRuntimeServiceGetInstance = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetInstance>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   options?: {
@@ -625,7 +627,7 @@ export const runtimeServiceDeleteInstance = (
 };
 
 export const getRuntimeServiceDeleteInstanceMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -659,13 +661,13 @@ export type RuntimeServiceDeleteInstanceMutationResult = NonNullable<
 >;
 export type RuntimeServiceDeleteInstanceMutationBody =
   RuntimeServiceDeleteInstanceBody;
-export type RuntimeServiceDeleteInstanceMutationError = RpcStatus;
+export type RuntimeServiceDeleteInstanceMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary DeleteInstance deletes an instance
  */
 export const createRuntimeServiceDeleteInstance = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -696,7 +698,7 @@ export const runtimeServiceEditInstance = (
 };
 
 export const getRuntimeServiceEditInstanceMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -730,13 +732,13 @@ export type RuntimeServiceEditInstanceMutationResult = NonNullable<
 >;
 export type RuntimeServiceEditInstanceMutationBody =
   RuntimeServiceEditInstanceBody;
-export type RuntimeServiceEditInstanceMutationError = RpcStatus;
+export type RuntimeServiceEditInstanceMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary EditInstance edits an existing instance
  */
 export const createRuntimeServiceEditInstance = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -778,7 +780,7 @@ export const getRuntimeServiceListCatalogEntriesQueryKey = (
 
 export const getRuntimeServiceListCatalogEntriesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListCatalogEntries>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceListCatalogEntriesParams,
@@ -816,14 +818,14 @@ export const getRuntimeServiceListCatalogEntriesQueryOptions = <
 export type RuntimeServiceListCatalogEntriesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceListCatalogEntries>>
 >;
-export type RuntimeServiceListCatalogEntriesQueryError = RpcStatus;
+export type RuntimeServiceListCatalogEntriesQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary ListCatalogEntries lists all the entries registered in an instance's catalog (like tables, sources or metrics views)
  */
 export const createRuntimeServiceListCatalogEntries = <
   TData = Awaited<ReturnType<typeof runtimeServiceListCatalogEntries>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceListCatalogEntriesParams,
@@ -875,7 +877,7 @@ export const getRuntimeServiceGetCatalogEntryQueryKey = (
 
 export const getRuntimeServiceGetCatalogEntryQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetCatalogEntry>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   name: string,
@@ -912,14 +914,14 @@ export const getRuntimeServiceGetCatalogEntryQueryOptions = <
 export type RuntimeServiceGetCatalogEntryQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetCatalogEntry>>
 >;
-export type RuntimeServiceGetCatalogEntryQueryError = RpcStatus;
+export type RuntimeServiceGetCatalogEntryQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary GetCatalogEntry returns information about a specific entry in the catalog
  */
 export const createRuntimeServiceGetCatalogEntry = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetCatalogEntry>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   name: string,
@@ -963,7 +965,7 @@ export const runtimeServiceTriggerRefresh = (
 };
 
 export const getRuntimeServiceTriggerRefreshMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -996,7 +998,7 @@ export type RuntimeServiceTriggerRefreshMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceTriggerRefresh>>
 >;
 
-export type RuntimeServiceTriggerRefreshMutationError = RpcStatus;
+export type RuntimeServiceTriggerRefreshMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary TriggerRefresh triggers a refresh of a refreshable catalog object.
@@ -1004,7 +1006,7 @@ It currently only supports sources (which will be re-ingested), but will also su
 It does not respond until the refresh has completed (will move to async jobs when the task scheduler is in place).
  */
 export const createRuntimeServiceTriggerRefresh = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -1048,7 +1050,7 @@ export const getRuntimeServiceListFilesQueryKey = (
 
 export const getRuntimeServiceListFilesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListFiles>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceListFilesParams,
@@ -1085,7 +1087,7 @@ export const getRuntimeServiceListFilesQueryOptions = <
 export type RuntimeServiceListFilesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceListFiles>>
 >;
-export type RuntimeServiceListFilesQueryError = RpcStatus;
+export type RuntimeServiceListFilesQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary ListFiles lists all the files matching a glob in a repo.
@@ -1093,7 +1095,7 @@ The files are sorted by their full path.
  */
 export const createRuntimeServiceListFiles = <
   TData = Awaited<ReturnType<typeof runtimeServiceListFiles>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceListFilesParams,
@@ -1145,7 +1147,7 @@ export const getRuntimeServiceGetFileQueryKey = (
 
 export const getRuntimeServiceGetFileQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetFile>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   path: string,
@@ -1182,14 +1184,14 @@ export const getRuntimeServiceGetFileQueryOptions = <
 export type RuntimeServiceGetFileQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetFile>>
 >;
-export type RuntimeServiceGetFileQueryError = RpcStatus;
+export type RuntimeServiceGetFileQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary GetFile returns the contents of a specific file in a repo.
  */
 export const createRuntimeServiceGetFile = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetFile>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   path: string,
@@ -1228,7 +1230,7 @@ export const runtimeServiceDeleteFile = (instanceId: string, path: string) => {
 };
 
 export const getRuntimeServiceDeleteFileMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -1261,13 +1263,13 @@ export type RuntimeServiceDeleteFileMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceDeleteFile>>
 >;
 
-export type RuntimeServiceDeleteFileMutationError = RpcStatus;
+export type RuntimeServiceDeleteFileMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary DeleteFile deletes a file from a repo
  */
 export const createRuntimeServiceDeleteFile = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -1298,7 +1300,7 @@ export const runtimeServicePutFile = (
 };
 
 export const getRuntimeServicePutFileMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -1331,13 +1333,13 @@ export type RuntimeServicePutFileMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServicePutFile>>
 >;
 export type RuntimeServicePutFileMutationBody = RuntimeServicePutFileBody;
-export type RuntimeServicePutFileMutationError = RpcStatus;
+export type RuntimeServicePutFileMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary PutFile creates or updates a file in a repo
  */
 export const createRuntimeServicePutFile = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -1367,7 +1369,7 @@ export const runtimeServiceRenameFile = (
 };
 
 export const getRuntimeServiceRenameFileMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -1400,13 +1402,13 @@ export type RuntimeServiceRenameFileMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceRenameFile>>
 >;
 export type RuntimeServiceRenameFileMutationBody = RuntimeServiceRenameFileBody;
-export type RuntimeServiceRenameFileMutationError = RpcStatus;
+export type RuntimeServiceRenameFileMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary RenameFile renames a file in a repo
  */
 export const createRuntimeServiceRenameFile = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -1436,7 +1438,7 @@ export const runtimeServiceUnpackEmpty = (
 };
 
 export const getRuntimeServiceUnpackEmptyMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -1470,13 +1472,13 @@ export type RuntimeServiceUnpackEmptyMutationResult = NonNullable<
 >;
 export type RuntimeServiceUnpackEmptyMutationBody =
   RuntimeServiceUnpackEmptyBody;
-export type RuntimeServiceUnpackEmptyMutationError = RpcStatus;
+export type RuntimeServiceUnpackEmptyMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary UnpackEmpty unpacks an empty project
  */
 export const createRuntimeServiceUnpackEmpty = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -1506,7 +1508,7 @@ export const runtimeServiceUnpackExample = (
 };
 
 export const getRuntimeServiceUnpackExampleMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -1540,13 +1542,13 @@ export type RuntimeServiceUnpackExampleMutationResult = NonNullable<
 >;
 export type RuntimeServiceUnpackExampleMutationBody =
   RuntimeServiceUnpackExampleBody;
-export type RuntimeServiceUnpackExampleMutationError = RpcStatus;
+export type RuntimeServiceUnpackExampleMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary UnpackExample unpacks an example project
  */
 export const createRuntimeServiceUnpackExample = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -1589,7 +1591,7 @@ export const getRuntimeServiceWatchFilesQueryKey = (
 
 export const getRuntimeServiceWatchFilesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceWatchFiles>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceWatchFilesParams,
@@ -1626,14 +1628,14 @@ export const getRuntimeServiceWatchFilesQueryOptions = <
 export type RuntimeServiceWatchFilesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceWatchFiles>>
 >;
-export type RuntimeServiceWatchFilesQueryError = RpcStatus;
+export type RuntimeServiceWatchFilesQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary WatchFiles streams repo file update events. It is not supported on all backends.
  */
 export const createRuntimeServiceWatchFiles = <
   TData = Awaited<ReturnType<typeof runtimeServiceWatchFiles>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceWatchFilesParams,
@@ -1689,7 +1691,7 @@ export const getRuntimeServiceGetLogsQueryKey = (
 
 export const getRuntimeServiceGetLogsQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetLogs>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceGetLogsParams,
@@ -1726,14 +1728,14 @@ export const getRuntimeServiceGetLogsQueryOptions = <
 export type RuntimeServiceGetLogsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetLogs>>
 >;
-export type RuntimeServiceGetLogsQueryError = RpcStatus;
+export type RuntimeServiceGetLogsQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary GetLogs returns recent logs from a controller
  */
 export const createRuntimeServiceGetLogs = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetLogs>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceGetLogsParams,
@@ -1789,7 +1791,7 @@ export const getRuntimeServiceWatchLogsQueryKey = (
 
 export const getRuntimeServiceWatchLogsQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceWatchLogs>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceWatchLogsParams,
@@ -1826,14 +1828,14 @@ export const getRuntimeServiceWatchLogsQueryOptions = <
 export type RuntimeServiceWatchLogsQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceWatchLogs>>
 >;
-export type RuntimeServiceWatchLogsQueryError = RpcStatus;
+export type RuntimeServiceWatchLogsQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary WatchLogs streams new logs emitted from a controller
  */
 export const createRuntimeServiceWatchLogs = <
   TData = Awaited<ReturnType<typeof runtimeServiceWatchLogs>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceWatchLogsParams,
@@ -1880,7 +1882,7 @@ export const runtimeServiceReconcile = (
 };
 
 export const getRuntimeServiceReconcileMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -1913,7 +1915,7 @@ export type RuntimeServiceReconcileMutationResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceReconcile>>
 >;
 export type RuntimeServiceReconcileMutationBody = RuntimeServiceReconcileBody;
-export type RuntimeServiceReconcileMutationError = RpcStatus;
+export type RuntimeServiceReconcileMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary Reconcile applies a full set of artifacts from a repo to the catalog and infra.
@@ -1922,7 +1924,7 @@ the desired state expressed in the artifacts. Any existing objects not described
 artifacts will be deleted.
  */
 export const createRuntimeServiceReconcile = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -1964,7 +1966,7 @@ export const getRuntimeServiceGetResourceQueryKey = (
 
 export const getRuntimeServiceGetResourceQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetResource>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceGetResourceParams,
@@ -2001,14 +2003,14 @@ export const getRuntimeServiceGetResourceQueryOptions = <
 export type RuntimeServiceGetResourceQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceGetResource>>
 >;
-export type RuntimeServiceGetResourceQueryError = RpcStatus;
+export type RuntimeServiceGetResourceQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary GetResource looks up a specific catalog resource
  */
 export const createRuntimeServiceGetResource = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetResource>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceGetResourceParams,
@@ -2064,7 +2066,7 @@ export const getRuntimeServiceListResourcesQueryKey = (
 
 export const getRuntimeServiceListResourcesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListResources>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceListResourcesParams,
@@ -2101,14 +2103,14 @@ export const getRuntimeServiceListResourcesQueryOptions = <
 export type RuntimeServiceListResourcesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceListResources>>
 >;
-export type RuntimeServiceListResourcesQueryError = RpcStatus;
+export type RuntimeServiceListResourcesQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary ListResources lists the resources stored in the catalog
  */
 export const createRuntimeServiceListResources = <
   TData = Awaited<ReturnType<typeof runtimeServiceListResources>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceListResourcesParams,
@@ -2164,7 +2166,7 @@ export const getRuntimeServiceWatchResourcesQueryKey = (
 
 export const getRuntimeServiceWatchResourcesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceWatchResources>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceWatchResourcesParams,
@@ -2201,14 +2203,14 @@ export const getRuntimeServiceWatchResourcesQueryOptions = <
 export type RuntimeServiceWatchResourcesQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceWatchResources>>
 >;
-export type RuntimeServiceWatchResourcesQueryError = RpcStatus;
+export type RuntimeServiceWatchResourcesQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary WatchResources streams updates to catalog resources (including creation and deletion events)
  */
 export const createRuntimeServiceWatchResources = <
   TData = Awaited<ReturnType<typeof runtimeServiceWatchResources>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   instanceId: string,
   params?: RuntimeServiceWatchResourcesParams,
@@ -2253,7 +2255,7 @@ export const runtimeServiceCreateTrigger = (
 };
 
 export const getRuntimeServiceCreateTriggerMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -2287,14 +2289,14 @@ export type RuntimeServiceCreateTriggerMutationResult = NonNullable<
 >;
 export type RuntimeServiceCreateTriggerMutationBody =
   RuntimeServiceCreateTriggerBody;
-export type RuntimeServiceCreateTriggerMutationError = RpcStatus;
+export type RuntimeServiceCreateTriggerMutationError = ErrorType<RpcStatus>;
 
 /**
  * @summary CreateTrigger creates a trigger in the catalog.
 Triggers are ephemeral resources that will be cleaned up by the controller.
  */
 export const createRuntimeServiceCreateTrigger = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -2322,7 +2324,7 @@ export const getRuntimeServicePingQueryKey = () => {
 
 export const getRuntimeServicePingQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServicePing>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof runtimeServicePing>>,
@@ -2348,14 +2350,14 @@ export const getRuntimeServicePingQueryOptions = <
 export type RuntimeServicePingQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServicePing>>
 >;
-export type RuntimeServicePingQueryError = RpcStatus;
+export type RuntimeServicePingQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary Ping returns information about the runtime
  */
 export const createRuntimeServicePing = <
   TData = Awaited<ReturnType<typeof runtimeServicePing>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof runtimeServicePing>>,
@@ -2391,7 +2393,7 @@ export const runtimeServicePutFileAndReconcile = (
 };
 
 export const getRuntimeServicePutFileAndReconcileMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -2425,14 +2427,15 @@ export type RuntimeServicePutFileAndReconcileMutationResult = NonNullable<
 >;
 export type RuntimeServicePutFileAndReconcileMutationBody =
   V1PutFileAndReconcileRequest;
-export type RuntimeServicePutFileAndReconcileMutationError = RpcStatus;
+export type RuntimeServicePutFileAndReconcileMutationError =
+  ErrorType<RpcStatus>;
 
 /**
  * @summary PutFileAndReconcile combines PutFile and Reconcile in a single endpoint to reduce latency.
 It is equivalent to calling the two RPCs sequentially.
  */
 export const createRuntimeServicePutFileAndReconcile = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -2459,7 +2462,7 @@ export const runtimeServiceRefreshAndReconcile = (
 };
 
 export const getRuntimeServiceRefreshAndReconcileMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -2493,10 +2496,11 @@ export type RuntimeServiceRefreshAndReconcileMutationResult = NonNullable<
 >;
 export type RuntimeServiceRefreshAndReconcileMutationBody =
   V1RefreshAndReconcileRequest;
-export type RuntimeServiceRefreshAndReconcileMutationError = RpcStatus;
+export type RuntimeServiceRefreshAndReconcileMutationError =
+  ErrorType<RpcStatus>;
 
 export const createRuntimeServiceRefreshAndReconcile = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -2526,7 +2530,7 @@ export const runtimeServiceRenameFileAndReconcile = (
 };
 
 export const getRuntimeServiceRenameFileAndReconcileMutationOptions = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -2560,13 +2564,14 @@ export type RuntimeServiceRenameFileAndReconcileMutationResult = NonNullable<
 >;
 export type RuntimeServiceRenameFileAndReconcileMutationBody =
   V1RenameFileAndReconcileRequest;
-export type RuntimeServiceRenameFileAndReconcileMutationError = RpcStatus;
+export type RuntimeServiceRenameFileAndReconcileMutationError =
+  ErrorType<RpcStatus>;
 
 /**
  * @summary RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
  */
 export const createRuntimeServiceRenameFileAndReconcile = <
-  TError = RpcStatus,
+  TError = ErrorType<RpcStatus>,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
