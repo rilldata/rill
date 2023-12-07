@@ -5,7 +5,6 @@
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
-  import type { QueryError } from "@rilldata/web-common/runtime-client/error";
   import { errorStore } from "../../../features/errors/error-store";
 
   const instanceId = $page.url.searchParams.get("instance_id");
@@ -14,8 +13,7 @@
 
   $: dashboard = useDashboard(instanceId, dashboardName);
   $: isDashboardNotFound =
-    $dashboard.isError &&
-    ($dashboard.error as QueryError)?.response?.status === 404;
+    $dashboard.isError && $dashboard.error?.response?.status === 404;
   // We check for metricsView.state.validSpec instead of meta.reconcileError. validSpec persists
   // from previous valid dashboards, allowing display even when the current dashboard spec is invalid
   // and a meta.reconcileError exists.
