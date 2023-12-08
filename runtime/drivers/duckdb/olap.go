@@ -766,7 +766,7 @@ func (c *connection) generateSelectQuery(ctx context.Context, db string) (string
 		if err := rows.Scan(&col); err != nil {
 			return "", err
 		}
-		cols = append(cols, col)
+		cols = append(cols, safeName(col))
 	}
 
 	return fmt.Sprintf("SELECT %s FROM %s.default", strings.Join(cols, ", "), safeSQLName(db)), nil

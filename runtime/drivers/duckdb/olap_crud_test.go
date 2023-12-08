@@ -461,7 +461,7 @@ func Test_connection_ChangingOrder(t *testing.T) {
 	c.AsOLAP("default")
 
 	// create table
-	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'India' AS country")
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'India' AS 'coun\"try'")
 	require.NoError(t, err)
 
 	// create view
@@ -470,7 +470,7 @@ func Test_connection_ChangingOrder(t *testing.T) {
 	verifyCount(t, c, "test_view", 1)
 
 	// change sequence
-	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 'India' AS country, 1 AS id")
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 'India' AS 'coun\"try', 1 AS id")
 	require.NoError(t, err)
 	// view should still work
 	verifyCount(t, c, "test_view", 1)
@@ -484,7 +484,7 @@ func Test_connection_ChangingOrder(t *testing.T) {
 	c.AsOLAP("default")
 
 	// create table
-	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'India' AS country")
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'India' AS 'coun\"try'")
 	require.NoError(t, err)
 
 	// create view
@@ -493,7 +493,7 @@ func Test_connection_ChangingOrder(t *testing.T) {
 	verifyCount(t, c, "test_view", 1)
 
 	// change sequence
-	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 'India' AS country, 1 AS id")
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 'India' AS 'coun\"try', 1 AS id")
 	require.NoError(t, err)
 
 	// view no longer works
