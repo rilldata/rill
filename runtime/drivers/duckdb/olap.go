@@ -741,7 +741,7 @@ func (c *connection) convertToEnum(ctx context.Context, table, col string) error
 // duckDB raises Contents of view were altered: types don't match! error even when number of columns are same but sequence of column changes in underlying table.
 // This causes temporary query failures till the model view is not updated to reflect the new column sequence.
 // We ensure that view for external table storage is always generated using a stable order of columns of underlying table.
-// Additionaly we want to keep the same order as the underlying table locally so that we can show columns in the same order as they appear in source data.
+// Additionally we want to keep the same order as the underlying table locally so that we can show columns in the same order as they appear in source data.
 // Using `AllowHostAccess` as proxy to check if we are running in local/cloud mode.
 func (c *connection) generateSelectQuery(ctx context.Context, db string) (string, error) {
 	if c.config.AllowHostAccess {
@@ -763,7 +763,7 @@ func (c *connection) generateSelectQuery(ctx context.Context, db string) (string
 	cols := make([]string, 0)
 	var col string
 	for rows.Next() {
-		if err = rows.Scan(&col); err != nil {
+		if err := rows.Scan(&col); err != nil {
 			return "", err
 		}
 		cols = append(cols, col)
