@@ -102,40 +102,6 @@ func BenchmarkMetricsViewsTimeSeries_TimeZone_Hour(b *testing.B) {
 	}
 }
 
-func BenchmarkMetricsViewsTimeSeries_TimeZone_Day_spending(b *testing.B) {
-	rt, instanceID, mv := prepareEnvironmentSpending(b)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		q := &queries.MetricsViewTimeSeries{
-			MetricsViewName: "spending_dashboard",
-			TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-			MeasureNames:    []string{"total_records"},
-			TimeZone:        "Asia/Kathmandu",
-			MetricsView:     mv,
-		}
-		err := q.Resolve(context.Background(), rt, instanceID, 0)
-		require.NoError(b, err)
-		require.NotEmpty(b, q.Result)
-	}
-}
-
-func BenchmarkMetricsViewsTimeSeries_TimeZone_Hour_spending(b *testing.B) {
-	rt, instanceID, mv := prepareEnvironmentSpending(b)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		q := &queries.MetricsViewTimeSeries{
-			MetricsViewName: "spending_dashboard",
-			TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
-			MeasureNames:    []string{"total_records"},
-			TimeZone:        "Asia/Kathmandu",
-			MetricsView:     mv,
-		}
-		err := q.Resolve(context.Background(), rt, instanceID, 0)
-		require.NoError(b, err)
-		require.NotEmpty(b, q.Result)
-	}
-}
-
 func prepareEnvironment(b *testing.B) (*runtime.Runtime, string, *runtimev1.MetricsViewSpec) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 
@@ -143,19 +109,6 @@ func prepareEnvironment(b *testing.B) (*runtime.Runtime, string, *runtimev1.Metr
 	require.NoError(b, err)
 
 	obj, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(b, err)
-
-	mv := obj.GetMetricsView().Spec
-	return rt, instanceID, mv
-}
-
-func prepareEnvironmentSpending(b *testing.B) (*runtime.Runtime, string, *runtimev1.MetricsViewSpec) {
-	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
-
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(b, err)
-
-	obj, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "spending_dashboard"}, false)
 	require.NoError(b, err)
 
 	mv := obj.GetMetricsView().Spec
