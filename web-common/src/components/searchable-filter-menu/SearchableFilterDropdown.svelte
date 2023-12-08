@@ -76,7 +76,7 @@
   rounded={false}
 >
   <!-- the min-height is set to have about 3 entries in it -->
-  <div class="px-1 pb-1">
+  <div class="px-3 py-2">
     <Search bind:value={searchText} showBorderOnFocus={false} />
   </div>
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
@@ -99,8 +99,6 @@
                 ? "#9CA3AF"
                 : "#15141A"}
             />
-          {:else}
-            <Spacer size="20px" />
           {/if}
         </svelte:fragment>
         <span class:ui-copy-disabled={!selected && allowMultiSelect}>

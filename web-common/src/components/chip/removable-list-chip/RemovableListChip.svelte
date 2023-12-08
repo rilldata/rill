@@ -11,8 +11,9 @@ the name and then move the cursor to the right to cancel it.
 existing elements in the lib as well as changing the type (include, exclude) and enabling list search. The implementation of these parts
 are details left to the consumer of the component; this component should remain pure-ish (only internal state) if possible.
 -->
-<script lang="ts">
-  import { createEventDispatcher } from "svelte";
+
+<script context="module" lang="ts">
+  import { createEventDispatcher, onMount } from "svelte";
   import { fly } from "svelte/transition";
   import WithTogglableFloatingElement from "../../floating-element/WithTogglableFloatingElement.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
@@ -23,21 +24,38 @@ are details left to the consumer of the component; this component should remain 
   import RemovableListBody from "./RemovableListBody.svelte";
   import RemovableListMenu from "./RemovableListMenu.svelte";
   import { writable, Writable } from "svelte/store";
+  import { clearFilterForDimension } from "@rilldata/web-common/features/dashboards/actions";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+</script>
 
+<script lang="ts">
   export let name: string;
   export let selectedValues: string[];
   export let searchedValues: string[] | null;
 
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
-  export let excludeMode;
+  export let excludeMode: boolean;
   export let colors: ChipColors = defaultChipColors;
   export let label: string | undefined = undefined;
+  export let dimensionName: string;
 
   const dispatch = createEventDispatcher();
 
+  const StateManagers = getStateManagers();
+
+  const {
+    actions: {
+      dimensionsFilter: { toggleDimensionValueSelection },
+    },
+  } = StateManagers;
+
   const excludeStore: Writable<boolean> = writable(excludeMode);
   $: excludeStore.set(excludeMode);
+
+  onMount(() => {
+    dispatch("mount");
+  });
 </script>
 
 <WithTogglableFloatingElement
@@ -45,6 +63,7 @@ are details left to the consumer of the component; this component should remain 
   let:active
   distance={8}
   alignment="start"
+  active={true}
 >
   <Tooltip
     location="bottom"
@@ -55,7 +74,10 @@ are details left to the consumer of the component; this component should remain 
   >
     <Chip
       removable
-      on:click={toggleFloatingElement}
+      on:click={() => {
+        toggleFloatingElement();
+        dispatch("click");
+      }}
       on:remove={() => dispatch("remove")}
       {active}
       {...colors}
@@ -91,14 +113,29 @@ are details left to the consumer of the component; this component should remain 
     </div>
   </Tooltip>
   <RemovableListMenu
-    {excludeStore}
     slot="floating-element"
-    on:escape={toggleFloatingElement}
-    on:click-outside={toggleFloatingElement}
+    {excludeMode}
+    {selectedValues}
+    {searchedValues}
+    on:escape={() => {
+      if (!selectedValues.length) {
+        clearFilterForDimension(StateManagers, dimensionName, !excludeMode);
+      } else {
+        toggleFloatingElement();
+      }
+    }}
+    on:click-outside={() => {
+      if (!selectedValues.length) {
+        clearFilterForDimension(StateManagers, dimensionName, !excludeMode);
+      } else {
+        toggleFloatingElement();
+      }
+    }}
+    on:keep-alive={() => {
+      toggleDimensionValueSelection(dimensionName);
+    }}
     on:apply
     on:search
     on:toggle
-    {selectedValues}
-    {searchedValues}
   />
 </WithTogglableFloatingElement>

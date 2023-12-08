@@ -8,8 +8,9 @@
   import { Menu, MenuItem } from "../../menu";
   import { Search } from "../../search";
   import Footer from "./Footer.svelte";
+  import Button from "../../button/Button.svelte";
 
-  export let excludeStore: Writable<boolean>;
+  export let excludeMode: boolean;
   export let selectedValues: string[];
   export let searchedValues: string[] | null = [];
 
@@ -33,7 +34,7 @@
   let valuesToDisplay = [...candidateValues];
 
   // If searchedValues === null, search has not finished yet. So continue rendering the previous list
-  $: if (searchText && searchedValues !== null) {
+  $: if (searchedValues !== null) {
     valuesToDisplay = [...searchedValues];
   } else if (!searchText) valuesToDisplay = [...candidateValues];
 
@@ -41,13 +42,26 @@
     (v) => !valuesToDisplay.includes(v)
   ).length;
 
-  function toggleValue(value) {
+  function toggleValue(value: string) {
     dispatch("apply", value);
 
     if (!candidateValues.includes(value)) {
       candidateValues = [...candidateValues, value];
     }
   }
+
+  function toggleSelectAll() {
+    valuesToDisplay.forEach((value) => {
+      if (!allSelected && selectedValues.includes(value)) return;
+
+      toggleValue(value);
+    });
+
+    if (allSelected) dispatch("keep-alive");
+  }
+
+  $: allSelected =
+    selectedValues?.length && valuesToDisplay.length === selectedValues.length;
 </script>
 
 <Menu
@@ -63,11 +77,12 @@
 >
   <!-- the min-height is set to have about 3 entries in it -->
 
-  <div class="px-1 pb-1">
+  <div class="px-3 py-2">
     <Search
       bind:value={searchText}
       on:input={onSearch}
-      label="Search list"
+      label="Search dimension values"
+      placeholder="Search dimension values"
       showBorderOnFocus={false}
     />
   </div>
@@ -85,9 +100,9 @@
           }}
         >
           <svelte:fragment slot="icon">
-            {#if selectedValues.includes(value) && !$excludeStore}
+            {#if selectedValues.includes(value) && !excludeMode}
               <Check size="20px" color="#15141A" />
-            {:else if selectedValues.includes(value) && $excludeStore}
+            {:else if selectedValues.includes(value) && excludeMode}
               <Cancel size="20px" color="#15141A" />
             {:else}
               <Spacer size="20px" />
@@ -95,7 +110,7 @@
           </svelte:fragment>
           <span
             class:ui-copy-disabled={selectedValues.includes(value) &&
-              $excludeStore}
+              excludeMode}
           >
             {#if value?.length > 240}
               {value.slice(0, 240)}...
@@ -110,17 +125,20 @@
     {/if}
   </div>
   <Footer>
-    <span class="ui-copy">
-      <Switch on:click={() => onToggleHandler()} checked={$excludeStore}>
+    <Button type="text" on:click={toggleSelectAll}>
+      {#if allSelected}
+        Deselect all
+      {:else}
+        Select all
+      {/if}
+    </Button>
+
+    <Button type="secondary" on:click={() => dispatch("toggle")}>
+      {#if excludeMode}
+        Include
+      {:else}
         Exclude
-      </Switch>
-    </span>
-    {#if numSelectedNotInSearch}
-      <div class="ui-label">
-        {numSelectedNotInSearch} other value{numSelectedNotInSearch > 1
-          ? "s"
-          : ""} selected
-      </div>
-    {/if}
+      {/if}
+    </Button>
   </Footer>
 </Menu>
