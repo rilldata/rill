@@ -22,6 +22,7 @@
   import DashboardCTAs from "./DashboardCTAs.svelte";
   import DashboardTitle from "./DashboardTitle.svelte";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
+  import Pivot from "@rilldata/web-common/features/dashboards/pivot/Pivot.svelte";
 
   export let metricViewName: string;
   export let leftMargin = undefined;
@@ -32,6 +33,7 @@
 
   $: selectedDimensionName = $metricsExplorer?.selectedDimensionName;
   $: expandedMeasureName = $metricsExplorer?.expandedMeasureName;
+  $: showPivot = $metricsExplorer?.pivot;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
     metricViewName
@@ -106,31 +108,37 @@
       class="flex gap-x-1 h-full overflow-hidden flex-{dashboardAlignment}"
       style:padding-left={leftSide}
     >
-      <div
-        class:fixed-metric-height={expandedMeasureName}
-        class="overflow-y-scroll pb-8 flex-none"
-      >
-        {#key metricViewName}
-          {#if hasTimeSeries}
-            <MetricsTimeSeriesCharts
-              {metricViewName}
-              workspaceWidth={exploreContainerWidth}
-            />
-          {:else}
-            <MeasuresContainer {exploreContainerWidth} {metricViewName} />
-          {/if}
-        {/key}
-      </div>
+      {#if showPivot}
+        <div class="overflow-y-hidden flex-none">
+          <Pivot {metricViewName} />
+        </div>
+      {:else}
+        <div
+          class:fixed-metric-height={expandedMeasureName}
+          class="overflow-y-scroll pb-8 flex-none"
+        >
+          {#key metricViewName}
+            {#if hasTimeSeries}
+              <MetricsTimeSeriesCharts
+                {metricViewName}
+                workspaceWidth={exploreContainerWidth}
+              />
+            {:else}
+              <MeasuresContainer {exploreContainerWidth} {metricViewName} />
+            {/if}
+          {/key}
+        </div>
 
-      <div class="overflow-y-hidden grow {expandedMeasureName ? '' : 'px-4'}">
-        {#if expandedMeasureName}
-          <TimeDimensionDisplay {metricViewName} />
-        {:else if selectedDimensionName}
-          <DimensionDisplay />
-        {:else}
-          <LeaderboardDisplay />
-        {/if}
-      </div>
+        <div class="overflow-y-hidden grow {expandedMeasureName ? '' : 'px-4'}">
+          {#if expandedMeasureName}
+            <TimeDimensionDisplay {metricViewName} />
+          {:else if selectedDimensionName}
+            <DimensionDisplay />
+          {:else}
+            <LeaderboardDisplay />
+          {/if}
+        </div>
+      {/if}
     </div>
 
     {#if isRillDeveloper && !expandedMeasureName}

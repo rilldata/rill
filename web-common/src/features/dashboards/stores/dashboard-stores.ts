@@ -210,6 +210,12 @@ const metricViewReducers = {
     });
   },
 
+  setPivotMode(name: string, mode: boolean) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = mode;
+    });
+  },
+
   setLeaderboardMeasureName(name: string, measureName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.leaderboardMeasureName = measureName;

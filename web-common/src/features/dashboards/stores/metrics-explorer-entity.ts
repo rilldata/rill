@@ -136,5 +136,7 @@ export interface MetricsExplorerEntity {
    */
   selectedDimensionName?: string;
 
+  pivot?: boolean;
+
   proto?: string;
 }

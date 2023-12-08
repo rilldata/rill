@@ -132,6 +132,7 @@ export function getDefaultMetricsExplorerEntity(
     showTimeComparison: false,
     dimensionSearchText: "",
     pinIndex: -1,
+    pivot: false,
   };
   // set time range related stuff
   setDefaultTimeRange(metricsView, metricsExplorer, fullTimeRange);
