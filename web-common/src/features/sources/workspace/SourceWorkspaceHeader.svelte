@@ -254,6 +254,7 @@
             on:click-outside={toggleFloatingElement}
             on:escape={toggleFloatingElement}
             slot="floating-element"
+            let:toggleFloatingElement
           >
             <MenuItem
               on:select={() => {

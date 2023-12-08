@@ -114,5 +114,6 @@ props as needed.
     {selectedItems}
     allowMultiSelect={false}
     slot="floating-element"
+    let:toggleFloatingElement
   />
 </WithTogglableFloatingElement>

@@ -26,10 +26,10 @@ props as needed.
   import { fly } from "svelte/transition";
   import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
 
+  import SelectButton from "../menu/triggers/SelectButton.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import SearchableFilterDropdown from "./SearchableFilterDropdown.svelte";
-  import SelectButton from "../menu/triggers/SelectButton.svelte";
 
   export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: boolean[];
@@ -88,5 +88,6 @@ props as needed.
     {selectableItems}
     {selectedItems}
     slot="floating-element"
+    let:toggleFloatingElement
   />
 </WithTogglableFloatingElement>

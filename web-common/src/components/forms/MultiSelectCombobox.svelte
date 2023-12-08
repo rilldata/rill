@@ -74,6 +74,8 @@
     />
     <Menu
       slot="floating-element"
+      let:active
+      let:toggleFloatingElement
       focusOnMount={false}
       minWidth={`${inputEl.clientWidth}px`}
       maxHeight="120px"

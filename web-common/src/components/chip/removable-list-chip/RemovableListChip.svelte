@@ -13,6 +13,7 @@ are details left to the consumer of the component; this component should remain 
 -->
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
+  import { Writable, writable } from "svelte/store";
   import { fly } from "svelte/transition";
   import WithTogglableFloatingElement from "../../floating-element/WithTogglableFloatingElement.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
@@ -22,7 +23,6 @@ are details left to the consumer of the component; this component should remain 
   import { Chip } from "../index";
   import RemovableListBody from "./RemovableListBody.svelte";
   import RemovableListMenu from "./RemovableListMenu.svelte";
-  import { writable, Writable } from "svelte/store";
 
   export let name: string;
   export let selectedValues: string[];
@@ -93,6 +93,7 @@ are details left to the consumer of the component; this component should remain 
   <RemovableListMenu
     {excludeStore}
     slot="floating-element"
+    let:toggleFloatingElement
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}
     on:apply

@@ -31,18 +31,18 @@
   }
 
   let parent;
+
+  function handleClose() {
+    active = false;
+  }
+
+  function toggleFloatingElement() {
+    active = !active;
+  }
 </script>
 
 <div class:inline bind:this={parent}>
-  <slot
-    {active}
-    handleClose={() => {
-      active = false;
-    }}
-    toggleFloatingElement={() => {
-      active = !active;
-    }}
-  />
+  <slot {active} {handleClose} {toggleFloatingElement} />
   {#if active && !suppress}
     <Portal>
       <div style="z-index: 50;">
@@ -56,7 +56,12 @@
           {overflowFlipY}
           {mousePos}
         >
-          <slot name="floating-element" />
+          <slot
+            name="floating-element"
+            {active}
+            {handleClose}
+            {toggleFloatingElement}
+          />
         </FloatingElement>
       </div>
     </Portal>

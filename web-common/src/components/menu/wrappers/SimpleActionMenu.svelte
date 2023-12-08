@@ -41,6 +41,7 @@ and the menu closes.
   <slot {handleClose} toggleMenu={toggleFloatingElement} {active} />
   <Menu
     slot="floating-element"
+    let:handleClose
     {dark}
     {minWidth}
     focusOnMount={false}
