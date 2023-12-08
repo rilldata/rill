@@ -1,6 +1,7 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import dns from "dns";
 import { defineConfig } from "vite";
+import Icons from "unplugin-icons/vite";
 
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");
@@ -40,7 +41,13 @@ const config = defineConfig(({ mode }) => ({
   define: {
     RILL_RUNTIME_URL: `"${runtimeUrl}"`,
   },
-  plugins: [sveltekit()],
+  plugins: [
+    sveltekit(),
+    Icons({
+      compiler: "svelte",
+      autoInstall: true,
+    }),
+  ],
 }));
 
 export default config;

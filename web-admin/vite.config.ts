@@ -1,6 +1,7 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import dns from "dns";
 import type { UserConfig } from "vite";
+import Icons from "unplugin-icons/vite";
 
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");
@@ -16,7 +17,13 @@ const config: UserConfig = {
     port: 3000,
     strictPort: true,
   },
-  plugins: [sveltekit()],
+  plugins: [
+    sveltekit(),
+    Icons({
+      compiler: "svelte",
+      autoInstall: true,
+    }),
+  ],
 };
 
 export default config;

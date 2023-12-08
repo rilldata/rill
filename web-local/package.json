@@ -35,6 +35,7 @@
     "svelte-check": "^3.0.3",
     "svelte-preprocess": "^4.10.7",
     "tree-kill": "^1.2.2",
-    "typescript": "4.6.3"
+    "typescript": "4.6.3",
+    "unplugin-icons": "^0.18.1"
   }
 }
