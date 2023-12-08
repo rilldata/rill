@@ -21,8 +21,8 @@ export function isFetching(...queries) {
 }
 
 export type ColumnSummary = V1ProfileColumn & {
-  nullCount: number;
-  cardinality: number;
+  nullCount?: number;
+  cardinality?: number;
   isFetching: boolean;
 };
 
@@ -32,9 +32,8 @@ export function getSummaries(
   instanceId: string,
   profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>
 ): Readable<Array<ColumnSummary>> {
-  if (!profileColumnResponse && !profileColumnResponse?.data) return;
   return derived(
-    profileColumnResponse.data.profileColumns.map((column) => {
+    profileColumnResponse?.data?.profileColumns?.map((column) => {
       return derived(
         [
           writable(column),
@@ -64,8 +63,8 @@ export function getSummaries(
         ([col, nullValues, cardinality]) => {
           return {
             ...col,
-            nullCount: +nullValues?.data?.count,
-            cardinality: +cardinality?.data?.categoricalSummary?.cardinality,
+            nullCount: nullValues?.data?.count,
+            cardinality: cardinality?.data?.categoricalSummary?.cardinality,
             isFetching:
               profileColumnResponse.isFetching ||
               nullValues?.isFetching ||
@@ -73,7 +72,7 @@ export function getSummaries(
           };
         }
       );
-    }),
+    }) ?? [],
 
     (combos) => {
       return combos;
@@ -111,8 +110,12 @@ export function getNullPercentage(
   );
   return derived([nullQuery, totalRowsQuery], ([nulls, totalRows]) => {
     return {
-      nullCount: nulls?.data?.count,
-      totalRows: +totalRows?.data?.cardinality,
+      // SAFETY: `.count` should presumably always exist in a
+      // null count query response
+      nullCount: nulls?.data?.count as number,
+      // SAFETY: `.cardinality` should presumably always exist
+      // in a carnality query response, but it's not typed as required.
+      totalRows: +(totalRows?.data?.cardinality as string),
       isFetching: nulls?.isFetching || totalRows?.isFetching,
     };
   });
@@ -147,7 +150,11 @@ export function getCountDistinct(
     ([cardinality, totalRows]) => {
       return {
         cardinality: cardinality?.data?.categoricalSummary?.cardinality,
-        totalRows: +totalRows?.data?.cardinality,
+        // SAFETY: if the V1TableCardinalityResponse exists in `totalRows`,
+        // then `.cardinality` should presumably always exist in the
+        // cardinality query response, so we should be able to cast it to
+        // a string. It's just not typed as required b/c of protobuf limitations.
+        totalRows: +(totalRows?.data?.cardinality as string),
         isFetching: cardinality?.isFetching || totalRows?.isFetching,
       };
     }
@@ -235,8 +242,8 @@ export function getTimeSeriesAndSpark(
         estimatedRollupInterval: $estimatedInterval?.data,
         smallestTimegrain: $smallestTimeGrain?.data?.timeGrain,
         data: convertTimestampPreview(
-          $query?.data?.rollup?.results.map((di) => {
-            const next = { ...di, count: di.records.count };
+          $query?.data?.rollup?.results?.map((di) => {
+            const next = { ...di, count: di?.records?.count };
             if (next.count == null || !isFinite(next.count)) {
               next.count = 0;
             }
@@ -244,8 +251,8 @@ export function getTimeSeriesAndSpark(
           }) || []
         ),
         spark: convertTimestampPreview(
-          $query?.data?.rollup?.spark.map((di) => {
-            const next = { ...di, count: di.records.count };
+          $query?.data?.rollup?.spark?.map((di) => {
+            const next = { ...di, count: di?.records?.count };
             if (next.count == null || !isFinite(next.count)) {
               next.count = 0;
             }
