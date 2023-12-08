@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Discord from "@rilldata/web-common/components/icons/Discord.svelte";
-  import Docs from "@rilldata/web-common/components/icons/Docs.svelte";
-  import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import Docs from "~icons/radix-icons/file-text";
+  import GitHub from "~icons/bxl/github";
+  import Discord from "~icons/bxl/discord-alt";
+  import InfoCircle from "~icons/ant-design/info-circle-outlined";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -21,21 +21,21 @@
       icon: Docs,
       label: "Documentation",
       href: "https://docs.rilldata.com",
-      className: "fill-gray-600",
+      className: "text-gray-600 text-[12px]",
       shrinkIcon: false,
     },
     {
       icon: Discord,
       label: "Ask a question",
       href: "http://bit.ly/3jg4IsF",
-      className: "fill-gray-500",
+      className: "text-gray-500 text-[14px]",
       shrinkIcon: true,
     },
     {
-      icon: Github,
+      icon: GitHub,
       label: "Report an issue",
       href: "https://github.com/rilldata/rill/issues/new?assignees=&labels=bug&template=bug_report.md&title=",
-      className: "fill-gray-500",
+      className: "text-gray-500 text-[14px]",
       shrinkIcon: true,
     },
   ];
@@ -57,7 +57,7 @@
         >
           <svelte:component
             this={lineItem.icon}
-            className={lineItem.className}
+            class={lineItem.className}
             size="14px"
           />
         </div>
@@ -77,7 +77,7 @@
           rel="noreferrer"
           class="text-gray-400"
         >
-          <InfoCircle size="16px" />
+          <InfoCircle class="text-[14px] text-gray-500" />
         </a>
         <div slot="tooltip-content" transition:fly={{ duration: 100, y: 8 }}>
           <TooltipContent>
