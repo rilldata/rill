@@ -5,7 +5,7 @@ import { filtersForCurrentExcludeMode } from "../selectors/dimension-filters";
 export function toggleDimensionValueSelection(
   { dashboard, cancelQueries }: DashboardMutables,
   dimensionName: string,
-  dimensionValue: string
+  dimensionValue?: string
 ) {
   const filters = filtersForCurrentExcludeMode({ dashboard })(dimensionName);
   // if there are no filters at this point we cannot update anything.
@@ -33,7 +33,7 @@ export function toggleDimensionValueSelection(
   } else {
     filters.push({
       name: dimensionName,
-      in: [dimensionValue],
+      in: dimensionValue ? [dimensionValue] : [],
     });
   }
 }

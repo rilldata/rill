@@ -29,6 +29,7 @@ The main feature-set component for dashboard filters
     toggleDimensionValue,
     toggleFilterMode,
   } from "../actions";
+  import FilterButton from "./FilterButton.svelte";
 
   const StateManagers = getStateManagers();
   const { dashboardStore } = StateManagers;
@@ -54,14 +55,16 @@ The main feature-set component for dashboard filters
     activeDimensionName;
 
   let topListQuery: ReturnType<typeof getFilterSearchList> | undefined;
-  $: if (activeDimensionName)
+  $: if (activeDimensionName) {
+    console.log({ activeDimensionName, searchText });
     topListQuery = getFilterSearchList(StateManagers, {
       dimension: activeDimensionName,
       searchText,
       addNull: "null".includes(searchText),
     });
+  }
 
-  $: if (!$topListQuery?.isFetching && searchText != "") {
+  $: if (!$topListQuery?.isFetching) {
     const topListData = $topListQuery?.data?.data ?? [];
     searchedValues = topListData.map((datum) => datum[activeColumn]) ?? [];
   }
@@ -120,7 +123,8 @@ The main feature-set component for dashboard filters
     currentDimensionFilters.sort((a, b) => (a.name > b.name ? 1 : -1));
   }
 
-  function setActiveDimension(name, value) {
+  function setActiveDimension(name, value = "") {
+    console.log({ name, value });
     activeDimensionName = name;
     searchText = value;
   }
@@ -144,8 +148,17 @@ The main feature-set component for dashboard filters
   >
     <Filter size="16px" />
   </div>
-  {#if currentDimensionFilters.length > 0}
-    <ChipContainer>
+
+  <ChipContainer>
+    {#if !currentDimensionFilters.length}
+      <div
+        in:fly|local={{ duration: 200, x: 8 }}
+        class="ui-copy-disabled grid items-center"
+        style:min-height={ROW_HEIGHT}
+      >
+        No filters selected
+      </div>
+    {:else}
       {#each currentDimensionFilters as { name, label, selectedValues, filterType } (name)}
         {@const isInclude = filterType === "include"}
         <div animate:flip={{ duration: 200 }}>
@@ -162,7 +175,15 @@ The main feature-set component for dashboard filters
             on:search={(event) => {
               setActiveDimension(name, event.detail);
             }}
+            on:click={(event) => {
+              console.log("CLICCKKKKCCCKK");
+              setActiveDimension(name, "");
+            }}
+            on:mount={() => {
+              setActiveDimension(name);
+            }}
             typeLabel="dimension"
+            dimensionName={name}
             name={isInclude ? label : `Exclude ${label}`}
             excludeMode={isInclude ? false : true}
             colors={getColorForChip(isInclude)}
@@ -176,35 +197,26 @@ The main feature-set component for dashboard filters
           </RemovableListChip>
         </div>
       {/each}
-      <!-- if filters are present, place a chip at the end of the flex container 
+    {/if}
+    <FilterButton />
+    <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
-      {#if hasFilters}
-        <div class="ml-auto">
-          <Chip
-            bgBaseClass="surface"
-            bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
-            textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
-            bgActiveClass="bg-gray-200 dark:bg-gray-600"
-            outlineClass="outline-gray-400"
-            on:click={() => clearAllFilters(StateManagers)}
-          >
-            <span slot="icon" class="ui-copy-disabled-faint">
-              <FilterRemove size="16px" />
-            </span>
-            <svelte:fragment slot="body">Clear filters</svelte:fragment>
-          </Chip>
-        </div>
-      {/if}
-    </ChipContainer>
-  {:else if currentDimensionFilters.length === 0}
-    <div
-      in:fly|local={{ duration: 200, x: 8 }}
-      class="ui-copy-disabled grid items-center"
-      style:min-height={ROW_HEIGHT}
-    >
-      No filters selected
-    </div>
-  {:else}
-    &nbsp;
-  {/if}
+    {#if hasFilters}
+      <div class="ml-auto">
+        <Chip
+          bgBaseClass="surface"
+          bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
+          textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
+          bgActiveClass="bg-gray-200 dark:bg-gray-600"
+          outlineClass="outline-gray-400"
+          on:click={() => clearAllFilters(StateManagers)}
+        >
+          <span slot="icon" class="ui-copy-disabled-faint">
+            <FilterRemove size="16px" />
+          </span>
+          <svelte:fragment slot="body">Clear filters</svelte:fragment>
+        </Chip>
+      </div>
+    {/if}
+  </ChipContainer>
 </section>

@@ -38,9 +38,8 @@
     bind:this={ref}
     type="text"
     autocomplete="off"
-    class="bg-white border border-gray-200 {showBorderOnFocus
-      ? 'focus:border-blue-400'
-      : ''} outline-none rounded-sm block w-full pl-8 p-1"
+    class:focus={showBorderOnFocus}
+    class="bg-slate-50 border border-gray-200 outline-none rounded-sm block w-full pl-8 p-1"
     {placeholder}
     bind:value
     on:input
@@ -48,3 +47,9 @@
     aria-label={label}
   />
 </form>
+
+<style lang="postcss">
+  .focus:focus {
+    @apply border-blue-400;
+  }
+</style>
