@@ -61,19 +61,6 @@ export function formatMsInterval(ms: number): string {
     // );
     return "";
   }
-  let negative = false;
-  if (ms < 0) {
-    ms = -ms;
-    negative = true;
-  }
-
-  if (ms === 0) {
-    return `0 ${timeUnits.s}`;
-  } else if (ms < 1) {
-    return `~0 ${timeUnits.s}`;
-  } else if (ms >= 100 * MS_PER_YEAR) {
-    return negative ? `< -100 ${timeUnits.y}` : `>100 ${timeUnits.y}`;
-  }
 
   const format = Intl.NumberFormat("en-US", {
     maximumFractionDigits: 1,
@@ -81,7 +68,11 @@ export function formatMsInterval(ms: number): string {
     maximumSignificantDigits: 2,
   }).format;
 
-  const neg = negative ? "-" : "";
+  let neg: "" | "-" = "";
+  if (ms < 0) {
+    ms = -ms;
+    neg = "-";
+  }
 
   switch (true) {
     case ms < 0:
@@ -110,7 +101,7 @@ export function formatMsInterval(ms: number): string {
     case ms < 100 * MS_PER_YEAR:
       return `${neg}${format(ms / MS_PER_YEAR)} ${timeUnits.y}`;
     default:
-      return negative ? `< -100 ${timeUnits.y}` : `>100 ${timeUnits.y}`;
+      return neg === "-" ? `< -100 ${timeUnits.y}` : `>100 ${timeUnits.y}`;
   }
 }
 
