@@ -474,7 +474,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	require.NoError(t, err)
 
 	// Close OLAP connection
-	rt.connCache.evictAll(ctx, inst.ID)
+	rt.connCache.EvictAll(ctx, inst.ID)
 
 	// Corrupt database file
 	err = os.WriteFile(dbpath, []byte("corrupted"), 0644)

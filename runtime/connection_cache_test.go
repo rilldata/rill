@@ -22,12 +22,12 @@ func TestConnectionCache(t *testing.T) {
 
 	rt := newTestRuntimeWithInst(t)
 	c := newConnectionCache(10, zap.NewNop(), rt, activity.NewNoopClient())
-	conn1, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false)
+	conn1, release, err := c.Get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	release()
 	require.NotNil(t, conn1)
 
-	conn2, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false)
+	conn2, release, err := c.Get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	release()
 	require.NotNil(t, conn2)
@@ -57,7 +57,7 @@ func TestConnectionCache(t *testing.T) {
 	}
 	require.NoError(t, rt.CreateInstance(context.Background(), inst))
 
-	conn3, release, err := c.get(ctx, "default1", "sqlite", map[string]any{"dsn": ":memory:"}, false)
+	conn3, release, err := c.Get(ctx, "default1", "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	release()
 	require.NotNil(t, conn3)
@@ -71,24 +71,24 @@ func TestConnectionCacheWithAllShared(t *testing.T) {
 	id := "default"
 
 	c := newConnectionCache(1, zap.NewNop(), newTestRuntimeWithInst(t), activity.NewNoopClient())
-	conn1, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, true)
+	conn1, release, err := c.Get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, true)
 	require.NoError(t, err)
 	require.NotNil(t, conn1)
 	defer release()
 
-	conn2, release, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, true)
+	conn2, release, err := c.Get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, true)
 	require.NoError(t, err)
 	require.NotNil(t, conn2)
 	defer release()
 
-	conn3, release, err := c.get(ctx, "default", "sqlite", map[string]any{"dsn": ":memory:"}, true)
+	conn3, release, err := c.Get(ctx, "default", "sqlite", map[string]any{"dsn": ":memory:"}, true)
 	require.NoError(t, err)
 	require.NotNil(t, conn3)
 	defer release()
 
 	require.True(t, conn1 == conn2)
 	require.True(t, conn2 == conn3)
-	require.Equal(t, 1, len(c.acquired))
+	require.Equal(t, 1, len(c.entries))
 	require.Equal(t, 0, c.lru.Len())
 }
 
@@ -97,30 +97,30 @@ func TestConnectionCacheWithAllOpen(t *testing.T) {
 
 	rt := newTestRuntimeWithInst(t)
 	c := newConnectionCache(1, zap.NewNop(), rt, activity.NewNoopClient())
-	conn1, r1, err := c.get(ctx, "default", "sqlite", map[string]any{"dsn": ":memory:"}, false)
+	conn1, r1, err := c.Get(ctx, "default", "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	require.NotNil(t, conn1)
 
 	createInstance(t, rt, "default1")
-	conn2, r2, err := c.get(ctx, "default1", "sqlite", map[string]any{"dsn": ":memory:"}, false)
+	conn2, r2, err := c.Get(ctx, "default1", "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	require.NotNil(t, conn2)
 
 	createInstance(t, rt, "default2")
-	conn3, r3, err := c.get(ctx, "default2", "sqlite", map[string]any{"dsn": ":memory:"}, false)
+	conn3, r3, err := c.Get(ctx, "default2", "sqlite", map[string]any{"dsn": ":memory:"}, false)
 	require.NoError(t, err)
 	require.NotNil(t, conn3)
 
-	require.Equal(t, 3, len(c.acquired))
+	require.Equal(t, 3, len(c.entries))
 	require.Equal(t, 0, c.lru.Len())
 	// release all connections
 	r1()
 	r2()
 	r3()
-	require.Equal(t, 0, len(c.acquired))
+	require.Equal(t, 1, len(c.entries))
 	require.Equal(t, 1, c.lru.Len())
 	_, val, _ := c.lru.GetOldest()
-	require.True(t, conn3 == val.(*connWithRef).handle)
+	require.True(t, conn3 == val.(*connectionCacheEntry).handle)
 }
 
 func TestConnectionCacheParallel(t *testing.T) {
@@ -140,7 +140,7 @@ func TestConnectionCacheParallel(t *testing.T) {
 				defer wg.Done()
 				id := fmt.Sprintf("default%v", 100+j)
 				createInstance(t, rt, id)
-				conn, _, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false)
+				conn, _, err := c.Get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false)
 				require.NoError(t, err)
 				require.NotNil(t, conn)
 				time.Sleep(100 * time.Millisecond)
@@ -155,7 +155,7 @@ func TestConnectionCacheParallel(t *testing.T) {
 			defer wg.Done()
 			id := fmt.Sprintf("default%v", 200+j)
 			createInstance(t, rt, id)
-			conn, r, err := c.get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false)
+			conn, r, err := c.Get(ctx, id, "sqlite", map[string]any{"dsn": ":memory:"}, false)
 			defer r()
 			require.NoError(t, err)
 			require.NotNil(t, conn)
@@ -165,7 +165,7 @@ func TestConnectionCacheParallel(t *testing.T) {
 	wg.Wait()
 
 	// 10 connections were not released so should be present in in-use cache
-	require.Equal(t, 10, len(c.acquired))
+	require.Equal(t, 15, len(c.entries))
 	// 20 connections were released so 15 should be evicted
 	require.Equal(t, 5, c.lru.Len())
 }
@@ -175,25 +175,25 @@ func TestConnectionCacheMultipleConfigs(t *testing.T) {
 
 	c := newConnectionCache(10, zap.NewNop(), newTestRuntimeWithInst(t), activity.NewNoopClient())
 	defer c.Close()
-	conn1, r1, err := c.get(ctx, "default", "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
+	conn1, r1, err := c.Get(ctx, "default", "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
 	require.NoError(t, err)
 	require.NotNil(t, conn1)
 
-	conn2, r2, err := c.get(ctx, "default", "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
+	conn2, r2, err := c.Get(ctx, "default", "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
 	require.NoError(t, err)
 	require.NotNil(t, conn2)
 
-	conn3, r3, err := c.get(ctx, "default", "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
+	conn3, r3, err := c.Get(ctx, "default", "sqlite", map[string]any{"dsn": ":memory:", "host": "localhost:8080", "allow_host_access": "true"}, true)
 	require.NoError(t, err)
 	require.NotNil(t, conn3)
 
-	require.Equal(t, 1, len(c.acquired))
+	require.Equal(t, 1, len(c.entries))
 	require.Equal(t, 0, c.lru.Len())
 	// release all connections
 	r1()
 	r2()
 	r3()
-	require.Equal(t, 0, len(c.acquired))
+	require.Equal(t, 1, len(c.entries))
 	require.Equal(t, 1, c.lru.Len())
 }
 
@@ -218,7 +218,7 @@ func TestConnectionCacheParallelCalls(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		go func() {
 			defer wg.Done()
-			conn, _, err := c.get(ctx, "default", "mock_driver", map[string]any{"sleep": int64(100)}, false)
+			conn, _, err := c.Get(ctx, "default", "mock_driver", map[string]any{"sleep": int64(100)}, false)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 		}()
@@ -226,7 +226,7 @@ func TestConnectionCacheParallelCalls(t *testing.T) {
 	wg.Wait()
 
 	require.Equal(t, int32(1), m.opened.Load())
-	require.Equal(t, 1, len(c.acquired))
+	require.Equal(t, 1, len(c.entries))
 }
 
 func TestConnectionCacheBlockingCalls(t *testing.T) {
@@ -249,7 +249,7 @@ func TestConnectionCacheBlockingCalls(t *testing.T) {
 	// open 1 slow connection
 	go func() {
 		defer wg.Done()
-		conn, _, err := c.get(ctx, "default", "mock_driver", map[string]any{"sleep": int64(1000)}, false)
+		conn, _, err := c.Get(ctx, "default", "mock_driver", map[string]any{"sleep": int64(1000)}, false)
 		require.NoError(t, err)
 		require.NotNil(t, conn)
 	}()
@@ -259,7 +259,7 @@ func TestConnectionCacheBlockingCalls(t *testing.T) {
 		j := i
 		go func() {
 			defer wg.Done()
-			conn, _, err := c.get(ctx, "default", "mock_driver", map[string]any{"sleep": int64(j + 10)}, false)
+			conn, _, err := c.Get(ctx, "default", "mock_driver", map[string]any{"sleep": int64(j + 10)}, false)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 		}()

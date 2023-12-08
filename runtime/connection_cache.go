@@ -12,120 +12,117 @@ import (
 	"github.com/hashicorp/golang-lru/simplelru"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 )
 
 var errConnectionCacheClosed = errors.New("connectionCache: closed")
 
+var errConnectionClosed = errors.New("connectionCache: connection closed")
+
 const migrateTimeout = 2 * time.Minute
+
+const hangingTimeout = 5 * time.Minute
 
 // connectionCache is a thread-safe cache for open connections.
 // Connections should preferably be opened only via the connection cache.
-//
-// TODO: It opens connections async, but it will close them sync when evicted. If a handle's close hangs, this can block the cache.
-// We should move the closing to the background. However, it must then handle the case of trying to re-open a connection that's currently closing in the background.
 type connectionCache struct {
-	size             int
-	runtime          *Runtime
-	logger           *zap.Logger
-	activity         activity.Client
-	closed           bool
-	migrateCtx       context.Context    // ctx used for connection migrations
-	migrateCtxCancel context.CancelFunc // cancel all running migrations
-	lock             sync.Mutex
-	acquired         map[string]*connWithRef // items with non-zero references (in use) which should not be evicted
-	lru              *simplelru.LRU          // items with no references (opened, but not in use) ready for eviction
+	size      int
+	runtime   *Runtime
+	logger    *zap.Logger
+	activity  activity.Client
+	closed    bool
+	ctx       context.Context    // ctx used for background tasks
+	ctxCancel context.CancelFunc // cancel background ctx
+	lock      sync.Mutex
+	entries   map[string]*connectionCacheEntry
+	lru       *simplelru.LRU // entries with no references (opened, but not in use) ready for eviction
 }
 
-type connWithRef struct {
-	instanceID string
-	handle     drivers.Handle
-	err        error
-	refs       int
-	ready      chan struct{}
+type connectionCacheEntry struct {
+	instanceID   string
+	refs         int
+	working      bool
+	workingCh    chan struct{}
+	workingSince time.Time
+	handle       drivers.Handle
+	err          error
+	closed       bool
 }
 
 func newConnectionCache(size int, logger *zap.Logger, rt *Runtime, ac activity.Client) *connectionCache {
-	// LRU cache that closes evicted connections
-	lru, err := simplelru.NewLRU(size, func(key interface{}, value interface{}) {
-		// Skip if the conn has refs, since the callback also gets called when transferring to acquired cache
-		conn := value.(*connWithRef)
-		if conn.refs != 0 {
-			return
-		}
-		if conn.handle != nil {
-			if err := conn.handle.Close(); err != nil {
-				logger.Error("failed closing cached connection", zap.String("key", key.(string)), zap.Error(err))
-			}
-		}
-	})
+	ctx, cancel := context.WithCancel(context.Background())
+	c := &connectionCache{
+		size:      size,
+		runtime:   rt,
+		logger:    logger,
+		activity:  ac,
+		ctx:       ctx,
+		ctxCancel: cancel,
+		entries:   make(map[string]*connectionCacheEntry),
+	}
+
+	var err error
+	c.lru, err = simplelru.NewLRU(size, c.lruEvictionHandler)
 	if err != nil {
 		panic(err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	return &connectionCache{
-		size:             size,
-		runtime:          rt,
-		logger:           logger,
-		activity:         ac,
-		migrateCtx:       ctx,
-		migrateCtxCancel: cancel,
-		acquired:         make(map[string]*connWithRef),
-		lru:              lru,
-	}
+	go c.periodicallyCheckHangingConnections()
+
+	return c
 }
 
+// Close closes all connections in the cache.
+// While not strictly necessary, it's probably best to call this after all connections have been released.
 func (c *connectionCache) Close() error {
 	c.lock.Lock()
-	defer c.lock.Unlock()
 
+	// Set closed
 	if c.closed {
+		c.lock.Unlock()
 		return errConnectionCacheClosed
 	}
 	c.closed = true
 
 	// Cancel currently running migrations
-	c.migrateCtxCancel()
+	c.ctxCancel()
 
-	var firstErr error
-	for _, key := range c.lru.Keys() {
-		val, ok := c.lru.Get(key)
-		if !ok {
-			continue
-		}
-		conn := val.(*connWithRef)
-		if conn.handle == nil {
-			continue
-		}
-		err := conn.handle.Close()
-		if err != nil {
-			c.logger.Error("failed closing cached connection", zap.Error(err))
-			if firstErr == nil {
-				firstErr = err
-			}
-		}
+	// Start closing all connections (will close in the background)
+	for key, entry := range c.entries {
+		c.closeEntry(key, entry)
 	}
 
-	for _, value := range c.acquired {
-		if value.handle == nil {
-			continue
+	// Clear the LRU - might not be needed, but just to be sure
+	c.lru.Purge()
+
+	// Unlock to allow entries to close and remove themselves from c.entries in the background
+	c.lock.Unlock()
+
+	// Wait for c.entries to become empty
+	for {
+		c.lock.Lock()
+		var anyEntry *connectionCacheEntry
+		for _, e := range c.entries {
+			anyEntry = e
+			break
 		}
-		err := value.handle.Close()
-		if err != nil {
-			c.logger.Error("failed closing cached connection", zap.Error(err))
-			if firstErr == nil {
-				firstErr = err
-			}
+		c.lock.Unlock()
+
+		if anyEntry == nil {
+			// c.entries is empty, we can return
+			break
 		}
+
+		<-anyEntry.workingCh
 	}
 
-	return firstErr
+	return nil
 }
 
-func (c *connectionCache) get(ctx context.Context, instanceID, driver string, config map[string]any, shared bool) (drivers.Handle, func(), error) {
+// Get opens and caches a connection.
+// The caller should call the returned release function when done with the connection.
+func (c *connectionCache) Get(ctx context.Context, instanceID, driver string, config map[string]any, shared bool) (drivers.Handle, func(), error) {
 	var key string
 	if shared {
 		// not using instanceID to ensure all instances share the same handle
@@ -140,100 +137,231 @@ func (c *connectionCache) get(ctx context.Context, instanceID, driver string, co
 		return nil, nil, errConnectionCacheClosed
 	}
 
-	// Get conn from caches
-	conn, ok := c.acquired[key]
-	if ok {
-		conn.refs++
-	} else {
-		var val any
-		val, ok = c.lru.Get(key)
-		if ok {
-			// Conn was found in LRU - move to acquired cache
-			conn = val.(*connWithRef)
-			conn.refs++ // NOTE: Must increment before call to c.lru.remove to avoid closing the conn
-			c.lru.Remove(key)
-			c.acquired[key] = conn
-		}
-	}
-
-	// Cached conn not found, open a new one
+	// Get or create conn
+	entry, ok := c.entries[key]
 	if !ok {
-		conn = &connWithRef{
-			instanceID: instanceID,
-			refs:       1, // Since refs is assumed to already have been incremented when checking conn.ready
-			ready:      make(chan struct{}),
+		// Cached conn not found, open a new one
+		entry = &connectionCacheEntry{instanceID: instanceID}
+		c.entries[key] = entry
+
+		c.openEntry(key, entry, driver, shared, config)
+
+		if len(c.entries) >= 2*c.size {
+			c.logger.Warn("connection cache: the number of open connections exceeds the cache size by more than 2x", zap.Int("entries", len(c.entries)))
 		}
-		c.acquired[key] = conn
-
-		if len(c.acquired)+c.lru.Len() > c.size {
-			c.logger.Warn("number of connections acquired and in LRU exceed total configured size", zap.Int("acquired", len(c.acquired)), zap.Int("lru", c.lru.Len()))
-		}
-
-		// Open and migrate the connection in a separate goroutine (outside lock).
-		// Incrementing ref and releasing the conn for this operation separately to cover the case where all waiting goroutines are cancelled before the migration completes.
-		conn.refs++
-		go func() {
-			handle, err := c.openAndMigrate(c.migrateCtx, instanceID, driver, shared, config)
-			c.lock.Lock()
-			conn.handle = handle
-			conn.err = err
-			c.releaseConn(key, conn)
-			wasClosed := c.closed
-			c.lock.Unlock()
-			close(conn.ready)
-
-			// The cache might have been closed while the connection was being opened.
-			// Since we acquired the lock, the close will have already been completed, so we need to close the connection here.
-			if wasClosed && handle != nil {
-				_ = handle.Close()
-			}
-		}()
 	}
+
+	// Acquire the entry
+	c.acquireEntry(key, entry)
 
 	// We can now release the lock and wait for the connection to be ready (it might already be)
 	c.lock.Unlock()
 
 	// Wait for connection to be ready or context to be cancelled
 	var err error
-	select {
-	case <-conn.ready:
-	case <-ctx.Done():
-		err = ctx.Err() // Will always be non-nil, ensuring releaseConn is called
+	stop := false
+	for !stop {
+		select {
+		case <-entry.workingCh:
+			c.lock.Lock()
+
+			// The entry was closed right after being opened, we must loop to check c.workingCh again.
+			if entry.working {
+				c.lock.Unlock()
+				continue
+			}
+
+			// We acquired the entry as it was closing, let's reopen it.
+			if entry.closed {
+				c.openEntry(key, entry, driver, shared, config)
+				c.lock.Unlock()
+				continue
+			}
+
+			stop = true
+		case <-ctx.Done():
+			c.lock.Lock()
+			err = ctx.Err() // Will always be non-nil, ensuring releaseEntry is called
+			stop = true
+		}
 	}
 
-	// Lock again for accessing conn
-	c.lock.Lock()
+	// We've got the lock now and know entry.working is false
 	defer c.lock.Unlock()
 
 	if err == nil {
-		err = conn.err
+		err = entry.err
 	}
 
 	if err != nil {
-		c.releaseConn(key, conn)
+		c.releaseEntry(key, entry)
 		return nil, nil, err
 	}
 
 	release := func() {
 		c.lock.Lock()
-		c.releaseConn(key, conn)
+		c.releaseEntry(key, entry)
 		c.lock.Unlock()
 	}
 
-	return conn.handle, release, nil
+	return entry.handle, release, nil
 }
 
-func (c *connectionCache) releaseConn(key string, conn *connWithRef) {
-	conn.refs--
-	if conn.refs == 0 {
-		// No longer referenced. Move from acquired to LRU.
-		if !c.closed {
-			delete(c.acquired, key)
-			c.lru.Add(key, conn)
+// EvictAll closes all connections for an instance.
+func (c *connectionCache) EvictAll(ctx context.Context, instanceID string) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.closed {
+		return
+	}
+
+	for key, entry := range c.entries {
+		if entry.instanceID != instanceID {
+			continue
+		}
+
+		c.closeEntry(key, entry)
+	}
+}
+
+// acquireEntry increments an entry's refs and moves it out of the LRU if it's there.
+// It should be called when holding the lock.
+func (c *connectionCache) acquireEntry(key string, entry *connectionCacheEntry) {
+	entry.refs++
+	if entry.refs == 1 {
+		// NOTE: lru.Remove is safe even if it's not in the LRU (should only happen if the entry is acquired for the first time)
+		_ = c.lru.Remove(key)
+	}
+}
+
+// releaseEntry decrements an entry's refs and moves it to the LRU if nothing references it.
+// It should be called when holding the lock.
+func (c *connectionCache) releaseEntry(key string, entry *connectionCacheEntry) {
+	entry.refs--
+	if entry.refs == 0 {
+		// No longer referenced. Move to LRU unless conn and/or cache is closed.
+		delete(c.entries, key)
+		if !c.closed && !entry.closed {
+			c.lru.Add(key, entry)
 		}
 	}
 }
 
+// lruEvictionHandler is called by the LRU when evicting an entry.
+// Note that the LRU only holds entries with refs == 0 (unless the entry is currently being moved to the acquired cache).
+// Note also that this handler is called sync by the LRU, i.e. c.lock will be held.
+func (c *connectionCache) lruEvictionHandler(key, value interface{}) {
+	entry := value.(*connectionCacheEntry)
+
+	// The callback also gets called when removing from LRU during acquisition.
+	// We use conn.refs != 0 to signal that its being acquired and should not be closed.
+	if entry.refs != 0 {
+		return
+	}
+
+	// Close the connection
+	c.closeEntry(key.(string), entry)
+}
+
+// openEntry opens an entry's connection. It's safe to call for a previously closed entry.
+// It's NOT safe to call for an entry that's currently working.
+// It should be called when holding the lock (but the actual open and migrate will happen in the background).
+func (c *connectionCache) openEntry(key string, entry *connectionCacheEntry, driver string, shared bool, config map[string]any) {
+	// Since whatever code that called openEntry may get cancelled/return before the connection is opened, we get our own reference to it.
+	c.acquireEntry(key, entry)
+
+	// Reset entry and set working
+	entry.working = true
+	entry.workingCh = make(chan struct{})
+	entry.workingSince = time.Now()
+	entry.handle = nil
+	entry.err = nil
+	entry.closed = false
+
+	// Open in the background
+	// NOTE: If closeEntry is called while it's opening, closeEntry will wait for the open to complete, so we don't need to handle that case here.
+	go func() {
+		handle, err := c.openAndMigrate(c.ctx, entry.instanceID, driver, shared, config)
+
+		c.lock.Lock()
+		entry.working = false
+		close(entry.workingCh)
+		entry.workingSince = time.Time{}
+		entry.handle = handle
+		entry.err = err
+		c.releaseEntry(key, entry)
+		c.lock.Unlock()
+	}()
+}
+
+// closeEntry closes an entry's connection. It's safe to call for an entry that's currently being closed/already closed.
+// It should be called when holding the lock (but the actual close will happen in the background).
+func (c *connectionCache) closeEntry(key string, entry *connectionCacheEntry) {
+	if entry.closed {
+		return
+	}
+
+	c.acquireEntry(key, entry)
+
+	wasWorking := entry.working
+	if !wasWorking {
+		entry.working = true
+		entry.workingCh = make(chan struct{})
+		entry.workingSince = time.Now()
+	}
+
+	go func() {
+		// If the entry was working when closeEntry was called, wait for it to finish before continuing.
+		if wasWorking {
+			stop := false
+			for !stop {
+				<-entry.workingCh
+				c.lock.Lock()
+
+				// Bad luck, something else started working on the entry. Loop and wait again.
+				if entry.working {
+					c.lock.Unlock()
+					continue
+				}
+
+				// Good luck, something else closed the entry. We're done.
+				if entry.closed {
+					c.lock.Unlock()
+					return
+				}
+
+				// Our turn to start working it
+				entry.working = true
+				entry.workingCh = make(chan struct{})
+				entry.workingSince = time.Now()
+				c.lock.Unlock()
+				stop = true
+			}
+		}
+
+		// Close the connection
+		if entry.handle != nil {
+			err := entry.handle.Close()
+			if err != nil {
+				c.logger.Error("failed closing cached connection", zap.String("key", key), zap.Error(err))
+			}
+		}
+
+		// Mark closed
+		c.lock.Lock()
+		entry.working = false
+		close(entry.workingCh)
+		entry.workingSince = time.Time{}
+		entry.handle = nil
+		entry.err = errConnectionClosed
+		entry.closed = true
+		c.releaseEntry(key, entry)
+		c.lock.Unlock()
+	}()
+}
+
+// openAndMigrate opens a connection and migrates it.
 func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver string, shared bool, config map[string]any) (drivers.Handle, error) {
 	logger := c.logger
 	if instanceID != "default" {
@@ -275,53 +403,24 @@ func (c *connectionCache) openAndMigrate(ctx context.Context, instanceID, driver
 	return handle, nil
 }
 
-// evictAll closes all connections for an instance.
-func (c *connectionCache) evictAll(ctx context.Context, instanceID string) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+// periodicallyCheckHangingConnections periodically checks for connection opens or closes that have been working for too long.
+func (c *connectionCache) periodicallyCheckHangingConnections() {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
 
-	if c.closed {
-		return
-	}
-
-	for key, conn := range c.acquired {
-		if conn.instanceID != instanceID {
-			continue
-		}
-
-		if conn.handle != nil {
-			err := conn.handle.Close()
-			if err != nil {
-				c.logger.Error("connection cache: failed to close cached connection", zap.Error(err), zap.String("instance", instanceID), observability.ZapCtx(ctx))
+	for {
+		select {
+		case <-ticker.C:
+			c.lock.Lock()
+			for key, entry := range c.entries {
+				if entry.working && time.Since(entry.workingSince) > hangingTimeout {
+					c.logger.Error("connection cache: connection open or close has been working for too long", zap.String("key", key), zap.Duration("duration", time.Since(entry.workingSince)))
+				}
 			}
-			conn.handle = nil
-			conn.err = fmt.Errorf("connection evicted") // Defensive, should never be accessed
+			c.lock.Unlock()
+		case <-c.ctx.Done():
+			return
 		}
-
-		delete(c.acquired, key)
-	}
-
-	for _, key := range c.lru.Keys() {
-		connT, ok := c.lru.Get(key)
-		if !ok {
-			panic("connection cache: key not found in LRU")
-		}
-		conn := connT.(*connWithRef)
-
-		if conn.instanceID != instanceID {
-			continue
-		}
-
-		if conn.handle != nil {
-			err := conn.handle.Close()
-			if err != nil {
-				c.logger.Error("connection cache: failed to close cached connection", zap.Error(err), zap.String("instance", instanceID), observability.ZapCtx(ctx))
-			}
-			conn.handle = nil
-			conn.err = fmt.Errorf("connection evicted") // Defensive, should never be accessed
-		}
-
-		c.lru.Remove(key)
 	}
 }
 
