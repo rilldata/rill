@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import Check from "../icons/Check.svelte";
-  import Spacer from "../icons/Spacer.svelte";
   import { Menu, MenuItem } from "../menu";
   import { Search } from "../search";
   import Footer from "./Footer.svelte";

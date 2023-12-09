@@ -20,10 +20,6 @@
     dispatch("search", searchText);
   }
 
-  function onToggleHandler() {
-    dispatch("toggle");
-  }
-
   function toggleValue(value: string) {
     dispatch("apply", value);
   }
@@ -54,7 +50,6 @@
   on:click-outside
 >
   <!-- the min-height is set to have about 3 entries in it -->
-
   <div class="px-3 py-2">
     <Search
       bind:value={searchText}

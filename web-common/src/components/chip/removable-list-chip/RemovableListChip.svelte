@@ -23,7 +23,6 @@ are details left to the consumer of the component; this component should remain 
   import { Chip } from "../index";
   import RemovableListBody from "./RemovableListBody.svelte";
   import RemovableListMenu from "./RemovableListMenu.svelte";
-  import { writable, Writable } from "svelte/store";
   import { clearFilterForDimension } from "@rilldata/web-common/features/dashboards/actions";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 </script>

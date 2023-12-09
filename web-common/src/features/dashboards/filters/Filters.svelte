@@ -175,7 +175,7 @@ The main feature-set component for dashboard filters
             on:search={(event) => {
               setActiveDimension(name, event.detail);
             }}
-            on:click={(event) => {
+            on:click={() => {
               setActiveDimension(name, "");
             }}
             on:mount={() => {
