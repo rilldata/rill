@@ -73,7 +73,6 @@ export const getFilterSearchList = (
           measureNames: [metricsExplorer.leaderboardMeasureName],
           timeStart: timeControls.timeStart,
           timeEnd: timeControls.timeEnd,
-          limit: "15",
           offset: "0",
           sort: [],
           filter: {
