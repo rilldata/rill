@@ -34,7 +34,6 @@ func TestUserWorkflow(t *testing.T) {
 	defer adm.Close()
 
 	db := adm.DB
-	defer db.Close()
 
 	// create mock admin user
 	adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{
@@ -43,6 +42,7 @@ func TestUserWorkflow(t *testing.T) {
 		QuotaSingleuserOrgs: 3,
 	})
 	require.NoError(t, err)
+	require.NotNil(t, adminUser)
 
 	// issue admin and viewer tokens
 	adminAuthToken, err := adm.IssueUserAuthToken(ctx, adminUser.ID, database.AuthClientIDRillWeb, "test", nil, nil)
@@ -59,7 +59,7 @@ func TestUserWorkflow(t *testing.T) {
 
 	group.Go(func() error { return srv.ServeGRPC(cctx) })
 	group.Go(func() error { return srv.ServeHTTP(cctx) })
-	err = mock.CheckServerStatus()
+	err = mock.CheckServerStatus(cctx)
 	require.NoError(t, err)
 
 	var buf bytes.Buffer
