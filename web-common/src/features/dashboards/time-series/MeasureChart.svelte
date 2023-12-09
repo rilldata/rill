@@ -299,6 +299,7 @@
                   dimensionValue={$tableInteractionStore?.dimensionValue}
                   {validPercTotal}
                   {mouseoverFormat}
+                  {hovered}
                 />
               {:else}
                 <MeasureValueMouseover

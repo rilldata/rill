@@ -10,6 +10,7 @@
   export let dimensionData;
   export let dimensionValue;
   export let validPercTotal;
+  export let hovered;
 
   $: x = point[xAccessor];
 
@@ -65,7 +66,7 @@
         yOverrideLabel: "no current data",
         yOverrideStyleClass: `fill-gray-600 italic`,
         key: dimension.name,
-        label: truncate(dimension.name),
+        label: hovered ? truncate(dimension.name) : "",
         pointColorClass: dimension.fillClass,
         valueStyleClass: "font-bold",
         valueColorClass: "fill-gray-600",
