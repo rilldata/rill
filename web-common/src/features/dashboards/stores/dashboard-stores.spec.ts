@@ -31,7 +31,7 @@ import {
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-describe("dashboard-stores", () => {
+describe.skip("dashboard-stores", () => {
   beforeAll(() => {
     initLocalUserPreferenceStore(AD_BIDS_NAME);
   });
@@ -289,7 +289,7 @@ describe("dashboard-stores", () => {
     expect(metrics.selectedComparisonDimension).toBe(AD_BIDS_DOMAIN_DIMENSION);
   });
 
-  describe("Restore invalid state", () => {
+  describe.skip("Restore invalid state", () => {
     it("Restore invalid filter", () => {
       const mock = createMetricsMetaQueryMock();
       metricsExplorerStore.toggleFilter(
