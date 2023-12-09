@@ -31,7 +31,7 @@ are details left to the consumer of the component; this component should remain 
 <script lang="ts">
   export let name: string;
   export let selectedValues: string[];
-  export let searchedValues: string[] | null;
+  export let allValues: string[] | null;
 
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
@@ -49,9 +49,6 @@ are details left to the consumer of the component; this component should remain 
       dimensionsFilter: { toggleDimensionValueSelection },
     },
   } = StateManagers;
-
-  const excludeStore: Writable<boolean> = writable(excludeMode);
-  $: excludeStore.set(excludeMode);
 
   onMount(() => {
     dispatch("mount");
@@ -115,8 +112,8 @@ are details left to the consumer of the component; this component should remain 
   <RemovableListMenu
     slot="floating-element"
     {excludeMode}
+    {allValues}
     {selectedValues}
-    {searchedValues}
     on:escape={() => {
       if (!selectedValues.length) {
         clearFilterForDimension(StateManagers, dimensionName, !excludeMode);

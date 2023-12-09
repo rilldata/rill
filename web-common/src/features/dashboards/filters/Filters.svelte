@@ -48,15 +48,15 @@ The main feature-set component for dashboard filters
   }
 
   let searchText = "";
-  let searchedValues: string[] | null = null;
-  let activeDimensionName;
+  let allValues: string[] | null = null;
+  let activeDimensionName: string;
+
   $: activeColumn =
     dimensions.find((d) => d.name === activeDimensionName)?.column ??
     activeDimensionName;
 
   let topListQuery: ReturnType<typeof getFilterSearchList> | undefined;
   $: if (activeDimensionName) {
-    console.log({ activeDimensionName, searchText });
     topListQuery = getFilterSearchList(StateManagers, {
       dimension: activeDimensionName,
       searchText,
@@ -66,7 +66,7 @@ The main feature-set component for dashboard filters
 
   $: if (!$topListQuery?.isFetching) {
     const topListData = $topListQuery?.data?.data ?? [];
-    searchedValues = topListData.map((datum) => datum[activeColumn]) ?? [];
+    allValues = topListData.map((datum) => datum[activeColumn]) ?? [];
   }
 
   $: hasFilters = isFiltered($dashboardStore.filters);
@@ -124,7 +124,6 @@ The main feature-set component for dashboard filters
   }
 
   function setActiveDimension(name, value = "") {
-    console.log({ name, value });
     activeDimensionName = name;
     searchText = value;
   }
@@ -170,13 +169,13 @@ The main feature-set component for dashboard filters
                 name,
                 isInclude ? true : false
               )}
-            on:apply={(event) =>
-              toggleDimensionValue(StateManagers, name, event.detail)}
+            on:apply={(event) => {
+              toggleDimensionValue(StateManagers, name, event.detail);
+            }}
             on:search={(event) => {
               setActiveDimension(name, event.detail);
             }}
             on:click={(event) => {
-              console.log("CLICCKKKKCCCKK");
               setActiveDimension(name, "");
             }}
             on:mount={() => {
@@ -189,7 +188,7 @@ The main feature-set component for dashboard filters
             colors={getColorForChip(isInclude)}
             label="View filter"
             {selectedValues}
-            {searchedValues}
+            {allValues}
           >
             <svelte:fragment slot="body-tooltip-content">
               Click to edit the the filters in this dimension
