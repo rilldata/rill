@@ -56,7 +56,6 @@
   export let labelAccessor = "label";
   export let yAccessor = "value";
   export let mouseoverValue;
-  export let hovered = false;
   export let validPercTotal: number | null = null;
 
   // control point for scrub functionality.
@@ -70,10 +69,10 @@
   $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
   $: numberKind = numberKindForMeasure(measure);
 
-  export let tweenProps = { duration: 400, easing: cubicOut };
-
+  const tweenProps = { duration: 400, easing: cubicOut };
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
 
+  let hovered: boolean | undefined = false;
   let scrub;
   let cursorClass;
   let preventScrubReset;
