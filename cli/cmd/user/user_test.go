@@ -32,7 +32,7 @@ func TestUserWorkflow(t *testing.T) {
 	adm, err := mock.AdminService(ctx, logger, pg.DatabaseURL)
 	require.NoError(t, err)
 	defer adm.Close()
-	
+
 	db := adm.DB
 
 	// create mock admin user
