@@ -24,8 +24,8 @@
       }
       return str.slice(0, truncateLength) + "...";
     }
-    return str
-};
+    return str;
+  }
 
   let pointsData = dimensionData;
   $: if (dimensionValue !== undefined) {
@@ -56,7 +56,8 @@
       let value = mouseoverFormat(y);
       if (validPercTotal) {
         const percOfTotal = y / validPercTotal;
-         value = mouseoverFormat(y) + ",  " + (percOfTotal * 100).toFixed(2) + "%";
+        value =
+          mouseoverFormat(y) + ",  " + (percOfTotal * 100).toFixed(2) + "%";
       }
       return {
         x,

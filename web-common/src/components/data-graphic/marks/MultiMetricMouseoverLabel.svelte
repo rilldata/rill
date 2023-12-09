@@ -58,7 +58,8 @@ It is probably not the most up to date code; but it works very well in practice.
   let containerWidths = [];
   // let labelWidth = 0;
 
-  $: fanOutLabels = !isDimension || false;
+  let fanOutLabels = true;
+
   // update locations.
   $: nonOverlappingLocations = preventVerticalOverlap(
     point.map((p) => ({
@@ -204,7 +205,9 @@ It is probably not the most up to date code; but it works very well in practice.
                     {visibility}
                   >
                     {#if !location?.yOverride}
-                      {location.value ? location.value : formatValue(location.y)}
+                      {location.value
+                        ? location.value
+                        : formatValue(location.y)}
                     {/if}
                   </tspan>
 
@@ -256,7 +259,9 @@ It is probably not the most up to date code; but it works very well in practice.
                     {visibility}
                   >
                     {#if !location?.yOverride}
-                      {location.value ? location.value : formatValue(location.y)}
+                      {location.value
+                        ? location.value
+                        : formatValue(location.y)}
                     {/if}
                   </tspan>
                 {/if}

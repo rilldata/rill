@@ -32,7 +32,7 @@
   export let metricViewName;
   export let workspaceWidth: number;
 
-  $: dashboardStore = useDashboardStore(metricViewName)
+  $: dashboardStore = useDashboardStore(metricViewName);
   $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
@@ -288,7 +288,7 @@
             xMin={startValue}
             xMax={endValue}
             {showComparison}
-            validPercTotal={isValidPercTotal ? bigNum: null}
+            validPercTotal={isValidPercTotal ? bigNum : null}
             mouseoverTimeFormat={(value) => {
               /** format the date according to the time grain */
               return new Date(value).toLocaleDateString(
