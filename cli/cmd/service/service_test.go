@@ -30,7 +30,6 @@ func TestServiceWorkflow(t *testing.T) {
 
 	// Get Admin service
 	adm, err := mock.AdminService(ctx, logger, pg.DatabaseURL)
-	defer adm.Close()
 	require.NoError(t, err)
 	db := adm.DB
 
