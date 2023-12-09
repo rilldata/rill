@@ -344,7 +344,9 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 
 	sql := ""
 	if shift == "" {
-		if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_HOUR {
+		if q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_HOUR ||
+			q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_MINUTE ||
+			q.TimeGranularity == runtimev1.TimeGrain_TIME_GRAIN_SECOND {
 			sql = fmt.Sprintf(
 				`
 					SELECT
@@ -361,7 +363,7 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 				whereClause,                    // 6
 				timezone,                       // 7
 			)
-		} else {
+		} else { // date_trunc is faster than time_bucket for year, month, week
 			sql = fmt.Sprintf(
 				`
 					SELECT
@@ -422,10 +424,9 @@ func addNulls(data []*runtimev1.TimeSeriesValue, nullRecords *structpb.Struct, s
 }
 
 func addTo(t time.Time, d duration.Duration, tz *time.Location) time.Time {
-	nt := d.Add(t.In(tz)).In(time.UTC)
-	if t.Equal(nt) {
-		// edge case when adding an hour to a time that will be moved back
+	sd := d.(duration.StandardDuration)
+	if sd.Hour > 0 || sd.Minute > 0 || sd.Second > 0 {
 		return d.Add(t)
 	}
-	return nt
+	return d.Add(t.In(tz)).In(time.UTC)
 }
