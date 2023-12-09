@@ -32,12 +32,17 @@
   export let metricViewName;
   export let workspaceWidth: number;
 
-  $: dashboardStore = useDashboardStore(metricViewName);
-
+  $: dashboardStore = useDashboardStore(metricViewName)
   $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
+
+  const {
+    selectors: {
+      measures: { isMeasureValidPercentOfTotal },
+    },
+  } = getStateManagers();
 
   $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
 
@@ -238,6 +243,7 @@
       <!-- for bigNum, catch nulls and convert to undefined.  -->
       {@const bigNum = totals?.[measure.name] ?? undefined}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
+      {@const isValidPercTotal = $isMeasureValidPercentOfTotal(measure.name)}
       {@const comparisonPercChange =
         comparisonValue && bigNum !== undefined && bigNum !== null
           ? (bigNum - comparisonValue) / comparisonValue
@@ -282,6 +288,7 @@
             xMin={startValue}
             xMax={endValue}
             {showComparison}
+            validPercTotal={isValidPercTotal ? bigNum: null}
             mouseoverTimeFormat={(value) => {
               /** format the date according to the time grain */
               return new Date(value).toLocaleDateString(

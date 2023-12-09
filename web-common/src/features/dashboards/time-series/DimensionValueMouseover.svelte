@@ -9,8 +9,22 @@
   export let mouseoverFormat;
   export let dimensionData;
   export let dimensionValue;
+  export let validPercTotal;
 
   $: x = point[xAccessor];
+
+  function truncate(str) {
+    const truncateLength = 34;
+
+    if (str.length > truncateLength) {
+      // Check if last character is space
+      if (str[truncateLength - 1] === " ") {
+        return str.slice(0, truncateLength - 1) + "...";
+      }
+      return str.slice(0, truncateLength) + "...";
+    }
+    return str
+};
 
   let pointsData = dimensionData;
   $: if (dimensionValue !== undefined) {
@@ -38,18 +52,25 @@
     .map((dimension) => {
       const y = dimension.y;
       const currentPointIsNull = y === null;
+      let value = mouseoverFormat(y);
+      if (validPercTotal) {
+        const percOfTotal = y / validPercTotal;
+         value = mouseoverFormat(y) + ",  " + (percOfTotal * 100).toFixed(2) + "%";
+      }
       return {
         x,
-        y: currentPointIsNull ? lastAvailableCurrentY : y,
+        y,
+        value,
         yOverride: currentPointIsNull,
         yOverrideLabel: "no current data",
         yOverrideStyleClass: `fill-gray-600 italic`,
         key: dimension.name,
-        label: "",
+        label: truncate(dimension.name),
         pointColorClass: dimension.fillClass,
-        valueStyleClass: "font-semibold",
+        valueStyleClass: "font-bold",
         valueColorClass: "fill-gray-600",
-        labelColorClass: dimension.fillClass,
+        labelColorClass: "fill-gray-600",
+        labelStyleClass: "font-semibold",
       };
     })
     .filter((d) => !d.yOverride);
@@ -63,7 +84,7 @@
     <MultiMetricMouseoverLabel
       isDimension={true}
       attachPointToLabel
-      direction="right"
+      direction="left"
       flipAtEdge="body"
       formatValue={mouseoverFormat}
       point={pointSet || []}

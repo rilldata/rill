@@ -57,6 +57,7 @@
   export let yAccessor = "value";
   export let mouseoverValue;
   export let hovered = false;
+  export let validPercTotal: number | null = null;
 
   // control point for scrub functionality.
   export let isScrubbing = false;
@@ -296,6 +297,7 @@
                   {yAccessor}
                   {dimensionData}
                   dimensionValue={$tableInteractionStore?.dimensionValue}
+                  {validPercTotal}
                   {mouseoverFormat}
                 />
               {:else}
