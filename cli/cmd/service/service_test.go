@@ -34,6 +34,7 @@ func TestServiceWorkflow(t *testing.T) {
 	defer adm.Close()
 
 	db := adm.DB
+	defer db.Close()
 
 	// create mock admin user
 	adminUser, err := db.InsertUser(ctx, &database.InsertUserOptions{
