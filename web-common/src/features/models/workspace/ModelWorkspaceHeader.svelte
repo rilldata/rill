@@ -93,7 +93,6 @@
 <WorkspaceHeader
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
   appRunning={$appQueryStatusStore}
-  let:width
 >
   <svelte:fragment slot="workspace-controls">
     <IconButton
@@ -111,7 +110,7 @@
       </svelte:fragment>
     </IconButton>
   </svelte:fragment>
-  <svelte:fragment slot="cta">
+  <svelte:fragment slot="cta" let:width>
     {@const collapse = width < 800}
     <PanelCTA side="right">
       <ModelWorkspaceCTAs

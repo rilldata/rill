@@ -13,16 +13,16 @@
     createAdminServiceListOrganizations,
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
-  import { useDashboards } from "../dashboards/listing/dashboards";
+  import { useDashboards } from "../dashboards/listing/selectors";
   import { useReports } from "../scheduled-reports/selectors";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
+  import OrganizationAvatar from "./OrganizationAvatar.svelte";
   import {
     isDashboardPage,
     isOrganizationPage,
     isProjectPage,
     isReportPage,
   } from "./nav-utils";
-  import OrganizationAvatar from "./OrganizationAvatar.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 

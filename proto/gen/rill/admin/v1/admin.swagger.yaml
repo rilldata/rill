@@ -367,7 +367,7 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
     post:
-      summary: GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+      summary: GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
       operationId: AdminService_GetDeploymentCredentials
       responses:
         "200":
@@ -395,9 +395,14 @@ paths:
             properties:
               branch:
                 type: string
+              ttlSeconds:
+                type: integer
+                format: int64
               userId:
                 type: string
-              attrs:
+              userEmail:
+                type: string
+              attributes:
                 type: object
       tags:
         - AdminService
@@ -423,6 +428,57 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/iframe:
+    post:
+      summary: GetIFrame returns the iframe URL for the given project
+      operationId: AdminService_GetIFrame
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetIFrameResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branch:
+                type: string
+              kind:
+                type: string
+              resource:
+                type: string
+              ttlSeconds:
+                type: integer
+                format: int64
+              state:
+                type: string
+              query:
+                type: object
+                additionalProperties:
+                  type: string
+              userId:
+                type: string
+              userEmail:
+                type: string
+              attributes:
+                type: object
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/invites:
@@ -1965,10 +2021,13 @@ definitions:
     properties:
       runtimeHost:
         type: string
-      runtimeInstanceId:
+      instanceId:
         type: string
-      jwt:
+      accessToken:
         type: string
+      ttlSeconds:
+        type: integer
+        format: int64
   v1GetGitCredentialsResponse:
     type: object
     properties:
@@ -1991,6 +2050,20 @@ definitions:
         type: string
       defaultBranch:
         type: string
+  v1GetIFrameResponse:
+    type: object
+    properties:
+      iframeSrc:
+        type: string
+      runtimeHost:
+        type: string
+      instanceId:
+        type: string
+      accessToken:
+        type: string
+      ttlSeconds:
+        type: integer
+        format: int64
   v1GetOrganizationResponse:
     type: object
     properties:

@@ -229,6 +229,20 @@ export interface DashboardResource {
   refreshedOn: string;
 }
 
+function getDashboardRefreshedOn(
+  dashboard: V1Resource,
+  allResources: V1Resource[]
+): string | undefined {
+  const refName = dashboard.meta.refs[0];
+  const refTable = allResources.find(
+    (r) => r.meta?.name?.name === refName?.name
+  );
+  return (
+    refTable?.model?.state.refreshedOn || refTable?.source?.state.refreshedOn
+  );
+}
+
+// This iteration of `useDashboards` returns the above `DashboardResource` type, which includes `refreshedOn`
 export function useDashboardsV2(
   instanceId: string
 ): CreateQueryResult<DashboardResource[]> {
@@ -237,18 +251,28 @@ export function useDashboardsV2(
       select: (data) => {
         const dashboards = data.resources.filter((res) => res.metricsView);
         return dashboards.map((db) => {
-          // Extract table name from dashboard metadata
-          const refName = db.meta.refs[0];
-          const refTable = data.resources.find(
-            (r) => r.meta?.name?.name === refName?.name
-          );
-
-          // Add the "refreshedOn" attribute
-          const refreshedOn =
-            refTable?.model?.state.refreshedOn ||
-            refTable?.source?.state.refreshedOn;
+          const refreshedOn = getDashboardRefreshedOn(db, data.resources);
           return { resource: db, refreshedOn };
         });
+      },
+    },
+  });
+}
+
+// This iteration of `useDashboard` returns the above `DashboardResource` type, which includes `refreshedOn`
+export function useDashboardV2(
+  instanceId: string,
+  name: string
+): CreateQueryResult<DashboardResource> {
+  return createRuntimeServiceListResources(instanceId, undefined, {
+    query: {
+      enabled: !!instanceId && !!name,
+      select: (data) => {
+        const dashboard = data.resources.find(
+          (res) => res.meta.name.name === name
+        );
+        const refreshedOn = getDashboardRefreshedOn(dashboard, data.resources);
+        return { resource: dashboard, refreshedOn };
       },
     },
   });

@@ -132,13 +132,19 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	}
 
 	// create table
-	if err := s.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1}); err != nil {
+	err = s.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1, LongRunning: true})
+	if err != nil {
 		return err
 	}
 
 	defer func() {
 		// ensure temporary table is cleaned
-		if err := s.to.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable), Priority: 100}); err != nil {
+		err := s.to.Exec(context.Background(), &drivers.Statement{
+			Query:       fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable),
+			Priority:    100,
+			LongRunning: true,
+		})
+		if err != nil {
 			s.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
 		}
 	}()
