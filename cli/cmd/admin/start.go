@@ -40,6 +40,7 @@ type Config struct {
 	Jobs                     []string               `split_words:"true"`
 	HTTPPort                 int                    `default:"8080" split_words:"true"`
 	GRPCPort                 int                    `default:"9090" split_words:"true"`
+	DebugPort                int                    `split_words:"true"`
 	LogLevel                 zapcore.Level          `default:"info" split_words:"true"`
 	MetricsExporter          observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter           observability.Exporter `default:"" split_words:"true"`
@@ -258,7 +259,9 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				group.Go(func() error { return srv.ServeGRPC(cctx) })
 				group.Go(func() error { return srv.ServeHTTP(cctx) })
-				group.Go(func() error { return debugserver.ServeHTTP(cctx) })
+				if conf.DebugPort != 0 {
+					group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
+				}
 			}
 
 			// Init and run worker

@@ -45,7 +45,12 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 	tmpTable := fmt.Sprintf("__%s_tmp_postgres", sinkCfg.Table)
 	defer func() {
 		// ensure temporary table is cleaned
-		if err := t.to.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable), Priority: 100}); err != nil {
+		err := t.to.Exec(context.Background(), &drivers.Statement{
+			Query:       fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable),
+			Priority:    100,
+			LongRunning: true,
+		})
+		if err != nil {
 			t.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
 		}
 	}()

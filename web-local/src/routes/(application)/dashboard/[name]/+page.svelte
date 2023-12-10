@@ -21,6 +21,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
+  import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
 
   const queryClient = useQueryClient();
 
@@ -60,7 +61,7 @@
       // When a mock user doesn't have access to the dashboard, stay on the page to show a message
       if (
         $selectedMockUserStore === null ||
-        $resourceStatusStore.error.response?.status !== 404
+        $resourceStatusStore?.error?.response?.status !== 404
       ) {
         // On all other errors, redirect to the `/edit` page
         goto(`/dashboard/${metricViewName}/edit`);
@@ -97,7 +98,9 @@
       {#key metricViewName}
         <DashboardStateProvider {metricViewName}>
           <DashboardURLStateProvider {metricViewName}>
-            <Dashboard {metricViewName} />
+            <DashboardThemeProvider>
+              <Dashboard {metricViewName} />
+            </DashboardThemeProvider>
           </DashboardURLStateProvider>
         </DashboardStateProvider>
       {/key}

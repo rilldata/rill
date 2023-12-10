@@ -353,7 +353,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			olap, release, err := rt.OLAP(ctx, inst.ID)
 			require.NoError(t, err)
 			defer release()
-			_, err = olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
+			err = olap.Exec(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.NoError(t, err)
 
 			// Verify new olap is not the old one
@@ -426,7 +426,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			// verify older olap connection is closed and cache updated
 			require.False(t, rt.connCache.lru.Contains(inst.ID+"duckdb"+fmt.Sprintf("dsn:%s ", dbFile)))
 			require.False(t, rt.connCache.lru.Contains(inst.ID+"file"+fmt.Sprintf("dsn:%s ", repodsn)))
-			_, err = olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
+			err = olap.Exec(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.True(t, err != nil)
 
 			// verify db file is dropped if requested

@@ -68,7 +68,7 @@
 </script>
 
 <section
-  class="flex flex-col gap-y-1 h-full overflow-x-auto overflow-y-hidden"
+  class="flex flex-col gap-y-1 h-full overflow-x-auto overflow-y-hidden dashboard-theme-boundary"
   use:listenToNodeResize
 >
   <div

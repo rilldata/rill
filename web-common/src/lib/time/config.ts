@@ -412,7 +412,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
 /** The default configurations for time comparisons. */
 export const TIME_COMPARISON = {
   [TimeComparisonOption.CONTIGUOUS]: {
-    label: "Last period",
+    label: "Previous period",
     shorthand: "prev. period",
     description: "Compare the current time range to the previous time range",
     comparisonType: TimeComparisonOption.CONTIGUOUS,

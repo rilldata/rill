@@ -39,6 +39,7 @@ import type {
   V1ScanConnectorsResponse,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
+import type { ErrorType } from "../../http-client";
 
 /**
  * @summary BigQueryListDatasets list all datasets in a bigquery project
@@ -63,7 +64,7 @@ export const getConnectorServiceBigQueryListDatasetsQueryKey = (
 
 export const getConnectorServiceBigQueryListDatasetsQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceBigQueryListDatasets>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceBigQueryListDatasetsParams,
   options?: {
@@ -94,14 +95,15 @@ export const getConnectorServiceBigQueryListDatasetsQueryOptions = <
 export type ConnectorServiceBigQueryListDatasetsQueryResult = NonNullable<
   Awaited<ReturnType<typeof connectorServiceBigQueryListDatasets>>
 >;
-export type ConnectorServiceBigQueryListDatasetsQueryError = RpcStatus;
+export type ConnectorServiceBigQueryListDatasetsQueryError =
+  ErrorType<RpcStatus>;
 
 /**
  * @summary BigQueryListDatasets list all datasets in a bigquery project
  */
 export const createConnectorServiceBigQueryListDatasets = <
   TData = Awaited<ReturnType<typeof connectorServiceBigQueryListDatasets>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceBigQueryListDatasetsParams,
   options?: {
@@ -150,7 +152,7 @@ export const getConnectorServiceBigQueryListTablesQueryKey = (
 
 export const getConnectorServiceBigQueryListTablesQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceBigQueryListTables>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceBigQueryListTablesParams,
   options?: {
@@ -181,14 +183,14 @@ export const getConnectorServiceBigQueryListTablesQueryOptions = <
 export type ConnectorServiceBigQueryListTablesQueryResult = NonNullable<
   Awaited<ReturnType<typeof connectorServiceBigQueryListTables>>
 >;
-export type ConnectorServiceBigQueryListTablesQueryError = RpcStatus;
+export type ConnectorServiceBigQueryListTablesQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary BigQueryListTables list all tables in a bigquery project:dataset
  */
 export const createConnectorServiceBigQueryListTables = <
   TData = Awaited<ReturnType<typeof connectorServiceBigQueryListTables>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceBigQueryListTablesParams,
   options?: {
@@ -237,7 +239,7 @@ export const getConnectorServiceOLAPGetTableQueryKey = (
 
 export const getConnectorServiceOLAPGetTableQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceOLAPGetTable>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceOLAPGetTableParams,
   options?: {
@@ -267,14 +269,14 @@ export const getConnectorServiceOLAPGetTableQueryOptions = <
 export type ConnectorServiceOLAPGetTableQueryResult = NonNullable<
   Awaited<ReturnType<typeof connectorServiceOLAPGetTable>>
 >;
-export type ConnectorServiceOLAPGetTableQueryError = RpcStatus;
+export type ConnectorServiceOLAPGetTableQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary OLAPGetTable returns metadata about a table or view in an OLAP
  */
 export const createConnectorServiceOLAPGetTable = <
   TData = Awaited<ReturnType<typeof connectorServiceOLAPGetTable>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceOLAPGetTableParams,
   options?: {
@@ -325,7 +327,7 @@ export const getConnectorServiceScanConnectorsQueryKey = (
 
 export const getConnectorServiceScanConnectorsQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceScanConnectors>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceScanConnectorsParams,
   options?: {
@@ -355,7 +357,7 @@ export const getConnectorServiceScanConnectorsQueryOptions = <
 export type ConnectorServiceScanConnectorsQueryResult = NonNullable<
   Awaited<ReturnType<typeof connectorServiceScanConnectors>>
 >;
-export type ConnectorServiceScanConnectorsQueryError = RpcStatus;
+export type ConnectorServiceScanConnectorsQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary ScanConnectors scans the artifacts for connectors and returns information about
@@ -364,7 +366,7 @@ credentials for the connector.
  */
 export const createConnectorServiceScanConnectors = <
   TData = Awaited<ReturnType<typeof connectorServiceScanConnectors>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceScanConnectorsParams,
   options?: {
@@ -418,7 +420,7 @@ export const getConnectorServiceGCSListObjectsQueryKey = (
 
 export const getConnectorServiceGCSListObjectsQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceGCSListObjects>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   bucket: string,
   params?: ConnectorServiceGCSListObjectsParams,
@@ -455,14 +457,14 @@ export const getConnectorServiceGCSListObjectsQueryOptions = <
 export type ConnectorServiceGCSListObjectsQueryResult = NonNullable<
   Awaited<ReturnType<typeof connectorServiceGCSListObjects>>
 >;
-export type ConnectorServiceGCSListObjectsQueryError = RpcStatus;
+export type ConnectorServiceGCSListObjectsQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary GCSListObjects lists objects for the given bucket.
  */
 export const createConnectorServiceGCSListObjects = <
   TData = Awaited<ReturnType<typeof connectorServiceGCSListObjects>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   bucket: string,
   params?: ConnectorServiceGCSListObjectsParams,
@@ -513,7 +515,7 @@ export const getConnectorServiceGCSListBucketsQueryKey = (
 
 export const getConnectorServiceGCSListBucketsQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceGCSListBuckets>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceGCSListBucketsParams,
   options?: {
@@ -543,14 +545,14 @@ export const getConnectorServiceGCSListBucketsQueryOptions = <
 export type ConnectorServiceGCSListBucketsQueryResult = NonNullable<
   Awaited<ReturnType<typeof connectorServiceGCSListBuckets>>
 >;
-export type ConnectorServiceGCSListBucketsQueryError = RpcStatus;
+export type ConnectorServiceGCSListBucketsQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary GCSListBuckets lists buckets accessible with the configured credentials.
  */
 export const createConnectorServiceGCSListBuckets = <
   TData = Awaited<ReturnType<typeof connectorServiceGCSListBuckets>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceGCSListBucketsParams,
   options?: {
@@ -599,7 +601,7 @@ export const getConnectorServiceGCSGetCredentialsInfoQueryKey = (
 
 export const getConnectorServiceGCSGetCredentialsInfoQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceGCSGetCredentialsInfo>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceGCSGetCredentialsInfoParams,
   options?: {
@@ -630,14 +632,15 @@ export const getConnectorServiceGCSGetCredentialsInfoQueryOptions = <
 export type ConnectorServiceGCSGetCredentialsInfoQueryResult = NonNullable<
   Awaited<ReturnType<typeof connectorServiceGCSGetCredentialsInfo>>
 >;
-export type ConnectorServiceGCSGetCredentialsInfoQueryError = RpcStatus;
+export type ConnectorServiceGCSGetCredentialsInfoQueryError =
+  ErrorType<RpcStatus>;
 
 /**
  * @summary GCSGetCredentialsInfo returns metadata for the given bucket.
  */
 export const createConnectorServiceGCSGetCredentialsInfo = <
   TData = Awaited<ReturnType<typeof connectorServiceGCSGetCredentialsInfo>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceGCSGetCredentialsInfoParams,
   options?: {
@@ -686,7 +689,7 @@ export const getConnectorServiceOLAPListTablesQueryKey = (
 
 export const getConnectorServiceOLAPListTablesQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceOLAPListTables>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceOLAPListTablesParams,
   options?: {
@@ -716,14 +719,14 @@ export const getConnectorServiceOLAPListTablesQueryOptions = <
 export type ConnectorServiceOLAPListTablesQueryResult = NonNullable<
   Awaited<ReturnType<typeof connectorServiceOLAPListTables>>
 >;
-export type ConnectorServiceOLAPListTablesQueryError = RpcStatus;
+export type ConnectorServiceOLAPListTablesQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary OLAPListTables list all tables across all databases on motherduck
  */
 export const createConnectorServiceOLAPListTables = <
   TData = Awaited<ReturnType<typeof connectorServiceOLAPListTables>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceOLAPListTablesParams,
   options?: {
@@ -777,7 +780,7 @@ export const getConnectorServiceS3GetBucketMetadataQueryKey = (
 
 export const getConnectorServiceS3GetBucketMetadataQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceS3GetBucketMetadata>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   bucket: string,
   params?: ConnectorServiceS3GetBucketMetadataParams,
@@ -815,14 +818,15 @@ export const getConnectorServiceS3GetBucketMetadataQueryOptions = <
 export type ConnectorServiceS3GetBucketMetadataQueryResult = NonNullable<
   Awaited<ReturnType<typeof connectorServiceS3GetBucketMetadata>>
 >;
-export type ConnectorServiceS3GetBucketMetadataQueryError = RpcStatus;
+export type ConnectorServiceS3GetBucketMetadataQueryError =
+  ErrorType<RpcStatus>;
 
 /**
  * @summary S3GetBucketMetadata returns metadata for the given bucket.
  */
 export const createConnectorServiceS3GetBucketMetadata = <
   TData = Awaited<ReturnType<typeof connectorServiceS3GetBucketMetadata>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   bucket: string,
   params?: ConnectorServiceS3GetBucketMetadataParams,
@@ -878,7 +882,7 @@ export const getConnectorServiceS3ListObjectsQueryKey = (
 
 export const getConnectorServiceS3ListObjectsQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceS3ListObjects>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   bucket: string,
   params?: ConnectorServiceS3ListObjectsParams,
@@ -915,14 +919,14 @@ export const getConnectorServiceS3ListObjectsQueryOptions = <
 export type ConnectorServiceS3ListObjectsQueryResult = NonNullable<
   Awaited<ReturnType<typeof connectorServiceS3ListObjects>>
 >;
-export type ConnectorServiceS3ListObjectsQueryError = RpcStatus;
+export type ConnectorServiceS3ListObjectsQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary S3ListBuckets lists objects for the given bucket.
  */
 export const createConnectorServiceS3ListObjects = <
   TData = Awaited<ReturnType<typeof connectorServiceS3ListObjects>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   bucket: string,
   params?: ConnectorServiceS3ListObjectsParams,
@@ -973,7 +977,7 @@ export const getConnectorServiceS3ListBucketsQueryKey = (
 
 export const getConnectorServiceS3ListBucketsQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceS3ListBuckets>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceS3ListBucketsParams,
   options?: {
@@ -1003,14 +1007,14 @@ export const getConnectorServiceS3ListBucketsQueryOptions = <
 export type ConnectorServiceS3ListBucketsQueryResult = NonNullable<
   Awaited<ReturnType<typeof connectorServiceS3ListBuckets>>
 >;
-export type ConnectorServiceS3ListBucketsQueryError = RpcStatus;
+export type ConnectorServiceS3ListBucketsQueryError = ErrorType<RpcStatus>;
 
 /**
  * @summary S3ListBuckets lists buckets accessible with the configured credentials.
  */
 export const createConnectorServiceS3ListBuckets = <
   TData = Awaited<ReturnType<typeof connectorServiceS3ListBuckets>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceS3ListBucketsParams,
   options?: {
@@ -1059,7 +1063,7 @@ export const getConnectorServiceS3GetCredentialsInfoQueryKey = (
 
 export const getConnectorServiceS3GetCredentialsInfoQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceS3GetCredentialsInfo>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceS3GetCredentialsInfoParams,
   options?: {
@@ -1090,14 +1094,15 @@ export const getConnectorServiceS3GetCredentialsInfoQueryOptions = <
 export type ConnectorServiceS3GetCredentialsInfoQueryResult = NonNullable<
   Awaited<ReturnType<typeof connectorServiceS3GetCredentialsInfo>>
 >;
-export type ConnectorServiceS3GetCredentialsInfoQueryError = RpcStatus;
+export type ConnectorServiceS3GetCredentialsInfoQueryError =
+  ErrorType<RpcStatus>;
 
 /**
  * @summary S3GetCredentialsInfo returns metadata for the given bucket.
  */
 export const createConnectorServiceS3GetCredentialsInfo = <
   TData = Awaited<ReturnType<typeof connectorServiceS3GetCredentialsInfo>>,
-  TError = RpcStatus
+  TError = ErrorType<RpcStatus>
 >(
   params?: ConnectorServiceS3GetCredentialsInfoParams,
   options?: {

@@ -6,7 +6,7 @@
   import {
     getDashboardsForProject,
     useDashboardsStatus,
-  } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
+  } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
