@@ -11,7 +11,7 @@ function getDayElement(container, dateString) {
   );
 }
 
-describe.skip("Litepicker", () => {
+describe("Litepicker", () => {
   let startEl, endEl;
   beforeEach(() => {
     startEl = document.createElement("input");

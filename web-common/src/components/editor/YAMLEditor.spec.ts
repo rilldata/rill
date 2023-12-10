@@ -9,7 +9,7 @@ function getLines(container: HTMLElement) {
   );
 }
 
-describe.skip("YAMLEditor.svelte", () => {
+describe("YAMLEditor.svelte", () => {
   beforeAll(() => {
     document.createRange = () => {
       const range = new Range();
