@@ -22,7 +22,7 @@
   import DashboardCTAs from "./DashboardCTAs.svelte";
   import DashboardTitle from "./DashboardTitle.svelte";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
-  import Pivot from "@rilldata/web-common/features/dashboards/pivot/Pivot.svelte";
+  import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
 
   export let metricViewName: string;
   export let leftMargin = undefined;
@@ -110,7 +110,7 @@
     >
       {#if showPivot}
         <div class="overflow-y-hidden flex-none">
-          <Pivot {metricViewName} />
+          <PivotDisplay {metricViewName} />
         </div>
       {:else}
         <div
