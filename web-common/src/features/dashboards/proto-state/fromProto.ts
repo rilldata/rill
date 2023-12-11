@@ -1,13 +1,13 @@
-import type { Timestamp } from "@bufbuild/protobuf";
+import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type {
   DashboardTimeControls,
   ScrubRange,
 } from "@rilldata/web-common/lib/time/types";
-import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
+import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
+import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
   DashboardState,
   DashboardState_LeaderboardContextColumn,
@@ -146,13 +146,7 @@ export function getDashboardStateFromProto(
 }
 
 export function base64ToProto(message: string) {
-  return new Uint8Array(
-    atob(message)
-      .split("")
-      .map(function (c) {
-        return c.charCodeAt(0);
-      })
-  );
+  return protoBase64.dec(message);
 }
 
 function fromFiltersProto(conditions: Array<MetricsViewFilter_Cond>) {

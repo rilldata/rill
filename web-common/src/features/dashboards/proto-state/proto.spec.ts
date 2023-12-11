@@ -13,7 +13,7 @@ import {
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-describe.skip("toProto/fromProto", () => {
+describe("toProto/fromProto", () => {
   beforeAll(() => {
     initLocalUserPreferenceStore(AD_BIDS_NAME);
   });

@@ -57,7 +57,7 @@ vi.mock("$app/stores", () => {
   };
 });
 
-describe.skip("useDashboardUrlSync", () => {
+describe("useDashboardUrlSync", () => {
   runtime.set({
     host: "http://localhost",
     instanceId: "default",

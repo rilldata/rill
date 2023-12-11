@@ -30,7 +30,7 @@ import { render } from "@testing-library/svelte";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-describe.skip("time-control-store", () => {
+describe("time-control-store", () => {
   runtime.set({
     host: "http://localhost",
     instanceId: "default",

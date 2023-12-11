@@ -30,7 +30,7 @@ import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-describe.skip("Show/Hide Selectors", () => {
+describe("Show/Hide Selectors", () => {
   beforeAll(() => {
     initLocalUserPreferenceStore(AD_BIDS_NAME);
   });
