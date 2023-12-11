@@ -495,6 +495,27 @@ func (c *connection) reopenDB() error {
 
 	c.logLimits(conn)
 
+	// 2023-12-11: Hail mary for solving this issue: https://github.com/duckdblabs/rilldata/issues/6.
+	// Forces DuckDB to create catalog entries for the information schema up front (they are normally created lazily).
+	// Can be removed if the issue persists.
+	_, err = conn.ExecContext(context.Background(), `
+		select
+			coalesce(t.table_catalog, current_database()) as "database",
+			t.table_schema as "schema",
+			t.table_name as "name",
+			t.table_type as "type", 
+			array_agg(c.column_name order by c.ordinal_position) as "column_names",
+			array_agg(c.data_type order by c.ordinal_position) as "column_types",
+			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
+		from information_schema.tables t
+		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
+		group by 1, 2, 3, 4
+		order by 1, 2, 3, 4
+	`)
+	if err != nil {
+		return err
+	}
+
 	// List the directories directly in the external storage directory
 	// Load the version.txt from each sub-directory
 	// If version.txt is found, attach only the .db file matching the version.txt.
