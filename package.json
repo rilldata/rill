@@ -20,9 +20,6 @@
   "overrides": {
     "@rgossiaux/svelte-headlessui": {
       "svelte": "^4.0.0"
-    },
-    "@tanstack/svelte-virtual": {
-      "svelte": "^4.0.0"
     }
   }
 }
