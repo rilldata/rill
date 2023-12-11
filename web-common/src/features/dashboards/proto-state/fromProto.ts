@@ -1,7 +1,10 @@
 import type { Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import {
+  TimeComparisonOption,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -66,6 +69,8 @@ export function getDashboardStateFromProto(
     entity.selectedComparisonTimeRange = fromTimeRangeProto(
       dashboard.compareTimeRange
     );
+    // backwards compatibility
+    correctComparisonTimeRange(entity.selectedComparisonTimeRange);
   }
   entity.showTimeComparison = Boolean(dashboard.showTimeComparison);
 
@@ -188,6 +193,28 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
   }
 
   return selectedTimeRange;
+}
+
+function correctComparisonTimeRange(
+  comparisonTimeRange: DashboardTimeControls
+) {
+  switch (comparisonTimeRange.name as string) {
+    case "P1D":
+      comparisonTimeRange.name = TimeComparisonOption.DAY;
+      break;
+    case "P1W":
+      comparisonTimeRange.name = TimeComparisonOption.WEEK;
+      break;
+    case "P1M":
+      comparisonTimeRange.name = TimeComparisonOption.MONTH;
+      break;
+    case "P3M":
+      comparisonTimeRange.name = TimeComparisonOption.QUARTER;
+      break;
+    case "P1Y":
+      comparisonTimeRange.name = TimeComparisonOption.YEAR;
+      break;
+  }
 }
 
 function fromTimeProto(timestamp: Timestamp) {
