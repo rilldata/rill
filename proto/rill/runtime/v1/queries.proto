@@ -8,6 +8,7 @@ import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
 import "validate/validate.proto";
+import "expressions.proto";
 
 service QueryService {
   // Query runs a SQL query against the instance's OLAP datastore.
@@ -279,7 +280,8 @@ message MetricsViewAggregationRequest {
   TimeRange time_range = 12;
   google.protobuf.Timestamp time_start = 6; // Deprecated in favor of time_range
   google.protobuf.Timestamp time_end = 7; // Deprecated in favor of time_range
-  MetricsViewFilter filter = 8;
+  Expression filter = 8;
+  repeated MetricsViewColumnAlias aliases = 13;
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   int32 priority = 11;
@@ -302,15 +304,39 @@ message MetricsViewAggregationMeasure {
   repeated google.protobuf.Value builtin_measure_args = 3;
 }
 
+message MetricsViewAggregationSort {
+  string name = 1;
+  bool desc = 2;
+}
+
+message MetricsViewColumnAlias {
+  string name = 1;
+  oneof alias { // Is this overkill to future proof this?
+    MetricsViewMeasureAlias measure_alias = 2;
+  }
+}
+
+message MetricsViewMeasureAlias {
+  enum MeasureType {
+    MEASURE_TYPE_UNSPECIFIED = 0;
+    MEASURE_TYPE_COUNT = 1;
+    MEASURE_TYPE_COUNT_DISTINCT = 2;
+    MEASURE_TYPE_BASE_VALUE = 3;
+    MEASURE_TYPE_COMPARISON_VALUE = 4;
+    MEASURE_TYPE_ABS_DELTA = 5;
+    MEASURE_TYPE_REL_DELTA = 6;
+  }
+
+  string name = 1;
+  MeasureType type = 2;
+  repeated google.protobuf.Value args = 3;
+  string alias = 4;
+}
+
 enum BuiltinMeasure {
   BUILTIN_MEASURE_UNSPECIFIED = 0;
   BUILTIN_MEASURE_COUNT = 1;
   BUILTIN_MEASURE_COUNT_DISTINCT = 2;
-}
-
-message MetricsViewAggregationSort {
-  string name = 1;
-  bool desc = 2;
 }
 
 message MetricsViewToplistRequest {
@@ -339,10 +365,11 @@ message MetricsViewComparisonRequest {
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   MetricsViewAggregationDimension dimension = 3;
   repeated MetricsViewAggregationMeasure measures = 4;
-  repeated MetricsViewComparisonSort sort = 5;
+  repeated MetricsViewAggregationSort sort = 5;
   TimeRange time_range = 6;
   TimeRange comparison_time_range = 7;
-  MetricsViewFilter filter = 8;
+  Expression filter = 8;
+  repeated MetricsViewColumnAlias aliases = 14;
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   int32 priority = 11;
@@ -398,7 +425,8 @@ message MetricsViewTimeSeriesRequest {
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
   TimeGrain time_granularity = 6;
-  MetricsViewFilter filter = 7;
+  Expression filter = 7;
+  repeated MetricsViewColumnAlias aliases = 11;
   string time_zone = 10;
   int32 priority = 8;
 }
@@ -415,7 +443,8 @@ message MetricsViewTotalsRequest {
   repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
-  MetricsViewFilter filter = 7;
+  Expression filter = 7;
+  repeated MetricsViewColumnAlias aliases = 10;
   int32 priority = 8;
 }
 
@@ -430,7 +459,8 @@ message MetricsViewRowsRequest {
   google.protobuf.Timestamp time_start = 3;
   google.protobuf.Timestamp time_end = 4;
   TimeGrain time_granularity = 10;
-  MetricsViewFilter filter = 5;
+  Expression filter = 5;
+  repeated MetricsViewColumnAlias aliases = 12;
   repeated MetricsViewSort sort = 6;
   int32 limit = 7 [(validate.rules).int32.gte = 0];
   int64 offset = 8 [(validate.rules).int64.gte = 0];
@@ -477,49 +507,6 @@ message MetricsViewTimeRangeRequest {
 
 message MetricsViewTimeRangeResponse {
   TimeRangeSummary time_range_summary = 1;
-}
-
-message MeasureFilter {
-  MeasureFilterExpression expression = 1;
-}
-
-message MeasureFilterNode {
-  oneof entry {
-    MeasureFilterMeasure MeasureFilterMeasure = 1;
-    MeasureFilterExpression MeasureFilterExpression = 2;
-    google.protobuf.Value Value = 3;
-    MeasureFilterNode MeasureFilterNode = 4;
-  }
-}
-
-message MeasureFilterMeasure {
-  enum ColumnType {
-    COLUMN_TYPE_UNSPECIFIED = 0;
-    COLUMN_TYPE_PREVIOUS = 1;
-    COLUMN_TYPE_DELTA_ABSOLUTE = 2;
-    COLUMN_TYPE_DELTA_RELATIVE = 3;
-  }
-
-  MetricsViewAggregationMeasure measure = 1;
-  ColumnType column_type = 2;
-}
-
-message MeasureFilterExpression {
-  enum OperationType {
-    OPERATION_TYPE_UNSPECIFIED = 0;
-    OPERATION_TYPE_EQUALS = 1;
-    OPERATION_TYPE_NOT_EQUALS = 2;
-    OPERATION_TYPE_LESSER = 3;
-    OPERATION_TYPE_LESSER_OR_EQUALS = 4;
-    OPERATION_TYPE_GREATER = 5;
-    OPERATION_TYPE_GREATER_OR_EQUALS = 6;
-    OPERATION_TYPE_OR = 7;
-    OPERATION_TYPE_AND = 8;
-    OPERATION_TYPE_BETWEEN = 9;
-  }
-
-  repeated MeasureFilterNode entries = 1;
-  OperationType operation_type = 2;
 }
 
 // **********
