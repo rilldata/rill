@@ -643,7 +643,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 	}
 	c.logger.Info("convert column to enum", zap.String("table", table), zap.Strings("col", cols))
 
-	currentVersion, exist, err := c.tableVersion(table)
+	oldVesrion, exist, err := c.tableVersion(table)
 	if err != nil {
 		return err
 	}
@@ -652,11 +652,11 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 		return fmt.Errorf("table %q does not exist", table)
 	}
 
-	currentDB := dbName(table, currentVersion)
+	oldDB := dbName(table, oldVesrion)
 	for _, col := range cols {
 		// check that atleast one non nil value exists in the column
 		res, err := c.Execute(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("SELECT (SELECT count(%s) FROM %s.default WHERE %s IS NOT NULL) > 0 AS cnt", safeSQLName(col), safeSQLName(currentDB), safeSQLName(col)),
+			Query:    fmt.Sprintf("SELECT (SELECT count(%s) FROM %s.default WHERE %s IS NOT NULL) > 0 AS cnt", safeSQLName(col), safeSQLName(oldDB), safeSQLName(col)),
 			Priority: 100,
 		})
 		if err != nil {
@@ -676,7 +676,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 		}
 	}
 
-	// scan current db and current schema
+	// scan main db and main schema
 	res, err := c.Execute(ctx, &drivers.Statement{
 		Query:    "SELECT current_database(), current_schema()",
 		Priority: 100,
@@ -727,7 +727,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 
 		for _, col := range cols {
 			enum := fmt.Sprintf("%s_enum", col)
-			if err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE TYPE %s AS ENUM (SELECT DISTINCT %s FROM %s.default WHERE %s IS NOT NULL)", safeSQLName(enum), safeSQLName(col), safeSQLName(currentDB), safeSQLName(col))}); err != nil {
+			if err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE TYPE %s AS ENUM (SELECT DISTINCT %s FROM %s.default WHERE %s IS NOT NULL)", safeSQLName(enum), safeSQLName(col), safeSQLName(oldDB), safeSQLName(col))}); err != nil {
 				c.detachAndRemoveFile(ctx, newDB, newDBFile)
 				return fmt.Errorf("failed to create enum %q: %w", enum, err)
 			}
@@ -740,7 +740,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 		}
 		selectQry += fmt.Sprintf("* EXCLUDE(%s)", strings.Join(cols, ","))
 
-		if err := c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE \"default\" AS SELECT %s FROM %s.default", selectQry, safeSQLName(currentDB))}); err != nil {
+		if err := c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE \"default\" AS SELECT %s FROM %s.default", selectQry, safeSQLName(oldDB))}); err != nil {
 			c.detachAndRemoveFile(ctx, newDB, newDBFile)
 			return fmt.Errorf("failed to create table with enum values: %w", err)
 		}
@@ -758,8 +758,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 			return fmt.Errorf("failed to update version: %w", err)
 		}
 
-		oldDBFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", currentVersion))
-		c.detachAndRemoveFile(ensuredCtx, currentDB, oldDBFile)
+		c.detachAndRemoveFile(ensuredCtx, oldDB, filepath.Join(sourceDir, fmt.Sprintf("%s.db", oldVesrion)))
 		return nil
 	})
 }
