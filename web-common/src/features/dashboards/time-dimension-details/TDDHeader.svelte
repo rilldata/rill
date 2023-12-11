@@ -107,7 +107,8 @@
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- Hidden path for opening full pivot -->
       <div
-        on:click={() => metricsExplorerStore.setPivotMode(metricViewName, true)}
+        on:dblclick={() =>
+          metricsExplorerStore.setPivotMode(metricViewName, true)}
         class="flex items-center gap-x-1"
       >
         <Row size="16px" /> Rows
