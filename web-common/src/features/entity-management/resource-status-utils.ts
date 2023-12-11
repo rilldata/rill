@@ -12,6 +12,7 @@ import {
   V1ReconcileStatus,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { derived, Readable, Unsubscriber } from "svelte/store";
 
@@ -23,7 +24,7 @@ export enum ResourceStatus {
 
 export type ResourceStatusState = {
   status: ResourceStatus;
-  error?: unknown;
+  error?: ErrorType<unknown>;
   resource?: V1Resource;
 };
 

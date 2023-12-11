@@ -24,19 +24,6 @@ const timeUnits = {
   y: "y",
 };
 
-const ms_breakpoints = [
-  { ms: 0 },
-  { ms: 1 },
-  { ms: 100, divisor: 1, unit: timeUnits.ms },
-  { ms: 90 * MS_PER_SEC, divisor: MS_PER_SEC, unit: timeUnits.s },
-  { ms: 90 * MS_PER_MIN, divisor: MS_PER_MIN, unit: timeUnits.m },
-  { ms: 72 * MS_PER_HOUR, divisor: MS_PER_HOUR, unit: timeUnits.h },
-  { ms: 90 * MS_PER_DAY, divisor: MS_PER_DAY, unit: timeUnits.d },
-  { ms: 18 * MS_PER_MONTH, divisor: MS_PER_MONTH, unit: timeUnits.mon },
-  { ms: 100 * MS_PER_YEAR, divisor: MS_PER_YEAR, unit: timeUnits.y },
-  { ms: Infinity, unit: "TOO_LARGE" },
-];
-
 // TODO: Rewrite this to use the sample and provided options
 export class IntervalFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterRangeSpecsStrategy;
@@ -74,37 +61,48 @@ export function formatMsInterval(ms: number): string {
     // );
     return "";
   }
-  let negative = false;
-  if (ms < 0) {
-    ms = -ms;
-    negative = true;
-  }
 
-  if (ms === 0) {
-    return `0 ${timeUnits.s}`;
-  } else if (ms < 1) {
-    return `~0 ${timeUnits.s}`;
-  } else if (ms >= 100 * MS_PER_YEAR) {
-    return negative ? `< -100 ${timeUnits.y}` : `>100 ${timeUnits.y}`;
-  }
-
-  const i = ms_breakpoints.findIndex((b) => ms < b.ms);
-
-  const breakpoint = ms_breakpoints[i];
-
-  if (breakpoint.unit === "TOO_LARGE") {
-    return `>100 ${timeUnits.y}`;
-  }
-
-  const unit = breakpoint.unit;
-  const value = ms / breakpoint.divisor;
-  const fmt = Intl.NumberFormat("en-US", {
+  const format = Intl.NumberFormat("en-US", {
     maximumFractionDigits: 1,
     minimumFractionDigits: 0,
     maximumSignificantDigits: 2,
-  }).format(value);
+  }).format;
 
-  return `${negative ? "-" : ""}${fmt} ${unit}`;
+  let neg: "" | "-" = "";
+  if (ms < 0) {
+    ms = -ms;
+    neg = "-";
+  }
+
+  switch (true) {
+    case ms < 0:
+      // THIS SHOULD NEVER HAPPEN, any negative values should
+      // have been made positive above.
+      console.warn(
+        `formatMsInterval: negative value ${ms} was not converted to positive.`
+      );
+      return "0 ms";
+    case ms === 0:
+      return `0 ${timeUnits.s}`;
+    case ms < 1:
+      return `~0 ${timeUnits.s}`;
+    case ms < 100:
+      return `${neg}${format(ms)} ${timeUnits.ms}`;
+    case ms < 90 * MS_PER_SEC:
+      return `${neg}${format(ms / MS_PER_SEC)} ${timeUnits.s}`;
+    case ms < 90 * MS_PER_MIN:
+      return `${neg}${format(ms / MS_PER_MIN)} ${timeUnits.m}`;
+    case ms < 72 * MS_PER_HOUR:
+      return `${neg}${format(ms / MS_PER_HOUR)} ${timeUnits.h}`;
+    case ms < 90 * MS_PER_DAY:
+      return `${neg}${format(ms / MS_PER_DAY)} ${timeUnits.d}`;
+    case ms < 18 * MS_PER_MONTH:
+      return `${neg}${format(ms / MS_PER_MONTH)} ${timeUnits.mon}`;
+    case ms < 100 * MS_PER_YEAR:
+      return `${neg}${format(ms / MS_PER_YEAR)} ${timeUnits.y}`;
+    default:
+      return neg === "-" ? `< -100 ${timeUnits.y}` : `>100 ${timeUnits.y}`;
+  }
 }
 
 /**
