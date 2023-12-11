@@ -447,3 +447,67 @@ func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 	err = normalConn.CreateTableAsSelect(ctx, "test_view", true, sql)
 	require.NoError(t, err)
 }
+
+func Test_connection_ChangingOrder(t *testing.T) {
+	temp := t.TempDir()
+	os.Mkdir(temp, fs.ModePerm)
+
+	// on cloud
+	dbPath := filepath.Join(temp, "view.db")
+	handle, err := Driver{}.Open(map[string]any{"dsn": dbPath, "external_table_storage": true, "allow_host_access": false}, false, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	c := handle.(*connection)
+	require.NoError(t, c.Migrate(context.Background()))
+	c.AsOLAP("default")
+
+	// create table
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'India' AS 'coun\"try'")
+	require.NoError(t, err)
+
+	// create view
+	err = c.CreateTableAsSelect(context.Background(), "test_view", true, "SELECT * FROM test")
+	require.NoError(t, err)
+	verifyCount(t, c, "test_view", 1)
+
+	// change sequence
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 'India' AS 'coun\"try', 1 AS id")
+	require.NoError(t, err)
+	// view should still work
+	verifyCount(t, c, "test_view", 1)
+
+	// on local
+	dbPath = filepath.Join(temp, "local.db")
+	handle, err = Driver{}.Open(map[string]any{"dsn": dbPath, "external_table_storage": true, "allow_host_access": true}, false, activity.NewNoopClient(), zap.NewNop())
+	require.NoError(t, err)
+	c = handle.(*connection)
+	require.NoError(t, c.Migrate(context.Background()))
+	c.AsOLAP("default")
+
+	// create table
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'India' AS 'coun\"try'")
+	require.NoError(t, err)
+
+	// create view
+	err = c.CreateTableAsSelect(context.Background(), "test_view", true, "SELECT * FROM test")
+	require.NoError(t, err)
+	verifyCount(t, c, "test_view", 1)
+
+	// change sequence
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 'India' AS 'coun\"try', 1 AS id")
+	require.NoError(t, err)
+
+	// view no longer works
+	_, err = c.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) from test_view"})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "Binder Error: Contents of view were altered: types don't match!")
+}
+
+func verifyCount(t *testing.T, c *connection, table string, expected int) {
+	res, err := c.Execute(context.Background(), &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) from %s", table)})
+	require.NoError(t, err)
+	require.True(t, res.Next())
+	var count int
+	require.NoError(t, res.Scan(&count))
+	require.Equal(t, 1, count)
+	require.NoError(t, res.Close())
+}

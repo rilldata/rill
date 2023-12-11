@@ -320,9 +320,14 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 			return fmt.Errorf("create: update version %q failed: %w", newVersion, err)
 		}
 
+		qry, err := c.generateSelectQuery(ctx, db)
+		if err != nil {
+			return err
+		}
+
 		// create view query
 		err = c.Exec(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT * FROM %s.default", safeSQLName(name), safeSQLName(db)),
+			Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), qry),
 		})
 		if err != nil {
 			c.detachAndRemoveFile(ensuredCtx, db, dbFile)
@@ -507,8 +512,13 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 			return fmt.Errorf("rename: attach %q db failed: %w", newDB, err)
 		}
 
+		qry, err := c.generateSelectQuery(ctx, newDB)
+		if err != nil {
+			return err
+		}
+
 		// change view query
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS SELECT * FROM %s.default", safeSQLName(newName), safeSQLName(newDB))})
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(newName), qry)})
 		if err != nil {
 			return fmt.Errorf("rename: create %q view failed: %w", newName, err)
 		}
@@ -713,15 +723,53 @@ func (c *connection) convertToEnum(ctx context.Context, table, col string) error
 			return fmt.Errorf("failed to alter table %q: %w", table, err)
 		}
 
+		qry, err := c.generateSelectQuery(ctx, dbName)
+		if err != nil {
+			return err
+		}
 		// recreate view to propagate schema changes
 		// NOTE :: db name need to be appened in the view query else query fails when switching to main db
-		return c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s.%s AS SELECT * FROM %s.default", safeSQLName(currentDB), safeSQLName(currentSchema), safeSQLName(table), safeSQLName(dbName))})
+		return c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s.%s AS %s", safeSQLName(currentDB), safeSQLName(currentSchema), safeSQLName(table), qry)})
 	})
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// duckDB raises Contents of view were altered: types don't match! error even when number of columns are same but sequence of column changes in underlying table.
+// This causes temporary query failures till the model view is not updated to reflect the new column sequence.
+// We ensure that view for external table storage is always generated using a stable order of columns of underlying table.
+// Additionally we want to keep the same order as the underlying table locally so that we can show columns in the same order as they appear in source data.
+// Using `AllowHostAccess` as proxy to check if we are running in local/cloud mode.
+func (c *connection) generateSelectQuery(ctx context.Context, db string) (string, error) {
+	if c.config.AllowHostAccess {
+		return fmt.Sprintf("SELECT * FROM %s.default", safeSQLName(db)), nil
+	}
+
+	rows, err := c.Execute(ctx, &drivers.Statement{
+		Query: fmt.Sprintf(`
+			SELECT column_name AS name
+			FROM information_schema.columns
+			WHERE table_catalog = %s AND table_name = 'default'
+			ORDER BY name ASC`, safeSQLString(db)),
+	})
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	cols := make([]string, 0)
+	var col string
+	for rows.Next() {
+		if err := rows.Scan(&col); err != nil {
+			return "", err
+		}
+		cols = append(cols, safeName(col))
+	}
+
+	return fmt.Sprintf("SELECT %s FROM %s.default", strings.Join(cols, ", "), safeSQLName(db)), nil
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
