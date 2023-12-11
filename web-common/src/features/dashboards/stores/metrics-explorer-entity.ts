@@ -9,6 +9,12 @@ import type {
 } from "@rilldata/web-common/lib/time/types";
 import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
 
+interface PivotState {
+  active: boolean;
+  rows: string[];
+  columns: string[];
+}
+
 export interface MetricsExplorerEntity {
   name: string;
   /**
@@ -136,7 +142,7 @@ export interface MetricsExplorerEntity {
    */
   selectedDimensionName?: string;
 
-  pivot?: boolean;
+  pivot: PivotState;
 
   proto?: string;
 }

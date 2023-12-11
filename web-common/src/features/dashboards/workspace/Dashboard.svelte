@@ -33,7 +33,7 @@
 
   $: selectedDimensionName = $metricsExplorer?.selectedDimensionName;
   $: expandedMeasureName = $metricsExplorer?.expandedMeasureName;
-  $: showPivot = $metricsExplorer?.pivot;
+  $: showPivot = $metricsExplorer?.pivot?.active;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
     metricViewName
@@ -110,7 +110,7 @@
     >
       {#if showPivot}
         <div class="overflow-y-hidden flex-none">
-          <PivotDisplay {metricViewName} />
+          <PivotDisplay />
         </div>
       {:else}
         <div

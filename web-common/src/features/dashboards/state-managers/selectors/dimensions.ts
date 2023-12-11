@@ -60,6 +60,12 @@ export const getDimensionDescription = (
   };
 };
 
+export const comparisonDimension = (dashData: DashboardDataSources) => {
+  const dimName = dashData.dashboard.selectedComparisonDimension;
+  if (!dimName) return undefined;
+  return getDimensionByName(dashData)(dimName);
+};
+
 export const dimensionSelectors = {
   /**
    * Gets all dimensions for the dashboard, or undefined if there are none.
@@ -86,6 +92,12 @@ export const dimensionSelectors = {
    * given its "key" name. Returns an empty string if the dimension has no description.
    */
   getDimensionDescription,
+
+  /**
+   * Gets the dimension that is currently being compared.
+   * Returns undefined otherwise.
+   */
+  comparisonDimension,
 
   /**
    * Gets the name of the dimension that is currently selected in the dimension table.

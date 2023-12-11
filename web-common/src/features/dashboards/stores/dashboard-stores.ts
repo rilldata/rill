@@ -212,7 +212,26 @@ const metricViewReducers = {
 
   setPivotMode(name: string, mode: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = mode;
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, active: mode };
+    });
+  },
+
+  addPivotItem(name: string, value: string, type: "row" | "column") {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      const pivot = metricsExplorer.pivot;
+      const list = type === "row" ? pivot.rows : pivot.columns;
+      list.push(value);
+    });
+  },
+
+  removePivotItem(name: string, value: string, type: "row" | "column") {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      const pivot = metricsExplorer.pivot;
+      const list = type === "row" ? pivot.rows : pivot.columns;
+      const index = list.indexOf(value);
+      if (index >= 0) {
+        list.splice(index, 1);
+      }
     });
   },
 

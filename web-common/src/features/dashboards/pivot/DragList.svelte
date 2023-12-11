@@ -1,6 +1,8 @@
 <script lang="ts">
   import { dndzone } from "svelte-dnd-action";
   import { flip } from "svelte/animate";
+  import { Chip } from "@rilldata/web-common/components/chip";
+  import { measureChipColors } from "@rilldata/web-common/components/chip/chip-types";
 
   export let items: unknown[] = [];
   export let style: "vertical" | "horizontal" = "vertical";
@@ -13,9 +15,9 @@
 
   let listClasses;
   $: if (style === "horizontal") {
-    listClasses = "flex flex-row bg-slate-100 w-full p-2";
+    listClasses = "flex flex-row bg-slate-50 w-full p-2 gap-x-1 h-10";
   } else {
-    listClasses = "flex flex-col px-2";
+    listClasses = "flex flex-col gap-y-1 py-2";
   }
 </script>
 
@@ -27,7 +29,14 @@
 >
   {#each items as item (item.id)}
     <div class="item" animate:flip={{ duration: flipDurationMs }}>
-      {item.title}
+      <Chip
+        {...measureChipColors}
+        extraPadding={false}
+        extraRounded={false}
+        label={item.title}
+      >
+        <div slot="body" class="font-semibold">{item.title}</div>
+      </Chip>
     </div>
   {/each}
 </div>
@@ -35,8 +44,5 @@
 <style type="postcss">
   .item {
     @apply text-center h-6;
-    border: 1px solid black;
-    margin: 0.2em;
-    padding: 0.3em;
   }
 </style>

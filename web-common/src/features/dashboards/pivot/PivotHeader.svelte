@@ -2,36 +2,56 @@
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import DragList from "./DragList.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 
-  let items2 = [
-    { id: 6, title: "Palpatine" },
-    { id: 7, title: "Death" },
+  const stateManagers = getStateManagers();
+  const {
+    dashboardStore,
+    selectors: {
+      activeMeasure: { activeMeasure },
+      dimensions: { comparisonDimension },
+    },
+    metricsViewName,
+    runtime,
+  } = stateManagers;
+
+  $: startingMeasure = [
+    {
+      id: $activeMeasure?.name,
+      title: $activeMeasure?.label || $activeMeasure?.name,
+    },
   ];
 
-  let items3 = [
-    { id: 8, title: "Emperor" },
-    { id: 9, title: "Star" },
-  ];
+  $: startingDimension = $comparisonDimension
+    ? [
+        {
+          id: $comparisonDimension.column || $comparisonDimension.name,
+          title:
+            $comparisonDimension.label ||
+            $comparisonDimension.name ||
+            $comparisonDimension.column,
+        },
+      ]
+    : [];
 </script>
 
 <div class="header">
   <div class="header-row">
     <Column size="16px" /> Columns
-    <DragList items={items2} style="horizontal" />
+    <DragList items={startingMeasure} style="horizontal" />
   </div>
   <div class="header-row">
     <Row size="16px" /> Rows
-    <DragList items={items3} style="horizontal" />
+    <DragList items={startingDimension} style="horizontal" />
   </div>
 </div>
 
 <style lang="postcss">
   .header {
+    @apply flex flex-col;
     border-bottom: 1px solid #ddd;
-    display: flex;
-    flex-direction: column;
   }
   .header-row {
-    @apply flex items-center gap-x-1 p-2;
+    @apply flex items-center gap-x-1 px-2 py-1;
   }
 </style>
