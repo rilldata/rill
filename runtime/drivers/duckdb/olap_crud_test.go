@@ -394,22 +394,38 @@ func Test_connection_CastEnum(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "test", false, "select 'hello' as name")
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'bglr' AS city, 'IND' AS country")
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test", false, "select 'world'")
+	err = c.InsertTableAsSelect(context.Background(), "test", false, "SELECT 2, 'mUm', 'IND'")
 	require.NoError(t, err)
 
-	err = c.convertToEnum(context.Background(), "test", "name")
+	err = c.InsertTableAsSelect(context.Background(), "test", false, "SELECT 3, 'Perth', 'Aus'")
 	require.NoError(t, err)
 
-	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE column_name='name'"})
+	err = c.InsertTableAsSelect(context.Background(), "test", false, "SELECT 3, null, 'Aus'")
+	require.NoError(t, err)
+
+	err = c.InsertTableAsSelect(context.Background(), "test", false, "SELECT 3, 'bglr', null")
+	require.NoError(t, err)
+
+	err = c.convertToEnum(context.Background(), "test", []string{"city", "country"})
+	require.NoError(t, err)
+
+	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE column_name='city' AND table_name='test' AND table_catalog = 'view'"})
 	require.NoError(t, err)
 
 	var typ string
 	require.True(t, res.Next())
 	require.NoError(t, res.Scan(&typ))
-	require.Equal(t, "ENUM('hello', 'world')", typ)
+	require.Equal(t, "ENUM('bglr', 'Perth', 'mUm')", typ)
+	require.NoError(t, res.Close())
+
+	res, err = c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE column_name='country' AND table_name='test' AND table_catalog = 'view'"})
+	require.NoError(t, err)
+	require.True(t, res.Next())
+	require.NoError(t, res.Scan(&typ))
+	require.Equal(t, "ENUM('Aus', 'IND')", typ)
 	require.NoError(t, res.Close())
 }
 
