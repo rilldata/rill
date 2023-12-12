@@ -231,8 +231,8 @@
       <ChartBody
         {data}
         {dimensionData}
-        isHovering={hoveredTime}
         dimensionValue={$tableInteractionStore?.dimensionValue}
+        isHovering={hoveredTime}
         {scrubEnd}
         {scrubStart}
         {showComparison}
