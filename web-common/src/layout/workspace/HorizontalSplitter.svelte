@@ -16,7 +16,6 @@
   let parentElement: HTMLElement | null = null;
   let splitter: HTMLButtonElement;
 
-  let parentTop = 0;
   let parentHeight = 0;
 
   function onMouseMove(e: MouseEvent) {
@@ -33,7 +32,6 @@
   function startDrag() {
     if (!parentElement) return;
 
-    parentTop = parentElement.getBoundingClientRect().top;
     parentHeight = parentElement.clientHeight;
 
     window.addEventListener("mousemove", onMouseMove);
