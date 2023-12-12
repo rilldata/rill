@@ -1,13 +1,11 @@
 <script lang="ts">
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createAdminServiceGetProject } from "../../client";
   import ProjectDeploymentStatusChip from "./ProjectDeploymentStatusChip.svelte";
   import { useProjectDataLastRefreshed } from "./selectors";
 
   export let organization: string;
   export let project: string;
 
-  $: proj = createAdminServiceGetProject(organization, project);
   $: dataLastRefreshed = useProjectDataLastRefreshed($runtime?.instanceId);
 </script>
 
