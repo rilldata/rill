@@ -653,37 +653,13 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 	}
 	c.logger.Info("convert column to enum", zap.String("table", table), zap.Strings("col", cols))
 
-	oldVesrion, exist, err := c.tableVersion(table)
+	oldVersion, exist, err := c.tableVersion(table)
 	if err != nil {
 		return err
 	}
 
 	if !exist {
 		return fmt.Errorf("table %q does not exist", table)
-	}
-
-	oldDB := dbName(table, oldVesrion)
-	for _, col := range cols {
-		// check that atleast one non nil value exists in the column
-		res, err := c.Execute(ctx, &drivers.Statement{
-			Query:    fmt.Sprintf("SELECT (SELECT count(%s) FROM %s.default WHERE %s IS NOT NULL) > 0 AS cnt", safeSQLName(col), safeSQLName(oldDB), safeSQLName(col)),
-			Priority: 100,
-		})
-		if err != nil {
-			return err
-		}
-
-		var exists bool
-		if res.Next() {
-			if err := res.Scan(&exists); err != nil {
-				_ = res.Close()
-				return err
-			}
-		}
-		_ = res.Close()
-		if !exists {
-			return fmt.Errorf("column %q can't be converted to enum, has zero non null values", col)
-		}
 	}
 
 	// scan main db and main schema
@@ -735,6 +711,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 			}
 		}()
 
+		oldDB := dbName(table, oldVersion)
 		for _, col := range cols {
 			enum := fmt.Sprintf("%s_enum", col)
 			if err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE TYPE %s AS ENUM (SELECT DISTINCT %s FROM %s.default WHERE %s IS NOT NULL)", safeSQLName(enum), safeSQLName(col), safeSQLName(oldDB), safeSQLName(col))}); err != nil {
@@ -756,12 +733,12 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 		}
 
 		// recreate view to propagate schema changes
-		// NOTE :: db name need to be appened in the view query else query fails when switching to main db
 		selectQry, err := c.generateSelectQuery(ctx, newDB)
 		if err != nil {
 			return err
 		}
 
+		// NOTE :: db name need to be appened in the view query else query fails when switching to main db
 		if err := c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s.%s AS %s", safeSQLName(mainDB), safeSQLName(mainSchema), safeSQLName(table), selectQry)}); err != nil {
 			c.detachAndRemoveFile(ctx, newDB, newDBFile)
 			return fmt.Errorf("failed to create view %q: %w", table, err)
@@ -773,7 +750,7 @@ func (c *connection) convertToEnum(ctx context.Context, table string, cols []str
 			return fmt.Errorf("failed to update version: %w", err)
 		}
 
-		c.detachAndRemoveFile(ensuredCtx, oldDB, filepath.Join(sourceDir, fmt.Sprintf("%s.db", oldVesrion)))
+		c.detachAndRemoveFile(ensuredCtx, oldDB, filepath.Join(sourceDir, fmt.Sprintf("%s.db", oldVersion)))
 		return nil
 	})
 }
