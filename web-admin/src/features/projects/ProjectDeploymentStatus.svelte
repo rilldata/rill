@@ -8,7 +8,6 @@
   export let project: string;
 
   $: proj = createAdminServiceGetProject(organization, project);
-  $: isProjectDeployed = $proj?.data && $proj.data.prodDeployment;
   $: dataLastRefreshed = useProjectDataLastRefreshed($runtime?.instanceId);
 </script>
 
@@ -28,8 +27,5 @@
         minute: "numeric",
       })}
     </span>
-  {/if}
-  {#if !isProjectDeployed}
-    <div>This project is not deployed.</div>
   {/if}
 </div>
