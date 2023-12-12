@@ -1,3 +1,7 @@
+import {
+  createShowHideDimensionsStore,
+  createShowHideMeasuresStore,
+} from "@rilldata/web-common/features/dashboards/show-hide-selectors";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
@@ -21,10 +25,6 @@ import {
   createMetricsMetaQueryMock,
   resetDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
-import {
-  createShowHideDimensionsStore,
-  createShowHideMeasuresStore,
-} from "@rilldata/web-common/features/dashboards/show-hide-selectors";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";

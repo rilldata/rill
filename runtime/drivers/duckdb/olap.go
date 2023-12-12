@@ -644,13 +644,16 @@ func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Sta
 
 // convertToEnum converts a varchar col in table to an enum type.
 // Generally to be used for low cardinality varchar columns although not enforced here.
-func (c *connection) convertToEnum(ctx context.Context, table, col string) error {
+func (c *connection) convertToEnum(ctx context.Context, table string, cols []string) error {
+	if len(cols) == 0 {
+		return fmt.Errorf("empty list")
+	}
 	if !c.config.ExtTableStorage {
 		return fmt.Errorf("`cast_to_enum` is only supported when `external_table_storage` is enabled")
 	}
-	c.logger.Info("convert column to enum", zap.String("table", table), zap.String("col", col))
+	c.logger.Info("convert column to enum", zap.String("table", table), zap.Strings("col", cols))
 
-	version, exist, err := c.tableVersion(table)
+	oldVersion, exist, err := c.tableVersion(table)
 	if err != nil {
 		return err
 	}
@@ -659,83 +662,97 @@ func (c *connection) convertToEnum(ctx context.Context, table, col string) error
 		return fmt.Errorf("table %q does not exist", table)
 	}
 
-	dbName := dbName(table, version)
-	enum := fmt.Sprintf("%s_enum", col)
-
-	err = c.WithConnection(ctx, 100, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
-		// check that atleast one non nil value exists in the column
-		res, err := c.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT (SELECT count(%s) FROM %s.default WHERE %s IS NOT NULL) > 0 AS cnt", safeSQLName(col), safeSQLName(dbName), safeSQLName(col))})
-		if err != nil {
-			return err
-		}
-
-		var exists bool
-		if res.Next() {
-			if err := res.Scan(&exists); err != nil {
-				_ = res.Close()
-				return err
-			}
-		}
-		_ = res.Close()
-		if !exists {
-			return fmt.Errorf("column %q can't be converted to enum, has zero non null values", col)
-		}
-
-		// scan current db and current schema
-		res, err = c.Execute(ctx, &drivers.Statement{Query: "SELECT current_database(), current_schema()"})
-		if err != nil {
-			return err
-		}
-
-		var currentDB, currentSchema string
-		if res.Next() {
-			if err := res.Scan(&currentDB, &currentSchema); err != nil {
-				_ = res.Close()
-				return err
-			}
-		}
-		_ = res.Close()
-
-		// switch to source db
-		// this is only required since duckdb has bugs around db scoped custom types
-		// TODO: remove this when https://github.com/duckdb/duckdb/pull/9622 is released
-		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s", dbName)})
-		if err != nil {
-			return fmt.Errorf("failed switch db %q: %w", dbName, err)
-		}
-		defer func() {
-			// switch to original db, notice `db.schema` just doing USE db switches context to `main` schema in the current db if doing `USE main`
-			// we want to switch to original db and schema
-			err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("USE %s.%s", safeSQLName(currentDB), safeSQLName(currentSchema))})
-			if err != nil {
-				// This should NEVER happen
-				c.fatalInternalError(fmt.Errorf("failed to switch back from db %q: %w", dbName, err))
-			}
-		}()
-
-		err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE TYPE %s AS ENUM (SELECT DISTINCT %s FROM \"default\" WHERE %s IS NOT NULL)", safeSQLName(enum), safeSQLName(col), safeSQLName(col))})
-		if err != nil {
-			return fmt.Errorf("failed to create enum %q: %w", enum, err)
-		}
-
-		err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("ALTER TABLE \"default\" ALTER COLUMN %s SET TYPE %s", safeSQLName(col), safeSQLName(enum))})
-		if err != nil {
-			return fmt.Errorf("failed to alter table %q: %w", table, err)
-		}
-
-		qry, err := c.generateSelectQuery(ctx, dbName)
-		if err != nil {
-			return err
-		}
-		// recreate view to propagate schema changes
-		// NOTE :: db name need to be appened in the view query else query fails when switching to main db
-		return c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s.%s AS %s", safeSQLName(currentDB), safeSQLName(currentSchema), safeSQLName(table), qry)})
+	// scan main db and main schema
+	res, err := c.Execute(ctx, &drivers.Statement{
+		Query:    "SELECT current_database(), current_schema()",
+		Priority: 100,
 	})
 	if err != nil {
 		return err
 	}
 
-	return nil
+	var mainDB, mainSchema string
+	if res.Next() {
+		if err := res.Scan(&mainDB, &mainSchema); err != nil {
+			_ = res.Close()
+			return err
+		}
+	}
+	_ = res.Close()
+
+	sourceDir := filepath.Join(c.config.ExtStoragePath, table)
+	newVersion := fmt.Sprint(time.Now().UnixMilli())
+	newDBFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
+	newDB := dbName(table, newVersion)
+	return c.WithConnection(ctx, 100, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+		// attach new db
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(newDBFile), safeSQLName(newDB))})
+		if err != nil {
+			removeDBFile(newDBFile)
+			return fmt.Errorf("create: attach %q db failed: %w", newDBFile, err)
+		}
+
+		// switch to new db
+		// this is only required since duckdb has bugs around db scoped custom types
+		// TODO: remove this when https://github.com/duckdb/duckdb/pull/9622 is released
+		err = c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s", safeSQLName(newDB))})
+		if err != nil {
+			c.detachAndRemoveFile(ctx, newDB, newDBFile)
+			return fmt.Errorf("failed switch db %q: %w", newDB, err)
+		}
+		defer func() {
+			// switch to original db, notice `db.schema` just doing USE db switches context to `main` schema in the current db if doing `USE main`
+			// we want to switch to original db and schema
+			err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("USE %s.%s", safeSQLName(mainDB), safeSQLName(mainSchema))})
+			if err != nil {
+				c.detachAndRemoveFile(ctx, newDB, newDBFile)
+				// This should NEVER happen
+				c.fatalInternalError(fmt.Errorf("failed to switch back from db %q: %w", mainDB, err))
+			}
+		}()
+
+		oldDB := dbName(table, oldVersion)
+		for _, col := range cols {
+			enum := fmt.Sprintf("%s_enum", col)
+			if err = c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE TYPE %s AS ENUM (SELECT DISTINCT %s FROM %s.default WHERE %s IS NOT NULL)", safeSQLName(enum), safeSQLName(col), safeSQLName(oldDB), safeSQLName(col))}); err != nil {
+				c.detachAndRemoveFile(ctx, newDB, newDBFile)
+				return fmt.Errorf("failed to create enum %q: %w", enum, err)
+			}
+		}
+
+		var selectQry string
+		for _, col := range cols {
+			enum := fmt.Sprintf("%s_enum", col)
+			selectQry += fmt.Sprintf("CAST(%s AS %s) AS %s,", safeSQLName(col), safeSQLName(enum), safeSQLName(col))
+		}
+		selectQry += fmt.Sprintf("* EXCLUDE(%s)", strings.Join(cols, ","))
+
+		if err := c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE TABLE \"default\" AS SELECT %s FROM %s.default", selectQry, safeSQLName(oldDB))}); err != nil {
+			c.detachAndRemoveFile(ctx, newDB, newDBFile)
+			return fmt.Errorf("failed to create table with enum values: %w", err)
+		}
+
+		// recreate view to propagate schema changes
+		selectQry, err := c.generateSelectQuery(ctx, newDB)
+		if err != nil {
+			return err
+		}
+
+		// NOTE :: db name need to be appened in the view query else query fails when switching to main db
+		if err := c.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s.%s.%s AS %s", safeSQLName(mainDB), safeSQLName(mainSchema), safeSQLName(table), selectQry)}); err != nil {
+			c.detachAndRemoveFile(ctx, newDB, newDBFile)
+			return fmt.Errorf("failed to create view %q: %w", table, err)
+		}
+
+		// update version and detach old db
+		if err := c.updateVersion(table, newVersion); err != nil {
+			c.detachAndRemoveFile(ctx, newDB, newDBFile)
+			return fmt.Errorf("failed to update version: %w", err)
+		}
+
+		c.detachAndRemoveFile(ensuredCtx, oldDB, filepath.Join(sourceDir, fmt.Sprintf("%s.db", oldVersion)))
+		return nil
+	})
 }
 
 // duckDB raises Contents of view were altered: types don't match! error even when number of columns are same but sequence of column changes in underlying table.

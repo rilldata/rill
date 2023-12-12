@@ -1,10 +1,7 @@
 <script lang="ts">
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import {
-    getAllErrorsForFile,
-    useResourceForFile,
-  } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
@@ -32,10 +29,6 @@
   });
 
   $: yaml = $file.data?.blob || "";
-
-  // Get only reconcile errors here. File parse errors are shown inline
-  $: source = useResourceForFile(queryClient, $runtime.instanceId, filePath);
-  $: reconcileError = $source.data?.meta?.reconcileError;
 
   $: allErrors = getAllErrorsForFile(
     queryClient,

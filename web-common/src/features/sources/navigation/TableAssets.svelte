@@ -68,12 +68,12 @@
 >
 
 {#if showTables}
-  <div class="pb-3" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+  <div class="pb-3" transition:slide={{ duration: LIST_SLIDE_DURATION }}>
     {#if $sourceNames?.data}
       {#each $sourceNames.data as sourceName (sourceName)}
         <div
           animate:flip={{ duration: 200 }}
-          out:slide={{ duration: LIST_SLIDE_DURATION }}
+          out:slide|global={{ duration: LIST_SLIDE_DURATION }}
         >
           <NavigationEntry
             name={sourceName}
@@ -83,7 +83,7 @@
             on:command-click={() => queryHandler(sourceName)}
           >
             <svelte:fragment slot="more">
-              <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+              <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
                 <ColumnProfile indentLevel={1} objectName={sourceName} />
               </div>
             </svelte:fragment>
