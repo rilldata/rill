@@ -12,14 +12,14 @@
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
   const yScale = getContext(contexts.scale("y")) as ScaleStore;
 
-  export let x: number = undefined;
-  export let y: number = undefined;
-  export let rx: number = undefined;
-  export let ry: number = undefined;
-  export let dy: string | number = undefined;
+  export let x: number | undefined = undefined;
+  export let y: number | undefined = undefined;
+  export let rx: number | undefined = undefined;
+  export let ry: number | undefined = undefined;
+  export let dy: string | number | undefined = undefined;
 
-  export let color: string = undefined;
-  export let colorClass: string = undefined;
+  export let color: string | undefined = undefined;
+  export let colorClass: string | undefined = undefined;
   export let location: "left" | "right" = "right";
   export let buffer = 8;
 

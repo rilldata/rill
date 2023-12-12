@@ -5,8 +5,9 @@
   import WithSimpleLinearScale from "../../../components/data-graphic/functional-components/WithSimpleLinearScale.svelte";
   import type { ScaleStore } from "../../../components/data-graphic/state/types";
   import type { SimpleConfigurationStore } from "../state/types";
+  import type { NumericOutliersOutlier } from "@rilldata/web-common/runtime-client";
 
-  export let data;
+  export let data: NumericOutliersOutlier[];
 
   export let size = 12;
   export let xAccessor = "value";
@@ -28,7 +29,7 @@
   $: largestCount = Math.max(...data.map((d) => d[densityAccessor]));
   // let's split everything up into 8.
   let tiers = 32;
-  let counts = Array.from({ length: tiers }).fill([]);
+  let counts: NumericOutliersOutlier[][] = Array(tiers).fill([]);
   $: {
     data.forEach((datum) => {
       if (datum[densityAccessor] === 0) return;
