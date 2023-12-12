@@ -79,6 +79,7 @@
     on:click-outside={toggleFloatingElement}
     on:escape={toggleFloatingElement}
     slot="floating-element"
+    let:toggleFloatingElement
   >
     {#if !$mockUsers.data || $mockUsers.data?.length === 0}
       <MenuItem disabled>No mock users</MenuItem>

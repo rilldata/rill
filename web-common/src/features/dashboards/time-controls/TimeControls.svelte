@@ -8,8 +8,8 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { getValidComparisonOption } from "@rilldata/web-common/features/dashboards/time-controls/time-range-store";
   import {
-    getDefaultTimeGrain,
     getAllowedTimeGrains,
+    getDefaultTimeGrain,
   } from "@rilldata/web-common/lib/time/grains";
   import type {
     DashboardTimeControls,
@@ -20,18 +20,18 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { runtime } from "../../../runtime-client/runtime-store";
   import {
     metricsExplorerStore,
     useDashboardStore,
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import { initLocalUserPreferenceStore } from "../user-preferences";
+  import ComparisonSelector from "./ComparisonSelector.svelte";
   import NoTimeDimensionCTA from "./NoTimeDimensionCTA.svelte";
   import TimeComparisonSelector from "./TimeComparisonSelector.svelte";
   import TimeGrainSelector from "./TimeGrainSelector.svelte";
   import TimeRangeSelector from "./TimeRangeSelector.svelte";
   import TimeZoneSelector from "./TimeZoneSelector.svelte";
-  import ComparisonSelector from "./ComparisonSelector.svelte";
 
   export let metricViewName: string;
 
@@ -202,7 +202,6 @@
     {/if}
     <TimeGrainSelector
       on:select-time-grain={(e) => onSelectTimeGrain(e.detail.timeGrain)}
-      {metricViewName}
       {timeGrainOptions}
       {minTimeGrain}
     />

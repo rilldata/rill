@@ -95,6 +95,7 @@ and the menu closes.
     {paddingTop}
     {paddingBottom}
     slot="floating-element"
+    let:handleClose
     {dark}
     on:click-outside={() => {
       if (active) handleClose();

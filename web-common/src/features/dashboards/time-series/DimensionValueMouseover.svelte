@@ -59,7 +59,7 @@
 </script>
 
 {#if pointSet.length}
-  <WithGraphicContexts let:xScale let:yScale>
+  <WithGraphicContexts>
     <MultiMetricMouseoverLabel
       isDimension={true}
       attachPointToLabel
