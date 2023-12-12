@@ -13,7 +13,7 @@
   export let start: Date;
   export let end: Date;
   export let estimatedSmallestTimeGrain: V1TimeGrain | undefined;
-  export let rollupTimeGrain: V1TimeGrain | undefined;
+  export let rollupTimeGrain: V1TimeGrain;
 
   enum NicerTimeGrain {
     TIME_GRAIN_MILLISECOND = "milliseconds",
@@ -27,8 +27,11 @@
     TIME_GRAIN_YEAR = "yearly",
   }
 
+  let displayEstimatedSmallestTimegrain: V1TimeGrain;
   $: displayEstimatedSmallestTimegrain =
-    NicerTimeGrain?.[estimatedSmallestTimeGrain] || estimatedSmallestTimeGrain;
+    (estimatedSmallestTimeGrain &&
+      NicerTimeGrain?.[estimatedSmallestTimeGrain]) ||
+    estimatedSmallestTimeGrain;
 
   $: formattedTimeRange = datesToFormattedTimeRange(start, end);
 

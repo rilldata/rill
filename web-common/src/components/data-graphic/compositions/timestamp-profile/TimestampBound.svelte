@@ -24,7 +24,7 @@
   export let value: Date;
   export let label = "value";
   export let align: "left" | "right" = "left";
-  let valueWithoutOffset = undefined;
+  let valueWithoutOffset: Date | undefined;
   $: if (value instanceof Date)
     valueWithoutOffset = removeLocalTimezoneOffset(value);
 </script>
@@ -35,6 +35,7 @@
     style:line-height={1.1}
     use:shiftClickAction
     on:shift-click={async () => {
+      if (valueWithoutOffset === undefined) return;
       const exportedValue = `TIMESTAMP '${valueWithoutOffset.toISOString()}'`;
       await navigator.clipboard.writeText(exportedValue);
       notifications.send({ message: `copied ${exportedValue} to clipboard` });
@@ -51,7 +52,11 @@
   <TooltipContent slot="tooltip-content">
     <TooltipTitle>
       <svelte:fragment slot="name"
-        >{valueWithoutOffset.toISOString()}</svelte:fragment
+        >{#if valueWithoutOffset === undefined}
+          loading...
+        {:else}
+          {valueWithoutOffset.toISOString()}
+        {/if}</svelte:fragment
       >
       <svelte:fragment slot="description">{label}</svelte:fragment>
     </TooltipTitle>

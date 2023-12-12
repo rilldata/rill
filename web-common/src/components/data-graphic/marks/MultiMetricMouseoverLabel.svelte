@@ -10,22 +10,9 @@ It is probably not the most up to date code; but it works very well in practice.
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
   import { preventVerticalOverlap } from "./prevent-vertical-overlap";
   import DelayedLabel from "@rilldata/web-common/components/data-graphic/marks/DelayedLabel.svelte";
+  import type { Point } from "./types";
 
   const DIMENSION_HOVER_DURATION = 350;
-  interface Point {
-    x: number;
-    y: number;
-    label: string;
-    key: string;
-    valueColorClass?: string;
-    valueStyleClass?: string;
-    labelColorClass?: string;
-    labelStyleClass?: string;
-    pointColorClass?: string;
-    yOverride?: boolean;
-    yOverrideLabel?: string;
-    yOverrideStyleClass?: string;
-  }
 
   export let point: Point[] = [];
 
@@ -53,8 +40,8 @@ It is probably not the most up to date code; but it works very well in practice.
   export let flipAtEdge: "body" | "graphic" | false = "graphic"; // "body", "graphic", or undefined
   export let attachPointToLabel = false;
 
-  let container;
-  let containerWidths = [];
+  let container: SVGGElement;
+  let containerWidths: number[] = [];
   // let labelWidth = 0;
 
   $: fanOutLabels = !isDimension || false;
@@ -71,12 +58,17 @@ It is probably not the most up to date code; but it works very well in practice.
   );
 
   $: locations = point.map((p) => {
+    const locationValue = nonOverlappingLocations.find(
+      (l) => l.key === p.key
+    )?.value;
+
     return {
       ...p,
       xRange: $xScale(p.x),
-      yRange: fanOutLabels
-        ? nonOverlappingLocations.find((l) => l.key === p.key).value
-        : $yScale(p.y),
+      yRange:
+        fanOutLabels && locationValue !== undefined
+          ? locationValue
+          : $yScale(p.y),
     };
   });
 
@@ -136,7 +128,7 @@ It is probably not the most up to date code; but it works very well in practice.
 
   let labelWidth = 0;
   /** the full text width */
-  let textWidths = [];
+  let textWidths: number[] = [];
   let transitionalTimeoutForCalculatingLabelWidth;
 
   $: if (container && locations && $xScale && $yScale) {

@@ -162,8 +162,8 @@ export function barplotPolyline(
   separator = 1,
   closeBottom = false,
   inflator = 1
-) {
-  if (!data?.length) return [];
+): string {
+  if (!data?.length) return "";
   const path = data.reduce((pointsPathString, datum, i) => {
     const low = datum[xLow];
     const high = datum[xHigh];
