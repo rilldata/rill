@@ -61,42 +61,20 @@
     $sourceStore.clientYAML
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
-
-  let height = 0.5;
-
-  let boxTop = 0;
-  let boxHeight = 0;
-
-  function onMouseMove(e) {
-    height = (e.clientY - boxTop) / boxHeight;
-  }
-
-  function onMouseUp(e) {
-    window.removeEventListener("mousemove", onMouseMove);
-  }
-  let thisElement: HTMLDivElement;
 </script>
 
 <svelte:window bind:innerHeight />
 
-<div class="h-full pb-3" bind:this={thisElement}>
-  <div class="p-5 h-1/2" style:height={height * 100 + "%"}>
+<div class="h-full pb-3">
+  <div
+    class="p-5"
+    style:height="calc({innerHeight}px - {$outputPosition *
+      $outputVisibilityTween}px - var(--header-height))"
+  >
     <SourceEditor {sourceName} {yaml} />
   </div>
-  <!-- <HorizontalSplitter /> -->
-  <button
-    on:mousedown={() => {
-      boxTop = thisElement.getBoundingClientRect().top;
-      boxHeight = thisElement.clientHeight;
-      window.addEventListener("mousemove", onMouseMove);
-      window.addEventListener("mouseup", onMouseUp);
-    }}
-    class="flex items-center justify-center h-2 w-full"
-  >
-    <div class="h-[1px] bg-gray-300 w-[95%]" />
-    <div class="border-gray-400 border bg-white rounded h-1 w-8 absolute" />
-  </button>
-  <div class="p-5 h-full">
+  <HorizontalSplitter className="px-5" />
+  <div class="p-5" style:height="{$outputPosition}px">
     <div
       class="h-full border border-gray-300 rounded overflow-auto {isSourceUnsaved &&
         'brightness-90'} transition duration-200"
