@@ -9,7 +9,7 @@ export interface ExtremumResolutionTweenProps {
 }
 
 export interface ExtremumResolutionStore extends Readable<number | Date> {
-  setWithKey: (arg0: string, arg1: number | Date, arg2: boolean) => void;
+  setWithKey: (arg0: string, arg1: number | Date, arg2?: boolean) => void;
   removeKey: (arg0: string) => void;
   setTweenProps: (arg0: ExtremumResolutionTweenProps) => void;
 }
@@ -39,7 +39,7 @@ export interface SimpleDataGraphicConfigurationArguments {
   yMax: number | Date;
   bodyBuffer: number;
   marginBuffer: number;
-  pixelDeviceRation: number;
+  devicePixelRatio: number;
 }
 
 export interface SimpleGraphicConfigurationDerivations {
