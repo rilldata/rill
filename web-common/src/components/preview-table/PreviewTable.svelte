@@ -18,8 +18,8 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   import PinnedColumns from "../virtualized-table/sections/PinnedColumns.svelte";
   import RowHeaders from "../virtualized-table/sections/RowHeaders.svelte";
   import TableCells from "../virtualized-table/sections/TableCells.svelte";
-  import { config as defaultConfig } from "./config";
   import type { VirtualizedTableConfig } from "../virtualized-table/types";
+  import { config as defaultConfig } from "./config";
 
   export let rows;
   export let configOverride: Partial<VirtualizedTableConfig> = {};
@@ -259,6 +259,8 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
 >
   {#if rowVirtualizer}
     <div
+      role="grid"
+      tabindex="0"
       class="relative surface"
       on:mouseleave={clearActiveIndex}
       on:blur={clearActiveIndex}

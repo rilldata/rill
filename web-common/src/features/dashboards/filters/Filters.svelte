@@ -198,7 +198,7 @@ The main feature-set component for dashboard filters
     </ChipContainer>
   {:else if currentDimensionFilters.length === 0}
     <div
-      in:fly|local={{ duration: 200, x: 8 }}
+      in:fly={{ duration: 200, x: 8 }}
       class="ui-copy-disabled grid items-center"
       style:min-height={ROW_HEIGHT}
     >

@@ -5,7 +5,6 @@
   import { isDuplicateName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
   import GoToDashboardButton from "./GoToDashboardButton.svelte";
@@ -47,9 +46,6 @@
   $: titleInput = metricsDefName;
 </script>
 
-<WorkspaceHeader
-  {...{ titleInput, onChangeCallback }}
-  appRunning={$appQueryStatusStore}
->
+<WorkspaceHeader {...{ titleInput, onChangeCallback }}>
   <GoToDashboardButton {metricsDefName} slot="cta" />
 </WorkspaceHeader>

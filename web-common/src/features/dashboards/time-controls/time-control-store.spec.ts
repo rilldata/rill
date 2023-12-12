@@ -8,12 +8,12 @@ import {
   AD_BIDS_TIMESTAMP_DIMENSION,
   initStateManagers,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
+import TimeControlsStoreTest from "@rilldata/web-common/features/dashboards/time-controls/TimeControlsStoreTest.svelte";
 import {
-  createTimeControlStore,
   TimeControlState,
   TimeControlStore,
+  createTimeControlStore,
 } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import TimeControlsStoreTest from "@rilldata/web-common/features/dashboards/time-controls/TimeControlsStoreTest.svelte";
 import {
   getLocalUserPreferences,
   initLocalUserPreferenceStore,
@@ -22,13 +22,13 @@ import {
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
-import { get } from "svelte/store";
-import { describe, it, expect, beforeAll, beforeEach } from "vitest";
+import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
+import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { render } from "@testing-library/svelte";
+import { get } from "svelte/store";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 describe("time-control-store", () => {
   runtime.set({

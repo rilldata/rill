@@ -9,14 +9,14 @@ TableCells – the cell contents.
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { createVirtualizer, VirtualItem } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";
-  import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
-  import { DimensionTableConfig as config } from "./DimensionTableConfig";
-  import DimensionValueHeader from "./DimensionValueHeader.svelte";
+  import type { DimensionTableRow } from "./dimension-table-types";
   import {
     estimateColumnCharacterWidths,
     estimateColumnSizes,
   } from "./dimension-table-utils";
-  import type { DimensionTableRow } from "./dimension-table-types";
+  import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
+  import { DimensionTableConfig as config } from "./DimensionTableConfig";
+  import DimensionValueHeader from "./DimensionValueHeader.svelte";
 
   import { getStateManagers } from "../state-managers/state-managers";
 
@@ -226,6 +226,8 @@ TableCells – the cell contents.
   >
     {#if rowVirtualizer}
       <div
+        role="grid"
+        tabindex="0"
         class="relative surface"
         on:mouseleave={clearActiveIndex}
         on:blur={clearActiveIndex}

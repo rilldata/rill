@@ -1,4 +1,9 @@
 import { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
+import {
+  useDashboardDefaultProto,
+  useDashboardUrlSync,
+} from "@rilldata/web-common/features/dashboards/proto-state/dashboard-url-state";
+import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
@@ -21,11 +26,6 @@ import {
   resetDashboardStore,
   TestTimeConstants,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
-import {
-  useDashboardDefaultProto,
-  useDashboardUrlSync,
-} from "@rilldata/web-common/features/dashboards/proto-state/dashboard-url-state";
-import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import DashboardTestComponent from "@rilldata/web-common/features/dashboards/stores/DashboardTestComponent.svelte";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
@@ -35,13 +35,13 @@ import type { Page } from "@sveltejs/kit";
 import { render } from "@testing-library/svelte";
 import { get, Readable, writable } from "svelte/store";
 import {
-  beforeEach,
   beforeAll,
-  it,
+  beforeEach,
   describe,
-  vi,
   expect,
+  it,
   SpyInstance,
+  vi,
 } from "vitest";
 
 const pageMock: PageMock = vi.hoisted(() => ({} as any));

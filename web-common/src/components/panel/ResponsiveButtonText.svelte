@@ -10,7 +10,7 @@ horizontal slide animation
 </script>
 
 {#if !collapse}<div
-    transition:slideRight|local={{
+    transition:slideRight={{
       duration: 400,
       rightOffset: 8,
     }}

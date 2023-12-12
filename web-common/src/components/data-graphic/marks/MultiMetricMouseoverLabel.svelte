@@ -6,10 +6,10 @@ It is probably not the most up to date code; but it works very well in practice.
   import { getContext } from "svelte";
   import { contexts } from "../constants";
 
+  import DelayedLabel from "@rilldata/web-common/components/data-graphic/marks/DelayedLabel.svelte";
   import { WithTween } from "../functional-components";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
   import { preventVerticalOverlap } from "./prevent-vertical-overlap";
-  import DelayedLabel from "@rilldata/web-common/components/data-graphic/marks/DelayedLabel.svelte";
 
   const DIMENSION_HOVER_DURATION = 350;
   interface Point {
@@ -135,8 +135,6 @@ It is probably not the most up to date code; but it works very well in practice.
   }
 
   let labelWidth = 0;
-  /** the full text width */
-  let textWidths = [];
   let transitionalTimeoutForCalculatingLabelWidth;
 
   $: if (container && locations && $xScale && $yScale) {
@@ -149,9 +147,6 @@ It is probably not the most up to date code; but it works very well in practice.
           )
         );
 
-        textWidths = Array.from(
-          container.querySelectorAll(".text-elements")
-        ).map((q: SVGElement) => q.getBoundingClientRect().width);
         if (!Number.isFinite(labelWidth)) {
           labelWidth = 0;
         }
@@ -171,7 +166,7 @@ It is probably not the most up to date code; but it works very well in practice.
 
 <g bind:this={container}>
   {#if showLabels}
-    {#each locations as location, i (location.key || location.label)}
+    {#each locations as location (location.key || location.label)}
       {#if (location.y || location.yRange) && (location.x || location.xRange)}
         <WithTween
           value={location.xRange}

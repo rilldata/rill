@@ -1,16 +1,15 @@
 <script lang="ts">
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import RowsViewer from "./RowsViewer.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { useModelHasTimeSeries } from "../selectors";
-  import ExportModelDataButton from "./ExportModelDataButton.svelte";
   import { featureFlags } from "../../feature-flags";
+  import ExportModelDataButton from "./ExportModelDataButton.svelte";
+  import RowsViewer from "./RowsViewer.svelte";
 
   export let metricViewName: string;
   let isOpen = false;
@@ -42,12 +41,6 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
   const timeControlsStore = useTimeControlStore(getStateManagers());
-
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
-  $: hasTimeSeries = $metricTimeSeries.data;
 
   let timeEnd: string;
   $: {
