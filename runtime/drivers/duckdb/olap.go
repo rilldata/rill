@@ -150,7 +150,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		return nil, err
 	}
 
-	schema, err := rowsToSchema(rows)
+	schema, err := RowsToSchema(rows)
 	if err != nil {
 		if cancelFunc != nil {
 			cancelFunc()
@@ -725,7 +725,7 @@ func (c *connection) convertToEnum(ctx context.Context, table, col string) error
 	return nil
 }
 
-func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
+func RowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
 	}
