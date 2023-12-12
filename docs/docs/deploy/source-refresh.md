@@ -42,7 +42,7 @@ sources:
     every: 24h
 ```
 
-Similarly, the following would use cron syntax to set a project-wide default of refreshings ources every 15 minutes:
+Similarly, the following would use cron syntax to set a project-wide configuration of refreshing sources by default every 15 minutes (unless overridden at the individual source level):
 ```yaml
 sources:
   refresh:
