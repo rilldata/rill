@@ -375,7 +375,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			// So we want to evict all open connections for that instance, but it's unsafe to do so while the controller is running.
 			// So this is the only place where we can do it safely.
 			if r.baseCtx.Err() == nil {
-				r.rt.connCache.EvictAll(r.baseCtx, iwc.instance.ID)
+				r.rt.evictInstanceConnections(iwc.instance.ID)
 			}
 
 			r.mu.Lock()
