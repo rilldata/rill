@@ -8,7 +8,7 @@ import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
 import "validate/validate.proto";
-import "expressions.proto";
+import "rill/runtime/v1/expression.proto";
 
 service QueryService {
   // Query runs a SQL query against the instance's OLAP datastore.
@@ -280,8 +280,8 @@ message MetricsViewAggregationRequest {
   TimeRange time_range = 12;
   google.protobuf.Timestamp time_start = 6; // Deprecated in favor of time_range
   google.protobuf.Timestamp time_end = 7; // Deprecated in favor of time_range
-  Expression filter = 8;
-  repeated MetricsViewColumnAlias aliases = 13;
+  Condition where = 8;
+  Condition having = 13;
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   int32 priority = 11;
@@ -307,30 +307,6 @@ message MetricsViewAggregationMeasure {
 message MetricsViewAggregationSort {
   string name = 1;
   bool desc = 2;
-}
-
-message MetricsViewColumnAlias {
-  string name = 1;
-  oneof alias { // Is this overkill to future proof this?
-    MetricsViewMeasureAlias measure_alias = 2;
-  }
-}
-
-message MetricsViewMeasureAlias {
-  enum MeasureType {
-    MEASURE_TYPE_UNSPECIFIED = 0;
-    MEASURE_TYPE_COUNT = 1;
-    MEASURE_TYPE_COUNT_DISTINCT = 2;
-    MEASURE_TYPE_BASE_VALUE = 3;
-    MEASURE_TYPE_COMPARISON_VALUE = 4;
-    MEASURE_TYPE_ABS_DELTA = 5;
-    MEASURE_TYPE_REL_DELTA = 6;
-  }
-
-  string name = 1;
-  MeasureType type = 2;
-  repeated google.protobuf.Value args = 3;
-  string alias = 4;
 }
 
 enum BuiltinMeasure {
@@ -365,11 +341,12 @@ message MetricsViewComparisonRequest {
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   MetricsViewAggregationDimension dimension = 3;
   repeated MetricsViewAggregationMeasure measures = 4;
-  repeated MetricsViewAggregationSort sort = 5;
+  repeated MetricsViewComparisonSort sort = 5;
   TimeRange time_range = 6;
   TimeRange comparison_time_range = 7;
-  Expression filter = 8;
-  repeated MetricsViewColumnAlias aliases = 14;
+  Condition where = 8;
+  Condition having = 14;
+  repeated MetricsViewMeasureAlias aliases = 15;
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   int32 priority = 11;
@@ -425,8 +402,7 @@ message MetricsViewTimeSeriesRequest {
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
   TimeGrain time_granularity = 6;
-  Expression filter = 7;
-  repeated MetricsViewColumnAlias aliases = 11;
+  MetricsViewFilter filter = 7;
   string time_zone = 10;
   int32 priority = 8;
 }
@@ -436,6 +412,21 @@ message MetricsViewTimeSeriesResponse {
   repeated TimeSeriesValue data = 2;
 }
 
+message MetricsViewMeasureAlias {
+  enum MeasureType {
+    MEASURE_TYPE_UNSPECIFIED = 0;
+    MEASURE_TYPE_BASE_VALUE = 1;
+    MEASURE_TYPE_COMPARISON_VALUE = 2;
+    MEASURE_TYPE_ABS_DELTA = 3;
+    MEASURE_TYPE_REL_DELTA = 4;
+  }
+
+  string name = 1;
+  MeasureType type = 2;
+  repeated google.protobuf.Value args = 3;
+  string alias = 4;
+}
+
 message MetricsViewTotalsRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
@@ -443,8 +434,7 @@ message MetricsViewTotalsRequest {
   repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
-  Expression filter = 7;
-  repeated MetricsViewColumnAlias aliases = 10;
+  MetricsViewFilter filter = 7;
   int32 priority = 8;
 }
 
@@ -459,8 +449,7 @@ message MetricsViewRowsRequest {
   google.protobuf.Timestamp time_start = 3;
   google.protobuf.Timestamp time_end = 4;
   TimeGrain time_granularity = 10;
-  Expression filter = 5;
-  repeated MetricsViewColumnAlias aliases = 12;
+  MetricsViewFilter filter = 5;
   repeated MetricsViewSort sort = 6;
   int32 limit = 7 [(validate.rules).int32.gte = 0];
   int64 offset = 8 [(validate.rules).int64.gte = 0];

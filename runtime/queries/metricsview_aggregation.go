@@ -19,13 +19,16 @@ type MetricsViewAggregation struct {
 	Measures           []*runtimev1.MetricsViewAggregationMeasure   `json:"measures,omitempty"`
 	Sort               []*runtimev1.MetricsViewAggregationSort      `json:"sort,omitempty"`
 	TimeRange          *runtimev1.TimeRange                         `json:"time_range,omitempty"`
-	Filter             *runtimev1.MetricsViewFilter                 `json:"filter,omitempty"`
+	Where              *runtimev1.Condition                         `json:"where,omitempty"`
+	Having             *runtimev1.Condition                         `json:"having,omitempty"`
 	Priority           int32                                        `json:"priority,omitempty"`
 	Limit              *int64                                       `json:"limit,omitempty"`
 	Offset             int64                                        `json:"offset,omitempty"`
 	MetricsView        *runtimev1.MetricsViewSpec                   `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity         `json:"security"`
-	MeasureFilter      *runtimev1.MeasureFilter                     `json:"measure_filter,omitempty"`
+
+	// TODO: backwards compatibility
+	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
@@ -173,6 +176,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		args = append(args, exprArgs...)
 	}
 
+	measureAliases := map[string]string{}
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
@@ -195,6 +199,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
+		measureAliases[m.Name] = safeName(m.Name)
 	}
 
 	groupClause := ""
@@ -224,10 +229,10 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	}
 
 	havingClause := ""
-	if q.MeasureFilter != nil {
+	if q.Having != nil {
 		var havingClauseArgs []any
 		var err error
-		havingClause, havingClauseArgs, err = buildHavingClause(q.MeasureFilter, mv, false)
+		havingClause, havingClauseArgs, err = buildFromConditionExpression(q.Having, measureAliases)
 		if err != nil {
 			return "", nil, err
 		}

@@ -292,125 +292,92 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev
 	return fmt.Sprintf("AND (%s) ", condsClause), args, nil
 }
 
-func buildHavingClause(filter *runtimev1.MeasureFilter, mv *runtimev1.MetricsViewSpec, hasComparison bool) (string, []any, error) {
-	if filter.Expression == nil {
-		return "", []any{}, nil
-	}
-	return buildHavingClauseFromExpression(filter.Expression, mv, hasComparison)
-}
-
-func buildHavingClauseFromNode(node *runtimev1.MeasureFilterNode, mv *runtimev1.MetricsViewSpec, hasComparison bool) (string, []any, error) {
-	sql := ""
-	args := make([]any, 0)
-	switch e := node.Entry.(type) {
-	case *runtimev1.MeasureFilterNode_MeasureFilterMeasure:
-		expr, subArgs, err := buildHavingClauseFromMeasure(e.MeasureFilterMeasure, mv, hasComparison)
-		if err != nil {
-			return "", args, err
-		}
-		args = append(args, subArgs...)
-		sql += expr
-
-	case *runtimev1.MeasureFilterNode_MeasureFilterExpression:
-		expr, subArgs, err := buildHavingClauseFromExpression(e.MeasureFilterExpression, mv, hasComparison)
-		if err != nil {
-			return "", args, err
-		}
-		args = append(args, subArgs...)
-		sql += expr
-
-	case *runtimev1.MeasureFilterNode_Value:
+func buildFromExpression(filter *runtimev1.Expression, allowedIdentifiers map[string]string) (string, []any, error) {
+	var emptyArg []any
+	switch e := filter.Expression.(type) {
+	case *runtimev1.Expression_Value:
 		arg, err := pbutil.FromValue(e.Value)
 		if err != nil {
-			return "", args, err
+			return "", emptyArg, err
 		}
-		args = append(args, arg)
-		sql += "?"
+		return "?", []any{arg}, nil
+
+	case *runtimev1.Expression_Identifier:
+		col, ok := allowedIdentifiers[e.Identifier]
+		if !ok {
+			return "", emptyArg, fmt.Errorf("unknown column filter. %s", e.Identifier)
+		}
+		return col, emptyArg, nil
+
+	case *runtimev1.Expression_Condition:
+		return buildFromConditionExpression(e.Condition, allowedIdentifiers)
 	}
 
-	return sql, args, nil
+	return "", emptyArg, nil
 }
 
-func buildHavingClauseFromMeasure(measure *runtimev1.MeasureFilterMeasure, mv *runtimev1.MetricsViewSpec, hasComparison bool) (string, []any, error) {
-	expr := ""
+func buildFromConditionExpression(ce *runtimev1.Condition, allowedIdentifiers map[string]string) (string, []any, error) {
 	args := make([]any, 0)
-	switch measure.Measure.BuiltinMeasure {
-	case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
-		if measure.ColumnType != runtimev1.MeasureFilterMeasure_COLUMN_TYPE_UNSPECIFIED && !hasComparison {
-			return "", args, fmt.Errorf("comparison filter cannot be applied when it is not enabled/supported")
-		}
+	if len(ce.Operands) < 2 {
+		return "", args, fmt.Errorf("at least 2 operands should be spcified")
+	}
+	leftExpr, subArgs, err := buildFromExpression(ce.Operands[0], allowedIdentifiers)
+	if err != nil {
+		return "", args, err
+	}
+	args = append(args, subArgs...)
+	expr1, subArgs, err := buildFromExpression(ce.Operands[1], allowedIdentifiers)
+	if err != nil {
+		return "", args, err
+	}
+	args = append(args, subArgs...)
 
-		var ms *runtimev1.MetricsViewSpec_MeasureV2
-		for _, m := range mv.Measures {
-			if strings.EqualFold(m.Name, measure.Measure.Name) {
-				ms = m
-				break
+	oprn := conditionExpressionOperation(ce.Operation)
+
+	switch ce.Operation {
+	case runtimev1.Operation_OPERATION_IN, runtimev1.Operation_OPERATION_NOT_IN:
+		ins := []string{expr1}
+		for i := 2; i < len(ce.Operands); i++ {
+			expr, subArgs, err := buildFromExpression(ce.Operands[i], allowedIdentifiers)
+			if err != nil {
+				return "", args, err
 			}
+			ins = append(ins, expr)
+			args = append(args, subArgs...)
 		}
-		if ms == nil {
-			return "", args, fmt.Errorf("measure %s not found", measure.Measure.Name)
-		}
+		return fmt.Sprintf("(%s) %s (%s)", leftExpr, oprn, strings.Join(ins, ",")), args, nil
 
-		switch measure.ColumnType {
-		case runtimev1.MeasureFilterMeasure_COLUMN_TYPE_UNSPECIFIED:
-			expr += ms.Name
-		case runtimev1.MeasureFilterMeasure_COLUMN_TYPE_PREVIOUS:
-			expr += ms.Name + "__previous"
-		case runtimev1.MeasureFilterMeasure_COLUMN_TYPE_DELTA_ABSOLUTE:
-			expr += ms.Name + "__delta_abs"
-		case runtimev1.MeasureFilterMeasure_COLUMN_TYPE_DELTA_RELATIVE:
-			expr += ms.Name + "__delta_rel"
-		}
-
-	case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
-		//TODO: impl
-	case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
-		//TODO: impl
+	default:
+		return fmt.Sprintf("(%s) %s (%s)", leftExpr, oprn, expr1), args, nil
 	}
-	return expr, args, nil
 }
 
-func buildHavingClauseFromExpression(expr *runtimev1.MeasureFilterExpression, mv *runtimev1.MetricsViewSpec, hasComparison bool) (string, []any, error) {
-	args := make([]any, 0)
-	if len(expr.Entries) < 2 {
-		return "", args, fmt.Errorf("exactly 2 entries should be provided")
-	}
-
-	leftExpr, subArgs, err := buildHavingClauseFromNode(expr.Entries[0], mv, hasComparison)
-	if err != nil {
-		return "", args, err
-	}
-	args = append(args, subArgs...)
-	rightExpr, subArgs, err := buildHavingClauseFromNode(expr.Entries[1], mv, hasComparison)
-	if err != nil {
-		return "", args, err
-	}
-	args = append(args, subArgs...)
-
-	sql := fmt.Sprintf("(%s) %s (%s)", leftExpr, measureFilterClauseOperation(expr), rightExpr)
-	return sql, args, nil
-}
-
-func measureFilterClauseOperation(e *runtimev1.MeasureFilterExpression) string {
-	switch e.OperationType {
-	case runtimev1.MeasureFilterExpression_OPERATION_TYPE_EQUALS:
+func conditionExpressionOperation(oprn runtimev1.Operation) string {
+	switch oprn {
+	case runtimev1.Operation_OPERATION_EQUALS:
 		return "="
-	case runtimev1.MeasureFilterExpression_OPERATION_TYPE_NOT_EQUALS:
+	case runtimev1.Operation_OPERATION_NOT_EQUALS:
 		return "!="
-	case runtimev1.MeasureFilterExpression_OPERATION_TYPE_LESSER:
+	case runtimev1.Operation_OPERATION_LESSER:
 		return "<"
-	case runtimev1.MeasureFilterExpression_OPERATION_TYPE_LESSER_OR_EQUALS:
+	case runtimev1.Operation_OPERATION_LESSER_OR_EQUALS:
 		return "<="
-	case runtimev1.MeasureFilterExpression_OPERATION_TYPE_GREATER:
+	case runtimev1.Operation_OPERATION_GREATER:
 		return ">"
-	case runtimev1.MeasureFilterExpression_OPERATION_TYPE_GREATER_OR_EQUALS:
+	case runtimev1.Operation_OPERATION_GREATER_OR_EQUALS:
 		return ">="
-	case runtimev1.MeasureFilterExpression_OPERATION_TYPE_OR:
+	case runtimev1.Operation_OPERATION_OR:
 		return "OR"
-	case runtimev1.MeasureFilterExpression_OPERATION_TYPE_AND:
+	case runtimev1.Operation_OPERATION_AND:
 		return "AND"
-	case runtimev1.MeasureFilterExpression_OPERATION_TYPE_BETWEEN:
-		return "BETWEEN"
+	case runtimev1.Operation_OPERATION_IN:
+		return "IN"
+	case runtimev1.Operation_OPERATION_NOT_IN:
+		return "NOT IN"
+	case runtimev1.Operation_OPERATION_LIKE:
+		return "LIKE"
+	case runtimev1.Operation_OPERATION_NOT_LIKE:
+		return "NOT LIKE"
 	}
 	return "=" // TODO: handle unknown operation type
 }

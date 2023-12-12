@@ -7,6 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
+import { Condition } from "./expression_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
 
 /**
@@ -786,9 +787,14 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   timeEnd?: Timestamp;
 
   /**
-   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 8;
+   * @generated from field: rill.runtime.v1.Condition where = 8;
    */
-  filter?: MetricsViewFilter;
+  where?: Condition;
+
+  /**
+   * @generated from field: rill.runtime.v1.Condition having = 13;
+   */
+  having?: Condition;
 
   /**
    * @generated from field: int64 limit = 9;
@@ -821,7 +827,8 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 12, name: "time_range", kind: "message", T: TimeRange },
     { no: 6, name: "time_start", kind: "message", T: Timestamp },
     { no: 7, name: "time_end", kind: "message", T: Timestamp },
-    { no: 8, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 8, name: "where", kind: "message", T: Condition },
+    { no: 13, name: "having", kind: "message", T: Condition },
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -1216,9 +1223,19 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   comparisonTimeRange?: TimeRange;
 
   /**
-   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 8;
+   * @generated from field: rill.runtime.v1.Condition where = 8;
    */
-  filter?: MetricsViewFilter;
+  where?: Condition;
+
+  /**
+   * @generated from field: rill.runtime.v1.Condition having = 14;
+   */
+  having?: Condition;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewMeasureAlias aliases = 15;
+   */
+  aliases: MetricsViewMeasureAlias[] = [];
 
   /**
    * @generated from field: int64 limit = 9;
@@ -1255,7 +1272,9 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
     { no: 5, name: "sort", kind: "message", T: MetricsViewComparisonSort, repeated: true },
     { no: 6, name: "time_range", kind: "message", T: TimeRange },
     { no: 7, name: "comparison_time_range", kind: "message", T: TimeRange },
-    { no: 8, name: "filter", kind: "message", T: MetricsViewFilter },
+    { no: 8, name: "where", kind: "message", T: Condition },
+    { no: 14, name: "having", kind: "message", T: Condition },
+    { no: 15, name: "aliases", kind: "message", T: MetricsViewMeasureAlias, repeated: true },
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -1671,6 +1690,99 @@ export class MetricsViewTimeSeriesResponse extends Message<MetricsViewTimeSeries
     return proto3.util.equals(MetricsViewTimeSeriesResponse, a, b);
   }
 }
+
+/**
+ * @generated from message rill.runtime.v1.MetricsViewMeasureAlias
+ */
+export class MetricsViewMeasureAlias extends Message<MetricsViewMeasureAlias> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewMeasureAlias.MeasureType type = 2;
+   */
+  type = MetricsViewMeasureAlias_MeasureType.UNSPECIFIED;
+
+  /**
+   * @generated from field: repeated google.protobuf.Value args = 3;
+   */
+  args: Value[] = [];
+
+  /**
+   * @generated from field: string alias = 4;
+   */
+  alias = "";
+
+  constructor(data?: PartialMessage<MetricsViewMeasureAlias>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewMeasureAlias";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewMeasureAlias_MeasureType) },
+    { no: 3, name: "args", kind: "message", T: Value, repeated: true },
+    { no: 4, name: "alias", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewMeasureAlias {
+    return new MetricsViewMeasureAlias().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewMeasureAlias {
+    return new MetricsViewMeasureAlias().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewMeasureAlias {
+    return new MetricsViewMeasureAlias().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewMeasureAlias | PlainMessage<MetricsViewMeasureAlias> | undefined, b: MetricsViewMeasureAlias | PlainMessage<MetricsViewMeasureAlias> | undefined): boolean {
+    return proto3.util.equals(MetricsViewMeasureAlias, a, b);
+  }
+}
+
+/**
+ * @generated from enum rill.runtime.v1.MetricsViewMeasureAlias.MeasureType
+ */
+export enum MetricsViewMeasureAlias_MeasureType {
+  /**
+   * @generated from enum value: MEASURE_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: MEASURE_TYPE_BASE_VALUE = 1;
+   */
+  BASE_VALUE = 1,
+
+  /**
+   * @generated from enum value: MEASURE_TYPE_COMPARISON_VALUE = 2;
+   */
+  COMPARISON_VALUE = 2,
+
+  /**
+   * @generated from enum value: MEASURE_TYPE_ABS_DELTA = 3;
+   */
+  ABS_DELTA = 3,
+
+  /**
+   * @generated from enum value: MEASURE_TYPE_REL_DELTA = 4;
+   */
+  REL_DELTA = 4,
+}
+// Retrieve enum metadata with: proto3.getEnumType(MetricsViewMeasureAlias_MeasureType)
+proto3.util.setEnumType(MetricsViewMeasureAlias_MeasureType, "rill.runtime.v1.MetricsViewMeasureAlias.MeasureType", [
+  { no: 0, name: "MEASURE_TYPE_UNSPECIFIED" },
+  { no: 1, name: "MEASURE_TYPE_BASE_VALUE" },
+  { no: 2, name: "MEASURE_TYPE_COMPARISON_VALUE" },
+  { no: 3, name: "MEASURE_TYPE_ABS_DELTA" },
+  { no: 4, name: "MEASURE_TYPE_REL_DELTA" },
+]);
 
 /**
  * @generated from message rill.runtime.v1.MetricsViewTotalsRequest
@@ -2246,293 +2358,6 @@ export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeRe
     return proto3.util.equals(MetricsViewTimeRangeResponse, a, b);
   }
 }
-
-/**
- * @generated from message rill.runtime.v1.MeasureFilter
- */
-export class MeasureFilter extends Message<MeasureFilter> {
-  /**
-   * @generated from field: rill.runtime.v1.MeasureFilterExpression expression = 1;
-   */
-  expression?: MeasureFilterExpression;
-
-  constructor(data?: PartialMessage<MeasureFilter>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MeasureFilter";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "expression", kind: "message", T: MeasureFilterExpression },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MeasureFilter {
-    return new MeasureFilter().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MeasureFilter {
-    return new MeasureFilter().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MeasureFilter {
-    return new MeasureFilter().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MeasureFilter | PlainMessage<MeasureFilter> | undefined, b: MeasureFilter | PlainMessage<MeasureFilter> | undefined): boolean {
-    return proto3.util.equals(MeasureFilter, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.MeasureFilterNode
- */
-export class MeasureFilterNode extends Message<MeasureFilterNode> {
-  /**
-   * @generated from oneof rill.runtime.v1.MeasureFilterNode.entry
-   */
-  entry: {
-    /**
-     * @generated from field: rill.runtime.v1.MeasureFilterMeasure MeasureFilterMeasure = 1;
-     */
-    value: MeasureFilterMeasure;
-    case: "MeasureFilterMeasure";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.MeasureFilterExpression MeasureFilterExpression = 2;
-     */
-    value: MeasureFilterExpression;
-    case: "MeasureFilterExpression";
-  } | {
-    /**
-     * @generated from field: google.protobuf.Value Value = 3;
-     */
-    value: Value;
-    case: "Value";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.MeasureFilterNode MeasureFilterNode = 4;
-     */
-    value: MeasureFilterNode;
-    case: "MeasureFilterNode";
-  } | { case: undefined; value?: undefined } = { case: undefined };
-
-  constructor(data?: PartialMessage<MeasureFilterNode>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MeasureFilterNode";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "MeasureFilterMeasure", kind: "message", T: MeasureFilterMeasure, oneof: "entry" },
-    { no: 2, name: "MeasureFilterExpression", kind: "message", T: MeasureFilterExpression, oneof: "entry" },
-    { no: 3, name: "Value", kind: "message", T: Value, oneof: "entry" },
-    { no: 4, name: "MeasureFilterNode", kind: "message", T: MeasureFilterNode, oneof: "entry" },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MeasureFilterNode {
-    return new MeasureFilterNode().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MeasureFilterNode {
-    return new MeasureFilterNode().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MeasureFilterNode {
-    return new MeasureFilterNode().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MeasureFilterNode | PlainMessage<MeasureFilterNode> | undefined, b: MeasureFilterNode | PlainMessage<MeasureFilterNode> | undefined): boolean {
-    return proto3.util.equals(MeasureFilterNode, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.MeasureFilterMeasure
- */
-export class MeasureFilterMeasure extends Message<MeasureFilterMeasure> {
-  /**
-   * @generated from field: rill.runtime.v1.MetricsViewAggregationMeasure measure = 1;
-   */
-  measure?: MetricsViewAggregationMeasure;
-
-  /**
-   * @generated from field: rill.runtime.v1.MeasureFilterMeasure.ColumnType column_type = 2;
-   */
-  columnType = MeasureFilterMeasure_ColumnType.UNSPECIFIED;
-
-  constructor(data?: PartialMessage<MeasureFilterMeasure>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MeasureFilterMeasure";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "measure", kind: "message", T: MetricsViewAggregationMeasure },
-    { no: 2, name: "column_type", kind: "enum", T: proto3.getEnumType(MeasureFilterMeasure_ColumnType) },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MeasureFilterMeasure {
-    return new MeasureFilterMeasure().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MeasureFilterMeasure {
-    return new MeasureFilterMeasure().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MeasureFilterMeasure {
-    return new MeasureFilterMeasure().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MeasureFilterMeasure | PlainMessage<MeasureFilterMeasure> | undefined, b: MeasureFilterMeasure | PlainMessage<MeasureFilterMeasure> | undefined): boolean {
-    return proto3.util.equals(MeasureFilterMeasure, a, b);
-  }
-}
-
-/**
- * @generated from enum rill.runtime.v1.MeasureFilterMeasure.ColumnType
- */
-export enum MeasureFilterMeasure_ColumnType {
-  /**
-   * @generated from enum value: COLUMN_TYPE_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: COLUMN_TYPE_PREVIOUS = 1;
-   */
-  PREVIOUS = 1,
-
-  /**
-   * @generated from enum value: COLUMN_TYPE_DELTA_ABSOLUTE = 2;
-   */
-  DELTA_ABSOLUTE = 2,
-
-  /**
-   * @generated from enum value: COLUMN_TYPE_DELTA_RELATIVE = 3;
-   */
-  DELTA_RELATIVE = 3,
-}
-// Retrieve enum metadata with: proto3.getEnumType(MeasureFilterMeasure_ColumnType)
-proto3.util.setEnumType(MeasureFilterMeasure_ColumnType, "rill.runtime.v1.MeasureFilterMeasure.ColumnType", [
-  { no: 0, name: "COLUMN_TYPE_UNSPECIFIED" },
-  { no: 1, name: "COLUMN_TYPE_PREVIOUS" },
-  { no: 2, name: "COLUMN_TYPE_DELTA_ABSOLUTE" },
-  { no: 3, name: "COLUMN_TYPE_DELTA_RELATIVE" },
-]);
-
-/**
- * @generated from message rill.runtime.v1.MeasureFilterExpression
- */
-export class MeasureFilterExpression extends Message<MeasureFilterExpression> {
-  /**
-   * @generated from field: repeated rill.runtime.v1.MeasureFilterNode entries = 1;
-   */
-  entries: MeasureFilterNode[] = [];
-
-  /**
-   * @generated from field: rill.runtime.v1.MeasureFilterExpression.OperationType operation_type = 2;
-   */
-  operationType = MeasureFilterExpression_OperationType.UNSPECIFIED;
-
-  constructor(data?: PartialMessage<MeasureFilterExpression>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MeasureFilterExpression";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "entries", kind: "message", T: MeasureFilterNode, repeated: true },
-    { no: 2, name: "operation_type", kind: "enum", T: proto3.getEnumType(MeasureFilterExpression_OperationType) },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MeasureFilterExpression {
-    return new MeasureFilterExpression().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MeasureFilterExpression {
-    return new MeasureFilterExpression().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MeasureFilterExpression {
-    return new MeasureFilterExpression().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MeasureFilterExpression | PlainMessage<MeasureFilterExpression> | undefined, b: MeasureFilterExpression | PlainMessage<MeasureFilterExpression> | undefined): boolean {
-    return proto3.util.equals(MeasureFilterExpression, a, b);
-  }
-}
-
-/**
- * @generated from enum rill.runtime.v1.MeasureFilterExpression.OperationType
- */
-export enum MeasureFilterExpression_OperationType {
-  /**
-   * @generated from enum value: OPERATION_TYPE_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: OPERATION_TYPE_EQUALS = 1;
-   */
-  EQUALS = 1,
-
-  /**
-   * @generated from enum value: OPERATION_TYPE_NOT_EQUALS = 2;
-   */
-  NOT_EQUALS = 2,
-
-  /**
-   * @generated from enum value: OPERATION_TYPE_LESSER = 3;
-   */
-  LESSER = 3,
-
-  /**
-   * @generated from enum value: OPERATION_TYPE_LESSER_OR_EQUALS = 4;
-   */
-  LESSER_OR_EQUALS = 4,
-
-  /**
-   * @generated from enum value: OPERATION_TYPE_GREATER = 5;
-   */
-  GREATER = 5,
-
-  /**
-   * @generated from enum value: OPERATION_TYPE_GREATER_OR_EQUALS = 6;
-   */
-  GREATER_OR_EQUALS = 6,
-
-  /**
-   * @generated from enum value: OPERATION_TYPE_OR = 7;
-   */
-  OR = 7,
-
-  /**
-   * @generated from enum value: OPERATION_TYPE_AND = 8;
-   */
-  AND = 8,
-
-  /**
-   * @generated from enum value: OPERATION_TYPE_BETWEEN = 9;
-   */
-  BETWEEN = 9,
-}
-// Retrieve enum metadata with: proto3.getEnumType(MeasureFilterExpression_OperationType)
-proto3.util.setEnumType(MeasureFilterExpression_OperationType, "rill.runtime.v1.MeasureFilterExpression.OperationType", [
-  { no: 0, name: "OPERATION_TYPE_UNSPECIFIED" },
-  { no: 1, name: "OPERATION_TYPE_EQUALS" },
-  { no: 2, name: "OPERATION_TYPE_NOT_EQUALS" },
-  { no: 3, name: "OPERATION_TYPE_LESSER" },
-  { no: 4, name: "OPERATION_TYPE_LESSER_OR_EQUALS" },
-  { no: 5, name: "OPERATION_TYPE_GREATER" },
-  { no: 6, name: "OPERATION_TYPE_GREATER_OR_EQUALS" },
-  { no: 7, name: "OPERATION_TYPE_OR" },
-  { no: 8, name: "OPERATION_TYPE_AND" },
-  { no: 9, name: "OPERATION_TYPE_BETWEEN" },
-]);
 
 /**
  * @generated from message rill.runtime.v1.ColumnRollupIntervalRequest

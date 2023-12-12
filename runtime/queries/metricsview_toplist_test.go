@@ -9,7 +9,6 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -46,25 +45,6 @@ func TestMetricsViewsToplist_measure_filters(t *testing.T) {
 			},
 		},
 		Limit: &lmt,
-		MeasureFilter: &runtimev1.MeasureFilter{
-			Expression: &runtimev1.MeasureFilterExpression{
-				Entries: []*runtimev1.MeasureFilterNode{
-					{
-						Entry: &runtimev1.MeasureFilterNode_MeasureFilterMeasure{
-							MeasureFilterMeasure: &runtimev1.MeasureFilterMeasure{
-								Measure: &runtimev1.MetricsViewAggregationMeasure{Name: "measure_1"},
-							},
-						},
-					},
-					{
-						Entry: &runtimev1.MeasureFilterNode_Value{
-							Value: structpb.NewNumberValue(3.25),
-						},
-					},
-				},
-				OperationType: runtimev1.MeasureFilterExpression_OPERATION_TYPE_GREATER,
-			},
-		},
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)

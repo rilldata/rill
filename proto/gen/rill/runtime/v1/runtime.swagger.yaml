@@ -1051,8 +1051,10 @@ paths:
                 type: string
                 format: date-time
                 title: Deprecated in favor of time_range
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
+              where:
+                $ref: '#/definitions/v1Condition'
+              having:
+                $ref: '#/definitions/v1Condition'
               limit:
                 type: string
                 format: int64
@@ -1107,8 +1109,15 @@ paths:
                 $ref: '#/definitions/v1TimeRange'
               comparisonTimeRange:
                 $ref: '#/definitions/v1TimeRange'
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
+              where:
+                $ref: '#/definitions/v1Condition'
+              having:
+                $ref: '#/definitions/v1Condition'
+              aliases:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewMeasureAlias'
               limit:
                 type: string
                 format: int64
@@ -2338,6 +2347,15 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
+  MetricsViewMeasureAliasMeasureType:
+    type: string
+    enum:
+      - MEASURE_TYPE_UNSPECIFIED
+      - MEASURE_TYPE_BASE_VALUE
+      - MEASURE_TYPE_COMPARISON_VALUE
+      - MEASURE_TYPE_ABS_DELTA
+      - MEASURE_TYPE_REL_DELTA
+    default: MEASURE_TYPE_UNSPECIFIED
   MetricsViewSecurity:
     type: object
     properties:
@@ -2900,6 +2918,16 @@ definitions:
     properties:
       categoricalSummary:
         $ref: '#/definitions/v1CategoricalSummary'
+  v1Condition:
+    type: object
+    properties:
+      operation:
+        $ref: '#/definitions/v1Operation'
+      operands:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Expression'
   v1Connector:
     type: object
     properties:
@@ -3053,6 +3081,14 @@ definitions:
     properties:
       downloadUrlPath:
         type: string
+  v1Expression:
+    type: object
+    properties:
+      identifier:
+        type: string
+      value: {}
+      condition:
+        $ref: '#/definitions/v1Condition'
   v1FileEvent:
     type: string
     enum:
@@ -3396,8 +3432,10 @@ definitions:
         type: string
         format: date-time
         title: Deprecated in favor of time_range
-      filter:
-        $ref: '#/definitions/v1MetricsViewFilter'
+      where:
+        $ref: '#/definitions/v1Condition'
+      having:
+        $ref: '#/definitions/v1Condition'
       limit:
         type: string
         format: int64
@@ -3455,8 +3493,15 @@ definitions:
         $ref: '#/definitions/v1TimeRange'
       comparisonTimeRange:
         $ref: '#/definitions/v1TimeRange'
-      filter:
-        $ref: '#/definitions/v1MetricsViewFilter'
+      where:
+        $ref: '#/definitions/v1Condition'
+      having:
+        $ref: '#/definitions/v1Condition'
+      aliases:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewMeasureAlias'
       limit:
         type: string
         format: int64
@@ -3527,6 +3572,18 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/MetricsViewFilterCond'
+  v1MetricsViewMeasureAlias:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        $ref: '#/definitions/MetricsViewMeasureAliasMeasureType'
+      args:
+        type: array
+        items: {}
+      alias:
+        type: string
   v1MetricsViewRowsRequest:
     type: object
     properties:
@@ -3955,6 +4012,23 @@ definitions:
       - OBJECT_TYPE_METRICS_VIEW
     default: OBJECT_TYPE_UNSPECIFIED
     title: ObjectType represents the different kinds of catalog objects
+  v1Operation:
+    type: string
+    enum:
+      - OPERATION_UNSPECIFIED
+      - OPERATION_EQUALS
+      - OPERATION_NOT_EQUALS
+      - OPERATION_LESSER
+      - OPERATION_LESSER_OR_EQUALS
+      - OPERATION_GREATER
+      - OPERATION_GREATER_OR_EQUALS
+      - OPERATION_OR
+      - OPERATION_AND
+      - OPERATION_IN
+      - OPERATION_NOT_IN
+      - OPERATION_LIKE
+      - OPERATION_NOT_LIKE
+    default: OPERATION_UNSPECIFIED
   v1ParseError:
     type: object
     properties:

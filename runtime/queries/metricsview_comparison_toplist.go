@@ -25,11 +25,14 @@ type MetricsViewComparison struct {
 	Limit               int64                                      `json:"limit,omitempty"`
 	Offset              int64                                      `json:"offset,omitempty"`
 	Sort                []*runtimev1.MetricsViewComparisonSort     `json:"sort,omitempty"`
-	Filter              *runtimev1.MetricsViewFilter               `json:"filter,omitempty"`
+	Where               *runtimev1.Condition                       `json:"where,omitempty"`
+	Having              *runtimev1.Condition                       `json:"having,omitempty"`
 	MetricsView         *runtimev1.MetricsViewSpec                 `json:"-"`
 	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity       `json:"security"`
 	Exact               bool                                       `json:"exact"`
-	MeasureFilter       *runtimev1.MeasureFilter                   `json:"measure_filter,omitempty"`
+
+	// TODO: backwards compatibility
+	Filter *runtimev1.MetricsViewFilter `json:"filter"`
 
 	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
 }
@@ -252,6 +255,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	}
 	labelCols = []string{fmt.Sprintf("%s as %s", safeName(dim.Name), dimLabel)}
 
+	measureAliases := map[string]string{}
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
@@ -277,6 +281,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
+		measureAliases[m.Name] = safeName(m.Name)
 	}
 
 	selectClause := strings.Join(selectCols, ", ")
@@ -302,9 +307,9 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	}
 
 	havingClause := ""
-	if q.MeasureFilter != nil {
+	if q.Having != nil {
 		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildHavingClause(q.MeasureFilter, mv, false)
+		havingClause, havingClauseArgs, err = buildFromConditionExpression(q.Having, measureAliases)
 		if err != nil {
 			return "", nil, err
 		}
@@ -407,6 +412,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		selectCols = append(selectCols, colName)
 	}
 
+	measureAliases := map[string]string{}
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
@@ -429,6 +435,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
+		measureAliases[m.Name] = safeName(m.Name)
 	}
 
 	finalSelectCols := []string{}
@@ -439,6 +446,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		var columnsTuple string
 		var labelTuple string
 		if dialect != drivers.DialectDruid {
+			// TODO: only add `sum()` only if having is enabled
 			columnsTuple = fmt.Sprintf(
 				"sum(base.%[1]s) as %[1]s, sum(comparison.%[1]s) AS %[2]s, sum(base.%[1]s - comparison.%[1]s) AS %[3]s, sum((base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE) AS %[4]s",
 				safeName(m.Name),
@@ -454,6 +462,10 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				safeName(labelMap[m.Name]+" (Δ%)"),
 				safeName(labelMap[m.Name]),
 			)
+			measureAliases[m.Name] = fmt.Sprintf("sum(base.%s)", safeName(m.Name))
+			measureAliases[m.Name+"__previous"] = fmt.Sprintf("sum(base.%s)", safeName(m.Name+"__previous"))
+			measureAliases[m.Name+"__delta_abs"] = fmt.Sprintf("sum(base.%s)", safeName(m.Name+"__delta_abs"))
+			measureAliases[m.Name+"__delta_rel"] = fmt.Sprintf("sum(base.%s)", safeName(m.Name+"__delta_rel"))
 		} else {
 			columnsTuple = fmt.Sprintf(
 				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE)))",
@@ -525,9 +537,9 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 
 	havingClause := ""
-	if q.MeasureFilter != nil {
+	if q.Having != nil {
 		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildHavingClause(q.MeasureFilter, mv, true)
+		havingClause, havingClauseArgs, err = buildFromConditionExpression(q.Having, measureAliases)
 		if err != nil {
 			return "", nil, err
 		}
