@@ -14,10 +14,10 @@
     insertNewline,
   } from "@codemirror/commands";
   import {
+    SQLDialect,
     keywordCompletionSource,
     schemaCompletionSource,
     sql,
-    SQLDialect,
   } from "@codemirror/lang-sql";
   import {
     bracketMatching,
@@ -38,9 +38,9 @@
   import {
     Decoration,
     DecorationSet,
+    EditorView,
     drawSelection,
     dropCursor,
-    EditorView,
     highlightActiveLine,
     highlightActiveLineGutter,
     highlightSpecialChars,
@@ -293,6 +293,8 @@
     class="editor-container h-full w-full overflow-x-auto"
   >
     <div
+      role="textbox"
+      tabindex="0"
       bind:this={editorContainerComponent}
       class="w-full overflow-x-auto h-full"
       on:click={() => {

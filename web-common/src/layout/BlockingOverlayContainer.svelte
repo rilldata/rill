@@ -22,7 +22,7 @@
 
 <Overlay {bg}>
   <div
-    transition:fly={{ duration: 200, y: 16 }}
+    transition:fly|global={{ duration: 200, y: 16 }}
     class="text-white text-center"
     style:width="540px"
   >

@@ -18,11 +18,10 @@
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
+    V1SourceV2,
     createRuntimeServiceGetFile,
     createRuntimeServiceRefreshAndReconcile,
-    V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
-  import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
   import { WithTogglableFloatingElement } from "../../../components/floating-element";
@@ -180,10 +179,7 @@
 </script>
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
-  <WorkspaceHeader
-    {...{ titleInput: sourceName, onChangeCallback }}
-    appRunning={$appQueryStatusStore}
-  >
+  <WorkspaceHeader {...{ titleInput: sourceName, onChangeCallback }}>
     <svelte:fragment slot="workspace-controls">
       {#if $refreshSourceMutation.isLoading}
         Refreshing...
@@ -193,7 +189,7 @@
             <div
               class="ml-2 ui-copy-muted line-clamp-2"
               style:font-size="11px"
-              transition:fade|local={{ duration: 200 }}
+              transition:fade={{ duration: 200 }}
             >
               Ingested on {formatRefreshedOn(source?.state?.refreshedOn)}
             </div>
@@ -242,7 +238,7 @@
               <div class="flex">
                 {#if isSourceUnsaved}<div
                     class="pr-1"
-                    transition:slideRight={{ duration: 250 }}
+                    transition:slideRight|global={{ duration: 250 }}
                   >
                     Save and
                   </div>{/if}
@@ -258,6 +254,7 @@
             on:click-outside={toggleFloatingElement}
             on:escape={toggleFloatingElement}
             slot="floating-element"
+            let:toggleFloatingElement
           >
             <MenuItem
               on:select={() => {

@@ -84,7 +84,7 @@
       class="absolute"
       style:left="0"
       style:top="0px"
-      transition:hackedLocalKeyFly={hackedLocalKeyFlyArgs}
+      transition:hackedLocalKeyFly|global={hackedLocalKeyFlyArgs}
     >
       {active ? "Hide" : "Show"}
     </div>

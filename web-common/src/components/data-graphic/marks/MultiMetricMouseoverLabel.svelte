@@ -6,10 +6,10 @@ It is probably not the most up to date code; but it works very well in practice.
   import { getContext } from "svelte";
   import { contexts } from "../constants";
 
+  import DelayedLabel from "@rilldata/web-common/components/data-graphic/marks/DelayedLabel.svelte";
   import { WithTween } from "../functional-components";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
   import { preventVerticalOverlap } from "./prevent-vertical-overlap";
-  import DelayedLabel from "@rilldata/web-common/components/data-graphic/marks/DelayedLabel.svelte";
 
   const DIMENSION_HOVER_DURATION = 350;
   interface Point {
@@ -149,6 +149,10 @@ It is probably not the most up to date code; but it works very well in practice.
             (q: SVGElement) => q.getBoundingClientRect().width
           )
         );
+
+        if (!Number.isFinite(labelWidth)) {
+          labelWidth = 0;
+        }
       }
     }, 0);
   }
@@ -165,7 +169,7 @@ It is probably not the most up to date code; but it works very well in practice.
 
 <g bind:this={container}>
   {#if showLabels}
-    {#each locations as location, i (location.key || location.label)}
+    {#each locations as location (location.key || location.label)}
       {#if (location.y || location.yRange) && (location.x || location.xRange)}
         <WithTween
           value={location.xRange}
@@ -297,6 +301,7 @@ It is probably not the most up to date code; but it works very well in practice.
     stroke: white;
     stroke-width: 3px;
     white-space: pre-wrap;
+    /* Make all characters and numbers of equal width for easy scanibility */
     font-feature-settings: "case" 0, "cpsp" 0, "dlig" 0, "frac" 0, "dnom" 0,
       "numr" 0, "salt" 0, "subs" 0, "sups" 0, "tnum", "zero" 0, "ss01", "ss02" 0,
       "ss03" 0, "ss04" 0, "cv01" 0, "cv02" 0, "cv03" 0, "cv04" 0, "cv05" 0,

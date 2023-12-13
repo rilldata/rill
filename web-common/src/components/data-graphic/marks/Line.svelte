@@ -5,7 +5,7 @@
 <script lang="ts">
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { extent } from "d3-array";
-  import { getContext, onDestroy, onMount } from "svelte";
+  import { getContext, onDestroy } from "svelte";
   import { contexts } from "../constants";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
   import { lineFactory, pathDoesNotDropToZero } from "../utils";
@@ -84,7 +84,6 @@
     .reduce((acc, v) => acc + v, 0);
 
   let computedLineDensity = 0.05;
-  let devicePixelRatio = 3;
 
   $: computedLineDensity = Math.min(
     1,
@@ -113,10 +112,6 @@
         1.5
     )
   );
-
-  onMount(() => {
-    devicePixelRatio = window.devicePixelRatio;
-  });
 </script>
 
 {#if lineFcn}
