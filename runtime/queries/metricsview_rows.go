@@ -19,13 +19,17 @@ type MetricsViewRows struct {
 	TimeStart          *timestamppb.Timestamp               `json:"time_start,omitempty"`
 	TimeEnd            *timestamppb.Timestamp               `json:"time_end,omitempty"`
 	TimeGranularity    runtimev1.TimeGrain                  `json:"time_granularity,omitempty"`
-	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
+	Where              *runtimev1.Expression                `json:"where,omitempty"`
+	Having             *runtimev1.Expression                `json:"having,omitempty"`
 	Sort               []*runtimev1.MetricsViewSort         `json:"sort,omitempty"`
 	Limit              *int64                               `json:"limit,omitempty"`
 	Offset             int64                                `json:"offset,omitempty"`
 	TimeZone           string                               `json:"time_zone,omitempty"`
 	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
+
+	// TODO: backwards compatibility
+	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 
 	Result *runtimev1.MetricsViewRowsResponse `json:"-"`
 }
@@ -228,12 +232,12 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dia
 		}
 	}
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if q.Where != nil {
+		clause, clauseArgs, err := buildFromExpression(q.Where, dimensionAliases(mv), dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += " " + clause
+		whereClause += " AND " + clause
 		args = append(args, clauseArgs...)
 	}
 

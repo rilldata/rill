@@ -618,25 +618,10 @@ func TestServer_MetricsViewComparison_sort_by_base_filter(t *testing.T) {
 				Desc: true,
 			},
 		},
-		Where: &runtimev1.Expression{
-			Expression: &runtimev1.Expression_Cond{
-				Cond: &runtimev1.Condition{
-					Op: runtimev1.Operation_OPERATION_NIN,
-					Exprs: []*runtimev1.Expression{
-						{
-							Expression: &runtimev1.Expression_Ident{
-								Ident: "domain",
-							},
-						},
-						{
-							Expression: &runtimev1.Expression_Val{
-								Val: structpb.NewStringValue("yahoo.com"),
-							},
-						},
-					},
-				},
-			},
-		},
+		Where: filterNotInClause(
+			filterColumn("domain"),
+			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("yahoo.com"))},
+		),
 		Exact: true,
 	})
 
@@ -1086,25 +1071,10 @@ func TestServer_MetricsViewComparison_no_comparison_complete_source_sanity_test(
 				Desc: false,
 			},
 		},
-		Where: &runtimev1.Expression{
-			Expression: &runtimev1.Expression_Cond{
-				Cond: &runtimev1.Condition{
-					Op: runtimev1.Operation_OPERATION_NIN,
-					Exprs: []*runtimev1.Expression{
-						{
-							Expression: &runtimev1.Expression_Ident{
-								Ident: "pub",
-							},
-						},
-						{
-							Expression: &runtimev1.Expression_Val{
-								Val: structpb.NewStringValue("Yahoo"),
-							},
-						},
-					},
-				},
-			},
-		},
+		Where: filterNotInClause(
+			filterColumn("pub"),
+			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("Yahoo"))},
+		),
 		Exact: true,
 	})
 	require.NoError(t, err)

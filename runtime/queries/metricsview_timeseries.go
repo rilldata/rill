@@ -27,11 +27,15 @@ type MetricsViewTimeSeries struct {
 	Limit              int64                                `json:"limit,omitempty"`
 	Offset             int64                                `json:"offset,omitempty"`
 	Sort               []*runtimev1.MetricsViewSort         `json:"sort,omitempty"`
-	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
+	Where              *runtimev1.Expression                `json:"where,omitempty"`
+	Having             *runtimev1.Expression                `json:"having,omitempty"`
 	TimeGranularity    runtimev1.TimeGrain                  `json:"time_granularity,omitempty"`
 	TimeZone           string                               `json:"time_zone,omitempty"`
 	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
+
+	// TODO: backwards compatibility
+	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
@@ -245,7 +249,7 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 
 func (q *MetricsViewTimeSeries) generateFilename(mv *runtimev1.MetricsViewSpec) string {
 	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Where != nil || q.Having != nil {
 		filename += "_filtered"
 	}
 	return filename
@@ -274,12 +278,12 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 		args = append(args, q.TimeEnd.AsTime())
 	}
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, olap.Dialect(), policy)
+	if q.Where != nil {
+		clause, clauseArgs, err := buildFromExpression(q.Where, dimensionAliases(mv), olap.Dialect())
 		if err != nil {
 			return "", "", nil, err
 		}
-		whereClause += " " + clause
+		whereClause += " AND " + clause
 		args = append(args, clauseArgs...)
 	}
 

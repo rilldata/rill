@@ -70,17 +70,10 @@ func TestServer_MetricsViewTimeSeries_complete_source_sanity_test(t *testing.T) 
 		MetricsViewName: "ad_bids_metrics",
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		MeasureNames:    []string{"measure_0", "measure_1"},
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "dom",
-					In: []*structpb.Value{
-						structpb.NewStringValue("msn.com"),
-					},
-					Like: []string{"%yahoo%"},
-				},
-			},
-		},
+		Where: filterOrClause([]*runtimev1.Expression{
+			filterInClause(filterColumn("dom"), []*runtimev1.Expression{filterValue(structpb.NewStringValue("msn.com"))}),
+			filterLikeClause(filterColumn("dom"), filterValue(structpb.NewStringValue("%yahoo%"))),
+		}),
 	})
 	require.NoError(t, err)
 	require.True(t, len(tr.Data) > 0)
@@ -101,14 +94,10 @@ func TestServer_Timeseries(t *testing.T) {
 		TimeStart:       parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2019-12-02T00:00:00Z"),
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "device",
-					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
-				},
-			},
-		},
+		Where: filterInClause(
+			filterColumn("device"),
+			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("android")), filterValue(structpb.NewStringValue("iphone"))},
+		),
 	})
 
 	require.NoError(t, err)
@@ -126,14 +115,10 @@ func Ignore_TestServer_Timeseries_exclude_notnull(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"count"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "latitude",
-					In:   []*structpb.Value{structpb.NewNumberValue(25)},
-				},
-			},
-		},
+		Where: filterNotInClause(
+			filterColumn("latitude"),
+			[]*runtimev1.Expression{filterValue(structpb.NewNumberValue(25))},
+		),
 	})
 
 	require.NoError(t, err)
@@ -151,14 +136,10 @@ func Ignore_TestServer_Timeseries_exclude_all(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"count"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "latitude",
-					In:   []*structpb.Value{structpb.NewNumberValue(25), structpb.NewNullValue()},
-				},
-			},
-		},
+		Where: filterNotInClause(
+			filterColumn("latitude"),
+			[]*runtimev1.Expression{filterValue(structpb.NewNumberValue(25)), filterValue(structpb.NewNullValue())},
+		),
 	})
 
 	require.NoError(t, err)
@@ -176,14 +157,10 @@ func TestServer_Timeseries_exclude_notnull_string(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"count"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "country",
-					In:   []*structpb.Value{structpb.NewStringValue("Canada")},
-				},
-			},
-		},
+		Where: filterNotInClause(
+			filterColumn("country"),
+			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("Canada"))},
+		),
 	})
 
 	require.NoError(t, err)
@@ -201,14 +178,10 @@ func TestServer_Timeseries_exclude_all_string(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"sum_imps"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "country",
-					In:   []*structpb.Value{structpb.NewStringValue("Canada"), structpb.NewNullValue()},
-				},
-			},
-		},
+		Where: filterNotInClause(
+			filterColumn("country"),
+			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("Canada")), filterValue(structpb.NewNullValue())},
+		),
 	})
 
 	require.NoError(t, err)
@@ -225,14 +198,10 @@ func TestServer_Timeseries_exclude_notnull_like(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"count"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "device",
-					Like: []string{"iphone"},
-				},
-			},
-		},
+		Where: filterNotLikeClause(
+			filterColumn("device"),
+			filterValue(structpb.NewStringValue("iphone")),
+		),
 	})
 
 	require.NoError(t, err)
@@ -250,15 +219,16 @@ func TestServer_Timeseries_exclude_like_all(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"sum_imps"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "country",
-					In:   []*structpb.Value{structpb.NewNullValue()},
-					Like: []string{"Canada"},
-				},
-			},
-		},
+		Where: filterAndClause([]*runtimev1.Expression{
+			filterNotInClause(
+				filterColumn("country"),
+				[]*runtimev1.Expression{filterValue(structpb.NewNullValue())},
+			),
+			filterNotLikeClause(
+				filterColumn("country"),
+				filterValue(structpb.NewStringValue("Canada")),
+			),
+		}),
 	})
 
 	require.NoError(t, err)
@@ -275,14 +245,10 @@ func TestServer_Timeseries_numeric_dim(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"count"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "latitude",
-					In:   []*structpb.Value{structpb.NewNumberValue(25)},
-				},
-			},
-		},
+		Where: filterInClause(
+			filterColumn("latitude"),
+			[]*runtimev1.Expression{filterValue(structpb.NewNumberValue(25))},
+		),
 	})
 
 	require.NoError(t, err)
@@ -300,14 +266,10 @@ func TestServer_Timeseries_numeric_dim_2values(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"count"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "latitude",
-					In:   []*structpb.Value{structpb.NewNumberValue(25), structpb.NewNumberValue(35)},
-				},
-			},
-		},
+		Where: filterInClause(
+			filterColumn("latitude"),
+			[]*runtimev1.Expression{filterValue(structpb.NewNumberValue(25)), filterValue(structpb.NewNumberValue(35))},
+		),
 	})
 
 	require.NoError(t, err)
@@ -325,14 +287,10 @@ func TestServer_Timeseries_numeric_dim_and_null(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"count"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "latitude",
-					In:   []*structpb.Value{structpb.NewNumberValue(25), structpb.NewNullValue()},
-				},
-			},
-		},
+		Where: filterInClause(
+			filterColumn("latitude"),
+			[]*runtimev1.Expression{filterValue(structpb.NewNumberValue(25)), filterValue(structpb.NewNullValue())},
+		),
 	})
 
 	require.NoError(t, err)
@@ -531,14 +489,10 @@ func TestServer_Timeseries_2measures(t *testing.T) {
 		TimeStart:       parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2019-12-01T00:00:00Z"),
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "device",
-					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
-				},
-			},
-		},
+		Where: filterInClause(
+			filterColumn("device"),
+			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("android")), filterValue(structpb.NewStringValue("iphone"))},
+		),
 	})
 
 	require.NoError(t, err)
@@ -559,14 +513,10 @@ func TestServer_Timeseries_1dim(t *testing.T) {
 		TimeStart:       parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2019-12-01T00:00:00Z"),
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "device",
-					In:   []*structpb.Value{structpb.NewStringValue("android")},
-				},
-			},
-		},
+		Where: filterInClause(
+			filterColumn("device"),
+			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("android"))},
+		),
 	})
 
 	require.NoError(t, err)
@@ -584,14 +534,10 @@ func TestServer_Timeseries_1dim_null(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"sum_clicks"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "publisher",
-					In:   []*structpb.Value{structpb.NewNullValue()},
-				},
-			},
-		},
+		Where: filterInClause(
+			filterColumn("publisher"),
+			[]*runtimev1.Expression{filterValue(structpb.NewNullValue())},
+		),
 	})
 
 	require.NoError(t, err)
@@ -609,17 +555,10 @@ func TestServer_Timeseries_1dim_null_and_in(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"sum_clicks"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "publisher",
-					In: []*structpb.Value{
-						structpb.NewNullValue(),
-						structpb.NewStringValue("Google"),
-					},
-				},
-			},
-		},
+		Where: filterInClause(
+			filterColumn("publisher"),
+			[]*runtimev1.Expression{filterValue(structpb.NewNullValue()), filterValue(structpb.NewStringValue("Google"))},
+		),
 	})
 
 	require.NoError(t, err)
@@ -637,20 +576,16 @@ func TestServer_Timeseries_1dim_null_and_in_and_like(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"sum_clicks"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "publisher",
-					In: []*structpb.Value{
-						structpb.NewNullValue(),
-						structpb.NewStringValue("Google"),
-					},
-					Like: []string{
-						"Goo%",
-					},
-				},
-			},
-		},
+		Where: filterOrClause([]*runtimev1.Expression{
+			filterInClause(
+				filterColumn("publisher"),
+				[]*runtimev1.Expression{filterValue(structpb.NewNullValue()), filterValue(structpb.NewStringValue("Google"))},
+			),
+			filterLikeClause(
+				filterColumn("publisher"),
+				filterValue(structpb.NewStringValue("Goo%")),
+			),
+		}),
 	})
 
 	require.NoError(t, err)
@@ -668,17 +603,16 @@ func TestServer_Timeseries_1dim_2like(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"sum_clicks"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "domain",
-					Like: []string{
-						"g%",
-						"msn%",
-					},
-				},
-			},
-		},
+		Where: filterOrClause([]*runtimev1.Expression{
+			filterLikeClause(
+				filterColumn("domain"),
+				filterValue(structpb.NewStringValue("g%")),
+			),
+			filterLikeClause(
+				filterColumn("domain"),
+				filterValue(structpb.NewStringValue("msn%")),
+			),
+		}),
 	})
 
 	require.NoError(t, err)
@@ -696,22 +630,16 @@ func TestServer_Timeseries_2dim_include_and_exclude(t *testing.T) {
 		MetricsViewName: "timeseries",
 		MeasureNames:    []string{"sum_clicks"},
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "publisher",
-					In: []*structpb.Value{
-						structpb.NewStringValue("Google"),
-					},
-				},
-				{
-					Name: "domain",
-					In: []*structpb.Value{
-						structpb.NewStringValue("msn.com"),
-					},
-				},
-			},
-		},
+		Where: filterAndClause([]*runtimev1.Expression{
+			filterInClause(
+				filterColumn("publisher"),
+				[]*runtimev1.Expression{filterValue(structpb.NewStringValue("Google"))},
+			),
+			filterInClause(
+				filterColumn("domain"),
+				[]*runtimev1.Expression{filterValue(structpb.NewStringValue("msn.com"))},
+			),
+		}),
 	})
 
 	require.NoError(t, err)
@@ -730,14 +658,10 @@ func TestServer_Timeseries_1day(t *testing.T) {
 		TimeStart:       parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2019-01-03T00:00:00Z"),
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "device",
-					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
-				},
-			},
-		},
+		Where: filterInClause(
+			filterColumn("device"),
+			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("android")), filterValue(structpb.NewStringValue("iphone"))},
+		),
 	})
 
 	require.NoError(t, err)
@@ -805,14 +729,10 @@ func TestServer_Timeseries_1day_Count(t *testing.T) {
 		TimeStart:       parseTimeToProtoTimeStamps(t, "2019-01-01T00:00:00Z"),
 		TimeEnd:         parseTimeToProtoTimeStamps(t, "2019-01-03T00:00:00Z"),
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "device",
-					In:   []*structpb.Value{structpb.NewStringValue("android"), structpb.NewStringValue("iphone")},
-				},
-			},
-		},
+		Where: filterInClause(
+			filterColumn("device"),
+			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("android")), filterValue(structpb.NewStringValue("iphone"))},
+		),
 	})
 
 	require.NoError(t, err)

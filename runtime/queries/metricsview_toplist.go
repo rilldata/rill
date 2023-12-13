@@ -23,9 +23,13 @@ type MetricsViewToplist struct {
 	Limit              *int64                               `json:"limit,omitempty"`
 	Offset             int64                                `json:"offset,omitempty"`
 	Sort               []*runtimev1.MetricsViewSort         `json:"sort,omitempty"`
-	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
+	Where              *runtimev1.Expression                `json:"where,omitempty"`
+	Having             *runtimev1.Expression                `json:"having,omitempty"`
 	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
+
+	// TODO: backwards compatibility
+	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 
 	Result *runtimev1.MetricsViewToplistResponse `json:"-"`
 }
@@ -166,7 +170,7 @@ func (q *MetricsViewToplist) generalExport(ctx context.Context, rt *runtime.Runt
 func (q *MetricsViewToplist) generateFilename(mv *runtimev1.MetricsViewSpec) string {
 	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
 	filename += "_" + q.DimensionName
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Where != nil || q.Having != nil {
 		filename += "_filtered"
 	}
 	return filename
@@ -196,9 +200,11 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		selectCols = append(selectCols, colName)
 	}
 
+	measureAliases := map[string]identifier{}
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
 		selectCols = append(selectCols, expr)
+		measureAliases[m.Name] = newIdentifier(m.Name)
 	}
 
 	whereClause := "1=1"
@@ -214,25 +220,25 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		}
 	}
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if q.Where != nil {
+		clause, clauseArgs, err := buildFromExpression(q.Where, dimensionAliases(mv), dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += " " + clause
+		whereClause += " AND " + clause
 		args = append(args, clauseArgs...)
 	}
 
 	havingClause := ""
-	//if q.MeasureFilter != nil {
-	//	var havingClauseArgs []any
-	//	havingClause, havingClauseArgs, err = buildHavingClause(q.MeasureFilter, mv, false)
-	//	if err != nil {
-	//		return "", nil, err
-	//	}
-	//	havingClause = "HAVING " + havingClause
-	//	args = append(args, havingClauseArgs...)
-	//}
+	if q.Having != nil {
+		var havingClauseArgs []any
+		havingClause, havingClauseArgs, err = buildFromExpression(q.Having, nil, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		havingClause = "HAVING " + havingClause
+		args = append(args, havingClauseArgs...)
+	}
 
 	sortingCriteria := make([]string, 0, len(q.Sort))
 	for _, s := range q.Sort {

@@ -341,6 +341,12 @@ func buildFromConditionExpression(cond *runtimev1.Condition, allowedIdentifiers 
 	case runtimev1.Operation_OPERATION_IN, runtimev1.Operation_OPERATION_NIN:
 		return buildFromInExpression(cond, allowedIdentifiers, dialect)
 
+	case runtimev1.Operation_OPERATION_AND:
+		return buildFromAndOrExpressions(cond, allowedIdentifiers, dialect, " AND ")
+
+	case runtimev1.Operation_OPERATION_OR:
+		return buildFromAndOrExpressions(cond, allowedIdentifiers, dialect, " OR ")
+
 	default:
 		leftExpr, args, err := buildFromExpression(cond.Exprs[0], allowedIdentifiers, dialect)
 		if err != nil {
@@ -353,7 +359,7 @@ func buildFromConditionExpression(cond *runtimev1.Condition, allowedIdentifiers 
 		}
 		args = append(args, subArgs...)
 
-		return fmt.Sprintf("%s %s %s", leftExpr, conditionExpressionOperation(cond.Op), rightExpr), args, nil
+		return fmt.Sprintf("(%s) %s (%s)", leftExpr, conditionExpressionOperation(cond.Op), rightExpr), args, nil
 	}
 }
 
@@ -398,6 +404,12 @@ func buildFromLikeExpression(cond *runtimev1.Condition, allowedIdentifiers map[s
 		} else {
 			clause = fmt.Sprintf("%s %s ILIKE %s", leftExpr, notKeyword, rightExpr)
 		}
+	}
+
+	// When you have "dim NOT ILIKE '...'", then NULL values are always excluded.
+	// We need to explicitly include it.
+	if cond.Op == runtimev1.Operation_OPERATION_NLIKE {
+		clause += fmt.Sprintf(" OR %s IS NULL", leftExpr)
 	}
 
 	// TODO: is `col is null` needed?
@@ -475,7 +487,7 @@ func buildFromInExpression(cond *runtimev1.Condition, allowedIdentifiers map[str
 	} else {
 		condsClause = strings.Join(clauses, " OR ")
 	}
-	if exclude && len(clauses) > 0 {
+	if exclude && !inHasNull && len(clauses) > 0 {
 		// When you have "dim NOT IN (a, b, ...)", then NULL values are always excluded, even if NULL is not in the list.
 		// E.g. this returns zero rows: "select * from (select 1 as a union select null as a) where a not in (1)"
 		// We need to explicitly include it.
@@ -483,6 +495,20 @@ func buildFromInExpression(cond *runtimev1.Condition, allowedIdentifiers map[str
 	}
 
 	return condsClause, args, nil
+}
+
+func buildFromAndOrExpressions(cond *runtimev1.Condition, allowedIdentifiers map[string]identifier, dialect drivers.Dialect, joiner string) (string, []any, error) {
+	clauses := make([]string, 0)
+	var args []any
+	for _, expr := range cond.Exprs {
+		clause, subArgs, err := buildFromExpression(expr, allowedIdentifiers, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		args = append(args, subArgs...)
+		clauses = append(clauses, fmt.Sprintf("(%s)", clause))
+	}
+	return strings.Join(clauses, joiner), args, nil
 }
 
 func conditionExpressionOperation(oprn runtimev1.Operation) string {
@@ -823,7 +849,7 @@ func duckDBCopyExport(ctx context.Context, w io.Writer, opts *runtime.ExportOpti
 
 func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsViewSpec) string {
 	filename := strings.ReplaceAll(mv.Table, `"`, `_`)
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Where != nil || q.Having != nil {
 		filename += "_filtered"
 	}
 	return filename

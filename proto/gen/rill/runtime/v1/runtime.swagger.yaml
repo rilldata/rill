@@ -1168,8 +1168,10 @@ paths:
                 format: date-time
               timeGranularity:
                 $ref: '#/definitions/v1TimeGrain'
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
+              where:
+                $ref: '#/definitions/v1Expression'
+              having:
+                $ref: '#/definitions/v1Expression'
               sort:
                 type: array
                 items:
@@ -1268,8 +1270,10 @@ paths:
                 format: date-time
               timeGranularity:
                 $ref: '#/definitions/v1TimeGrain'
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
+              where:
+                $ref: '#/definitions/v1Expression'
+              having:
+                $ref: '#/definitions/v1Expression'
               timeZone:
                 type: string
               priority:
@@ -1335,8 +1339,10 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewSort'
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
+              where:
+                $ref: '#/definitions/v1Expression'
+              having:
+                $ref: '#/definitions/v1Expression'
               priority:
                 type: integer
                 format: int32
@@ -1387,8 +1393,10 @@ paths:
               timeEnd:
                 type: string
                 format: date-time
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
+              where:
+                $ref: '#/definitions/v1Expression'
+              having:
+                $ref: '#/definitions/v1Expression'
               priority:
                 type: integer
                 format: int32
@@ -2319,18 +2327,6 @@ definitions:
       column:
         type: string
     title: Dimensions are columns to filter and group by
-  MetricsViewFilterCond:
-    type: object
-    properties:
-      name:
-        type: string
-      in:
-        type: array
-        items: {}
-      like:
-        type: array
-        items:
-          type: string
   MetricsViewMeasure:
     type: object
     properties:
@@ -3562,19 +3558,6 @@ definitions:
       comparisonValue: {}
       deltaAbs: {}
       deltaRel: {}
-  v1MetricsViewFilter:
-    type: object
-    properties:
-      include:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/MetricsViewFilterCond'
-      exclude:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/MetricsViewFilterCond'
   v1MetricsViewRowsRequest:
     type: object
     properties:
@@ -3590,8 +3573,10 @@ definitions:
         format: date-time
       timeGranularity:
         $ref: '#/definitions/v1TimeGrain'
-      filter:
-        $ref: '#/definitions/v1MetricsViewFilter'
+      where:
+        $ref: '#/definitions/v1Expression'
+      having:
+        $ref: '#/definitions/v1Expression'
       sort:
         type: array
         items:
@@ -3728,8 +3713,10 @@ definitions:
         format: date-time
       timeGranularity:
         $ref: '#/definitions/v1TimeGrain'
-      filter:
-        $ref: '#/definitions/v1MetricsViewFilter'
+      where:
+        $ref: '#/definitions/v1Expression'
+      having:
+        $ref: '#/definitions/v1Expression'
       timeZone:
         type: string
       priority:
@@ -3783,8 +3770,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewSort'
-      filter:
-        $ref: '#/definitions/v1MetricsViewFilter'
+      where:
+        $ref: '#/definitions/v1Expression'
+      having:
+        $ref: '#/definitions/v1Expression'
       priority:
         type: integer
         format: int32
@@ -3822,8 +3811,10 @@ definitions:
       timeEnd:
         type: string
         format: date-time
-      filter:
-        $ref: '#/definitions/v1MetricsViewFilter'
+      where:
+        $ref: '#/definitions/v1Expression'
+      having:
+        $ref: '#/definitions/v1Expression'
       priority:
         type: integer
         format: int32

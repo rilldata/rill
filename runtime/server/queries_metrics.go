@@ -105,7 +105,8 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
 		attribute.StringSlice("args.sort.names", marshalMetricsViewSort(req.Sort)),
 		attribute.StringSlice("args.inline_measures", marshalInlineMeasure(req.InlineMeasures)),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		// TODO filter and having
+		//attribute.Int("args.filter_count", filterCount(req.Filter)),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -149,7 +150,8 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		Limit:              &req.Limit,
 		Offset:             req.Offset,
 		Sort:               req.Sort,
-		Filter:             req.Filter,
+		Where:              req.Where,
+		Having:             req.Having,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
 	}
@@ -248,7 +250,8 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
 		attribute.String("args.time_granularity", req.TimeGranularity.String()),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		// TODO filter and having
+		//attribute.Int("args.filter_count", filterCount(req.Filter)),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
@@ -282,7 +285,8 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		TimeStart:          req.TimeStart,
 		TimeEnd:            req.TimeEnd,
 		TimeGranularity:    req.TimeGranularity,
-		Filter:             req.Filter,
+		Where:              req.Where,
+		Having:             req.Having,
 		TimeZone:           req.TimeZone,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
@@ -303,7 +307,8 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		attribute.StringSlice("args.inline_measures.names", marshalInlineMeasure(req.InlineMeasures)),
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		// TODO filter and having
+		//attribute.Int("args.filter_count", filterCount(req.Filter)),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
@@ -336,7 +341,8 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		InlineMeasures:     req.InlineMeasures,
 		TimeStart:          req.TimeStart,
 		TimeEnd:            req.TimeEnd,
-		Filter:             req.Filter,
+		Where:              req.Where,
+		Having:             req.Having,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
 	}
@@ -355,7 +361,8 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
 		attribute.String("args.time_granularity", req.TimeGranularity.String()),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		// TODO filter and having
+		//attribute.Int("args.filter_count", filterCount(req.Filter)),
 		attribute.StringSlice("args.sort.names", marshalMetricsViewSort(req.Sort)),
 		attribute.Int("args.limit", int(req.Limit)),
 		attribute.Int64("args.offset", req.Offset),
@@ -380,7 +387,8 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		TimeStart:          req.TimeStart,
 		TimeEnd:            req.TimeEnd,
 		TimeGranularity:    req.TimeGranularity,
-		Filter:             req.Filter,
+		Where:              req.Where,
+		Having:             req.Having,
 		Sort:               req.Sort,
 		Limit:              &limit,
 		Offset:             req.Offset,

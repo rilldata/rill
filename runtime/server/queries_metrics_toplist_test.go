@@ -333,16 +333,10 @@ func TestServer_MetricsViewToplist_complete_source_sanity_test(t *testing.T) {
 				Ascending: true,
 			},
 		},
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "pub",
-					In: []*structpb.Value{
-						structpb.NewStringValue("Yahoo"),
-					},
-				},
-			},
-		},
+		Where: filterNotInClause(
+			filterColumn("pub"),
+			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("Yahoo"))},
+		),
 	})
 	require.NoError(t, err)
 	require.True(t, len(tr.Data) > 1)
@@ -364,16 +358,10 @@ func TestServer_MetricsViewToplist_DimensionsByName(t *testing.T) {
 				Ascending: true,
 			},
 		},
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "pub",
-					In: []*structpb.Value{
-						structpb.NewStringValue("Yahoo"),
-					},
-				},
-			},
-		},
+		Where: filterNotInClause(
+			filterColumn("pub"),
+			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("Yahoo"))},
+		),
 	})
 	require.NoError(t, err)
 	require.True(t, len(tr.Data) > 1)

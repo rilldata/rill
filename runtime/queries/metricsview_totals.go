@@ -19,9 +19,13 @@ type MetricsViewTotals struct {
 	InlineMeasures     []*runtimev1.InlineMeasure           `json:"inline_measures,omitempty"`
 	TimeStart          *timestamppb.Timestamp               `json:"time_start,omitempty"`
 	TimeEnd            *timestamppb.Timestamp               `json:"time_end,omitempty"`
-	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
+	Where              *runtimev1.Expression                `json:"where,omitempty"`
+	Having             *runtimev1.Expression                `json:"having,omitempty"`
 	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
+
+	// TODO: backwards compatibility
+	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 
 	Result *runtimev1.MetricsViewTotalsResponse `json:"-"`
 }
@@ -105,10 +109,12 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsViewSpec,
 		return "", nil, err
 	}
 
+	measureAliases := map[string]identifier{}
 	selectCols := []string{}
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
 		selectCols = append(selectCols, expr)
+		measureAliases[m.Name] = newIdentifier(m.Name)
 	}
 
 	whereClause := "1=1"
@@ -124,20 +130,32 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsViewSpec,
 		}
 	}
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if q.Where != nil {
+		clause, clauseArgs, err := buildFromExpression(q.Where, dimensionAliases(mv), dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += " " + clause
+		whereClause += " AND " + clause
+		args = append(args, clauseArgs...)
+	}
+
+	havingClause := ""
+	if q.Having != nil {
+		clause, clauseArgs, err := buildFromExpression(q.Having, dimensionAliases(mv), dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		havingClause += "HAVING " + clause
 		args = append(args, clauseArgs...)
 	}
 
 	sql := fmt.Sprintf(
-		"SELECT %s FROM %q WHERE %s",
+		"SELECT %s FROM %q WHERE %s %s",
 		strings.Join(selectCols, ", "),
 		mv.Table,
 		whereClause,
+		havingClause,
 	)
+	fmt.Println(sql, args)
 	return sql, args, nil
 }

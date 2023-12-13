@@ -326,7 +326,8 @@ message MetricsViewToplistRequest {
   int64 limit = 7 [(validate.rules).int64.gte = 0];
   int64 offset = 8 [(validate.rules).int64.gte = 0];
   repeated MetricsViewSort sort = 9;
-  MetricsViewFilter filter = 10;
+  Expression where = 10;
+  Expression having = 13;
   int32 priority = 11;
 }
 
@@ -402,7 +403,8 @@ message MetricsViewTimeSeriesRequest {
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
   TimeGrain time_granularity = 6;
-  MetricsViewFilter filter = 7;
+  Expression where = 7;
+  Expression having = 11;
   string time_zone = 10;
   int32 priority = 8;
 }
@@ -426,7 +428,8 @@ message MetricsViewTotalsRequest {
   repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
-  MetricsViewFilter filter = 7;
+  Expression where = 7;
+  Expression having = 10;
   int32 priority = 8;
 }
 
@@ -441,7 +444,8 @@ message MetricsViewRowsRequest {
   google.protobuf.Timestamp time_start = 3;
   google.protobuf.Timestamp time_end = 4;
   TimeGrain time_granularity = 10;
-  MetricsViewFilter filter = 5;
+  Expression where = 5;
+  Expression having = 12;
   repeated MetricsViewSort sort = 6;
   int32 limit = 7 [(validate.rules).int32.gte = 0];
   int64 offset = 8 [(validate.rules).int64.gte = 0];
