@@ -244,14 +244,14 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 			if skipRillYAMLErr && e.FilePath == "/rill.yaml" {
 				continue
 			}
-			r.C.Logger.Error("Parser error", slog.String("path", e.FilePath), slog.String("err", e.Message))
+			r.C.Logger.Warn("Parser error", slog.String("path", e.FilePath), slog.String("err", e.Message))
 		}
 	} else if diff.Skipped {
-		r.C.Logger.Error("Not parsing changed paths due to broken rill.yaml")
+		r.C.Logger.Warn("Not parsing changed paths due to broken rill.yaml")
 	} else {
 		for _, e := range parser.Errors {
 			if slices.Contains(changedPaths, e.FilePath) {
-				r.C.Logger.Error("Parser error", slog.String("path", e.FilePath), slog.String("err", e.Message))
+				r.C.Logger.Warn("Parser error", slog.String("path", e.FilePath), slog.String("err", e.Message))
 			}
 		}
 	}
