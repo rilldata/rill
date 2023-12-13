@@ -130,7 +130,7 @@
 
 <svelte:window bind:innerHeight />
 
-<div class="h-full pb-3">
+<div class="editor-pane h-full pb-3">
   <div
     class="p-5"
     style:height="calc({innerHeight}px - {$outputPosition *
@@ -153,7 +153,7 @@
     <HorizontalSplitter className="px-5" />
   {/if}
   {#if hasModelSql}
-    <div class="p-5" style:height="{$outputPosition}px">
+    <div class="p-5 flex flex-col gap-6" style:height="{$outputPosition}px">
       <div
         class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&
           'hidden'}"
