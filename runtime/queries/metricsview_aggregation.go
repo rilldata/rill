@@ -107,7 +107,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 
 	filename := strings.ReplaceAll(q.MetricsView.Table, `"`, `_`)
-	if !isTimeRangeNil(q.TimeRange) || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+	if !isTimeRangeNil(q.TimeRange) || q.Where != nil || q.Having != nil {
 		filename += "_filtered"
 	}
 
@@ -216,12 +216,12 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 		whereClause += clause
 	}
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if q.Where != nil {
+		clause, clauseArgs, err := buildFromExpression(q.Where, dimensionAliases(mv), dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += " " + clause
+		whereClause += " AND " + clause
 		args = append(args, clauseArgs...)
 	}
 	if len(whereClause) > 0 {

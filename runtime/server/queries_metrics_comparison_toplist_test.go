@@ -89,8 +89,8 @@ func TestServer_MetricsViewComparison(t *testing.T) {
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, "cars", rows[0].DimensionValue.GetStringValue())
 
@@ -145,8 +145,8 @@ func TestServer_MetricsViewComparison_inline_measures(t *testing.T) {
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, "cars", rows[0].DimensionValue.GetStringValue())
 
@@ -196,8 +196,8 @@ func TestServer_MetricsViewComparison_nulls(t *testing.T) {
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -263,8 +263,8 @@ func TestServer_MetricsViewComparison_sort_by_base(t *testing.T) {
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -321,8 +321,8 @@ func TestServer_MetricsViewComparison_sort_by_comparison(t *testing.T) {
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "msn.com", rows[0].DimensionValue.GetStringValue())
@@ -380,8 +380,8 @@ func TestServer_MetricsViewComparison_sort_by_abs_delta(t *testing.T) {
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -438,8 +438,8 @@ func TestServer_MetricsViewComparison_sort_by_rel_delta(t *testing.T) {
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "msn.com", rows[0].DimensionValue.GetStringValue())
@@ -532,8 +532,8 @@ func TestServer_MetricsViewComparison_sort_by_delta_limit_1(t *testing.T) {
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -577,8 +577,8 @@ func TestServer_MetricsViewComparison_sort_by_base_limit_1(t *testing.T) {
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -618,19 +618,30 @@ func TestServer_MetricsViewComparison_sort_by_base_filter(t *testing.T) {
 				Desc: true,
 			},
 		},
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "domain",
-					In:   []*structpb.Value{structpb.NewStringValue("yahoo.com")},
+		Where: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_NIN,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "domain",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewStringValue("yahoo.com"),
+							},
+						},
+					},
 				},
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 
 	require.Equal(t, "msn.com", rows[0].DimensionValue.GetStringValue())
@@ -693,8 +704,8 @@ func TestServer_MetricsViewComparison_2_measures(t *testing.T) {
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -1075,12 +1086,21 @@ func TestServer_MetricsViewComparison_no_comparison_complete_source_sanity_test(
 				Desc: false,
 			},
 		},
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "pub",
-					In: []*structpb.Value{
-						structpb.NewStringValue("Yahoo"),
+		Where: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_NIN,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "pub",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewStringValue("Yahoo"),
+							},
+						},
 					},
 				},
 			},

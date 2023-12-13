@@ -296,12 +296,12 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	}
 	baseWhereClause += trc
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if q.Where != nil {
+		clause, clauseArgs, err := buildFromExpression(q.Where, dimensionAliases(mv), dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		baseWhereClause += " " + clause
+		baseWhereClause += " AND " + clause
 
 		args = append(args, clauseArgs...)
 	}
@@ -510,12 +510,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 	baseWhereClause += trc
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if q.Where != nil {
+		clause, clauseArgs, err := buildFromExpression(q.Where, dimensionAliases(mv), dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		baseWhereClause += " " + clause
+		baseWhereClause += " AND " + clause
 
 		args = append(args, clauseArgs...)
 	}
@@ -526,12 +526,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 	comparisonWhereClause += trc
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if q.Where != nil {
+		clause, clauseArgs, err := buildFromExpression(q.Where, dimensionAliases(mv), dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		comparisonWhereClause += " " + clause
+		comparisonWhereClause += " AND " + clause
 
 		args = append(args, clauseArgs...)
 	}
@@ -951,7 +951,7 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 func (q *MetricsViewComparison) generateFilename() string {
 	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
 	filename += "_" + q.DimensionName
-	if q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+	if q.Where != nil || q.Having != nil {
 		filename += "_filtered"
 	}
 	return filename

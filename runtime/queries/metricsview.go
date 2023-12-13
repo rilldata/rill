@@ -301,6 +301,14 @@ func newIdentifier(name string) identifier {
 	return identifier{safeName(name), false}
 }
 
+func dimensionAliases(mv *runtimev1.MetricsViewSpec) map[string]identifier {
+	aliases := map[string]identifier{}
+	for _, dim := range mv.Dimensions {
+		aliases[dim.Name] = identifier{safeName(metricsViewDimensionColumn(dim)), dim.Unnest}
+	}
+	return aliases
+}
+
 func buildFromExpression(expr *runtimev1.Expression, allowedIdentifiers map[string]identifier, dialect drivers.Dialect) (string, []any, error) {
 	var emptyArg []any
 	switch e := expr.Expression.(type) {
@@ -414,8 +422,7 @@ func buildFromInExpression(cond *runtimev1.Condition, allowedIdentifiers map[str
 	}
 
 	inHasNull := false
-	clauses := make([]string, 0)
-
+	var valClauses []string
 	// Add to args, skipping nulls
 	for _, subExpr := range cond.Exprs[1:] {
 		// TODO: is a deeper check needed?
@@ -430,7 +437,31 @@ func buildFromInExpression(cond *runtimev1.Condition, allowedIdentifiers map[str
 			return "", nil, err
 		}
 		args = append(args, subArgs...)
-		clauses = append(clauses, inVal)
+		valClauses = append(valClauses, inVal)
+	}
+
+	// identify if immediate identifier has unnest
+	// TODO: do we need to do a deeper check?
+	unnest := false
+	ident, isIndent := cond.Exprs[0].Expression.(*runtimev1.Expression_Ident)
+	if isIndent {
+		i := allowedIdentifiers[ident.Ident]
+		unnest = i.unnest
+	}
+
+	clauses := make([]string, 0)
+
+	// If there were non-null args, add a "dim [NOT] IN (...)" clause
+	if len(valClauses) > 0 {
+		questionMarks := strings.Join(valClauses, ",")
+		var clause string
+		// Build [NOT] list_has_any("dim", ARRAY[?, ?, ...])
+		if unnest && dialect != drivers.DialectDruid {
+			clause = fmt.Sprintf("%s list_has_any(%s, ARRAY[%s])", notKeyword, leftExpr, questionMarks)
+		} else {
+			clause = fmt.Sprintf("%s %s IN (%s)", leftExpr, notKeyword, questionMarks)
+		}
+		clauses = append(clauses, clause)
 	}
 
 	if inHasNull {
