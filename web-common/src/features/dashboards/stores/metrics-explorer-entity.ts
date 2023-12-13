@@ -1,4 +1,5 @@
 import type { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type {
   SortDirection,
   SortType,
@@ -8,12 +9,6 @@ import type {
   ScrubRange,
 } from "@rilldata/web-common/lib/time/types";
 import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
-
-interface PivotState {
-  active: boolean;
-  rows: string[];
-  columns: string[];
-}
 
 export interface MetricsExplorerEntity {
   name: string;

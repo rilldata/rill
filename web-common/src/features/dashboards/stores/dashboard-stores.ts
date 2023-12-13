@@ -19,6 +19,7 @@ import type {
   V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
+import type { ExpandedState } from "@tanstack/svelte-table";
 import { derived, Readable, writable } from "svelte/store";
 import {
   SortDirection,
@@ -216,22 +217,21 @@ const metricViewReducers = {
     });
   },
 
-  addPivotItem(name: string, value: string, type: "row" | "column") {
+  setPivotRows(name: string, values: string[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      const pivot = metricsExplorer.pivot;
-      const list = type === "row" ? pivot.rows : pivot.columns;
-      list.push(value);
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, rows: values };
     });
   },
 
-  removePivotItem(name: string, value: string, type: "row" | "column") {
+  setPivotColumns(name: string, values: string[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      const pivot = metricsExplorer.pivot;
-      const list = type === "row" ? pivot.rows : pivot.columns;
-      const index = list.indexOf(value);
-      if (index >= 0) {
-        list.splice(index, 1);
-      }
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, columns: values };
+    });
+  },
+
+  setPivotExpanded(name: string, expanded: ExpandedState) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, expanded };
     });
   },
 

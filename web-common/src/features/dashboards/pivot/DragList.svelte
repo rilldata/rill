@@ -3,33 +3,40 @@
   import { flip } from "svelte/animate";
   import { Chip } from "@rilldata/web-common/components/chip";
   import { measureChipColors } from "@rilldata/web-common/components/chip/chip-types";
+  import { createEventDispatcher } from "svelte";
 
   export let items: unknown[] = [];
   export let style: "vertical" | "horizontal" = "vertical";
 
+  const dispatch = createEventDispatcher();
   const flipDurationMs = 200;
 
-  function handleSort(e) {
+  function handleConsider(e) {
     items = e.detail.items;
+  }
+  function handleFinalize(e) {
+    items = e.detail.items;
+    dispatch("update", items);
   }
 
   let listClasses;
   $: if (style === "horizontal") {
-    listClasses = "flex flex-row bg-slate-50 w-full p-2 gap-x-1 h-10";
+    listClasses = "flex flex-row bg-slate-50 w-full p-2 gap-x-2 h-10";
   } else {
-    listClasses = "flex flex-col gap-y-1 py-2";
+    listClasses = "flex flex-col gap-y-2 py-2";
   }
 </script>
 
 <div
   class={listClasses}
   use:dndzone={{ items, flipDurationMs }}
-  on:consider={handleSort}
-  on:finalize={handleSort}
+  on:consider={handleConsider}
+  on:finalize={handleFinalize}
 >
   {#each items as item (item.id)}
     <div class="item" animate:flip={{ duration: flipDurationMs }}>
       <Chip
+        outline={true}
         {...measureChipColors}
         extraPadding={false}
         extraRounded={false}

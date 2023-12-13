@@ -3,6 +3,8 @@
   import PivotSidebar from "./PivotSidebar.svelte";
   import PivotHeader from "./PivotHeader.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { usePivotDataStore } from "./pivot-data-store";
+  import type { TableOptions } from "@tanstack/svelte-table";
 
   const stateManagers = getStateManagers();
   const {
@@ -15,6 +17,16 @@
     metricsViewName,
     runtime,
   } = stateManagers;
+
+  $: pivotDataStore = usePivotDataStore(stateManagers);
+
+  let pivotDataCopy: unknown[] = [];
+  let columnCopy: unknown[] = [];
+
+  $: if ($pivotDataStore?.data) {
+    pivotDataCopy = $pivotDataStore.data;
+    columnCopy = $pivotDataStore.columnDef;
+  }
 </script>
 
 <div class="layout">
@@ -24,7 +36,13 @@
       <PivotHeader />
     </header>
     <main>
-      <PivotTable />
+      {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
+        <div class="empty-state">
+          <p>No data available</p>
+        </div>
+      {:else}
+        <PivotTable data={$pivotDataStore.data} columns={columnCopy} />
+      {/if}
     </main>
   </div>
 </div>
@@ -44,7 +62,6 @@
 
   main {
     flex: 1;
-    padding: 1rem;
     overflow-y: auto;
   }
 </style>

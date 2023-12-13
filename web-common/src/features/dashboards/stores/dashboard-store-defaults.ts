@@ -136,6 +136,7 @@ export function getDefaultMetricsExplorerEntity(
       active: false,
       rows: [],
       columns: [],
+      expanded: {},
     },
   };
   // set time range related stuff

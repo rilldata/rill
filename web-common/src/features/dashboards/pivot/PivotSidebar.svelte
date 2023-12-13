@@ -13,15 +13,22 @@
     runtime,
   } = stateManagers;
 
-  $: measures = $visibleMeasures.map((measure) => ({
-    id: measure.name,
-    title: measure.label || measure.name,
-  }));
+  $: columnsInTable = $dashboardStore?.pivot?.columns;
+  $: rowsInTable = $dashboardStore?.pivot?.columns;
 
-  $: dimensions = $visibleDimensions.map((dimension) => ({
-    id: dimension.column || dimension.name,
-    title: dimension.label || dimension.name || dimension.column,
-  }));
+  $: measures = $visibleMeasures
+    .filter((m) => !columnsInTable.includes(m.name as string))
+    .map((measure) => ({
+      id: measure.name,
+      title: measure.label || measure.name,
+    }));
+
+  $: dimensions = $visibleDimensions
+    .filter((d) => !rowsInTable.includes((d.column ?? d.name) as string))
+    .map((dimension) => ({
+      id: dimension.column || dimension.name,
+      title: dimension.label || dimension.name || dimension.column,
+    }));
 </script>
 
 <div class="sidebar">

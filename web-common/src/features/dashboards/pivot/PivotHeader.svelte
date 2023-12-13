@@ -2,47 +2,55 @@
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import DragList from "./DragList.svelte";
+  import { metricsExplorerStore } from "../stores/dashboard-stores";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 
   const stateManagers = getStateManagers();
   const {
     dashboardStore,
     selectors: {
-      activeMeasure: { activeMeasure },
-      dimensions: { comparisonDimension },
+      measures: { measureLabel },
+      dimensions: { getDimensionDisplayName },
     },
     metricsViewName,
     runtime,
   } = stateManagers;
 
-  $: startingMeasure = [
-    {
-      id: $activeMeasure?.name,
-      title: $activeMeasure?.label || $activeMeasure?.name,
-    },
-  ];
+  $: colMeasures = $dashboardStore?.pivot?.columns?.map((col) => ({
+    id: col,
+    title: $measureLabel(col),
+  }));
 
-  $: startingDimension = $comparisonDimension
-    ? [
-        {
-          id: $comparisonDimension.column || $comparisonDimension.name,
-          title:
-            $comparisonDimension.label ||
-            $comparisonDimension.name ||
-            $comparisonDimension.column,
-        },
-      ]
-    : [];
+  $: rowDimensions = $dashboardStore?.pivot?.rows?.map((row) => ({
+    id: row,
+    title: $getDimensionDisplayName(row),
+  }));
 </script>
 
 <div class="header">
   <div class="header-row">
     <Column size="16px" /> Columns
-    <DragList items={startingMeasure} style="horizontal" />
+    <DragList
+      on:update={(e) =>
+        metricsExplorerStore.setPivotColumns(
+          $metricsViewName,
+          e.detail?.map((item) => item.id)
+        )}
+      items={colMeasures}
+      style="horizontal"
+    />
   </div>
   <div class="header-row">
     <Row size="16px" /> Rows
-    <DragList items={startingDimension} style="horizontal" />
+    <DragList
+      on:update={(e) =>
+        metricsExplorerStore.setPivotRows(
+          $metricsViewName,
+          e.detail?.map((item) => item.id)
+        )}
+      items={rowDimensions}
+      style="horizontal"
+    />
   </div>
 </div>
 

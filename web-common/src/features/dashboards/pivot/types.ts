@@ -1,3 +1,12 @@
+import type { ExpandedState } from "@tanstack/svelte-table";
+
+export interface PivotState {
+  active: boolean;
+  rows: string[];
+  columns: string[];
+  expanded: ExpandedState;
+}
+
 export type PivotMeasure = {
   def: string;
   minichart?: boolean;
