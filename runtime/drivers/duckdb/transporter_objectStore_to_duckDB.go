@@ -116,12 +116,9 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		appendToTable = true
 	}
 	// convert to enum
-	for _, col := range srcCfg.CastToENUM {
+	if len(srcCfg.CastToENUM) > 0 {
 		conn, _ := t.to.(*connection)
-		err = conn.convertToEnum(ctx, sinkCfg.Table, col)
-		if err != nil {
-			return err
-		}
+		return conn.convertToEnum(ctx, sinkCfg.Table, srcCfg.CastToENUM)
 	}
 	return nil
 }
@@ -183,12 +180,9 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 		appendToTable = true
 	}
 	// convert to enum
-	for _, col := range srcCfg.CastToENUM {
+	if len(srcCfg.CastToENUM) > 0 {
 		conn, _ := t.to.(*connection)
-		err = conn.convertToEnum(ctx, dbSink.Table, col)
-		if err != nil {
-			return err
-		}
+		return conn.convertToEnum(ctx, dbSink.Table, srcCfg.CastToENUM)
 	}
 	return nil
 }

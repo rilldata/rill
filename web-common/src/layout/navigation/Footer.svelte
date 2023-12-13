@@ -79,7 +79,10 @@
         >
           <InfoCircle size="16px" />
         </a>
-        <div slot="tooltip-content" transition:fly={{ duration: 100, y: 8 }}>
+        <div
+          slot="tooltip-content"
+          transition:fly|global={{ duration: 100, y: 8 }}
+        >
           <TooltipContent>
             <TooltipTitle>
               <svelte:fragment slot="name">Rill Developer</svelte:fragment>

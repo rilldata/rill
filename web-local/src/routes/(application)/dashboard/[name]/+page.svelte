@@ -61,7 +61,7 @@
       // When a mock user doesn't have access to the dashboard, stay on the page to show a message
       if (
         $selectedMockUserStore === null ||
-        $resourceStatusStore.error.response?.status !== 404
+        $resourceStatusStore?.error?.response?.status !== 404
       ) {
         // On all other errors, redirect to the `/edit` page
         goto(`/dashboard/${metricViewName}/edit`);

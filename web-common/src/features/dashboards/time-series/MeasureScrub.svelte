@@ -1,17 +1,17 @@
 <script lang="ts">
+  import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
+  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
+  import type { PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
   import {
     ScrubArea0Color,
     ScrubArea1Color,
     ScrubArea2Color,
     ScrubBoxColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
-  import { createEventDispatcher, getContext } from "svelte";
-  import type { PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
-  import type { Writable } from "svelte/store";
-  import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
-  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import { getBisectedTimeFromCordinates } from "@rilldata/web-common/features/dashboards/time-series/utils";
+  import { createEventDispatcher, getContext } from "svelte";
+  import type { Writable } from "svelte/store";
 
   export let start;
   export let stop;
@@ -211,7 +211,7 @@
 </script>
 
 {#if start && stop}
-  <WithGraphicContexts let:xScale let:yScale>
+  <WithGraphicContexts let:xScale>
     {@const xStart = xScale(Math.min(start, stop))}
     {@const xEnd = xScale(Math.max(start, stop))}
     <g>
@@ -258,7 +258,11 @@
         stroke-width={strokeWidth}
       />
     </g>
-    <g on:mouseup={() => onMouseUp()} opacity={isScrubbing ? "0.4" : "0.2"}>
+    <g
+      role="presentation"
+      opacity={isScrubbing ? "0.4" : "0.2"}
+      on:mouseup={() => onMouseUp()}
+    >
       <rect
         class:rect-shadow={isScrubbing}
         x={Math.min(xStart, xEnd)}

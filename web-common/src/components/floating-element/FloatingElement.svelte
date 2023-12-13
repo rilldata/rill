@@ -141,7 +141,7 @@ display:contents. This is useful when nesting a floating element within a toolti
 
 <Portal>
   <div
-    transition:fade|local={{ duration: 25 }}
+    transition:fade={{ duration: 25 }}
     bind:this={child}
     class="absolute"
     style:z-index="200"

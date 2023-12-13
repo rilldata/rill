@@ -164,6 +164,7 @@ button {
 }
 
 body {
+  background-color: white;
   font-family: "Inter";
   font-size: 12px;
 
@@ -188,8 +189,6 @@ body {
 
   --error-bg: hsl(1, 60%, 90%);
   --error-text: hsl(1, 60%, 30%);
-
-  overscroll-behavior: none;
 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
