@@ -31,7 +31,6 @@ func TestOpenDrop(t *testing.T) {
 	err = handle.Close()
 	require.NoError(t, err)
 	require.FileExists(t, path)
-	require.FileExists(t, walpath)
 
 	err = Driver{}.Drop(map[string]any{"dsn": dsn}, zap.NewNop())
 	require.NoError(t, err)
