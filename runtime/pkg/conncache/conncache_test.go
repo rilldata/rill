@@ -70,6 +70,7 @@ func TestBasic(t *testing.T) {
 		require.Equal(t, int64(1+i+1), opens.Load())
 		r()
 	}
+	time.Sleep(time.Second)
 	require.Equal(t, true, m1.(*mockConn).closeCalled)
 
 	// Close cache
@@ -142,7 +143,8 @@ func TestOpenDuringClose(t *testing.T) {
 
 	// Evict it so it starts closing
 	c.EvictWhere(func(cfg any) bool { return true })
-	// closeCalled is set immediately, but it will take 1s to actually close
+	// closeCalled is set before mockConn.Close hangs, but it will take 1s to actually close
+	time.Sleep(100 * time.Millisecond)
 	require.True(t, m1.(*mockConn).closeCalled)
 
 	// Open again, check it takes ~1s to do so
