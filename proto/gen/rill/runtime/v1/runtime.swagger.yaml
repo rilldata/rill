@@ -1052,9 +1052,9 @@ paths:
                 format: date-time
                 title: Deprecated in favor of time_range
               where:
-                $ref: '#/definitions/v1Condition'
+                $ref: '#/definitions/v1Expression'
               having:
-                $ref: '#/definitions/v1Condition'
+                $ref: '#/definitions/v1Expression'
               limit:
                 type: string
                 format: int64
@@ -1110,14 +1110,14 @@ paths:
               comparisonTimeRange:
                 $ref: '#/definitions/v1TimeRange'
               where:
-                $ref: '#/definitions/v1Condition'
+                $ref: '#/definitions/v1Expression'
               having:
-                $ref: '#/definitions/v1Condition'
+                $ref: '#/definitions/v1Expression'
               aliases:
                 type: array
                 items:
                   type: object
-                  $ref: '#/definitions/v1MetricsViewMeasureAlias'
+                  $ref: '#/definitions/v1MetricsViewComparisonMeasureAlias'
               limit:
                 type: string
                 format: int64
@@ -2347,15 +2347,6 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
-  MetricsViewMeasureAliasMeasureType:
-    type: string
-    enum:
-      - MEASURE_TYPE_UNSPECIFIED
-      - MEASURE_TYPE_BASE_VALUE
-      - MEASURE_TYPE_COMPARISON_VALUE
-      - MEASURE_TYPE_ABS_DELTA
-      - MEASURE_TYPE_REL_DELTA
-    default: MEASURE_TYPE_UNSPECIFIED
   MetricsViewSecurity:
     type: object
     properties:
@@ -2921,9 +2912,9 @@ definitions:
   v1Condition:
     type: object
     properties:
-      operation:
+      op:
         $ref: '#/definitions/v1Operation'
-      operands:
+      exprs:
         type: array
         items:
           type: object
@@ -3084,10 +3075,10 @@ definitions:
   v1Expression:
     type: object
     properties:
-      identifier:
+      ident:
         type: string
-      value: {}
-      condition:
+      val: {}
+      cond:
         $ref: '#/definitions/v1Condition'
   v1FileEvent:
     type: string
@@ -3433,9 +3424,9 @@ definitions:
         format: date-time
         title: Deprecated in favor of time_range
       where:
-        $ref: '#/definitions/v1Condition'
+        $ref: '#/definitions/v1Expression'
       having:
-        $ref: '#/definitions/v1Condition'
+        $ref: '#/definitions/v1Expression'
       limit:
         type: string
         format: int64
@@ -3470,6 +3461,27 @@ definitions:
         type: string
       nullable:
         type: boolean
+  v1MetricsViewComparisonMeasureAlias:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        $ref: '#/definitions/v1MetricsViewComparisonMeasureType'
+      args:
+        type: array
+        items: {}
+      alias:
+        type: string
+  v1MetricsViewComparisonMeasureType:
+    type: string
+    enum:
+      - METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED
+      - METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
+      - METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE
+      - METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA
+      - METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
+    default: METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED
   v1MetricsViewComparisonRequest:
     type: object
     properties:
@@ -3494,14 +3506,14 @@ definitions:
       comparisonTimeRange:
         $ref: '#/definitions/v1TimeRange'
       where:
-        $ref: '#/definitions/v1Condition'
+        $ref: '#/definitions/v1Expression'
       having:
-        $ref: '#/definitions/v1Condition'
+        $ref: '#/definitions/v1Expression'
       aliases:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1MetricsViewMeasureAlias'
+          $ref: '#/definitions/v1MetricsViewComparisonMeasureAlias'
       limit:
         type: string
         format: int64
@@ -3540,16 +3552,7 @@ definitions:
       desc:
         type: boolean
       type:
-        $ref: '#/definitions/v1MetricsViewComparisonSortType'
-  v1MetricsViewComparisonSortType:
-    type: string
-    enum:
-      - METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
-      - METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE
-      - METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE
-      - METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA
-      - METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA
-    default: METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
+        $ref: '#/definitions/v1MetricsViewComparisonMeasureType'
   v1MetricsViewComparisonValue:
     type: object
     properties:
@@ -3572,18 +3575,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/MetricsViewFilterCond'
-  v1MetricsViewMeasureAlias:
-    type: object
-    properties:
-      name:
-        type: string
-      type:
-        $ref: '#/definitions/MetricsViewMeasureAliasMeasureType'
-      args:
-        type: array
-        items: {}
-      alias:
-        type: string
   v1MetricsViewRowsRequest:
     type: object
     properties:
@@ -4016,18 +4007,18 @@ definitions:
     type: string
     enum:
       - OPERATION_UNSPECIFIED
-      - OPERATION_EQUALS
-      - OPERATION_NOT_EQUALS
-      - OPERATION_LESSER
-      - OPERATION_LESSER_OR_EQUALS
-      - OPERATION_GREATER
-      - OPERATION_GREATER_OR_EQUALS
+      - OPERATION_EQ
+      - OPERATION_NEQ
+      - OPERATION_LT
+      - OPERATION_LTE
+      - OPERATION_GT
+      - OPERATION_GTE
       - OPERATION_OR
       - OPERATION_AND
       - OPERATION_IN
-      - OPERATION_NOT_IN
+      - OPERATION_NIN
       - OPERATION_LIKE
-      - OPERATION_NOT_LIKE
+      - OPERATION_NLIKE
     default: OPERATION_UNSPECIFIED
   v1ParseError:
     type: object

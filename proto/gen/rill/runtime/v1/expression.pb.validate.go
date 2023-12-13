@@ -58,7 +58,7 @@ func (m *Expression) validate(all bool) error {
 	var errors []error
 
 	switch v := m.Expression.(type) {
-	case *Expression_Identifier:
+	case *Expression_Ident:
 		if v == nil {
 			err := ExpressionValidationError{
 				field:  "Expression",
@@ -69,8 +69,8 @@ func (m *Expression) validate(all bool) error {
 			}
 			errors = append(errors, err)
 		}
-		// no validation rules for Identifier
-	case *Expression_Value:
+		// no validation rules for Ident
+	case *Expression_Val:
 		if v == nil {
 			err := ExpressionValidationError{
 				field:  "Expression",
@@ -83,11 +83,11 @@ func (m *Expression) validate(all bool) error {
 		}
 
 		if all {
-			switch v := interface{}(m.GetValue()).(type) {
+			switch v := interface{}(m.GetVal()).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, ExpressionValidationError{
-						field:  "Value",
+						field:  "Val",
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -95,23 +95,23 @@ func (m *Expression) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, ExpressionValidationError{
-						field:  "Value",
+						field:  "Val",
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
 				}
 			}
-		} else if v, ok := interface{}(m.GetValue()).(interface{ Validate() error }); ok {
+		} else if v, ok := interface{}(m.GetVal()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return ExpressionValidationError{
-					field:  "Value",
+					field:  "Val",
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
 			}
 		}
 
-	case *Expression_Condition:
+	case *Expression_Cond:
 		if v == nil {
 			err := ExpressionValidationError{
 				field:  "Expression",
@@ -124,11 +124,11 @@ func (m *Expression) validate(all bool) error {
 		}
 
 		if all {
-			switch v := interface{}(m.GetCondition()).(type) {
+			switch v := interface{}(m.GetCond()).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, ExpressionValidationError{
-						field:  "Condition",
+						field:  "Cond",
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -136,16 +136,16 @@ func (m *Expression) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, ExpressionValidationError{
-						field:  "Condition",
+						field:  "Cond",
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
 				}
 			}
-		} else if v, ok := interface{}(m.GetCondition()).(interface{ Validate() error }); ok {
+		} else if v, ok := interface{}(m.GetCond()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return ExpressionValidationError{
-					field:  "Condition",
+					field:  "Cond",
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -255,9 +255,9 @@ func (m *Condition) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Operation
+	// no validation rules for Op
 
-	for idx, item := range m.GetOperands() {
+	for idx, item := range m.GetExprs() {
 		_, _ = idx, item
 
 		if all {
@@ -265,7 +265,7 @@ func (m *Condition) validate(all bool) error {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
 					errors = append(errors, ConditionValidationError{
-						field:  fmt.Sprintf("Operands[%v]", idx),
+						field:  fmt.Sprintf("Exprs[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -273,7 +273,7 @@ func (m *Condition) validate(all bool) error {
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
 					errors = append(errors, ConditionValidationError{
-						field:  fmt.Sprintf("Operands[%v]", idx),
+						field:  fmt.Sprintf("Exprs[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -282,7 +282,7 @@ func (m *Condition) validate(all bool) error {
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return ConditionValidationError{
-					field:  fmt.Sprintf("Operands[%v]", idx),
+					field:  fmt.Sprintf("Exprs[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}

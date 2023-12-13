@@ -19,8 +19,8 @@ type MetricsViewAggregation struct {
 	Measures           []*runtimev1.MetricsViewAggregationMeasure   `json:"measures,omitempty"`
 	Sort               []*runtimev1.MetricsViewAggregationSort      `json:"sort,omitempty"`
 	TimeRange          *runtimev1.TimeRange                         `json:"time_range,omitempty"`
-	Where              *runtimev1.Condition                         `json:"where,omitempty"`
-	Having             *runtimev1.Condition                         `json:"having,omitempty"`
+	Where              *runtimev1.Expression                        `json:"where,omitempty"`
+	Having             *runtimev1.Expression                        `json:"having,omitempty"`
 	Priority           int32                                        `json:"priority,omitempty"`
 	Limit              *int64                                       `json:"limit,omitempty"`
 	Offset             int64                                        `json:"offset,omitempty"`
@@ -176,7 +176,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		args = append(args, exprArgs...)
 	}
 
-	measureAliases := map[string]string{}
+	measureAliases := map[string]identifier{}
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
@@ -199,7 +199,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
-		measureAliases[m.Name] = safeName(m.Name)
+		measureAliases[m.Name] = newIdentifier(m.Name)
 	}
 
 	groupClause := ""
@@ -232,7 +232,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	if q.Having != nil {
 		var havingClauseArgs []any
 		var err error
-		havingClause, havingClauseArgs, err = buildFromConditionExpression(q.Having, measureAliases)
+		havingClause, havingClauseArgs, err = buildFromExpression(q.Having, measureAliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}

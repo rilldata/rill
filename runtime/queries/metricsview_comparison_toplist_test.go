@@ -53,7 +53,7 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "dom",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
 				Desc: false,
 			},
 		},
@@ -95,7 +95,7 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "dom",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 				Desc: false,
 			},
 		},
@@ -153,7 +153,7 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "dom",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
 				Desc: true,
 			},
 		},
@@ -205,7 +205,7 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "measure_1",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
 				Desc: true,
 			},
 		},
@@ -253,22 +253,26 @@ func TestMetricsViewsComparison_measure_filters(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "dom",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
 				Desc: true,
 			},
 		},
 		Limit: 250,
-		Having: &runtimev1.Condition{
-			Operation: runtimev1.Operation_OPERATION_GREATER,
-			Operands: []*runtimev1.Expression{
-				{
-					Expression: &runtimev1.Expression_Identifier{
-						Identifier: "measure_1",
-					},
-				},
-				{
-					Expression: &runtimev1.Expression_Value{
-						Value: structpb.NewNumberValue(3.25),
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_GT,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "measure_1",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(3.25),
+							},
+						},
 					},
 				},
 			},
@@ -322,22 +326,26 @@ func TestMetricsViewsComparison_measure_filters_with_compare(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "dom",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
 				Desc: true,
 			},
 		},
 		Limit: 250,
-		Having: &runtimev1.Condition{
-			Operation: runtimev1.Operation_OPERATION_GREATER,
-			Operands: []*runtimev1.Expression{
-				{
-					Expression: &runtimev1.Expression_Identifier{
-						Identifier: "measure_1",
-					},
-				},
-				{
-					Expression: &runtimev1.Expression_Value{
-						Value: structpb.NewNumberValue(3.25),
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_GT,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "measure_1",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(3.25),
+							},
+						},
 					},
 				},
 			},
@@ -388,7 +396,7 @@ func TestMetricsViewsCompariso_export_xlsx(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "domain",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
 				Desc: false,
 			},
 		},
@@ -446,7 +454,7 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "domain",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
 				Desc: false,
 			},
 		},

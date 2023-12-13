@@ -25,8 +25,8 @@ type MetricsViewComparison struct {
 	Limit               int64                                      `json:"limit,omitempty"`
 	Offset              int64                                      `json:"offset,omitempty"`
 	Sort                []*runtimev1.MetricsViewComparisonSort     `json:"sort,omitempty"`
-	Where               *runtimev1.Condition                       `json:"where,omitempty"`
-	Having              *runtimev1.Condition                       `json:"having,omitempty"`
+	Where               *runtimev1.Expression                      `json:"where,omitempty"`
+	Having              *runtimev1.Expression                      `json:"having,omitempty"`
 	MetricsView         *runtimev1.MetricsViewSpec                 `json:"-"`
 	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity       `json:"security"`
 	Exact               bool                                       `json:"exact"`
@@ -255,7 +255,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	}
 	labelCols = []string{fmt.Sprintf("%s as %s", safeName(dim.Name), dimLabel)}
 
-	measureAliases := map[string]string{}
+	measureAliases := map[string]identifier{}
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
@@ -281,7 +281,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
-		measureAliases[m.Name] = safeName(m.Name)
+		measureAliases[m.Name] = newIdentifier(m.Name)
 	}
 
 	selectClause := strings.Join(selectCols, ", ")
@@ -309,7 +309,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	havingClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildFromConditionExpression(q.Having, measureAliases)
+		havingClause, havingClauseArgs, err = buildFromExpression(q.Having, measureAliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -412,7 +412,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		selectCols = append(selectCols, colName)
 	}
 
-	measureAliases := map[string]string{}
+	measureAliases := map[string]identifier{}
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
@@ -435,7 +435,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
-		measureAliases[m.Name] = safeName(m.Name)
+		measureAliases[m.Name] = newIdentifier(m.Name)
 	}
 
 	finalSelectCols := []string{}
@@ -462,10 +462,10 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				safeName(labelMap[m.Name]+" (Δ%)"),
 				safeName(labelMap[m.Name]),
 			)
-			measureAliases[m.Name] = fmt.Sprintf("sum(base.%s)", safeName(m.Name))
-			measureAliases[m.Name+"__previous"] = fmt.Sprintf("sum(base.%s)", safeName(m.Name+"__previous"))
-			measureAliases[m.Name+"__delta_abs"] = fmt.Sprintf("sum(base.%s)", safeName(m.Name+"__delta_abs"))
-			measureAliases[m.Name+"__delta_rel"] = fmt.Sprintf("sum(base.%s)", safeName(m.Name+"__delta_rel"))
+			measureAliases[m.Name] = identifier{fmt.Sprintf("sum(base.%s)", safeName(m.Name)), false}
+			measureAliases[m.Name+"__previous"] = identifier{fmt.Sprintf("sum(base.%s)", safeName(m.Name+"__previous")), false}
+			measureAliases[m.Name+"__delta_abs"] = identifier{fmt.Sprintf("sum(base.%s)", safeName(m.Name+"__delta_abs")), false}
+			measureAliases[m.Name+"__delta_rel"] = identifier{fmt.Sprintf("sum(base.%s)", safeName(m.Name+"__delta_rel")), false}
 		} else {
 			columnsTuple = fmt.Sprintf(
 				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE)))",
@@ -539,7 +539,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	havingClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildFromConditionExpression(q.Having, measureAliases)
+		havingClause, havingClauseArgs, err = buildFromExpression(q.Having, measureAliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -577,13 +577,13 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		subQueryOrderClause += ", "
 		var pos int
 		switch s.Type {
-		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
 			pos = 2 + i*4
-		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
 			pos = 3 + i*4
-		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA:
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
 			pos = 4 + i*4
-		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA:
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
 			pos = 5 + i*4
 		default:
 			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.Name)
@@ -615,21 +615,21 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	joinType := "FULL"
 	if !q.Exact {
-		deltaComparison := q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA ||
-			q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA
+		deltaComparison := q.Sort[0].Type == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA ||
+			q.Sort[0].Type == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
 
 		approximationLimit := q.Limit
 		if q.Limit != 0 && q.Limit < 100 && deltaComparison {
 			approximationLimit = 100
 		}
 
-		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE || deltaComparison {
+		if q.Sort[0].Type == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE || deltaComparison {
 			joinType = "LEFT OUTER"
 			baseLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
 			if approximationLimit > 0 {
 				baseLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
 			}
-		} else if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
+		} else if q.Sort[0].Type == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE {
 			joinType = "RIGHT OUTER"
 			comparisonLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
 			if approximationLimit > 0 {
@@ -747,7 +747,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		leftWhereClause := baseWhereClause
 		rightWhereClause := comparisonWhereClause
 
-		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
+		if q.Sort[0].Type == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE {
 			leftSubQueryAlias = "comparison"
 			rightSubQueryAlias = "base"
 			leftWhereClause = comparisonWhereClause

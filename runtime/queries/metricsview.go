@@ -292,92 +292,182 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev
 	return fmt.Sprintf("AND (%s) ", condsClause), args, nil
 }
 
-func buildFromExpression(filter *runtimev1.Expression, allowedIdentifiers map[string]string) (string, []any, error) {
+type identifier struct {
+	mapped string
+	unnest bool
+}
+
+func newIdentifier(name string) identifier {
+	return identifier{safeName(name), false}
+}
+
+func buildFromExpression(expr *runtimev1.Expression, allowedIdentifiers map[string]identifier, dialect drivers.Dialect) (string, []any, error) {
 	var emptyArg []any
-	switch e := filter.Expression.(type) {
-	case *runtimev1.Expression_Value:
-		arg, err := pbutil.FromValue(e.Value)
+	switch e := expr.Expression.(type) {
+	case *runtimev1.Expression_Val:
+		arg, err := pbutil.FromValue(e.Val)
 		if err != nil {
 			return "", emptyArg, err
 		}
 		return "?", []any{arg}, nil
 
-	case *runtimev1.Expression_Identifier:
-		col, ok := allowedIdentifiers[e.Identifier]
+	case *runtimev1.Expression_Ident:
+		col, ok := allowedIdentifiers[e.Ident]
 		if !ok {
-			return "", emptyArg, fmt.Errorf("unknown column filter. %s", e.Identifier)
+			return "", emptyArg, fmt.Errorf("unknown column filter. %s", e.Ident)
 		}
-		return col, emptyArg, nil
+		return col.mapped, emptyArg, nil
 
-	case *runtimev1.Expression_Condition:
-		return buildFromConditionExpression(e.Condition, allowedIdentifiers)
+	case *runtimev1.Expression_Cond:
+		return buildFromConditionExpression(e.Cond, allowedIdentifiers, dialect)
 	}
 
 	return "", emptyArg, nil
 }
 
-func buildFromConditionExpression(ce *runtimev1.Condition, allowedIdentifiers map[string]string) (string, []any, error) {
-	args := make([]any, 0)
-	if len(ce.Operands) < 2 {
-		return "", args, fmt.Errorf("at least 2 operands should be spcified")
-	}
-	leftExpr, subArgs, err := buildFromExpression(ce.Operands[0], allowedIdentifiers)
-	if err != nil {
-		return "", args, err
-	}
-	args = append(args, subArgs...)
-	expr1, subArgs, err := buildFromExpression(ce.Operands[1], allowedIdentifiers)
-	if err != nil {
-		return "", args, err
-	}
-	args = append(args, subArgs...)
+func buildFromConditionExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]identifier, dialect drivers.Dialect) (string, []any, error) {
+	switch cond.Op {
+	case runtimev1.Operation_OPERATION_LIKE, runtimev1.Operation_OPERATION_NLIKE:
+		return buildFromLikeExpression(cond, allowedIdentifiers, dialect)
 
-	oprn := conditionExpressionOperation(ce.Operation)
-
-	switch ce.Operation {
-	case runtimev1.Operation_OPERATION_IN, runtimev1.Operation_OPERATION_NOT_IN:
-		ins := []string{expr1}
-		for i := 2; i < len(ce.Operands); i++ {
-			expr, subArgs, err := buildFromExpression(ce.Operands[i], allowedIdentifiers)
-			if err != nil {
-				return "", args, err
-			}
-			ins = append(ins, expr)
-			args = append(args, subArgs...)
-		}
-		return fmt.Sprintf("(%s) %s (%s)", leftExpr, oprn, strings.Join(ins, ",")), args, nil
+	case runtimev1.Operation_OPERATION_IN, runtimev1.Operation_OPERATION_NIN:
+		return buildFromInExpression(cond, allowedIdentifiers, dialect)
 
 	default:
-		return fmt.Sprintf("(%s) %s (%s)", leftExpr, oprn, expr1), args, nil
+		leftExpr, args, err := buildFromExpression(cond.Exprs[0], allowedIdentifiers, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+
+		rightExpr, subArgs, err := buildFromExpression(cond.Exprs[1], allowedIdentifiers, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		args = append(args, subArgs...)
+
+		return fmt.Sprintf("%s %s %s", leftExpr, conditionExpressionOperation(cond.Op), rightExpr), args, nil
 	}
+}
+
+func buildFromLikeExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]identifier, dialect drivers.Dialect) (string, []any, error) {
+	if len(cond.Exprs) != 2 {
+		return "", nil, fmt.Errorf("like/not like expression should have exactly 2 sub expressions")
+	}
+
+	leftExpr, args, err := buildFromExpression(cond.Exprs[0], allowedIdentifiers, dialect)
+	if err != nil {
+		return "", nil, err
+	}
+
+	rightExpr, subArgs, err := buildFromExpression(cond.Exprs[1], allowedIdentifiers, dialect)
+	if err != nil {
+		return "", nil, err
+	}
+	args = append(args, subArgs...)
+
+	notKeyword := ""
+	if cond.Op == runtimev1.Operation_OPERATION_NLIKE {
+		notKeyword = "NOT"
+	}
+
+	// identify if immediate identifier has unnest
+	// TODO: do we need to do a deeper check?
+	unnest := false
+	ident, isIndent := cond.Exprs[0].Expression.(*runtimev1.Expression_Ident)
+	if isIndent {
+		i := allowedIdentifiers[ident.Ident]
+		unnest = i.unnest
+	}
+
+	var clause string
+	// Build [NOT] len(list_filter("dim", x -> x ILIKE ?)) > 0
+	if unnest && dialect != drivers.DialectDruid {
+		clause = fmt.Sprintf("%s len(list_filter(%s, x -> x %s ILIKE %s)) > 0", notKeyword, leftExpr, notKeyword, rightExpr)
+	} else {
+		if dialect == drivers.DialectDruid {
+			// Druid does not support ILIKE
+			clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(%s)", leftExpr, notKeyword, rightExpr)
+		} else {
+			clause = fmt.Sprintf("%s %s ILIKE %s", leftExpr, notKeyword, rightExpr)
+		}
+	}
+
+	// TODO: is `col is null` needed?
+
+	return clause, args, nil
+}
+
+func buildFromInExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]identifier, dialect drivers.Dialect) (string, []any, error) {
+	if len(cond.Exprs) <= 1 {
+		return "", nil, fmt.Errorf("in/not in expression should have atleast 2 sub expressions")
+	}
+
+	leftExpr, args, err := buildFromExpression(cond.Exprs[0], allowedIdentifiers, dialect)
+	if err != nil {
+		return "", nil, err
+	}
+
+	notKeyword := ""
+	exclude := cond.Op == runtimev1.Operation_OPERATION_NIN
+	if exclude {
+		notKeyword = "NOT"
+	}
+
+	inHasNull := false
+	clauses := make([]string, 0)
+
+	// Add to args, skipping nulls
+	for _, subExpr := range cond.Exprs[1:] {
+		// TODO: is a deeper check needed?
+		if v, isVal := subExpr.Expression.(*runtimev1.Expression_Val); isVal {
+			if _, isNull := v.Val.Kind.(*structpb.Value_NullValue); isNull {
+				inHasNull = true
+				continue // Handled later using "dim IS [NOT] NULL" clause
+			}
+		}
+		inVal, subArgs, err := buildFromExpression(subExpr, allowedIdentifiers, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		args = append(args, subArgs...)
+		clauses = append(clauses, inVal)
+	}
+
+	if inHasNull {
+		// Add null check
+		// NOTE: DuckDB doesn't handle NULL values in an "IN" expression. They must be checked with a "dim IS [NOT] NULL" clause.
+		clauses = append(clauses, fmt.Sprintf("%s IS %s NULL", leftExpr, notKeyword))
+	}
+	var condsClause string
+	if exclude {
+		condsClause = strings.Join(clauses, " AND ")
+	} else {
+		condsClause = strings.Join(clauses, " OR ")
+	}
+	if exclude && len(clauses) > 0 {
+		// When you have "dim NOT IN (a, b, ...)", then NULL values are always excluded, even if NULL is not in the list.
+		// E.g. this returns zero rows: "select * from (select 1 as a union select null as a) where a not in (1)"
+		// We need to explicitly include it.
+		condsClause += fmt.Sprintf(" OR %s IS NULL", leftExpr)
+	}
+
+	return condsClause, args, nil
 }
 
 func conditionExpressionOperation(oprn runtimev1.Operation) string {
 	switch oprn {
-	case runtimev1.Operation_OPERATION_EQUALS:
+	case runtimev1.Operation_OPERATION_EQ:
 		return "="
-	case runtimev1.Operation_OPERATION_NOT_EQUALS:
+	case runtimev1.Operation_OPERATION_NEQ:
 		return "!="
-	case runtimev1.Operation_OPERATION_LESSER:
+	case runtimev1.Operation_OPERATION_LT:
 		return "<"
-	case runtimev1.Operation_OPERATION_LESSER_OR_EQUALS:
+	case runtimev1.Operation_OPERATION_LTE:
 		return "<="
-	case runtimev1.Operation_OPERATION_GREATER:
+	case runtimev1.Operation_OPERATION_GT:
 		return ">"
-	case runtimev1.Operation_OPERATION_GREATER_OR_EQUALS:
+	case runtimev1.Operation_OPERATION_GTE:
 		return ">="
-	case runtimev1.Operation_OPERATION_OR:
-		return "OR"
-	case runtimev1.Operation_OPERATION_AND:
-		return "AND"
-	case runtimev1.Operation_OPERATION_IN:
-		return "IN"
-	case runtimev1.Operation_OPERATION_NOT_IN:
-		return "NOT IN"
-	case runtimev1.Operation_OPERATION_LIKE:
-		return "LIKE"
-	case runtimev1.Operation_OPERATION_NOT_LIKE:
-		return "NOT LIKE"
 	}
 	return "=" // TODO: handle unknown operation type
 }

@@ -5640,22 +5640,23 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewTimeSeriesResponseValidationError{}
 
-// Validate checks the field values on MetricsViewMeasureAlias with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *MetricsViewMeasureAlias) Validate() error {
+// Validate checks the field values on MetricsViewComparisonMeasureAlias with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *MetricsViewComparisonMeasureAlias) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsViewMeasureAlias with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// MetricsViewMeasureAliasMultiError, or nil if none found.
-func (m *MetricsViewMeasureAlias) ValidateAll() error {
+// ValidateAll checks the field values on MetricsViewComparisonMeasureAlias
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// MetricsViewComparisonMeasureAliasMultiError, or nil if none found.
+func (m *MetricsViewComparisonMeasureAlias) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsViewMeasureAlias) validate(all bool) error {
+func (m *MetricsViewComparisonMeasureAlias) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -5673,7 +5674,7 @@ func (m *MetricsViewMeasureAlias) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewMeasureAliasValidationError{
+					errors = append(errors, MetricsViewComparisonMeasureAliasValidationError{
 						field:  fmt.Sprintf("Args[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -5681,7 +5682,7 @@ func (m *MetricsViewMeasureAlias) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewMeasureAliasValidationError{
+					errors = append(errors, MetricsViewComparisonMeasureAliasValidationError{
 						field:  fmt.Sprintf("Args[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -5690,7 +5691,7 @@ func (m *MetricsViewMeasureAlias) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return MetricsViewMeasureAliasValidationError{
+				return MetricsViewComparisonMeasureAliasValidationError{
 					field:  fmt.Sprintf("Args[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -5703,19 +5704,20 @@ func (m *MetricsViewMeasureAlias) validate(all bool) error {
 	// no validation rules for Alias
 
 	if len(errors) > 0 {
-		return MetricsViewMeasureAliasMultiError(errors)
+		return MetricsViewComparisonMeasureAliasMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsViewMeasureAliasMultiError is an error wrapping multiple validation
-// errors returned by MetricsViewMeasureAlias.ValidateAll() if the designated
+// MetricsViewComparisonMeasureAliasMultiError is an error wrapping multiple
+// validation errors returned by
+// MetricsViewComparisonMeasureAlias.ValidateAll() if the designated
 // constraints aren't met.
-type MetricsViewMeasureAliasMultiError []error
+type MetricsViewComparisonMeasureAliasMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewMeasureAliasMultiError) Error() string {
+func (m MetricsViewComparisonMeasureAliasMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -5724,11 +5726,12 @@ func (m MetricsViewMeasureAliasMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsViewMeasureAliasMultiError) AllErrors() []error { return m }
+func (m MetricsViewComparisonMeasureAliasMultiError) AllErrors() []error { return m }
 
-// MetricsViewMeasureAliasValidationError is the validation error returned by
-// MetricsViewMeasureAlias.Validate if the designated constraints aren't met.
-type MetricsViewMeasureAliasValidationError struct {
+// MetricsViewComparisonMeasureAliasValidationError is the validation error
+// returned by MetricsViewComparisonMeasureAlias.Validate if the designated
+// constraints aren't met.
+type MetricsViewComparisonMeasureAliasValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -5736,24 +5739,24 @@ type MetricsViewMeasureAliasValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsViewMeasureAliasValidationError) Field() string { return e.field }
+func (e MetricsViewComparisonMeasureAliasValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsViewMeasureAliasValidationError) Reason() string { return e.reason }
+func (e MetricsViewComparisonMeasureAliasValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsViewMeasureAliasValidationError) Cause() error { return e.cause }
+func (e MetricsViewComparisonMeasureAliasValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsViewMeasureAliasValidationError) Key() bool { return e.key }
+func (e MetricsViewComparisonMeasureAliasValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsViewMeasureAliasValidationError) ErrorName() string {
-	return "MetricsViewMeasureAliasValidationError"
+func (e MetricsViewComparisonMeasureAliasValidationError) ErrorName() string {
+	return "MetricsViewComparisonMeasureAliasValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsViewMeasureAliasValidationError) Error() string {
+func (e MetricsViewComparisonMeasureAliasValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -5765,14 +5768,14 @@ func (e MetricsViewMeasureAliasValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsViewMeasureAlias.%s: %s%s",
+		"invalid %sMetricsViewComparisonMeasureAlias.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsViewMeasureAliasValidationError{}
+var _ error = MetricsViewComparisonMeasureAliasValidationError{}
 
 var _ interface {
 	Field() string
@@ -5780,7 +5783,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsViewMeasureAliasValidationError{}
+} = MetricsViewComparisonMeasureAliasValidationError{}
 
 // Validate checks the field values on MetricsViewTotalsRequest with the rules
 // defined in the proto definition for this message. If any rules are

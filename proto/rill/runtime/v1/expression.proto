@@ -5,29 +5,29 @@ import "google/protobuf/struct.proto";
 
 message Expression {
   oneof expression {
-    string identifier = 1;
-    google.protobuf.Value value = 2;
-    Condition condition = 3;
+    string ident = 1;
+    google.protobuf.Value val = 2;
+    Condition cond = 3;
   }
 }
 
 message Condition {
-  Operation operation = 1;
-  repeated Expression operands = 2;
+  Operation op = 1;
+  repeated Expression exprs = 2;
 }
 
 enum Operation {
   OPERATION_UNSPECIFIED = 0;
-  OPERATION_EQUALS = 1;
-  OPERATION_NOT_EQUALS = 2;
-  OPERATION_LESSER = 3;
-  OPERATION_LESSER_OR_EQUALS = 4;
-  OPERATION_GREATER = 5;
-  OPERATION_GREATER_OR_EQUALS = 6;
+  OPERATION_EQ = 1;
+  OPERATION_NEQ = 2;
+  OPERATION_LT = 3;
+  OPERATION_LTE = 4;
+  OPERATION_GT = 5;
+  OPERATION_GTE = 6;
   OPERATION_OR = 7;
   OPERATION_AND = 8;
   OPERATION_IN = 9;
-  OPERATION_NOT_IN = 10;
+  OPERATION_NIN = 10;
   OPERATION_LIKE = 11;
-  OPERATION_NOT_LIKE = 12;
+  OPERATION_NLIKE = 12;
 }

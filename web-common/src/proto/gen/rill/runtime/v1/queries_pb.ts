@@ -7,7 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
-import { Condition } from "./expression_pb.js";
+import { Expression } from "./expression_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
 
 /**
@@ -37,41 +37,41 @@ proto3.util.setEnumType(BuiltinMeasure, "rill.runtime.v1.BuiltinMeasure", [
 ]);
 
 /**
- * @generated from enum rill.runtime.v1.MetricsViewComparisonSortType
+ * @generated from enum rill.runtime.v1.MetricsViewComparisonMeasureType
  */
-export enum MetricsViewComparisonSortType {
+export enum MetricsViewComparisonMeasureType {
   /**
-   * @generated from enum value: METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED = 0;
+   * @generated from enum value: METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE = 1;
+   * @generated from enum value: METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE = 1;
    */
   BASE_VALUE = 1,
 
   /**
-   * @generated from enum value: METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE = 2;
+   * @generated from enum value: METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE = 2;
    */
   COMPARISON_VALUE = 2,
 
   /**
-   * @generated from enum value: METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA = 3;
+   * @generated from enum value: METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA = 3;
    */
   ABS_DELTA = 3,
 
   /**
-   * @generated from enum value: METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA = 4;
+   * @generated from enum value: METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA = 4;
    */
   REL_DELTA = 4,
 }
-// Retrieve enum metadata with: proto3.getEnumType(MetricsViewComparisonSortType)
-proto3.util.setEnumType(MetricsViewComparisonSortType, "rill.runtime.v1.MetricsViewComparisonSortType", [
-  { no: 0, name: "METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED" },
-  { no: 1, name: "METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE" },
-  { no: 2, name: "METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE" },
-  { no: 3, name: "METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA" },
-  { no: 4, name: "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA" },
+// Retrieve enum metadata with: proto3.getEnumType(MetricsViewComparisonMeasureType)
+proto3.util.setEnumType(MetricsViewComparisonMeasureType, "rill.runtime.v1.MetricsViewComparisonMeasureType", [
+  { no: 0, name: "METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED" },
+  { no: 1, name: "METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE" },
+  { no: 2, name: "METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE" },
+  { no: 3, name: "METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA" },
+  { no: 4, name: "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA" },
 ]);
 
 /**
@@ -787,14 +787,14 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   timeEnd?: Timestamp;
 
   /**
-   * @generated from field: rill.runtime.v1.Condition where = 8;
+   * @generated from field: rill.runtime.v1.Expression where = 8;
    */
-  where?: Condition;
+  where?: Expression;
 
   /**
-   * @generated from field: rill.runtime.v1.Condition having = 13;
+   * @generated from field: rill.runtime.v1.Expression having = 13;
    */
-  having?: Condition;
+  having?: Expression;
 
   /**
    * @generated from field: int64 limit = 9;
@@ -827,8 +827,8 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 12, name: "time_range", kind: "message", T: TimeRange },
     { no: 6, name: "time_start", kind: "message", T: Timestamp },
     { no: 7, name: "time_end", kind: "message", T: Timestamp },
-    { no: 8, name: "where", kind: "message", T: Condition },
-    { no: 13, name: "having", kind: "message", T: Condition },
+    { no: 8, name: "where", kind: "message", T: Expression },
+    { no: 13, name: "having", kind: "message", T: Expression },
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -1223,19 +1223,19 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   comparisonTimeRange?: TimeRange;
 
   /**
-   * @generated from field: rill.runtime.v1.Condition where = 8;
+   * @generated from field: rill.runtime.v1.Expression where = 8;
    */
-  where?: Condition;
+  where?: Expression;
 
   /**
-   * @generated from field: rill.runtime.v1.Condition having = 14;
+   * @generated from field: rill.runtime.v1.Expression having = 14;
    */
-  having?: Condition;
+  having?: Expression;
 
   /**
-   * @generated from field: repeated rill.runtime.v1.MetricsViewMeasureAlias aliases = 15;
+   * @generated from field: repeated rill.runtime.v1.MetricsViewComparisonMeasureAlias aliases = 15;
    */
-  aliases: MetricsViewMeasureAlias[] = [];
+  aliases: MetricsViewComparisonMeasureAlias[] = [];
 
   /**
    * @generated from field: int64 limit = 9;
@@ -1272,9 +1272,9 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
     { no: 5, name: "sort", kind: "message", T: MetricsViewComparisonSort, repeated: true },
     { no: 6, name: "time_range", kind: "message", T: TimeRange },
     { no: 7, name: "comparison_time_range", kind: "message", T: TimeRange },
-    { no: 8, name: "where", kind: "message", T: Condition },
-    { no: 14, name: "having", kind: "message", T: Condition },
-    { no: 15, name: "aliases", kind: "message", T: MetricsViewMeasureAlias, repeated: true },
+    { no: 8, name: "where", kind: "message", T: Expression },
+    { no: 14, name: "having", kind: "message", T: Expression },
+    { no: 15, name: "aliases", kind: "message", T: MetricsViewComparisonMeasureAlias, repeated: true },
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
@@ -1419,9 +1419,9 @@ export class MetricsViewComparisonSort extends Message<MetricsViewComparisonSort
   desc = false;
 
   /**
-   * @generated from field: rill.runtime.v1.MetricsViewComparisonSortType type = 3;
+   * @generated from field: rill.runtime.v1.MetricsViewComparisonMeasureType type = 3;
    */
-  type = MetricsViewComparisonSortType.UNSPECIFIED;
+  type = MetricsViewComparisonMeasureType.UNSPECIFIED;
 
   constructor(data?: PartialMessage<MetricsViewComparisonSort>) {
     super();
@@ -1433,7 +1433,7 @@ export class MetricsViewComparisonSort extends Message<MetricsViewComparisonSort
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "desc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewComparisonSortType) },
+    { no: 3, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewComparisonMeasureType) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonSort {
@@ -1692,18 +1692,18 @@ export class MetricsViewTimeSeriesResponse extends Message<MetricsViewTimeSeries
 }
 
 /**
- * @generated from message rill.runtime.v1.MetricsViewMeasureAlias
+ * @generated from message rill.runtime.v1.MetricsViewComparisonMeasureAlias
  */
-export class MetricsViewMeasureAlias extends Message<MetricsViewMeasureAlias> {
+export class MetricsViewComparisonMeasureAlias extends Message<MetricsViewComparisonMeasureAlias> {
   /**
    * @generated from field: string name = 1;
    */
   name = "";
 
   /**
-   * @generated from field: rill.runtime.v1.MetricsViewMeasureAlias.MeasureType type = 2;
+   * @generated from field: rill.runtime.v1.MetricsViewComparisonMeasureType type = 2;
    */
-  type = MetricsViewMeasureAlias_MeasureType.UNSPECIFIED;
+  type = MetricsViewComparisonMeasureType.UNSPECIFIED;
 
   /**
    * @generated from field: repeated google.protobuf.Value args = 3;
@@ -1715,74 +1715,36 @@ export class MetricsViewMeasureAlias extends Message<MetricsViewMeasureAlias> {
    */
   alias = "";
 
-  constructor(data?: PartialMessage<MetricsViewMeasureAlias>) {
+  constructor(data?: PartialMessage<MetricsViewComparisonMeasureAlias>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewMeasureAlias";
+  static readonly typeName = "rill.runtime.v1.MetricsViewComparisonMeasureAlias";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewMeasureAlias_MeasureType) },
+    { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewComparisonMeasureType) },
     { no: 3, name: "args", kind: "message", T: Value, repeated: true },
     { no: 4, name: "alias", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewMeasureAlias {
-    return new MetricsViewMeasureAlias().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonMeasureAlias {
+    return new MetricsViewComparisonMeasureAlias().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewMeasureAlias {
-    return new MetricsViewMeasureAlias().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewComparisonMeasureAlias {
+    return new MetricsViewComparisonMeasureAlias().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewMeasureAlias {
-    return new MetricsViewMeasureAlias().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewComparisonMeasureAlias {
+    return new MetricsViewComparisonMeasureAlias().fromJsonString(jsonString, options);
   }
 
-  static equals(a: MetricsViewMeasureAlias | PlainMessage<MetricsViewMeasureAlias> | undefined, b: MetricsViewMeasureAlias | PlainMessage<MetricsViewMeasureAlias> | undefined): boolean {
-    return proto3.util.equals(MetricsViewMeasureAlias, a, b);
+  static equals(a: MetricsViewComparisonMeasureAlias | PlainMessage<MetricsViewComparisonMeasureAlias> | undefined, b: MetricsViewComparisonMeasureAlias | PlainMessage<MetricsViewComparisonMeasureAlias> | undefined): boolean {
+    return proto3.util.equals(MetricsViewComparisonMeasureAlias, a, b);
   }
 }
-
-/**
- * @generated from enum rill.runtime.v1.MetricsViewMeasureAlias.MeasureType
- */
-export enum MetricsViewMeasureAlias_MeasureType {
-  /**
-   * @generated from enum value: MEASURE_TYPE_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: MEASURE_TYPE_BASE_VALUE = 1;
-   */
-  BASE_VALUE = 1,
-
-  /**
-   * @generated from enum value: MEASURE_TYPE_COMPARISON_VALUE = 2;
-   */
-  COMPARISON_VALUE = 2,
-
-  /**
-   * @generated from enum value: MEASURE_TYPE_ABS_DELTA = 3;
-   */
-  ABS_DELTA = 3,
-
-  /**
-   * @generated from enum value: MEASURE_TYPE_REL_DELTA = 4;
-   */
-  REL_DELTA = 4,
-}
-// Retrieve enum metadata with: proto3.getEnumType(MetricsViewMeasureAlias_MeasureType)
-proto3.util.setEnumType(MetricsViewMeasureAlias_MeasureType, "rill.runtime.v1.MetricsViewMeasureAlias.MeasureType", [
-  { no: 0, name: "MEASURE_TYPE_UNSPECIFIED" },
-  { no: 1, name: "MEASURE_TYPE_BASE_VALUE" },
-  { no: 2, name: "MEASURE_TYPE_COMPARISON_VALUE" },
-  { no: 3, name: "MEASURE_TYPE_ABS_DELTA" },
-  { no: 4, name: "MEASURE_TYPE_REL_DELTA" },
-]);
 
 /**
  * @generated from message rill.runtime.v1.MetricsViewTotalsRequest

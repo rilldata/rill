@@ -51,7 +51,7 @@ func BenchmarkMetricsViewsComparison_compare(b *testing.B) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "measure_1",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
 				Desc: true,
 			},
 		},
@@ -99,7 +99,7 @@ func BenchmarkMetricsViewsComparison_nocompare_all(b *testing.B) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "measure_1",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
 				Desc: true,
 			},
 		},
@@ -145,7 +145,7 @@ func BenchmarkMetricsViewsComparison_compare_spending(b *testing.B) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "total_agencies",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
 				Desc: true,
 			},
 		},
@@ -193,7 +193,7 @@ func BenchmarkMetricsViewsComparison_nocompare_all_spending(b *testing.B) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "total_agencies",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
 				Desc: true,
 			},
 		},
@@ -247,7 +247,7 @@ func BenchmarkMetricsViewsComparison_delta_compare(b *testing.B) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "measure_1",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
 				Desc: true,
 			},
 		},
@@ -295,7 +295,7 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all(b *testing.B) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "measure_1",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
 				Desc: true,
 			},
 		},
@@ -340,7 +340,7 @@ func BenchmarkMetricsViewsComparison_delta_compare_spending(b *testing.B) {
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "total_agencies",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
 				Desc: true,
 			},
 		},
@@ -388,7 +388,7 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all_spending(b *testing.B) 
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "total_agencies",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
 				Desc: true,
 			},
 		},
@@ -433,7 +433,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending(b *
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "total_agencies",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
 				Desc: true,
 			},
 		},
@@ -478,7 +478,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "total_agencies",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
 				Desc: true,
 			},
 		},
@@ -526,7 +526,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_nocompare_all_spendi
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "total_agencies",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
 				Desc: true,
 			},
 		},
@@ -571,7 +571,7 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending(b *testin
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "total_agencies",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
 				Desc: true,
 			},
 		},
@@ -616,7 +616,7 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending_approxima
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "total_agencies",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
 				Desc: true,
 			},
 		},
@@ -661,7 +661,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "total_agencies",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
 				Desc: true,
 			},
 		},
@@ -705,7 +705,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "total_agencies",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
 				Desc: true,
 			},
 		},
@@ -753,7 +753,7 @@ func BenchmarkMetricsViewsComparison_high_cardinality_nocompare_all_spending(b *
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
 				Name: "total_agencies",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
+				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
 				Desc: true,
 			},
 		},

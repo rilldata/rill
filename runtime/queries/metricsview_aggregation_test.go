@@ -56,17 +56,21 @@ func TestMetricsViewAggregation_measure_filters(t *testing.T) {
 			},
 		},
 		Limit: &lmt,
-		Having: &runtimev1.Condition{
-			Operation: runtimev1.Operation_OPERATION_GREATER,
-			Operands: []*runtimev1.Expression{
-				{
-					Expression: &runtimev1.Expression_Identifier{
-						Identifier: "measure_1",
-					},
-				},
-				{
-					Expression: &runtimev1.Expression_Value{
-						Value: structpb.NewNumberValue(3.25),
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_GT,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "measure_1",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(3.25),
+							},
+						},
 					},
 				},
 			},

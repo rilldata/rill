@@ -16,34 +16,34 @@ export enum Operation {
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: OPERATION_EQUALS = 1;
+   * @generated from enum value: OPERATION_EQ = 1;
    */
-  EQUALS = 1,
+  EQ = 1,
 
   /**
-   * @generated from enum value: OPERATION_NOT_EQUALS = 2;
+   * @generated from enum value: OPERATION_NEQ = 2;
    */
-  NOT_EQUALS = 2,
+  NEQ = 2,
 
   /**
-   * @generated from enum value: OPERATION_LESSER = 3;
+   * @generated from enum value: OPERATION_LT = 3;
    */
-  LESSER = 3,
+  LT = 3,
 
   /**
-   * @generated from enum value: OPERATION_LESSER_OR_EQUALS = 4;
+   * @generated from enum value: OPERATION_LTE = 4;
    */
-  LESSER_OR_EQUALS = 4,
+  LTE = 4,
 
   /**
-   * @generated from enum value: OPERATION_GREATER = 5;
+   * @generated from enum value: OPERATION_GT = 5;
    */
-  GREATER = 5,
+  GT = 5,
 
   /**
-   * @generated from enum value: OPERATION_GREATER_OR_EQUALS = 6;
+   * @generated from enum value: OPERATION_GTE = 6;
    */
-  GREATER_OR_EQUALS = 6,
+  GTE = 6,
 
   /**
    * @generated from enum value: OPERATION_OR = 7;
@@ -61,9 +61,9 @@ export enum Operation {
   IN = 9,
 
   /**
-   * @generated from enum value: OPERATION_NOT_IN = 10;
+   * @generated from enum value: OPERATION_NIN = 10;
    */
-  NOT_IN = 10,
+  NIN = 10,
 
   /**
    * @generated from enum value: OPERATION_LIKE = 11;
@@ -71,25 +71,25 @@ export enum Operation {
   LIKE = 11,
 
   /**
-   * @generated from enum value: OPERATION_NOT_LIKE = 12;
+   * @generated from enum value: OPERATION_NLIKE = 12;
    */
-  NOT_LIKE = 12,
+  NLIKE = 12,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Operation)
 proto3.util.setEnumType(Operation, "rill.runtime.v1.Operation", [
   { no: 0, name: "OPERATION_UNSPECIFIED" },
-  { no: 1, name: "OPERATION_EQUALS" },
-  { no: 2, name: "OPERATION_NOT_EQUALS" },
-  { no: 3, name: "OPERATION_LESSER" },
-  { no: 4, name: "OPERATION_LESSER_OR_EQUALS" },
-  { no: 5, name: "OPERATION_GREATER" },
-  { no: 6, name: "OPERATION_GREATER_OR_EQUALS" },
+  { no: 1, name: "OPERATION_EQ" },
+  { no: 2, name: "OPERATION_NEQ" },
+  { no: 3, name: "OPERATION_LT" },
+  { no: 4, name: "OPERATION_LTE" },
+  { no: 5, name: "OPERATION_GT" },
+  { no: 6, name: "OPERATION_GTE" },
   { no: 7, name: "OPERATION_OR" },
   { no: 8, name: "OPERATION_AND" },
   { no: 9, name: "OPERATION_IN" },
-  { no: 10, name: "OPERATION_NOT_IN" },
+  { no: 10, name: "OPERATION_NIN" },
   { no: 11, name: "OPERATION_LIKE" },
-  { no: 12, name: "OPERATION_NOT_LIKE" },
+  { no: 12, name: "OPERATION_NLIKE" },
 ]);
 
 /**
@@ -101,22 +101,22 @@ export class Expression extends Message<Expression> {
    */
   expression: {
     /**
-     * @generated from field: string identifier = 1;
+     * @generated from field: string ident = 1;
      */
     value: string;
-    case: "identifier";
+    case: "ident";
   } | {
     /**
-     * @generated from field: google.protobuf.Value value = 2;
+     * @generated from field: google.protobuf.Value val = 2;
      */
     value: Value;
-    case: "value";
+    case: "val";
   } | {
     /**
-     * @generated from field: rill.runtime.v1.Condition condition = 3;
+     * @generated from field: rill.runtime.v1.Condition cond = 3;
      */
     value: Condition;
-    case: "condition";
+    case: "cond";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   constructor(data?: PartialMessage<Expression>) {
@@ -127,9 +127,9 @@ export class Expression extends Message<Expression> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.Expression";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "identifier", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "expression" },
-    { no: 2, name: "value", kind: "message", T: Value, oneof: "expression" },
-    { no: 3, name: "condition", kind: "message", T: Condition, oneof: "expression" },
+    { no: 1, name: "ident", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "expression" },
+    { no: 2, name: "val", kind: "message", T: Value, oneof: "expression" },
+    { no: 3, name: "cond", kind: "message", T: Condition, oneof: "expression" },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Expression {
@@ -154,14 +154,14 @@ export class Expression extends Message<Expression> {
  */
 export class Condition extends Message<Condition> {
   /**
-   * @generated from field: rill.runtime.v1.Operation operation = 1;
+   * @generated from field: rill.runtime.v1.Operation op = 1;
    */
-  operation = Operation.UNSPECIFIED;
+  op = Operation.UNSPECIFIED;
 
   /**
-   * @generated from field: repeated rill.runtime.v1.Expression operands = 2;
+   * @generated from field: repeated rill.runtime.v1.Expression exprs = 2;
    */
-  operands: Expression[] = [];
+  exprs: Expression[] = [];
 
   constructor(data?: PartialMessage<Condition>) {
     super();
@@ -171,8 +171,8 @@ export class Condition extends Message<Condition> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.Condition";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "operation", kind: "enum", T: proto3.getEnumType(Operation) },
-    { no: 2, name: "operands", kind: "message", T: Expression, repeated: true },
+    { no: 1, name: "op", kind: "enum", T: proto3.getEnumType(Operation) },
+    { no: 2, name: "exprs", kind: "message", T: Expression, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Condition {
