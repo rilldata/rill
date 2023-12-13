@@ -91,14 +91,15 @@ It is probably not the most up to date code; but it works very well in practice.
 
   $: if (direction === "left") {
     let flip = !!flipAtEdge;
-    fcn = (c) =>
-      flip &&
-      locations[0].xRange - c <=
-        (flipAtEdge === "body"
-          ? plotLeft
-          : flipAtEdge === "graphic"
-          ? 0
-          : false);
+    fcn = (c) => {
+      const rhs_comparator =
+        flipAtEdge === "body" ? plotLeft : flipAtEdge === "graphic" ? 0 : false;
+      return (
+        flip &&
+        typeof rhs_comparator === "number" &&
+        locations[0].xRange - c <= rhs_comparator
+      );
+    };
   } else {
     let flip = !!flipAtEdge;
     fcn = (c) =>
