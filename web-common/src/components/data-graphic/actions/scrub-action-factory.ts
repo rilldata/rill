@@ -89,6 +89,12 @@ function clamp(v: number, min: number, max: number) {
   return v;
 }
 
+/**
+ *
+ * NOTE: types for these scrub action are added to the
+ * `interface SVGAttributes` in the svelteHTML namespace in
+ * `web-common/app.d.ts`
+ */
 export function createScrubAction({
   plotLeft,
   plotRight,
