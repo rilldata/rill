@@ -251,12 +251,20 @@
 
   :global(.litepicker .container__tooltip) {
     z-index: 1000;
-    @apply bg-gray-700;
-    @apply text-gray-50;
+
+    /* expansion of: @apply bg-gray-700; */
+    --tw-bg-opacity: 1;
+    background-color: rgb(55 65 81 / var(--tw-bg-opacity));
+
+    /* expansion of: @apply text-gray-50 */
+    --tw-text-opacity: 1;
+    color: rgb(249 250 251 / var(--tw-text-opacity));
   }
 
   :global(.litepicker .container__tooltip:after) {
-    @apply border-t-gray-700;
+    /* expansion of: @apply border-t-gray-700; */
+    --tw-border-opacity: 1;
+    border-top-color: rgb(55 65 81 / var(--tw-border-opacity));
   }
 
   :global(.litepicker .button-previous-month svg) {
