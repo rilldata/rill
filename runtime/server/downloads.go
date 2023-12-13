@@ -233,7 +233,6 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			TimeStart:          r.TimeStart,
 			TimeEnd:            r.TimeEnd,
 			Where:              r.Where,
-			Having:             r.Having,
 			Sort:               r.Sort,
 			Limit:              limitPtr,
 			TimeZone:           r.TimeZone,

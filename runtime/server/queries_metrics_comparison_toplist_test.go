@@ -618,9 +618,9 @@ func TestServer_MetricsViewComparison_sort_by_base_filter(t *testing.T) {
 				Desc: true,
 			},
 		},
-		Where: filterNotInClause(
-			filterColumn("domain"),
-			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("yahoo.com"))},
+		Where: testruntime.FilterNotInClause(
+			testruntime.FilterColumn("domain"),
+			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("yahoo.com"))},
 		),
 		Exact: true,
 	})
@@ -1071,9 +1071,9 @@ func TestServer_MetricsViewComparison_no_comparison_complete_source_sanity_test(
 				Desc: false,
 			},
 		},
-		Where: filterNotInClause(
-			filterColumn("pub"),
-			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("Yahoo"))},
+		Where: testruntime.FilterNotInClause(
+			testruntime.FilterColumn("pub"),
+			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("Yahoo"))},
 		),
 		Exact: true,
 	})

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -333,9 +334,9 @@ func TestServer_MetricsViewToplist_complete_source_sanity_test(t *testing.T) {
 				Ascending: true,
 			},
 		},
-		Where: filterNotInClause(
-			filterColumn("pub"),
-			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("Yahoo"))},
+		Where: testruntime.FilterNotInClause(
+			testruntime.FilterColumn("pub"),
+			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("Yahoo"))},
 		),
 	})
 	require.NoError(t, err)
@@ -358,9 +359,9 @@ func TestServer_MetricsViewToplist_DimensionsByName(t *testing.T) {
 				Ascending: true,
 			},
 		},
-		Where: filterNotInClause(
-			filterColumn("pub"),
-			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("Yahoo"))},
+		Where: testruntime.FilterNotInClause(
+			testruntime.FilterColumn("pub"),
+			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("Yahoo"))},
 		),
 	})
 	require.NoError(t, err)

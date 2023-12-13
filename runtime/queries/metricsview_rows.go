@@ -20,7 +20,6 @@ type MetricsViewRows struct {
 	TimeEnd            *timestamppb.Timestamp               `json:"time_end,omitempty"`
 	TimeGranularity    runtimev1.TimeGrain                  `json:"time_granularity,omitempty"`
 	Where              *runtimev1.Expression                `json:"where,omitempty"`
-	Having             *runtimev1.Expression                `json:"having,omitempty"`
 	Sort               []*runtimev1.MetricsViewSort         `json:"sort,omitempty"`
 	Limit              *int64                               `json:"limit,omitempty"`
 	Offset             int64                                `json:"offset,omitempty"`

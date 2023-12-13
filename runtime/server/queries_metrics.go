@@ -388,7 +388,6 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		TimeEnd:            req.TimeEnd,
 		TimeGranularity:    req.TimeGranularity,
 		Where:              req.Where,
-		Having:             req.Having,
 		Sort:               req.Sort,
 		Limit:              &limit,
 		Offset:             req.Offset,

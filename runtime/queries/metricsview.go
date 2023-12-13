@@ -849,7 +849,7 @@ func duckDBCopyExport(ctx context.Context, w io.Writer, opts *runtime.ExportOpti
 
 func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsViewSpec) string {
 	filename := strings.ReplaceAll(mv.Table, `"`, `_`)
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Where != nil || q.Having != nil {
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Where != nil {
 		filename += "_filtered"
 	}
 	return filename

@@ -100,6 +100,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("error building query: %w", err)
 	}
 
+	fmt.Println(sql, args)
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            sql,
 		Args:             args,
@@ -264,10 +265,12 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 		return "", "", nil, err
 	}
 
+	measureAliases := map[string]identifier{}
 	selectCols := []string{}
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
 		selectCols = append(selectCols, expr)
+		measureAliases[m.Name] = newIdentifier(m.Name)
 	}
 
 	whereClause := "1=1"
@@ -290,6 +293,16 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 		args = append(args, clauseArgs...)
 	}
 
+	havingClause := ""
+	if q.Having != nil {
+		clause, clauseArgs, err := buildFromExpression(q.Having, measureAliases, olap.Dialect())
+		if err != nil {
+			return "", "", nil, err
+		}
+		havingClause = " HAVING " + clause
+		args = append(args, clauseArgs...)
+	}
+
 	tsAlias := tempName("_ts_")
 	timezone := "UTC"
 	if q.TimeZone != "" {
@@ -299,10 +312,10 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 	var sql string
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		sql = q.buildDuckDBSQL(mv, tsAlias, selectCols, whereClause, timezone)
+		sql = q.buildDuckDBSQL(mv, tsAlias, selectCols, whereClause, havingClause, timezone)
 	case drivers.DialectDruid:
 		args = append([]any{timezone}, args...)
-		sql = q.buildDruidSQL(args, mv, tsAlias, selectCols, whereClause)
+		sql = q.buildDruidSQL(args, mv, tsAlias, selectCols, havingClause, whereClause)
 	default:
 		return "", "", nil, fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
@@ -310,7 +323,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 	return sql, tsAlias, args, nil
 }
 
-func (q *MetricsViewTimeSeries) buildDruidSQL(args []any, mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause string) string {
+func (q *MetricsViewTimeSeries) buildDruidSQL(args []any, mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, havingClause string) string {
 	tsSpecifier := convertToDruidTimeFloorSpecifier(q.TimeGranularity)
 
 	timeClause := fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR))", safeName(mv.TimeDimension), tsSpecifier)
@@ -323,18 +336,19 @@ func (q *MetricsViewTimeSeries) buildDruidSQL(args []any, mv *runtimev1.MetricsV
 	}
 
 	sql := fmt.Sprintf(
-		`SELECT %s AS %s, %s FROM %s WHERE %s GROUP BY 1 ORDER BY 1`,
+		`SELECT %s AS %s, %s FROM %s WHERE %s GROUP BY 1 %s ORDER BY 1`,
 		timeClause,
 		tsAlias,
 		strings.Join(selectCols, ", "),
 		safeName(mv.Table),
 		whereClause,
+		havingClause,
 	)
 
 	return sql
 }
 
-func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, timezone string) string {
+func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, tsAlias string, selectCols []string, whereClause, havingClause, timezone string) string {
 	dateTruncSpecifier := convertToDateTruncSpecifier(q.TimeGranularity)
 
 	shift := "" // shift to accommodate FirstDayOfWeek or FirstMonthOfYear
@@ -358,7 +372,9 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 						%[4]s
 					FROM %[5]s
 					WHERE %[6]s
-					GROUP BY 1 ORDER BY 1`,
+					GROUP BY 1
+					%[8]s
+					ORDER BY 1`,
 				dateTruncSpecifier,             // 1
 				safeName(mv.TimeDimension),     // 2
 				tsAlias,                        // 3
@@ -366,6 +382,7 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 				safeName(mv.Table),             // 5
 				whereClause,                    // 6
 				timezone,                       // 7
+				havingClause,                   // 8
 			)
 		} else { // date_trunc is faster than time_bucket for year, month, week
 			sql = fmt.Sprintf(
@@ -375,7 +392,9 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 					%[4]s
 					FROM %[5]s
 					WHERE %[6]s
-					GROUP BY 1 ORDER BY 1`,
+					GROUP BY 1
+					%[8]s
+					ORDER BY 1`,
 				dateTruncSpecifier,             // 1
 				safeName(mv.TimeDimension),     // 2
 				tsAlias,                        // 3
@@ -383,6 +402,7 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 				safeName(mv.Table),             // 5
 				whereClause,                    // 6
 				timezone,                       // 7
+				havingClause,                   // 8
 			)
 		}
 	} else {
@@ -393,7 +413,9 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 				%[4]s
 				FROM %[5]s
 				WHERE %[6]s
-				GROUP BY 1 ORDER BY 1`,
+				GROUP BY 1
+				%[9]s
+				ORDER BY 1`,
 			dateTruncSpecifier,             // 1
 			safeName(mv.TimeDimension),     // 2
 			tsAlias,                        // 3
@@ -402,6 +424,7 @@ func (q *MetricsViewTimeSeries) buildDuckDBSQL(mv *runtimev1.MetricsViewSpec, ts
 			whereClause,                    // 6
 			timezone,                       // 7
 			shift,                          // 8
+			havingClause,                   // 9
 		)
 	}
 

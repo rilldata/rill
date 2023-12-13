@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -30,9 +31,9 @@ func TestServer_MetricsViewTotals_row_null_exclude(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterNotInClause(
-			filterColumn("device"),
-			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("iphone"))},
+		Where: testruntime.FilterNotInClause(
+			testruntime.FilterColumn("device"),
+			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("iphone"))},
 		),
 	})
 	require.NoError(t, err)
@@ -48,9 +49,9 @@ func TestServer_MetricsViewTotals_row_null_exclude_null(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterNotInClause(
-			filterColumn("device"),
-			[]*runtimev1.Expression{filterValue(structpb.NewNullValue())},
+		Where: testruntime.FilterNotInClause(
+			testruntime.FilterColumn("device"),
+			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewNullValue())},
 		),
 	})
 	require.NoError(t, err)
@@ -66,9 +67,9 @@ func TestServer_MetricsViewTotals_row_null_exclude_all(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterNotInClause(
-			filterColumn("device"),
-			[]*runtimev1.Expression{filterValue(structpb.NewNullValue()), filterValue(structpb.NewStringValue("iphone"))},
+		Where: testruntime.FilterNotInClause(
+			testruntime.FilterColumn("device"),
+			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewNullValue()), testruntime.FilterValue(structpb.NewStringValue("iphone"))},
 		),
 	})
 	require.NoError(t, err)
@@ -84,9 +85,9 @@ func TestServer_MetricsViewTotals_row_null_include(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterInClause(
-			filterColumn("device"),
-			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("iphone"))},
+		Where: testruntime.FilterInClause(
+			testruntime.FilterColumn("device"),
+			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("iphone"))},
 		),
 	})
 	require.NoError(t, err)
@@ -102,9 +103,9 @@ func TestServer_MetricsViewTotals_row_null_include_null(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterInClause(
-			filterColumn("device"),
-			[]*runtimev1.Expression{filterValue(structpb.NewNullValue())},
+		Where: testruntime.FilterInClause(
+			testruntime.FilterColumn("device"),
+			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewNullValue())},
 		),
 	})
 	require.NoError(t, err)
@@ -120,9 +121,9 @@ func TestServer_MetricsViewTotals_row_null_include_all(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterInClause(
-			filterColumn("device"),
-			[]*runtimev1.Expression{filterValue(structpb.NewNullValue()), filterValue(structpb.NewStringValue("iphone"))},
+		Where: testruntime.FilterInClause(
+			testruntime.FilterColumn("device"),
+			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewNullValue()), testruntime.FilterValue(structpb.NewStringValue("iphone"))},
 		),
 	})
 	require.NoError(t, err)
@@ -138,9 +139,9 @@ func TestServer_MetricsViewTotals_row_null_exclude_like(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterNotLikeClause(
-			filterColumn("device"),
-			filterValue(structpb.NewStringValue("iphone")),
+		Where: testruntime.FilterNotLikeClause(
+			testruntime.FilterColumn("device"),
+			testruntime.FilterValue(structpb.NewStringValue("iphone")),
 		),
 	})
 	require.NoError(t, err)
@@ -156,14 +157,14 @@ func TestServer_MetricsViewTotals_row_null_exclude_like_and_null(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterAndClause([]*runtimev1.Expression{
-			filterNotInClause(
-				filterColumn("device"),
-				[]*runtimev1.Expression{filterValue(structpb.NewNullValue())},
+		Where: testruntime.FilterAndClause([]*runtimev1.Expression{
+			testruntime.FilterNotInClause(
+				testruntime.FilterColumn("device"),
+				[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewNullValue())},
 			),
-			filterNotLikeClause(
-				filterColumn("device"),
-				filterValue(structpb.NewStringValue("iphone")),
+			testruntime.FilterNotLikeClause(
+				testruntime.FilterColumn("device"),
+				testruntime.FilterValue(structpb.NewStringValue("iphone")),
 			),
 		}),
 	})
@@ -180,9 +181,9 @@ func TestServer_MetricsViewTotals_row_null_exclude_like_doesntexist(t *testing.T
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterNotInClause(
-			filterColumn("device"),
-			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("doesntexist"))},
+		Where: testruntime.FilterNotInClause(
+			testruntime.FilterColumn("device"),
+			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("doesntexist"))},
 		),
 	})
 	require.NoError(t, err)
@@ -288,9 +289,9 @@ func TestServer_MetricsViewTotals_1dim(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterInClause(
-			filterColumn("domain"),
-			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("msn.com"))},
+		Where: testruntime.FilterInClause(
+			testruntime.FilterColumn("domain"),
+			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("msn.com"))},
 		),
 	})
 	require.NoError(t, err)
@@ -306,12 +307,12 @@ func TestServer_MetricsViewTotals_1dim_special_symbol_values(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterInClause(
-			filterColumn("domain"),
+		Where: testruntime.FilterInClause(
+			testruntime.FilterColumn("domain"),
 			[]*runtimev1.Expression{
-				filterValue(structpb.NewStringValue("msn.'com")),
-				filterValue(structpb.NewStringValue("msn.\"com")),
-				filterValue(structpb.NewStringValue("msn. com")),
+				testruntime.FilterValue(structpb.NewStringValue("msn.'com")),
+				testruntime.FilterValue(structpb.NewStringValue("msn.\"com")),
+				testruntime.FilterValue(structpb.NewStringValue("msn. com")),
 			},
 		),
 	})
@@ -328,9 +329,9 @@ func TestServer_MetricsViewTotals_1dim_2In(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterInClause(
-			filterColumn("domain"),
-			[]*runtimev1.Expression{filterValue(structpb.NewStringValue("msn.com")), filterValue(structpb.NewStringValue("yahoo.com"))},
+		Where: testruntime.FilterInClause(
+			testruntime.FilterColumn("domain"),
+			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("msn.com")), testruntime.FilterValue(structpb.NewStringValue("yahoo.com"))},
 		),
 	})
 	require.NoError(t, err)
@@ -346,14 +347,14 @@ func TestServer_MetricsViewTotals_2dim(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterAndClause([]*runtimev1.Expression{
-			filterNotInClause(
-				filterColumn("domain"),
-				[]*runtimev1.Expression{filterValue(structpb.NewStringValue("yahoo.com"))},
+		Where: testruntime.FilterAndClause([]*runtimev1.Expression{
+			testruntime.FilterNotInClause(
+				testruntime.FilterColumn("domain"),
+				[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("yahoo.com"))},
 			),
-			filterNotLikeClause(
-				filterColumn("publisher"),
-				filterValue(structpb.NewStringValue("Yahoo")),
+			testruntime.FilterNotLikeClause(
+				testruntime.FilterColumn("publisher"),
+				testruntime.FilterValue(structpb.NewStringValue("Yahoo")),
 			),
 		}),
 	})
@@ -370,9 +371,9 @@ func TestServer_MetricsViewTotals_1dim_like(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterLikeClause(
-			filterColumn("domain"),
-			filterValue(structpb.NewStringValue("%com")),
+		Where: testruntime.FilterLikeClause(
+			testruntime.FilterColumn("domain"),
+			testruntime.FilterValue(structpb.NewStringValue("%com")),
 		),
 	})
 	require.NoError(t, err)
@@ -388,9 +389,9 @@ func TestServer_MetricsViewTotals_1dim_in_and_like(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterOrClause([]*runtimev1.Expression{
-			filterInClause(filterColumn("domain"), []*runtimev1.Expression{filterValue(structpb.NewStringValue("yahoo"))}),
-			filterLikeClause(filterColumn("domain"), filterValue(structpb.NewStringValue("%com"))),
+		Where: testruntime.FilterOrClause([]*runtimev1.Expression{
+			testruntime.FilterInClause(testruntime.FilterColumn("domain"), []*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("yahoo"))}),
+			testruntime.FilterLikeClause(testruntime.FilterColumn("domain"), testruntime.FilterValue(structpb.NewStringValue("%com"))),
 		}),
 	})
 	require.NoError(t, err)
@@ -406,9 +407,9 @@ func TestServer_MetricsViewTotals_1dim_2like(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterOrClause([]*runtimev1.Expression{
-			filterLikeClause(filterColumn("domain"), filterValue(structpb.NewStringValue("msn%"))),
-			filterLikeClause(filterColumn("domain"), filterValue(structpb.NewStringValue("%com"))),
+		Where: testruntime.FilterOrClause([]*runtimev1.Expression{
+			testruntime.FilterLikeClause(testruntime.FilterColumn("domain"), testruntime.FilterValue(structpb.NewStringValue("msn%"))),
+			testruntime.FilterLikeClause(testruntime.FilterColumn("domain"), testruntime.FilterValue(structpb.NewStringValue("%com"))),
 		}),
 	})
 	require.NoError(t, err)
@@ -424,9 +425,9 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterAndClause([]*runtimev1.Expression{
-			filterLikeClause(filterColumn("domain"), filterValue(structpb.NewStringValue("%com"))),
-			filterNotInClause(filterColumn("domain"), []*runtimev1.Expression{filterValue(structpb.NewStringValue("yahoo.com"))}),
+		Where: testruntime.FilterAndClause([]*runtimev1.Expression{
+			testruntime.FilterLikeClause(testruntime.FilterColumn("domain"), testruntime.FilterValue(structpb.NewStringValue("%com"))),
+			testruntime.FilterNotInClause(testruntime.FilterColumn("domain"), []*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("yahoo.com"))}),
 		}),
 	})
 	require.NoError(t, err)
@@ -442,8 +443,8 @@ func TestServer_MetricsViewTotals_1dim_null(t *testing.T) {
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterAndClause([]*runtimev1.Expression{
-			filterInClause(filterColumn("publisher"), []*runtimev1.Expression{filterValue(structpb.NewNullValue())}),
+		Where: testruntime.FilterAndClause([]*runtimev1.Expression{
+			testruntime.FilterInClause(testruntime.FilterColumn("publisher"), []*runtimev1.Expression{testruntime.FilterValue(structpb.NewNullValue())}),
 		}),
 	})
 	require.NoError(t, err)
@@ -459,11 +460,11 @@ func TestServer_MetricsViewTotals_1dim_include_and_exclude_in_and_like(t *testin
 		InstanceId:      instanceId,
 		MetricsViewName: "ad_bids_metrics",
 		MeasureNames:    []string{"measure_0"},
-		Where: filterAndClause([]*runtimev1.Expression{
-			filterInClause(filterColumn("domain"), []*runtimev1.Expression{filterValue(structpb.NewStringValue("msn.com"))}),
-			filterLikeClause(filterColumn("domain"), filterValue(structpb.NewStringValue("%yahoo%"))),
-			filterNotInClause(filterColumn("publisher"), []*runtimev1.Expression{filterValue(structpb.NewNullValue())}),
-			filterNotLikeClause(filterColumn("publisher"), filterValue(structpb.NewStringValue("Y%"))),
+		Where: testruntime.FilterAndClause([]*runtimev1.Expression{
+			testruntime.FilterInClause(testruntime.FilterColumn("domain"), []*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("msn.com"))}),
+			testruntime.FilterLikeClause(testruntime.FilterColumn("domain"), testruntime.FilterValue(structpb.NewStringValue("%yahoo%"))),
+			testruntime.FilterNotInClause(testruntime.FilterColumn("publisher"), []*runtimev1.Expression{testruntime.FilterValue(structpb.NewNullValue())}),
+			testruntime.FilterNotLikeClause(testruntime.FilterColumn("publisher"), testruntime.FilterValue(structpb.NewStringValue("Y%"))),
 		}),
 	})
 	require.NoError(t, err)

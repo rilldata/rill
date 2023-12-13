@@ -429,7 +429,6 @@ message MetricsViewTotalsRequest {
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
   Expression where = 7;
-  Expression having = 10;
   int32 priority = 8;
 }
 
@@ -445,7 +444,6 @@ message MetricsViewRowsRequest {
   google.protobuf.Timestamp time_end = 4;
   TimeGrain time_granularity = 10;
   Expression where = 5;
-  Expression having = 12;
   repeated MetricsViewSort sort = 6;
   int32 limit = 7 [(validate.rules).int32.gte = 0];
   int64 offset = 8 [(validate.rules).int64.gte = 0];

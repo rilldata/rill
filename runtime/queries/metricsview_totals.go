@@ -109,12 +109,10 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsViewSpec,
 		return "", nil, err
 	}
 
-	measureAliases := map[string]identifier{}
 	selectCols := []string{}
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
 		selectCols = append(selectCols, expr)
-		measureAliases[m.Name] = newIdentifier(m.Name)
 	}
 
 	whereClause := "1=1"
@@ -139,22 +137,11 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsViewSpec,
 		args = append(args, clauseArgs...)
 	}
 
-	havingClause := ""
-	if q.Having != nil {
-		clause, clauseArgs, err := buildFromExpression(q.Having, dimensionAliases(mv), dialect)
-		if err != nil {
-			return "", nil, err
-		}
-		havingClause += "HAVING " + clause
-		args = append(args, clauseArgs...)
-	}
-
 	sql := fmt.Sprintf(
-		"SELECT %s FROM %q WHERE %s %s",
+		"SELECT %s FROM %q WHERE %s",
 		strings.Join(selectCols, ", "),
 		mv.Table,
 		whereClause,
-		havingClause,
 	)
 	fmt.Println(sql, args)
 	return sql, args, nil
