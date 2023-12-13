@@ -289,4 +289,5 @@ replace github.com/snowflakedb/gosnowflake v1.7.0 => github.com/esevastyanov/gos
 
 exclude modernc.org/sqlite v1.18.1
 
+// revert to original SDK once this PR is merged and released : https://github.com/XSAM/otelsql/pull/199
 replace github.com/XSAM/otelsql v0.26.0 => github.com/rilldata/otelsql v0.0.0-20231213102114-31132d178f10
