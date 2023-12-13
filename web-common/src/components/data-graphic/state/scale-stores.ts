@@ -17,7 +17,7 @@ export function initializeMaxMinStores({
   domainMax = undefined,
   domainMinTweenProps = { duration: 0 },
   domainMaxTweenProps = { duration: 0 },
-}) {
+}:{namespace: string, domainMin?: number | Date, domainMax?: number | Date, domainMinTweenProps?: { duration: number }, domainMaxTweenProps?: { duration: number }}) {
   // initialize
   const minStore = createExtremumResolutionStore(domainMin, {
     direction: "min",
