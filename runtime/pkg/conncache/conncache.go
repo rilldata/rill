@@ -58,12 +58,12 @@ type Options struct {
 type cacheImpl struct {
 	opts         Options
 	closed       bool
-	singleflight *singleflight.Group[string, *entry]
-	ctx          context.Context
-	cancel       context.CancelFunc
 	mu           sync.Mutex
 	entries      map[string]*entry
 	lru          *simplelru.LRU
+	singleflight *singleflight.Group[string, any]
+	ctx          context.Context
+	cancel       context.CancelFunc
 }
 
 type entry struct {
@@ -88,10 +88,11 @@ const (
 func New(opts Options) Cache {
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &cacheImpl{
-		opts:    opts,
-		ctx:     ctx,
-		cancel:  cancel,
-		entries: make(map[string]*entry),
+		opts:         opts,
+		entries:      make(map[string]*entry),
+		singleflight: &singleflight.Group[string, any]{},
+		ctx:          ctx,
+		cancel:       cancel,
 	}
 
 	var err error
@@ -133,7 +134,7 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 	c.mu.Unlock()
 
 	for attempt := 0; attempt < 2; attempt++ {
-		_, err := c.singleflight.Do(ctx, k, func(_ context.Context) (*entry, error) {
+		_, err := c.singleflight.Do(ctx, k, func(_ context.Context) (any, error) {
 			c.mu.Lock()
 			c.retainEntry(k, e)
 			e.status = entryStatusOpening
@@ -142,9 +143,15 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 			e.err = nil
 			c.mu.Unlock()
 
-			ctx, cancel := context.WithTimeout(c.ctx, c.opts.OpenTimeout)
-			handle, err := c.opts.OpenFunc(ctx, cfg)
-			cancel()
+			var handle Connection
+			var err error
+			if c.opts.OpenTimeout == 0 {
+				handle, err = c.opts.OpenFunc(ctx, cfg)
+			} else {
+				ctx, cancel := context.WithTimeout(c.ctx, c.opts.OpenTimeout)
+				handle, err = c.opts.OpenFunc(ctx, cfg)
+				cancel()
+			}
 
 			c.mu.Lock()
 			c.releaseEntry(k, e)
@@ -154,7 +161,7 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 			e.err = err
 			c.mu.Unlock()
 
-			return e, nil
+			return nil, nil
 		})
 		if err != nil {
 			// TODO: if err is not ctx.Err(), it's a panic. Should we handle panics?
@@ -221,7 +228,7 @@ func (c *cacheImpl) Close(ctx context.Context) error {
 		}
 
 		// TODO: What if this blocks before the close? Probably better to wait for a close channel on the entry.
-		_, _ = c.singleflight.Do(context.Background(), anyK, func(_ context.Context) (*entry, error) {
+		_, _ = c.singleflight.Do(context.Background(), anyK, func(_ context.Context) (any, error) {
 			return nil, nil
 		})
 	}
@@ -239,7 +246,7 @@ func (c *cacheImpl) beginClose(k string, e *entry) {
 
 	go func() {
 		for attempt := 0; attempt < 2; attempt++ {
-			_, _ = c.singleflight.Do(context.Background(), k, func(_ context.Context) (*entry, error) {
+			_, _ = c.singleflight.Do(context.Background(), k, func(_ context.Context) (any, error) {
 				c.mu.Lock()
 				e.status = entryStatusClosing
 				e.since = time.Now()
@@ -254,7 +261,7 @@ func (c *cacheImpl) beginClose(k string, e *entry) {
 				e.err = err
 				c.mu.Unlock()
 
-				return e, nil
+				return nil, nil
 			})
 			// TODO: can return err on panic in Close. Should we handle panics?
 
@@ -310,8 +317,10 @@ func (c *cacheImpl) releaseFunc(key string, e *entry) ReleaseFunc {
 	}
 }
 
+var checkHangingInterval = time.Minute
+
 func (c *cacheImpl) periodicallyCheckHangingConnections() {
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(checkHangingInterval)
 	defer ticker.Stop()
 
 	for {
@@ -319,10 +328,10 @@ func (c *cacheImpl) periodicallyCheckHangingConnections() {
 		case <-ticker.C:
 			c.mu.Lock()
 			for _, e := range c.entries {
-				if e.status == entryStatusOpening && time.Since(e.since) >= c.opts.OpenTimeout {
+				if c.opts.OpenTimeout != 0 && e.status == entryStatusOpening && time.Since(e.since) >= c.opts.OpenTimeout {
 					c.opts.HangingFunc(e.cfg, true)
 				}
-				if e.status == entryStatusClosing && time.Since(e.since) >= c.opts.CloseTimeout {
+				if c.opts.CloseTimeout != 0 && e.status == entryStatusClosing && time.Since(e.since) >= c.opts.CloseTimeout {
 					c.opts.HangingFunc(e.cfg, false)
 				}
 			}
