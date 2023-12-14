@@ -97,7 +97,7 @@
   <div slot="details">
     <div class="pl-8 py-4" style:height="{timestampDetailHeight + 64 + 28}px">
       <WithParentClientRect let:rect>
-        {#if $timeSeries?.data?.length}
+        {#if $timeSeries?.data?.length && $timeSeries?.estimatedRollupInterval?.interval && $timeSeries?.smallestTimegrain}
           <TimestampDetail
             width={rect?.width - 56 || 400}
             mouseover={true}
