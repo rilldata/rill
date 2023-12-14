@@ -51,8 +51,8 @@ export function useAllModelColumns(
       allModels.data.map((r) =>
         createTableColumnsWithName(queryClient, instanceId, r.meta.name.name)
       ),
-      (sourceColumnResponses) =>
-        sourceColumnResponses.filter((res) => !!res.data).map((res) => res.data)
+      (modelColumnResponses) =>
+        modelColumnResponses.filter((res) => !!res.data).map((res) => res.data)
     ).subscribe(set);
   });
 }

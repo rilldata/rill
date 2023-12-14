@@ -90,11 +90,11 @@
       "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then else end in cast left join on not desc asc sum union",
   });
 
+  const schema: { [table: string]: string[] } = {};
+
   // Autocomplete: source tables
-  let schema: { [table: string]: string[] };
   $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
   $: if ($allSourceColumns?.length) {
-    schema = {};
     for (const sourceTable of $allSourceColumns) {
       const sourceIdentifier = sourceTable?.tableName;
       schema[sourceIdentifier] =
