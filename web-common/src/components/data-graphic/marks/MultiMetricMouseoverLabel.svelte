@@ -130,7 +130,6 @@ It is probably not the most up to date code; but it works very well in practice.
 
   let labelWidth = 0;
   /** the full text width */
-  let textWidths: number[] = [];
   let transitionalTimeoutForCalculatingLabelWidth;
 
   $: if (container && locations && $xScale && $yScale) {
