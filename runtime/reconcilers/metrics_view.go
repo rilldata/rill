@@ -126,8 +126,9 @@ func (r *MetricsViewReconciler) validate(ctx context.Context, mv *runtimev1.Metr
 
 	// Check dimension columns exist
 	for _, d := range mv.Dimensions {
-		if _, ok := fields[strings.ToLower(d.Column)]; !ok {
-			errs = append(errs, fmt.Errorf("dimension column %q not found in table %q", d.Column, mv.Table))
+		err = validateDimension(ctx, olap, t, d, fields)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("invalid expression for dimension %q: %w", d.Name, err))
 		}
 	}
 
@@ -150,6 +151,29 @@ func (r *MetricsViewReconciler) validate(ctx context.Context, mv *runtimev1.Metr
 	}
 
 	return errors.Join(errs...)
+}
+
+func validateDimension(
+	ctx context.Context,
+	olap drivers.OLAPStore,
+	t *drivers.Table,
+	d *runtimev1.MetricsViewSpec_DimensionV2,
+	fields map[string]*runtimev1.StructType_Field,
+) error {
+	expr := d.Expression
+	if _, isField := fields[expr]; isField {
+		// TODO: find a good place for this modification of dimension
+		d.Column = expr
+		d.Expression = ""
+		// escape columns
+		expr = fmt.Sprintf(`"%s"`, expr)
+	}
+	err := olap.Exec(ctx, &drivers.Statement{
+		Query:  fmt.Sprintf("SELECT %s from %s", expr, safeSQLName(t.Name)),
+		DryRun: true,
+	})
+	// TODO: validate non aggregate function used
+	return err
 }
 
 func validateMeasure(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, m *runtimev1.MetricsViewSpec_MeasureV2) error {

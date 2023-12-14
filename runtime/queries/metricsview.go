@@ -359,6 +359,14 @@ func metricsViewDimensionColumn(dimension *runtimev1.MetricsViewSpec_DimensionV2
 	return dimension.Name
 }
 
+func metricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
+	if dimension.Expression != "" {
+		return dimension.Expression
+	}
+	// if there is expression treat as a column reference
+	return safeName(metricsViewDimensionColumn(dimension))
+}
+
 func metricsViewMeasureExpression(mv *runtimev1.MetricsViewSpec, measureName string) (string, error) {
 	for _, measure := range mv.Measures {
 		if strings.EqualFold(measure.Name, measureName) {

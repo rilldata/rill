@@ -6,34 +6,34 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	// Load IANA time zone data
+	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"gopkg.in/yaml.v3"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
 )
 
 // MetricsViewYAML is the raw structure of a MetricsView resource defined in YAML
 type MetricsViewYAML struct {
 	commonYAML         `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title              string           `yaml:"title"`
-	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
-	Description        string           `yaml:"description"`
-	Model              string           `yaml:"model"`
-	Table              string           `yaml:"table"`
-	TimeDimension      string           `yaml:"timeseries"`
-	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
-	DefaultTimeRange   string           `yaml:"default_time_range"`
-	AvailableTimeZones []string         `yaml:"available_time_zones"`
-	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
-	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
-	DefaultTheme       string           `yaml:"default_theme"`
+	Title              string   `yaml:"title"`
+	DisplayName        string   `yaml:"display_name"` // Backwards compatibility
+	Description        string   `yaml:"description"`
+	Model              string   `yaml:"model"`
+	Table              string   `yaml:"table"`
+	TimeDimension      string   `yaml:"timeseries"`
+	SmallestTimeGrain  string   `yaml:"smallest_time_grain"`
+	DefaultTimeRange   string   `yaml:"default_time_range"`
+	AvailableTimeZones []string `yaml:"available_time_zones"`
+	FirstDayOfWeek     uint32   `yaml:"first_day_of_week"`
+	FirstMonthOfYear   uint32   `yaml:"first_month_of_year"`
+	DefaultTheme       string   `yaml:"default_theme"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string
 		Column      string
+		Expression  string
 		Property    string // For backwards compatibility
 		Description string
 		Ignore      bool `yaml:"ignore"`
@@ -233,17 +233,25 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			}
 		}
 
+		// Backwards compatibility
+		if dim.Column != "" {
+			dim.Expression = dim.Column
+		} else if dim.Expression == "" {
+			dim.Expression = dim.Name
+		}
+
 		lower := strings.ToLower(dim.Name)
 		if ok := names[lower]; ok {
 			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
 		}
 		names[lower] = true
 
-		lower = strings.ToLower(dim.Column)
-		if ok := columns[lower]; ok {
-			return fmt.Errorf("found duplicate dimension column name %q", dim.Column)
-		}
-		columns[lower] = true
+		// TODO: reintroduce duplicate column check
+		// lower = strings.ToLower(dim.Column)
+		// if ok := columns[lower]; ok {
+		// 	return fmt.Errorf("found duplicate dimension column name %q", dim.Column)
+		// }
+		// columns[lower] = true
 	}
 
 	measureCount := 0
@@ -423,7 +431,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dim.Name,
-			Column:      dim.Column,
+			Expression:  dim.Expression,
 			Label:       dim.Label,
 			Description: dim.Description,
 			Unnest:      dim.Unnest,

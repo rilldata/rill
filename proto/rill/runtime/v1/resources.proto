@@ -127,6 +127,7 @@ message MetricsViewSpec {
   message DimensionV2 {
     string name = 1;
     string column = 2;
+    string expression = 6;
     string label = 3;
     string description = 4;
     bool unnest = 5;
