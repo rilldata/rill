@@ -108,9 +108,9 @@ export function resourceStatusStore(
 
       const changed =
         !lastUpdatedOn ||
-        (res.data?.meta?.stateUpdatedOn
+        (res.data?.meta?.stateUpdatedOn !== undefined
           ? res.data?.meta?.stateUpdatedOn > lastUpdatedOn
-          : undefined);
+          : false);
 
       return {
         status: !res.data?.meta?.reconcileError
