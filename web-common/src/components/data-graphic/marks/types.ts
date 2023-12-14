@@ -1,6 +1,7 @@
 export interface Point {
   x: number;
   y: number;
+  value: string;
   label: string;
   key: string;
   valueColorClass?: string;
