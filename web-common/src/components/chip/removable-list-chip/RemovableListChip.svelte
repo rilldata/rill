@@ -43,12 +43,6 @@ are details left to the consumer of the component; this component should remain 
 
   const StateManagers = getStateManagers();
 
-  const {
-    actions: {
-      dimensionsFilter: { toggleDimensionValueSelection },
-    },
-  } = StateManagers;
-
   onMount(() => {
     dispatch("mount");
   });
