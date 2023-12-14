@@ -12,6 +12,7 @@
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
@@ -57,6 +58,9 @@
     $timeControlsStore.minTimeGrain;
   $: isScrubbing = $dashboardStore?.selectedScrubRange?.isScrubbing;
 
+  $: isPercOfTotalAsContextColumn =
+    $dashboardStore?.leaderboardContextColumn ===
+    LeaderboardContextColumn.PERCENT;
   $: includedValuesForDimension =
     $dashboardStore?.filters?.include?.find(
       (filter) => filter.name === comparisonDimension
@@ -288,7 +292,9 @@
             xMin={startValue}
             xMax={endValue}
             {showComparison}
-            validPercTotal={isValidPercTotal ? bigNum : null}
+            validPercTotal={isPercOfTotalAsContextColumn && isValidPercTotal
+              ? bigNum
+              : null}
             mouseoverTimeFormat={(value) => {
               /** format the date according to the time grain */
               return new Date(value).toLocaleDateString(
