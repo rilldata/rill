@@ -114,9 +114,9 @@ func (m *mockGithub) InstallationToken(ctx context.Context, installationID int64
 	return "", nil
 }
 
-func CheckServerStatus() error {
+func CheckServerStatus(cctx context.Context) error {
 	client := &http.Client{}
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(cctx, 60*time.Second)
 	defer cancel()
 	for {
 		select {

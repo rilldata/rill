@@ -95,7 +95,7 @@ are details left to the consumer of the component; this component should remain 
         {active}
       />
     </Chip>
-    <div slot="tooltip-content" transition:fly|local={{ duration: 100, y: 4 }}>
+    <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
       <TooltipContent maxWidth="400px">
         <TooltipTitle>
           <svelte:fragment slot="name">{name}</svelte:fragment>

@@ -1,10 +1,10 @@
 <script lang="ts">
+  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { createEventDispatcher } from "svelte";
   import Cell from "../core/Cell.svelte";
   import ColumnHeader from "../core/ColumnHeader.svelte";
   import Row from "../core/Row.svelte";
   import type { PinnedColumnSide } from "../types";
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
 
   const dispatch = createEventDispatcher();
 
@@ -57,7 +57,7 @@
   style:width="{totalWidth}px"
 >
   <div class="w-full sticky relative top-0 z-10">
-    {#each reconciledColumns as { columnProfile, virtualColumn }, i (columnProfile.name + "-pinned")}
+    {#each reconciledColumns as { columnProfile, virtualColumn } (columnProfile.name + "-pinned")}
       <ColumnHeader
         header={{
           start: virtualColumn.start,

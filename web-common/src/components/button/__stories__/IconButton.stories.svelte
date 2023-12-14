@@ -35,7 +35,7 @@
 
 <Meta title="Icon Button stories" />
 
-<Template let:args>
+<Template>
   <table>
     <tr>
       <td />
