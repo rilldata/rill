@@ -1,18 +1,20 @@
 <script lang="ts">
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
+  import type { NumericPlotPoint } from "@rilldata/web-common/components/data-graphic/functional-components/types";
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
+  import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
   import { mean } from "d3-array";
-  export let point;
-  export let xAccessor;
-  export let yAccessor;
+  export let point: NumericPlotPoint;
+  export let xAccessor: string;
+  export let yAccessor: string;
   export let mouseoverFormat;
-  export let dimensionData;
-  export let dimensionValue;
-  export let validPercTotal;
-  export let hovered;
+  export let dimensionData: DimensionDataItem[];
+  export let dimensionValue: string | undefined;
+  export let validPercTotal: number | null;
+  export let hovered: boolean | undefined;
 
-  $: x = point[xAccessor];
+  $: x = point?.[xAccessor];
 
   function truncate(str) {
     const truncateLength = 34;

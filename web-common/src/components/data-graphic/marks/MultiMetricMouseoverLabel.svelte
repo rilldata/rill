@@ -217,6 +217,7 @@ It is probably not the most up to date code; but it works very well in practice.
 
                   <tspan
                     dy=".35em"
+                    dx="0.4em"
                     y={y.label}
                     x={xText - (location?.yOverride ? labelWidth : 0)}
                     {visibility}
@@ -236,6 +237,7 @@ It is probably not the most up to date code; but it works very well in practice.
                 {:else}
                   <tspan
                     dy=".35em"
+                    dx="-0.4em"
                     y={y.label}
                     x={xText - (location?.yOverride ? 0 : labelWidth)}
                     {visibility}
