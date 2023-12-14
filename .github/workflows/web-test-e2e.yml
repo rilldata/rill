@@ -1,4 +1,4 @@
-name: Build and Test web code
+name: End-to-end tests of web+runtime
 on:
   pull_request:
     paths:
