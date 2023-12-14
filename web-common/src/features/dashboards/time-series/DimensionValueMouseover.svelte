@@ -4,7 +4,6 @@
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
-  import { mean } from "d3-array";
   export let point: NumericPlotPoint;
   export let xAccessor: string;
   export let yAccessor: string;
@@ -45,11 +44,6 @@
       name: dimension?.value,
     };
   });
-
-  let lastAvailableCurrentY = 0;
-  $: if (yValues.length) {
-    lastAvailableCurrentY = mean(yValues, (d) => d.y);
-  }
 
   $: points = yValues
     .map((dimension) => {
