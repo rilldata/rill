@@ -97,11 +97,11 @@ func (t *duckDBToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[s
 
 	// If the path is a local file reference, rewrite to a safe and repo-relative path.
 	if uri.Scheme == "" && uri.Host == "" {
-		sql, err := rewriteLocalPaths(ast, opts.RepoRoot, opts.AllowHostAccess)
+		rewrittenSQL, err := rewriteLocalPaths(ast, opts.RepoRoot, opts.AllowHostAccess)
 		if err != nil {
 			return fmt.Errorf("invalid local path: %w", err)
 		}
-		srcCfg.SQL = sql
+		srcCfg.SQL = rewrittenSQL
 	}
 
 	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, srcCfg.SQL)
@@ -138,7 +138,7 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 			}
 		}()
 
-		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s;", safeName(dbName))}); err != nil {
+		if err := t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s;", safeName(dbName))}); err != nil {
 			return err
 		}
 

@@ -40,10 +40,10 @@ export function compileCreateSourceYAML(
       delete values.table;
       break;
     case "duckdb":
-      var db = values.db as string 
+      var db = values.db as string;
       if (db.startsWith("md:")) {
         connectorName = "motherduck";
-        values.db = db.replace("md:", "")
+        values.db = db.replace("md:", "");
       }
       break;
   }
