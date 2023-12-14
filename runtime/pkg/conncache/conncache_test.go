@@ -156,6 +156,41 @@ func TestOpenDuringClose(t *testing.T) {
 	require.NoError(t, c.Close(context.Background()))
 }
 
+func TestCloseDuringOpen(t *testing.T) {
+	opens := atomic.Int64{}
+	m := &mockConn{cfg: "foo"}
+
+	c := New(Options{
+		MaxConnectionsIdle: 2,
+		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
+			time.Sleep(time.Second)
+			opens.Add(1)
+			return m, nil
+		},
+		KeyFunc: func(cfg any) string {
+			return cfg.(string)
+		},
+	})
+
+	// Start opening
+	go func() {
+		_, _, err := c.Acquire(context.Background(), "foo")
+		require.ErrorContains(t, err, "immediately closed")
+		require.Equal(t, int64(1), opens.Load())
+	}()
+
+	// Evict it so it starts closing
+	time.Sleep(100 * time.Millisecond) // Give it time to start opening
+	c.EvictWhere(func(cfg any) bool { return true })
+
+	// It will let the open finish before closing it, so will take ~1s
+	time.Sleep(2 * time.Second)
+	require.True(t, m.closeCalled.Load())
+
+	// Close cache
+	require.NoError(t, c.Close(context.Background()))
+}
+
 func TestCloseInUse(t *testing.T) {
 	opens := atomic.Int64{}
 

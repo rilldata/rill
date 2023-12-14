@@ -78,12 +78,13 @@ type cacheImpl struct {
 }
 
 type entry struct {
-	cfg    any
-	refs   int
-	status entryStatus
-	since  time.Time
-	handle Connection
-	err    error
+	cfg               any
+	refs              int
+	status            entryStatus
+	since             time.Time
+	closeAfterOpening bool
+	handle            Connection
+	err               error
 }
 
 type entryStatus int
@@ -149,7 +150,14 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 
 	if ok && e.status == entryStatusClosing {
 		c.mu.Unlock()
-		<-ch
+		select {
+		case <-ch:
+		case <-ctx.Done():
+			c.mu.Lock()
+			c.releaseEntry(k, e)
+			c.mu.Unlock()
+			return nil, nil, ctx.Err()
+		}
 		c.mu.Lock()
 
 		// Since we released the lock, need to check c.closed and e.status again.
@@ -204,13 +212,25 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 			delete(c.singleflight, k)
 			close(ch)
 
+			if e.closeAfterOpening {
+				e.closeAfterOpening = false
+				c.beginClose(k, e)
+			}
+
 			c.releaseEntry(k, e)
 		}()
 	}
 
 	c.mu.Unlock()
 
-	<-ch
+	select {
+	case <-ch:
+	case <-ctx.Done():
+		c.mu.Lock()
+		c.releaseEntry(k, e)
+		c.mu.Unlock()
+		return nil, nil, ctx.Err()
+	}
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -283,30 +303,18 @@ func (c *cacheImpl) beginClose(k string, e *entry) {
 		return
 	}
 
+	if e.status == entryStatusOpening {
+		e.closeAfterOpening = true
+		return
+	}
+
 	c.retainEntry(k, e)
 
 	ch, ok := c.singleflight[k]
 	if ok {
-		c.mu.Unlock()
-		<-ch
-		c.mu.Lock()
-
-		_, ok = c.singleflight[k]
-		if ok {
-			// Probably, another goroutine started closing it. Very unlikely, it was closed and re-opened again.
-			// Either way, we did our part.
-			c.releaseEntry(k, e)
-			return
-		}
-
-		// Since we released the lock, need to check e.status again.
-		// (Doesn't need to check entryStatusClosing since we now know that the singleflight is empty.)
-		if e.status == entryStatusClosed {
-			c.releaseEntry(k, e)
-			return
-		}
+		// Should never happen, but checking since it would be pretty bad.
+		panic(errors.New("conncache: singleflight exists for entry that is neither opening nor closing"))
 	}
-
 	ch = make(chan struct{})
 	c.singleflight[k] = ch
 
