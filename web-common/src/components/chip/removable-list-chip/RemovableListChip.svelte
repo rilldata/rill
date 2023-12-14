@@ -127,9 +127,6 @@ are details left to the consumer of the component; this component should remain 
         toggleFloatingElement();
       }
     }}
-    on:keep-alive={() => {
-      toggleDimensionValueSelection(dimensionName);
-    }}
     on:apply
     on:search
     on:toggle

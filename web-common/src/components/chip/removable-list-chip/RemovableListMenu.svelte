@@ -30,8 +30,6 @@
 
       toggleValue(value);
     });
-
-    if (allSelected) dispatch("keep-alive");
   }
 
   $: allSelected =
