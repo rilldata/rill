@@ -39,6 +39,7 @@
   </Tooltip>
 
   <SearchableFilterDropdown
+    let:toggleFloatingElement
     slot="floating-element"
     selectedItems={[]}
     allowMultiSelect={false}

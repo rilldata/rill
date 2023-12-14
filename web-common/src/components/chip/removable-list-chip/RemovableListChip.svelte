@@ -109,6 +109,7 @@ are details left to the consumer of the component; this component should remain 
     </div>
   </Tooltip>
   <RemovableListMenu
+    let:toggleFloatingElement
     slot="floating-element"
     {excludeMode}
     {allValues}
