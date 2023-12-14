@@ -421,8 +421,7 @@ message MetricsViewTimeSeriesResponse {
 message MetricsViewComparisonMeasureAlias {
   string name = 1;
   MetricsViewComparisonMeasureType type = 2;
-  repeated google.protobuf.Value args = 3;
-  string alias = 4;
+  string alias = 3;
 }
 
 message MetricsViewTotalsRequest {

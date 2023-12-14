@@ -3486,9 +3486,6 @@ definitions:
         type: string
       type:
         $ref: '#/definitions/v1MetricsViewComparisonMeasureType'
-      args:
-        type: array
-        items: {}
       alias:
         type: string
   v1MetricsViewComparisonMeasureType:

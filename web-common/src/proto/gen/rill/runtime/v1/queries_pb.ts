@@ -1742,12 +1742,7 @@ export class MetricsViewComparisonMeasureAlias extends Message<MetricsViewCompar
   type = MetricsViewComparisonMeasureType.UNSPECIFIED;
 
   /**
-   * @generated from field: repeated google.protobuf.Value args = 3;
-   */
-  args: Value[] = [];
-
-  /**
-   * @generated from field: string alias = 4;
+   * @generated from field: string alias = 3;
    */
   alias = "";
 
@@ -1761,8 +1756,7 @@ export class MetricsViewComparisonMeasureAlias extends Message<MetricsViewCompar
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewComparisonMeasureType) },
-    { no: 3, name: "args", kind: "message", T: Value, repeated: true },
-    { no: 4, name: "alias", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "alias", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonMeasureAlias {

@@ -6,31 +6,31 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	// Load IANA time zone data
+	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
 )
 
 type MetricsViewComparison struct {
-	MetricsViewName     string                                     `json:"metrics_view_name,omitempty"`
-	DimensionName       string                                     `json:"dimension_name,omitempty"`
-	Measures            []*runtimev1.MetricsViewAggregationMeasure `json:"measures,omitempty"`
-	TimeRange           *runtimev1.TimeRange                       `json:"base_time_range,omitempty"`
-	ComparisonTimeRange *runtimev1.TimeRange                       `json:"comparison_time_range,omitempty"`
-	Limit               int64                                      `json:"limit,omitempty"`
-	Offset              int64                                      `json:"offset,omitempty"`
-	Sort                []*runtimev1.MetricsViewComparisonSort     `json:"sort,omitempty"`
-	Where               *runtimev1.Expression                      `json:"where,omitempty"`
-	Having              *runtimev1.Expression                      `json:"having,omitempty"`
-	MetricsView         *runtimev1.MetricsViewSpec                 `json:"-"`
-	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity       `json:"security"`
-	Exact               bool                                       `json:"exact"`
+	MetricsViewName     string                                         `json:"metrics_view_name,omitempty"`
+	DimensionName       string                                         `json:"dimension_name,omitempty"`
+	Measures            []*runtimev1.MetricsViewAggregationMeasure     `json:"measures,omitempty"`
+	TimeRange           *runtimev1.TimeRange                           `json:"base_time_range,omitempty"`
+	ComparisonTimeRange *runtimev1.TimeRange                           `json:"comparison_time_range,omitempty"`
+	Limit               int64                                          `json:"limit,omitempty"`
+	Offset              int64                                          `json:"offset,omitempty"`
+	Sort                []*runtimev1.MetricsViewComparisonSort         `json:"sort,omitempty"`
+	Where               *runtimev1.Expression                          `json:"where,omitempty"`
+	Having              *runtimev1.Expression                          `json:"having,omitempty"`
+	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
+	MetricsView         *runtimev1.MetricsViewSpec                     `json:"-"`
+	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity           `json:"security"`
+	Exact               bool                                           `json:"exact"`
 
 	// TODO: backwards compatibility
 	Filter *runtimev1.MetricsViewFilter `json:"filter"`
@@ -293,6 +293,13 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		measureAliases[m.Name] = newIdentifier(m.Name)
 	}
 
+	if q.Aliases != nil {
+		err = aliasesToMeasureMap(q.Aliases, measureAliases, false)
+		if err != nil {
+			return "", nil, err
+		}
+	}
+
 	selectClause := strings.Join(selectCols, ", ")
 	baseWhereClause := "1=1"
 
@@ -470,10 +477,10 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				safeName(labelMap[m.Name]+" (Δ%)"),
 				safeName(labelMap[m.Name]),
 			)
-			measureAliases[m.Name] = identifier{fmt.Sprintf("sum(base.%s)", safeName(m.Name)), false}
-			measureAliases[m.Name+"__previous"] = identifier{fmt.Sprintf("sum(base.%s)", safeName(m.Name+"__previous")), false}
-			measureAliases[m.Name+"__delta_abs"] = identifier{fmt.Sprintf("sum(base.%s)", safeName(m.Name+"__delta_abs")), false}
-			measureAliases[m.Name+"__delta_rel"] = identifier{fmt.Sprintf("sum(base.%s)", safeName(m.Name+"__delta_rel")), false}
+			measureAliases[m.Name] = newIdentifier(m.Name)
+			measureAliases[m.Name+"__previous"] = newIdentifier(m.Name + "__previous")
+			measureAliases[m.Name+"__delta_abs"] = newIdentifier(m.Name + "__delta_abs")
+			measureAliases[m.Name+"__delta_rel"] = newIdentifier(m.Name + "__delta_rel")
 		} else {
 			columnsTuple = fmt.Sprintf(
 				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE)))",
@@ -493,6 +500,13 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			columnsTuple,
 		)
 		labelCols = append(labelCols, labelTuple)
+	}
+
+	if q.Aliases != nil {
+		err = aliasesToMeasureMap(q.Aliases, measureAliases, true)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 
 	subSelectClause := strings.Join(selectCols, ", ")
@@ -1006,4 +1020,30 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {
 
 func isTimeRangeNil(tr *runtimev1.TimeRange) bool {
 	return tr == nil || (tr.Start == nil && tr.End == nil)
+}
+
+func aliasesToMeasureMap(aliases []*runtimev1.MetricsViewComparisonMeasureAlias, measureAliases map[string]identifier, hasComparison bool) error {
+	for _, alias := range aliases {
+		switch alias.Type {
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+			runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED:
+			measureAliases[alias.Alias] = newIdentifier(alias.Name)
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
+			if !hasComparison {
+				return fmt.Errorf("comparison not enabled for alias %s", alias.Alias)
+			}
+			measureAliases[alias.Alias] = newIdentifier(alias.Name + "__previous")
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
+			if !hasComparison {
+				return fmt.Errorf("comparison not enabled for alias %s", alias.Alias)
+			}
+			measureAliases[alias.Alias] = newIdentifier(alias.Name + "__delta_abs")
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
+			if !hasComparison {
+				return fmt.Errorf("comparison not enabled for alias %s", alias.Alias)
+			}
+			measureAliases[alias.Alias] = newIdentifier(alias.Name + "__delta_rel")
+		}
+	}
+	return nil
 }

@@ -1293,7 +1293,6 @@ export const V1MetricsViewComparisonMeasureType = {
 
 export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
-  args?: unknown[];
   name?: string;
   type?: V1MetricsViewComparisonMeasureType;
 }
