@@ -32,7 +32,7 @@ type MetricsViewComparison struct {
 	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity           `json:"security"`
 	Exact               bool                                           `json:"exact"`
 
-	// TODO: backwards compatibility
+	// backwards compatibility
 	Filter *runtimev1.MetricsViewFilter `json:"filter"`
 
 	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
@@ -165,6 +165,7 @@ func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, ol
 		return fmt.Errorf("error building query: %w", err)
 	}
 
+	fmt.Println(sql, args)
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,
 		Args:     args,
@@ -461,14 +462,23 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		var columnsTuple string
 		var labelTuple string
 		if dialect != drivers.DialectDruid {
-			// TODO: only add `sum()` only if having is enabled
-			columnsTuple = fmt.Sprintf(
-				"sum(base.%[1]s) as %[1]s, sum(comparison.%[1]s) AS %[2]s, sum(base.%[1]s - comparison.%[1]s) AS %[3]s, sum((base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE) AS %[4]s",
-				safeName(m.Name),
-				safeName(m.Name+"__previous"),
-				safeName(m.Name+"__delta_abs"),
-				safeName(m.Name+"__delta_rel"),
-			)
+			if q.Having != nil {
+				columnsTuple = fmt.Sprintf(
+					"sum(base.%[1]s) as %[1]s, sum(comparison.%[1]s) AS %[2]s, sum(base.%[1]s - comparison.%[1]s) AS %[3]s, sum((base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE) AS %[4]s",
+					safeName(m.Name),
+					safeName(m.Name+"__previous"),
+					safeName(m.Name+"__delta_abs"),
+					safeName(m.Name+"__delta_rel"),
+				)
+			} else {
+				columnsTuple = fmt.Sprintf(
+					"base.%[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
+					safeName(m.Name),
+					safeName(m.Name+"__previous"),
+					safeName(m.Name+"__delta_abs"),
+					safeName(m.Name+"__delta_rel"),
+				)
+			}
 			labelTuple = fmt.Sprintf(
 				"base.%[1]s AS %[5]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
 				safeName(m.Name),
@@ -565,7 +575,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		if err != nil {
 			return "", nil, err
 		}
-		havingClause = "HAVING " + havingClause
+		havingClause = "GROUP BY 1 HAVING " + havingClause
 		args = append(args, havingClauseArgs...)
 	}
 
@@ -700,7 +710,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
-		GROUP BY 1
 		%[16]s
 		ORDER BY
 			%[6]s

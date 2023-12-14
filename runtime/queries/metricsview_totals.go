@@ -24,7 +24,7 @@ type MetricsViewTotals struct {
 	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
 
-	// TODO: backwards compatibility
+	// backwards compatibility
 	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 
 	Result *runtimev1.MetricsViewTotalsResponse `json:"-"`
