@@ -40,7 +40,7 @@ export function compileCreateSourceYAML(
       delete values.table;
       break;
     case "duckdb":
-      let db = values.db as string;
+      const db = values.db as string;
       if (db.startsWith("md:")) {
         connectorName = "motherduck";
         values.db = db.replace("md:", "");
