@@ -39,7 +39,7 @@ are details left to the consumer of the component; this component should remain 
   export let label: string | undefined = undefined;
   export let dimensionName: string;
 
-  const active = !selectedValues.length;
+  const initiallyActive = !selectedValues.length;
 
   const dispatch = createEventDispatcher();
 
@@ -55,7 +55,7 @@ are details left to the consumer of the component; this component should remain 
   let:active
   distance={8}
   alignment="start"
-  {active}
+  active={initiallyActive}
 >
   <Tooltip
     location="bottom"
