@@ -86,13 +86,13 @@
     let:xScale
     let:config
   >
-    <g transition:scaleVertical|local={{ duration: 400, start: 0.3 }}>
+    <g transition:scaleVertical={{ duration: 400, start: 0.3 }}>
       <Line {data} {xAccessor} {yAccessor} {color} lineThickness={0.5} />
       <Area {data} {xAccessor} {yAccessor} {color} />
     </g>
     <!-- show zoom boundaries -->
     {#if zoomWindowXMin && zoomWindowXMax}
-      <g transition:fade|local={{ duration: 100 }}>
+      <g transition:fade={{ duration: 100 }}>
         <rect
           x={xScale(zoomWindowXMin)}
           y={config.plotTop}

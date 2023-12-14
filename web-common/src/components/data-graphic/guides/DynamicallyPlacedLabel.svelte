@@ -26,17 +26,13 @@
   let element;
 
   let elementWidth = 0;
-  let elementHeight = 0;
   let elementX = 0;
-  let elementY = 0;
   let xOffset = tweened(buffer, { duration: 0 });
 
   function update() {
     let bb = element.getBBox();
     elementWidth = bb.width;
-    elementHeight = bb.height;
     elementX = bb.x;
-    elementY = bb.y;
     if (location === "right" && elementX + elementWidth > $config.plotRight) {
       xOffset.set(-elementWidth - buffer);
     } else {

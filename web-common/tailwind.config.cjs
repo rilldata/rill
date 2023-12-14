@@ -1,4 +1,16 @@
-const colors = require("tailwindcss/colors")
+const colors = require("tailwindcss/colors");
+const deprecatedColors = {
+  lightBlue: true,
+  warmGray: true,
+  trueGray: true,
+  coolGray: true,
+  blueGray: true
+}
+const newColors = {};
+for (const c in colors) {
+  if (c in deprecatedColors) continue;
+  newColors[c] = colors[c]
+}
 
 module.exports = {
    // need to add this for storybook
@@ -11,7 +23,7 @@ module.exports = {
   darkMode: "class",
   theme: {
     colors: {
-      ...colors,
+      ...newColors,
       blue: {
         50: "var(--color-primary-50)",
         100: "var(--color-primary-100)",

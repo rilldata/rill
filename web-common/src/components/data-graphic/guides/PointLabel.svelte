@@ -108,7 +108,7 @@
       : undefined}
     {#if showReferenceLine}
       <line
-        transition:fade|local={{ duration: 100 }}
+        transition:fade={{ duration: 100 }}
         x1={output.x}
         x2={output.x}
         y1={config.plotTop}
@@ -134,7 +134,7 @@
     {/if}
     {#if !isNull && showDistanceLine}
       <line
-        transition:fade|local={{ duration: 100 }}
+        transition:fade={{ duration: 100 }}
         x1={output.x}
         x2={output.x}
         y1={showComparisonText ? output.cdy : yScale(0)}
@@ -176,7 +176,7 @@
     {/if}
     {#if !isNull && showPoint}
       <circle
-        transition:scaleFromOrigin|local
+        transition:scaleFromOrigin
         cx={output.x}
         cy={output.y}
         r="3"
@@ -187,7 +187,7 @@
     {/if}
     {#if !isNull && showPoint && showComparisonText}
       <circle
-        transition:scaleFromOrigin|local
+        transition:scaleFromOrigin
         cx={output.x}
         cy={output.cdy}
         r="3"

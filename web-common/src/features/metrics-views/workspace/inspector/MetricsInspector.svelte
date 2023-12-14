@@ -11,8 +11,8 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
-    createRuntimeServiceGetFile,
     V1Resource,
+    createRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
@@ -66,7 +66,7 @@
           </CollapsibleSectionTitle>
         </div>
         {#if showModelInformation}
-          <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
             <ModelInspectorHeader
               {modelName}
               containerWidth={$observedNode?.clientWidth}
@@ -88,7 +88,7 @@
         </div>
 
         {#if showColumns && entry?.meta?.name?.name}
-          <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
             <ColumnProfile
               objectName={entry?.meta?.name?.name}
               indentLevel={0}
