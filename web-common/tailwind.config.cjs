@@ -1,4 +1,4 @@
-const colors = require("tailwindcss/colors")
+// const colors = require("tailwindcss/colors")
 
 module.exports = {
    // need to add this for storybook
@@ -10,8 +10,8 @@ module.exports = {
   /** Once we have applied dark styling to all UI elements, remove this line */
   darkMode: "class",
   theme: {
-    colors: {
-      ...colors,
+    extend: {
+      // ...colors,
       blue: {
         50: "var(--color-primary-50)",
         100: "var(--color-primary-100)",
