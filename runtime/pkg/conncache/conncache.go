@@ -14,15 +14,15 @@ import (
 // The cache will at most open one connection per key, even under concurrent access.
 // The cache automatically evicts connections that are not in use ("acquired") using a least-recently-used policy.
 type Cache interface {
-	// Acquire retrieves or opens a connection for the given key. The returned ReleaseFunc must be called when the connection is no longer needed.
-	// While a connection is acquired, it will not be closed unless Evict or Close is called.
+	// Acquire retrieves or opens a connection for the given config. The returned ReleaseFunc must be called when the connection is no longer needed.
+	// While a connection is acquired, it will not be closed unless EvictWhere or Close is called.
 	// If Acquire is called while the underlying connection is being evicted, it will wait for the close to complete and then open a new connection.
 	// If opening the connection fails, Acquire may return the error on subsequent calls without trying to open again until the entry is evicted.
 	Acquire(ctx context.Context, cfg any) (Connection, ReleaseFunc, error)
 
 	// EvictWhere closes the connections that match the predicate.
-	// It immediately closes the connections, even those that are currently acquired.
-	// It returns immediately and does not wait for the connections to finish closing.
+	// It immediately starts closing the connections, even those that are currently acquired.
+	// It returns quickly and does not wait for connections to finish closing in the background.
 	EvictWhere(predicate func(cfg any) bool)
 
 	// Close closes all open connections and prevents new connections from being acquired.
@@ -50,7 +50,7 @@ type Options struct {
 	CheckHangingInterval time.Duration
 	// OpenFunc opens a connection.
 	OpenFunc func(ctx context.Context, cfg any) (Connection, error)
-	// KeyFunc computes a comparable key for a connection configuration.
+	// KeyFunc computes a comparable key for a connection config.
 	KeyFunc func(cfg any) string
 	// HangingFunc is called when an open or close exceeds its timeout and does not respond to context cancellation.
 	HangingFunc func(cfg any, open bool)
@@ -61,6 +61,7 @@ var _ Cache = (*cacheImpl)(nil)
 // cacheImpl implements Cache. Implementation notes:
 // - It uses an LRU to pool unused connections and eventually close them.
 // - It leverages a singleflight pattern to ensure at most one open/close action runs against a connection at a time.
+// - It directly implements a singleflight (instead of using a library) because it needs to use the same mutex for the singleflight and the map/LRU to avoid race conditions.
 // - An entry will only have entryStatusOpening or entryStatusClosing if a singleflight call is currently running for it.
 // - Any code that keeps a reference to an entry after the mutex is released must call retainEntry/releaseEntry.
 // - If the ctx for an open call is cancelled, the entry will continue opening in the background (and will be put in the LRU).
