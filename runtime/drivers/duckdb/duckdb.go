@@ -62,7 +62,6 @@ var spec = drivers.Spec{
 	ConfigProperties: []drivers.PropertySchema{
 		{
 			Key:    "dsn",
-			Secret: true,
 		},
 	},
 }
