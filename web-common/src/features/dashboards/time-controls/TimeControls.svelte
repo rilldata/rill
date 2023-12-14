@@ -40,8 +40,8 @@
   const queryClient = useQueryClient();
   $: dashboardStore = useDashboardStore(metricViewName);
 
-  let baseTimeRange: TimeRange;
-  let minTimeGrain: V1TimeGrain;
+  let baseTimeRange: TimeRange | undefined;
+  let minTimeGrain: V1TimeGrain | undefined;
   let availableTimeZones: string[] = [];
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
@@ -61,7 +61,7 @@
     !!$metaQuery?.data?.table &&
     !!$metaQuery?.data?.timeDimension
   ) {
-    availableTimeZones = $metaQuery?.data?.availableTimeZones;
+    availableTimeZones = $metaQuery?.data?.availableTimeZones ?? [];
 
     /**
      * Remove the timezone selector if no timezone key is present
