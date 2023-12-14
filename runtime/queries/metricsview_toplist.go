@@ -182,18 +182,19 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	if err != nil {
 		return "", nil, err
 	}
-	rawColName := metricsViewDimensionColumn(dim)
-	colName := safeName(rawColName)
-	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
+	colName := safeName(dim.Name)
+	dimExpr := metricsViewDimensionExpression(dim)
+	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
 
 	var selectCols []string
 	unnestClause := ""
 	if dim.Unnest && dialect != drivers.DialectDruid {
+		// TODO: support dimension expression
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
 		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
 		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
 	} else {
-		selectCols = append(selectCols, colName)
+		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, dimExpr, colName))
 	}
 
 	for _, m := range ms {
