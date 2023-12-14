@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { SelectionRange } from "@codemirror/state";
-  import Portal from "@rilldata/web-common/components/Portal.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import {
     getFileAPIPathFromNameAndType,
@@ -131,13 +130,14 @@
 
 <svelte:window bind:innerHeight />
 
-<div class="editor-pane bg-gray-100">
+<div class="editor-pane h-full pb-3">
   <div
+    class="p-5"
     style:height="calc({innerHeight}px - {$outputPosition *
       $outputVisibilityTween}px - var(--header-height))"
   >
     {#if hasModelSql}
-      <div class="h-full p-5 grid overflow-auto">
+      <div class="h-full grid overflow-auto">
         {#key modelName}
           <Editor
             content={modelSql}
@@ -149,14 +149,11 @@
       </div>
     {/if}
   </div>
-  <Portal target=".body">
-    {#if $outputLayout.visible}
-      <HorizontalSplitter />
-    {/if}
-  </Portal>
-
+  {#if $outputLayout.visible}
+    <HorizontalSplitter className="px-5" />
+  {/if}
   {#if hasModelSql}
-    <div style:height="{$outputPosition}px" class="p-5 flex flex-col gap-6">
+    <div class="p-5 flex flex-col gap-6" style:height="{$outputPosition}px">
       <div
         class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&
           'hidden'}"
