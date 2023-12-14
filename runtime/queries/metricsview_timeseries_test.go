@@ -300,9 +300,9 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t *testing.
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Where: testruntime.FilterInClause(
-			testruntime.FilterColumn("label"),
-			[]*runtimev1.Expression{testruntime.FilterValue(toStructpbValue(t, "sparse_day"))},
+		Where: queries.FilterInClause(
+			queries.FilterColumn("label"),
+			[]*runtimev1.Expression{queries.FilterValue(toStructpbValue(t, "sparse_day"))},
 		),
 		MetricsViewName: "timeseries_dst_backwards",
 		MetricsView:     mv.Spec,
@@ -470,9 +470,9 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Where: testruntime.FilterInClause(
-			testruntime.FilterColumn("label"),
-			[]*runtimev1.Expression{testruntime.FilterValue(toStructpbValue(t, "sparse_hour"))},
+		Where: queries.FilterInClause(
+			queries.FilterColumn("label"),
+			[]*runtimev1.Expression{queries.FilterValue(toStructpbValue(t, "sparse_hour"))},
 		),
 		MetricsViewName: "timeseries_dst_backwards",
 		MetricsView:     mv.Spec,
@@ -583,9 +583,9 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t *testing.T
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Where: testruntime.FilterInClause(
-			testruntime.FilterColumn("label"),
-			[]*runtimev1.Expression{testruntime.FilterValue(toStructpbValue(t, "sparse_day"))},
+		Where: queries.FilterInClause(
+			queries.FilterColumn("label"),
+			[]*runtimev1.Expression{queries.FilterValue(toStructpbValue(t, "sparse_day"))},
 		),
 		MetricsViewName: "timeseries_dst_forwards",
 		MetricsView:     mv.Spec,
@@ -661,9 +661,9 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Where: testruntime.FilterInClause(
-			testruntime.FilterColumn("label"),
-			[]*runtimev1.Expression{testruntime.FilterValue(toStructpbValue(t, "sparse_hour"))},
+		Where: queries.FilterInClause(
+			queries.FilterColumn("label"),
+			[]*runtimev1.Expression{queries.FilterValue(toStructpbValue(t, "sparse_hour"))},
 		),
 		MetricsViewName: "timeseries_dst_forwards",
 		MetricsView:     mv.Spec,

@@ -7,6 +7,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -618,9 +619,9 @@ func TestServer_MetricsViewComparison_sort_by_base_filter(t *testing.T) {
 				Desc: true,
 			},
 		},
-		Where: testruntime.FilterNotInClause(
-			testruntime.FilterColumn("domain"),
-			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("yahoo.com"))},
+		Where: queries.FilterNotInClause(
+			queries.FilterColumn("domain"),
+			[]*runtimev1.Expression{queries.FilterValue(structpb.NewStringValue("yahoo.com"))},
 		),
 		Exact: true,
 	})
@@ -1071,9 +1072,9 @@ func TestServer_MetricsViewComparison_no_comparison_complete_source_sanity_test(
 				Desc: false,
 			},
 		},
-		Where: testruntime.FilterNotInClause(
-			testruntime.FilterColumn("pub"),
-			[]*runtimev1.Expression{testruntime.FilterValue(structpb.NewStringValue("Yahoo"))},
+		Where: queries.FilterNotInClause(
+			queries.FilterColumn("pub"),
+			[]*runtimev1.Expression{queries.FilterValue(structpb.NewStringValue("Yahoo"))},
 		),
 		Exact: true,
 	})

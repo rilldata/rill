@@ -811,6 +811,11 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
    */
   priority = 0;
 
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 14;
+   */
+  filter?: MetricsViewFilter;
+
   constructor(data?: PartialMessage<MetricsViewAggregationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -832,6 +837,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 14, name: "filter", kind: "message", T: MetricsViewFilter },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationRequest {
@@ -1104,6 +1110,11 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
    */
   priority = 0;
 
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 14;
+   */
+  filter?: MetricsViewFilter;
+
   constructor(data?: PartialMessage<MetricsViewToplistRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1125,6 +1136,7 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
     { no: 10, name: "where", kind: "message", T: Expression },
     { no: 13, name: "having", kind: "message", T: Expression },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 14, name: "filter", kind: "message", T: MetricsViewFilter },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewToplistRequest {
@@ -1234,7 +1246,7 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
   where?: Expression;
 
   /**
-   * @generated from field: rill.runtime.v1.Expression having = 14;
+   * @generated from field: rill.runtime.v1.Expression having = 12;
    */
   having?: Expression;
 
@@ -1263,6 +1275,11 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
    */
   exact = false;
 
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 14;
+   */
+  filter?: MetricsViewFilter;
+
   constructor(data?: PartialMessage<MetricsViewComparisonRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1279,12 +1296,13 @@ export class MetricsViewComparisonRequest extends Message<MetricsViewComparisonR
     { no: 6, name: "time_range", kind: "message", T: TimeRange },
     { no: 7, name: "comparison_time_range", kind: "message", T: TimeRange },
     { no: 8, name: "where", kind: "message", T: Expression },
-    { no: 14, name: "having", kind: "message", T: Expression },
+    { no: 12, name: "having", kind: "message", T: Expression },
     { no: 15, name: "aliases", kind: "message", T: MetricsViewComparisonMeasureAlias, repeated: true },
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 11, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 13, name: "exact", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "filter", kind: "message", T: MetricsViewFilter },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewComparisonRequest {
@@ -1622,6 +1640,11 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
    */
   priority = 0;
 
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 12;
+   */
+  filter?: MetricsViewFilter;
+
   constructor(data?: PartialMessage<MetricsViewTimeSeriesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1641,6 +1664,7 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 11, name: "having", kind: "message", T: Expression },
     { no: 10, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 12, name: "filter", kind: "message", T: MetricsViewFilter },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTimeSeriesRequest {
@@ -1798,14 +1822,14 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
   where?: Expression;
 
   /**
-   * @generated from field: rill.runtime.v1.Expression having = 10;
-   */
-  having?: Expression;
-
-  /**
    * @generated from field: int32 priority = 8;
    */
   priority = 0;
+
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 10;
+   */
+  filter?: MetricsViewFilter;
 
   constructor(data?: PartialMessage<MetricsViewTotalsRequest>) {
     super();
@@ -1822,8 +1846,8 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 7, name: "where", kind: "message", T: Expression },
-    { no: 10, name: "having", kind: "message", T: Expression },
     { no: 8, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 10, name: "filter", kind: "message", T: MetricsViewFilter },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewTotalsRequest {
@@ -1921,11 +1945,6 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
   where?: Expression;
 
   /**
-   * @generated from field: rill.runtime.v1.Expression having = 12;
-   */
-  having?: Expression;
-
-  /**
    * @generated from field: repeated rill.runtime.v1.MetricsViewSort sort = 6;
    */
   sort: MetricsViewSort[] = [];
@@ -1950,6 +1969,11 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
    */
   timeZone = "";
 
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewFilter filter = 12;
+   */
+  filter?: MetricsViewFilter;
+
   constructor(data?: PartialMessage<MetricsViewRowsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1964,12 +1988,12 @@ export class MetricsViewRowsRequest extends Message<MetricsViewRowsRequest> {
     { no: 4, name: "time_end", kind: "message", T: Timestamp },
     { no: 10, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 5, name: "where", kind: "message", T: Expression },
-    { no: 12, name: "having", kind: "message", T: Expression },
     { no: 6, name: "sort", kind: "message", T: MetricsViewSort, repeated: true },
     { no: 7, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 8, name: "offset", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 9, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 11, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "filter", kind: "message", T: MetricsViewFilter },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewRowsRequest {

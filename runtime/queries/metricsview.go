@@ -529,6 +529,90 @@ func conditionExpressionOperation(oprn runtimev1.Operation) string {
 	return "=" // TODO: handle unknown operation type
 }
 
+func convertFilterToExpression(filter *runtimev1.MetricsViewFilter) *runtimev1.Expression {
+	var exprs []*runtimev1.Expression
+
+	if len(filter.Include) > 0 {
+		var includeExprs []*runtimev1.Expression
+		for _, cond := range filter.Include {
+			domExpr := convertDimensionFilterToExpression(cond, false)
+			if domExpr != nil {
+				includeExprs = append(includeExprs, domExpr)
+			}
+		}
+		exprs = append(exprs, FilterOrClause(includeExprs))
+	}
+
+	if len(filter.Exclude) > 0 {
+		for _, cond := range filter.Exclude {
+			domExpr := convertDimensionFilterToExpression(cond, true)
+			if domExpr != nil {
+				exprs = append(exprs, domExpr)
+			}
+		}
+	}
+
+	if len(exprs) == 1 {
+		return exprs[0]
+	} else if len(exprs) > 1 {
+		return FilterAndClause(exprs)
+	}
+	return nil
+}
+
+func convertDimensionFilterToExpression(cond *runtimev1.MetricsViewFilter_Cond, exclude bool) *runtimev1.Expression {
+	var inExpr *runtimev1.Expression
+	if len(cond.In) > 0 {
+		var inExprs []*runtimev1.Expression
+		for _, inVal := range cond.In {
+			inExprs = append(inExprs, FilterValue(inVal))
+		}
+		if exclude {
+			inExpr = FilterNotInClause(FilterColumn(cond.Name), inExprs)
+		} else {
+			inExpr = FilterInClause(FilterColumn(cond.Name), inExprs)
+		}
+	}
+
+	var likeExpr *runtimev1.Expression
+	if len(cond.Like) == 1 {
+		if exclude {
+			likeExpr = FilterNotLikeClause(FilterColumn(cond.Name), FilterValue(structpb.NewStringValue(cond.Like[0])))
+		} else {
+			likeExpr = FilterLikeClause(FilterColumn(cond.Name), FilterValue(structpb.NewStringValue(cond.Like[0])))
+		}
+	} else if len(cond.Like) > 1 {
+		var likeExprs []*runtimev1.Expression
+		for _, l := range cond.Like {
+			col := FilterColumn(cond.Name)
+			val := FilterValue(structpb.NewStringValue(l))
+			if exclude {
+				likeExprs = append(likeExprs, FilterNotLikeClause(col, val))
+			} else {
+				likeExprs = append(likeExprs, FilterLikeClause(col, val))
+			}
+		}
+		if exclude {
+			likeExpr = FilterAndClause(likeExprs)
+		} else {
+			likeExpr = FilterOrClause(likeExprs)
+		}
+	}
+
+	if inExpr != nil && likeExpr != nil {
+		if exclude {
+			return FilterAndClause([]*runtimev1.Expression{inExpr, likeExpr})
+		}
+		return FilterOrClause([]*runtimev1.Expression{inExpr, likeExpr})
+	} else if inExpr != nil {
+		return inExpr
+	} else if likeExpr != nil {
+		return likeExpr
+	}
+
+	return nil
+}
+
 func repeatString(val string, n int) []string {
 	res := make([]string, n)
 	for i := 0; i < n; i++ {

@@ -1064,6 +1064,8 @@ paths:
               priority:
                 type: integer
                 format: int32
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -1129,6 +1131,8 @@ paths:
                 format: int32
               exact:
                 type: boolean
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
             title: Request message for QueryService.MetricsViewComparison
       tags:
         - QueryService
@@ -1170,8 +1174,6 @@ paths:
                 $ref: '#/definitions/v1TimeGrain'
               where:
                 $ref: '#/definitions/v1Expression'
-              having:
-                $ref: '#/definitions/v1Expression'
               sort:
                 type: array
                 items:
@@ -1188,6 +1190,8 @@ paths:
                 format: int32
               timeZone:
                 type: string
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
@@ -1279,6 +1283,8 @@ paths:
               priority:
                 type: integer
                 format: int32
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist:
@@ -1346,6 +1352,8 @@ paths:
               priority:
                 type: integer
                 format: int32
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/totals:
@@ -1395,11 +1403,11 @@ paths:
                 format: date-time
               where:
                 $ref: '#/definitions/v1Expression'
-              having:
-                $ref: '#/definitions/v1Expression'
               priority:
                 type: integer
                 format: int32
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
@@ -2327,6 +2335,18 @@ definitions:
       column:
         type: string
     title: Dimensions are columns to filter and group by
+  MetricsViewFilterCond:
+    type: object
+    properties:
+      name:
+        type: string
+      in:
+        type: array
+        items: {}
+      like:
+        type: array
+        items:
+          type: string
   MetricsViewMeasure:
     type: object
     properties:
@@ -3432,6 +3452,8 @@ definitions:
       priority:
         type: integer
         format: int32
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -3521,6 +3543,8 @@ definitions:
         format: int32
       exact:
         type: boolean
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
     title: Request message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonResponse:
     type: object
@@ -3558,6 +3582,19 @@ definitions:
       comparisonValue: {}
       deltaAbs: {}
       deltaRel: {}
+  v1MetricsViewFilter:
+    type: object
+    properties:
+      include:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewFilterCond'
+      exclude:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewFilterCond'
   v1MetricsViewRowsRequest:
     type: object
     properties:
@@ -3575,8 +3612,6 @@ definitions:
         $ref: '#/definitions/v1TimeGrain'
       where:
         $ref: '#/definitions/v1Expression'
-      having:
-        $ref: '#/definitions/v1Expression'
       sort:
         type: array
         items:
@@ -3593,6 +3628,8 @@ definitions:
         format: int32
       timeZone:
         type: string
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
   v1MetricsViewRowsResponse:
     type: object
     properties:
@@ -3722,6 +3759,8 @@ definitions:
       priority:
         type: integer
         format: int32
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
   v1MetricsViewTimeSeriesResponse:
     type: object
     properties:
@@ -3777,6 +3816,8 @@ definitions:
       priority:
         type: integer
         format: int32
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
   v1MetricsViewToplistResponse:
     type: object
     properties:
@@ -3813,11 +3854,11 @@ definitions:
         format: date-time
       where:
         $ref: '#/definitions/v1Expression'
-      having:
-        $ref: '#/definitions/v1Expression'
       priority:
         type: integer
         format: int32
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
   v1MetricsViewTotalsResponse:
     type: object
     properties:

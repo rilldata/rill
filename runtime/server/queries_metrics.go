@@ -82,6 +82,7 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Offset:             req.Offset,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
+		Filter:             req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -154,6 +155,7 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		Having:             req.Having,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
+		Filter:             req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -231,6 +233,7 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		MetricsView:         mv,
 		ResolvedMVSecurity:  security,
 		Exact:               req.Exact,
+		Filter:              req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -290,6 +293,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		TimeZone:           req.TimeZone,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
+		Filter:             req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -342,9 +346,9 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		TimeStart:          req.TimeStart,
 		TimeEnd:            req.TimeEnd,
 		Where:              req.Where,
-		Having:             req.Having,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
+		Filter:             req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -394,6 +398,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		TimeZone:           req.TimeZone,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
+		Filter:             req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

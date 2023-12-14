@@ -81,6 +81,14 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
+	// backwards compatibility
+	if q.Filter != nil {
+		if q.Where != nil {
+			return fmt.Errorf("both filter and where is provided")
+		}
+		q.Where = convertFilterToExpression(q.Filter)
+	}
+
 	// Build query
 	sql, args, err := q.buildMetricsTopListSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
 	if err != nil {
@@ -277,7 +285,6 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		limitClause,
 		q.Offset,
 	)
-	fmt.Println(sql, args)
 
 	return sql, args, nil
 }

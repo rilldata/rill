@@ -89,6 +89,14 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
+	// backwards compatibility
+	if q.Filter != nil {
+		if q.Where != nil {
+			return fmt.Errorf("both filter and where is provided")
+		}
+		q.Where = convertFilterToExpression(q.Filter)
+	}
+
 	if !isTimeRangeNil(q.ComparisonTimeRange) {
 		return q.executeComparisonToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
 	}
@@ -379,7 +387,6 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 			havingClause,       // 9
 		)
 	}
-	fmt.Println(sql, args)
 
 	return sql, args, nil
 }
@@ -782,7 +789,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			finalDimName,        // 14
 		)
 	}
-	fmt.Println(sql, args)
 
 	return sql, args, nil
 }

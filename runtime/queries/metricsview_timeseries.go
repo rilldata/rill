@@ -94,13 +94,20 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
+	// backwards compatibility
+	if q.Filter != nil {
+		if q.Where != nil {
+			return fmt.Errorf("both filter and where is provided")
+		}
+		q.Where = convertFilterToExpression(q.Filter)
+	}
+
 	mv := r.GetMetricsView().Spec
 	sql, tsAlias, args, err := q.buildMetricsTimeseriesSQL(olap, mv, q.ResolvedMVSecurity)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
 
-	fmt.Println(sql, args)
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            sql,
 		Args:             args,

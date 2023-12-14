@@ -1,4 +1,4 @@
-package testruntime
+package queries
 
 import (
 	"github.com/rilldata/rill/proto/gen/rill/runtime/v1"

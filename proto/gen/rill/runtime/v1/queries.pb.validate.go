@@ -2944,6 +2944,35 @@ func (m *MetricsViewAggregationRequest) validate(all bool) error {
 
 	// no validation rules for Priority
 
+	if all {
+		switch v := interface{}(m.GetFilter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewAggregationRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewAggregationRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewAggregationRequestValidationError{
+				field:  "Filter",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewAggregationRequestMultiError(errors)
 	}
@@ -3801,6 +3830,35 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 
 	// no validation rules for Priority
 
+	if all {
+		switch v := interface{}(m.GetFilter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewToplistRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewToplistRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewToplistRequestValidationError{
+				field:  "Filter",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewToplistRequestMultiError(errors)
 	}
@@ -4358,6 +4416,35 @@ func (m *MetricsViewComparisonRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	// no validation rules for Exact
+
+	if all {
+		switch v := interface{}(m.GetFilter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewComparisonRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewComparisonRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewComparisonRequestValidationError{
+				field:  "Filter",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return MetricsViewComparisonRequestMultiError(errors)
@@ -5446,6 +5533,35 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 
 	// no validation rules for Priority
 
+	if all {
+		switch v := interface{}(m.GetFilter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewTimeSeriesRequestValidationError{
+				field:  "Filter",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return MetricsViewTimeSeriesRequestMultiError(errors)
 	}
@@ -6010,12 +6126,14 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for Priority
+
 	if all {
-		switch v := interface{}(m.GetHaving()).(type) {
+		switch v := interface{}(m.GetFilter()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, MetricsViewTotalsRequestValidationError{
-					field:  "Having",
+					field:  "Filter",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -6023,23 +6141,21 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, MetricsViewTotalsRequestValidationError{
-					field:  "Having",
+					field:  "Filter",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetHaving()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return MetricsViewTotalsRequestValidationError{
-				field:  "Having",
+				field:  "Filter",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
 		}
 	}
-
-	// no validation rules for Priority
 
 	if len(errors) > 0 {
 		return MetricsViewTotalsRequestMultiError(errors)
@@ -6410,35 +6526,6 @@ func (m *MetricsViewRowsRequest) validate(all bool) error {
 		}
 	}
 
-	if all {
-		switch v := interface{}(m.GetHaving()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewRowsRequestValidationError{
-					field:  "Having",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewRowsRequestValidationError{
-					field:  "Having",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetHaving()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return MetricsViewRowsRequestValidationError{
-				field:  "Having",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
 	for idx, item := range m.GetSort() {
 		_, _ = idx, item
 
@@ -6498,6 +6585,35 @@ func (m *MetricsViewRowsRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	// no validation rules for TimeZone
+
+	if all {
+		switch v := interface{}(m.GetFilter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewRowsRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewRowsRequestValidationError{
+					field:  "Filter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewRowsRequestValidationError{
+				field:  "Filter",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return MetricsViewRowsRequestMultiError(errors)

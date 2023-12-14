@@ -285,6 +285,7 @@ message MetricsViewAggregationRequest {
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   int32 priority = 11;
+  MetricsViewFilter filter = 14;
 }
 
 message MetricsViewAggregationResponse {
@@ -329,6 +330,7 @@ message MetricsViewToplistRequest {
   Expression where = 10;
   Expression having = 13;
   int32 priority = 11;
+  MetricsViewFilter filter = 14;
 }
 
 message MetricsViewToplistResponse {
@@ -346,12 +348,13 @@ message MetricsViewComparisonRequest {
   TimeRange time_range = 6;
   TimeRange comparison_time_range = 7;
   Expression where = 8;
-  Expression having = 14;
+  Expression having = 12;
   repeated MetricsViewComparisonMeasureAlias aliases = 15;
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   int32 priority = 11;
   bool exact = 13;
+  MetricsViewFilter filter = 14;
 }
 
 // Response message for QueryService.MetricsViewComparison
@@ -407,6 +410,7 @@ message MetricsViewTimeSeriesRequest {
   Expression having = 11;
   string time_zone = 10;
   int32 priority = 8;
+  MetricsViewFilter filter = 12;
 }
 
 message MetricsViewTimeSeriesResponse {
@@ -430,6 +434,7 @@ message MetricsViewTotalsRequest {
   google.protobuf.Timestamp time_end = 5;
   Expression where = 7;
   int32 priority = 8;
+  MetricsViewFilter filter = 10;
 }
 
 message MetricsViewTotalsResponse {
@@ -449,6 +454,7 @@ message MetricsViewRowsRequest {
   int64 offset = 8 [(validate.rules).int64.gte = 0];
   int32 priority = 9;
   string time_zone = 11;
+  MetricsViewFilter filter = 12;
 }
 
 message MetricsViewRowsResponse {

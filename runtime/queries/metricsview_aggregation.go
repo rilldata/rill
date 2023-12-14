@@ -27,7 +27,7 @@ type MetricsViewAggregation struct {
 	MetricsView        *runtimev1.MetricsViewSpec                   `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity         `json:"security"`
 
-	// TODO: backwards compatibility
+	// backwards compatibility
 	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
@@ -78,6 +78,14 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 
 	if q.MetricsView.TimeDimension == "" && !isTimeRangeNil(q.TimeRange) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsView)
+	}
+
+	// backwards compatibility
+	if q.Filter != nil {
+		if q.Where != nil {
+			return fmt.Errorf("both filter and where is provided")
+		}
+		q.Where = convertFilterToExpression(q.Filter)
 	}
 
 	// Build query
@@ -275,7 +283,6 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		limitClause,
 		q.Offset,
 	)
-	fmt.Println(sql, args)
 
 	return sql, args, nil
 }
