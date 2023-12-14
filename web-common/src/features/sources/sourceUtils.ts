@@ -39,6 +39,13 @@ export function compileCreateSourceYAML(
       delete values.db;
       delete values.table;
       break;
+    case "duckdb":
+      var db = values.db as string 
+      if (db.startsWith("md:")) {
+        connectorName = "motherduck";
+        values.db = db.replace("md:", "")
+      }
+      break;
   }
 
   const compiledKeyValues = Object.entries(values)

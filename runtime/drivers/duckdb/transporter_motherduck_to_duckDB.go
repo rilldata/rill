@@ -70,7 +70,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		}
 
 		// get token
-		token := config["token"]
+		token, _ := config["token"].(string)
 		if token == "" && config["allow_host_access"].(bool) {
 			token = os.Getenv("motherduck_token")
 		}

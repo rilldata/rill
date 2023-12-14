@@ -50,27 +50,24 @@ var spec = drivers.Spec{
 			Description: "DuckDB SQL query.",
 			Placeholder: "select * from read_csv('data/file.csv', header=true);",
 		},
+		{
+			Key:         "db",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "DB",
+			Description: "Path to external DuckDB database. Use md:<dbname> for motherduckb.",
+			Placeholder: "/path/to/main.db or md:main.db(for motherduck)",
+		},
 	},
 	ConfigProperties: []drivers.PropertySchema{
 		{
-			Key: "dsn",
+			Key:    "dsn",
+			Secret: true,
 		},
 	},
 }
 
 var motherduckSpec = drivers.Spec{
-	DisplayName: "MotherDuck",
-	Description: "Import data from MotherDuck.",
-	SourceProperties: []drivers.PropertySchema{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from MotherDuck.",
-			Placeholder: "select * from my_db.my_table;",
-		},
-	},
 	ConfigProperties: []drivers.PropertySchema{
 		{
 			Key:    "token",
