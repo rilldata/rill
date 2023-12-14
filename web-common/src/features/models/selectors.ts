@@ -11,7 +11,6 @@ import {
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
   V1ListFilesResponse,
-  V1ProfileColumn,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/query-core";
 import { TIMESTAMPS } from "../../lib/duckdb-data-types";
