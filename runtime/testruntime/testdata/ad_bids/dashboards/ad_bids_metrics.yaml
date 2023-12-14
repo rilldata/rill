@@ -14,6 +14,13 @@ dimensions:
     name: dom
     property: domain
     description: ""
+  - label: Domain Parts
+    name: domain_parts
+    expression: "string_split(domain, '.')"
+    unnest: true
+  - label: TLD
+    name: tld
+    expression: "regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)"
 
 measures:
   - label: "Number of bids"

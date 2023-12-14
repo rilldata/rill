@@ -6,15 +6,14 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	// Load IANA time zone data
+	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
 )
 
 type MetricsViewComparison struct {
@@ -224,9 +223,9 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	if err != nil {
 		return "", nil, err
 	}
-	rawColName := metricsViewDimensionColumn(dim)
-	colName := safeName(rawColName)
-	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
+	colName := safeName(dim.Name)
+	dimExpr := metricsViewDimensionExpression(dim)
+	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
 
 	labelMap := make(map[string]string, len(mv.Measures))
 	for _, m := range mv.Measures {
@@ -244,11 +243,12 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		dimLabel = safeName(dim.Label)
 	}
 	if dim.Unnest && dialect != drivers.DialectDruid {
+		// TODO: support dimension expression
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
 		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
 		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
 	} else {
-		selectCols = append(selectCols, colName)
+		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, dimExpr, colName))
 	}
 	labelCols = []string{fmt.Sprintf("%s as %s", safeName(dim.Name), dimLabel)}
 
@@ -371,9 +371,9 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		return "", nil, err
 	}
 
-	rawColName := metricsViewDimensionColumn(dim)
-	colName := safeName(rawColName)
-	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
+	colName := safeName(dim.Name)
+	dimExpr := metricsViewDimensionExpression(dim)
+	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
 
 	labelMap := make(map[string]string, len(mv.Measures))
 	for _, m := range mv.Measures {
@@ -386,11 +386,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	var selectCols []string
 	unnestClause := ""
 	if dim.Unnest && dialect != drivers.DialectDruid {
+		// TODO: support dimension expression
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
 		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
 		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
 	} else {
-		selectCols = append(selectCols, colName)
+		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, dimExpr, colName))
 	}
 
 	for _, m := range q.Measures {
