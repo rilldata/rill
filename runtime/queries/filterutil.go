@@ -43,7 +43,7 @@ func FilterNotInClause(col *runtimev1.Expression, values []*runtimev1.Expression
 	}
 }
 
-func FilterLikeClause(col *runtimev1.Expression, val *runtimev1.Expression) *runtimev1.Expression {
+func FilterLikeClause(col, val *runtimev1.Expression) *runtimev1.Expression {
 	return &runtimev1.Expression{
 		Expression: &runtimev1.Expression_Cond{
 			Cond: &runtimev1.Condition{
@@ -54,7 +54,7 @@ func FilterLikeClause(col *runtimev1.Expression, val *runtimev1.Expression) *run
 	}
 }
 
-func FilterNotLikeClause(col *runtimev1.Expression, val *runtimev1.Expression) *runtimev1.Expression {
+func FilterNotLikeClause(col, val *runtimev1.Expression) *runtimev1.Expression {
 	return &runtimev1.Expression{
 		Expression: &runtimev1.Expression_Cond{
 			Cond: &runtimev1.Condition{

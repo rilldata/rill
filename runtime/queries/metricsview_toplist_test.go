@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -38,6 +39,25 @@ func TestMetricsViewsToplist_measure_filters(t *testing.T) {
 		MetricsView:     mv.Spec,
 		TimeStart:       ctr.Result.Min,
 		TimeEnd:         timestamppb.New(maxTime),
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_GT,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "measure_1",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(3.25),
+							},
+						},
+					},
+				},
+			},
+		},
 		Sort: []*runtimev1.MetricsViewSort{
 			{
 				Name:      "domain",

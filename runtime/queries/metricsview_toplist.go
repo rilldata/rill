@@ -240,7 +240,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	havingClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildFromExpression(q.Having, nil, dialect)
+		havingClause, havingClauseArgs, err = buildFromExpression(q.Having, measureAliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
