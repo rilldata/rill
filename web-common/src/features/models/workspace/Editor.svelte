@@ -55,6 +55,7 @@
   import { editorTheme } from "../../../components/editor/theme";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useAllSourceColumns } from "../../sources/selectors";
+  import { useAllModelColumns } from "../selectors";
 
   export let content: string;
   export let editorHeight = 0;
@@ -98,6 +99,15 @@
       const sourceIdentifier = sourceTable?.tableName;
       schema[sourceIdentifier] =
         sourceTable.profileColumns?.map((c) => c.name) ?? [];
+    }
+  }
+
+  //Auto complete: model tables
+  $: allModelColumns = useAllModelColumns(queryClient, $runtime?.instanceId);
+  $: if ($allModelColumns?.length) {
+    for (const modelTable of $allModelColumns) {
+      const modelIdentifier = modelTable?.tableName;
+      schema[modelIdentifier] = modelTable.profileColumns?.map((c) => c.name);
     }
   }
 
