@@ -14,15 +14,11 @@ import (
 type mockConn struct {
 	cfg         string
 	closeDelay  time.Duration
-	closeHang   bool
-	closeCalled bool
+	closeCalled atomic.Bool
 }
 
 func (c *mockConn) Close() error {
-	c.closeCalled = true
-	if c.closeHang {
-		select {}
-	}
+	c.closeCalled.Store(true)
 	time.Sleep(c.closeDelay)
 	return nil
 }
@@ -71,7 +67,7 @@ func TestBasic(t *testing.T) {
 		r()
 	}
 	time.Sleep(time.Second)
-	require.Equal(t, true, m1.(*mockConn).closeCalled)
+	require.Equal(t, true, m1.(*mockConn).closeCalled.Load())
 
 	// Close cache
 	require.NoError(t, c.Close(context.Background()))
@@ -145,7 +141,7 @@ func TestOpenDuringClose(t *testing.T) {
 	c.EvictWhere(func(cfg any) bool { return true })
 	// closeCalled is set before mockConn.Close hangs, but it will take 1s to actually close
 	time.Sleep(100 * time.Millisecond)
-	require.True(t, m1.(*mockConn).closeCalled)
+	require.True(t, m1.(*mockConn).closeCalled.Load())
 
 	// Open again, check it takes ~1s to do so
 	start := time.Now()
@@ -182,7 +178,7 @@ func TestCloseInUse(t *testing.T) {
 	// Evict it, check it's closed even though still in use (r1 not called)
 	c.EvictWhere(func(cfg any) bool { return true })
 	time.Sleep(time.Second)
-	require.Equal(t, true, m1.(*mockConn).closeCalled)
+	require.Equal(t, true, m1.(*mockConn).closeCalled.Load())
 
 	// Open "foo" again, check it opens a new one
 	m2, r2, err := c.Acquire(context.Background(), "foo")
@@ -196,16 +192,14 @@ func TestCloseInUse(t *testing.T) {
 }
 
 func TestHanging(t *testing.T) {
-	// Make it check for hanging conns every 100ms
-	checkHangingInterval = 100 * time.Millisecond
-
 	hangingOpens := atomic.Int64{}
 	hangingCloses := atomic.Int64{}
 
 	c := New(Options{
-		MaxConnectionsIdle: 2,
-		OpenTimeout:        100 * time.Millisecond,
-		CloseTimeout:       100 * time.Millisecond,
+		MaxConnectionsIdle:   2,
+		OpenTimeout:          100 * time.Millisecond,
+		CloseTimeout:         100 * time.Millisecond,
+		CheckHangingInterval: 100 * time.Millisecond,
 		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
 			time.Sleep(time.Second)
 			return &mockConn{
@@ -234,6 +228,6 @@ func TestHanging(t *testing.T) {
 	// Evict it, check it's closed even though still in use (r1 not called)
 	c.EvictWhere(func(cfg any) bool { return true })
 	time.Sleep(time.Second)
-	require.Equal(t, true, m1.(*mockConn).closeCalled)
+	require.Equal(t, true, m1.(*mockConn).closeCalled.Load())
 	require.GreaterOrEqual(t, hangingCloses.Load(), int64(1))
 }

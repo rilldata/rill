@@ -47,6 +47,8 @@ type Options struct {
 	OpenTimeout time.Duration
 	// CloseTimeout is the maximum amount of time to wait for a connection to close.
 	CloseTimeout time.Duration
+	// CheckHangingInterval is the interval at which to check for hanging open/close calls.
+	CheckHangingInterval time.Duration
 	// OpenFunc opens a connection.
 	OpenFunc func(ctx context.Context, cfg any) (Connection, error)
 	// KeyFunc computes a comparable key for a connection configuration.
@@ -69,7 +71,7 @@ type cacheImpl struct {
 	mu           sync.Mutex
 	entries      map[string]*entry
 	lru          *simplelru.LRU
-	singleflight *singleflight.Group[string, any]
+	singleflight *singleflight.Group[string, entryStatus]
 	ctx          context.Context
 	cancel       context.CancelFunc
 }
@@ -99,7 +101,7 @@ func New(opts Options) Cache {
 	c := &cacheImpl{
 		opts:         opts,
 		entries:      make(map[string]*entry),
-		singleflight: &singleflight.Group[string, any]{},
+		singleflight: &singleflight.Group[string, entryStatus]{},
 		ctx:          ctx,
 		cancel:       cancel,
 	}
@@ -110,7 +112,9 @@ func New(opts Options) Cache {
 		panic(err)
 	}
 
-	go c.periodicallyCheckHangingConnections()
+	if opts.CheckHangingInterval != 0 {
+		go c.periodicallyCheckHangingConnections()
+	}
 
 	return c
 }
@@ -143,16 +147,19 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 
 	c.mu.Unlock()
 
+	// We use the same singleflight key for opening and closing. This ensures only one operation can run at a time per entry.
+	// We need to retry once since the singleflight might currently be closing the same entry.
+	// We don't retry more than once to avoid potentially infinite open/close loops.
 	for attempt := 0; attempt < 2; attempt++ {
-		_, err := c.singleflight.Do(ctx, k, func(_ context.Context) (any, error) {
+		stat, err := c.singleflight.Do(ctx, k, func(_ context.Context) (entryStatus, error) {
 			c.mu.Lock()
 			if c.closed {
 				c.mu.Unlock()
-				return nil, errors.New("conncache: closed")
+				return entryStatusUnspecified, errors.New("conncache: closed")
 			}
 			if e.status == entryStatusOpen {
 				c.mu.Unlock()
-				return nil, nil
+				return entryStatusOpen, nil
 			}
 			c.retainEntry(k, e)
 			e.status = entryStatusOpening
@@ -179,27 +186,40 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 			e.err = err
 			c.mu.Unlock()
 
-			return nil, nil
+			return entryStatusOpen, nil
 		})
 		if err != nil {
 			// TODO: could be a caught panic. Should we handle panics?
 			return nil, nil, err
 		}
 
+		if stat != entryStatusOpen {
+			// TODO: Too fast
+			continue
+		}
+
 		c.mu.Lock()
-		if e.status == entryStatusOpen {
-			break
+		if e.status != entryStatusOpen {
+			c.releaseEntry(k, e)
+			c.mu.Unlock()
+			return nil, nil, errors.New("conncache: connection was immediately closed after being opened")
+		}
+		handle := e.handle
+		err = e.err
+		if e.err != nil {
+			c.releaseEntry(k, e)
+			c.mu.Unlock()
+			return nil, nil, err
 		}
 		c.mu.Unlock()
+		return handle, c.releaseFunc(k, e), nil
 	}
 
-	defer c.mu.Unlock()
+	c.mu.Lock()
+	c.releaseEntry(k, e)
+	c.mu.Unlock()
 
-	if e.err != nil {
-		c.releaseEntry(k, e)
-		return nil, nil, e.err
-	}
-	return e.handle, c.releaseFunc(k, e), nil
+	return nil, nil, errors.New("conncache: connection was closed repeatedly while trying to open it")
 }
 
 func (c *cacheImpl) EvictWhere(predicate func(cfg any) bool) {
@@ -266,12 +286,15 @@ func (c *cacheImpl) beginClose(k string, e *entry) {
 	c.retainEntry(k, e)
 
 	go func() {
+		// We use the same singleflight key for opening and closing. This ensures only one operation can run at a time per entry.
+		// We need to retry once since the singleflight might currently be opening the same entry.
+		// We don't retry more than once to avoid potentially infinite open/close loops.
 		for attempt := 0; attempt < 2; attempt++ {
-			_, _ = c.singleflight.Do(context.Background(), k, func(_ context.Context) (any, error) {
+			stat, _ := c.singleflight.Do(context.Background(), k, func(_ context.Context) (entryStatus, error) {
 				c.mu.Lock()
 				if e.status == entryStatusClosed {
 					c.mu.Unlock()
-					return nil, nil
+					return entryStatusClosed, nil
 				}
 				e.status = entryStatusClosing
 				e.since = time.Now()
@@ -295,16 +318,13 @@ func (c *cacheImpl) beginClose(k string, e *entry) {
 				e.err = err
 				c.mu.Unlock()
 
-				return nil, nil
+				return entryStatusClosed, nil
 			})
 			// TODO: can return err on panic in Close. Should we handle panics?
 
-			c.mu.Lock()
-			if e.status == entryStatusClosed {
-				c.mu.Unlock()
+			if stat == entryStatusClosed {
 				break
 			}
-			c.mu.Unlock()
 		}
 
 		c.mu.Lock()
@@ -352,10 +372,8 @@ func (c *cacheImpl) releaseFunc(key string, e *entry) ReleaseFunc {
 	}
 }
 
-var checkHangingInterval = time.Minute
-
 func (c *cacheImpl) periodicallyCheckHangingConnections() {
-	ticker := time.NewTicker(checkHangingInterval)
+	ticker := time.NewTicker(c.opts.CheckHangingInterval)
 	defer ticker.Stop()
 
 	for {
@@ -363,10 +381,10 @@ func (c *cacheImpl) periodicallyCheckHangingConnections() {
 		case <-ticker.C:
 			c.mu.Lock()
 			for _, e := range c.entries {
-				if c.opts.OpenTimeout != 0 && e.status == entryStatusOpening && time.Since(e.since) >= c.opts.OpenTimeout {
+				if c.opts.OpenTimeout != 0 && e.status == entryStatusOpening && time.Since(e.since) > c.opts.OpenTimeout {
 					c.opts.HangingFunc(e.cfg, true)
 				}
-				if c.opts.CloseTimeout != 0 && e.status == entryStatusClosing && time.Since(e.since) >= c.opts.CloseTimeout {
+				if c.opts.CloseTimeout != 0 && e.status == entryStatusClosing && time.Since(e.since) > c.opts.CloseTimeout {
 					c.opts.HangingFunc(e.cfg, false)
 				}
 			}

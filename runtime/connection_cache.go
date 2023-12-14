@@ -27,9 +27,10 @@ type cachedConnectionConfig struct {
 // It also monitors for hanging connections.
 func (r *Runtime) newConnectionCache() conncache.Cache {
 	return conncache.New(conncache.Options{
-		MaxConnectionsIdle: r.opts.ConnectionCacheSize,
-		OpenTimeout:        2 * time.Minute,
-		CloseTimeout:       5 * time.Minute,
+		MaxConnectionsIdle:   r.opts.ConnectionCacheSize,
+		OpenTimeout:          2 * time.Minute,
+		CloseTimeout:         5 * time.Minute,
+		CheckHangingInterval: time.Minute,
 		OpenFunc: func(ctx context.Context, cfg any) (conncache.Connection, error) {
 			x := cfg.(cachedConnectionConfig)
 			return r.openAndMigrate(ctx, x)
