@@ -28,8 +28,8 @@ type cachedConnectionConfig struct {
 func (r *Runtime) newConnectionCache() conncache.Cache {
 	return conncache.New(conncache.Options{
 		MaxConnectionsIdle:   r.opts.ConnectionCacheSize,
-		OpenTimeout:          2 * time.Minute,
-		CloseTimeout:         5 * time.Minute,
+		OpenTimeout:          10 * time.Minute,
+		CloseTimeout:         10 * time.Minute,
 		CheckHangingInterval: time.Minute,
 		OpenFunc: func(ctx context.Context, cfg any) (conncache.Connection, error) {
 			x := cfg.(cachedConnectionConfig)
