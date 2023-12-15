@@ -27,7 +27,7 @@ func TestBasic(t *testing.T) {
 	opens := atomic.Int64{}
 
 	c := New(Options{
-		MaxConnectionsIdle: 2,
+		MaxIdleConnections: 2,
 		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
 			opens.Add(1)
 			return &mockConn{cfg: cfg.(string)}, nil
@@ -77,7 +77,7 @@ func TestConcurrentOpen(t *testing.T) {
 	opens := atomic.Int64{}
 
 	c := New(Options{
-		MaxConnectionsIdle: 2,
+		MaxIdleConnections: 2,
 		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
 			opens.Add(1)
 			time.Sleep(time.Second)
@@ -118,7 +118,7 @@ func TestOpenDuringClose(t *testing.T) {
 	opens := atomic.Int64{}
 
 	c := New(Options{
-		MaxConnectionsIdle: 2,
+		MaxIdleConnections: 2,
 		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
 			opens.Add(1)
 			return &mockConn{
@@ -161,7 +161,7 @@ func TestCloseDuringOpen(t *testing.T) {
 	m := &mockConn{cfg: "foo"}
 
 	c := New(Options{
-		MaxConnectionsIdle: 2,
+		MaxIdleConnections: 2,
 		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
 			time.Sleep(time.Second)
 			opens.Add(1)
@@ -195,7 +195,7 @@ func TestCloseInUse(t *testing.T) {
 	opens := atomic.Int64{}
 
 	c := New(Options{
-		MaxConnectionsIdle: 2,
+		MaxIdleConnections: 2,
 		OpenFunc: func(ctx context.Context, cfg any) (Connection, error) {
 			opens.Add(1)
 			return &mockConn{cfg: cfg.(string)}, nil
@@ -231,7 +231,7 @@ func TestHanging(t *testing.T) {
 	hangingCloses := atomic.Int64{}
 
 	c := New(Options{
-		MaxConnectionsIdle:   2,
+		MaxIdleConnections:   2,
 		OpenTimeout:          100 * time.Millisecond,
 		CloseTimeout:         100 * time.Millisecond,
 		CheckHangingInterval: 100 * time.Millisecond,

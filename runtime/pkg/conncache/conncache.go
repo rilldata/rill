@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/golang-lru/simplelru"
+	"go.opentelemetry.io/otel/metric"
 )
 
 // Cache is a concurrency-safe cache of stateful connection objects.
@@ -40,8 +41,8 @@ type ReleaseFunc func()
 
 // Options configures a new connection cache.
 type Options struct {
-	// MaxConnectionsIdle is the maximum number of non-acquired connections that will be kept open.
-	MaxConnectionsIdle int
+	// MaxIdleConnections is the maximum number of non-acquired connections that will be kept open.
+	MaxIdleConnections int
 	// OpenTimeout is the maximum amount of time to wait for a connection to open.
 	OpenTimeout time.Duration
 	// CloseTimeout is the maximum amount of time to wait for a connection to close.
@@ -54,6 +55,18 @@ type Options struct {
 	KeyFunc func(cfg any) string
 	// HangingFunc is called when an open or close exceeds its timeout and does not respond to context cancellation.
 	HangingFunc func(cfg any, open bool)
+	// Metrics are optional instruments for observability.
+	Metrics Metrics
+}
+
+// Metrics are optional instruments for observability. If an instrument is nil, it will not be collected.
+type Metrics struct {
+	Opens          metric.Int64Counter
+	Closes         metric.Int64Counter
+	SizeTotal      metric.Int64UpDownCounter
+	SizeLRU        metric.Int64UpDownCounter
+	OpenLatencyMS  metric.Int64Histogram
+	CloseLatencyMS metric.Int64Histogram
 }
 
 var _ Cache = (*cacheImpl)(nil)
@@ -108,7 +121,7 @@ func New(opts Options) Cache {
 	}
 
 	var err error
-	c.lru, err = simplelru.NewLRU(opts.MaxConnectionsIdle, c.lruEvictionHandler)
+	c.lru, err = simplelru.NewLRU(opts.MaxIdleConnections, c.lruEvictionHandler)
 	if err != nil {
 		panic(err)
 	}
@@ -133,6 +146,9 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 	if !ok {
 		e = &entry{cfg: cfg, since: time.Now()}
 		c.entries[k] = e
+		if c.opts.Metrics.SizeTotal != nil {
+			c.opts.Metrics.SizeTotal.Add(c.ctx, 1)
+		}
 	}
 
 	c.retainEntry(k, e)
@@ -191,6 +207,7 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 		e.err = nil
 
 		go func() {
+			start := time.Now()
 			var handle Connection
 			var err error
 			if c.opts.OpenTimeout == 0 {
@@ -199,6 +216,13 @@ func (c *cacheImpl) Acquire(ctx context.Context, cfg any) (Connection, ReleaseFu
 				ctx, cancel := context.WithTimeout(c.ctx, c.opts.OpenTimeout)
 				handle, err = c.opts.OpenFunc(ctx, cfg)
 				cancel()
+			}
+
+			if c.opts.Metrics.Opens != nil {
+				c.opts.Metrics.Opens.Add(c.ctx, 1)
+			}
+			if c.opts.Metrics.OpenLatencyMS != nil {
+				c.opts.Metrics.OpenLatencyMS.Record(c.ctx, time.Since(start).Milliseconds())
 			}
 
 			c.mu.Lock()
@@ -322,12 +346,20 @@ func (c *cacheImpl) beginClose(k string, e *entry) {
 	e.since = time.Now()
 
 	go func() {
+		start := time.Now()
 		var err error
 		if e.handle != nil {
 			err = e.handle.Close()
 		}
 		if err == nil {
 			err = errors.New("conncache: connection closed")
+		}
+
+		if c.opts.Metrics.Closes != nil {
+			c.opts.Metrics.Closes.Add(c.ctx, 1)
+		}
+		if c.opts.Metrics.CloseLatencyMS != nil {
+			c.opts.Metrics.CloseLatencyMS.Record(c.ctx, time.Since(start).Milliseconds())
 		}
 
 		c.mu.Lock()
@@ -361,6 +393,9 @@ func (c *cacheImpl) retainEntry(key string, e *entry) {
 	if e.refs == 1 {
 		// NOTE: lru.Remove is safe even if it's not in the LRU (should only happen if the entry is acquired for the first time)
 		_ = c.lru.Remove(key)
+		if c.opts.Metrics.SizeLRU != nil {
+			c.opts.Metrics.SizeLRU.Add(c.ctx, -1)
+		}
 	}
 }
 
@@ -370,8 +405,14 @@ func (c *cacheImpl) releaseEntry(key string, e *entry) {
 		// If open, keep entry and put in LRU. Else remove entirely.
 		if e.status != entryStatusClosing && e.status != entryStatusClosed {
 			c.lru.Add(key, e)
+			if c.opts.Metrics.SizeLRU != nil {
+				c.opts.Metrics.SizeLRU.Add(c.ctx, 1)
+			}
 		} else {
 			delete(c.entries, key)
+			if c.opts.Metrics.SizeTotal != nil {
+				c.opts.Metrics.SizeTotal.Add(c.ctx, -1)
+			}
 		}
 	}
 }
@@ -392,12 +433,15 @@ func (c *cacheImpl) periodicallyCheckHangingConnections() {
 		select {
 		case <-ticker.C:
 			c.mu.Lock()
+			hanging := 0
 			for k := range c.singleflight {
 				e := c.entries[k]
 				if c.opts.OpenTimeout != 0 && e.status == entryStatusOpening && time.Since(e.since) > c.opts.OpenTimeout {
+					hanging++
 					c.opts.HangingFunc(e.cfg, true)
 				}
 				if c.opts.CloseTimeout != 0 && e.status == entryStatusClosing && time.Since(e.since) > c.opts.CloseTimeout {
+					hanging++
 					c.opts.HangingFunc(e.cfg, false)
 				}
 			}
