@@ -17,20 +17,9 @@
     "clean": "rm -rf dev-project",
     "test": "npm run test -w web-common && npm run test -w web-local && npm run test -w web-auth"
   },
-  "pkg": {
-    "scripts": "web-local/dist/**/*.js",
-    "assets": [
-      "node_modules/**/*",
-      "web-local/build/**/*",
-      "web-local/dist/runtime/*",
-      "package.json",
-      "web-local/package.json"
-    ]
-  },
-  "dependencies": {
-    "@bufbuild/protobuf": "^1.0.0",
-    "d3-interpolate-path": "^2.3.0",
-    "d3-line-chunked": "^1.5.1",
-    "d3-selection": "^3.0.0"
+  "overrides": {
+    "@rgossiaux/svelte-headlessui": {
+      "svelte": "^4.0.0"
+    }
   }
 }

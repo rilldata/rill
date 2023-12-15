@@ -12,6 +12,7 @@ import {
   V1ReconcileStatus,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { derived, Readable, Unsubscriber } from "svelte/store";
 
@@ -23,7 +24,7 @@ export enum ResourceStatus {
 
 export type ResourceStatusState = {
   status: ResourceStatus;
-  error?: unknown;
+  error?: ErrorType<unknown>;
   resource?: V1Resource;
 };
 
@@ -43,9 +44,9 @@ export function initialResourceStatusStore(
     ([resourceName, projectParserResp]) => {
       if (
         !projectParserResp.data ||
-        projectParserResp.data.projectParser.state.parseErrors.filter(
+        (projectParserResp?.data?.projectParser?.state?.parseErrors?.filter(
           (s) => s.filePath === filePath
-        ).length > 0
+        ).length ?? 0) > 0
       ) {
         return ResourceStatus.Errored;
       }
@@ -105,12 +106,17 @@ export function resourceStatusStore(
       )
         return { status: ResourceStatus.Busy };
 
+      const changed =
+        !lastUpdatedOn ||
+        (res.data?.meta?.stateUpdatedOn !== undefined
+          ? res.data?.meta?.stateUpdatedOn > lastUpdatedOn
+          : false);
+
       return {
         status: !res.data?.meta?.reconcileError
           ? ResourceStatus.Idle
           : ResourceStatus.Errored,
-        changed:
-          !lastUpdatedOn || res.data?.meta?.stateUpdatedOn > lastUpdatedOn,
+        changed,
       };
     }
   );
@@ -143,13 +149,18 @@ export function waitForResourceUpdate(
       if (status.status === ResourceStatus.Busy) return;
       if (timer) clearTimeout(timer);
 
+      const do_end =
+        status.status === ResourceStatus.Idle &&
+        status.changed !== undefined &&
+        status.changed;
+
       if (idled) {
-        end(status.status === ResourceStatus.Idle && status.changed);
+        end(do_end);
         return;
       } else {
         idled = true;
         timer = setTimeout(() => {
-          end(status.status === ResourceStatus.Idle && status.changed);
+          end(do_end);
         }, 500);
       }
     });

@@ -10,13 +10,10 @@
 
   const dispatch = createEventDispatcher();
 
-  let hovered = false;
   const onHover = () => {
-    hovered = true;
     dispatch("focus");
   };
   const onLeave = () => {
-    hovered = false;
     dispatch("blur");
   };
 </script>
@@ -28,7 +25,7 @@
   on:focus={onHover}
   on:mouseleave={onLeave}
   on:mouseover={onHover}
-  transition:slide|local={{ duration: 200 }}
+  transition:slide={{ duration: 200 }}
 >
   <BarAndLabel
     {color}

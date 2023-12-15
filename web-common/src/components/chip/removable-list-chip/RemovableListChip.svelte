@@ -13,6 +13,7 @@ are details left to the consumer of the component; this component should remain 
 -->
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
+  import { Writable, writable } from "svelte/store";
   import { fly } from "svelte/transition";
   import WithTogglableFloatingElement from "../../floating-element/WithTogglableFloatingElement.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
@@ -22,7 +23,6 @@ are details left to the consumer of the component; this component should remain 
   import { Chip } from "../index";
   import RemovableListBody from "./RemovableListBody.svelte";
   import RemovableListMenu from "./RemovableListMenu.svelte";
-  import { writable, Writable } from "svelte/store";
 
   export let name: string;
   export let selectedValues: string[];
@@ -31,13 +31,10 @@ are details left to the consumer of the component; this component should remain 
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
   export let excludeMode;
-  export let isHidden = false;
   export let colors: ChipColors = defaultChipColors;
   export let label: string | undefined = undefined;
 
   const dispatch = createEventDispatcher();
-
-  let active = false;
 
   const excludeStore: Writable<boolean> = writable(excludeMode);
   $: excludeStore.set(excludeMode);
@@ -45,6 +42,7 @@ are details left to the consumer of the component; this component should remain 
 
 <WithTogglableFloatingElement
   let:toggleFloatingElement
+  let:active
   distance={8}
   alignment="start"
 >
@@ -73,13 +71,13 @@ are details left to the consumer of the component; this component should remain 
       <!-- body -->
       <RemovableListBody
         slot="body"
-        {isHidden}
         label={name}
         values={selectedValues}
         show={1}
+        {active}
       />
     </Chip>
-    <div slot="tooltip-content" transition:fly|local={{ duration: 100, y: 4 }}>
+    <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
       <TooltipContent maxWidth="400px">
         <TooltipTitle>
           <svelte:fragment slot="name">{name}</svelte:fragment>
@@ -95,6 +93,7 @@ are details left to the consumer of the component; this component should remain 
   <RemovableListMenu
     {excludeStore}
     slot="floating-element"
+    let:toggleFloatingElement
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}
     on:apply

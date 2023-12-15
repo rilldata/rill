@@ -25,6 +25,7 @@ This component needs to do the following:
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { NO_COMPARISON_LABEL } from "@rilldata/web-common/lib/time/config";
+  import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { matchSorter } from "match-sorter";
   import SelectorButton from "./SelectorButton.svelte";
@@ -34,7 +35,7 @@ This component needs to do the following:
 
   const TIME = "Time";
 
-  let dimensions = [];
+  let dimensions: MetricsViewSpecDimensionV2[] | undefined = [];
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
@@ -46,13 +47,15 @@ This component needs to do the following:
   let searchText = "";
 
   function getLabelForDimension(dimension: string) {
-    return dimensions.find((d) => d.name === dimension)?.label;
+    if (!dimensions) return dimension;
+    const dimensionObj = dimensions.find((d) => d.name === dimension);
+    return dimensionObj?.label || dimension;
   }
 
   /** compile the comparison options */
-  $: options = dimensions.map((d) => ({
+  $: options = (dimensions || []).map((d) => ({
     name: d.name,
-    label: d.label,
+    label: d.label || d.name,
   }));
 
   $: menuOptions = matchSorter(options, searchText, { keys: ["label"] });
@@ -95,6 +98,8 @@ This component needs to do the following:
           toggleFloatingElement();
         }}
         {label}
+        {active}
+        outline={true}
       >
         <div slot="body" class="flex gap-x-2">
           <div
@@ -136,6 +141,7 @@ This component needs to do the following:
   <Menu
     minWidth="280px"
     slot="floating-element"
+    let:toggleFloatingElement
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}
     label="Comparison selector"
@@ -183,7 +189,9 @@ This component needs to do the following:
         <MenuItem
           selected={option.name === intermediateSelection}
           on:before-select={() => {
-            intermediateSelection = option.name;
+            if (option.name) {
+              intermediateSelection = option.name;
+            }
           }}
           on:select={() => {
             enableComparison("dimension", option.name);

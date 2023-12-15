@@ -999,6 +999,45 @@ measures:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestTheme(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`themes/t1.yaml`: `
+kind: theme
+
+colors:
+  primary: red
+  secondary: grey
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindTheme, Name: "t1"},
+			Paths: []string{"/themes/t1.yaml"},
+			ThemeSpec: &runtimev1.ThemeSpec{
+				PrimaryColor: &runtimev1.Color{
+					Red:   1,
+					Green: 0,
+					Blue:  0,
+					Alpha: 1,
+				},
+				SecondaryColor: &runtimev1.Color{
+					Red:   0.5019608,
+					Green: 0.5019608,
+					Blue:  0.5019608,
+					Alpha: 1,
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
 	// Check resources
 	gotResources := maps.Clone(p.Resources)
@@ -1013,6 +1052,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.ModelSpec, got.ModelSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
+				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
 
 				delete(gotResources, got.Name)
 				found = true

@@ -5,7 +5,7 @@ import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-clie
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { createSparkline } from "@rilldata/web-common/components/data-graphic/marks/sparkline";
-import { safeFormatter, transposeArray } from "./util";
+import { transposeArray } from "./util";
 import {
   DEFAULT_TIME_RANGES,
   TIME_COMPARISON,
@@ -81,7 +81,7 @@ function prepareDimensionData(
   if (!data || !totalsData || !measure || data?.length < selectedValues.length)
     return;
 
-  const formatter = safeFormatter(createMeasureValueFormatter(measure));
+  const formatter = createMeasureValueFormatter<null | undefined>(measure);
   const measureName = measure?.name as string;
   const validPercentOfTotal = measure?.validPercentOfTotal as boolean;
 
@@ -198,7 +198,7 @@ function prepareTimeData(
 ): TableData {
   if (!data || !measure) return;
 
-  const formatter = safeFormatter(createMeasureValueFormatter(measure));
+  const formatter = createMeasureValueFormatter<null | undefined>(measure);
   const measureName = measure?.name ?? "";
 
   /** Strip out data points out of chart view */

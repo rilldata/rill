@@ -3,25 +3,24 @@ package service
 import (
 	"github.com/rilldata/rill/cli/cmd/service/token"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func ServiceCmd(cfg *config.Config) *cobra.Command {
+func ServiceCmd(ch *cmdutil.Helper) *cobra.Command {
+	cfg := ch.Config
 	serviceCmd := &cobra.Command{
 		Use:               "service",
 		Short:             "Manage service accounts",
-		Hidden:            !cfg.IsDev(),
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 	}
 
 	serviceCmd.PersistentFlags().StringVar(&cfg.Org, "org", cfg.Org, "Organization Name")
-	serviceCmd.AddCommand(ListCmd(cfg))
-	serviceCmd.AddCommand(CreateCmd(cfg))
-	serviceCmd.AddCommand(RenameCmd(cfg))
-	serviceCmd.AddCommand(DeleteCmd(cfg))
-	serviceCmd.AddCommand(token.TokenCmd(cfg))
+	serviceCmd.AddCommand(ListCmd(ch))
+	serviceCmd.AddCommand(CreateCmd(ch))
+	serviceCmd.AddCommand(RenameCmd(ch))
+	serviceCmd.AddCommand(DeleteCmd(ch))
+	serviceCmd.AddCommand(token.TokenCmd(ch))
 
 	return serviceCmd
 }

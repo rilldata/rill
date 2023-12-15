@@ -8,18 +8,20 @@
   import { viewAsUserStore } from "../../features/view-as-user/viewAsUserStore";
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
+  import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import ShareDashboardButton from "../dashboards/share/ShareDashboardButton.svelte";
   import { isErrorStoreEmpty } from "../errors/error-store";
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import Breadcrumbs from "./Breadcrumbs.svelte";
   import { isDashboardPage, isProjectPage } from "./nav-utils";
 
+  const user = createAdminServiceGetCurrentUser();
+
   $: organization = $page.params.organization;
   $: project = $page.params.project;
+
   $: onProjectPage = isProjectPage($page);
   $: onDashboardPage = isDashboardPage($page);
-
-  const user = createAdminServiceGetCurrentUser();
 </script>
 
 <div
@@ -55,6 +57,7 @@
       <ShareProjectButton {organization} {project} />
     {/if}
     {#if onDashboardPage}
+      <LastRefreshedDate />
       <ShareDashboardButton />
     {/if}
     {#if $user.isSuccess}

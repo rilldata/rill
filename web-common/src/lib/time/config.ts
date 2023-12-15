@@ -19,6 +19,8 @@ import {
   TimeTruncationType,
 } from "./types";
 
+export type TimeRangeMetaSet = Partial<Record<TimeRangePreset, TimeRangeMeta>>;
+
 /**
  * The "latest" window time ranges are defined as a set of time ranges that are
  * anchored to the latest data point in the dataset with a conceptually-fixed
@@ -30,7 +32,7 @@ import {
  * may be during an incomplete period. For now, we are truncating to a reasonable
  * periodicity (e.g. to the start of the hour) and then applying the offset.
  */
-export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
+export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.LAST_SIX_HOURS]: {
     label: "Last 6 Hours",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
@@ -196,9 +198,7 @@ export const LATEST_WINDOW_TIME_RANGES: Record<string, TimeRangeMeta> = {
  * Like the latest window ranges, wetruncate the latest data point datetime to the
  * start of a reasonable period for now.
  */
-export const PERIOD_TO_DATE_RANGES: Partial<
-  Record<TimeRangePreset, TimeRangeMeta>
-> = {
+export const PERIOD_TO_DATE_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.TODAY]: {
     label: "Today",
     rangePreset: RangePresetType.PERIOD_ANCHORED,
@@ -317,9 +317,7 @@ export const DEFAULT = {
 };
 
 // TODO: get rid of Partial here
-export const DEFAULT_TIME_RANGES: Partial<
-  Record<TimeRangePreset, TimeRangeMeta>
-> = {
+export const DEFAULT_TIME_RANGES: TimeRangeMetaSet = {
   ...LATEST_WINDOW_TIME_RANGES,
   ...PERIOD_TO_DATE_RANGES,
   [TimeRangePreset.ALL_TIME]: ALL_TIME,
@@ -337,6 +335,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,
     label: "minute",
     duration: Period.MINUTE,
+    d3format: "%M:%S",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -349,6 +348,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_HOUR,
     label: "hour",
     duration: Period.HOUR,
+    d3format: "%H:%M",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -360,6 +360,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_DAY,
     label: "day",
     duration: Period.DAY,
+    d3format: "%b %d",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -370,6 +371,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_WEEK,
     label: "week",
     duration: Period.WEEK,
+    d3format: "%b %d",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -380,6 +382,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_MONTH,
     label: "month",
     duration: Period.MONTH,
+    d3format: "%b '%y",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -389,6 +392,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_QUARTER,
     label: "quarter",
     duration: Period.QUARTER,
+    d3format: "%b '%y",
     formatDate: {
       year: "numeric",
       month: "short",
@@ -398,6 +402,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
     grain: V1TimeGrain.TIME_GRAIN_YEAR,
     label: "year",
     duration: Period.YEAR,
+    d3format: "%Y",
     formatDate: {
       year: "numeric",
     },
@@ -407,7 +412,7 @@ export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
 /** The default configurations for time comparisons. */
 export const TIME_COMPARISON = {
   [TimeComparisonOption.CONTIGUOUS]: {
-    label: "Last period",
+    label: "Previous period",
     shorthand: "prev. period",
     description: "Compare the current time range to the previous time range",
     comparisonType: TimeComparisonOption.CONTIGUOUS,

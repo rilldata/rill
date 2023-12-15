@@ -42,7 +42,7 @@ it to do any automatic binning of data, which is done server-side.
   // get extents
   $: xMinValue = min(data, (d) => d[xLowAccessor]);
   $: xMaxValue = max(data, (d) => d[xHighAccessor]);
-  $: [yMinValue, yMaxValue] = extent(data, (d) => d[yAccessor]);
+  $: [, yMaxValue] = extent(data, (d) => d[yAccessor]);
   // set your extrema here
   $: if (inferXExtent) xMinStore.setWithKey(markID, xMin || xMinValue);
   $: if (inferXExtent) xMaxStore.setWithKey(markID, xMax || xMaxValue);

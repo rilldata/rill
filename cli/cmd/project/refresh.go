@@ -4,19 +4,19 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func RefreshCmd(cfg *config.Config) *cobra.Command {
+func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 	var source []string
+	cfg := ch.Config
 
 	refreshCmd := &cobra.Command{
 		Use:               "refresh [<project-name>]",
 		Args:              cobra.MaximumNArgs(1),
-		Short:             "Refresh project",
+		Short:             "Refresh the project's data sources",
 		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -45,6 +45,10 @@ func RefreshCmd(cfg *config.Config) *cobra.Command {
 			})
 			if err != nil {
 				return err
+			}
+
+			if resp.ProdDeployment == nil {
+				return fmt.Errorf("no production deployment found for project %q", project)
 			}
 
 			_, err = client.TriggerRefreshSources(ctx, &adminv1.TriggerRefreshSourcesRequest{DeploymentId: resp.ProdDeployment.Id, Sources: source})

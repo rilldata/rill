@@ -156,6 +156,7 @@ linters-settings:
     disable-all: true
   gosec:
     excludes:
+      - G108
       - G112
       - G203
       - G306

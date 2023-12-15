@@ -34,9 +34,15 @@ func TruncateTime(start time.Time, tg TimeGrain, tz *time.Location, firstDay, fi
 	case TimeGrainMinute:
 		return start.Truncate(time.Minute)
 	case TimeGrainHour:
+		previousTimestamp := start.Add(-time.Hour)   // DST check, ie in NewYork 1:00am can be equal 2:00am
+		previousTimestamp = previousTimestamp.In(tz) // if it happens then converting back to UTC loses the hour
 		start = start.In(tz)
 		start = time.Date(start.Year(), start.Month(), start.Day(), start.Hour(), 0, 0, 0, tz)
-		return start.In(time.UTC)
+		utc := start.In(time.UTC)
+		if previousTimestamp.Hour() == start.Hour() {
+			return utc.Add(time.Hour)
+		}
+		return utc
 	case TimeGrainDay:
 		start = start.In(tz)
 		start = time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, tz)

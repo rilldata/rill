@@ -18,7 +18,7 @@
   export let row;
   export let column;
   export let value;
-  export let formattedValue;
+  export let formattedValue = null;
   export let type;
   export let barValue = 0;
   export let rowActive = false;
@@ -108,6 +108,8 @@
 
 <Tooltip location="top" distance={16} suppress={suppressTooltip}>
   <div
+    role="gridcell"
+    tabindex="0"
     on:mouseover={onFocus}
     on:mouseout={onBlur}
     on:focus={onFocus}

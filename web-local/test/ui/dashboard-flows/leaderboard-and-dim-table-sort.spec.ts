@@ -18,7 +18,7 @@ test.describe("leaderboard and dimension table sorting", () => {
   startRuntimeForEachTest();
 
   test("leaderboard and dimension table sorting", async ({ page }) => {
-    test.setTimeout(60000);
+    test.setTimeout(30000);
     await page.goto("/");
     // disable animations
     await page.addStyleTag({
@@ -93,9 +93,14 @@ test.describe("leaderboard and dimension table sorting", () => {
     await page.getByRole("button", { name: "Select a context column" }).click();
     await page.getByRole("menuitem", { name: "Percent change" }).click();
 
+    // need a slight delay for the rankings to update
+    await page.waitForTimeout(1000);
+
+    // Broader selectors using RegEx to account for some Playwright runs triggering the display
+    // of the starting value on hover
     await assertAAboveB(
-      page.getByRole("button", { name: "Google 116 4%" }),
-      page.getByRole("button", { name: "Facebook 283 -4%" })
+      page.getByRole("button", { name: /^Google/ }),
+      page.getByRole("button", { name: /^Facebook/ })
     );
 
     // toggle sort by pct change

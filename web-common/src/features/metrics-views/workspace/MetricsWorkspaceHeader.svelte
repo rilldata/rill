@@ -5,7 +5,6 @@
   import { isDuplicateName } from "@rilldata/web-common/features/entity-management/name-utils";
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { WorkspaceHeader } from "../../../layout/workspace";
   import { runtime } from "../../../runtime-client/runtime-store";
   import GoToDashboardButton from "./GoToDashboardButton.svelte";
@@ -24,7 +23,9 @@
       e.target.value = metricsDefName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, metricsDefName, $allNamesQuery.data)) {
+    if (
+      isDuplicateName(e.target.value, metricsDefName, $allNamesQuery.data ?? [])
+    ) {
       notifications.send({
         message: `Name ${e.target.value} is already in use`,
       });
@@ -45,9 +46,6 @@
   $: titleInput = metricsDefName;
 </script>
 
-<WorkspaceHeader
-  {...{ titleInput, onChangeCallback }}
-  appRunning={$appQueryStatusStore}
->
+<WorkspaceHeader {...{ titleInput, onChangeCallback }}>
   <GoToDashboardButton {metricsDefName} slot="cta" />
 </WorkspaceHeader>

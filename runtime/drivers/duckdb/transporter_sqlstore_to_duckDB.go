@@ -121,19 +121,38 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 		s.logger.Info("records to be ingested", zap.Uint64("rows", total))
 		p.Target(int64(total), drivers.ProgressUnitRecord)
 	}
-	// create table
-	qry, err := CreateTableQuery(schema, table)
+	// we first ingest data in a temporary table in the main db
+	// and then copy it to the final table to ensure that the final table is always created using CRUD APIs which takes care
+	// whether table goes in main db or in separate table specific db
+	tmpTable := fmt.Sprintf("__%s_tmp_postgres", table)
+	// generate create table query
+	qry, err := CreateTableQuery(schema, tmpTable)
 	if err != nil {
 		return err
 	}
 
-	if err := s.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1}); err != nil {
+	// create table
+	err = s.to.Exec(ctx, &drivers.Statement{Query: qry, Priority: 1, LongRunning: true})
+	if err != nil {
 		return err
 	}
 
-	return s.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
-		return RawConn(conn, func(conn driver.Conn) error {
-			a, err := duckdb.NewAppenderFromConn(conn, "", table)
+	defer func() {
+		// ensure temporary table is cleaned
+		err := s.to.Exec(context.Background(), &drivers.Statement{
+			Query:       fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable),
+			Priority:    100,
+			LongRunning: true,
+		})
+		if err != nil {
+			s.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
+		}
+	}()
+
+	err = s.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, conn *sql.Conn) error {
+		// append data using appender API
+		return rawConn(conn, func(conn driver.Conn) error {
+			a, err := duckdb.NewAppenderFromConn(conn, "", tmpTable)
 			if err != nil {
 				return err
 			}
@@ -173,6 +192,12 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 			}
 		})
 	})
+	if err != nil {
+		return err
+	}
+
+	// copy data from temp table to target table
+	return s.to.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", tmpTable))
 }
 
 func CreateTableQuery(schema *runtimev1.StructType, name string) (string, error) {

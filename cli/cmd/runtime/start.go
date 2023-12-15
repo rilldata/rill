@@ -10,10 +10,11 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/redis/go-redis/v9"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -37,6 +38,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
+	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
 )
@@ -47,6 +49,7 @@ import (
 type Config struct {
 	HTTPPort                int                    `default:"8080" split_words:"true"`
 	GRPCPort                int                    `default:"9090" split_words:"true"`
+	DebugPort               int                    `default:"6060" split_words:"true"`
 	LogLevel                zapcore.Level          `default:"info" split_words:"true"`
 	MetricsExporter         observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter          observability.Exporter `default:"" split_words:"true"`
@@ -89,11 +92,12 @@ type Config struct {
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
-func StartCmd(cliCfg *config.Config) *cobra.Command {
+func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start stand-alone runtime server",
 		Run: func(cmd *cobra.Command, args []string) {
+			cliCfg := ch.Config
 			// Load .env (note: fails silently if .env has errors)
 			_ = godotenv.Load()
 
@@ -233,6 +237,9 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
 			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
+			if conf.DebugPort != 0 {
+				group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
+			}
 			err = group.Wait()
 			if err != nil {
 				logger.Error("server crashed", zap.Error(err))

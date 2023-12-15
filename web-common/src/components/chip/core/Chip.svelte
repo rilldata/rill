@@ -10,6 +10,7 @@
 
   export let removable = false;
   export let active = false;
+  export let outline = false;
 
   /** chip style props */
   export let extraRounded = true;
@@ -21,6 +22,7 @@
   export let textClass = defaultChipColors.textClass;
   export let bgActiveClass = defaultChipColors.bgActiveClass;
   export let outlineClass = defaultChipColors.outlineClass;
+  export let outlineActiveClass = defaultChipColors.outlineActiveClass;
 
   /** if removable is true, these props control the tooltip positioning */
   export let removeButtonTooltipLocation = "bottom";
@@ -34,20 +36,18 @@
   const dispatch = createEventDispatcher();
 </script>
 
-<div in:slideRight|local={{ duration: 150 }}>
+<div in:slideRight={{ duration: 150 }}>
   <button
     on:click
     class="
     grid gap-x-2 items-center pl-2 pr-{extraPadding ? '4' : '2'}
       py-1 {extraRounded ? 'rounded-2xl' : 'rounded-sm'} cursor-pointer
     {textClass}
-    {bgBaseClass} 
-    {outlineClass} 
     {bgHoverClass} 
-    {active ? bgActiveClass : ''}
+    {active ? bgActiveClass : bgBaseClass}
+    {outline ? outlineClass : ''}
+    {active && outline ? outlineActiveClass : ''} 
   "
-    class:outline-2={active}
-    class:outline={active}
     style:grid-template-columns="{$$slots.icon || removable
       ? "max-content"
       : ""}

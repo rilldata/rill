@@ -2,21 +2,20 @@ package admin
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func PingCmd(cfg *config.Config) *cobra.Command {
+func PingCmd(ch *cmdutil.Helper) *cobra.Command {
 	var adminURL string
 
 	pingCmd := &cobra.Command{
 		Use:   "ping",
 		Short: "Ping",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			// Must set here to avoid flag parser overriding it globally
 			cfg.AdminURL = adminURL
 
@@ -31,7 +30,7 @@ func PingCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Pong: %s\n", pong.Time.AsTime().String())
+			ch.Printer.Printf("Pong: %s\n", pong.Time.AsTime().String())
 			return nil
 		},
 	}

@@ -6,38 +6,29 @@
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import DefaultTimeRangeMenuItem from "@rilldata/web-common/features/dashboards/time-controls/DefaultTimeRangeMenuItem.svelte";
+  import TimeRangeScrubChip from "@rilldata/web-common/features/dashboards/time-controls/TimeRangeScrubChip.svelte";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import {
     ALL_TIME,
     DEFAULT_TIME_RANGES,
-    LATEST_WINDOW_TIME_RANGES,
-    PERIOD_TO_DATE_RANGES,
   } from "@rilldata/web-common/lib/time/config";
-  import {
-    getChildTimeRanges,
-    prettyFormatTimeRange,
-  } from "@rilldata/web-common/lib/time/ranges";
-  import {
-    humaniseISODuration,
-    ISODurationToTimeRangePreset,
-  } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+  import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
+  import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import {
     DashboardTimeControls,
     TimeRange,
-    TimeRangeOption,
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { Menu, MenuItem } from "../../../components/menu";
   import Divider from "../../../components/menu/core/Divider.svelte";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import type { V1TimeGrain } from "../../../runtime-client";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
-  import TimeRangeScrubChip from "@rilldata/web-common/features/dashboards/time-controls/TimeRangeScrubChip.svelte";
-  import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 
   export let metricViewName: string;
   export let boundaryStart: Date;
@@ -52,38 +43,14 @@
   const ctx = getStateManagers();
   const timeControlsStore = useTimeControlStore(ctx);
   const metaQuery = useMetaQuery(ctx);
+  const {
+    selectors: {
+      timeRangeSelectors: { timeRangeSelectorState },
+    },
+  } = ctx;
 
   let isCustomRangeOpen = false;
   let isCalendarRecentlyClosed = false;
-
-  let latestWindowTimeRanges: TimeRangeOption[];
-  let periodToDateTimeRanges: TimeRangeOption[];
-
-  $: showDefaultItem =
-    $metaQuery.data?.defaultTimeRange &&
-    !($metaQuery.data?.defaultTimeRange in ISODurationToTimeRangePreset);
-
-  // get the available latest-window time ranges
-  $: if (boundaryStart && boundaryEnd) {
-    latestWindowTimeRanges = getChildTimeRanges(
-      boundaryStart,
-      boundaryEnd,
-      LATEST_WINDOW_TIME_RANGES,
-      minTimeGrain,
-      $dashboardStore?.selectedTimezone
-    );
-  }
-
-  // get the the available period-to-date time ranges
-  $: if (boundaryStart && boundaryEnd) {
-    periodToDateTimeRanges = getChildTimeRanges(
-      boundaryStart,
-      boundaryEnd,
-      PERIOD_TO_DATE_RANGES,
-      minTimeGrain,
-      $dashboardStore?.selectedTimezone
-    );
-  }
 
   $: hasSubRangeSelected = $dashboardStore?.selectedScrubRange?.end;
 
@@ -227,6 +194,7 @@
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
     on:escape={toggleFloatingElement}
     slot="floating-element"
+    let:toggleFloatingElement
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,
@@ -253,7 +221,7 @@
         {allTime.label}
       </span>
     </MenuItem>
-    {#if showDefaultItem && $timeControlsStore.defaultTimeRange}
+    {#if $timeRangeSelectorState.showDefaultItem}
       <DefaultTimeRangeMenuItem
         on:before-select={setIntermediateSelection(
           $metaQuery.data?.defaultTimeRange
@@ -267,12 +235,9 @@
         isoDuration={$metaQuery.data?.defaultTimeRange}
       />
     {/if}
-    {#if latestWindowTimeRanges}
-      {#if latestWindowTimeRanges?.length}
-        <Divider />
-      {/if}
-
-      {#each latestWindowTimeRanges as timeRange}
+    {#if $timeRangeSelectorState.latestWindowTimeRanges?.length}
+      <Divider />
+      {#each $timeRangeSelectorState.latestWindowTimeRanges as timeRange}
         <MenuItem
           on:before-select={setIntermediateSelection(timeRange.name)}
           on:select={() =>
@@ -284,9 +249,9 @@
         </MenuItem>
       {/each}
     {/if}
-    {#if periodToDateTimeRanges}
+    {#if $timeRangeSelectorState.periodToDateRanges?.length}
       <Divider />
-      {#each periodToDateTimeRanges as timeRange}
+      {#each $timeRangeSelectorState.periodToDateRanges as timeRange}
         <MenuItem
           on:before-select={setIntermediateSelection(timeRange.name)}
           on:select={() =>
@@ -297,8 +262,8 @@
           </span>
         </MenuItem>
       {/each}
-      <Divider />
     {/if}
+    <Divider />
     <CustomTimeRangeMenuItem
       on:select={() => {
         isCustomRangeOpen = !isCustomRangeOpen;
@@ -307,7 +272,7 @@
       selected={intermediateSelection === TimeRangePreset.CUSTOM}
     />
     {#if isCustomRangeOpen}
-      <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+      <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
         <CustomTimeRangeInput
           {boundaryStart}
           {boundaryEnd}

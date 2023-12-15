@@ -4,8 +4,8 @@ import type {
   V1MetricsViewSpec,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
-import { wait } from "@testing-library/user-event/dist/utils";
 import { afterAll, beforeAll, vi } from "vitest";
+import { asyncWait } from "../../lib/waitUtils";
 
 export class DashboardFetchMocks {
   private responses = new Map<string, any>();
@@ -89,7 +89,8 @@ export class DashboardFetchMocks {
         break;
     }
 
-    await wait(1);
+    // wait a tick
+    await asyncWait(1);
 
     return {
       ready: true,

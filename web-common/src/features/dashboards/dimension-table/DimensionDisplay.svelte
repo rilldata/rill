@@ -17,6 +17,7 @@
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
 
   const stateManagers = getStateManagers();
@@ -105,7 +106,7 @@
   }
 
   function toggleAllSearchItems() {
-    const labels = tableRows.map((row) => row[dimensionName] as string);
+    const labels = tableRows.map((row) => row[dimensionColumnName] as string);
     cancelDashboardQueries(queryClient, $metricsViewName);
 
     if (areAllTableRowsSelected) {
@@ -114,13 +115,30 @@
         dimensionName,
         labels
       );
+
+      notifications.send({
+        message: `Removed ${labels.length} items from filter`,
+      });
       return;
     } else {
-      metricsExplorerStore.selectItemsInFilter(
+      const newValuesSelected = metricsExplorerStore.selectItemsInFilter(
         $metricsViewName,
         dimensionName,
         labels
       );
+      notifications.send({
+        message: `Added ${newValuesSelected} items to filter`,
+      });
+    }
+  }
+
+  function handleKeyDown(e) {
+    // Select all items on Meta+A
+    if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+      if (e.target.tagName === "INPUT") return;
+      e.preventDefault();
+      if (areAllTableRowsSelected) return;
+      toggleAllSearchItems();
     }
   }
 </script>
@@ -156,3 +174,5 @@
     {/if}
   </div>
 {/if}
+
+<svelte:window on:keydown={handleKeyDown} />

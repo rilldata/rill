@@ -1,4 +1,10 @@
 <script lang="ts">
+  import {
+    AreaSubRangeColor,
+    AreaNormalColor,
+    MainLineSubRangeColor,
+    MainLineNormalColor,
+  } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { writable } from "svelte/store";
   import {
     ChunkedLine,
@@ -23,12 +29,10 @@
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
   $: mainLineColor = hasSubrangeSelected
-    ? "hsla(217, 10%, 60%, 1)"
-    : "hsla(217,60%, 55%, 1)";
+    ? MainLineSubRangeColor
+    : MainLineNormalColor;
 
-  $: areaColor = hasSubrangeSelected
-    ? "hsla(225, 20%, 80%, .2)"
-    : "hsla(217,70%, 80%, .4)";
+  $: areaColor = hasSubrangeSelected ? AreaSubRangeColor : AreaNormalColor;
 
   $: isDimValueHiglighted =
     dimensionValue !== undefined &&
@@ -98,7 +102,7 @@
       >
         <ChunkedLine
           area={false}
-          lineColor={`hsl(217, 10%, 60%)`}
+          lineColor={MainLineSubRangeColor}
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
           $timeRangeKey !== $previousTimeRangeKey
@@ -125,8 +129,8 @@
       <ClippedChunkedLine
         start={Math.min(scrubStart, scrubEnd)}
         end={Math.max(scrubStart, scrubEnd)}
-        lineColor="hsla(217,60%, 55%, 1)"
-        areaColor="hsla(217,70%, 80%, .4)"
+        lineColor={MainLineNormalColor}
+        areaColor={AreaNormalColor}
         delay={0}
         duration={0}
         {data}

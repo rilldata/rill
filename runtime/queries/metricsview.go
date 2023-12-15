@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/apache/arrow/go/v13/arrow"
-	"github.com/apache/arrow/go/v13/arrow/array"
-	"github.com/apache/arrow/go/v13/arrow/memory"
-	"github.com/apache/arrow/go/v13/parquet/pqarrow"
+	"github.com/apache/arrow/go/v14/arrow"
+	"github.com/apache/arrow/go/v14/arrow/array"
+	"github.com/apache/arrow/go/v14/arrow/memory"
+	"github.com/apache/arrow/go/v14/parquet/pqarrow"
 	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -527,7 +527,7 @@ func writeParquet(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, 
 			case runtimev1.Type_CODE_UINT64:
 				recordBuilder.Field(idx).(*array.Uint64Builder).Append(uint64(v.GetNumberValue()))
 			case runtimev1.Type_CODE_INT128:
-				recordBuilder.Field(idx).(*array.Float64Builder).Append((v.GetNumberValue()))
+				recordBuilder.Field(idx).(*array.Float64Builder).Append(v.GetNumberValue())
 			case runtimev1.Type_CODE_FLOAT32:
 				recordBuilder.Field(idx).(*array.Float32Builder).Append(float32(v.GetNumberValue()))
 			case runtimev1.Type_CODE_FLOAT64, runtimev1.Type_CODE_DECIMAL:

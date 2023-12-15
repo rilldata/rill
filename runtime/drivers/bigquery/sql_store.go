@@ -6,15 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
 	"regexp"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/apache/arrow/go/v13/parquet"
-	"github.com/apache/arrow/go/v13/parquet/compress"
-	"github.com/apache/arrow/go/v13/parquet/pqarrow"
+	"github.com/apache/arrow/go/v14/parquet"
+	"github.com/apache/arrow/go/v14/parquet/compress"
+	"github.com/apache/arrow/go/v14/parquet/pqarrow"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -235,9 +236,6 @@ func (f *fileIterator) Next() ([]string, error) {
 		),
 		pqarrow.NewArrowWriterProperties(pqarrow.WithStoreSchema()))
 	if err != nil {
-		if strings.Contains(err.Error(), "not implemented: support for DECIMAL256") {
-			return nil, fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to STRING or NUMERIC (if loss of precision is acceptable) in the submitted query")
-		}
 		return nil, err
 	}
 	defer writer.Close()
@@ -317,6 +315,7 @@ func (f *fileIterator) downloadAsJSONFile() error {
 	rows := 0
 	enc := json.NewEncoder(fw)
 	enc.SetEscapeHTML(false)
+	bigNumericFields := make([]string, 0)
 	for {
 		row := make(map[string]bigquery.Value)
 		err := f.bqIter.Next(&row)
@@ -334,8 +333,24 @@ func (f *fileIterator) downloadAsJSONFile() error {
 		if !init {
 			init = true
 			f.progress.Target(int64(f.bqIter.TotalRows), drivers.ProgressUnitRecord)
-			if hasBigNumericType(f.bqIter.Schema) {
-				return fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to STRING or NUMERIC (if loss of precision is acceptable) in the submitted query")
+			for _, f := range f.bqIter.Schema {
+				if f.Type == bigquery.BigNumericFieldType {
+					bigNumericFields = append(bigNumericFields, f.Name)
+				}
+			}
+		}
+
+		// convert fields into a.b else fields are marshalled as a/b
+		for _, f := range bigNumericFields {
+			r, ok := row[f].(*big.Rat)
+			if !ok {
+				continue
+			}
+			num, exact := r.Float64()
+			if exact {
+				row[f] = num
+			} else { // number doesn't fit in float so cast to string,
+				row[f] = r.FloatString(38)
 			}
 		}
 
@@ -357,17 +372,6 @@ func (f *fileIterator) downloadAsJSONFile() error {
 			}
 		}
 	}
-}
-
-func hasBigNumericType(s bigquery.Schema) bool {
-	for _, f := range s {
-		if f.Type == bigquery.BigNumericFieldType {
-			return true
-		} else if f.Type == bigquery.RecordFieldType && hasBigNumericType(f.Schema) {
-			return true
-		}
-	}
-	return false
 }
 
 var _ drivers.FileIterator = &fileIterator{}

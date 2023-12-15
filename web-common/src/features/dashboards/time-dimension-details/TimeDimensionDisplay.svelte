@@ -3,10 +3,14 @@
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { timeFormat } from "d3-time-format";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
   import {
     chartInteractionColumn,
     tableInteractionStore,
@@ -16,7 +20,6 @@
     SortDirection,
     SortType,
   } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-  import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import type { TDDComparison, TableData } from "./types";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
@@ -27,10 +30,13 @@
   const queryClient = useQueryClient();
 
   const timeDimensionDataStore = useTimeDimensionDataStore(getStateManagers());
+  const timeControlStore = useTimeControlStore(getStateManagers());
 
   $: metaQuery = useMetaQuery(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
+
+  $: timeGrain = $timeControlStore.selectedTimeRange?.interval;
 
   // Get labels for table headers
   $: measureLabel =
@@ -74,14 +80,9 @@
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
 
   // Create a time formatter for the column headers
-  $: timeFormatter = (columnHeaders?.length &&
-    createTimeFormat(
-      [
-        new Date(columnHeaders[0]?.value),
-        new Date(columnHeaders[columnHeaders?.length - 1]?.value),
-      ],
-      columnHeaders?.length
-    )[0]) as (d: Date) => string;
+  $: timeFormatter = timeFormat(
+    timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M"
+  ) as (d: Date) => string;
 
   function highlightCell(e) {
     const { x, y } = e.detail;
@@ -111,13 +112,20 @@
         dimensionName,
         rowHeaderLabels
       );
+      notifications.send({
+        message: `Removed ${rowHeaderLabels.length} items from filter`,
+      });
       return;
     } else {
-      metricsExplorerStore.selectItemsInFilter(
+      const newValuesSelected = metricsExplorerStore.selectItemsInFilter(
         metricViewName,
         dimensionName,
         rowHeaderLabels
       );
+
+      notifications.send({
+        message: `Added ${newValuesSelected} items to filter`,
+      });
     }
   }
 
@@ -136,6 +144,17 @@
       newPinIndex = formattedData?.selectedValues?.length - 1;
     }
     metricsExplorerStore.setPinIndex(metricViewName, newPinIndex);
+  }
+
+  function handleKeyDown(e) {
+    if (comparisonCopy !== "dimension") return;
+    // Select all items on Meta+A
+    if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+      if (e.target.tagName === "INPUT") return;
+      e.preventDefault();
+      if (areAllTableRowsSelected) return;
+      toggleAllSearchItems();
+    }
   }
 </script>
 
@@ -196,3 +215,5 @@
     </div>
   </div>
 {/if}
+
+<svelte:window on:keydown={handleKeyDown} />

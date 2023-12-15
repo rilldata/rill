@@ -26,6 +26,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// reconcileCancelationTimeout sets a timeout for how long to wait for a reconcile to cancel before stopping the controller with a critical error.
+const reconcileCancelationTimeout = 10 * time.Minute
+
 // errCyclicDependency is set as the error on resources that can't be reconciled due to a cyclic dependency
 var errCyclicDependency = errors.New("cannot be reconciled due to cyclic dependency")
 
@@ -151,6 +154,10 @@ func (c *Controller) Run(ctx context.Context) error {
 	flushTicker := time.NewTicker(10 * time.Second)
 	defer flushTicker.Stop()
 
+	// Ticker for periodically checking for hanging reconciles that don't respond to cancelation
+	hangingTicker := time.NewTicker(time.Minute)
+	defer hangingTicker.Stop()
+
 	// Timer for scheduling resources added to c.timeline.
 	// Call resetTimelineTimer whenever the timeline may have been changed (must hold mu).
 	timelineTimer := time.NewTimer(time.Second)
@@ -225,6 +232,21 @@ func (c *Controller) Run(ctx context.Context) error {
 			if err != nil {
 				loopErr = err
 				stop = true
+			}
+		case <-hangingTicker.C: // It's time to check for hanging canceled reconciles
+			var hanging []*runtimev1.ResourceName
+			c.mu.RLock()
+			for _, inv := range c.invocations {
+				if !inv.cancelledOn.IsZero() && time.Since(inv.cancelledOn) >= reconcileCancelationTimeout {
+					hanging = append(hanging, inv.name)
+				}
+			}
+			c.mu.RUnlock()
+
+			if len(hanging) != 0 {
+				loopErr = fmt.Errorf("reconciles for resources %v have hung for more than %s after cancelation", hanging, reconcileCancelationTimeout.String())
+				stop = true
+				break
 			}
 		case <-c.catalog.hasEventsCh: // The catalog has events to process
 			// Need a write lock to call resetEvents.
@@ -1101,7 +1123,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 		}
 		if !r.Meta.Hidden {
 			logArgs := []any{slog.String("name", n.Name), slog.String("kind", unqualifiedKind(n.Kind)), slog.Any("error", errCyclicDependency)}
-			c.Logger.Error("Skipping resource", logArgs...)
+			c.Logger.Warn("Skipping resource", logArgs...)
 		}
 		return true, nil
 	}
@@ -1272,6 +1294,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 			// Send invocation to event loop for post-processing
 			c.completed <- inv
 		}()
+
 		// Start tracing span
 		tracerAttrs := []attribute.KeyValue{
 			attribute.String("instance_id", c.InstanceID),
@@ -1318,8 +1341,8 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	if !inv.result.Retrigger.IsZero() {
 		logArgs = append(logArgs, slog.String("retrigger_on", inv.result.Retrigger.Format(time.RFC3339)))
 	}
-	if inv.cancelled {
-		logArgs = append(logArgs, slog.Bool("cancelled", inv.cancelled))
+	if !inv.cancelledOn.IsZero() {
+		logArgs = append(logArgs, slog.Bool("cancelled", true))
 	}
 	errorLevel := false
 	if inv.result.Err != nil && !errors.Is(inv.result.Err, context.Canceled) {
@@ -1327,7 +1350,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		errorLevel = true
 	}
 	if errorLevel {
-		c.Logger.Error("Reconcile failed", logArgs...)
+		c.Logger.Warn("Reconcile failed", logArgs...)
 	} else if !inv.isHidden {
 		c.Logger.Info("Reconciled resource", logArgs...)
 	}
@@ -1343,7 +1366,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 
 	if inv.isDelete {
 		// Extra checks in case item was re-created during deletion, or deleted during a normal reconciling (in which case this is just a cancellation of the normal reconcile, not the result of deletion)
-		if r != nil && r.Meta.DeletedOn != nil && !inv.cancelled {
+		if r != nil && r.Meta.DeletedOn != nil && inv.cancelledOn.IsZero() {
 			if inv.result.Err != nil {
 				c.Logger.Error("got error while deleting resource", slog.String("name", nameStr(r.Meta.Name)), slog.Any("error", inv.result.Err))
 			}
@@ -1365,7 +1388,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 
 	if inv.isRename {
 		// Extra checks in case item was cancelled during renaming
-		if r != nil && r.Meta.RenamedFrom != nil && !inv.cancelled {
+		if r != nil && r.Meta.RenamedFrom != nil && inv.cancelledOn.IsZero() {
 			err = c.catalog.clearRenamedFrom(r.Meta.Name)
 			if err != nil {
 				return err
@@ -1452,7 +1475,7 @@ type invocation struct {
 	isRename    bool
 	startedOn   time.Time
 	cancelFn    context.CancelFunc
-	cancelled   bool
+	cancelledOn time.Time
 	reschedule  bool
 	holdsLock   bool
 	deletedSelf bool
@@ -1470,8 +1493,8 @@ type waitlistEntry struct {
 // It can be called multiple times with different reschedule values, and will be rescheduled if any of the calls ask for it.
 // It's not thread-safe (must be called while the controller's mutex is held).
 func (i *invocation) cancel(reschedule bool) {
-	if !i.cancelled {
-		i.cancelled = true
+	if i.cancelledOn.IsZero() {
+		i.cancelledOn = time.Now()
 		i.cancelFn()
 	}
 	i.reschedule = i.reschedule || reschedule

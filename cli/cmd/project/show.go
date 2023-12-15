@@ -4,12 +4,11 @@ import (
 	"context"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func ShowCmd(cfg *config.Config) *cobra.Command {
+func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, path string
 
 	showCmd := &cobra.Command{
@@ -17,6 +16,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Show project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -42,8 +42,7 @@ func ShowCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.TablePrinter(toRow(proj.Project))
-			return nil
+			return ch.Printer.PrintResource(toRow(proj.Project))
 		},
 	}
 

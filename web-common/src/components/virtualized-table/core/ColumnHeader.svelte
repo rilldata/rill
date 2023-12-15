@@ -29,7 +29,7 @@
   export let enableResize = true;
   export let isSelected = false;
   export let highlight = false;
-  export let sorted: SortDirection = undefined;
+  export let sorted: SortDirection | undefined = undefined;
 
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();
@@ -158,11 +158,11 @@
     {#if sorted}
       <div class="mt-0.5 ui-copy-icon">
         {#if sorted === SortDirection.DESCENDING}
-          <div in:fly={{ duration: 200, y: -8 }} style:opacity={1}>
+          <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>
             <ArrowDown size="12px" />
           </div>
         {:else if sorted === SortDirection.ASCENDING}
-          <div in:fly={{ duration: 200, y: 8 }} style:opacity={1}>
+          <div in:fly|global={{ duration: 200, y: 8 }} style:opacity={1}>
             <ArrowDown transform="scale(1 -1)" size="12px" />
           </div>
         {/if}
@@ -172,7 +172,7 @@
     {#if !noPin && showMore}
       <Tooltip location="top" alignment="middle" distance={16}>
         <button
-          transition:fly|local={{ duration: 200, y: 4 }}
+          transition:fly={{ duration: 200, y: 4 }}
           class:text-gray-900={pinned}
           class:text-gray-400={!pinned}
           class="transition-colors duration-100 justify-self-end"

@@ -6,7 +6,7 @@
   import {
     getDashboardsForProject,
     useDashboardsStatus,
-  } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
+  } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
@@ -18,7 +18,6 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import type { SvelteComponent } from "svelte";
 
   export let organization: string;
   export let project: string;
@@ -69,7 +68,7 @@
   }
 
   type StatusDisplay = {
-    icon: typeof SvelteComponent;
+    icon: any; // SvelteComponent
     iconProps?: {
       [key: string]: unknown;
     };

@@ -12,6 +12,7 @@
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
@@ -33,11 +34,16 @@
   export let workspaceWidth: number;
 
   $: dashboardStore = useDashboardStore(metricViewName);
-
   $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
+
+  const {
+    selectors: {
+      measures: { isMeasureValidPercentOfTotal },
+    },
+  } = getStateManagers();
 
   $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
 
@@ -52,6 +58,9 @@
     $timeControlsStore.minTimeGrain;
   $: isScrubbing = $dashboardStore?.selectedScrubRange?.isScrubbing;
 
+  $: isPercOfTotalAsContextColumn =
+    $dashboardStore?.leaderboardContextColumn ===
+    LeaderboardContextColumn.PERCENT;
   $: includedValuesForDimension =
     $dashboardStore?.filters?.include?.find(
       (filter) => filter.name === comparisonDimension
@@ -235,8 +244,10 @@
     <!-- FIXME: this is pending the remaining state work for show/hide measures and dimensions -->
     {#each renderedMeasures as measure (measure.name)}
       <!-- FIXME: I can't select the big number by the measure id. -->
-      {@const bigNum = totals?.[measure.name]}
+      <!-- for bigNum, catch nulls and convert to undefined.  -->
+      {@const bigNum = totals?.[measure.name] ?? undefined}
       {@const comparisonValue = totalsComparisons?.[measure.name]}
+      {@const isValidPercTotal = $isMeasureValidPercentOfTotal(measure.name)}
       {@const comparisonPercChange =
         comparisonValue && bigNum !== undefined && bigNum !== null
           ? (bigNum - comparisonValue) / comparisonValue
@@ -281,6 +292,9 @@
             xMin={startValue}
             xMax={endValue}
             {showComparison}
+            validPercTotal={isPercOfTotalAsContextColumn && isValidPercTotal
+              ? bigNum
+              : null}
             mouseoverTimeFormat={(value) => {
               /** format the date according to the time grain */
               return new Date(value).toLocaleDateString(

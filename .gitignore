@@ -74,4 +74,3 @@ rill-binary-sa.json
 sysroot/
 latest.txt
 /web-common/coverage
-/web-local/.jest/rill-e2e-test

@@ -14,8 +14,9 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -39,6 +40,7 @@ type Config struct {
 	Jobs                     []string               `split_words:"true"`
 	HTTPPort                 int                    `default:"8080" split_words:"true"`
 	GRPCPort                 int                    `default:"9090" split_words:"true"`
+	DebugPort                int                    `split_words:"true"`
 	LogLevel                 zapcore.Level          `default:"info" split_words:"true"`
 	MetricsExporter          observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter           observability.Exporter `default:"" split_words:"true"`
@@ -75,12 +77,14 @@ type Config struct {
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
-func StartCmd(cliCfg *config.Config) *cobra.Command {
+func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "start [jobs|server|worker]",
 		Short: "Start admin service",
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
+			cliCfg := ch.Config
+			printer := ch.Printer
 			// Load .env (note: fails silently if .env has errors)
 			_ = godotenv.Load()
 
@@ -88,7 +92,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			var conf Config
 			err := envconfig.Process("rill_admin", &conf)
 			if err != nil {
-				fmt.Printf("failed to load config: %s\n", err.Error())
+				printer.Printf("failed to load config: %s\n", err.Error())
 				os.Exit(1)
 			}
 
@@ -97,7 +101,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			cfg.Level.SetLevel(conf.LogLevel)
 			logger, err := cfg.Build()
 			if err != nil {
-				fmt.Printf("error: failed to create logger: %s\n", err.Error())
+				printer.Printf("error: failed to create logger: %s\n", err.Error())
 				os.Exit(1)
 			}
 
@@ -114,12 +118,12 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			// Validate frontend and external URLs
 			_, err = url.Parse(conf.FrontendURL)
 			if err != nil {
-				fmt.Printf("error: invalid frontend URL: %s\n", err.Error())
+				printer.Printf("error: invalid frontend URL: %s\n", err.Error())
 				os.Exit(1)
 			}
 			_, err = url.Parse(conf.ExternalURL)
 			if err != nil {
-				fmt.Printf("error: invalid external URL: %s\n", err.Error())
+				printer.Printf("error: invalid external URL: %s\n", err.Error())
 				os.Exit(1)
 			}
 			_, err = url.Parse(conf.ExternalGRPCURL)
@@ -255,6 +259,9 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				}
 				group.Go(func() error { return srv.ServeGRPC(cctx) })
 				group.Go(func() error { return srv.ServeHTTP(cctx) })
+				if conf.DebugPort != 0 {
+					group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
+				}
 			}
 
 			// Init and run worker

@@ -10,18 +10,20 @@ and the menu closes.
   import Check from "../../icons/Check.svelte";
   import Spacer from "../../icons/Spacer.svelte";
   import { Divider, Menu, MenuItem } from "../index";
+  import type { SelectMenuItem } from "../types";
 
   export let options;
-  export let selection = undefined;
+  export let selection: (SelectMenuItem & { index?: number }) | undefined =
+    undefined;
 
-  export let dark: boolean = undefined;
-  export let multiSelect: boolean = undefined;
+  export let dark: boolean | undefined = undefined;
+  export let multiSelect: boolean | undefined = undefined;
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
   export let distance = 16;
-  export let paddingTop: number = undefined;
-  export let paddingBottom: number = undefined;
-  export let minWidth: string = undefined;
+  export let paddingTop: number | undefined = undefined;
+  export let paddingBottom: number | undefined = undefined;
+  export let minWidth: string | undefined = undefined;
   export let overflowFlipY = false;
 
   export let active = false;
@@ -93,6 +95,7 @@ and the menu closes.
     {paddingTop}
     {paddingBottom}
     slot="floating-element"
+    let:handleClose
     {dark}
     on:click-outside={() => {
       if (active) handleClose();

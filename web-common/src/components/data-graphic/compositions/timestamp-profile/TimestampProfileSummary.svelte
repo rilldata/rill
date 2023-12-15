@@ -12,8 +12,8 @@
 
   export let start: Date;
   export let end: Date;
-  export let estimatedSmallestTimeGrain: V1TimeGrain;
-  export let rollupTimeGrain: V1TimeGrain;
+  export let estimatedSmallestTimeGrain: V1TimeGrain | undefined;
+  export let rollupTimeGrain: V1TimeGrain | undefined;
 
   enum NicerTimeGrain {
     TIME_GRAIN_MILLISECOND = "milliseconds",
