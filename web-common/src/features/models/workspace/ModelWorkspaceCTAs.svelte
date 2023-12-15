@@ -68,6 +68,7 @@
       on:click-outside={toggleFloatingElement}
       on:escape={toggleFloatingElement}
       slot="floating-element"
+      let:toggleFloatingElement
     >
       <MenuItem
         on:select={() => {
@@ -137,6 +138,7 @@
       <Menu
         dark
         slot="floating-element"
+        let:toggleFloatingElement
         on:escape={toggleFloatingElement}
         on:click-outside={toggleFloatingElement}
       >

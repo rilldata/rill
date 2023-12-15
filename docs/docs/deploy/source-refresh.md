@@ -18,6 +18,13 @@ refresh:
   every: 24h
 ```
 
+Similarly, if you would like to utilize cron syntax, the following example would update a source every 15 minutes:
+
+```yaml
+refresh:
+  cron: '*/15 * * * *'
+```
+
 :::tip Source settings
 
 For more details about available source configurations and properties, check our [Source YAML](../reference/project-files/sources) reference page.
@@ -28,11 +35,18 @@ For more details about available source configurations and properties, check our
 
 You can also specify a project-wide refresh schedule that will apply to all sources by default. This can be done through the `rill.yaml` file. More details can be found [here](../reference/project-files/rill-yaml.md#project-wide-defaults).
 
-Using the same example as above:
+Using the same example as above, the following sets a project-wide default of refreshing sources every 24 hours:
 ```yaml
 sources:
   refresh:
     every: 24h
+```
+
+Similarly, the following would use cron syntax to set a project-wide configuration of refreshing sources by default every 15 minutes (unless overridden at the individual source level):
+```yaml
+sources:
+  refresh:
+    cron: '*/15 * * * *'
 ```
 
 :::info Did you know?

@@ -143,14 +143,13 @@
     yType="number"
   >
     <div />
-    <SimpleDataGraphic top={24} height={24} let:config>
+    <SimpleDataGraphic top={24} height={24}>
       <Axis side="top" />
     </SimpleDataGraphic>
     <WithBisector
       data={$data1}
       callback={(datum) => datum.period}
       value={mouseoverValue?.period}
-      let:point
     >
       {#each metrics as { name, accessor, formatBigNumber, formatAxis }, i (i)}
         <div>

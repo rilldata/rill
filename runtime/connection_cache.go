@@ -10,8 +10,19 @@ import (
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+)
+
+var (
+	connCacheOpens          = observability.Must(meter.Int64Counter("connnection_cache.opens"))
+	connCacheCloses         = observability.Must(meter.Int64Counter("connnection_cache.closes"))
+	connCacheSizeTotal      = observability.Must(meter.Int64UpDownCounter("connnection_cache.size_total"))
+	connCacheSizeLRU        = observability.Must(meter.Int64UpDownCounter("connnection_cache.size_lru"))
+	connCacheOpenLatencyMS  = observability.Must(meter.Int64Histogram("connnection_cache.open_latency", metric.WithUnit("ms")))
+	connCacheCloseLatencyMS = observability.Must(meter.Int64Histogram("connnection_cache.close_latency", metric.WithUnit("ms")))
 )
 
 type cachedConnectionConfig struct {
@@ -27,9 +38,10 @@ type cachedConnectionConfig struct {
 // It also monitors for hanging connections.
 func (r *Runtime) newConnectionCache() conncache.Cache {
 	return conncache.New(conncache.Options{
-		MaxConnectionsIdle: r.opts.ConnectionCacheSize,
-		OpenTimeout:        2 * time.Minute,
-		CloseTimeout:       5 * time.Minute,
+		MaxIdleConnections:   r.opts.ConnectionCacheSize,
+		OpenTimeout:          10 * time.Minute,
+		CloseTimeout:         10 * time.Minute,
+		CheckHangingInterval: time.Minute,
 		OpenFunc: func(ctx context.Context, cfg any) (conncache.Connection, error) {
 			x := cfg.(cachedConnectionConfig)
 			return r.openAndMigrate(ctx, x)
@@ -41,6 +53,14 @@ func (r *Runtime) newConnectionCache() conncache.Cache {
 		HangingFunc: func(cfg any, open bool) {
 			x := cfg.(cachedConnectionConfig)
 			r.logger.Error("connection cache: connection has been working for too long", zap.String("instance_id", x.instanceID), zap.String("driver", x.driver), zap.Bool("open", open))
+		},
+		Metrics: conncache.Metrics{
+			Opens:          connCacheOpens,
+			Closes:         connCacheCloses,
+			SizeTotal:      connCacheSizeTotal,
+			SizeLRU:        connCacheSizeLRU,
+			OpenLatencyMS:  connCacheOpenLatencyMS,
+			CloseLatencyMS: connCacheCloseLatencyMS,
 		},
 	})
 }

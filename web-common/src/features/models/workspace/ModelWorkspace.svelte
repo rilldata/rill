@@ -10,12 +10,8 @@
 
 {#key modelName}
   <WorkspaceContainer assetID={modelName}>
-    <div slot="header">
-      <ModelWorkspaceHeader {modelName} />
-    </div>
-    <div slot="body">
-      <ModelBody {modelName} {focusEditorOnMount} />
-    </div>
+    <ModelWorkspaceHeader slot="header" {modelName} />
+    <ModelBody slot="body" {modelName} {focusEditorOnMount} />
     <ModelInspector {modelName} slot="inspector" />
   </WorkspaceContainer>
 {/key}

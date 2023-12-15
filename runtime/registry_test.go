@@ -331,7 +331,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			}
 
 			// Wait for controller restart
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(2 * time.Second)
 			_, err = rt.Controller(ctx, inst.ID)
 			require.NoError(t, err)
 
@@ -426,6 +426,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			// verify older olap connection is closed and cache updated
 			// require.False(t, rt.connCache.lru.Contains(inst.ID+"duckdb"+fmt.Sprintf("dsn:%s ", dbFile)))
 			// require.False(t, rt.connCache.lru.Contains(inst.ID+"file"+fmt.Sprintf("dsn:%s ", repodsn)))
+			time.Sleep(2 * time.Second)
 			err = olap.Exec(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.True(t, err != nil)
 

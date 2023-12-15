@@ -160,7 +160,7 @@
       </div>
 
       {#if showColumns}
-        <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+        <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
           <ColumnProfile objectName={source?.state?.table} indentLevel={0} />
         </div>
       {/if}

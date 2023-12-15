@@ -81,7 +81,6 @@
       top={$margin}
       bottom={$margin}
       bodyBuffer={$bodyBuffer}
-      let:config
     >
       <SimpleDataGraphic
         right={$margin}

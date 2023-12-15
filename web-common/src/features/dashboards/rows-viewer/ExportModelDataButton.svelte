@@ -4,8 +4,8 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
-    createQueryServiceExport,
     V1ExportFormat,
+    createQueryServiceExport,
   } from "@rilldata/web-common/runtime-client";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import exportMetrics from "./export-metrics";
@@ -53,6 +53,7 @@
     on:click-outside={toggleFloatingElement}
     on:escape={toggleFloatingElement}
     slot="floating-element"
+    let:toggleFloatingElement
   >
     <MenuItem
       on:select={() => {

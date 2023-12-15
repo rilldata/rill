@@ -48,7 +48,7 @@
 {#if showModels}
   <div
     class="pb-3 justify-self-end"
-    transition:slide={{ duration: LIST_SLIDE_DURATION }}
+    transition:slide|global={{ duration: LIST_SLIDE_DURATION }}
     id="assets-model-list"
   >
     {#if $modelNames?.data}
@@ -59,7 +59,7 @@
           open={$page.url.pathname === `/model/${modelName}`}
         >
           <svelte:fragment slot="more">
-            <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+            <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
               <ColumnProfile indentLevel={1} objectName={modelName} />
             </div>
           </svelte:fragment>

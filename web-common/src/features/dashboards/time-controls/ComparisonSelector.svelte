@@ -5,7 +5,6 @@ This component needs to do the following:
 3. update comparisons on user interactions
 -->
 <script lang="ts">
-  import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
   import { IconSpaceFixer } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
@@ -26,6 +25,7 @@ This component needs to do the following:
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { NO_COMPARISON_LABEL } from "@rilldata/web-common/lib/time/config";
+  import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { matchSorter } from "match-sorter";
   import SelectorButton from "./SelectorButton.svelte";
@@ -141,6 +141,7 @@ This component needs to do the following:
   <Menu
     minWidth="280px"
     slot="floating-element"
+    let:toggleFloatingElement
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}
     label="Comparison selector"
@@ -188,7 +189,9 @@ This component needs to do the following:
         <MenuItem
           selected={option.name === intermediateSelection}
           on:before-select={() => {
-            intermediateSelection = option.name;
+            if (option.name) {
+              intermediateSelection = option.name;
+            }
           }}
           on:select={() => {
             enableComparison("dimension", option.name);

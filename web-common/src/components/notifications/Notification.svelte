@@ -25,7 +25,7 @@
 </script>
 
 <aside
-  transition:scale={{ duration: 200, start: 0.98, opacity: 0 }}
+  transition:scale|global={{ duration: 200, start: 0.98, opacity: 0 }}
   {style}
   class="whitespace-pre radius-sm notification-{level} 
       {location !== undefined
