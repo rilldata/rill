@@ -385,8 +385,33 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure(t *testing.T) {
 	require.Equal(t, "google.com", fieldsToString(rows[i], "dom"))
 }
 
-// remove 'Ignore_' for testing in a local environment
-// later these tests will be used in CI
+// Steps to run this test:
+// 1. Unpack Druid distribution.
+// 2. Run ./bin/start-micro-quickstart
+// 3. Go to localhost:8888 -> Load data and index AdBids.csv as `test_data“ datasource.
+// 4. Create Rill project named `rill-untitled` with `test_data`.
+// 5. Run this config in VSCode:
+//
+//	{
+//		"name": "Launch main with druid",
+//		"type": "go",
+//		"request": "launch",
+//		"mode": "debug",
+//		"program": "cli/main.go",
+//		"args": [
+//			"start",
+//			"--no-ui",
+//			"--db-driver",
+//			"druid",
+//			"--db",
+//			"http://localhost:8082/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=1&avaticaPassword=2",
+//			"rill-untitled"
+//		],
+//	}
+//
+// 4. Remove 'Ignore_' and run test.
+//
+// Later these tests will be integrated in CI
 func Ignore_TestMetricsViewsAggregation_Druid(t *testing.T) {
 	dialOpts := []grpc.DialOption{grpc.WithInsecure()}
 

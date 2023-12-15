@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 )
@@ -59,6 +60,54 @@ func BenchmarkMetricsViewsAggregation(b *testing.B) {
 		err := q.Resolve(context.Background(), rt, instanceID, 0)
 		require.NoError(b, err)
 		require.NotEmpty(b, q.Result)
+	}
+}
+
+func BenchmarkMetricsViewsAggregation_pivot_2_measures(t *testing.B) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView().Spec
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+			{
+				Name: "measure_0",
+			},
+		},
+		MetricsView: mv,
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+		},
+		PivotOn: []string{
+			"timestamp",
+		},
+		Limit: &limit,
+	}
+	for i := 0; i < t.N; i++ {
+		err = q.Resolve(context.Background(), rt, instanceID, 0)
+		require.NoError(t, err)
+		require.NotEmpty(t, q.Result)
 	}
 }
 
@@ -300,5 +349,204 @@ func BenchmarkMetricsViewsAggregation_spending_pivot_100(b *testing.B) {
 		err := q.Resolve(context.Background(), rt, instanceID, 0)
 		require.NoError(b, err)
 		require.NotEmpty(b, q.Result)
+	}
+}
+
+func BenchmarkMetricsViewsAggregation_Druid(t *testing.B) {
+	dialOpts := []grpc.DialOption{grpc.WithInsecure()}
+
+	conn, err := grpc.Dial(":49009", dialOpts...)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	defer conn.Close()
+
+	client := runtimev1.NewQueryServiceClient(conn)
+	req := &runtimev1.MetricsViewAggregationRequest{
+		InstanceId:  "default",
+		MetricsView: "test_data_test",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "publisher",
+			},
+			{
+				Name:      "__time",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "bp",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "publisher",
+			},
+			{
+				Name: "__time",
+			},
+		},
+		Limit: 10,
+	}
+
+	for i := 0; i < t.N; i++ {
+		resp, err := client.MetricsViewAggregation(context.Background(), req)
+		if err != nil {
+			require.NoError(t, err)
+		}
+		rows := resp.Data
+		require.NotEmpty(t, rows)
+	}
+}
+
+func BenchmarkMetricsViewsAggregation_Druid_2_measures(t *testing.B) {
+	dialOpts := []grpc.DialOption{grpc.WithInsecure()}
+
+	conn, err := grpc.Dial(":49009", dialOpts...)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	defer conn.Close()
+
+	client := runtimev1.NewQueryServiceClient(conn)
+	req := &runtimev1.MetricsViewAggregationRequest{
+		InstanceId:  "default",
+		MetricsView: "test_data_test",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "publisher",
+			},
+			{
+				Name:      "__time",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "bp",
+			},
+			{
+				Name: "rate",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "publisher",
+			},
+			{
+				Name: "__time",
+			},
+		},
+		Limit: 10,
+	}
+
+	for i := 0; i < t.N; i++ {
+		resp, err := client.MetricsViewAggregation(context.Background(), req)
+		if err != nil {
+			require.NoError(t, err)
+		}
+		rows := resp.Data
+		require.NotEmpty(t, rows)
+	}
+}
+
+func BenchmarkMetricsViewsAggregation_Druid_pivot(t *testing.B) {
+	dialOpts := []grpc.DialOption{grpc.WithInsecure()}
+
+	conn, err := grpc.Dial(":49009", dialOpts...)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	defer conn.Close()
+
+	client := runtimev1.NewQueryServiceClient(conn)
+	req := &runtimev1.MetricsViewAggregationRequest{
+		InstanceId:  "default",
+		MetricsView: "test_data_test",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "publisher",
+			},
+			{
+				Name:      "__time",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "bp",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "publisher",
+			},
+		},
+		PivotOn: []string{
+			"__time",
+		},
+		Limit: 10,
+	}
+
+	for i := 0; i < t.N; i++ {
+		resp, err := client.MetricsViewAggregation(context.Background(), req)
+		if err != nil {
+			require.NoError(t, err)
+		}
+		rows := resp.Data
+		require.NotEmpty(t, rows)
+	}
+}
+
+func BenchmarkMetricsViewsAggregation_Druid_pivot_2_measures(t *testing.B) {
+	dialOpts := []grpc.DialOption{grpc.WithInsecure()}
+
+	conn, err := grpc.Dial(":49009", dialOpts...)
+	if err != nil {
+		require.NoError(t, err)
+	}
+	defer conn.Close()
+
+	client := runtimev1.NewQueryServiceClient(conn)
+	req := &runtimev1.MetricsViewAggregationRequest{
+		InstanceId:  "default",
+		MetricsView: "test_data_test",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "publisher",
+			},
+
+			{
+				Name:      "__time",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "bp",
+			},
+			{
+				Name: "rate",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "publisher",
+			},
+		},
+		PivotOn: []string{
+			"__time",
+		},
+		Limit: 10,
+	}
+
+	for i := 0; i < t.N; i++ {
+		resp, err := client.MetricsViewAggregation(context.Background(), req)
+		if err != nil {
+			require.NoError(t, err)
+		}
+		rows := resp.Data
+		require.NotEmpty(t, rows)
 	}
 }
