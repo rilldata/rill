@@ -227,7 +227,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	}
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, emptyMeasureAliases, dialect)
+		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -238,7 +238,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	havingClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, emptyMeasureAliases, dialect)
+		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}

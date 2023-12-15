@@ -137,7 +137,7 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsViewSpec,
 	}
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, emptyMeasureAliases, dialect)
+		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}

@@ -290,7 +290,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 	}
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, emptyMeasureAliases, olap.Dialect())
+		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, olap.Dialect())
 		if err != nil {
 			return "", "", nil, err
 		}
@@ -300,7 +300,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 
 	havingClause := ""
 	if q.Having != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Having, emptyMeasureAliases, olap.Dialect())
+		clause, clauseArgs, err := buildExpression(mv, q.Having, nil, olap.Dialect())
 		if err != nil {
 			return "", "", nil, err
 		}

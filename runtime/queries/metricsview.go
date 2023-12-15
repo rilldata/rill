@@ -26,8 +26,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-var emptyMeasureAliases = make([]*runtimev1.MetricsViewComparisonMeasureAlias, 0)
-
 // resolveMeasures returns the selected measures
 func resolveMeasures(mv *runtimev1.MetricsViewSpec, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsViewSpec_MeasureV2, error) {
 	// Build combined measures

@@ -223,7 +223,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		whereClause += clause
 	}
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, emptyMeasureAliases, dialect)
+		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -238,7 +238,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	if q.Having != nil {
 		var havingClauseArgs []any
 		var err error
-		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, emptyMeasureAliases, dialect)
+		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}

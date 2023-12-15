@@ -240,7 +240,7 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dia
 	}
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, emptyMeasureAliases, dialect)
+		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"slices"
 	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -294,7 +293,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	}
 
 	if q.Aliases != nil {
-		err = validateMeasureAliases(q.Aliases, q.Measures, false)
+		err = validateMeasureAliases(q.Aliases, false)
 		if err != nil {
 			return "", nil, err
 		}
@@ -313,7 +312,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	baseWhereClause += trc
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, emptyMeasureAliases, dialect)
+		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -459,25 +458,13 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		var columnsTuple string
 		var labelTuple string
 		if dialect != drivers.DialectDruid {
-			if q.Having != nil {
-				// having clause needs selected columns to either be in group by or be aggregations.
-				// so adding additional sum() around measure and comparison columns
-				columnsTuple = fmt.Sprintf(
-					"sum(base.%[1]s) as %[1]s, sum(comparison.%[1]s) AS %[2]s, sum(base.%[1]s - comparison.%[1]s) AS %[3]s, sum((base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE) AS %[4]s",
-					safeName(m.Name),
-					safeName(m.Name+"__previous"),
-					safeName(m.Name+"__delta_abs"),
-					safeName(m.Name+"__delta_rel"),
-				)
-			} else {
-				columnsTuple = fmt.Sprintf(
-					"base.%[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
-					safeName(m.Name),
-					safeName(m.Name+"__previous"),
-					safeName(m.Name+"__delta_abs"),
-					safeName(m.Name+"__delta_rel"),
-				)
-			}
+			columnsTuple = fmt.Sprintf(
+				"base.%[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
+				safeName(m.Name),
+				safeName(m.Name+"__previous"),
+				safeName(m.Name+"__delta_abs"),
+				safeName(m.Name+"__delta_rel"),
+			)
 			labelTuple = fmt.Sprintf(
 				"base.%[1]s AS %[5]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
 				safeName(m.Name),
@@ -508,7 +495,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 
 	if q.Aliases != nil {
-		err = validateMeasureAliases(q.Aliases, q.Measures, true)
+		err = validateMeasureAliases(q.Aliases, true)
 		if err != nil {
 			return "", nil, err
 		}
@@ -538,7 +525,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	baseWhereClause += trc
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, emptyMeasureAliases, dialect)
+		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -554,7 +541,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	comparisonWhereClause += trc
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, emptyMeasureAliases, dialect)
+		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -563,14 +550,14 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		args = append(args, clauseArgs...)
 	}
 
-	havingClause := ""
+	outerWhereClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
+		outerWhereClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		havingClause = "GROUP BY 1 HAVING " + havingClause
+		outerWhereClause = "WHERE " + outerWhereClause
 		args = append(args, havingClauseArgs...)
 	}
 
@@ -729,7 +716,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			comparisonLimitClause, // 13
 			unnestClause,          // 14
 			groupByCol,            // 15
-			havingClause,          // 16
+			outerWhereClause,      // 16
 		)
 	} else {
 		/*
@@ -789,6 +776,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 					SELECT %[1]s FROM %[3]s WHERE %[5]s AND %[2]s IN (SELECT %[2]s FROM %[11]s) GROUP BY %[2]s %[10]s
 				)
 				SELECT %[11]s.%[2]s AS %[14]s, %[9]s FROM %[11]s LEFT JOIN %[12]s ON base.%[2]s = comparison.%[2]s
+        %[15]s
 				GROUP BY 1
 				ORDER BY %[6]s
 				%[7]s
@@ -808,6 +796,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			rightSubQueryAlias,  // 12
 			subQueryOrderClause, // 13
 			finalDimName,        // 14
+			outerWhereClause,    // 15
 		)
 	}
 
@@ -1045,15 +1034,8 @@ func updateComparisonSort(sort []*runtimev1.MetricsViewComparisonSort) {
 	}
 }
 
-func validateMeasureAliases(aliases []*runtimev1.MetricsViewComparisonMeasureAlias, measures []*runtimev1.MetricsViewAggregationMeasure, hasComparison bool) error {
+func validateMeasureAliases(aliases []*runtimev1.MetricsViewComparisonMeasureAlias, hasComparison bool) error {
 	for _, alias := range aliases {
-		// We need to make sure the aliases measure is selected. Having query will fail otherwise
-		if !slices.ContainsFunc(measures, func(measure *runtimev1.MetricsViewAggregationMeasure) bool {
-			return measure.Name == alias.Name
-		}) {
-			return fmt.Errorf("measure alias not selected: %s", alias.Name)
-		}
-
 		switch alias.Type {
 		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
 			runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
