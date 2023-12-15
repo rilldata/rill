@@ -1,3 +1,5 @@
+import "unplugin-icons/types/svelte";
+
 declare namespace svelteHTML {
   interface HTMLAttributes {
     // Used for copy action `shift-click-actions.ts`

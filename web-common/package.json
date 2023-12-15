@@ -67,6 +67,7 @@
     "tailwindcss": "^3.2.7",
     "typescript": "^5.0.0",
     "ua-parser-js": "^1.0.2",
+    "unplugin-icons": "^0.18.1",
     "uuid": "^9.0.0",
     "vitest": "^0.31.0",
     "yaml": "^2.1.3",

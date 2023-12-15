@@ -1,5 +1,6 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig, UserConfig } from "vitest/config";
+import Icons from "unplugin-icons/vite";
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 type Alias = Writeable<UserConfig["resolve"]["alias"]>;
@@ -38,7 +39,13 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias,
     },
-    plugins: [svelte()],
+    plugins: [
+      svelte(),
+      Icons({
+        compiler: "svelte",
+        autoInstall: true,
+      }),
+    ],
     test: {
       // This alias fixes `onMount` not getting called during vitest unit tests.
       // See: https://stackoverflow.com/questions/76577665/vitest-and-svelte-components-onmount
