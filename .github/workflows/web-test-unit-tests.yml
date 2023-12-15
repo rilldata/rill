@@ -21,22 +21,15 @@ jobs:
           filters: |
             admin:
               - ".github/workflows/web-test.yml"
-              - "admin/**"
-              - "cli/**"
-              - "runtime/**"
               - "web-admin/**"
             auth:
               - ".github/workflows/web-test.yml"
               - "web-auth/**"
             local:
               - ".github/workflows/web-test.yml"
-              - "cli/**"
-              - "runtime/**"
               - "web-local/**"
             common:
               - ".github/workflows/web-test.yml"
-              - "cli/**"
-              - "runtime/**"
               - "web-common/**"
 
       - name: Set up NodeJS
@@ -47,14 +40,14 @@ jobs:
       - name: NPM Install
         run: npm install
 
-      - name: unit test web-common
+      - name: Run web-common unit tests
         if: steps.filter.outputs.common == 'true'
         run: npm run test -w web-common
 
-      - name: Test web-auth
+      - name: Run web-auth unit tests
         if: steps.filter.outputs.auth == 'true'
         run: npm run test -w web-auth
 
-      - name: Make sure storybook is working
+      - name: Run storybook smoke tests
         run: |-
           npm run storybook:smoketest -w web-common

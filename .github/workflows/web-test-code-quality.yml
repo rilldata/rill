@@ -21,22 +21,15 @@ jobs:
           filters: |
             admin:
               - ".github/workflows/web-test.yml"
-              - "admin/**"
-              - "cli/**"
-              - "runtime/**"
               - "web-admin/**"
             auth:
               - ".github/workflows/web-test.yml"
               - "web-auth/**"
             local:
               - ".github/workflows/web-test.yml"
-              - "cli/**"
-              - "runtime/**"
               - "web-local/**"
             common:
               - ".github/workflows/web-test.yml"
-              - "cli/**"
-              - "runtime/**"
               - "web-common/**"
 
       - name: Set up NodeJS
