@@ -52,13 +52,17 @@ export function toggleDimensionNameSelection(
   // that are currently running.
   cancelQueries();
 
-  const hasFilter = filters.find((filter) => filter.name === dimensionName);
+  const filterIndex = filters.findIndex(
+    (filter) => filter.name === dimensionName
+  );
 
-  if (!hasFilter) {
+  if (filterIndex === -1) {
     filters.push({
       name: dimensionName,
       in: [],
     });
+  } else {
+    filters.splice(filterIndex, 1);
   }
 }
 
