@@ -390,6 +390,7 @@ func BenchmarkMetricsViewsAggregation_Druid(t *testing.B) {
 		Limit: 10,
 	}
 
+	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
 		resp, err := client.MetricsViewAggregation(context.Background(), req)
 		if err != nil {
@@ -441,6 +442,7 @@ func BenchmarkMetricsViewsAggregation_Druid_2_measures(t *testing.B) {
 		Limit: 10,
 	}
 
+	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
 		resp, err := client.MetricsViewAggregation(context.Background(), req)
 		if err != nil {
@@ -489,6 +491,7 @@ func BenchmarkMetricsViewsAggregation_Druid_pivot(t *testing.B) {
 		Limit: 10,
 	}
 
+	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
 		resp, err := client.MetricsViewAggregation(context.Background(), req)
 		if err != nil {
@@ -541,6 +544,7 @@ func BenchmarkMetricsViewsAggregation_Druid_pivot_2_measures(t *testing.B) {
 		Limit: 10,
 	}
 
+	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
 		resp, err := client.MetricsViewAggregation(context.Background(), req)
 		if err != nil {
