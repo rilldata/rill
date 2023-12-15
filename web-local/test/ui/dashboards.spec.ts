@@ -245,7 +245,7 @@ test.describe("dashboard", () => {
     // Filter to Facebook via leaderboard
     await page.getByRole("button", { name: "Facebook 19.3k" }).click();
 
-    await page.waitForTimeout(100);
+    await page.waitForSelector("text=Publisher Facebook");
 
     // Change filter to excluded
     await page.getByText("Publisher Facebook").click();
