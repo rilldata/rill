@@ -5,7 +5,7 @@ import { filtersForCurrentExcludeMode } from "../selectors/dimension-filters";
 export function toggleDimensionValueSelection(
   { dashboard, cancelQueries }: DashboardMutables,
   dimensionName: string,
-  dimensionValue?: string
+  dimensionValue: string
 ) {
   const filters = filtersForCurrentExcludeMode({ dashboard })(dimensionName);
   // if there are no filters at this point we cannot update anything.
@@ -33,7 +33,31 @@ export function toggleDimensionValueSelection(
   } else {
     filters.push({
       name: dimensionName,
-      in: dimensionValue ? [dimensionValue] : [],
+      in: [dimensionValue],
+    });
+  }
+}
+
+export function toggleDimensionNameSelection(
+  { dashboard, cancelQueries }: DashboardMutables,
+  dimensionName: string
+) {
+  const filters = filtersForCurrentExcludeMode({ dashboard })(dimensionName);
+  // if there are no filters at this point we cannot update anything.
+  if (filters === undefined) {
+    return;
+  }
+
+  // if we are able to update the filters, we must cancel any queries
+  // that are currently running.
+  cancelQueries();
+
+  const hasFilter = filters.find((filter) => filter.name === dimensionName);
+
+  if (!hasFilter) {
+    filters.push({
+      name: dimensionName,
+      in: [],
     });
   }
 }
@@ -48,4 +72,5 @@ export const dimensionFilterActions = {
    * the include/exclude mode is a toggle for the entire dimension.
    */
   toggleDimensionValueSelection,
+  toggleDimensionNameSelection,
 };
