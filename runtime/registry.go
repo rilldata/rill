@@ -336,7 +336,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			r.logger.Info("syncing repo", zap.String("instance_id", iwc.instance.ID))
 			err := r.ensureRepoSync(iwc.ctx, iwc.instance.ID)
 			if err != nil {
-				r.logger.Error("failed to sync repo", zap.String("instance_id", iwc.instance.ID), zap.Error(err))
+				r.logger.Warn("failed to sync repo", zap.String("instance_id", iwc.instance.ID), zap.Error(err))
 				// Even if repo sync failed, we'll start the controller
 			} else {
 				r.logger.Info("repo synced", zap.String("instance_id", iwc.instance.ID))
