@@ -11,18 +11,31 @@
   const {
     selectors: {
       dimensions: { allDimensions },
+      dimensionFilters: { getAllFilters, isFilterExcludeMode },
     },
     actions: {
-      dimensionsFilter: { toggleDimensionValueSelection },
+      dimensionsFilter: { toggleDimensionNameSelection },
     },
   } = getStateManagers();
 
-  $: selectableItems = $allDimensions
-    ? $allDimensions.map((d) => ({
+  function filterExists(name: string, exclude: boolean): boolean {
+    const selected = exclude
+      ? $getAllFilters?.exclude
+      : $getAllFilters?.include;
+
+    return selected?.find((f) => f.name === name) !== undefined;
+  }
+
+  $: selectableItems =
+    $allDimensions
+      ?.map((d) => ({
         name: d.name as string,
         label: d.label as string,
       }))
-    : [];
+      .filter((d) => {
+        const exclude = $isFilterExcludeMode(d.name);
+        return !filterExists(d.name, exclude);
+      }) ?? [];
 </script>
 
 <WithTogglableFloatingElement
@@ -48,7 +61,7 @@
     on:click-outside={toggleFloatingElement}
     on:item-clicked={(e) => {
       toggleFloatingElement();
-      toggleDimensionValueSelection(e.detail.name);
+      toggleDimensionNameSelection(e.detail.name);
     }}
   />
 </WithTogglableFloatingElement>
