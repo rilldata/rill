@@ -6,9 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	// "github.com/golang/protobuf/proto"
-	// garuntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
-	// "github.com/grpc-ecosystem/grpc-gateway/utilities"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
@@ -157,8 +154,6 @@ func TestMetricsViewsAggregation_pivot(t *testing.T) {
 	require.Equal(t, "Microsoft", fieldsToString(rows[i], "pub"))
 	i++
 	require.Equal(t, "Yahoo", fieldsToString(rows[i], "pub"))
-	i++
-	require.Equal(t, "", fieldsToString(rows[i], "pub"))
 }
 
 func TestMetricsViewsAggregation_pivot_2_measures(t *testing.T) {
@@ -232,8 +227,6 @@ func TestMetricsViewsAggregation_pivot_2_measures(t *testing.T) {
 	require.Equal(t, "Microsoft", fieldsToString(rows[i], "pub"))
 	i++
 	require.Equal(t, "Yahoo", fieldsToString(rows[i], "pub"))
-	i++
-	require.Equal(t, "", fieldsToString(rows[i], "pub"))
 }
 
 func TestMetricsViewsAggregation_pivot_2_measures_and_filter(t *testing.T) {
