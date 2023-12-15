@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -300,9 +301,9 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t *testing.
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Where: queries.FilterInClause(
-			queries.FilterColumn("label"),
-			[]*runtimev1.Expression{queries.FilterValue(toStructpbValue(t, "sparse_day"))},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "sparse_day"))},
 		),
 		MetricsViewName: "timeseries_dst_backwards",
 		MetricsView:     mv.Spec,
@@ -470,9 +471,9 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Where: queries.FilterInClause(
-			queries.FilterColumn("label"),
-			[]*runtimev1.Expression{queries.FilterValue(toStructpbValue(t, "sparse_hour"))},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "sparse_hour"))},
 		),
 		MetricsViewName: "timeseries_dst_backwards",
 		MetricsView:     mv.Spec,
@@ -583,9 +584,9 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t *testing.T
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Where: queries.FilterInClause(
-			queries.FilterColumn("label"),
-			[]*runtimev1.Expression{queries.FilterValue(toStructpbValue(t, "sparse_day"))},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "sparse_day"))},
 		),
 		MetricsViewName: "timeseries_dst_forwards",
 		MetricsView:     mv.Spec,
@@ -661,9 +662,9 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Where: queries.FilterInClause(
-			queries.FilterColumn("label"),
-			[]*runtimev1.Expression{queries.FilterValue(toStructpbValue(t, "sparse_hour"))},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "sparse_hour"))},
 		),
 		MetricsViewName: "timeseries_dst_forwards",
 		MetricsView:     mv.Spec,

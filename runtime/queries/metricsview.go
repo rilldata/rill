@@ -17,6 +17,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/grpc/codes"
@@ -540,7 +541,7 @@ func convertFilterToExpression(filter *runtimev1.MetricsViewFilter) *runtimev1.E
 				includeExprs = append(includeExprs, domExpr)
 			}
 		}
-		exprs = append(exprs, FilterOrClause(includeExprs))
+		exprs = append(exprs, expressionpb.Or(includeExprs))
 	}
 
 	if len(filter.Exclude) > 0 {
@@ -555,7 +556,7 @@ func convertFilterToExpression(filter *runtimev1.MetricsViewFilter) *runtimev1.E
 	if len(exprs) == 1 {
 		return exprs[0]
 	} else if len(exprs) > 1 {
-		return FilterAndClause(exprs)
+		return expressionpb.And(exprs)
 	}
 	return nil
 }
@@ -565,45 +566,45 @@ func convertDimensionFilterToExpression(cond *runtimev1.MetricsViewFilter_Cond, 
 	if len(cond.In) > 0 {
 		var inExprs []*runtimev1.Expression
 		for _, inVal := range cond.In {
-			inExprs = append(inExprs, FilterValue(inVal))
+			inExprs = append(inExprs, expressionpb.Value(inVal))
 		}
 		if exclude {
-			inExpr = FilterNotInClause(FilterColumn(cond.Name), inExprs)
+			inExpr = expressionpb.NotIn(expressionpb.Identifier(cond.Name), inExprs)
 		} else {
-			inExpr = FilterInClause(FilterColumn(cond.Name), inExprs)
+			inExpr = expressionpb.In(expressionpb.Identifier(cond.Name), inExprs)
 		}
 	}
 
 	var likeExpr *runtimev1.Expression
 	if len(cond.Like) == 1 {
 		if exclude {
-			likeExpr = FilterNotLikeClause(FilterColumn(cond.Name), FilterValue(structpb.NewStringValue(cond.Like[0])))
+			likeExpr = expressionpb.NotLike(expressionpb.Identifier(cond.Name), expressionpb.Value(structpb.NewStringValue(cond.Like[0])))
 		} else {
-			likeExpr = FilterLikeClause(FilterColumn(cond.Name), FilterValue(structpb.NewStringValue(cond.Like[0])))
+			likeExpr = expressionpb.Like(expressionpb.Identifier(cond.Name), expressionpb.Value(structpb.NewStringValue(cond.Like[0])))
 		}
 	} else if len(cond.Like) > 1 {
 		var likeExprs []*runtimev1.Expression
 		for _, l := range cond.Like {
-			col := FilterColumn(cond.Name)
-			val := FilterValue(structpb.NewStringValue(l))
+			col := expressionpb.Identifier(cond.Name)
+			val := expressionpb.Value(structpb.NewStringValue(l))
 			if exclude {
-				likeExprs = append(likeExprs, FilterNotLikeClause(col, val))
+				likeExprs = append(likeExprs, expressionpb.NotLike(col, val))
 			} else {
-				likeExprs = append(likeExprs, FilterLikeClause(col, val))
+				likeExprs = append(likeExprs, expressionpb.Like(col, val))
 			}
 		}
 		if exclude {
-			likeExpr = FilterAndClause(likeExprs)
+			likeExpr = expressionpb.And(likeExprs)
 		} else {
-			likeExpr = FilterOrClause(likeExprs)
+			likeExpr = expressionpb.Or(likeExprs)
 		}
 	}
 
 	if inExpr != nil && likeExpr != nil {
 		if exclude {
-			return FilterAndClause([]*runtimev1.Expression{inExpr, likeExpr})
+			return expressionpb.And([]*runtimev1.Expression{inExpr, likeExpr})
 		}
-		return FilterOrClause([]*runtimev1.Expression{inExpr, likeExpr})
+		return expressionpb.Or([]*runtimev1.Expression{inExpr, likeExpr})
 	} else if inExpr != nil {
 		return inExpr
 	} else if likeExpr != nil {

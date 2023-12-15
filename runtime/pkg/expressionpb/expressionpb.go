@@ -1,11 +1,15 @@
-package queries
+package expressionpb
 
 import (
 	"github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func FilterColumn(col string) *runtimev1.Expression {
+/**
+ * Helper utils to simplify using the expression structures.
+ */
+
+func Identifier(col string) *runtimev1.Expression {
 	return &runtimev1.Expression{
 		Expression: &runtimev1.Expression_Ident{
 			Ident: col,
@@ -13,7 +17,7 @@ func FilterColumn(col string) *runtimev1.Expression {
 	}
 }
 
-func FilterValue(val *structpb.Value) *runtimev1.Expression {
+func Value(val *structpb.Value) *runtimev1.Expression {
 	return &runtimev1.Expression{
 		Expression: &runtimev1.Expression_Val{
 			Val: val,
@@ -21,7 +25,7 @@ func FilterValue(val *structpb.Value) *runtimev1.Expression {
 	}
 }
 
-func FilterInClause(col *runtimev1.Expression, values []*runtimev1.Expression) *runtimev1.Expression {
+func In(col *runtimev1.Expression, values []*runtimev1.Expression) *runtimev1.Expression {
 	return &runtimev1.Expression{
 		Expression: &runtimev1.Expression_Cond{
 			Cond: &runtimev1.Condition{
@@ -32,7 +36,7 @@ func FilterInClause(col *runtimev1.Expression, values []*runtimev1.Expression) *
 	}
 }
 
-func FilterNotInClause(col *runtimev1.Expression, values []*runtimev1.Expression) *runtimev1.Expression {
+func NotIn(col *runtimev1.Expression, values []*runtimev1.Expression) *runtimev1.Expression {
 	return &runtimev1.Expression{
 		Expression: &runtimev1.Expression_Cond{
 			Cond: &runtimev1.Condition{
@@ -43,7 +47,7 @@ func FilterNotInClause(col *runtimev1.Expression, values []*runtimev1.Expression
 	}
 }
 
-func FilterLikeClause(col, val *runtimev1.Expression) *runtimev1.Expression {
+func Like(col, val *runtimev1.Expression) *runtimev1.Expression {
 	return &runtimev1.Expression{
 		Expression: &runtimev1.Expression_Cond{
 			Cond: &runtimev1.Condition{
@@ -54,7 +58,7 @@ func FilterLikeClause(col, val *runtimev1.Expression) *runtimev1.Expression {
 	}
 }
 
-func FilterNotLikeClause(col, val *runtimev1.Expression) *runtimev1.Expression {
+func NotLike(col, val *runtimev1.Expression) *runtimev1.Expression {
 	return &runtimev1.Expression{
 		Expression: &runtimev1.Expression_Cond{
 			Cond: &runtimev1.Condition{
@@ -65,7 +69,7 @@ func FilterNotLikeClause(col, val *runtimev1.Expression) *runtimev1.Expression {
 	}
 }
 
-func FilterAndClause(values []*runtimev1.Expression) *runtimev1.Expression {
+func And(values []*runtimev1.Expression) *runtimev1.Expression {
 	return &runtimev1.Expression{
 		Expression: &runtimev1.Expression_Cond{
 			Cond: &runtimev1.Condition{
@@ -76,7 +80,7 @@ func FilterAndClause(values []*runtimev1.Expression) *runtimev1.Expression {
 	}
 }
 
-func FilterOrClause(values []*runtimev1.Expression) *runtimev1.Expression {
+func Or(values []*runtimev1.Expression) *runtimev1.Expression {
 	return &runtimev1.Expression{
 		Expression: &runtimev1.Expression_Cond{
 			Cond: &runtimev1.Condition{
