@@ -23,8 +23,6 @@ are details left to the consumer of the component; this component should remain 
   import { Chip } from "../index";
   import RemovableListBody from "./RemovableListBody.svelte";
   import RemovableListMenu from "./RemovableListMenu.svelte";
-  import { clearFilterForDimension } from "@rilldata/web-common/features/dashboards/actions";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 </script>
 
 <script lang="ts">
@@ -37,25 +35,29 @@ are details left to the consumer of the component; this component should remain 
   export let excludeMode: boolean;
   export let colors: ChipColors = defaultChipColors;
   export let label: string | undefined = undefined;
-  export let dimensionName: string;
 
-  const initiallyActive = !selectedValues.length;
+  let active = !selectedValues.length;
 
   const dispatch = createEventDispatcher();
-
-  const StateManagers = getStateManagers();
 
   onMount(() => {
     dispatch("mount");
   });
+
+  function handleDismiss() {
+    if (!selectedValues.length) {
+      dispatch("remove");
+    } else {
+      active = false;
+    }
+  }
 </script>
 
 <WithTogglableFloatingElement
+  bind:active
   let:toggleFloatingElement
-  let:active
   distance={8}
   alignment="start"
-  active={initiallyActive}
 >
   <Tooltip
     location="bottom"
@@ -105,25 +107,12 @@ are details left to the consumer of the component; this component should remain 
     </div>
   </Tooltip>
   <RemovableListMenu
-    let:toggleFloatingElement
     slot="floating-element"
     {excludeMode}
     {allValues}
     {selectedValues}
-    on:escape={() => {
-      if (!selectedValues.length) {
-        clearFilterForDimension(StateManagers, dimensionName, !excludeMode);
-      } else {
-        toggleFloatingElement();
-      }
-    }}
-    on:click-outside={() => {
-      if (!selectedValues.length) {
-        clearFilterForDimension(StateManagers, dimensionName, !excludeMode);
-      } else {
-        toggleFloatingElement();
-      }
-    }}
+    on:escape={handleDismiss}
+    on:click-outside={handleDismiss}
     on:apply
     on:search
     on:toggle
