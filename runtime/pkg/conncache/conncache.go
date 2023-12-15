@@ -433,15 +433,12 @@ func (c *cacheImpl) periodicallyCheckHangingConnections() {
 		select {
 		case <-ticker.C:
 			c.mu.Lock()
-			hanging := 0
 			for k := range c.singleflight {
 				e := c.entries[k]
 				if c.opts.OpenTimeout != 0 && e.status == entryStatusOpening && time.Since(e.since) > c.opts.OpenTimeout {
-					hanging++
 					c.opts.HangingFunc(e.cfg, true)
 				}
 				if c.opts.CloseTimeout != 0 && e.status == entryStatusClosing && time.Since(e.since) > c.opts.CloseTimeout {
-					hanging++
 					c.opts.HangingFunc(e.cfg, false)
 				}
 			}
