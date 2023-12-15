@@ -117,11 +117,11 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 		var localDB, localSchema string
 		for res.Next() {
 			if err := res.Scan(&localDB, &localSchema); err != nil {
-				res.Close()
+				_ = res.Close()
 				return err
 			}
 		}
-		res.Close()
+		_ = res.Close()
 
 		// duckdb considers everything before first . as db name
 		// alternative solution can be to query `show databases()` before and after to identify db name

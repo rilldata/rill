@@ -61,13 +61,15 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		if err != nil {
 			return err
 		}
-		defer res.Close()
 
-		res.Next()
 		var localDB, localSchema string
-		if err := res.Scan(&localDB, &localSchema); err != nil {
-			return err
+		for res.Next() {
+			if err := res.Scan(&localDB, &localSchema); err != nil {
+				_ = res.Close()
+				return err
+			}
 		}
+		_ = res.Close()
 
 		// get token
 		token, _ := config["token"].(string)
