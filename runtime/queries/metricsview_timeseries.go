@@ -272,7 +272,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 		return "", "", nil, err
 	}
 
-	measureAliases := map[string]identifier{}
+	measureAliases := map[string]columnIdentifier{}
 	selectCols := []string{}
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
@@ -292,7 +292,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 	}
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildFromExpression(q.Where, dimensionAliases(mv), olap.Dialect())
+		clause, clauseArgs, err := buildExpression(q.Where, dimensionAliases(mv), olap.Dialect())
 		if err != nil {
 			return "", "", nil, err
 		}
@@ -302,7 +302,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 
 	havingClause := ""
 	if q.Having != nil {
-		clause, clauseArgs, err := buildFromExpression(q.Having, measureAliases, olap.Dialect())
+		clause, clauseArgs, err := buildExpression(q.Having, measureAliases, olap.Dialect())
 		if err != nil {
 			return "", "", nil, err
 		}

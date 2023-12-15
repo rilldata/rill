@@ -292,24 +292,28 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev
 	return fmt.Sprintf("AND (%s) ", condsClause), args, nil
 }
 
-type identifier struct {
-	mapped string
+type columnIdentifier struct {
+	// expression to use instead of a name for dimension or expression
+	// EG: measure expression : impressions => "impressions" (would be aliases in query)
+	//     dimension column : publisher => "publisher"
+	//     dimension expression : tld => "regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)" (needed since tld might not be selected)
+	expr   string
 	unnest bool
 }
 
-func newIdentifier(name string) identifier {
-	return identifier{safeName(name), false}
+func newIdentifier(name string) columnIdentifier {
+	return columnIdentifier{safeName(name), false}
 }
 
-func dimensionAliases(mv *runtimev1.MetricsViewSpec) map[string]identifier {
-	aliases := map[string]identifier{}
+func dimensionAliases(mv *runtimev1.MetricsViewSpec) map[string]columnIdentifier {
+	aliases := map[string]columnIdentifier{}
 	for _, dim := range mv.Dimensions {
-		aliases[dim.Name] = identifier{safeName(metricsViewDimensionColumn(dim)), dim.Unnest}
+		aliases[dim.Name] = columnIdentifier{safeName(metricsViewDimensionColumn(dim)), dim.Unnest}
 	}
 	return aliases
 }
 
-func buildFromExpression(expr *runtimev1.Expression, allowedIdentifiers map[string]identifier, dialect drivers.Dialect) (string, []any, error) {
+func buildExpression(expr *runtimev1.Expression, allowedIdentifiers map[string]columnIdentifier, dialect drivers.Dialect) (string, []any, error) {
 	var emptyArg []any
 	switch e := expr.Expression.(type) {
 	case *runtimev1.Expression_Val:
@@ -322,38 +326,38 @@ func buildFromExpression(expr *runtimev1.Expression, allowedIdentifiers map[stri
 	case *runtimev1.Expression_Ident:
 		col, ok := allowedIdentifiers[e.Ident]
 		if !ok {
-			return "", emptyArg, fmt.Errorf("unknown column filter. %s", e.Ident)
+			return "", emptyArg, fmt.Errorf("unknown column filter: %s", e.Ident)
 		}
-		return col.mapped, emptyArg, nil
+		return col.expr, emptyArg, nil
 
 	case *runtimev1.Expression_Cond:
-		return buildFromConditionExpression(e.Cond, allowedIdentifiers, dialect)
+		return buildConditionExpression(e.Cond, allowedIdentifiers, dialect)
 	}
 
 	return "", emptyArg, nil
 }
 
-func buildFromConditionExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]identifier, dialect drivers.Dialect) (string, []any, error) {
+func buildConditionExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]columnIdentifier, dialect drivers.Dialect) (string, []any, error) {
 	switch cond.Op {
 	case runtimev1.Operation_OPERATION_LIKE, runtimev1.Operation_OPERATION_NLIKE:
-		return buildFromLikeExpression(cond, allowedIdentifiers, dialect)
+		return buildLikeExpression(cond, allowedIdentifiers, dialect)
 
 	case runtimev1.Operation_OPERATION_IN, runtimev1.Operation_OPERATION_NIN:
-		return buildFromInExpression(cond, allowedIdentifiers, dialect)
+		return buildInExpression(cond, allowedIdentifiers, dialect)
 
 	case runtimev1.Operation_OPERATION_AND:
-		return buildFromAndOrExpressions(cond, allowedIdentifiers, dialect, " AND ")
+		return buildAndOrExpressions(cond, allowedIdentifiers, dialect, " AND ")
 
 	case runtimev1.Operation_OPERATION_OR:
-		return buildFromAndOrExpressions(cond, allowedIdentifiers, dialect, " OR ")
+		return buildAndOrExpressions(cond, allowedIdentifiers, dialect, " OR ")
 
 	default:
-		leftExpr, args, err := buildFromExpression(cond.Exprs[0], allowedIdentifiers, dialect)
+		leftExpr, args, err := buildExpression(cond.Exprs[0], allowedIdentifiers, dialect)
 		if err != nil {
 			return "", nil, err
 		}
 
-		rightExpr, subArgs, err := buildFromExpression(cond.Exprs[1], allowedIdentifiers, dialect)
+		rightExpr, subArgs, err := buildExpression(cond.Exprs[1], allowedIdentifiers, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -363,17 +367,17 @@ func buildFromConditionExpression(cond *runtimev1.Condition, allowedIdentifiers 
 	}
 }
 
-func buildFromLikeExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]identifier, dialect drivers.Dialect) (string, []any, error) {
+func buildLikeExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]columnIdentifier, dialect drivers.Dialect) (string, []any, error) {
 	if len(cond.Exprs) != 2 {
 		return "", nil, fmt.Errorf("like/not like expression should have exactly 2 sub expressions")
 	}
 
-	leftExpr, args, err := buildFromExpression(cond.Exprs[0], allowedIdentifiers, dialect)
+	leftExpr, args, err := buildExpression(cond.Exprs[0], allowedIdentifiers, dialect)
 	if err != nil {
 		return "", nil, err
 	}
 
-	rightExpr, subArgs, err := buildFromExpression(cond.Exprs[1], allowedIdentifiers, dialect)
+	rightExpr, subArgs, err := buildExpression(cond.Exprs[1], allowedIdentifiers, dialect)
 	if err != nil {
 		return "", nil, err
 	}
@@ -385,10 +389,9 @@ func buildFromLikeExpression(cond *runtimev1.Condition, allowedIdentifiers map[s
 	}
 
 	// identify if immediate identifier has unnest
-	// TODO: do we need to do a deeper check?
 	unnest := false
-	ident, isIndent := cond.Exprs[0].Expression.(*runtimev1.Expression_Ident)
-	if isIndent {
+	ident, isIdent := cond.Exprs[0].Expression.(*runtimev1.Expression_Ident)
+	if isIdent {
 		i := allowedIdentifiers[ident.Ident]
 		unnest = i.unnest
 	}
@@ -412,17 +415,15 @@ func buildFromLikeExpression(cond *runtimev1.Condition, allowedIdentifiers map[s
 		clause += fmt.Sprintf(" OR %s IS NULL", leftExpr)
 	}
 
-	// TODO: is `col is null` needed?
-
 	return clause, args, nil
 }
 
-func buildFromInExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]identifier, dialect drivers.Dialect) (string, []any, error) {
+func buildInExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]columnIdentifier, dialect drivers.Dialect) (string, []any, error) {
 	if len(cond.Exprs) <= 1 {
 		return "", nil, fmt.Errorf("in/not in expression should have atleast 2 sub expressions")
 	}
 
-	leftExpr, args, err := buildFromExpression(cond.Exprs[0], allowedIdentifiers, dialect)
+	leftExpr, args, err := buildExpression(cond.Exprs[0], allowedIdentifiers, dialect)
 	if err != nil {
 		return "", nil, err
 	}
@@ -437,14 +438,13 @@ func buildFromInExpression(cond *runtimev1.Condition, allowedIdentifiers map[str
 	var valClauses []string
 	// Add to args, skipping nulls
 	for _, subExpr := range cond.Exprs[1:] {
-		// TODO: is a deeper check needed?
 		if v, isVal := subExpr.Expression.(*runtimev1.Expression_Val); isVal {
 			if _, isNull := v.Val.Kind.(*structpb.Value_NullValue); isNull {
 				inHasNull = true
 				continue // Handled later using "dim IS [NOT] NULL" clause
 			}
 		}
-		inVal, subArgs, err := buildFromExpression(subExpr, allowedIdentifiers, dialect)
+		inVal, subArgs, err := buildExpression(subExpr, allowedIdentifiers, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -497,11 +497,11 @@ func buildFromInExpression(cond *runtimev1.Condition, allowedIdentifiers map[str
 	return condsClause, args, nil
 }
 
-func buildFromAndOrExpressions(cond *runtimev1.Condition, allowedIdentifiers map[string]identifier, dialect drivers.Dialect, joiner string) (string, []any, error) {
+func buildAndOrExpressions(cond *runtimev1.Condition, allowedIdentifiers map[string]columnIdentifier, dialect drivers.Dialect, joiner string) (string, []any, error) {
 	clauses := make([]string, 0)
 	var args []any
 	for _, expr := range cond.Exprs {
-		clause, subArgs, err := buildFromExpression(expr, allowedIdentifiers, dialect)
+		clause, subArgs, err := buildExpression(expr, allowedIdentifiers, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -526,7 +526,7 @@ func conditionExpressionOperation(oprn runtimev1.Operation) string {
 	case runtimev1.Operation_OPERATION_GTE:
 		return ">="
 	}
-	return "=" // TODO: handle unknown operation type
+	panic(fmt.Sprintf("unknown condition operation: %v", oprn))
 }
 
 func convertFilterToExpression(filter *runtimev1.MetricsViewFilter) *runtimev1.Expression {

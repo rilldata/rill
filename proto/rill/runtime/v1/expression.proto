@@ -2,6 +2,7 @@ syntax = "proto3";
 package rill.runtime.v1;
 
 import "google/protobuf/struct.proto";
+import "validate/validate.proto";
 
 message Expression {
   oneof expression {
@@ -12,7 +13,7 @@ message Expression {
 }
 
 message Condition {
-  Operation op = 1;
+  Operation op = 1 [(validate.rules).enum.defined_only = true];
   repeated Expression exprs = 2;
 }
 

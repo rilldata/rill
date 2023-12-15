@@ -184,7 +184,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		args = append(args, exprArgs...)
 	}
 
-	measureAliases := map[string]identifier{}
+	measureAliases := map[string]columnIdentifier{}
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
@@ -225,7 +225,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		whereClause += clause
 	}
 	if q.Where != nil {
-		clause, clauseArgs, err := buildFromExpression(q.Where, dimensionAliases(mv), dialect)
+		clause, clauseArgs, err := buildExpression(q.Where, dimensionAliases(mv), dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -240,7 +240,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	if q.Having != nil {
 		var havingClauseArgs []any
 		var err error
-		havingClause, havingClauseArgs, err = buildFromExpression(q.Having, measureAliases, dialect)
+		havingClause, havingClauseArgs, err = buildExpression(q.Having, measureAliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}

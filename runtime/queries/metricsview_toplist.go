@@ -208,7 +208,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		selectCols = append(selectCols, colName)
 	}
 
-	measureAliases := map[string]identifier{}
+	measureAliases := map[string]columnIdentifier{}
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
 		selectCols = append(selectCols, expr)
@@ -229,7 +229,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	}
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildFromExpression(q.Where, dimensionAliases(mv), dialect)
+		clause, clauseArgs, err := buildExpression(q.Where, dimensionAliases(mv), dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -240,7 +240,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	havingClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildFromExpression(q.Having, measureAliases, dialect)
+		havingClause, havingClauseArgs, err = buildExpression(q.Having, measureAliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}

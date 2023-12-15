@@ -285,7 +285,7 @@ message MetricsViewAggregationRequest {
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   int32 priority = 11;
-  MetricsViewFilter filter = 14;
+  MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
 }
 
 message MetricsViewAggregationResponse {
@@ -330,7 +330,7 @@ message MetricsViewToplistRequest {
   Expression where = 10;
   Expression having = 13;
   int32 priority = 11;
-  MetricsViewFilter filter = 14;
+  MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
 }
 
 message MetricsViewToplistResponse {
@@ -354,7 +354,7 @@ message MetricsViewComparisonRequest {
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   int32 priority = 11;
   bool exact = 13;
-  MetricsViewFilter filter = 14;
+  MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
 }
 
 // Response message for QueryService.MetricsViewComparison
@@ -398,6 +398,12 @@ message MetricsViewComparisonValue {
   google.protobuf.Value delta_rel = 5;
 }
 
+message MetricsViewComparisonMeasureAlias {
+  string name = 1;
+  MetricsViewComparisonMeasureType type = 2;
+  string alias = 3;
+}
+
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
@@ -410,18 +416,12 @@ message MetricsViewTimeSeriesRequest {
   Expression having = 11;
   string time_zone = 10;
   int32 priority = 8;
-  MetricsViewFilter filter = 12;
+  MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
 }
 
 message MetricsViewTimeSeriesResponse {
   repeated MetricsViewColumn meta = 1;
   repeated TimeSeriesValue data = 2;
-}
-
-message MetricsViewComparisonMeasureAlias {
-  string name = 1;
-  MetricsViewComparisonMeasureType type = 2;
-  string alias = 3;
 }
 
 message MetricsViewTotalsRequest {
@@ -433,7 +433,7 @@ message MetricsViewTotalsRequest {
   google.protobuf.Timestamp time_end = 5;
   Expression where = 7;
   int32 priority = 8;
-  MetricsViewFilter filter = 10;
+  MetricsViewFilter filter = 10; // Deprecated. should be removed once UI is moved to use new filters
 }
 
 message MetricsViewTotalsResponse {
@@ -453,7 +453,7 @@ message MetricsViewRowsRequest {
   int64 offset = 8 [(validate.rules).int64.gte = 0];
   int32 priority = 9;
   string time_zone = 11;
-  MetricsViewFilter filter = 12;
+  MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
 }
 
 message MetricsViewRowsResponse {
