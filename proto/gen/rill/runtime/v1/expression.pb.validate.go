@@ -255,7 +255,16 @@ func (m *Condition) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Op
+	if _, ok := Operation_name[int32(m.GetOp())]; !ok {
+		err := ConditionValidationError{
+			field:  "Op",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	for idx, item := range m.GetExprs() {
 		_, _ = idx, item

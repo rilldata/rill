@@ -371,6 +371,15 @@ message TimeRange {
   string time_zone = 6;
 }
 
+// Present for backwards compatibility
+enum MetricsViewComparisonSortType {
+  METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED = 0;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE = 1;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE = 2;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA = 3;
+  METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA = 4;
+}
+
 enum MetricsViewComparisonMeasureType {
   METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED = 0;
   METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE = 1;
@@ -382,7 +391,8 @@ enum MetricsViewComparisonMeasureType {
 message MetricsViewComparisonSort {
   string name = 1 [(validate.rules).string.min_len = 1];
   bool desc = 2;
-  MetricsViewComparisonMeasureType type = 3;
+  MetricsViewComparisonSortType type = 3; // Deprecated. Present for backwards compatibility for older reports
+  MetricsViewComparisonMeasureType sort_type = 4;
 }
 
 message MetricsViewComparisonRow {

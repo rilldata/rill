@@ -579,6 +579,8 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		return "", nil, err
 	}
 
+	// Update sort to make sure it is backwards compatible
+	updateComparisonSort(q.Sort)
 	orderClause := "true"
 	subQueryOrderClause := "true"
 	for _, s := range q.Sort {
@@ -603,7 +605,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		orderClause += ", "
 		subQueryOrderClause += ", "
 		var pos int
-		switch s.Type {
+		switch s.SortType {
 		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
 			pos = 2 + i*4
 		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
@@ -642,21 +644,21 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	joinType := "FULL"
 	if !q.Exact {
-		deltaComparison := q.Sort[0].Type == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA ||
-			q.Sort[0].Type == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
+		deltaComparison := q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA ||
+			q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
 
 		approximationLimit := q.Limit
 		if q.Limit != 0 && q.Limit < 100 && deltaComparison {
 			approximationLimit = 100
 		}
 
-		if q.Sort[0].Type == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE || deltaComparison {
+		if q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE || deltaComparison {
 			joinType = "LEFT OUTER"
 			baseLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
 			if approximationLimit > 0 {
 				baseLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
 			}
-		} else if q.Sort[0].Type == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE {
+		} else if q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE {
 			joinType = "RIGHT OUTER"
 			comparisonLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
 			if approximationLimit > 0 {
@@ -773,7 +775,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		leftWhereClause := baseWhereClause
 		rightWhereClause := comparisonWhereClause
 
-		if q.Sort[0].Type == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE {
+		if q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE {
 			leftSubQueryAlias = "comparison"
 			rightSubQueryAlias = "base"
 			leftWhereClause = comparisonWhereClause
@@ -1024,6 +1026,23 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {
 
 func isTimeRangeNil(tr *runtimev1.TimeRange) bool {
 	return tr == nil || (tr.Start == nil && tr.End == nil)
+}
+
+func updateComparisonSort(sort []*runtimev1.MetricsViewComparisonSort) {
+	for _, comparisonSort := range sort {
+		if comparisonSort.SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED && comparisonSort.Type != runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED {
+			switch comparisonSort.Type {
+			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
+				comparisonSort.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
+			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
+				comparisonSort.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE
+			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA:
+				comparisonSort.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA
+			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA:
+				comparisonSort.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
+			}
+		}
+	}
 }
 
 func validateMeasureAliases(aliases []*runtimev1.MetricsViewComparisonMeasureAlias, measures []*runtimev1.MetricsViewAggregationMeasure, hasComparison bool) error {

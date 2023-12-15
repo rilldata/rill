@@ -1131,6 +1131,18 @@ export interface V1MetricsViewTotalsResponse {
   meta?: V1MetricsViewColumn[];
 }
 
+export interface V1MetricsViewTotalsRequest {
+  filter?: V1MetricsViewFilter;
+  inlineMeasures?: V1InlineMeasure[];
+  instanceId?: string;
+  measureNames?: string[];
+  metricsViewName?: string;
+  priority?: number;
+  timeEnd?: string;
+  timeStart?: string;
+  where?: V1Expression;
+}
+
 export type V1MetricsViewToplistResponseDataItem = { [key: string]: any };
 
 export interface V1MetricsViewToplistResponse {
@@ -1141,6 +1153,21 @@ export interface V1MetricsViewToplistResponse {
 export interface V1MetricsViewTimeSeriesResponse {
   data?: V1TimeSeriesValue[];
   meta?: V1MetricsViewColumn[];
+}
+
+export interface V1MetricsViewTimeSeriesRequest {
+  filter?: V1MetricsViewFilter;
+  having?: V1Expression;
+  inlineMeasures?: V1InlineMeasure[];
+  instanceId?: string;
+  measureNames?: string[];
+  metricsViewName?: string;
+  priority?: number;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  timeStart?: string;
+  timeZone?: string;
+  where?: V1Expression;
 }
 
 export interface V1MetricsViewTimeRangeResponse {
@@ -1192,18 +1219,6 @@ export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
 }
 
-export interface V1MetricsViewTotalsRequest {
-  filter?: V1MetricsViewFilter;
-  inlineMeasures?: V1InlineMeasure[];
-  instanceId?: string;
-  measureNames?: string[];
-  metricsViewName?: string;
-  priority?: number;
-  timeEnd?: string;
-  timeStart?: string;
-  where?: V1Expression;
-}
-
 export interface V1MetricsViewToplistRequest {
   dimensionName?: string;
   filter?: V1MetricsViewFilter;
@@ -1218,21 +1233,6 @@ export interface V1MetricsViewToplistRequest {
   sort?: V1MetricsViewSort[];
   timeEnd?: string;
   timeStart?: string;
-  where?: V1Expression;
-}
-
-export interface V1MetricsViewTimeSeriesRequest {
-  filter?: V1MetricsViewFilter;
-  having?: V1Expression;
-  inlineMeasures?: V1InlineMeasure[];
-  instanceId?: string;
-  measureNames?: string[];
-  metricsViewName?: string;
-  priority?: number;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  timeStart?: string;
-  timeZone?: string;
   where?: V1Expression;
 }
 
@@ -1259,10 +1259,28 @@ export interface V1MetricsViewComparisonValue {
   measureName?: string;
 }
 
+export type V1MetricsViewComparisonSortType =
+  (typeof V1MetricsViewComparisonSortType)[keyof typeof V1MetricsViewComparisonSortType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1MetricsViewComparisonSortType = {
+  METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA",
+  METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA:
+    "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
+} as const;
+
 export interface V1MetricsViewComparisonSort {
   desc?: boolean;
   name?: string;
-  type?: V1MetricsViewComparisonMeasureType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+  type?: V1MetricsViewComparisonSortType;
 }
 
 export interface V1MetricsViewComparisonRow {

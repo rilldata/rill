@@ -1066,6 +1066,7 @@ paths:
                 format: int32
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
+                title: Deprecated. should be removed once UI is moved to use new filters
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -1133,6 +1134,7 @@ paths:
                 type: boolean
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
+                title: Deprecated. should be removed once UI is moved to use new filters
             title: Request message for QueryService.MetricsViewComparison
       tags:
         - QueryService
@@ -1192,6 +1194,7 @@ paths:
                 type: string
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
+                title: Deprecated. should be removed once UI is moved to use new filters
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
@@ -1285,6 +1288,7 @@ paths:
                 format: int32
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
+                title: Deprecated. should be removed once UI is moved to use new filters
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist:
@@ -1354,6 +1358,7 @@ paths:
                 format: int32
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
+                title: Deprecated. should be removed once UI is moved to use new filters
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/totals:
@@ -1408,6 +1413,7 @@ paths:
                 format: int32
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
+                title: Deprecated. should be removed once UI is moved to use new filters
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
@@ -3454,6 +3460,7 @@ definitions:
         format: int32
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
+        title: Deprecated. should be removed once UI is moved to use new filters
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -3542,6 +3549,7 @@ definitions:
         type: boolean
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
+        title: Deprecated. should be removed once UI is moved to use new filters
     title: Request message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonResponse:
     type: object
@@ -3569,7 +3577,20 @@ definitions:
       desc:
         type: boolean
       type:
+        $ref: '#/definitions/v1MetricsViewComparisonSortType'
+        title: Deprecated. Present for backwards compatibility for older reports
+      sortType:
         $ref: '#/definitions/v1MetricsViewComparisonMeasureType'
+  v1MetricsViewComparisonSortType:
+    type: string
+    enum:
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA
+      - METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA
+    default: METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
+    title: Present for backwards compatibility
   v1MetricsViewComparisonValue:
     type: object
     properties:
@@ -3627,6 +3648,7 @@ definitions:
         type: string
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
+        title: Deprecated. should be removed once UI is moved to use new filters
   v1MetricsViewRowsResponse:
     type: object
     properties:
@@ -3758,6 +3780,7 @@ definitions:
         format: int32
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
+        title: Deprecated. should be removed once UI is moved to use new filters
   v1MetricsViewTimeSeriesResponse:
     type: object
     properties:
@@ -3815,6 +3838,7 @@ definitions:
         format: int32
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
+        title: Deprecated. should be removed once UI is moved to use new filters
   v1MetricsViewToplistResponse:
     type: object
     properties:
@@ -3856,6 +3880,7 @@ definitions:
         format: int32
       filter:
         $ref: '#/definitions/v1MetricsViewFilter'
+        title: Deprecated. should be removed once UI is moved to use new filters
   v1MetricsViewTotalsResponse:
     type: object
     properties:

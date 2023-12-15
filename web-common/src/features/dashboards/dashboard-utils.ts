@@ -74,7 +74,7 @@ export function prepareSortedQueryBody(
       {
         desc: !sortAscending,
         name: sortMeasureName,
-        type: querySortType,
+        sortType: querySortType,
       },
     ],
     filter: filterForDimension,

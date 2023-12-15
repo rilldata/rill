@@ -52,9 +52,9 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "dom",
-				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
-				Desc: false,
+				Name:     "dom",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
+				Desc:     false,
 			},
 		},
 		Limit: 10,
@@ -94,9 +94,9 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "dom",
-				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
-				Desc: false,
+				Name:     "dom",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     false,
 			},
 		},
 		Limit: 10,
@@ -152,9 +152,9 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "dom",
-				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
-				Desc: true,
+				Name:     "dom",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
+				Desc:     true,
 			},
 		},
 		Limit: 250,
@@ -204,9 +204,9 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_1",
-				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
-				Desc: true,
+				Name:     "measure_1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
+				Desc:     true,
 			},
 		},
 		Limit: 250,
@@ -252,9 +252,9 @@ func TestMetricsViewsComparison_measure_filters(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "dom",
-				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
-				Desc: true,
+				Name:     "dom",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
+				Desc:     true,
 			},
 		},
 		Limit: 250,
@@ -325,9 +325,9 @@ func TestMetricsViewsComparison_measure_filters_with_compare_no_alias(t *testing
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "dom",
-				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
-				Desc: true,
+				Name:     "dom",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
+				Desc:     true,
 			},
 		},
 		Limit: 250,
@@ -393,9 +393,9 @@ func TestMetricsViewsComparison_measure_filters_with_compare_aliases(t *testing.
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "dom",
-				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
-				Desc: true,
+				Name:     "dom",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
+				Desc:     true,
 			},
 		},
 		Having: &runtimev1.Expression{
@@ -470,9 +470,9 @@ func TestMetricsViewsCompariso_export_xlsx(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "domain",
-				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
-				Desc: false,
+				Name:     "domain",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
+				Desc:     false,
 			},
 		},
 		Limit: 10,
@@ -528,9 +528,9 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "domain",
-				Type: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
-				Desc: false,
+				Name:     "domain",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
+				Desc:     false,
 			},
 		},
 		Limit: 10,
