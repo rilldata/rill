@@ -1,7 +1,7 @@
 import { createDashboardFromModel } from "../utils/dashboardHelpers";
 import { createAdBidsModel } from "../utils/dataSpecifcHelpers";
-import { test, expect, Locator } from "@playwright/test";
-import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
+import { expect, Locator } from "@playwright/test";
+import { test } from "../utils/test";
 
 async function assertAAboveB(locA: Locator, locB: Locator) {
   const topA = await locA.boundingBox().then((box) => box?.y);
@@ -15,11 +15,11 @@ async function assertAAboveB(locA: Locator, locB: Locator) {
 }
 
 test.describe("leaderboard and dimension table sorting", () => {
-  startRuntimeForEachTest();
+  // startRuntimeForEachTest();
 
   test("leaderboard and dimension table sorting", async ({ page }) => {
     test.setTimeout(30000);
-    await page.goto("/");
+
     // disable animations
     await page.addStyleTag({
       content: `
