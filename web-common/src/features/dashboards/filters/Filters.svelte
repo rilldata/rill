@@ -25,14 +25,18 @@ The main feature-set component for dashboard filters
   import { getStateManagers } from "../state-managers/state-managers";
   import {
     clearAllFilters,
-    clearFilterForDimension,
     toggleDimensionValue,
     toggleFilterMode,
   } from "../actions";
   import FilterButton from "./FilterButton.svelte";
 
   const StateManagers = getStateManagers();
-  const { dashboardStore } = StateManagers;
+  const {
+    dashboardStore,
+    actions: {
+      dimensionsFilter: { toggleDimensionNameSelection },
+    },
+  } = StateManagers;
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
@@ -163,12 +167,7 @@ The main feature-set component for dashboard filters
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
             on:toggle={() => toggleFilterMode(StateManagers, name)}
-            on:remove={() =>
-              clearFilterForDimension(
-                StateManagers,
-                name,
-                isInclude ? true : false
-              )}
+            on:remove={() => toggleDimensionNameSelection(name)}
             on:apply={(event) => {
               toggleDimensionValue(StateManagers, name, event.detail);
             }}
@@ -182,7 +181,6 @@ The main feature-set component for dashboard filters
               setActiveDimension(name);
             }}
             typeLabel="dimension"
-            dimensionName={name}
             name={isInclude ? label : `Exclude ${label}`}
             excludeMode={isInclude ? false : true}
             colors={getColorForChip(isInclude)}
