@@ -5,15 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
-	// Load IANA time zone data
-	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 type MetricsViewComparison struct {
@@ -264,7 +266,6 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	}
 	labelCols = []string{fmt.Sprintf("%s as %s", safeName(dim.Name), dimLabel)}
 
-	measureAliases := map[string]columnIdentifier{}
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
@@ -290,11 +291,10 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
-		measureAliases[m.Name] = newIdentifier(m.Name)
 	}
 
 	if q.Aliases != nil {
-		err = aliasesToMeasureMap(q.Aliases, measureAliases, false)
+		err = validateMeasureAliases(q.Aliases, q.Measures, false)
 		if err != nil {
 			return "", nil, err
 		}
@@ -313,7 +313,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	baseWhereClause += trc
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(q.Where, dimensionAliases(mv), dialect)
+		clause, clauseArgs, err := buildExpression(mv, q.Where, emptyMeasureAliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -325,7 +325,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	havingClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildExpression(q.Having, measureAliases, dialect)
+		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -427,7 +427,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		selectCols = append(selectCols, colName)
 	}
 
-	measureAliases := map[string]columnIdentifier{}
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
@@ -450,7 +449,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
-		measureAliases[m.Name] = newIdentifier(m.Name)
 	}
 
 	finalSelectCols := []string{}
@@ -462,6 +460,8 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		var labelTuple string
 		if dialect != drivers.DialectDruid {
 			if q.Having != nil {
+				// having clause needs selected columns to either be in group by or be aggregations.
+				// so adding additional sum() around measure and comparison columns
 				columnsTuple = fmt.Sprintf(
 					"sum(base.%[1]s) as %[1]s, sum(comparison.%[1]s) AS %[2]s, sum(base.%[1]s - comparison.%[1]s) AS %[3]s, sum((base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE) AS %[4]s",
 					safeName(m.Name),
@@ -486,10 +486,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				safeName(labelMap[m.Name]+" (Δ%)"),
 				safeName(labelMap[m.Name]),
 			)
-			measureAliases[m.Name] = newIdentifier(m.Name)
-			measureAliases[m.Name+"__previous"] = newIdentifier(m.Name + "__previous")
-			measureAliases[m.Name+"__delta_abs"] = newIdentifier(m.Name + "__delta_abs")
-			measureAliases[m.Name+"__delta_rel"] = newIdentifier(m.Name + "__delta_rel")
 		} else {
 			columnsTuple = fmt.Sprintf(
 				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE)))",
@@ -512,7 +508,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 
 	if q.Aliases != nil {
-		err = aliasesToMeasureMap(q.Aliases, measureAliases, true)
+		err = validateMeasureAliases(q.Aliases, q.Measures, true)
 		if err != nil {
 			return "", nil, err
 		}
@@ -542,7 +538,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	baseWhereClause += trc
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(q.Where, dimensionAliases(mv), dialect)
+		clause, clauseArgs, err := buildExpression(mv, q.Where, emptyMeasureAliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -558,7 +554,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	comparisonWhereClause += trc
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(q.Where, dimensionAliases(mv), dialect)
+		clause, clauseArgs, err := buildExpression(mv, q.Where, emptyMeasureAliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -570,7 +566,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	havingClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
-		havingClause, havingClauseArgs, err = buildExpression(q.Having, measureAliases, dialect)
+		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -1030,27 +1026,22 @@ func isTimeRangeNil(tr *runtimev1.TimeRange) bool {
 	return tr == nil || (tr.Start == nil && tr.End == nil)
 }
 
-func aliasesToMeasureMap(aliases []*runtimev1.MetricsViewComparisonMeasureAlias, measureAliases map[string]columnIdentifier, hasComparison bool) error {
+func validateMeasureAliases(aliases []*runtimev1.MetricsViewComparisonMeasureAlias, measures []*runtimev1.MetricsViewAggregationMeasure, hasComparison bool) error {
 	for _, alias := range aliases {
+		// We need to make sure the aliases measure is selected. Having query will fail otherwise
+		if !slices.ContainsFunc(measures, func(measure *runtimev1.MetricsViewAggregationMeasure) bool {
+			return measure.Name == alias.Name
+		}) {
+			return fmt.Errorf("measure alias not selected: %s", alias.Name)
+		}
+
 		switch alias.Type {
-		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
-			runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED:
-			measureAliases[alias.Alias] = newIdentifier(alias.Name)
-		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
+			runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+			runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
 			if !hasComparison {
 				return fmt.Errorf("comparison not enabled for alias %s", alias.Alias)
 			}
-			measureAliases[alias.Alias] = newIdentifier(alias.Name + "__previous")
-		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
-			if !hasComparison {
-				return fmt.Errorf("comparison not enabled for alias %s", alias.Alias)
-			}
-			measureAliases[alias.Alias] = newIdentifier(alias.Name + "__delta_abs")
-		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
-			if !hasComparison {
-				return fmt.Errorf("comparison not enabled for alias %s", alias.Alias)
-			}
-			measureAliases[alias.Alias] = newIdentifier(alias.Name + "__delta_rel")
 		}
 	}
 	return nil

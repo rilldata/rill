@@ -184,7 +184,6 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		args = append(args, exprArgs...)
 	}
 
-	measureAliases := map[string]columnIdentifier{}
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED:
@@ -207,7 +206,6 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
-		measureAliases[m.Name] = newIdentifier(m.Name)
 	}
 
 	groupClause := ""
@@ -225,7 +223,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		whereClause += clause
 	}
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(q.Where, dimensionAliases(mv), dialect)
+		clause, clauseArgs, err := buildExpression(mv, q.Where, emptyMeasureAliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -240,7 +238,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	if q.Having != nil {
 		var havingClauseArgs []any
 		var err error
-		havingClause, havingClauseArgs, err = buildExpression(q.Having, measureAliases, dialect)
+		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, emptyMeasureAliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}

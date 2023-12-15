@@ -26,6 +26,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+var emptyMeasureAliases = make([]*runtimev1.MetricsViewComparisonMeasureAlias, 0)
+
 // resolveMeasures returns the selected measures
 func resolveMeasures(mv *runtimev1.MetricsViewSpec, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsViewSpec_MeasureV2, error) {
 	// Build combined measures
@@ -293,28 +295,54 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev
 	return fmt.Sprintf("AND (%s) ", condsClause), args, nil
 }
 
-type columnIdentifier struct {
-	// expression to use instead of a name for dimension or expression
-	// EG: measure expression : impressions => "impressions" (would be aliases in query)
-	//     dimension column : publisher => "publisher"
-	//     dimension expression : tld => "regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)" (needed since tld might not be selected)
-	expr   string
-	unnest bool
-}
-
-func newIdentifier(name string) columnIdentifier {
-	return columnIdentifier{safeName(name), false}
-}
-
-func dimensionAliases(mv *runtimev1.MetricsViewSpec) map[string]columnIdentifier {
-	aliases := map[string]columnIdentifier{}
+func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, name string) (string, bool) {
+	// check if identifier is a dimension
 	for _, dim := range mv.Dimensions {
-		aliases[dim.Name] = columnIdentifier{safeName(metricsViewDimensionColumn(dim)), dim.Unnest}
+		if dim.Name == name {
+			return safeName(metricsViewDimensionColumn(dim)), true
+		}
 	}
-	return aliases
+
+	// check if identifier is passed as an alias
+	for _, alias := range aliases {
+		if alias.Alias == name {
+			switch alias.Type {
+			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED:
+				return safeName(alias.Name), true
+			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
+				return safeName(alias.Name + "__previous"), true
+			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
+				return safeName(alias.Name + "__delta_abs"), true
+			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
+				return safeName(alias.Name + "__delta_rel"), true
+			}
+		}
+	}
+
+	// check if identifier is measure but not passed as alias
+	for _, mes := range mv.Measures {
+		if mes.Name == name {
+			return safeName(mes.Name), true
+		}
+	}
+
+	return "", false
 }
 
-func buildExpression(expr *runtimev1.Expression, allowedIdentifiers map[string]columnIdentifier, dialect drivers.Dialect) (string, []any, error) {
+func identifierIsUnnest(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression) bool {
+	ident, isIdent := expr.Expression.(*runtimev1.Expression_Ident)
+	if isIdent {
+		for _, dim := range mv.Dimensions {
+			if dim.Name == ident.Ident {
+				return dim.Unnest
+			}
+		}
+	}
+	return false
+}
+
+func buildExpression(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
 	var emptyArg []any
 	switch e := expr.Expression.(type) {
 	case *runtimev1.Expression_Val:
@@ -325,40 +353,40 @@ func buildExpression(expr *runtimev1.Expression, allowedIdentifiers map[string]c
 		return "?", []any{arg}, nil
 
 	case *runtimev1.Expression_Ident:
-		col, ok := allowedIdentifiers[e.Ident]
-		if !ok {
+		expr, isIdent := columnIdentifierExpression(mv, aliases, e.Ident)
+		if !isIdent {
 			return "", emptyArg, fmt.Errorf("unknown column filter: %s", e.Ident)
 		}
-		return col.expr, emptyArg, nil
+		return expr, emptyArg, nil
 
 	case *runtimev1.Expression_Cond:
-		return buildConditionExpression(e.Cond, allowedIdentifiers, dialect)
+		return buildConditionExpression(mv, e.Cond, aliases, dialect)
 	}
 
 	return "", emptyArg, nil
 }
 
-func buildConditionExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]columnIdentifier, dialect drivers.Dialect) (string, []any, error) {
+func buildConditionExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
 	switch cond.Op {
 	case runtimev1.Operation_OPERATION_LIKE, runtimev1.Operation_OPERATION_NLIKE:
-		return buildLikeExpression(cond, allowedIdentifiers, dialect)
+		return buildLikeExpression(mv, cond, aliases, dialect)
 
 	case runtimev1.Operation_OPERATION_IN, runtimev1.Operation_OPERATION_NIN:
-		return buildInExpression(cond, allowedIdentifiers, dialect)
+		return buildInExpression(mv, cond, aliases, dialect)
 
 	case runtimev1.Operation_OPERATION_AND:
-		return buildAndOrExpressions(cond, allowedIdentifiers, dialect, " AND ")
+		return buildAndOrExpressions(mv, cond, aliases, dialect, " AND ")
 
 	case runtimev1.Operation_OPERATION_OR:
-		return buildAndOrExpressions(cond, allowedIdentifiers, dialect, " OR ")
+		return buildAndOrExpressions(mv, cond, aliases, dialect, " OR ")
 
 	default:
-		leftExpr, args, err := buildExpression(cond.Exprs[0], allowedIdentifiers, dialect)
+		leftExpr, args, err := buildExpression(mv, cond.Exprs[0], aliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
 
-		rightExpr, subArgs, err := buildExpression(cond.Exprs[1], allowedIdentifiers, dialect)
+		rightExpr, subArgs, err := buildExpression(mv, cond.Exprs[1], aliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -368,17 +396,17 @@ func buildConditionExpression(cond *runtimev1.Condition, allowedIdentifiers map[
 	}
 }
 
-func buildLikeExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]columnIdentifier, dialect drivers.Dialect) (string, []any, error) {
+func buildLikeExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
 	if len(cond.Exprs) != 2 {
 		return "", nil, fmt.Errorf("like/not like expression should have exactly 2 sub expressions")
 	}
 
-	leftExpr, args, err := buildExpression(cond.Exprs[0], allowedIdentifiers, dialect)
+	leftExpr, args, err := buildExpression(mv, cond.Exprs[0], aliases, dialect)
 	if err != nil {
 		return "", nil, err
 	}
 
-	rightExpr, subArgs, err := buildExpression(cond.Exprs[1], allowedIdentifiers, dialect)
+	rightExpr, subArgs, err := buildExpression(mv, cond.Exprs[1], aliases, dialect)
 	if err != nil {
 		return "", nil, err
 	}
@@ -390,12 +418,7 @@ func buildLikeExpression(cond *runtimev1.Condition, allowedIdentifiers map[strin
 	}
 
 	// identify if immediate identifier has unnest
-	unnest := false
-	ident, isIdent := cond.Exprs[0].Expression.(*runtimev1.Expression_Ident)
-	if isIdent {
-		i := allowedIdentifiers[ident.Ident]
-		unnest = i.unnest
-	}
+	unnest := identifierIsUnnest(mv, cond.Exprs[0])
 
 	var clause string
 	// Build [NOT] len(list_filter("dim", x -> x ILIKE ?)) > 0
@@ -419,12 +442,12 @@ func buildLikeExpression(cond *runtimev1.Condition, allowedIdentifiers map[strin
 	return clause, args, nil
 }
 
-func buildInExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]columnIdentifier, dialect drivers.Dialect) (string, []any, error) {
+func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
 	if len(cond.Exprs) <= 1 {
 		return "", nil, fmt.Errorf("in/not in expression should have atleast 2 sub expressions")
 	}
 
-	leftExpr, args, err := buildExpression(cond.Exprs[0], allowedIdentifiers, dialect)
+	leftExpr, args, err := buildExpression(mv, cond.Exprs[0], aliases, dialect)
 	if err != nil {
 		return "", nil, err
 	}
@@ -445,7 +468,7 @@ func buildInExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]
 				continue // Handled later using "dim IS [NOT] NULL" clause
 			}
 		}
-		inVal, subArgs, err := buildExpression(subExpr, allowedIdentifiers, dialect)
+		inVal, subArgs, err := buildExpression(mv, subExpr, aliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -454,13 +477,7 @@ func buildInExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]
 	}
 
 	// identify if immediate identifier has unnest
-	// TODO: do we need to do a deeper check?
-	unnest := false
-	ident, isIndent := cond.Exprs[0].Expression.(*runtimev1.Expression_Ident)
-	if isIndent {
-		i := allowedIdentifiers[ident.Ident]
-		unnest = i.unnest
-	}
+	unnest := identifierIsUnnest(mv, cond.Exprs[0])
 
 	clauses := make([]string, 0)
 
@@ -498,11 +515,11 @@ func buildInExpression(cond *runtimev1.Condition, allowedIdentifiers map[string]
 	return condsClause, args, nil
 }
 
-func buildAndOrExpressions(cond *runtimev1.Condition, allowedIdentifiers map[string]columnIdentifier, dialect drivers.Dialect, joiner string) (string, []any, error) {
+func buildAndOrExpressions(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect, joiner string) (string, []any, error) {
 	clauses := make([]string, 0)
 	var args []any
 	for _, expr := range cond.Exprs {
-		clause, subArgs, err := buildExpression(expr, allowedIdentifiers, dialect)
+		clause, subArgs, err := buildExpression(mv, expr, aliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}

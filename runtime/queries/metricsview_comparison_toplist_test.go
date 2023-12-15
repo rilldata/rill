@@ -288,7 +288,7 @@ func TestMetricsViewsComparison_measure_filters(t *testing.T) {
 	require.Equal(t, "instagram.com", q.Result.Rows[2].DimensionValue.GetStringValue())
 }
 
-func TestMetricsViewsComparison_measure_filters_with_compare(t *testing.T) {
+func TestMetricsViewsComparison_measure_filters_with_compare_no_alias(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	ctr := &queries.ColumnTimeRange{
@@ -353,12 +353,7 @@ func TestMetricsViewsComparison_measure_filters_with_compare(t *testing.T) {
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
-	require.NoError(t, err)
-	require.NotEmpty(t, q.Result)
-	require.Len(t, q.Result.Rows, 3)
-	require.Equal(t, "sports.yahoo.com", q.Result.Rows[0].DimensionValue.GetStringValue())
-	require.Equal(t, "news.google.com", q.Result.Rows[1].DimensionValue.GetStringValue())
-	require.Equal(t, "instagram.com", q.Result.Rows[2].DimensionValue.GetStringValue())
+	require.ErrorContains(t, err, "unknown column filter: measure_1__delta_rel")
 }
 
 func TestMetricsViewsComparison_measure_filters_with_compare_aliases(t *testing.T) {
