@@ -3,7 +3,7 @@ import {
   type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { derived, Readable, writable } from "svelte/store";
+import { derived, Readable, Writable, writable } from "svelte/store";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
@@ -197,8 +197,15 @@ function addExpandedDataToPivot(data, dimensions, expandedRowMeasureValues) {
   return pivotData;
 }
 
+/**
+ * Using multi level derived stores.
+ * TODO: Check performance implications of nested derived stores
+ */
 function createPivotDataStore(ctx: StateManagers): PivotDataStore {
   const isNested = true;
+  /**
+   * Derive a store using dashboard core state
+   */
   return derived(
     [useMetaQuery(ctx), useTimeControlStore(ctx), ctx.dashboardStore],
     ([metricsView, timeControls, dashboardStore], set) => {
@@ -235,7 +242,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
       const dimensionNames = dimensions.map((d) => d.column) as string[];
 
       let dimensionForInitialView = dimensions;
-      let columnDimensionAxesQuery = writable(null);
+      let columnDimensionAxesQuery: Writable<null> | Readable<unknown> =
+        writable(null);
 
       if (isNested && dimensions.length > 1) {
         dimensionForInitialView = dimensions.slice(0, 1);
@@ -258,7 +266,9 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         dimensionForInitialView.map((d) => d.column),
         dashboardStore.filters
       );
-
+      /**
+       * Derive a using initial table view
+       */
       return derived(
         [initialTableView, columnDimensionAxesQuery],
         ([initialTable, columnDimensionData], set2) => {
@@ -274,6 +284,9 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
 
           console.log("columnDimensionData", columnDimensionData);
 
+          /**
+           * Derive a store based on expanded rows
+           */
           return derived(
             queryExpandedRowMeasureValues(
               ctx,

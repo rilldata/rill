@@ -103,7 +103,7 @@ function createColumnDefinitionForDimensions(
 export function getColumnDefForPivot(
   pivot: PivotState,
   metricSpec: V1MetricsViewSpec,
-  columnDimensionAxes = []
+  columnDimensionAxes: unknown = []
 ) {
   const IsNested = true;
   const measureCols = getMeasuresInPivotColumns(pivot, metricSpec.measures);
