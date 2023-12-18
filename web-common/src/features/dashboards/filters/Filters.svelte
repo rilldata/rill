@@ -25,13 +25,18 @@ The main feature-set component for dashboard filters
   import { getStateManagers } from "../state-managers/state-managers";
   import {
     clearAllFilters,
-    clearFilterForDimension,
     toggleDimensionValue,
     toggleFilterMode,
   } from "../actions";
+  import FilterButton from "./FilterButton.svelte";
 
   const StateManagers = getStateManagers();
-  const { dashboardStore } = StateManagers;
+  const {
+    dashboardStore,
+    actions: {
+      dimensionsFilter: { toggleDimensionNameSelection },
+    },
+  } = StateManagers;
 
   /** the height of a row of chips */
   const ROW_HEIGHT = "26px";
@@ -47,23 +52,25 @@ The main feature-set component for dashboard filters
   }
 
   let searchText = "";
-  let searchedValues: string[] | null = null;
-  let activeDimensionName;
+  let allValues: string[] | null = null;
+  let activeDimensionName: string;
+
   $: activeColumn =
     dimensions.find((d) => d.name === activeDimensionName)?.column ??
     activeDimensionName;
 
   let topListQuery: ReturnType<typeof getFilterSearchList> | undefined;
-  $: if (activeDimensionName)
+  $: if (activeDimensionName) {
     topListQuery = getFilterSearchList(StateManagers, {
       dimension: activeDimensionName,
       searchText,
       addNull: "null".includes(searchText),
     });
+  }
 
-  $: if (!$topListQuery?.isFetching && searchText != "") {
+  $: if (!$topListQuery?.isFetching) {
     const topListData = $topListQuery?.data?.data ?? [];
-    searchedValues = topListData.map((datum) => datum[activeColumn]) ?? [];
+    allValues = topListData.map((datum) => datum[activeColumn]) ?? [];
   }
 
   $: hasFilters = isFiltered($dashboardStore.filters);
@@ -120,7 +127,7 @@ The main feature-set component for dashboard filters
     currentDimensionFilters.sort((a, b) => (a.name > b.name ? 1 : -1));
   }
 
-  function setActiveDimension(name, value) {
+  function setActiveDimension(name, value = "") {
     activeDimensionName = name;
     searchText = value;
   }
@@ -144,23 +151,34 @@ The main feature-set component for dashboard filters
   >
     <Filter size="16px" />
   </div>
-  {#if currentDimensionFilters.length > 0}
-    <ChipContainer>
+
+  <ChipContainer>
+    {#if !currentDimensionFilters.length}
+      <div
+        in:fly|local={{ duration: 200, x: 8 }}
+        class="ui-copy-disabled grid items-center"
+        style:min-height={ROW_HEIGHT}
+      >
+        No filters selected
+      </div>
+    {:else}
       {#each currentDimensionFilters as { name, label, selectedValues, filterType } (name)}
         {@const isInclude = filterType === "include"}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
             on:toggle={() => toggleFilterMode(StateManagers, name)}
-            on:remove={() =>
-              clearFilterForDimension(
-                StateManagers,
-                name,
-                isInclude ? true : false
-              )}
-            on:apply={(event) =>
-              toggleDimensionValue(StateManagers, name, event.detail)}
+            on:remove={() => toggleDimensionNameSelection(name)}
+            on:apply={(event) => {
+              toggleDimensionValue(StateManagers, name, event.detail);
+            }}
             on:search={(event) => {
               setActiveDimension(name, event.detail);
+            }}
+            on:click={() => {
+              setActiveDimension(name, "");
+            }}
+            on:mount={() => {
+              setActiveDimension(name);
             }}
             typeLabel="dimension"
             name={isInclude ? label : `Exclude ${label}`}
@@ -168,7 +186,7 @@ The main feature-set component for dashboard filters
             colors={getColorForChip(isInclude)}
             label="View filter"
             {selectedValues}
-            {searchedValues}
+            {allValues}
           >
             <svelte:fragment slot="body-tooltip-content">
               Click to edit the the filters in this dimension
@@ -176,35 +194,26 @@ The main feature-set component for dashboard filters
           </RemovableListChip>
         </div>
       {/each}
-      <!-- if filters are present, place a chip at the end of the flex container 
+    {/if}
+    <FilterButton />
+    <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
-      {#if hasFilters}
-        <div class="ml-auto">
-          <Chip
-            bgBaseClass="surface"
-            bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
-            textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
-            bgActiveClass="bg-gray-200 dark:bg-gray-600"
-            outlineClass="outline-gray-400"
-            on:click={() => clearAllFilters(StateManagers)}
-          >
-            <span slot="icon" class="ui-copy-disabled-faint">
-              <FilterRemove size="16px" />
-            </span>
-            <svelte:fragment slot="body">Clear filters</svelte:fragment>
-          </Chip>
-        </div>
-      {/if}
-    </ChipContainer>
-  {:else if currentDimensionFilters.length === 0}
-    <div
-      in:fly={{ duration: 200, x: 8 }}
-      class="ui-copy-disabled grid items-center"
-      style:min-height={ROW_HEIGHT}
-    >
-      No filters selected
-    </div>
-  {:else}
-    &nbsp;
-  {/if}
+    {#if hasFilters}
+      <div class="ml-auto">
+        <Chip
+          bgBaseClass="surface"
+          bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
+          textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
+          bgActiveClass="bg-gray-200 dark:bg-gray-600"
+          outlineClass="outline-gray-400"
+          on:click={() => clearAllFilters(StateManagers)}
+        >
+          <span slot="icon" class="ui-copy-disabled-faint">
+            <FilterRemove size="16px" />
+          </span>
+          <svelte:fragment slot="body">Clear filters</svelte:fragment>
+        </Chip>
+      </div>
+    {/if}
+  </ChipContainer>
 </section>

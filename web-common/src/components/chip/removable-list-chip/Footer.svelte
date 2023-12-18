@@ -1,5 +1,18 @@
-<div
-  class="flex flex-row mt-auto items-center justify-between gap-x-2 px-2 py-1 sticky bottom-0 border-t bg-gray-50 dark:bg-gray-600 border-gray-200 dark:border-gray-500"
->
+<footer>
   <slot />
-</div>
+</footer>
+
+<style lang="postcss">
+  footer {
+    @apply flex flex-row mt-auto items-center justify-end;
+    @apply bg-slate-100;
+    @apply border-t border-slate-300;
+    @apply bottom-0 sticky;
+    @apply gap-x-2 p-2 px-3.5;
+  }
+
+  footer:is(.dark) {
+    @apply bg-gray-800;
+    @apply border-gray-700;
+  }
+</style>

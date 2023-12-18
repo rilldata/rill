@@ -11,9 +11,9 @@ the name and then move the cursor to the right to cancel it.
 existing elements in the lib as well as changing the type (include, exclude) and enabling list search. The implementation of these parts
 are details left to the consumer of the component; this component should remain pure-ish (only internal state) if possible.
 -->
-<script lang="ts">
-  import { createEventDispatcher } from "svelte";
-  import { Writable, writable } from "svelte/store";
+
+<script context="module" lang="ts">
+  import { createEventDispatcher, onMount } from "svelte";
   import { fly } from "svelte/transition";
   import WithTogglableFloatingElement from "../../floating-element/WithTogglableFloatingElement.svelte";
   import Tooltip from "../../tooltip/Tooltip.svelte";
@@ -23,26 +23,39 @@ are details left to the consumer of the component; this component should remain 
   import { Chip } from "../index";
   import RemovableListBody from "./RemovableListBody.svelte";
   import RemovableListMenu from "./RemovableListMenu.svelte";
+</script>
 
+<script lang="ts">
   export let name: string;
   export let selectedValues: string[];
-  export let searchedValues: string[] | null;
+  export let allValues: string[] | null;
 
   /** an optional type label that will appear in the tooltip */
   export let typeLabel: string;
-  export let excludeMode;
+  export let excludeMode: boolean;
   export let colors: ChipColors = defaultChipColors;
   export let label: string | undefined = undefined;
 
+  let active = !selectedValues.length;
+
   const dispatch = createEventDispatcher();
 
-  const excludeStore: Writable<boolean> = writable(excludeMode);
-  $: excludeStore.set(excludeMode);
+  onMount(() => {
+    dispatch("mount");
+  });
+
+  function handleDismiss() {
+    if (!selectedValues.length) {
+      dispatch("remove");
+    } else {
+      active = false;
+    }
+  }
 </script>
 
 <WithTogglableFloatingElement
+  bind:active
   let:toggleFloatingElement
-  let:active
   distance={8}
   alignment="start"
 >
@@ -55,7 +68,10 @@ are details left to the consumer of the component; this component should remain 
   >
     <Chip
       removable
-      on:click={toggleFloatingElement}
+      on:click={() => {
+        toggleFloatingElement();
+        dispatch("click");
+      }}
       on:remove={() => dispatch("remove")}
       {active}
       {...colors}
@@ -91,15 +107,14 @@ are details left to the consumer of the component; this component should remain 
     </div>
   </Tooltip>
   <RemovableListMenu
-    {excludeStore}
     slot="floating-element"
-    let:toggleFloatingElement
-    on:escape={toggleFloatingElement}
-    on:click-outside={toggleFloatingElement}
+    {excludeMode}
+    {allValues}
+    {selectedValues}
+    on:escape={handleDismiss}
+    on:click-outside={handleDismiss}
     on:apply
     on:search
     on:toggle
-    {selectedValues}
-    {searchedValues}
   />
 </WithTogglableFloatingElement>
