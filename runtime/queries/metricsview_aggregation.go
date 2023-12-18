@@ -471,6 +471,9 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			*q.Limit = 100
 		}
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
+	} else if q.PivotOn != nil {
+		l := 1_000_000 / cols
+		limitClause = fmt.Sprintf("LIMIT %d", l)
 	}
 
 	var sql string
