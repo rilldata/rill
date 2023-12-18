@@ -301,26 +301,32 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		args = append(args, clauseArgs...)
 	}
 
-	orderClause := "true"
+	var orderClauses []string
 	for _, s := range q.Sort {
 		if s.Name == q.DimensionName {
-			orderClause += ", 1"
+			clause := "1"
 			if s.Desc {
-				orderClause += " DESC"
+				clause += " DESC"
 			}
 			if dialect == drivers.DialectDuckDB {
-				orderClause += " NULLS LAST"
+				clause += " NULLS LAST"
 			}
+			orderClauses = append(orderClauses, clause)
 			break
 		}
-		orderClause += ", "
-		orderClause += safeName(s.Name)
+		clause := safeName(s.Name)
 		if s.Desc {
-			orderClause += " DESC"
+			clause += " DESC"
 		}
 		if dialect == drivers.DialectDuckDB {
-			orderClause += " NULLS LAST"
+			clause += " NULLS LAST"
 		}
+		orderClauses = append(orderClauses, clause)
+	}
+
+	orderByClause := ""
+	if len(orderClauses) > 0 {
+		orderByClause = "ORDER BY " + strings.Join(orderClauses, ", ")
 	}
 
 	limitClause := ""
@@ -337,12 +343,12 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	if export {
 		labelSelectClause := strings.Join(labelCols, ", ")
 		sql = fmt.Sprintf(
-			`SELECT %[9]s FROM (SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d)`,
+			`SELECT %[9]s FROM (SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s %[5]s %[6]s OFFSET %[7]d)`,
 			selectClause,       // 1
 			groupByCol,         // 2
 			safeName(mv.Table), // 3
 			baseWhereClause,    // 4
-			orderClause,        // 5
+			orderByClause,      // 5
 			limitClause,        // 6
 			q.Offset,           // 7
 			unnestClause,       // 8
@@ -350,12 +356,12 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		)
 	} else {
 		sql = fmt.Sprintf(
-			`SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d`,
+			`SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s %[5]s %[6]s OFFSET %[7]d`,
 			selectClause,       // 1
 			groupByCol,         // 2
 			safeName(mv.Table), // 3
 			baseWhereClause,    // 4
-			orderClause,        // 5
+			orderByClause,      // 5
 			limitClause,        // 6
 			q.Offset,           // 7
 			unnestClause,       // 8
@@ -515,12 +521,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		return "", nil, err
 	}
 
-	orderClause := "true"
-	subQueryOrderClause := "true"
+	var orderClauses []string
+	var subQueryOrderClauses []string
 	for _, s := range q.Sort {
 		if s.Name == q.DimensionName {
-			orderClause += ", 1"
-			subQueryOrderClause += ", 1"
+			clause := "1"
+			subQueryClause := "1"
 			var ending string
 			if s.Desc {
 				ending += " DESC"
@@ -528,16 +534,17 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			if dialect == drivers.DialectDuckDB {
 				ending += " NULLS LAST"
 			}
-			orderClause += ending
-			subQueryOrderClause += ending
+			clause += ending
+			subQueryClause += ending
+			orderClauses = append(orderClauses, clause)
+			subQueryOrderClauses = append(subQueryOrderClauses, subQueryClause)
 			break
 		}
 		i, ok := measureMap[s.Name]
 		if !ok {
 			return "", nil, fmt.Errorf("metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.Name)
 		}
-		orderClause += ", "
-		subQueryOrderClause += ", "
+
 		var pos int
 		switch s.Type {
 		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
@@ -551,8 +558,8 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		default:
 			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.Name)
 		}
-		orderClause += fmt.Sprint(pos)
-		subQueryOrderClause += fmt.Sprint(i + 2) // 1-based + skip the first dim column
+		orderClause := fmt.Sprint(pos)
+		subQueryOrderClause := fmt.Sprint(i + 2) // 1-based + skip the first dim column
 		ending := ""
 		if s.Desc {
 			ending += " DESC"
@@ -562,6 +569,15 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		}
 		orderClause += ending
 		subQueryOrderClause += ending
+		orderClauses = append(orderClauses, orderClause)
+		subQueryOrderClauses = append(subQueryOrderClauses, subQueryOrderClause)
+	}
+
+	orderByClause := ""
+	subQueryOrderByClause := ""
+	if len(orderClauses) > 0 {
+		orderByClause = "ORDER BY " + strings.Join(orderClauses, ", ")
+		subQueryOrderByClause = "ORDER BY " + strings.Join(subQueryOrderClauses, ", ")
 	}
 
 	limitClause := ""
@@ -588,13 +604,13 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE || deltaComparison {
 			joinType = "LEFT OUTER"
-			baseLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
+			baseLimitClause = subQueryOrderByClause
 			if approximationLimit > 0 {
 				baseLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
 			}
 		} else if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
 			joinType = "RIGHT OUTER"
-			comparisonLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
+			comparisonLimitClause = subQueryOrderByClause
 			if approximationLimit > 0 {
 				comparisonLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
 			}
@@ -641,8 +657,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
-		ORDER BY
-			%[6]s
+		%[6]s
 		%[7]s
 		OFFSET
 			%[8]d
@@ -652,7 +667,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			safeName(mv.Table),    // 3
 			baseWhereClause,       // 4
 			comparisonWhereClause, // 5
-			orderClause,           // 6
+			orderByClause,         // 6
 			limitClause,           // 7
 			q.Offset,              // 8
 			finalSelectClause,     // 9
@@ -716,30 +731,30 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 		sql = fmt.Sprintf(`
 				WITH %[11]s AS (
-					SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s %[10]s OFFSET %[8]d 
+					SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY %[2]s %[13]s %[10]s OFFSET %[8]d
 				), %[12]s AS (
 					SELECT %[1]s FROM %[3]s WHERE %[5]s AND %[2]s IN (SELECT %[2]s FROM %[11]s) GROUP BY %[2]s %[10]s
 				)
 				SELECT %[11]s.%[2]s AS %[14]s, %[9]s FROM %[11]s LEFT JOIN %[12]s ON base.%[2]s = comparison.%[2]s
 				GROUP BY 1
-				ORDER BY %[6]s
+				%[6]s
 				%[7]s
 				OFFSET %[8]d
 			`,
-			subSelectClause,     // 1
-			colName,             // 2
-			safeName(mv.Table),  // 3
-			leftWhereClause,     // 4
-			rightWhereClause,    // 5
-			orderClause,         // 6
-			limitClause,         // 7
-			q.Offset,            // 8
-			finalSelectClause,   // 9
-			twiceTheLimitClause, // 10
-			leftSubQueryAlias,   // 11
-			rightSubQueryAlias,  // 12
-			subQueryOrderClause, // 13
-			finalDimName,        // 14
+			subSelectClause,       // 1
+			colName,               // 2
+			safeName(mv.Table),    // 3
+			leftWhereClause,       // 4
+			rightWhereClause,      // 5
+			orderByClause,         // 6
+			limitClause,           // 7
+			q.Offset,              // 8
+			finalSelectClause,     // 9
+			twiceTheLimitClause,   // 10
+			leftSubQueryAlias,     // 11
+			rightSubQueryAlias,    // 12
+			subQueryOrderByClause, // 13
+			finalDimName,          // 14
 		)
 	}
 
