@@ -1,5 +1,5 @@
 import {
-  V1MetricsViewComparisonSortType as ApiSortType,
+  V1MetricsViewComparisonMeasureType as ApiSortType,
   type V1MetricsViewComparisonRow,
   type V1MetricsViewComparisonValue,
 } from "@rilldata/web-common/runtime-client";
@@ -12,7 +12,6 @@ import { SortType } from "../proto-state/derived-types";
  * to convert to rows of leaderboard data, we need to extract a single
  * measure from the dimension table shaped data (namely, the active
  * measure in the leaderboard).
- * @param params
  */
 export function getLabeledComparisonFromComparisonRow(
   row: V1MetricsViewComparisonRow,
@@ -232,28 +231,28 @@ export function getQuerySortType(sortType: SortType) {
   return (
     {
       [SortType.VALUE]:
-        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 
       [SortType.DELTA_ABSOLUTE]:
-        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
 
       [SortType.DELTA_PERCENT]:
-        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA,
+        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA,
 
       // NOTE: sorting by percent-of-total has the same effect
       // as sorting by base value
       [SortType.PERCENT]:
-        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 
       // NOTE: UNSPECIFIED is not actually a valid sort type,
       // but it is required by protobuf serialization
       [SortType.UNSPECIFIED]:
-        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 
       // FIXME: sort by dimension value is not yet implemented,
       // for now fall back to sorting by base value
       [SortType.DIMENSION]:
-        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-    }[sortType] || ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE
+        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+    }[sortType] || ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
   );
 }

@@ -1,15 +1,13 @@
 package server
 
 import (
+	"context"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"go.uber.org/zap"
-
-	"context"
-
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestServer_InsertLimit_SELECT(t *testing.T) {

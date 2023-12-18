@@ -7,6 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -300,14 +301,10 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t *testing.
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "label",
-					In:   []*structpb.Value{toStructpbValue(t, "sparse_day")},
-				},
-			},
-		},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "sparse_day"))},
+		),
 		MetricsViewName: "timeseries_dst_backwards",
 		MetricsView:     mv.Spec,
 		TimeStart:       parseTime(t, "2023-11-03T04:00:00.000Z"),
@@ -474,14 +471,10 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "label",
-					In:   []*structpb.Value{toStructpbValue(t, "sparse_hour")},
-				},
-			},
-		},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "sparse_hour"))},
+		),
 		MetricsViewName: "timeseries_dst_backwards",
 		MetricsView:     mv.Spec,
 		TimeStart:       parseTime(t, "2023-11-05T03:00:00.000Z"),
@@ -591,14 +584,10 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t *testing.T
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "label",
-					In:   []*structpb.Value{toStructpbValue(t, "sparse_day")},
-				},
-			},
-		},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "sparse_day"))},
+		),
 		MetricsViewName: "timeseries_dst_forwards",
 		MetricsView:     mv.Spec,
 		TimeStart:       parseTime(t, "2023-03-10T05:00:00.000Z"),
@@ -673,14 +662,10 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 
 	q := &queries.MetricsViewTimeSeries{
 		MeasureNames: []string{"total_records"},
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "label",
-					In:   []*structpb.Value{toStructpbValue(t, "sparse_hour")},
-				},
-			},
-		},
+		Where: expressionpb.In(
+			expressionpb.Identifier("label"),
+			[]*runtimev1.Expression{expressionpb.Value(toStructpbValue(t, "sparse_hour"))},
+		),
 		MetricsViewName: "timeseries_dst_forwards",
 		MetricsView:     mv.Spec,
 		TimeStart:       parseTime(t, "2023-03-12T04:00:00.000Z"),
@@ -709,6 +694,68 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 	i++
 	require.Equal(t, parseTime(t, "2023-03-12T08:00:00Z").AsTime(), rows[i].Ts.AsTime())
 	require.Nil(t, q.Result.Data[i].Records.AsMap()["total_records"])
+}
+
+func TestMetricsViewTimeSeries_having_clause(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "timeseries_gaps"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView()
+
+	q := &queries.MetricsViewTimeSeries{
+		MeasureNames:    []string{"sum_imps"},
+		MetricsViewName: "timeseries_gaps",
+		MetricsView:     mv.Spec,
+		TimeStart:       parseTime(t, "2019-01-01T00:00:00Z"),
+		TimeEnd:         parseTime(t, "2019-01-07T00:00:00Z"),
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_LTE,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "sum_imps",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(3),
+							},
+						},
+					},
+				},
+			},
+		},
+		Limit: 250,
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	rows := q.Result.Data
+	require.Len(t, rows, 6)
+	i := 0
+	require.Equal(t, parseTime(t, "2019-01-01T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
+	i++
+	require.Equal(t, parseTime(t, "2019-01-02T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Nil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
+	i++
+	require.Equal(t, parseTime(t, "2019-01-03T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Nil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
+	i++
+	require.Equal(t, parseTime(t, "2019-01-04T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Nil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
+	i++
+	require.Equal(t, parseTime(t, "2019-01-05T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.Nil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
+	i++
+	require.Equal(t, parseTime(t, "2019-01-06T00:00:00Z").AsTime(), rows[i].Ts.AsTime())
+	require.NotNil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
 }
 
 func toStructpbValue(t *testing.T, v any) *structpb.Value {

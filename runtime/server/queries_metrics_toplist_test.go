@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -333,16 +334,10 @@ func TestServer_MetricsViewToplist_complete_source_sanity_test(t *testing.T) {
 				Ascending: true,
 			},
 		},
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "pub",
-					In: []*structpb.Value{
-						structpb.NewStringValue("Yahoo"),
-					},
-				},
-			},
-		},
+		Where: expressionpb.NotIn(
+			expressionpb.Identifier("pub"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("Yahoo"))},
+		),
 	})
 	require.NoError(t, err)
 	require.True(t, len(tr.Data) > 1)
@@ -364,16 +359,10 @@ func TestServer_MetricsViewToplist_DimensionsByName(t *testing.T) {
 				Ascending: true,
 			},
 		},
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "pub",
-					In: []*structpb.Value{
-						structpb.NewStringValue("Yahoo"),
-					},
-				},
-			},
-		},
+		Where: expressionpb.NotIn(
+			expressionpb.Identifier("pub"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("Yahoo"))},
+		),
 	})
 	require.NoError(t, err)
 	require.True(t, len(tr.Data) > 1)
