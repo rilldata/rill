@@ -5,7 +5,6 @@
   import type { LeaderboardItemData } from "./leaderboard-utils";
   import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
-  import { onDestroy, onMount } from "svelte";
 
   export let itemData: LeaderboardItemData;
 

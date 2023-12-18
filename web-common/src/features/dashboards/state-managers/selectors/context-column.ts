@@ -1,5 +1,4 @@
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
-import { contextColWidthDefaults } from "../../stores/metrics-explorer-entity";
 import type { DashboardDataSources } from "./types";
 
 const contextColumnWidth = ({ dashboard }: DashboardDataSources): string => {

@@ -1,7 +1,6 @@
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { sortTypeForContextColumnType } from "../../stores/dashboard-stores";
 import {
-  type MetricsExplorerEntity,
   type ContextColWidths,
   contextColWidthDefaults,
 } from "../../stores/metrics-explorer-entity";
