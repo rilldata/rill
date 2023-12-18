@@ -14,8 +14,11 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// replace with "timeseries_druid" to test on druid
+const TimeseriesProject = "timeseries"
+
 func TestMetricsViewsTimeseries_month_grain(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -65,7 +68,7 @@ func TestMetricsViewsTimeseries_month_grain(t *testing.T) {
 }
 
 func TestMetricsViewsTimeseries_month_grain_IST(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -118,7 +121,7 @@ func TestMetricsViewsTimeseries_month_grain_IST(t *testing.T) {
 }
 
 func TestMetricsViewsTimeseries_quarter_grain_IST(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -157,7 +160,7 @@ func TestMetricsViewsTimeseries_quarter_grain_IST(t *testing.T) {
 }
 
 func TestMetricsViewsTimeseries_year_grain_IST(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -188,7 +191,7 @@ func TestMetricsViewsTimeseries_year_grain_IST(t *testing.T) {
 }
 
 func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Weekly(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -222,7 +225,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Weekly(t *tes
 }
 
 func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_WeeklyOnSaturday(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -257,7 +260,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_WeeklyOnSatur
 }
 
 func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -291,7 +294,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily(t *test
 }
 
 func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -333,7 +336,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t *testing.
 }
 
 func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -379,7 +382,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t *tes
 }
 
 func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -425,7 +428,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t *tes
 }
 
 func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -461,7 +464,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t *tes
 }
 
 func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -506,7 +509,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing
 }
 
 func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -540,7 +543,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly(t *test
 }
 
 func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Daily(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -574,7 +577,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Daily(t *testi
 }
 
 func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -616,7 +619,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t *testing.T
 }
 
 func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -652,7 +655,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t *test
 }
 
 func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
@@ -697,7 +700,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 }
 
 func TestMetricsViewTimeSeries_having_clause(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")
+	rt, instanceID := testruntime.NewInstanceForProject(t, TimeseriesProject)
 
 	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)

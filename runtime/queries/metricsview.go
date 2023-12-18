@@ -293,7 +293,7 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev
 	return fmt.Sprintf("AND (%s) ", condsClause), args, nil
 }
 
-func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, name string) (string, bool) {
+func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, name string, dialect drivers.Dialect) (string, bool) {
 	// check if identifier is a dimension
 	for _, dim := range mv.Dimensions {
 		if dim.Name == name {
@@ -305,8 +305,12 @@ func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtim
 	for _, alias := range aliases {
 		if alias.Alias == name {
 			switch alias.Type {
-			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
-				runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED:
+			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
+				runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
+				// using `measure_0` as is causing ambiguity error in duckdb
+				if dialect == drivers.DialectDuckDB {
+					return "base." + safeName(alias.Name), true
+				}
 				return safeName(alias.Name), true
 			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
 				return safeName(alias.Name + "__previous"), true
@@ -351,7 +355,7 @@ func buildExpression(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression, 
 		return "?", []any{arg}, nil
 
 	case *runtimev1.Expression_Ident:
-		expr, isIdent := columnIdentifierExpression(mv, aliases, e.Ident)
+		expr, isIdent := columnIdentifierExpression(mv, aliases, e.Ident, dialect)
 		if !isIdent {
 			return "", emptyArg, fmt.Errorf("unknown column filter: %s", e.Ident)
 		}

@@ -320,7 +320,7 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 		sql = q.buildDuckDBSQL(mv, tsAlias, selectCols, whereClause, havingClause, timezone)
 	case drivers.DialectDruid:
 		args = append([]any{timezone}, args...)
-		sql = q.buildDruidSQL(args, mv, tsAlias, selectCols, havingClause, whereClause)
+		sql = q.buildDruidSQL(args, mv, tsAlias, selectCols, whereClause, havingClause)
 	default:
 		return "", "", nil, fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}

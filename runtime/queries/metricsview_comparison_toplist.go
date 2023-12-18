@@ -459,7 +459,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		var labelTuple string
 		if dialect != drivers.DialectDruid {
 			columnsTuple = fmt.Sprintf(
-				"base.%[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
+				"base.%[1]s AS %[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
 				safeName(m.Name),
 				safeName(m.Name+"__previous"),
 				safeName(m.Name+"__delta_abs"),
@@ -475,8 +475,11 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			)
 		} else {
 			columnsTuple = fmt.Sprintf(
-				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE)))",
+				"ANY_VALUE(base.%[1]s) AS %[1]s, ANY_VALUE(comparison.%[1]s) AS %[2]s, ANY_VALUE(base.%[1]s - comparison.%[1]s) AS %[3]s, ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[4]s",
 				safeName(m.Name),
+				safeName(m.Name+"__previous"),
+				safeName(m.Name+"__delta_abs"),
+				safeName(m.Name+"__delta_rel"),
 			)
 			labelTuple = fmt.Sprintf(
 				"ANY_VALUE(base.%[1]s) AS %[2]s, ANY_VALUE(comparison.%[1]s) AS %[3]s, ANY_VALUE(base.%[1]s - comparison.%[1]s) AS %[4]s, ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[5]s",
@@ -550,14 +553,13 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		args = append(args, clauseArgs...)
 	}
 
-	outerWhereClause := ""
+	havingClause := "1=1"
 	if q.Having != nil {
 		var havingClauseArgs []any
-		outerWhereClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
+		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		outerWhereClause = "WHERE " + outerWhereClause
 		args = append(args, havingClauseArgs...)
 	}
 
@@ -694,7 +696,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
-		%[16]s
+		WHERE %[16]s
 		ORDER BY
 			%[6]s
 		%[7]s
@@ -716,7 +718,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			comparisonLimitClause, // 13
 			unnestClause,          // 14
 			groupByCol,            // 15
-			outerWhereClause,      // 16
+			havingClause,          // 16
 		)
 	} else {
 		/*
@@ -776,8 +778,8 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 					SELECT %[1]s FROM %[3]s WHERE %[5]s AND %[2]s IN (SELECT %[2]s FROM %[11]s) GROUP BY %[2]s %[10]s
 				)
 				SELECT %[11]s.%[2]s AS %[14]s, %[9]s FROM %[11]s LEFT JOIN %[12]s ON base.%[2]s = comparison.%[2]s
-        %[15]s
 				GROUP BY 1
+        HAVING %[15]s
 				ORDER BY %[6]s
 				%[7]s
 				OFFSET %[8]d
@@ -796,7 +798,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			rightSubQueryAlias,  // 12
 			subQueryOrderClause, // 13
 			finalDimName,        // 14
-			outerWhereClause,    // 15
+			havingClause,        // 15
 		)
 	}
 
