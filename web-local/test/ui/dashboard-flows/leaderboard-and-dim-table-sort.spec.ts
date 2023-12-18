@@ -15,8 +15,6 @@ async function assertAAboveB(locA: Locator, locB: Locator) {
 }
 
 test.describe("leaderboard and dimension table sorting", () => {
-  // startRuntimeForEachTest();
-
   test("leaderboard and dimension table sorting", async ({ page }) => {
     test.setTimeout(30000);
 
