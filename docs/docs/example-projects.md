@@ -1,7 +1,7 @@
 ---
 title: Example Projects
 sidebar_label: Example Projects  
-sidebar_position: 40
+sidebar_position: 50
 ---
 
 import Tabs from '@theme/Tabs';
