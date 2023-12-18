@@ -14,6 +14,12 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/query-core";
 import { TIMESTAMPS } from "../../lib/duckdb-data-types";
+import type { Readable } from "svelte/motion";
+import { derived } from "svelte/store";
+import {
+  createTableColumnsWithName,
+  type TableColumnsWithName,
+} from "../sources/selectors";
 
 export function useModels(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.Model);
@@ -29,6 +35,26 @@ export function useModelFileNames(instanceId: string) {
 
 export function useModel(instanceId: string, name: string) {
   return useResource(instanceId, name, ResourceKind.Model);
+}
+
+export function useAllModelColumns(
+  queryClient: QueryClient,
+  instanceId: string
+): Readable<Array<TableColumnsWithName>> {
+  return derived([useModels(instanceId)], ([allModels], set) => {
+    if (!allModels.data?.length) {
+      set([]);
+      return;
+    }
+
+    derived(
+      allModels.data.map((r) =>
+        createTableColumnsWithName(queryClient, instanceId, r.meta.name.name)
+      ),
+      (modelColumnResponses) =>
+        modelColumnResponses.filter((res) => !!res.data).map((res) => res.data)
+    ).subscribe(set);
+  });
 }
 
 export async function getModelNames(

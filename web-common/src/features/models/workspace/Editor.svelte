@@ -55,6 +55,7 @@
   import { editorTheme } from "../../../components/editor/theme";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useAllSourceColumns } from "../../sources/selectors";
+  import { useAllModelColumns } from "../selectors";
 
   export let content: string;
   export let editorHeight = 0;
@@ -89,15 +90,24 @@
       "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then else end in cast left join on not desc asc sum union",
   });
 
+  const schema: { [table: string]: string[] } = {};
+
   // Autocomplete: source tables
-  let schema: { [table: string]: string[] };
   $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
   $: if ($allSourceColumns?.length) {
-    schema = {};
     for (const sourceTable of $allSourceColumns) {
       const sourceIdentifier = sourceTable?.tableName;
       schema[sourceIdentifier] =
         sourceTable.profileColumns?.map((c) => c.name) ?? [];
+    }
+  }
+
+  //Auto complete: model tables
+  $: allModelColumns = useAllModelColumns(queryClient, $runtime?.instanceId);
+  $: if ($allModelColumns?.length) {
+    for (const modelTable of $allModelColumns) {
+      const modelIdentifier = modelTable?.tableName;
+      schema[modelIdentifier] = modelTable.profileColumns?.map((c) => c.name);
     }
   }
 

@@ -159,16 +159,6 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         ]) => {
           let timeSeriesData = primary?.data?.data;
 
-          if (!primary?.data || !primaryTotal?.data || !unfilteredTotal?.data) {
-            return {
-              isFetching:
-                metricsView.isFetching ||
-                primary?.isFetching ||
-                primaryTotal?.isFetching ||
-                unfilteredTotal?.isFetching,
-            };
-          }
-
           if (!primary.isFetching && interval) {
             timeSeriesData = prepareTimeSeries(
               primary?.data?.data,
@@ -178,7 +168,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
             );
           }
           return {
-            isFetching: primaryTotal?.isFetching || metricsView?.isFetching,
+            isFetching: !primary?.data && !primaryTotal?.data,
             isError: false, // FIXME Handle errors
             timeSeriesData,
             total: primaryTotal?.data?.data?.[0],

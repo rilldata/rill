@@ -14,11 +14,11 @@ import (
 )
 
 func TestMetricsViewAggregation_measure_filters(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, AdBidsProject)
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
-		ColumnName: AdBidsTimestamp,
+		ColumnName: "timestamp",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)

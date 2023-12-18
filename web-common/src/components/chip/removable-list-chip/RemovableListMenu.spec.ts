@@ -1,28 +1,31 @@
 import RemovableListMenu from "./RemovableListMenu.svelte";
 import { describe, it, expect, vi } from "vitest";
 import { render, waitFor, fireEvent, screen } from "@testing-library/svelte";
-import { writable } from "svelte/store";
 
 describe("RemovableListMenu", () => {
-  it("renders selected values by default", async () => {
+  it("does not render selected values if not in all values", async () => {
     const { unmount } = render(RemovableListMenu, {
-      excludeStore: writable(false),
-      selectedValues: ["foo", "bar"],
-      searchedValues: null,
+      excludeMode: false,
+      selectedValues: ["x"],
+      allValues: ["foo", "bar"],
     });
 
     const foo = screen.getByText("foo");
     const bar = screen.getByText("bar");
     expect(foo).toBeDefined();
     expect(bar).toBeDefined();
+
+    const x = screen.queryByText("x");
+    expect(x).toBeNull();
+
     unmount();
   });
 
-  it("renders selected values if search text is empty", async () => {
+  it("renders all values if search text is empty", async () => {
     const { unmount } = render(RemovableListMenu, {
-      excludeStore: writable(false),
-      selectedValues: ["foo", "bar"],
-      searchedValues: ["x"],
+      excludeMode: false,
+      selectedValues: [],
+      allValues: ["foo", "bar"],
     });
 
     const foo = screen.getByText("foo");
@@ -34,9 +37,9 @@ describe("RemovableListMenu", () => {
 
   it("renders search values if search text is populated", async () => {
     const { unmount } = render(RemovableListMenu, {
-      excludeStore: writable(false),
+      excludeMode: false,
       selectedValues: ["foo", "bar"],
-      searchedValues: ["x"],
+      allValues: ["x"],
     });
 
     const searchInput = screen.getByRole("textbox", { name: "Search list" });
@@ -51,35 +54,33 @@ describe("RemovableListMenu", () => {
   });
 
   it("should render switch based on exclude store", async () => {
-    const excludeStore = writable(false);
-    const { unmount } = render(RemovableListMenu, {
-      excludeStore,
+    const { unmount, component } = render(RemovableListMenu, {
+      excludeMode: false,
       selectedValues: ["foo", "bar"],
-      searchedValues: ["x"],
+      allValues: ["x"],
     });
 
-    const switchInput = screen.getByRole<HTMLInputElement>("switch");
-    expect(switchInput.checked).toBe(false);
+    const switchInput = screen.getByText("Exclude");
+    expect(switchInput).toBeDefined();
 
-    excludeStore.set(true);
-    await waitFor(() => {
-      expect(switchInput.checked).toBe(true);
-    });
+    await component.$set({ excludeMode: true });
+
+    const includeButton = screen.getByText("Include");
+    expect(includeButton).toBeDefined();
 
     unmount();
   });
 
   it("should dispatch toggle, apply, and search events", async () => {
-    const excludeStore = writable(false);
     const { unmount, component } = render(RemovableListMenu, {
-      excludeStore,
-      selectedValues: ["foo", "bar"],
-      searchedValues: ["x"],
+      excludeMode: false,
+      selectedValues: [],
+      allValues: ["foo", "bar"],
     });
 
     const toggleSpy = vi.fn();
     component.$on("toggle", toggleSpy);
-    const switchInput = screen.getByRole<HTMLInputElement>("switch");
+    const switchInput = screen.getByText("Exclude");
     await fireEvent.click(switchInput);
     expect(toggleSpy).toHaveBeenCalledOnce();
 

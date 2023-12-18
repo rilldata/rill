@@ -19,18 +19,12 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 )
 
-// replace with "ad_bids_druid" to test on druid
-const AdBidsProject = "ad_bids"
-
-// replace with "timestamp" to test on druid
-const AdBidsTimestamp = "timestamp"
-
 func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, AdBidsProject)
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
-		ColumnName: AdBidsTimestamp,
+		ColumnName: "timestamp",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -122,11 +116,11 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 }
 
 func TestMetricsViewsComparison_dim_order(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, AdBidsProject)
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
-		ColumnName: AdBidsTimestamp,
+		ColumnName: "timestamp",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -174,11 +168,11 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 }
 
 func TestMetricsViewsComparison_measure_order(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, AdBidsProject)
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
-		ColumnName: AdBidsTimestamp,
+		ColumnName: "timestamp",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -226,11 +220,11 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 }
 
 func TestMetricsViewsComparison_measure_filters(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, AdBidsProject)
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
-		ColumnName: AdBidsTimestamp,
+		ColumnName: "timestamp",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -295,11 +289,11 @@ func TestMetricsViewsComparison_measure_filters(t *testing.T) {
 }
 
 func TestMetricsViewsComparison_measure_filters_with_compare_no_alias(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, AdBidsProject)
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
-		ColumnName: AdBidsTimestamp,
+		ColumnName: "timestamp",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -363,11 +357,11 @@ func TestMetricsViewsComparison_measure_filters_with_compare_no_alias(t *testing
 }
 
 func TestMetricsViewsComparison_measure_filters_with_compare_base_measure(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, AdBidsProject)
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
-		ColumnName: AdBidsTimestamp,
+		ColumnName: "timestamp",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -443,11 +437,11 @@ func TestMetricsViewsComparison_measure_filters_with_compare_base_measure(t *tes
 }
 
 func TestMetricsViewsComparison_measure_filters_with_compare_aliases(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, AdBidsProject)
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	ctr := &queries.ColumnTimeRange{
 		TableName:  "ad_bids",
-		ColumnName: AdBidsTimestamp,
+		ColumnName: "timestamp",
 	}
 	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)

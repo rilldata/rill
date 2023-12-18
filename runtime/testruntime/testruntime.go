@@ -31,12 +31,6 @@ import (
 	_ "github.com/rilldata/rill/runtime/reconcilers"
 )
 
-// testConnector replace with "druid" for testing on druid
-const testConnector = "duckdb"
-
-// testConnectorDSN replace with "http://localhost:8888/druid/v2/sql/avatica-protobuf/" for testing on druid
-const testConnectorDSN = ""
-
 // TestingT satisfies both *testing.T and *testing.B.
 type TestingT interface {
 	Name() string
@@ -96,7 +90,7 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 
 	tmpDir := t.TempDir()
 	inst := &drivers.Instance{
-		OLAPConnector:    testConnector,
+		OLAPConnector:    "duckdb",
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
@@ -106,9 +100,9 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 				Config: map[string]string{"dsn": tmpDir},
 			},
 			{
-				Type:   testConnector,
-				Name:   testConnector,
-				Config: map[string]string{"dsn": testConnectorDSN},
+				Type:   "duckdb",
+				Name:   "duckdb",
+				Config: map[string]string{"dsn": ""},
 			},
 			{
 				Type: "sqlite",
@@ -123,7 +117,6 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		StageChanges:                 opts.StageChanges,
 		ModelDefaultMaterialize:      opts.ModelDefaultMaterialize,
 		ModelMaterializeDelaySeconds: opts.ModelMaterializeDelaySeconds,
-		EmbedCatalog:                 testConnector != "druid",
 	}
 
 	for path, data := range opts.Files {
@@ -177,7 +170,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	projectPath := filepath.Join(currentFile, "..", "testdata", name)
 
 	inst := &drivers.Instance{
-		OLAPConnector:    testConnector,
+		OLAPConnector:    "duckdb",
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
@@ -187,9 +180,9 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 				Config: map[string]string{"dsn": projectPath},
 			},
 			{
-				Type:   testConnector,
-				Name:   testConnector,
-				Config: map[string]string{"dsn": testConnectorDSN},
+				Type:   "duckdb",
+				Name:   "duckdb",
+				Config: map[string]string{"dsn": ""},
 			},
 			{
 				Type: "sqlite",
@@ -199,7 +192,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
-		EmbedCatalog: testConnector != "druid",
+		EmbedCatalog: true,
 	}
 
 	err := rt.CreateInstance(context.Background(), inst)
