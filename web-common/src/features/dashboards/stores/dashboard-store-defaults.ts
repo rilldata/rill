@@ -125,9 +125,9 @@ export function getDefaultMetricsExplorerEntity(
   const metricsExplorer: MetricsExplorerEntity = {
     name,
     selectedMeasureNames: [...defaultMeasureNames],
-    visibleMeasureKeys: new Set(...defaultMeasureNames),
+    visibleMeasureKeys: new Set(defaultMeasureNames),
     allMeasuresVisible: true,
-    visibleDimensionKeys: new Set(...defaultDimNames),
+    visibleDimensionKeys: new Set(defaultDimNames),
     allDimensionsVisible: true,
     leaderboardMeasureName: defaultMeasureNames[0],
     filters: {
