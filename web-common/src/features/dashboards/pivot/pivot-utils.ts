@@ -60,6 +60,9 @@ export function prepareExpandedPivotData(
   }
 }
 
+/**
+ * Alternative to flexRender for performant rendering of cells
+ */
 export const cellComponent = (
   component: unknown,
   props: Record<string, unknown>
@@ -68,13 +71,47 @@ export const cellComponent = (
   props,
 });
 
+/***
+ * Create nested and grouped column definitions for pivot table
+ */
+function createColumnDefinitionForDimensions(
+  levels: number,
+  dimensions: MetricsViewSpecDimensionV2[],
+  headers,
+  leafData
+) {
+  if (!dimensions.length || !headers?.length) return leafData;
+  // Recursive function to create nested columns
+  function createNestedColumns(level: number, headerValues) {
+    console.log(headerValues, dimensions, level);
+    if (level === levels) {
+      // Base case: return leaf columns
+      return leafData;
+    }
+
+    // Recursive case: create nested headers
+    return headerValues.map((header) => ({
+      Header: header?.[dimensions[level]?.column],
+      columns: createNestedColumns(level + 1, headers[level + 1]),
+    }));
+  }
+
+  // Start the recursion
+  return createNestedColumns(0, headers[0]);
+}
+
 export function getColumnDefForPivot(
   pivot: PivotState,
-  metricSpec: V1MetricsViewSpec
+  metricSpec: V1MetricsViewSpec,
+  columnDimensionAxes = []
 ) {
   const IsNested = true;
   const measureCols = getMeasuresInPivotColumns(pivot, metricSpec.measures);
   const dimensionRows = getDimensionsInPivotRow(pivot, metricSpec.dimensions);
+  const dimensionCols = getDimensionsInPivotColumns(
+    pivot,
+    metricSpec.dimensions
+  );
 
   let rowDimensionsForColumnDef = dimensionRows;
   let nestedLabel;
@@ -94,7 +131,7 @@ export function getColumnDefForPivot(
     };
   });
 
-  const colDefinitions = measureCols.map((m) => {
+  const leafColumns = measureCols.map((m) => {
     return {
       accessorKey: m.name,
       header: m.label || m.name,
@@ -102,5 +139,12 @@ export function getColumnDefForPivot(
     };
   });
 
-  return [...rowDefinitions, ...colDefinitions];
+  const groupedColDef = createColumnDefinitionForDimensions(
+    dimensionCols.length,
+    dimensionCols,
+    columnDimensionAxes,
+    leafColumns
+  );
+
+  return [...rowDefinitions, ...groupedColDef];
 }

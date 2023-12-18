@@ -13,6 +13,7 @@ import { ExpandedState, flexRender } from "@tanstack/svelte-table";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
 import {
   getColumnDefForPivot,
+  getDimensionsInPivotColumns,
   getDimensionsInPivotRow,
   getMeasuresInPivotColumns,
   prepareExpandedPivotData,
@@ -70,7 +71,7 @@ function getAxisForDimensions(ctx, dimensions, filters) {
       createPivotAggregationRowQuery(ctx, [], [dimension.column], filters)
     ),
     (data) => {
-      if (data.some((d) => d.isFetching)) return null;
+      if (data.some((d) => d.isFetching)) return undefined;
       return data.map((d) => d?.data?.data);
     }
   );
@@ -225,21 +226,30 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         metricsView.data?.dimensions
       );
 
+      const columnDimensons = getDimensionsInPivotColumns(
+        dashboardStore.pivot,
+        metricsView.data?.dimensions
+      );
+
       const measureNames = measures.map((m) => m.name) as string[];
       const dimensionNames = dimensions.map((d) => d.column) as string[];
 
       let dimensionForInitialView = dimensions;
-      // let otherDimensions: MetricsViewSpecDimensionV2[] = [];
-      // let otherDimensionsAxis = writable(null);
+      let columnDimensionAxesQuery = writable(null);
 
       if (isNested && dimensions.length > 1) {
         dimensionForInitialView = dimensions.slice(0, 1);
-        // otherDimensions = dimensions.slice(1);
-        // otherDimensionsAxis = getAxisForDimensions(
-        //   ctx,
-        //   otherDimensions,
-        //   dashboardStore.filters
-        // );
+
+        if (columnDimensons.length) {
+          dimensionForInitialView =
+            dimensionForInitialView.concat(columnDimensons);
+
+          columnDimensionAxesQuery = getAxisForDimensions(
+            ctx,
+            columnDimensons,
+            dashboardStore.filters
+          );
+        }
       }
 
       const initialTableView = createPivotAggregationRowQuery(
@@ -249,42 +259,52 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         dashboardStore.filters
       );
 
-      return derived(initialTableView, (initialTable, set2) => {
-        // Wait for data
-        if (initialTable.isFetching) return { isFetching: true };
-        if (initialTable.error) return { isFetching: false, data: [] };
+      return derived(
+        [initialTableView, columnDimensionAxesQuery],
+        ([initialTable, columnDimensionData], set2) => {
+          // Wait for data
+          if (initialTable.isFetching) return { isFetching: true };
+          if (initialTable.error) return { isFetching: false, data: [] };
 
-        let data = initialTable.data?.data;
+          let data = initialTable.data?.data;
 
-        return derived(
-          queryExpandedRowMeasureValues(
-            ctx,
-            data,
-            measureNames,
-            dimensionNames,
-            expanded
-          ),
-          (expandedRowMeasureValues) => {
-            prepareExpandedPivotData(data, dimensionNames, expanded);
-
-            if (expandedRowMeasureValues?.length) {
-              data = addExpandedDataToPivot(
-                data,
-                dimensionNames,
-                expandedRowMeasureValues
-              );
-            }
-            return {
-              isFetching: false,
-              data,
-              columnDef: getColumnDefForPivot(
-                dashboardStore?.pivot,
-                metricsView?.data
-              ),
-            };
+          if (columnDimensons.length && !columnDimensionData) {
+            return { isFetching: true };
           }
-        ).subscribe(set2);
-      }).subscribe(set);
+
+          console.log("columnDimensionData", columnDimensionData);
+
+          return derived(
+            queryExpandedRowMeasureValues(
+              ctx,
+              data,
+              measureNames,
+              dimensionNames,
+              expanded
+            ),
+            (expandedRowMeasureValues) => {
+              prepareExpandedPivotData(data, dimensionNames, expanded);
+
+              if (expandedRowMeasureValues?.length) {
+                data = addExpandedDataToPivot(
+                  data,
+                  dimensionNames,
+                  expandedRowMeasureValues
+                );
+              }
+              return {
+                isFetching: false,
+                data,
+                columnDef: getColumnDefForPivot(
+                  dashboardStore?.pivot,
+                  metricsView?.data,
+                  columnDimensionData || []
+                ),
+              };
+            }
+          ).subscribe(set2);
+        }
+      ).subscribe(set);
     }
   );
 }
