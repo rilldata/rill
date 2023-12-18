@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/MicahParks/keyfunc"
+	"github.com/go-jose/go-jose/v3"
 	"github.com/golang-jwt/jwt/v4"
 	"go.uber.org/zap"
-	"gopkg.in/square/go-jose.v2"
 )
 
 // Issuer creates JWTs with claims for an Audience.
