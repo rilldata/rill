@@ -9,6 +9,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/robfig/cron/v3"
 )
@@ -153,4 +154,49 @@ func safeSQLName(name string) string {
 		return name
 	}
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
+}
+
+func resolveTemplateProps(ctx context.Context, props map[string]any, self compilerv1.TemplateResource, c *runtime.Controller) (map[string]any, error) {
+	inst, err := c.Runtime.Instance(ctx, c.InstanceID)
+	if err != nil {
+		return nil, err
+	}
+	vars := inst.ResolveVariables()
+
+	for key, value := range props {
+		strValue, ok := value.(string)
+		if !ok {
+			continue
+		}
+
+		strValue, err = compilerv1.ResolveTemplate(strValue, compilerv1.TemplateData{
+			User:       map[string]interface{}{},
+			Variables:  vars,
+			ExtraProps: map[string]interface{}{},
+			Self:       self,
+			Resolve: func(ref compilerv1.ResourceName) (string, error) {
+				return safeSQLName(ref.Name), nil
+			},
+			Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
+				if name.Kind == compilerv1.ResourceKindUnspecified {
+					return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without kind specified", name.Name)
+				}
+				res, err := c.Get(ctx, resourceNameFromCompiler(name), false)
+				if err != nil {
+					return compilerv1.TemplateResource{}, err
+				}
+				return compilerv1.TemplateResource{
+					Meta:  res.Meta,
+					Spec:  res.Resource.(*runtimev1.Resource_Model).Model.Spec,
+					State: res.Resource.(*runtimev1.Resource_Model).Model.State,
+				}, nil
+			},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve template: %w", err)
+		}
+
+		props[key] = strValue
+	}
+	return props, nil
 }
