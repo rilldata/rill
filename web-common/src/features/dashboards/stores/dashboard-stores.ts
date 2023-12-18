@@ -210,7 +210,15 @@ const metricViewReducers = {
     });
   },
 
+  /**
+   * DEPRECATED!!!
+   * use setLeaderboardMeasureName via:
+   * getStateManagers().actions.setLeaderboardMeasureName
+   */
   setLeaderboardMeasureName(name: string, measureName: string) {
+    console.warn(
+      "setLeaderboardMeasureName is deprecated. Use setLeaderboardMeasureName via `getStateManagers().actions.setLeaderboardMeasureName`"
+    );
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.leaderboardMeasureName = measureName;
     });
