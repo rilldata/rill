@@ -385,21 +385,13 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Res
 }
 
 func (r *SourceReconciler) driversSource(ctx context.Context, self *runtimev1.Resource, propsPB *structpb.Struct) (map[string]any, error) {
-	props := propsPB.AsMap()
-	spec := self.Resource.(*runtimev1.Resource_Source).Source.Spec
-	state := self.Resource.(*runtimev1.Resource_Source).Source.State
-
-	var err error
-	props, err = resolveTemplateProps(ctx, props, rillv1.TemplateResource{
+	tself := rillv1.TemplateResource{
 		Meta:  self.Meta,
-		Spec:  spec,
-		State: state,
-	}, r.C)
-	if err != nil {
-		return nil, err
+		Spec:  self.GetSource().Spec,
+		State: self.GetSource().State,
 	}
 
-	return props, nil
+	return resolveTemplateProps(ctx, propsPB.AsMap(), tself, r.C)
 }
 
 func driversSink(conn drivers.Handle, tableName string) (map[string]any, error) {
