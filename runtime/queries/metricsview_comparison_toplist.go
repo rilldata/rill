@@ -701,7 +701,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 	var sql string
 	if dialect != drivers.DialectDruid {
-		sql = fmt.Sprintf(`
+		if havingClause != "" {
+			// measure filter could include the base measure name.
+			// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
+			// to keep the clause builder consistent we add an outer query here.
+			sql = fmt.Sprintf(`
+  SELECT * from (
 		SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
 			(
 				SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY %[15]s %[12]s 
@@ -712,29 +717,63 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
-		WHERE %[16]s
-			%[6]s
+		%[6]s
+		%[7]s
+		OFFSET
+			%[8]d
+  ) WHERE %[16]s 
+		`,
+				subSelectClause,       // 1
+				colName,               // 2
+				safeName(mv.Table),    // 3
+				baseWhereClause,       // 4
+				comparisonWhereClause, // 5
+				orderByClause,         // 6
+				limitClause,           // 7
+				q.Offset,              // 8
+				finalSelectClause,     // 9
+				finalDimName,          // 10
+				joinType,              // 11
+				baseLimitClause,       // 12
+				comparisonLimitClause, // 13
+				unnestClause,          // 14
+				groupByCol,            // 15
+				havingClause,          // 16
+			)
+		} else {
+			sql = fmt.Sprintf(`
+		SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
+			(
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY %[15]s %[12]s 
+			) base
+		%[11]s JOIN
+			(
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY %[15]s %[13]s 
+			) comparison
+		ON
+				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
+		%[6]s
 		%[7]s
 		OFFSET
 			%[8]d
 		`,
-			subSelectClause,       // 1
-			colName,               // 2
-			safeName(mv.Table),    // 3
-			baseWhereClause,       // 4
-			comparisonWhereClause, // 5
-			orderByClause,         // 6
-			limitClause,           // 7
-			q.Offset,              // 8
-			finalSelectClause,     // 9
-			finalDimName,          // 10
-			joinType,              // 11
-			baseLimitClause,       // 12
-			comparisonLimitClause, // 13
-			unnestClause,          // 14
-			groupByCol,            // 15
-			havingClause,          // 16
-		)
+				subSelectClause,       // 1
+				colName,               // 2
+				safeName(mv.Table),    // 3
+				baseWhereClause,       // 4
+				comparisonWhereClause, // 5
+				orderByClause,         // 6
+				limitClause,           // 7
+				q.Offset,              // 8
+				finalSelectClause,     // 9
+				finalDimName,          // 10
+				joinType,              // 11
+				baseLimitClause,       // 12
+				comparisonLimitClause, // 13
+				unnestClause,          // 14
+				groupByCol,            // 15
+			)
+		}
 	} else {
 		/*
 			Example of the SQL query:

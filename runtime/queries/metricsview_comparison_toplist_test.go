@@ -417,13 +417,6 @@ func TestMetricsViewsComparison_measure_filters_with_compare_base_measure(t *tes
 				},
 			},
 		},
-		Aliases: []*runtimev1.MetricsViewComparisonMeasureAlias{
-			{
-				Name:  "measure_1",
-				Type:  runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
-				Alias: "measure_1",
-			},
-		},
 		Limit: 250,
 	}
 
