@@ -594,7 +594,7 @@ func convertDimensionFilterToExpression(cond *runtimev1.MetricsViewFilter_Cond, 
 		} else {
 			inExpr = expressionpb.In(expressionpb.Identifier(cond.Name), inExprs)
 		}
-	
+	}
 
 	var likeExpr *runtimev1.Expression
 	if len(cond.Like) == 1 {
@@ -631,7 +631,7 @@ func convertDimensionFilterToExpression(cond *runtimev1.MetricsViewFilter_Cond, 
 	} else if likeExpr != nil {
 		return likeExpr
 	}
-	}
+	
 
 	return nil
 }

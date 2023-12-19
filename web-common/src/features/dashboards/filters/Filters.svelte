@@ -1,6 +1,20 @@
 <!-- @component
 The main feature-set component for dashboard filters
  -->
+<script context="module" lang="ts">
+  import { writable } from "svelte/store";
+  import type { Writable } from "svelte/store";
+
+  export const temporaryFilters: Writable<
+    {
+      name: string;
+      label: string;
+      selectedValues: any[];
+      filterType: string;
+    }[]
+  > = writable([]);
+</script>
+
 <script lang="ts">
   import {
     Chip,
@@ -119,13 +133,31 @@ The main feature-set component for dashboard filters
           };
         }) ?? [];
 
+    const currentTemporaryFilters =
+      $temporaryFilters
+        .filter((dimensionValues) => dimensionValues.name !== undefined)
+        .map((dimensionValues) => {
+          const name = dimensionValues.name as string;
+          return {
+            name,
+            label: getDisplayName(
+              dimensionIdMap.get(name) as MetricsViewSpecDimensionV2
+            ),
+            selectedValues: [],
+            filterType: "exclude",
+          };
+        }) ?? [];
+
     currentDimensionFilters = [
       ...currentDimensionIncludeFilters,
       ...currentDimensionExcludeFilters,
+      ...currentTemporaryFilters,
     ];
     // sort based on name to make sure toggling include/exclude is not jarring
     currentDimensionFilters.sort((a, b) => (a.name > b.name ? 1 : -1));
   }
+
+  $: console.log($temporaryFilters);
 
   function setActiveDimension(name, value = "") {
     activeDimensionName = name;
