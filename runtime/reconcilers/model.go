@@ -14,7 +14,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"go.uber.org/zap"
 	"golang.org/x/exp/slog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -470,14 +469,14 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 func (r *ModelReconciler) logModelNameAndType(ctx context.Context, self *runtimev1.Resource, name string) {
 	olap, release, err := r.C.AcquireOLAP(ctx, self.GetModel().Spec.Connector)
 	if err != nil {
-		r.C.Logger.Error("ModelReconciler: failed to acquire OLAP", zap.Error(err))
+		r.C.Logger.Error("ModelReconciler: failed to acquire OLAP", slog.Any("err", err))
 		return
 	}
 	defer release()
 
 	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT column_name, data_type FROM information_schema.columns WHERE table_name=? ORDER BY column_name ASC", Args: []any{name}})
 	if err != nil {
-		r.C.Logger.Error("ModelReconciler: failed information_schema.columns", zap.Error(err))
+		r.C.Logger.Error("ModelReconciler: failed information_schema.columns", slog.Any("err", err))
 		return
 	}
 	defer res.Close()
@@ -487,7 +486,7 @@ func (r *ModelReconciler) logModelNameAndType(ctx context.Context, self *runtime
 	for res.Next() {
 		err = res.Scan(&col, &typ)
 		if err != nil {
-			r.C.Logger.Error("ModelReconciler: failed scan", zap.Error(err))
+			r.C.Logger.Error("ModelReconciler: failed scan", slog.Any("err", err))
 			return
 		}
 		colTyp = append(colTyp, fmt.Sprintf("%s:%s", col, typ))
