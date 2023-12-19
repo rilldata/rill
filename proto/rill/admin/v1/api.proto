@@ -508,11 +508,10 @@ message ProjectHealth{
   string project_id = 1;
   string project_name = 2;
   string org_id = 3;
-  string org_name = 4;
-  string deployment_id = 5;
-  DeploymentStatus status = 6;
-  string status_message = 7;
-  google.protobuf.Timestamp deployment_status_timestamp = 8;
+  string deployment_id = 4;
+  DeploymentStatus status = 5;
+  string status_message = 6;
+  google.protobuf.Timestamp deployment_status_timestamp = 7;
 }
 
 message PingRequest {}

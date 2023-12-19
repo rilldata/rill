@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/XSAM/otelsql"
-	"github.com/jackc/pgconn"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	// Load postgres driver
+	"github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
@@ -320,7 +320,7 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 func (c *connection) FindProjectsHealth(ctx context.Context, afterName string, limit int) ([]*database.ProjectHealth, error) {
 	var res []*database.ProjectHealth
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT p.*, d.status, d.status_message FROM projects p
+		SELECT p.id, p.name, p.org_id, p.prod_deployment_id, d.status, d.status_message, d.updated_on FROM projects p
 		LEFT JOIN deployments d ON p.prod_deployment_id = d.id
 		WHERE lower(p.name) > lower($1)
 		ORDER BY lower(p.name) LIMIT $2
@@ -334,9 +334,9 @@ func (c *connection) FindProjectsHealth(ctx context.Context, afterName string, l
 func (c *connection) FindProjectsHealthForOrganization(ctx context.Context, orgID, afterName string, limit int) ([]*database.ProjectHealth, error) {
 	var res []*database.ProjectHealth
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT p.*, d.status, d.status_message FROM projects p
+		SELECT p.id, p.name, p.org_id, p.prod_deployment_id, d.status, d.status_message, d.updated_on FROM projects p
 		LEFT JOIN deployments d ON p.prod_deployment_id = d.id
-		WHERE p.org_id=$1 AND lower(p.name) > lower($2)
+		WHERE p.org_id = $1 AND lower(p.name) > lower($2)
 		ORDER BY lower(p.name) LIMIT $3
 	`, orgID, afterName, limit)
 	if err != nil {
@@ -348,7 +348,7 @@ func (c *connection) FindProjectsHealthForOrganization(ctx context.Context, orgI
 func (c *connection) FindProjectsHealthForUser(ctx context.Context, userID, afterName string, limit int) ([]*database.ProjectHealth, error) {
 	var res []*database.ProjectHealth
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT p.*, d.status, d.status_message FROM projects p
+		SELECT p.id, p.name, p.org_id, p.prod_deployment_id, d.status, d.status_message, d.updated_on FROM projects p
 		LEFT JOIN deployments d ON p.prod_deployment_id = d.id
 		WHERE p.id IN (
 			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $1
@@ -366,15 +366,15 @@ func (c *connection) FindProjectsHealthForUser(ctx context.Context, userID, afte
 func (c *connection) FindProjectsHealthForDomain(ctx context.Context, domain, afterName string, limit int) ([]*database.ProjectHealth, error) {
 	var res []*database.ProjectHealth
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT p.*, d.status, d.status_message FROM projects p
+		SELECT p.id, p.name, p.org_id, p.prod_deployment_id, d.status, d.status_message, d.updated_on FROM projects p
 		LEFT JOIN deployments d ON p.prod_deployment_id = d.id
 		WHERE p.id IN (
 			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id IN (
-				SELECT u.id FROM users u WHERE u.email LIKE $1
+				SELECT u.id FROM users u WHERE lower(u.email) LIKE lower($1)
 			)
 			UNION
 			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id IN (
-				SELECT u.id FROM users u WHERE u.email LIKE $1
+				SELECT u.id FROM users u WHERE lower(u.email) LIKE lower($1)
 			)
 		) AND lower(p.name) > lower($2)
 		ORDER BY lower(p.name) LIMIT $3

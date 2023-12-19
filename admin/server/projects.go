@@ -762,6 +762,11 @@ func (s *Server) SudoListProjectsHealth(ctx context.Context, req *adminv1.SudoLi
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	nextToken := ""
+	if len(projectsHealth) >= pageSize {
+		nextToken = marshalPageToken(projectsHealth[len(projectsHealth)-1].ProjectName)
+	}
+
 	// Convert to proto
 	projectsHealthDtos := make([]*adminv1.ProjectHealth, len(projectsHealth))
 	for i, projectHealth := range projectsHealth {
@@ -769,11 +774,12 @@ func (s *Server) SudoListProjectsHealth(ctx context.Context, req *adminv1.SudoLi
 	}
 
 	return &adminv1.SudoListProjectsHealthResponse{
-		Projects: projectsHealthDtos,
+		Projects:      projectsHealthDtos,
+		NextPageToken: nextToken,
 	}, nil
 }
 
-// SudoListProjectsHealthForOrg returns the health of all projects in the organization
+// SudoListProjectsHealthForOrganization returns the health of all projects in the organization
 func (s *Server) SudoListProjectsHealthForOrganization(ctx context.Context, req *adminv1.SudoListProjectsHealthForOrganizationRequest) (*adminv1.SudoListProjectsHealthForOrganizationResponse, error) {
 	// Check the request is made by a superuser
 	claims := auth.GetClaims(ctx)
@@ -799,6 +805,11 @@ func (s *Server) SudoListProjectsHealthForOrganization(ctx context.Context, req 
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	nextToken := ""
+	if len(projectsHealth) >= pageSize {
+		nextToken = marshalPageToken(projectsHealth[len(projectsHealth)-1].ProjectName)
+	}
+
 	// Convert to proto
 	projectsHealthDtos := make([]*adminv1.ProjectHealth, len(projectsHealth))
 	for i, projectHealth := range projectsHealth {
@@ -806,9 +817,9 @@ func (s *Server) SudoListProjectsHealthForOrganization(ctx context.Context, req 
 	}
 
 	return &adminv1.SudoListProjectsHealthForOrganizationResponse{
-		Projects: projectsHealthDtos,
+		Projects:      projectsHealthDtos,
+		NextPageToken: nextToken,
 	}, nil
-
 }
 
 // SudoListProjectsHealthForUser returns the health of all projects in the organization
@@ -837,6 +848,11 @@ func (s *Server) SudoListProjectsHealthForUser(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	nextToken := ""
+	if len(projectsHealth) >= pageSize {
+		nextToken = marshalPageToken(projectsHealth[len(projectsHealth)-1].ProjectName)
+	}
+
 	// Convert to proto
 	projectsHealthDtos := make([]*adminv1.ProjectHealth, len(projectsHealth))
 	for i, projectHealth := range projectsHealth {
@@ -844,7 +860,8 @@ func (s *Server) SudoListProjectsHealthForUser(ctx context.Context, req *adminv1
 	}
 
 	return &adminv1.SudoListProjectsHealthForUserResponse{
-		Projects: projectsHealthDtos,
+		Projects:      projectsHealthDtos,
+		NextPageToken: nextToken,
 	}, nil
 }
 
@@ -868,6 +885,11 @@ func (s *Server) SudoListProjectsHealthForDomain(ctx context.Context, req *admin
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	nextToken := ""
+	if len(projectsHealth) >= pageSize {
+		nextToken = marshalPageToken(projectsHealth[len(projectsHealth)-1].ProjectName)
+	}
+
 	// Convert to proto
 	projectsHealthDtos := make([]*adminv1.ProjectHealth, len(projectsHealth))
 	for i, projectHealth := range projectsHealth {
@@ -875,7 +897,8 @@ func (s *Server) SudoListProjectsHealthForDomain(ctx context.Context, req *admin
 	}
 
 	return &adminv1.SudoListProjectsHealthForDomainResponse{
-		Projects: projectsHealthDtos,
+		Projects:      projectsHealthDtos,
+		NextPageToken: nextToken,
 	}, nil
 }
 
@@ -884,7 +907,6 @@ func projectHealthToPB(projectHealth *database.ProjectHealth) *adminv1.ProjectHe
 		ProjectId:                 projectHealth.ProjectID,
 		ProjectName:               projectHealth.ProjectName,
 		OrgId:                     projectHealth.OrgID,
-		OrgName:                   projectHealth.OrgName,
 		DeploymentId:              *projectHealth.ProdDeploymentID,
 		Status:                    adminv1.DeploymentStatus(projectHealth.Status),
 		StatusMessage:             projectHealth.StatusMessage,

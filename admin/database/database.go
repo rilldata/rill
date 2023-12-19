@@ -274,10 +274,9 @@ type Project struct {
 }
 
 type ProjectHealth struct {
-	ProjectID        string           `db:"project_id"`
-	ProjectName      string           `db:"project_name"`
+	ProjectID        string           `db:"id"`
+	ProjectName      string           `db:"name"`
 	OrgID            string           `db:"org_id"`
-	OrgName          string           `db:"org_name"`
 	ProdDeploymentID *string          `db:"prod_deployment_id"`
 	Status           DeploymentStatus `db:"status"`
 	StatusMessage    string           `db:"status_message"`

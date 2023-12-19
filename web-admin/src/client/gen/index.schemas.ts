@@ -474,7 +474,6 @@ export interface V1ProjectHealth {
   deploymentId?: string;
   deploymentStatusTimestamp?: string;
   orgId?: string;
-  orgName?: string;
   projectId?: string;
   projectName?: string;
   status?: V1DeploymentStatus;

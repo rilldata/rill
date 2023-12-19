@@ -421,27 +421,22 @@ export class ProjectHealth extends Message<ProjectHealth> {
   orgId = "";
 
   /**
-   * @generated from field: string org_name = 4;
-   */
-  orgName = "";
-
-  /**
-   * @generated from field: string deployment_id = 5;
+   * @generated from field: string deployment_id = 4;
    */
   deploymentId = "";
 
   /**
-   * @generated from field: rill.admin.v1.DeploymentStatus status = 6;
+   * @generated from field: rill.admin.v1.DeploymentStatus status = 5;
    */
   status = DeploymentStatus.UNSPECIFIED;
 
   /**
-   * @generated from field: string status_message = 7;
+   * @generated from field: string status_message = 6;
    */
   statusMessage = "";
 
   /**
-   * @generated from field: google.protobuf.Timestamp deployment_status_timestamp = 8;
+   * @generated from field: google.protobuf.Timestamp deployment_status_timestamp = 7;
    */
   deploymentStatusTimestamp?: Timestamp;
 
@@ -456,11 +451,10 @@ export class ProjectHealth extends Message<ProjectHealth> {
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "status", kind: "enum", T: proto3.getEnumType(DeploymentStatus) },
-    { no: 7, name: "status_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "deployment_status_timestamp", kind: "message", T: Timestamp },
+    { no: 4, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "status", kind: "enum", T: proto3.getEnumType(DeploymentStatus) },
+    { no: 6, name: "status_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "deployment_status_timestamp", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ProjectHealth {

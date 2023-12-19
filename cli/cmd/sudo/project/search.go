@@ -11,7 +11,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pageToken string
 
 	searchCmd := &cobra.Command{
-		Use:   "search",
+		Use:   "search <pattern>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Search projects by pattern",
 		RunE: func(cmd *cobra.Command, args []string) error {

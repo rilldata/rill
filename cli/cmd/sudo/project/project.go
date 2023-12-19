@@ -1,6 +1,7 @@
 package project
 
 import (
+	"github.com/rilldata/rill/cli/cmd/sudo/project/check"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 )
@@ -13,6 +14,7 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	projectCmd.AddCommand(GetCmd(ch))
 	projectCmd.AddCommand(SearchCmd(ch))
+	projectCmd.AddCommand(check.HealthCmd(ch))
 
 	return projectCmd
 }

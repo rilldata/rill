@@ -2476,8 +2476,6 @@ definitions:
         type: string
       orgId:
         type: string
-      orgName:
-        type: string
       deploymentId:
         type: string
       status:
