@@ -631,7 +631,6 @@ func convertDimensionFilterToExpression(cond *runtimev1.MetricsViewFilter_Cond, 
 	} else if likeExpr != nil {
 		return likeExpr
 	}
-	
 
 	return nil
 }
