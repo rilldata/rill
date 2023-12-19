@@ -49,13 +49,13 @@ With `unzip` installed, you're ready to install Rill. Just run:
 curl -s <https://cdn.rilldata.com/install.sh> | bash
 ```
 
-## Alternative install options
+## Alternative Install Options
 
-## Manual install
+## Manual Install
 
 You can download platform-specific binaries from our [releases page on Github](https://github.com/rilldata/rill/releases). A manual download will not make Rill Developer globally accessible, so you'll need to reference the full path of the binary when executing CLI commands.
 
-## Brew install
+## Brew Install
 
 On macOS, you can also install Rill using Homebrew. To avoid conflicts, don't mix it with other installation options and always upgrade Rill via `brew`.
 ```bash
