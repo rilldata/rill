@@ -85,7 +85,7 @@
 <!-- Position at top right corner of parent -->
 <div bind:this={container} class="w-0 h-0 absolute top-0 left-full" />
 
-<style>
+<style lang="postcss">
   :global(.litepicker) {
     --day-width: 42px;
     --day-height: 37px;
@@ -251,20 +251,12 @@
 
   :global(.litepicker .container__tooltip) {
     z-index: 1000;
-
-    /* expansion of: @apply bg-gray-700; */
-    --tw-bg-opacity: 1;
-    background-color: rgb(55 65 81 / var(--tw-bg-opacity));
-
-    /* expansion of: @apply text-gray-50 */
-    --tw-text-opacity: 1;
-    color: rgb(249 250 251 / var(--tw-text-opacity));
+    @apply bg-gray-700;
+    @apply text-gray-50;
   }
 
   :global(.litepicker .container__tooltip:after) {
-    /* expansion of: @apply border-t-gray-700; */
-    --tw-border-opacity: 1;
-    border-top-color: rgb(55 65 81 / var(--tw-border-opacity));
+    @apply border-t-gray-700;
   }
 
   :global(.litepicker .button-previous-month svg) {
