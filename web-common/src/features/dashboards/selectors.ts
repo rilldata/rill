@@ -119,14 +119,22 @@ export const getFiltersForOtherDimensions = (
   const filter: V1MetricsViewFilter = {
     include:
       filters.include
-        ?.filter((dimensionValues) => dimensionName !== dimensionValues.name)
+        ?.filter((dimensionValues) => {
+          return (
+            dimensionName !== dimensionValues.name && dimensionValues.in?.length
+          );
+        })
         .map((dimensionValues) => ({
           name: dimensionValues.name,
           in: dimensionValues.in,
         })) ?? [],
     exclude:
       filters.exclude
-        ?.filter((dimensionValues) => dimensionName !== dimensionValues.name)
+        ?.filter((dimensionValues) => {
+          return (
+            dimensionName !== dimensionValues.name && dimensionValues.in?.length
+          );
+        })
         .map((dimensionValues) => ({
           name: dimensionValues.name,
           in: dimensionValues.in,

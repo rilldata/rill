@@ -63,7 +63,10 @@
       ],
       timeStart: $timeControlsStore.timeStart,
       timeEnd,
-      filter: $dashboardStore?.filters,
+      filter: {
+        exclude: $dashboardStore.filters.exclude?.filter((f) => f.in?.length),
+        include: $dashboardStore.filters.include?.filter((f) => f.in?.length),
+      },
     },
     {
       query: {
