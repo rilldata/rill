@@ -551,19 +551,25 @@ func convertFilterToExpression(filter *runtimev1.MetricsViewFilter) *runtimev1.E
 	if len(filter.Include) > 0 {
 		var includeExprs []*runtimev1.Expression
 		for _, cond := range filter.Include {
-			domExpr := convertDimensionFilterToExpression(cond, false)
-			if domExpr != nil {
-				includeExprs = append(includeExprs, domExpr)
+			if len(cond.In) > 0 {
+				domExpr := convertDimensionFilterToExpression(cond, false)
+				if domExpr != nil {
+					includeExprs = append(includeExprs, domExpr)
+				}
 			}
 		}
-		exprs = append(exprs, expressionpb.Or(includeExprs))
+		if len(includeExprs) > 0 {
+			exprs = append(exprs, expressionpb.Or(includeExprs))
+		}
 	}
 
 	if len(filter.Exclude) > 0 {
 		for _, cond := range filter.Exclude {
-			domExpr := convertDimensionFilterToExpression(cond, true)
-			if domExpr != nil {
-				exprs = append(exprs, domExpr)
+			if len(cond.In) > 0 {
+				domExpr := convertDimensionFilterToExpression(cond, true)
+				if domExpr != nil {
+					exprs = append(exprs, domExpr)
+				}
 			}
 		}
 	}
@@ -588,7 +594,7 @@ func convertDimensionFilterToExpression(cond *runtimev1.MetricsViewFilter_Cond, 
 		} else {
 			inExpr = expressionpb.In(expressionpb.Identifier(cond.Name), inExprs)
 		}
-	}
+	
 
 	var likeExpr *runtimev1.Expression
 	if len(cond.Like) == 1 {
@@ -624,6 +630,7 @@ func convertDimensionFilterToExpression(cond *runtimev1.MetricsViewFilter_Cond, 
 		return inExpr
 	} else if likeExpr != nil {
 		return likeExpr
+	}
 	}
 
 	return nil
