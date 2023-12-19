@@ -199,6 +199,9 @@ function correctComparisonTimeRange(
   comparisonTimeRange: DashboardTimeControls
 ) {
   switch (comparisonTimeRange.name as string) {
+    case "CONTIGUOUS":
+      comparisonTimeRange.name = TimeComparisonOption.CONTIGUOUS;
+      break;
     case "P1D":
       comparisonTimeRange.name = TimeComparisonOption.DAY;
       break;
