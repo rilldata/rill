@@ -5,6 +5,7 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import SearchableFilterDropdown from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterDropdown.svelte";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
+  import { potentialFilterName } from "./Filters.svelte";
 </script>
 
 <script lang="ts">
@@ -12,9 +13,6 @@
     selectors: {
       dimensions: { allDimensions },
       dimensionFilters: { getAllFilters, isFilterExcludeMode },
-    },
-    actions: {
-      dimensionsFilter: { toggleDimensionNameSelection },
     },
   } = getStateManagers();
 
@@ -61,7 +59,7 @@
     on:click-outside={toggleFloatingElement}
     on:item-clicked={(e) => {
       toggleFloatingElement();
-      toggleDimensionNameSelection(e.detail.name);
+      $potentialFilterName = e.detail.name;
     }}
   />
 </WithTogglableFloatingElement>
