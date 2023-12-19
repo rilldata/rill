@@ -3,7 +3,7 @@ This component will draw an axis on the specified side.
 -->
 <script lang="ts">
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-  import { IntTimesPowerOfTenFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/IntTimesPowerOfTen";
+  import { SingleDigitTimesPowerOfTenFormatter } from "@rilldata/web-common/lib/number-formatting/strategies/SingleDigitTimesPowerOfTen";
   import { formatMsInterval } from "@rilldata/web-common/lib/number-formatting/strategies/intervals";
   import { getContext } from "svelte";
   import { contexts } from "../constants";
@@ -161,14 +161,15 @@ This component will draw an axis on the specified side.
     );
   } else {
     superlabel = false;
-    // If this is a numeric axis, the d3 tick function used by
-    // getTicks offers us some guarantees about the numbers returned.
-    // In that case, we should be able to use the
-    // IntTimesPowerOfTenFormatter, which is taylored to this situation.
-    const formatter = new IntTimesPowerOfTenFormatter(ticks, {
-      strategy: "intTimesPowerOfTen",
+    // Note that SingleDigitTimesPowerOfTenFormatter expects a single
+    // digit time a power of ten. The d3 axis function used upstream
+    // in this context _normally_ satisfies this requirement, but
+    // there are edge cases where it does not. In these edge cases,
+    // this formatter often does the right thing, but may not in some
+    // circumstances. See https://github.com/rilldata/rill/issues/3631
+    const formatter = new SingleDigitTimesPowerOfTenFormatter(ticks, {
+      strategy: "singleDigitTimesPowerOfTen",
       numberKind,
-      onInvalidInput: "consoleWarn",
       padWithInsignificantZeros: false,
     });
     formatterFunction = (x) =>
