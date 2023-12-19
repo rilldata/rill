@@ -250,7 +250,7 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev
 			} else {
 				if dialect == drivers.DialectDruid {
 					// Druid does not support ILIKE
-					clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(?)", name, notKeyword)
+					clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(CAST(? AS VARCHAR))", name, notKeyword)
 				} else {
 					clause = fmt.Sprintf("%s %s ILIKE ?", name, notKeyword)
 				}
