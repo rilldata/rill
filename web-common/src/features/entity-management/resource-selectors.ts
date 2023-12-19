@@ -119,7 +119,7 @@ export function createSchemaForTable(
   ) as ReturnType<typeof createConnectorServiceOLAPGetTable>;
 }
 
-export function resourceIsLoading(resource: V1Resource) {
+export function resourceIsLoading(resource?: V1Resource) {
   return (
     !!resource &&
     resource.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE
