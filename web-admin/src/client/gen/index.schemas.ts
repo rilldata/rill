@@ -18,6 +18,11 @@ export type AdminServiceGetUserParams = {
   email?: string;
 };
 
+export type AdminServiceSudoListProjectsHealthForUserParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceSudoGetResourceParams = {
   userId?: string;
   orgId?: string;
@@ -28,6 +33,21 @@ export type AdminServiceSudoGetResourceParams = {
 
 export type AdminServiceSearchProjectNamesParams = {
   namePattern?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceSudoListProjectsHealthParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceSudoListProjectsHealthForOrganizationParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceSudoListProjectsHealthForDomainParams = {
   pageSize?: number;
   pageToken?: string;
 };
@@ -274,9 +294,9 @@ export interface V1TelemetryResponse {
 export type V1TelemetryRequestEvent = { [key: string]: any };
 
 export interface V1TelemetryRequest {
+  event?: V1TelemetryRequestEvent;
   name?: string;
   value?: number;
-  event?: V1TelemetryRequestEvent;
 }
 
 export interface V1SudoUpdateUserQuotasResponse {
@@ -299,6 +319,26 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   projects?: number;
   slotsPerDeployment?: number;
   slotsTotal?: number;
+}
+
+export interface V1SudoListProjectsHealthResponse {
+  nextPageToken?: string;
+  projects?: V1ProjectHealth[];
+}
+
+export interface V1SudoListProjectsHealthForUserResponse {
+  nextPageToken?: string;
+  projects?: V1ProjectHealth[];
+}
+
+export interface V1SudoListProjectsHealthForOrganizationResponse {
+  nextPageToken?: string;
+  projects?: V1ProjectHealth[];
+}
+
+export interface V1SudoListProjectsHealthForDomainResponse {
+  nextPageToken?: string;
+  projects?: V1ProjectHealth[];
 }
 
 export interface V1SudoGetResourceResponse {
@@ -410,6 +450,17 @@ export interface V1ProjectPermissions {
   readProdStatus?: boolean;
   readProject?: boolean;
   readProjectMembers?: boolean;
+}
+
+export interface V1ProjectHealth {
+  deploymentId?: string;
+  deploymentStatusTimestamp?: string;
+  orgId?: string;
+  orgName?: string;
+  projectId?: string;
+  projectName?: string;
+  status?: V1DeploymentStatus;
+  statusMessage?: string;
 }
 
 export interface V1Project {

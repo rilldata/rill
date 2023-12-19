@@ -316,6 +316,75 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 	return res, nil
 }
 
+// FindProjectsHealth returns all the projects along with its deployment status and status message
+func (c *connection) FindProjectsHealth(ctx context.Context, afterName string, limit int) ([]*database.ProjectHealth, error) {
+	var res []*database.ProjectHealth
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT p.*, d.status, d.status_message FROM projects p
+		LEFT JOIN deployments d ON p.prod_deployment_id = d.id
+		WHERE lower(p.name) > lower($1)
+		ORDER BY lower(p.name) LIMIT $2
+	`, afterName, limit)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectsHealthForOrganization(ctx context.Context, orgID, afterName string, limit int) ([]*database.ProjectHealth, error) {
+	var res []*database.ProjectHealth
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT p.*, d.status, d.status_message FROM projects p
+		LEFT JOIN deployments d ON p.prod_deployment_id = d.id
+		WHERE p.org_id=$1 AND lower(p.name) > lower($2)
+		ORDER BY lower(p.name) LIMIT $3
+	`, orgID, afterName, limit)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectsHealthForUser(ctx context.Context, userID, afterName string, limit int) ([]*database.ProjectHealth, error) {
+	var res []*database.ProjectHealth
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT p.*, d.status, d.status_message FROM projects p
+		LEFT JOIN deployments d ON p.prod_deployment_id = d.id
+		WHERE p.id IN (
+			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id = $1
+			UNION
+			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $1
+		) AND lower(p.name) > lower($2)
+		ORDER BY lower(p.name) LIMIT $3
+	`, userID, afterName, limit)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectsHealthForDomain(ctx context.Context, domain, afterName string, limit int) ([]*database.ProjectHealth, error) {
+	var res []*database.ProjectHealth
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT p.*, d.status, d.status_message FROM projects p
+		LEFT JOIN deployments d ON p.prod_deployment_id = d.id
+		WHERE p.id IN (
+			SELECT upr.project_id FROM users_projects_roles upr WHERE upr.user_id IN (
+				SELECT u.id FROM users u WHERE u.email LIKE $1
+			)
+			UNION
+			SELECT ugpr.project_id FROM usergroups_projects_roles ugpr JOIN usergroups_users uug ON ugpr.usergroup_id = uug.usergroup_id WHERE uug.user_id IN (
+				SELECT u.id FROM users u WHERE u.email LIKE $1
+			)
+		) AND lower(p.name) > lower($2)
+		ORDER BY lower(p.name) LIMIT $3
+	`, "%@"+domain, afterName, limit)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return res, nil
+}
+
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err

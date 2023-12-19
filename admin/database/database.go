@@ -79,6 +79,10 @@ type DB interface {
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
+	FindProjectsHealth(ctx context.Context, afterProject string, limit int) ([]*ProjectHealth, error)
+	FindProjectsHealthForOrganization(ctx context.Context, orgID string, afterProject string, limit int) ([]*ProjectHealth, error)
+	FindProjectsHealthForUser(ctx context.Context, userID string, afterProject string, limit int) ([]*ProjectHealth, error)
+	FindProjectsHealthForDomain(ctx context.Context, domain string, afterProject string, limit int) ([]*ProjectHealth, error)
 
 	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
 	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
@@ -267,6 +271,17 @@ type Project struct {
 	ProdDeploymentID     *string   `db:"prod_deployment_id"`
 	CreatedOn            time.Time `db:"created_on"`
 	UpdatedOn            time.Time `db:"updated_on"`
+}
+
+type ProjectHealth struct {
+	ProjectID        string           `db:"project_id"`
+	ProjectName      string           `db:"project_name"`
+	OrgID            string           `db:"org_id"`
+	OrgName          string           `db:"org_name"`
+	ProdDeploymentID *string          `db:"prod_deployment_id"`
+	Status           DeploymentStatus `db:"status"`
+	StatusMessage    string           `db:"status_message"`
+	UpdatedOn        time.Time        `db:"updated_on"`
 }
 
 // Variables implements JSON SQL encoding of variables in Project.

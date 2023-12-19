@@ -38,6 +38,10 @@ import type {
   AdminServiceSearchUsersParams,
   AdminServiceSetOrganizationMemberRoleBodyBody,
   AdminServiceSudoGetResourceParams,
+  AdminServiceSudoListProjectsHealthForDomainParams,
+  AdminServiceSudoListProjectsHealthForOrganizationParams,
+  AdminServiceSudoListProjectsHealthForUserParams,
+  AdminServiceSudoListProjectsHealthParams,
   AdminServiceTriggerReconcileBodyBody,
   AdminServiceTriggerRefreshSourcesBody,
   AdminServiceUpdateOrganizationBody,
@@ -103,6 +107,10 @@ import type {
   V1SetSuperuserRequest,
   V1SetSuperuserResponse,
   V1SudoGetResourceResponse,
+  V1SudoListProjectsHealthForDomainResponse,
+  V1SudoListProjectsHealthForOrganizationResponse,
+  V1SudoListProjectsHealthForUserResponse,
+  V1SudoListProjectsHealthResponse,
   V1SudoUpdateOrganizationQuotasRequest,
   V1SudoUpdateOrganizationQuotasResponse,
   V1SudoUpdateUserQuotasRequest,
@@ -4418,6 +4426,113 @@ export const createAdminServiceRevokeServiceAuthToken = <
   return createMutation(mutationOptions);
 };
 /**
+ * @summary SudoListProjectsHealthForDomain lists all the projects health for the domain
+ */
+export const adminServiceSudoListProjectsHealthForDomain = (
+  domain: string,
+  params?: AdminServiceSudoListProjectsHealthForDomainParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1SudoListProjectsHealthForDomainResponse>({
+    url: `/v1/superuser/domains/${domain}/projects/health`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoListProjectsHealthForDomainQueryKey = (
+  domain: string,
+  params?: AdminServiceSudoListProjectsHealthForDomainParams
+) => {
+  return [
+    `/v1/superuser/domains/${domain}/projects/health`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceSudoListProjectsHealthForDomainQueryOptions = <
+  TData = Awaited<
+    ReturnType<typeof adminServiceSudoListProjectsHealthForDomain>
+  >,
+  TError = RpcStatus
+>(
+  domain: string,
+  params?: AdminServiceSudoListProjectsHealthForDomainParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSudoListProjectsHealthForDomain>>,
+      TError,
+      TData
+    >;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceSudoListProjectsHealthForDomainQueryKey(domain, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceSudoListProjectsHealthForDomain>>
+  > = ({ signal }) =>
+    adminServiceSudoListProjectsHealthForDomain(domain, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!domain,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceSudoListProjectsHealthForDomain>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminServiceSudoListProjectsHealthForDomainQueryResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSudoListProjectsHealthForDomain>>
+  >;
+export type AdminServiceSudoListProjectsHealthForDomainQueryError = RpcStatus;
+
+/**
+ * @summary SudoListProjectsHealthForDomain lists all the projects health for the domain
+ */
+export const createAdminServiceSudoListProjectsHealthForDomain = <
+  TData = Awaited<
+    ReturnType<typeof adminServiceSudoListProjectsHealthForDomain>
+  >,
+  TError = RpcStatus
+>(
+  domain: string,
+  params?: AdminServiceSudoListProjectsHealthForDomainParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSudoListProjectsHealthForDomain>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions =
+    getAdminServiceSudoListProjectsHealthForDomainQueryOptions(
+      domain,
+      params,
+      options
+    );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
  * @summary ListSuperusers lists all the superusers
  */
 export const adminServiceListSuperusers = (signal?: AbortSignal) => {
@@ -4556,6 +4671,222 @@ export const createAdminServiceSetSuperuser = <
 
   return createMutation(mutationOptions);
 };
+/**
+ * @summary SudoListProjectsHealthForOrganization lists all the projects health for the organization
+ */
+export const adminServiceSudoListProjectsHealthForOrganization = (
+  organization: string,
+  params?: AdminServiceSudoListProjectsHealthForOrganizationParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1SudoListProjectsHealthForOrganizationResponse>({
+    url: `/v1/superuser/organizations/${organization}/projects/health`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoListProjectsHealthForOrganizationQueryKey = (
+  organization: string,
+  params?: AdminServiceSudoListProjectsHealthForOrganizationParams
+) => {
+  return [
+    `/v1/superuser/organizations/${organization}/projects/health`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceSudoListProjectsHealthForOrganizationQueryOptions =
+  <
+    TData = Awaited<
+      ReturnType<typeof adminServiceSudoListProjectsHealthForOrganization>
+    >,
+    TError = RpcStatus
+  >(
+    organization: string,
+    params?: AdminServiceSudoListProjectsHealthForOrganizationParams,
+    options?: {
+      query?: CreateQueryOptions<
+        Awaited<
+          ReturnType<typeof adminServiceSudoListProjectsHealthForOrganization>
+        >,
+        TError,
+        TData
+      >;
+    }
+  ) => {
+    const { query: queryOptions } = options ?? {};
+
+    const queryKey =
+      queryOptions?.queryKey ??
+      getAdminServiceSudoListProjectsHealthForOrganizationQueryKey(
+        organization,
+        params
+      );
+
+    const queryFn: QueryFunction<
+      Awaited<
+        ReturnType<typeof adminServiceSudoListProjectsHealthForOrganization>
+      >
+    > = ({ signal }) =>
+      adminServiceSudoListProjectsHealthForOrganization(
+        organization,
+        params,
+        signal
+      );
+
+    return {
+      queryKey,
+      queryFn,
+      enabled: !!organization,
+      ...queryOptions,
+    } as CreateQueryOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoListProjectsHealthForOrganization>
+      >,
+      TError,
+      TData
+    > & { queryKey: QueryKey };
+  };
+
+export type AdminServiceSudoListProjectsHealthForOrganizationQueryResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof adminServiceSudoListProjectsHealthForOrganization>
+    >
+  >;
+export type AdminServiceSudoListProjectsHealthForOrganizationQueryError =
+  RpcStatus;
+
+/**
+ * @summary SudoListProjectsHealthForOrganization lists all the projects health for the organization
+ */
+export const createAdminServiceSudoListProjectsHealthForOrganization = <
+  TData = Awaited<
+    ReturnType<typeof adminServiceSudoListProjectsHealthForOrganization>
+  >,
+  TError = RpcStatus
+>(
+  organization: string,
+  params?: AdminServiceSudoListProjectsHealthForOrganizationParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<
+        ReturnType<typeof adminServiceSudoListProjectsHealthForOrganization>
+      >,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions =
+    getAdminServiceSudoListProjectsHealthForOrganizationQueryOptions(
+      organization,
+      params,
+      options
+    );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary SudoListProjectsHealth lists all the projects health
+ */
+export const adminServiceSudoListProjectsHealth = (
+  params?: AdminServiceSudoListProjectsHealthParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1SudoListProjectsHealthResponse>({
+    url: `/v1/superuser/projects/health`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoListProjectsHealthQueryKey = (
+  params?: AdminServiceSudoListProjectsHealthParams
+) => {
+  return [
+    `/v1/superuser/projects/health`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceSudoListProjectsHealthQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceSudoListProjectsHealth>>,
+  TError = RpcStatus
+>(
+  params?: AdminServiceSudoListProjectsHealthParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSudoListProjectsHealth>>,
+      TError,
+      TData
+    >;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceSudoListProjectsHealthQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceSudoListProjectsHealth>>
+  > = ({ signal }) => adminServiceSudoListProjectsHealth(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceSudoListProjectsHealth>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminServiceSudoListProjectsHealthQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoListProjectsHealth>>
+>;
+export type AdminServiceSudoListProjectsHealthQueryError = RpcStatus;
+
+/**
+ * @summary SudoListProjectsHealth lists all the projects health
+ */
+export const createAdminServiceSudoListProjectsHealth = <
+  TData = Awaited<ReturnType<typeof adminServiceSudoListProjectsHealth>>,
+  TError = RpcStatus
+>(
+  params?: AdminServiceSudoListProjectsHealthParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSudoListProjectsHealth>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServiceSudoListProjectsHealthQueryOptions(
+    params,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
 /**
  * @summary SearchProjectNames returns project names matching the pattern
  */
@@ -4858,6 +5189,107 @@ export const createAdminServiceSudoGetResource = <
   }
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getAdminServiceSudoGetResourceQueryOptions(
+    params,
+    options
+  );
+
+  const query = createQuery(queryOptions) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+};
+
+/**
+ * @summary SudoListProjectsHealthForUser lists all the projects health for the user
+ */
+export const adminServiceSudoListProjectsHealthForUser = (
+  email: string,
+  params?: AdminServiceSudoListProjectsHealthForUserParams,
+  signal?: AbortSignal
+) => {
+  return httpClient<V1SudoListProjectsHealthForUserResponse>({
+    url: `/v1/superuser/users/${email}/projects/health`,
+    method: "GET",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceSudoListProjectsHealthForUserQueryKey = (
+  email: string,
+  params?: AdminServiceSudoListProjectsHealthForUserParams
+) => {
+  return [
+    `/v1/superuser/users/${email}/projects/health`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getAdminServiceSudoListProjectsHealthForUserQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminServiceSudoListProjectsHealthForUser>>,
+  TError = RpcStatus
+>(
+  email: string,
+  params?: AdminServiceSudoListProjectsHealthForUserParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSudoListProjectsHealthForUser>>,
+      TError,
+      TData
+    >;
+  }
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceSudoListProjectsHealthForUserQueryKey(email, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceSudoListProjectsHealthForUser>>
+  > = ({ signal }) =>
+    adminServiceSudoListProjectsHealthForUser(email, params, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!email,
+    ...queryOptions,
+  } as CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceSudoListProjectsHealthForUser>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminServiceSudoListProjectsHealthForUserQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoListProjectsHealthForUser>>
+>;
+export type AdminServiceSudoListProjectsHealthForUserQueryError = RpcStatus;
+
+/**
+ * @summary SudoListProjectsHealthForUser lists all the projects health for the user
+ */
+export const createAdminServiceSudoListProjectsHealthForUser = <
+  TData = Awaited<ReturnType<typeof adminServiceSudoListProjectsHealthForUser>>,
+  TError = RpcStatus
+>(
+  email: string,
+  params?: AdminServiceSudoListProjectsHealthForUserParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceSudoListProjectsHealthForUser>>,
+      TError,
+      TData
+    >;
+  }
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const queryOptions = getAdminServiceSudoListProjectsHealthForUserQueryOptions(
+    email,
     params,
     options
   );
