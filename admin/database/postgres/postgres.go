@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/XSAM/otelsql"
+	"github.com/jackc/pgconn"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	// Load postgres driver
-	"github.com/jackc/pgconn"
 	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
