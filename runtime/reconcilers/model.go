@@ -7,11 +7,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
+	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 	"golang.org/x/exp/slog"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -222,6 +225,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if createErr != nil {
 		createErr = fmt.Errorf("failed to create model: %w", createErr)
 	}
+
+	// temporarily for debugging
+	r.logModelNameAndType(ctx, self, stagingTableName)
+
 	if createErr == nil && stage {
 		// Rename the staging table to main view/table
 		err = olapForceRenameTable(ctx, r.C, connector, stagingTableName, !materialize, tableName)
@@ -458,4 +465,33 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 	}
 
 	return olap.CreateTableAsSelect(ctx, tableName, view, sql)
+}
+
+func (r *ModelReconciler) logModelNameAndType(ctx context.Context, self *runtimev1.Resource, name string) {
+	olap, release, err := r.C.AcquireOLAP(ctx, self.GetModel().Spec.Connector)
+	if err != nil {
+		r.C.Logger.Error("ModelReconciler: failed to acquire OLAP", zap.Error(err))
+		return
+	}
+	defer release()
+
+	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT column_name, data_type FROM information_schema.columns WHERE table_name=? ORDER BY column_name ASC", Args: []any{name}})
+	if err != nil {
+		r.C.Logger.Error("ModelReconciler: failed information_schema.columns", zap.Error(err))
+		return
+	}
+	defer res.Close()
+
+	colTyp := make([]string, 0)
+	var col, typ string
+	for res.Next() {
+		err = res.Scan(&col, &typ)
+		if err != nil {
+			r.C.Logger.Error("ModelReconciler: failed scan", zap.Error(err))
+			return
+		}
+		colTyp = append(colTyp, fmt.Sprintf("%s:%s", col, typ))
+	}
+
+	r.C.Logger.Info("ModelReconciler: ", slog.String("name", name), slog.String("schema", strings.Join(colTyp, ", ")))
 }
