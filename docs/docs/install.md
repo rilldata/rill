@@ -20,6 +20,14 @@ Verify that the installation succeeded:
 rill --help
 ```
 
+## Install via Conda
+
+You can also install `rill` via `conda`:
+
+```
+conda install --channel conda-forge rill
+```
+
 ## Nightly Releases
 
 On both macOS and Linux, you can install the latest nightly build using the installation script:
