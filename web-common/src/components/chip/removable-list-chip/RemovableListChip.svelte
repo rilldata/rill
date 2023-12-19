@@ -38,6 +38,8 @@ are details left to the consumer of the component; this component should remain 
 
   let active = !selectedValues.length;
 
+  $: console.log(name, excludeMode);
+
   const dispatch = createEventDispatcher();
 
   onMount(() => {

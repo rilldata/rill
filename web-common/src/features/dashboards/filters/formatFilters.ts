@@ -5,30 +5,28 @@ import { getDisplayName } from "./getDisplayName";
 export type DimensionFilter = {
   name: string;
   label: string;
-  selectedValues: any[];
-  filterType: string;
+  selectedValues: string[];
 };
 
 export function formatFilters(
   filters: MetricsViewFilterCond[] | undefined,
-  exclude: boolean,
   dimensionIdMap: Map<string | number, MetricsViewSpecDimensionV2>
 ): DimensionFilter[] {
   if (!filters) return [];
 
-  const formatted: DimensionFilter[] = [];
+  const formattedFilters: DimensionFilter[] = [];
 
   filters.forEach(({ name, in: selectedValues }) => {
     if (name === undefined) return;
-    formatted.push({
+
+    const formatted = {
       name,
-      label: getDisplayName(
-        dimensionIdMap.get(name) as MetricsViewSpecDimensionV2
-      ),
-      selectedValues: selectedValues as any[],
-      filterType: exclude ? "exclude" : "include",
-    });
+      label: getDisplayName(dimensionIdMap.get(name)),
+      selectedValues: selectedValues as string[],
+    };
+
+    formattedFilters.push(formatted);
   });
 
-  return formatted;
+  return formattedFilters;
 }
