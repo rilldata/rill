@@ -4,6 +4,7 @@ import type {
   V1MetricsViewFilter,
   MetricsViewSpecMeasureV2,
   V1MetricsViewAggregationMeasure,
+  V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import type { TimeControlState } from "./time-controls/time-control-store";
 import { getQuerySortType } from "./leaderboard/leaderboard-utils";
@@ -35,7 +36,7 @@ export function prepareSortedQueryBody(
   sortMeasureName: string | null,
   sortType: SortType,
   sortAscending: boolean,
-  filterForDimension: V1MetricsViewFilter
+  filterForDimension: V1Expression
 ): QueryServiceMetricsViewComparisonBody {
   let comparisonTimeRange = {
     start: timeControls.comparisonTimeStart,
@@ -77,7 +78,7 @@ export function prepareSortedQueryBody(
         sortType: querySortType,
       },
     ],
-    filter: filterForDimension,
+    where: filterForDimension,
     limit: "250",
     offset: "0",
   };

@@ -1,6 +1,7 @@
 import type {
   QueryServiceMetricsViewComparisonBody,
   QueryServiceMetricsViewTotalsBody,
+  V1Expression,
 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 import { prepareSortedQueryBody } from "../../dashboard-utils";
@@ -32,7 +33,11 @@ export function dimensionTableSortedQueryBody(
   let filters = getFiltersForOtherDimensions(dashData)(dimensionName);
   const searchString = dimensionTableSearchString(dashData);
   if (searchString !== undefined) {
-    filters = updateFilterOnSearch(filters, searchString, dimensionName);
+    filters = updateFilterOnSearch(
+      filters,
+      searchString,
+      dimensionName
+    ) as V1Expression;
   }
 
   return prepareSortedQueryBody(
@@ -95,7 +100,7 @@ export function leaderboardDimensionTotalQueryBody(
 ): (dimensionName: string) => QueryServiceMetricsViewTotalsBody {
   return (dimensionName: string) => ({
     measureNames: [activeMeasureName(dashData)],
-    filter: getFiltersForOtherDimensions(dashData)(dimensionName),
+    where: getFiltersForOtherDimensions(dashData)(dimensionName),
     timeStart: timeControlsState(dashData).timeStart,
     timeEnd: timeControlsState(dashData).timeEnd,
   });

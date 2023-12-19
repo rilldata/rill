@@ -56,10 +56,11 @@ export default async function exportToplist({
             {
               name: dashboard.leaderboardMeasureName,
               desc: dashboard.sortDirection === SortDirection.DESCENDING,
-              type: getQuerySortType(dashboard.dashboardSortType),
+              sortType: getQuerySortType(dashboard.dashboardSortType),
             },
           ],
-          filter: dashboard.filters,
+          where: dashboard.whereFilter,
+          having: dashboard.havingFilter,
           limit: undefined, // the backend handles export limits
           offset: "0",
         },

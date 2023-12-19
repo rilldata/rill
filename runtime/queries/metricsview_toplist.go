@@ -231,7 +231,9 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += " AND " + clause
+		if strings.TrimSpace(clause) != "" {
+			whereClause += " AND " + clause
+		}
 		args = append(args, clauseArgs...)
 	}
 
@@ -242,7 +244,9 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		if err != nil {
 			return "", nil, err
 		}
-		havingClause = "HAVING " + havingClause
+		if strings.TrimSpace(havingClause) != "" {
+			havingClause = " HAVING " + havingClause
+		}
 		args = append(args, havingClauseArgs...)
 	}
 

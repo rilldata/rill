@@ -29,10 +29,17 @@
 
   const queryClient = useQueryClient();
 
-  const timeDimensionDataStore = useTimeDimensionDataStore(getStateManagers());
-  const timeControlStore = useTimeControlStore(getStateManagers());
+  const stateManagers = getStateManagers();
+  const {
+    actions: {
+      dimensionsFilter: { toggleDimensionValueSelection },
+    },
+  } = stateManagers;
 
-  $: metaQuery = useMetaQuery(getStateManagers());
+  const timeDimensionDataStore = useTimeDimensionDataStore(stateManagers);
+  const timeControlStore = useTimeControlStore(stateManagers);
+
+  $: metaQuery = useMetaQuery(stateManagers);
   $: dashboardStore = useDashboardStore(metricViewName);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
 
@@ -100,8 +107,7 @@
   }
 
   function toggleFilter(e) {
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilter(metricViewName, dimensionName, e.detail);
+    toggleDimensionValueSelection(dimensionName, e.detail);
   }
 
   function toggleAllSearchItems() {
@@ -159,12 +165,12 @@
 </script>
 
 <TDDHeader
-  {dimensionName}
-  {metricViewName}
-  isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
-  comparing={$timeDimensionDataStore?.comparing}
   {areAllTableRowsSelected}
+  comparing={$timeDimensionDataStore?.comparing}
+  {dimensionName}
+  isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
   isRowsEmpty={!rowHeaderLabels.length}
+  {metricViewName}
   on:search={(e) => {
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setSearchText(metricViewName, e.detail);

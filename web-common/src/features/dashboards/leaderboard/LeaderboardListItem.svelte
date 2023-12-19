@@ -109,8 +109,8 @@
     use:shiftClickAction
   >
     <LeaderboardItemFilterIcon
-      {isBeingCompared}
       {excluded}
+      {isBeingCompared}
       selectionIndex={itemData?.selectedIndex}
     />
     <BarAndLabel

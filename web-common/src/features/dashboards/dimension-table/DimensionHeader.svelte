@@ -44,6 +44,7 @@
         clearDimensionTableSearchString,
       },
       dimensions: { setPrimaryDimension },
+      dimensionsFilter: { toggleDimensionFilterMode },
     },
     metricsViewName,
   } = stateManagers;
@@ -87,7 +88,7 @@
   };
   function toggleFilterMode() {
     cancelDashboardQueries(queryClient, $metricsViewName);
-    metricsExplorerStore.toggleFilterMode($metricsViewName, dimensionName);
+    toggleDimensionFilterMode(dimensionName);
   }
 </script>
 
@@ -155,8 +156,8 @@
     </Tooltip>
 
     <ExportDimensionTableDataButton
-      metricViewName={$metricsViewName}
       includeScheduledReport={$featureFlags.adminServer}
+      metricViewName={$metricsViewName}
     />
   </div>
 </div>

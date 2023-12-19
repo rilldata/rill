@@ -1,3 +1,4 @@
+import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { derived, writable, type Readable } from "svelte/store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
@@ -366,17 +367,9 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
       if (dimensionName) {
         comparing = "dimension";
 
-        const excludeMode =
-          dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ??
-          false;
-        const selectedValues =
-          ((excludeMode
-            ? dashboardStore?.filters.exclude.find(
-                (d) => d.name === dimensionName
-              )?.in
-            : dashboardStore?.filters.include.find(
-                (d) => d.name === dimensionName
-              )?.in) as string[]) ?? [];
+        const selectedValues = selectedDimensionValues({
+          dashboard: dashboardStore,
+        })(dimensionName);
 
         data = prepareDimensionData(
           timeSeries?.timeSeriesData,

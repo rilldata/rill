@@ -6,15 +6,14 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	// Load IANA time zone data
+	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
 )
 
 type MetricsViewComparison struct {
@@ -316,7 +315,9 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		if err != nil {
 			return "", nil, err
 		}
-		baseWhereClause += " AND " + clause
+		if strings.TrimSpace(clause) != "" {
+			baseWhereClause += " AND " + clause
+		}
 
 		args = append(args, clauseArgs...)
 	}
@@ -328,7 +329,9 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		if err != nil {
 			return "", nil, err
 		}
-		havingClause = "HAVING " + havingClause
+		if strings.TrimSpace(havingClause) != "" {
+			havingClause = "HAVING " + havingClause
+		}
 		args = append(args, havingClauseArgs...)
 	}
 
@@ -538,7 +541,9 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		if err != nil {
 			return "", nil, err
 		}
-		baseWhereClause += " AND " + clause
+		if strings.TrimSpace(clause) != "" {
+			baseWhereClause += " AND " + clause
+		}
 
 		args = append(args, clauseArgs...)
 	}
@@ -554,7 +559,9 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		if err != nil {
 			return "", nil, err
 		}
-		comparisonWhereClause += " AND " + clause
+		if strings.TrimSpace(clause) != "" {
+			comparisonWhereClause += " AND " + clause
+		}
 
 		args = append(args, clauseArgs...)
 	}

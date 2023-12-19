@@ -441,8 +441,12 @@ func buildLikeExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Conditio
 }
 
 func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
-	if len(cond.Exprs) <= 1 {
-		return "", nil, fmt.Errorf("in/not in expression should have atleast 2 sub expressions")
+	if len(cond.Exprs) < 1 {
+		return "", nil, fmt.Errorf("in/not in expression should have atleast 1 sub expressions")
+	}
+	if len(cond.Exprs) == 1 {
+		// empty in expression
+		return "", nil, nil
 	}
 
 	leftExpr, args, err := buildExpression(mv, cond.Exprs[0], aliases, dialect)
@@ -520,6 +524,9 @@ func buildAndOrExpressions(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condit
 		clause, subArgs, err := buildExpression(mv, expr, aliases, dialect)
 		if err != nil {
 			return "", nil, err
+		}
+		if strings.TrimSpace(clause) == "" {
+			continue
 		}
 		args = append(args, subArgs...)
 		clauses = append(clauses, fmt.Sprintf("(%s)", clause))

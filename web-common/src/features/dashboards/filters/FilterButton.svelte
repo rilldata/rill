@@ -5,44 +5,78 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import SearchableFilterDropdown from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterDropdown.svelte";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
+  import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
+  import { getHavingFilterExpression } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
+  import { createBinaryExpression } from "@rilldata/web-common/features/dashboards/stores/filter-generators";
+  import { V1Operation } from "@rilldata/web-common/runtime-client";
 </script>
 
 <script lang="ts">
   const {
+    dashboardStore,
     selectors: {
+      measures: { allMeasures },
       dimensions: { allDimensions },
-      dimensionFilters: { getAllFilters, isFilterExcludeMode },
+      dimensionFilters: { dimensionHasFilter },
     },
     actions: {
       dimensionsFilter: { toggleDimensionNameSelection },
+      measuresFilter: { toggleMeasureFilter },
     },
   } = getStateManagers();
 
-  function filterExists(name: string, exclude: boolean): boolean {
-    const selected = exclude
-      ? $getAllFilters?.exclude
-      : $getAllFilters?.include;
+  let isDimension: Record<string, boolean> = {};
+  let selectableItems: Array<SearchableFilterSelectableItem> = [];
+  if ($allDimensions && $allMeasures) {
+    isDimension = {};
+    selectableItems = [];
 
-    return selected?.find((f) => f.name === name) !== undefined;
-  }
-
-  $: selectableItems =
     $allDimensions
-      ?.map((d) => ({
+      .map((d) => ({
         name: d.name as string,
         label: d.label as string,
       }))
-      .filter((d) => {
-        const exclude = $isFilterExcludeMode(d.name);
-        return !filterExists(d.name, exclude);
-      }) ?? [];
+      .filter((d) => !$dimensionHasFilter(d.name))
+      .forEach((d) => {
+        selectableItems.push(d);
+        isDimension[d.name] = true;
+      });
+
+    $allMeasures
+      .map((m) => ({
+        name: m.name as string,
+        label: m.label as string,
+      }))
+      .filter((m) => {
+        return (
+          getHavingFilterExpression({ dashboard: $dashboardStore })(m.name) ===
+          undefined
+        );
+      })
+      .forEach((m) => {
+        selectableItems.push(m);
+        isDimension[m.name] = false;
+      });
+  }
+
+  function filterAdded(name: string) {
+    const dimIdx = $allDimensions?.findIndex((d) => d.name === name);
+    if (dimIdx === undefined || dimIdx === -1) {
+      toggleMeasureFilter(
+        name,
+        createBinaryExpression(name, V1Operation.OPERATION_LT, 0)
+      );
+    } else {
+      toggleDimensionNameSelection(name);
+    }
+  }
 </script>
 
 <WithTogglableFloatingElement
-  distance={8}
   alignment="start"
-  let:toggleFloatingElement
+  distance={8}
   let:active
+  let:toggleFloatingElement
 >
   <Tooltip distance={8} suppress={active}>
     <button class:active on:click={toggleFloatingElement}>
@@ -52,17 +86,17 @@
   </Tooltip>
 
   <SearchableFilterDropdown
-    let:toggleFloatingElement
-    slot="floating-element"
-    selectedItems={[]}
     allowMultiSelect={false}
-    {selectableItems}
-    on:escape={toggleFloatingElement}
+    let:toggleFloatingElement
     on:click-outside={toggleFloatingElement}
+    on:escape={toggleFloatingElement}
     on:item-clicked={(e) => {
       toggleFloatingElement();
-      toggleDimensionNameSelection(e.detail.name);
+      filterAdded(e.detail.name);
     }}
+    {selectableItems}
+    selectedItems={[]}
+    slot="floating-element"
   />
 </WithTogglableFloatingElement>
 
