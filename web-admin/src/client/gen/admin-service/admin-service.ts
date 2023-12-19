@@ -21,6 +21,7 @@ import type {
   AdminServiceCreateWhitelistedDomainBody,
   AdminServiceGetDeploymentCredentialsBody,
   AdminServiceGetGithubRepoStatusParams,
+  AdminServiceGetIFrameBody,
   AdminServiceGetRepoMetaParams,
   AdminServiceGetReportMetaParams,
   AdminServiceGetUserParams,
@@ -70,6 +71,7 @@ import type {
   V1GetDeploymentCredentialsResponse,
   V1GetGitCredentialsResponse,
   V1GetGithubRepoStatusResponse,
+  V1GetIFrameResponse,
   V1GetOrganizationResponse,
   V1GetProjectResponse,
   V1GetProjectVariablesResponse,
@@ -1256,7 +1258,7 @@ export const createAdminServiceLeaveOrganization = <
   return createMutation(mutationOptions);
 };
 /**
- * @summary GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+ * @summary GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
  */
 export const adminServiceGetDeploymentCredentials = (
   organization: string,
@@ -1334,7 +1336,7 @@ export type AdminServiceGetDeploymentCredentialsQueryResult = NonNullable<
 export type AdminServiceGetDeploymentCredentialsQueryError = RpcStatus;
 
 /**
- * @summary GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+ * @summary GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
  */
 export const createAdminServiceGetDeploymentCredentials = <
   TData = Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>,
@@ -1467,6 +1469,76 @@ export const createAdminServiceGetGitCredentials = <
   return query;
 };
 
+/**
+ * @summary GetIFrame returns the iframe URL for the given project
+ */
+export const adminServiceGetIFrame = (
+  organization: string,
+  project: string,
+  adminServiceGetIFrameBody: AdminServiceGetIFrameBody
+) => {
+  return httpClient<V1GetIFrameResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/iframe`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceGetIFrameBody,
+  });
+};
+
+export const getAdminServiceGetIFrameMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceGetIFrame>>,
+    TError,
+    { organization: string; project: string; data: AdminServiceGetIFrameBody },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceGetIFrame>>,
+  TError,
+  { organization: string; project: string; data: AdminServiceGetIFrameBody },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceGetIFrame>>,
+    { organization: string; project: string; data: AdminServiceGetIFrameBody }
+  > = (props) => {
+    const { organization, project, data } = props ?? {};
+
+    return adminServiceGetIFrame(organization, project, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceGetIFrameMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetIFrame>>
+>;
+export type AdminServiceGetIFrameMutationBody = AdminServiceGetIFrameBody;
+export type AdminServiceGetIFrameMutationError = RpcStatus;
+
+/**
+ * @summary GetIFrame returns the iframe URL for the given project
+ */
+export const createAdminServiceGetIFrame = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceGetIFrame>>,
+    TError,
+    { organization: string; project: string; data: AdminServiceGetIFrameBody },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getAdminServiceGetIFrameMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
 /**
  * @summary ListProjectInvites lists all the project invites
  */

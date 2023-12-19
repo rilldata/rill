@@ -6,6 +6,7 @@ This component needs to do the following:
 -->
 <script lang="ts">
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
+  import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
   import {
     Divider,
     Menu,
@@ -30,7 +31,6 @@ This component needs to do the following:
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
   import SelectorButton from "./SelectorButton.svelte";
-  import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
 
   const dispatch = createEventDispatcher();
 
@@ -137,6 +137,7 @@ This component needs to do the following:
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
     on:escape={toggleFloatingElement}
     slot="floating-element"
+    let:toggleFloatingElement
   >
     {#each $timeComparisonOptionsState as option}
       {@const preset = TIME_COMPARISON[option.name]}
@@ -169,7 +170,7 @@ This component needs to do the following:
       open={isCustomRangeOpen}
     />
     {#if isCustomRangeOpen}
-      <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+      <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
         <CustomTimeRangeInput
           {boundaryStart}
           {boundaryEnd}

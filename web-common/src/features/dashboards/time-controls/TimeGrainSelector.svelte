@@ -9,9 +9,7 @@
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import type { V1TimeGrain } from "../../../runtime-client";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
 
-  export let metricViewName: string;
   export let timeGrainOptions: TimeGrain[];
   export let minTimeGrain: V1TimeGrain;
 
@@ -19,9 +17,9 @@
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
-  $: dashboardStore = useDashboardStore(metricViewName);
   $: activeTimeGrain = $timeControlsStore.selectedTimeRange?.interval;
-  $: activeTimeGrainLabel = TIME_GRAIN[activeTimeGrain]?.label;
+  $: activeTimeGrainLabel =
+    activeTimeGrain && TIME_GRAIN[activeTimeGrain]?.label;
 
   $: timeGrains = timeGrainOptions
     ? timeGrainOptions

@@ -6,15 +6,16 @@ It is probably not the most up to date code; but it works very well in practice.
   import { getContext } from "svelte";
   import { contexts } from "../constants";
 
+  import DelayedLabel from "@rilldata/web-common/components/data-graphic/marks/DelayedLabel.svelte";
   import { WithTween } from "../functional-components";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
   import { preventVerticalOverlap } from "./prevent-vertical-overlap";
-  import DelayedLabel from "@rilldata/web-common/components/data-graphic/marks/DelayedLabel.svelte";
 
   const DIMENSION_HOVER_DURATION = 350;
   interface Point {
     x: number;
     y: number;
+    value: string;
     label: string;
     key: string;
     valueColorClass?: string;
@@ -57,7 +58,8 @@ It is probably not the most up to date code; but it works very well in practice.
   let containerWidths = [];
   // let labelWidth = 0;
 
-  $: fanOutLabels = !isDimension || false;
+  let fanOutLabels = true;
+
   // update locations.
   $: nonOverlappingLocations = preventVerticalOverlap(
     point.map((p) => ({
@@ -136,7 +138,6 @@ It is probably not the most up to date code; but it works very well in practice.
 
   let labelWidth = 0;
   /** the full text width */
-  let textWidths = [];
   let transitionalTimeoutForCalculatingLabelWidth;
 
   $: if (container && locations && $xScale && $yScale) {
@@ -149,9 +150,6 @@ It is probably not the most up to date code; but it works very well in practice.
           )
         );
 
-        textWidths = Array.from(
-          container.querySelectorAll(".text-elements")
-        ).map((q: SVGElement) => q.getBoundingClientRect().width);
         if (!Number.isFinite(labelWidth)) {
           labelWidth = 0;
         }
@@ -171,7 +169,7 @@ It is probably not the most up to date code; but it works very well in practice.
 
 <g bind:this={container}>
   {#if showLabels}
-    {#each locations as location, i (location.key || location.label)}
+    {#each locations as location (location.key || location.label)}
       {#if (location.y || location.yRange) && (location.x || location.xRange)}
         <WithTween
           value={location.xRange}
@@ -211,12 +209,15 @@ It is probably not the most up to date code; but it works very well in practice.
                     {visibility}
                   >
                     {#if !location?.yOverride}
-                      {formatValue(location.y)}
+                      {location.value
+                        ? location.value
+                        : formatValue(location.y)}
                     {/if}
                   </tspan>
 
                   <tspan
                     dy=".35em"
+                    dx="0.4em"
                     y={y.label}
                     x={xText - (location?.yOverride ? labelWidth : 0)}
                     {visibility}
@@ -236,6 +237,7 @@ It is probably not the most up to date code; but it works very well in practice.
                 {:else}
                   <tspan
                     dy=".35em"
+                    dx="-0.4em"
                     y={y.label}
                     x={xText - (location?.yOverride ? 0 : labelWidth)}
                     {visibility}
@@ -263,7 +265,9 @@ It is probably not the most up to date code; but it works very well in practice.
                     {visibility}
                   >
                     {#if !location?.yOverride}
-                      {formatValue(location.y)}
+                      {location.value
+                        ? location.value
+                        : formatValue(location.y)}
                     {/if}
                   </tspan>
                 {/if}
@@ -298,5 +302,12 @@ It is probably not the most up to date code; but it works very well in practice.
     paint-order: stroke;
     stroke: white;
     stroke-width: 3px;
+    white-space: pre-wrap;
+    /* Make all characters and numbers of equal width for easy scanibility */
+    font-feature-settings: "case" 0, "cpsp" 0, "dlig" 0, "frac" 0, "dnom" 0,
+      "numr" 0, "salt" 0, "subs" 0, "sups" 0, "tnum", "zero" 0, "ss01", "ss02" 0,
+      "ss03" 0, "ss04" 0, "cv01" 0, "cv02" 0, "cv03" 0, "cv04" 0, "cv05" 0,
+      "cv06" 0, "cv07" 0, "cv08" 0, "cv09" 0, "cv10" 0, "cv11" 0, "calt", "ccmp",
+      "kern";
   }
 </style>

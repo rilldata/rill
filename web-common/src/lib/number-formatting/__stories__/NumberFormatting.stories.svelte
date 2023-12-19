@@ -70,7 +70,7 @@
   }}
 />
 
-<Story name="Intervals (compact)" let:args>
+<Story name="Intervals (compact)">
   <table>
     <tr style="border-bottom: solid 1px #ddd;">
       <td> input formula</td>
@@ -89,7 +89,7 @@
   </table>
 </Story>
 
-<Story name="Intervals (extended)" let:args>
+<Story name="Intervals (extended)">
   <table>
     <tr style="border-bottom: solid 1px #ddd;">
       <!-- <td> input formula</td> -->

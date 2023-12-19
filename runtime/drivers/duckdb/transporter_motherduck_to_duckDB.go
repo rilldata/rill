@@ -45,7 +45,12 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 	tmpTable := fmt.Sprintf("__%s_tmp_postgres", sinkCfg.Table)
 	defer func() {
 		// ensure temporary table is cleaned
-		if err := t.to.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable), Priority: 100}); err != nil {
+		err := t.to.Exec(context.Background(), &drivers.Statement{
+			Query:       fmt.Sprintf("DROP TABLE IF EXISTS %s", tmpTable),
+			Priority:    100,
+			LongRunning: true,
+		})
+		if err != nil {
 			t.logger.Error("failed to drop temp table", zap.String("table", tmpTable), zap.Error(err))
 		}
 	}()
@@ -56,16 +61,18 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		if err != nil {
 			return err
 		}
-		defer res.Close()
 
-		res.Next()
 		var localDB, localSchema string
-		if err := res.Scan(&localDB, &localSchema); err != nil {
-			return err
+		for res.Next() {
+			if err := res.Scan(&localDB, &localSchema); err != nil {
+				_ = res.Close()
+				return err
+			}
 		}
+		_ = res.Close()
 
 		// get token
-		token := config["token"]
+		token, _ := config["token"].(string)
 		if token == "" && config["allow_host_access"].(bool) {
 			token = os.Getenv("motherduck_token")
 		}

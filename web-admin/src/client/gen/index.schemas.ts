@@ -140,13 +140,31 @@ export type AdminServiceListProjectInvitesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceGetDeploymentCredentialsBodyAttrs = {
+export type AdminServiceGetIFrameBodyQuery = { [key: string]: string };
+
+export type AdminServiceGetIFrameBodyAttributes = { [key: string]: any };
+
+export type AdminServiceGetIFrameBody = {
+  attributes?: AdminServiceGetIFrameBodyAttributes;
+  branch?: string;
+  kind?: string;
+  query?: AdminServiceGetIFrameBodyQuery;
+  resource?: string;
+  state?: string;
+  ttlSeconds?: number;
+  userEmail?: string;
+  userId?: string;
+};
+
+export type AdminServiceGetDeploymentCredentialsBodyAttributes = {
   [key: string]: any;
 };
 
 export type AdminServiceGetDeploymentCredentialsBody = {
-  attrs?: AdminServiceGetDeploymentCredentialsBodyAttrs;
+  attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
   branch?: string;
+  ttlSeconds?: number;
+  userEmail?: string;
   userId?: string;
 };
 
@@ -626,6 +644,14 @@ export interface V1GetOrganizationResponse {
   permissions?: V1OrganizationPermissions;
 }
 
+export interface V1GetIFrameResponse {
+  accessToken?: string;
+  iframeSrc?: string;
+  instanceId?: string;
+  runtimeHost?: string;
+  ttlSeconds?: number;
+}
+
 export interface V1GetGithubRepoStatusResponse {
   defaultBranch?: string;
   grantAccessUrl?: string;
@@ -641,9 +667,10 @@ export interface V1GetGitCredentialsResponse {
 }
 
 export interface V1GetDeploymentCredentialsResponse {
-  jwt?: string;
+  accessToken?: string;
+  instanceId?: string;
   runtimeHost?: string;
-  runtimeInstanceId?: string;
+  ttlSeconds?: number;
 }
 
 export interface V1GetCurrentUserResponse {

@@ -2,7 +2,7 @@ import type { StateManagers } from "@rilldata/web-common/features/dashboards/sta
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { derived, type Readable } from "svelte/store";
+import { derived, writable, type Readable, Writable } from "svelte/store";
 import {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
@@ -92,9 +92,9 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
       const interval =
         timeControls.selectedTimeRange?.interval ?? timeControls.minTimeGrain;
 
-      const allMeasures = metricsView.data?.measures.map(
-        (measure) => measure.name
-      );
+      const allMeasures =
+        metricsView.data?.measures?.map((measure) => measure.name as string) ||
+        [];
       let measures = allMeasures;
       if (dashboardStore?.expandedMeasureName) {
         measures = allMeasures.filter(
@@ -118,21 +118,20 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         true
       );
 
-      let comparisonTimeSeries: CreateQueryResult<
-        V1MetricsViewTimeSeriesResponse,
-        unknown
-      >;
-      let comparisonTotals: CreateQueryResult<
-        V1MetricsViewAggregationResponse,
-        unknown
-      >;
+      let comparisonTimeSeries:
+        | CreateQueryResult<V1MetricsViewTimeSeriesResponse, unknown>
+        | Writable<null> = writable(null);
+      let comparisonTotals:
+        | CreateQueryResult<V1MetricsViewAggregationResponse, unknown>
+        | Writable<null> = writable(null);
       if (showComparison) {
         comparisonTimeSeries = createMetricsViewTimeSeries(ctx, measures, true);
         comparisonTotals = createTotalsForMeasure(ctx, measures, true);
       }
 
-      let dimensionTimeSeriesCharts;
-      let dimensionTimeSeriesTable;
+      let dimensionTimeSeriesCharts:
+        | Readable<DimensionDataItem[]>
+        | Writable<null> = writable(null);
       if (dashboardStore?.selectedComparisonDimension) {
         dimensionTimeSeriesCharts = getDimensionValueTimeSeries(
           ctx,
@@ -149,7 +148,6 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
           unfilteredTotals,
           comparisonTotals,
           dimensionTimeSeriesCharts,
-          dimensionTimeSeriesTable,
         ],
         ([
           primary,
@@ -161,31 +159,21 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         ]) => {
           let timeSeriesData = primary?.data?.data;
 
-          if (!primary?.data || !primaryTotal?.data || !unfilteredTotal?.data) {
-            return {
-              isFetching:
-                metricsView.isFetching ||
-                primary?.isFetching ||
-                primaryTotal?.isFetching ||
-                unfilteredTotal?.isFetching,
-            };
-          }
-
-          if (!primary.isFetching) {
+          if (!primary.isFetching && interval) {
             timeSeriesData = prepareTimeSeries(
               primary?.data?.data,
               comparison?.data?.data,
               TIME_GRAIN[interval]?.duration,
-              dashboardStore.selectedTimezone
+              dashboardStore.selectedTimezone || "Etc/UTC"
             );
           }
           return {
-            isFetching: primaryTotal?.isFetching || metricsView?.isFetching,
+            isFetching: !primary?.data && !primaryTotal?.data,
             isError: false, // FIXME Handle errors
             timeSeriesData,
-            total: primaryTotal?.data?.data[0],
-            unfilteredTotal: unfilteredTotal?.data?.data[0],
-            comparisonTotal: comparisonTotal?.data?.data[0],
+            total: primaryTotal?.data?.data?.[0],
+            unfilteredTotal: unfilteredTotal?.data?.data?.[0],
+            comparisonTotal: comparisonTotal?.data?.data?.[0],
             dimensionChartData: (dimensionChart as DimensionDataItem[]) || [],
           };
         }

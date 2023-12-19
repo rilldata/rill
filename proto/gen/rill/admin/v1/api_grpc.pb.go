@@ -60,6 +60,7 @@ const (
 	AdminService_SearchProjectUsers_FullMethodName                    = "/rill.admin.v1.AdminService/SearchProjectUsers"
 	AdminService_ListSuperusers_FullMethodName                        = "/rill.admin.v1.AdminService/ListSuperusers"
 	AdminService_GetDeploymentCredentials_FullMethodName              = "/rill.admin.v1.AdminService/GetDeploymentCredentials"
+	AdminService_GetIFrame_FullMethodName                             = "/rill.admin.v1.AdminService/GetIFrame"
 	AdminService_SetSuperuser_FullMethodName                          = "/rill.admin.v1.AdminService/SetSuperuser"
 	AdminService_SudoGetResource_FullMethodName                       = "/rill.admin.v1.AdminService/SudoGetResource"
 	AdminService_SudoUpdateUserQuotas_FullMethodName                  = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
@@ -177,8 +178,10 @@ type AdminServiceClient interface {
 	SearchProjectUsers(ctx context.Context, in *SearchProjectUsersRequest, opts ...grpc.CallOption) (*SearchProjectUsersResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(ctx context.Context, in *ListSuperusersRequest, opts ...grpc.CallOption) (*ListSuperusersResponse, error)
-	// GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	// GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
 	GetDeploymentCredentials(ctx context.Context, in *GetDeploymentCredentialsRequest, opts ...grpc.CallOption) (*GetDeploymentCredentialsResponse, error)
+	// GetIFrame returns the iframe URL for the given project
+	GetIFrame(ctx context.Context, in *GetIFrameRequest, opts ...grpc.CallOption) (*GetIFrameResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -617,6 +620,15 @@ func (c *adminServiceClient) GetDeploymentCredentials(ctx context.Context, in *G
 	return out, nil
 }
 
+func (c *adminServiceClient) GetIFrame(ctx context.Context, in *GetIFrameRequest, opts ...grpc.CallOption) (*GetIFrameResponse, error) {
+	out := new(GetIFrameResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetIFrame_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error) {
 	out := new(SetSuperuserResponse)
 	err := c.cc.Invoke(ctx, AdminService_SetSuperuser_FullMethodName, in, out, opts...)
@@ -972,8 +984,10 @@ type AdminServiceServer interface {
 	SearchProjectUsers(context.Context, *SearchProjectUsersRequest) (*SearchProjectUsersResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(context.Context, *ListSuperusersRequest) (*ListSuperusersResponse, error)
-	// GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	// GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
 	GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error)
+	// GetIFrame returns the iframe URL for the given project
+	GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -1162,6 +1176,9 @@ func (UnimplementedAdminServiceServer) ListSuperusers(context.Context, *ListSupe
 }
 func (UnimplementedAdminServiceServer) GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDeploymentCredentials not implemented")
+}
+func (UnimplementedAdminServiceServer) GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetIFrame not implemented")
 }
 func (UnimplementedAdminServiceServer) SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSuperuser not implemented")
@@ -2004,6 +2021,24 @@ func _AdminService_GetDeploymentCredentials_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetIFrame_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetIFrameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetIFrame(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetIFrame_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetIFrame(ctx, req.(*GetIFrameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SetSuperuser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetSuperuserRequest)
 	if err := dec(in); err != nil {
@@ -2714,6 +2749,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDeploymentCredentials",
 			Handler:    _AdminService_GetDeploymentCredentials_Handler,
+		},
+		{
+			MethodName: "GetIFrame",
+			Handler:    _AdminService_GetIFrame_Handler,
 		},
 		{
 			MethodName: "SetSuperuser",

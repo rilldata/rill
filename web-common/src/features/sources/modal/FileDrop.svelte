@@ -69,6 +69,7 @@
 
 <Overlay bg="rgba(0,0,0,.6)">
   <div
+    role="presentation"
     class="w-screen h-screen grid place-content-center"
     on:dragenter|preventDefault|stopPropagation
     on:dragleave|preventDefault|stopPropagation

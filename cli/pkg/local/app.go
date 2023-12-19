@@ -304,7 +304,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 
 	// Start debug server on port 6060
 	if a.Debug {
-		group.Go(func() error { return debugserver.ServeHTTP(ctx) })
+		group.Go(func() error { return debugserver.ServeHTTP(ctx, 6060) })
 	}
 
 	// Open the browser when health check succeeds

@@ -74,6 +74,8 @@
     />
     <Menu
       slot="floating-element"
+      let:active
+      let:toggleFloatingElement
       focusOnMount={false}
       minWidth={`${inputEl.clientWidth}px`}
       maxHeight="120px"
@@ -110,7 +112,7 @@
     </Menu>
   </WithTogglableFloatingElement>
   {#if error}
-    <div in:slide|local={{ duration: 200 }} class="text-red-500 text-sm py-px">
+    <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
       {error}
     </div>
   {/if}

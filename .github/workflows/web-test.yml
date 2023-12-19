@@ -75,14 +75,14 @@ jobs:
         run: |-
           npx prettier --check "web-common/**/*"
           npx eslint web-common --quiet
-          npx svelte-check --threshold error --workspace web-common --no-tsconfig --ignore "src/components/(data-graphic|column-profile),src/features/dashboards/(time-series|time-controls),src/features/sources/workspace/SourceWorkspaceHeader.svelte,src/features/models/workspace/ModelWorkspaceHeader.svelte,src/features/dashboards/workspace/Dashboard.svelte"
+          npx svelte-check --threshold error --workspace web-common --no-tsconfig --ignore "src/components/data-graphic,src/features/dashboards/time-series,src/features/dashboards/time-controls/TimeRangeSelector.svelte,src/features/dashboards/time-controls/TimeControls.svelte"
 
       - name: Prettier checks and lint for web local
         if: steps.filter.outputs.local == 'true'
         run: |-
           npx prettier --check "web-local/**/*"
           npx eslint web-local --quiet
-          npx svelte-check --workspace web-local --no-tsconfig --ignore "src/routes/dev,src/routes/\(application\)/(dashboard|model|source)/[name]"
+          npx svelte-check --workspace web-local --no-tsconfig --ignore "src/routes/dev"
 
       - name: Prettier checks and lint for web admin
         if: steps.filter.outputs.admin == 'true'
