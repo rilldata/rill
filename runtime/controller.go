@@ -1123,7 +1123,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 		}
 		if !r.Meta.Hidden {
 			logArgs := []any{slog.String("name", n.Name), slog.String("kind", unqualifiedKind(n.Kind)), slog.Any("error", errCyclicDependency)}
-			c.Logger.Error("Skipping resource", logArgs...)
+			c.Logger.Warn("Skipping resource", logArgs...)
 		}
 		return true, nil
 	}
@@ -1350,7 +1350,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 		errorLevel = true
 	}
 	if errorLevel {
-		c.Logger.Error("Reconcile failed", logArgs...)
+		c.Logger.Warn("Reconcile failed", logArgs...)
 	} else if !inv.isHidden {
 		c.Logger.Info("Reconciled resource", logArgs...)
 	}

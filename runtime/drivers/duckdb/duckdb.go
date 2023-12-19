@@ -49,6 +49,14 @@ var spec = drivers.Spec{
 			Description: "DuckDB SQL query.",
 			Placeholder: "select * from read_csv('data/file.csv', header=true);",
 		},
+		{
+			Key:         "db",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "DB",
+			Description: "Path to external DuckDB database. Use md:<dbname> for motherduckb.",
+			Placeholder: "/path/to/main.db or md:main.db(for motherduck)",
+		},
 	},
 	ConfigProperties: []drivers.PropertySchema{
 		{
@@ -58,18 +66,6 @@ var spec = drivers.Spec{
 }
 
 var motherduckSpec = drivers.Spec{
-	DisplayName: "MotherDuck",
-	Description: "Import data from MotherDuck.",
-	SourceProperties: []drivers.PropertySchema{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from MotherDuck.",
-			Placeholder: "select * from my_db.my_table;",
-		},
-	},
 	ConfigProperties: []drivers.PropertySchema{
 		{
 			Key:    "token",
@@ -813,7 +809,7 @@ func (c *connection) periodicallyCheckConnDurations(d time.Duration) {
 			c.connTimesMu.Lock()
 			for connID, connTime := range c.connTimes {
 				if time.Since(connTime) > maxAcquiredConnDuration {
-					c.logger.Error("duckdb: a connection has been held for more longer than the maximum allowed duration", zap.Int("conn_id", connID), zap.Duration("duration", time.Since(connTime)))
+					c.logger.Error("duckdb: a connection has been held for longer than the maximum allowed duration", zap.Int("conn_id", connID), zap.Duration("duration", time.Since(connTime)))
 				}
 			}
 			c.connTimesMu.Unlock()
