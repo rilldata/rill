@@ -73,7 +73,7 @@
     if ($sourceQuery.data?.source === undefined) {
       console.warn(`$sourceQuery.data?.source must not be undefined`);
     }
-    // CAST SAFETY, FIXME -- not sure if this is safe, but existing
+    // CAST SAFETY, FIXME -- not sure if this is safe, but existing code
     // has not guarded against undefined, so treating as safe for now.
     // Also added warning above to let us know if this is ever undefined.
     source = $sourceQuery.data?.source as V1SourceV2;
@@ -86,7 +86,7 @@
     if (source?.state?.connector === undefined) {
       console.warn(`source?.state?.connector must not be undefined`);
     }
-    // CAST SAFETY, FIXME -- not sure if this is safe, but existing
+    // CAST SAFETY, FIXME -- not sure if this is safe, but existing code
     // has not guarded against undefined, so treating as safe for now.
     // Also added warning above to let us know if this is ever undefined.
     connector = source?.state?.connector as string;
