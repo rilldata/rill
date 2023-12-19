@@ -8,7 +8,8 @@
   import { getContext, onDestroy } from "svelte";
   import { contexts } from "../constants";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
-  import { lineFactory, pathDoesNotDropToZero } from "../utils";
+  import { PlotConfig, lineFactory } from "../utils";
+  import type { Readable } from "svelte/store";
 
   const markID = guidGenerator();
 
@@ -18,9 +19,8 @@
   export let yAccessor = "y";
 
   export let color = "hsla(217,70%, 60%, 1)";
-  export let lineThickness = undefined;
+  export let lineThickness: number | undefined = undefined;
   export let alpha = 1;
-  export let pathDefined = pathDoesNotDropToZero;
 
   export let xMin = undefined;
   export let xMax = undefined;
@@ -46,7 +46,7 @@
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
   const yScale = getContext(contexts.scale("y")) as ScaleStore;
 
-  const config = getContext(contexts.config);
+  const config = getContext<Readable<PlotConfig>>(contexts.config);
 
   onDestroy(() => {
     xMinStore.removeKey(markID);
@@ -62,7 +62,6 @@
       yScale: $yScale,
       curve,
       xAccessor,
-      pathDefined,
     });
   }
 

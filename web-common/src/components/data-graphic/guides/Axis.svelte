@@ -17,7 +17,7 @@ This component will draw an axis on the specified side.
   export let tickLength = 4;
   export let tickBuffer = 4;
 
-  export let fontSize: number = undefined;
+  export let fontSize: number | undefined = undefined;
   export let placement = "middle";
 
   export let labelColor = "fill-gray-600 dark:fill-gray-400";
