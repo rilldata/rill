@@ -297,7 +297,7 @@ func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtim
 	// check if identifier is a dimension
 	for _, dim := range mv.Dimensions {
 		if dim.Name == name {
-			return safeName(metricsViewDimensionColumn(dim)), true
+			return metricsViewDimensionExpression(dim), true
 		}
 	}
 
