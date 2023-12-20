@@ -421,7 +421,7 @@ message MetricsViewTimeSeriesRequest {
   repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
-  TimeGrain time_granularity = 6;
+  TimeGrain time_granularity = 6 [(validate.rules).enum = {not_in: [0]}];
   Expression where = 7;
   Expression having = 11;
   string time_zone = 10;
