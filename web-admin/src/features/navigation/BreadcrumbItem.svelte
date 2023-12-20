@@ -1,10 +1,10 @@
 <script lang="ts">
   import {
     DropdownMenu,
+    DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
-  import DropdownMenuContent from "@rilldata/web-common/components/dropdown-menu/dropdown-menu-content.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";

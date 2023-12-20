@@ -2,13 +2,13 @@
   import { page } from "$app/stores";
   import {
     DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
     DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
-  import DropdownMenuContent from "@rilldata/web-common/components/dropdown-menu/dropdown-menu-content.svelte";
-  import DropdownMenuItem from "@rilldata/web-common/components/dropdown-menu/dropdown-menu-item.svelte";
-  import DropdownMenuSubContent from "@rilldata/web-common/components/dropdown-menu/dropdown-menu-sub-content.svelte";
-  import DropdownMenuSubTrigger from "@rilldata/web-common/components/dropdown-menu/dropdown-menu-sub-trigger.svelte";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";

@@ -3,9 +3,9 @@
   import {
     DropdownMenu,
     DropdownMenuContent,
+    DropdownMenuItem,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
-  import DropdownMenuItem from "@rilldata/web-common/components/dropdown-menu/dropdown-menu-item.svelte";
   import Link from "@rilldata/web-common/components/icons/Link.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
 

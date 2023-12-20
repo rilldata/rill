@@ -1,5 +1,5 @@
 <script lang="ts">
-  import DropdownMenuItem from "@rilldata/web-common/components/dropdown-menu/dropdown-menu-item.svelte";
+  import DropdownMenuItem from "@rilldata/web-common/components/dropdown-menu/DropdownMenuItem.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { Search } from "@rilldata/web-common/components/search";
