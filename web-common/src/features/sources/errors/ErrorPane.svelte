@@ -7,7 +7,7 @@
   import { useSourceFromYaml } from "../selectors";
 
   export let sourceName: string;
-  export let errorMessage: string;
+  export let errorMessage: string | undefined;
 
   // Parse Source YAML client-side
   $: sourceFromYaml = useSourceFromYaml(

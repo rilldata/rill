@@ -73,7 +73,7 @@
       class="h-full border border-gray-300 rounded overflow-auto {isSourceUnsaved &&
         'brightness-90'} transition duration-200"
     >
-      {#if !$allErrors?.length && table !== undefined}
+      {#if !$allErrors?.length}
         {#key sourceName}
           <ConnectedPreviewTable
             objectName={table}
@@ -81,7 +81,7 @@
           />
         {/key}
       {:else}
-        <ErrorPane {sourceName} errorMessage={$allErrors[0].message ?? ""} />
+        <ErrorPane {sourceName} errorMessage={$allErrors[0].message} />
       {/if}
     </div>
   </div>
