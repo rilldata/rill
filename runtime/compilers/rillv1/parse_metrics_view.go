@@ -246,13 +246,6 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
 		}
 		names[lower] = true
-
-		// TODO: reintroduce duplicate column check
-		// lower = strings.ToLower(dim.Column)
-		// if ok := columns[lower]; ok {
-		// 	return fmt.Errorf("found duplicate dimension column name %q", dim.Column)
-		// }
-		// columns[lower] = true
 	}
 
 	measureCount := 0

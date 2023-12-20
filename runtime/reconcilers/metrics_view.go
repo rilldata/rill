@@ -126,7 +126,7 @@ func (r *MetricsViewReconciler) validate(ctx context.Context, mv *runtimev1.Metr
 
 	// Check dimension columns exist
 	for _, d := range mv.Dimensions {
-		err = validateDimension(ctx, olap, t, d, fields)
+		err = validateDimension(ctx, olap, t, d)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("invalid expression for dimension %q: %w", d.Name, err))
 		}
@@ -158,18 +158,9 @@ func validateDimension(
 	olap drivers.OLAPStore,
 	t *drivers.Table,
 	d *runtimev1.MetricsViewSpec_DimensionV2,
-	fields map[string]*runtimev1.StructType_Field,
 ) error {
-	expr := d.Expression
-	if _, isField := fields[expr]; isField {
-		// TODO: find a good place for this modification of dimension
-		d.Column = expr
-		d.Expression = ""
-		// escape columns
-		expr = fmt.Sprintf(`"%s"`, expr)
-	}
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT %s from %s", expr, safeSQLName(t.Name)),
+		Query:  fmt.Sprintf("SELECT %s from %s", d.Expression, safeSQLName(t.Name)),
 		DryRun: true,
 	})
 	// TODO: validate non aggregate function used
