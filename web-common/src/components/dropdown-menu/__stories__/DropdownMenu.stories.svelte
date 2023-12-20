@@ -1,13 +1,17 @@
 <script lang="ts">
   import { Meta, Story } from "@storybook/addon-svelte-csf";
-  import { DropdownMenu, DropdownMenuSub, DropdownMenuTrigger } from "..";
+  import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+  } from "..";
   import { Button } from "../../button";
   import CopyIcon from "../../icons/CopyIcon.svelte";
   import DashboardIcon from "../../icons/DashboardIcon.svelte";
-  import DropdownMenuContent from "../dropdown-menu-content.svelte";
-  import DropdownMenuItem from "../dropdown-menu-item.svelte";
-  import DropdownMenuSubContent from "../dropdown-menu-sub-content.svelte";
-  import DropdownMenuSubTrigger from "../dropdown-menu-sub-trigger.svelte";
 </script>
 
 <Meta title="Components/Dropdown Menu" />
