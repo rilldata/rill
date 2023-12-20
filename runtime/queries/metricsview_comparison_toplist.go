@@ -238,7 +238,6 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		return "", nil, err
 	}
 	colName := safeName(dim.Name)
-	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
 
 	labelMap := make(map[string]string, len(mv.Measures))
 	for _, m := range mv.Measures {
@@ -254,7 +253,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	if dim.Label != "" {
 		dimLabel = safeName(dim.Label)
 	}
-	dimSel, unnestClause := dimensionSelect(mv, dim, unnestColName, dialect)
+	dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
 	selectCols = append(selectCols, dimSel)
 	labelCols = []string{fmt.Sprintf("%s as %s", safeName(dim.Name), dimLabel)}
 
@@ -358,39 +357,32 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
 	}
 
-	groupByCol := colName
-	if dim.Unnest && dialect != drivers.DialectDruid {
-		groupByCol = unnestColName
-	}
-
 	var sql string
 	if export {
 		labelSelectClause := strings.Join(labelCols, ", ")
 		sql = fmt.Sprintf(
-			`SELECT %[9]s FROM (SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s %[10]s %[5]s %[6]s OFFSET %[7]d)`,
+			`SELECT %[8]s FROM (SELECT %[1]s FROM %[2]s %[7]s WHERE %[3]s GROUP BY 1 %[9]s %[4]s %[5]s OFFSET %[6]d)`,
 			selectClause,       // 1
-			groupByCol,         // 2
-			safeName(mv.Table), // 3
-			baseWhereClause,    // 4
-			orderByClause,      // 5
-			limitClause,        // 6
-			q.Offset,           // 7
-			unnestClause,       // 8
-			labelSelectClause,  // 9
-			havingClause,       // 10
+			safeName(mv.Table), // 2
+			baseWhereClause,    // 3
+			orderByClause,      // 4
+			limitClause,        // 5
+			q.Offset,           // 6
+			unnestClause,       // 7
+			labelSelectClause,  // 8
+			havingClause,       // 9
 		)
 	} else {
 		sql = fmt.Sprintf(
-			`SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s %[9]s %[5]s %[6]s OFFSET %[7]d`,
+			`SELECT %[1]s FROM %[2]s %[7]s WHERE %[3]s GROUP BY 1 %[8]s %[4]s %[5]s OFFSET %[6]d`,
 			selectClause,       // 1
-			groupByCol,         // 2
-			safeName(mv.Table), // 3
-			baseWhereClause,    // 4
-			orderByClause,      // 5
-			limitClause,        // 6
-			q.Offset,           // 7
-			unnestClause,       // 8
-			havingClause,       // 9
+			safeName(mv.Table), // 2
+			baseWhereClause,    // 3
+			orderByClause,      // 4
+			limitClause,        // 5
+			q.Offset,           // 6
+			unnestClause,       // 7
+			havingClause,       // 8
 		)
 	}
 
@@ -404,7 +396,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 
 	colName := safeName(dim.Name)
-	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
 
 	labelMap := make(map[string]string, len(mv.Measures))
 	for _, m := range mv.Measures {
@@ -415,7 +406,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 
 	var selectCols []string
-	dimSel, unnestClause := dimensionSelect(mv, dim, unnestColName, dialect)
+	dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
 	selectCols = append(selectCols, dimSel)
 
 	for _, m := range q.Measures {
@@ -676,10 +667,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		LIMIT 10
 		OFFSET 0
 	*/
-	groupByCol := colName
-	if dim.Unnest && dialect != drivers.DialectDruid {
-		groupByCol = unnestColName
-	}
 
 	finalDimName := safeName(q.DimensionName)
 	if export && dim.Label != "" {
@@ -695,11 +682,11 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
   SELECT * from (
 		SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
 			(
-				SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY %[15]s %[12]s 
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY 1 %[12]s 
 			) base
 		%[11]s JOIN
 			(
-				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY %[15]s %[13]s 
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
@@ -707,7 +694,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		%[7]s
 		OFFSET
 			%[8]d
-  ) WHERE %[16]s 
+  ) WHERE %[15]s 
 		`,
 				subSelectClause,       // 1
 				colName,               // 2
@@ -723,18 +710,17 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				baseLimitClause,       // 12
 				comparisonLimitClause, // 13
 				unnestClause,          // 14
-				groupByCol,            // 15
-				havingClause,          // 16
+				havingClause,          // 15
 			)
 		} else {
 			sql = fmt.Sprintf(`
 		SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
 			(
-				SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY %[15]s %[12]s 
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY 1 %[12]s 
 			) base
 		%[11]s JOIN
 			(
-				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY %[15]s %[13]s 
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
@@ -757,7 +743,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				baseLimitClause,       // 12
 				comparisonLimitClause, // 13
 				unnestClause,          // 14
-				groupByCol,            // 15
 			)
 		}
 	} else {

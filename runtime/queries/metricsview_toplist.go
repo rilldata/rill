@@ -194,11 +194,9 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	if err != nil {
 		return "", nil, err
 	}
-	colName := safeName(dim.Name)
-	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
 
 	var selectCols []string
-	dimSel, unnestClause := dimensionSelect(mv, dim, unnestColName, dialect)
+	dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
 	selectCols = append(selectCols, dimSel)
 
 	for _, m := range ms {
@@ -260,17 +258,11 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
 
-	groupByCol := colName
-	if dim.Unnest && dialect != drivers.DialectDruid {
-		groupByCol = unnestColName
-	}
-
-	sql := fmt.Sprintf("SELECT %s FROM %s %s WHERE %s GROUP BY %s %s %s %s OFFSET %d",
+	sql := fmt.Sprintf("SELECT %s FROM %s %s WHERE %s GROUP BY 1 %s %s %s OFFSET %d",
 		strings.Join(selectCols, ", "),
 		safeName(mv.Table),
 		unnestClause,
 		whereClause,
-		groupByCol,
 		havingClause,
 		orderClause,
 		limitClause,

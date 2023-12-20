@@ -340,12 +340,13 @@ func identifierIsUnnest(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expressio
 	return false
 }
 
-func dimensionSelect(mv *runtimev1.MetricsViewSpec, dim *runtimev1.MetricsViewSpec_DimensionV2, unnestColName string, dialect drivers.Dialect) (string, string) {
+func dimensionSelect(mv *runtimev1.MetricsViewSpec, dim *runtimev1.MetricsViewSpec_DimensionV2, dialect drivers.Dialect) (string, string) {
 	colName := safeName(dim.Name)
 	if !dim.Unnest || dialect == drivers.DialectDruid {
 		return fmt.Sprintf(`%s as %s`, metricsViewDimensionExpression(dim), colName), ""
 	}
 
+	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
 	sel := fmt.Sprintf(`%s as %s`, unnestColName, colName)
 	if dim.Expression == "" {
 		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
