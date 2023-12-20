@@ -115,7 +115,7 @@
   }
 
   const onSaveAndRefreshClick = async (tableName: string) => {
-    // no-op if there clientYAML is still null
+    // no-op if the clientYAML is still null
     if ($sourceStore.clientYAML === null) return;
     overlay.set({ title: `Importing ${tableName}.yaml` });
     await saveAndRefresh(tableName, $sourceStore.clientYAML);
