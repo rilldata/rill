@@ -67,30 +67,12 @@
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
   $: file = createRuntimeServiceGetFile(runtimeInstanceId, filePath);
 
-  let source: V1SourceV2;
-  $: {
-    // FIXME: remove warning once API types are available
-    if ($sourceQuery.data?.source === undefined) {
-      console.warn(`$sourceQuery.data?.source must not be undefined`);
-    }
-    // CAST SAFETY, FIXME -- not sure if this is safe, but existing code
-    // has not guarded against undefined, so treating as safe for now.
-    // Also added warning above to let us know if this is ever undefined.
-    source = $sourceQuery.data?.source as V1SourceV2;
-  }
+  let source: V1SourceV2 | undefined;
+  $: source = $sourceQuery.data?.source;
   $: sourceIsReconciling = resourceIsLoading($sourceQuery.data);
 
-  let connector: string;
-  $: {
-    // FIXME: remove warning once API types are available
-    if (source?.state?.connector === undefined) {
-      console.warn(`source?.state?.connector must not be undefined`);
-    }
-    // CAST SAFETY, FIXME -- not sure if this is safe, but existing code
-    // has not guarded against undefined, so treating as safe for now.
-    // Also added warning above to let us know if this is ever undefined.
-    connector = source?.state?.connector as string;
-  }
+  let connector: string | undefined;
+  $: connector = source?.state?.connector;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
@@ -142,6 +124,9 @@
   };
 
   const onRefreshClick = async (tableName: string) => {
+    // no-op if connector is undefined
+    if (connector === undefined) return;
+
     try {
       await refreshSource(connector, tableName, runtimeInstanceId);
     } catch (err) {

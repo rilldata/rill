@@ -47,7 +47,7 @@
   /** source summary information */
   let rowCount;
   let columnCount;
-  let nullPercentage;
+  let nullPercentage: number | undefined;
 
   $: connectorType = formatConnectorType(source);
   $: fileExtension = getFileExtension(source);
@@ -87,17 +87,20 @@
     summaries = getSummaries(sourceName, $runtime?.instanceId, $profileColumns);
   }
 
-  let totalNulls = undefined;
+  let totalNulls: number | undefined = undefined;
 
   $: if (summaries) {
     totalNulls = $summaries.reduce(
-      (total, column) => total + (+column.nullCount || 0),
+      (total, column) => total + (column?.nullCount ?? 0),
       0
     );
   }
   $: {
     const totalCells = profileColumnsCount * cardinality;
-    nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
+    nullPercentage =
+      totalNulls !== undefined
+        ? formatBigNumberPercentage(totalNulls / totalCells)
+        : undefined;
   }
 
   const sourceStore = useSourceStore(sourceName);
@@ -129,12 +132,12 @@
 
         <Tooltip location="left" alignment="start" distance={24}>
           <GridCell side="left" classes="text-gray-600">
-            {#if totalNulls !== undefined}
+            {#if nullPercentage !== undefined}
               {nullPercentage} null
             {/if}
           </GridCell>
           <TooltipContent slot="tooltip-content">
-            {#if totalNulls !== undefined}
+            {#if nullPercentage !== undefined}
               {nullPercentage} of table values are null
             {:else}
               awaiting calculation of total null table values
