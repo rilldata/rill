@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 )
@@ -161,14 +162,10 @@ func TestMetricsViewAggregation_dimension_expression_filters(t *testing.T) {
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{Name: "tld", Desc: true},
 		},
-		Filter: &runtimev1.MetricsViewFilter{
-			Include: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "tld",
-					In:   []*structpb.Value{structpb.NewStringValue("msn.com")},
-				},
-			},
-		},
+		Where: expressionpb.In(
+			expressionpb.Identifier("tld"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("msn.com"))},
+		),
 	})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tr.Data))

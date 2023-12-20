@@ -745,14 +745,10 @@ func TestServer_MetricsViewComparison_dimension_expression(t *testing.T) {
 				Desc: false,
 			},
 		},
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "dom",
-					Like: []string{"%yahoo%"},
-				},
-			},
-		},
+		Where: expressionpb.NotLike(
+			expressionpb.Identifier("dom"),
+			expressionpb.Value(structpb.NewStringValue("%yahoo%")),
+		),
 		Exact: true,
 	})
 	require.NoError(t, err)
@@ -766,6 +762,55 @@ func TestServer_MetricsViewComparison_dimension_expression(t *testing.T) {
 	require.Equal(t, "google.com", tr.Rows[2].DimensionValue.GetStringValue())
 
 	require.Equal(t, "msn.com", tr.Rows[3].DimensionValue.GetStringValue())
+}
+
+func TestServer_MetricsViewComparison_dimension_expression_in_filter(t *testing.T) {
+	t.Parallel()
+	srv, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := srv.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain_parts",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-03T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-04T23:59:00Z"),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: parseTimeToProtoTimeStamps(t, "2022-01-01T00:00:00Z"),
+			End:   parseTimeToProtoTimeStamps(t, "2022-01-02T23:59:00Z"),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name: "measure_0",
+				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+				Desc: false,
+			},
+		},
+		Where: expressionpb.NotIn(
+			expressionpb.Identifier("domain_parts"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("yahoo")), expressionpb.Value(structpb.NewStringValue("google"))},
+		),
+		Exact: true,
+	})
+	require.NoError(t, err)
+	require.Len(t, tr.Rows, 4)
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+
+	require.Equal(t, "instagram", tr.Rows[0].DimensionValue.GetStringValue())
+
+	require.Equal(t, "com", tr.Rows[1].DimensionValue.GetStringValue())
+
+	require.Equal(t, "facebook", tr.Rows[2].DimensionValue.GetStringValue())
+
+	require.Equal(t, "msn", tr.Rows[3].DimensionValue.GetStringValue())
 }
 
 /*
@@ -1157,14 +1202,10 @@ func TestServer_MetricsViewComparison_no_comparison_dimension_expression(t *test
 				Desc: false,
 			},
 		},
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "dom",
-					Like: []string{"%yahoo%"},
-				},
-			},
-		},
+		Where: expressionpb.NotLike(
+			expressionpb.Identifier("dom"),
+			expressionpb.Value(structpb.NewStringValue("%yahoo%")),
+		),
 		Exact: true,
 	})
 	require.NoError(t, err)
@@ -1178,4 +1219,44 @@ func TestServer_MetricsViewComparison_no_comparison_dimension_expression(t *test
 	require.Equal(t, "facebook.com", tr.Rows[2].DimensionValue.GetStringValue())
 
 	require.Equal(t, "google.com", tr.Rows[3].DimensionValue.GetStringValue())
+}
+
+func TestServer_MetricsViewComparison_no_comparison_unnested_dimension_expression_in_filter(t *testing.T) {
+	t.Parallel()
+	srv, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := srv.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain_parts",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name: "measure_0",
+				Desc: false,
+			},
+		},
+		Where: expressionpb.NotIn(
+			expressionpb.Identifier("domain_parts"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("yahoo")), expressionpb.Value(structpb.NewStringValue("google"))},
+		),
+		Exact: true,
+	})
+	require.NoError(t, err)
+	require.Len(t, tr.Rows, 4)
+	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
+
+	require.Equal(t, "instagram", tr.Rows[0].DimensionValue.GetStringValue())
+
+	require.Equal(t, "msn", tr.Rows[1].DimensionValue.GetStringValue())
+
+	require.Equal(t, "facebook", tr.Rows[2].DimensionValue.GetStringValue())
+
+	require.Equal(t, "com", tr.Rows[3].DimensionValue.GetStringValue())
 }
