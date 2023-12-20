@@ -17,6 +17,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/grpc/codes"
@@ -250,7 +251,7 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev
 			} else {
 				if dialect == drivers.DialectDruid {
 					// Druid does not support ILIKE
-					clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(?)", name, notKeyword)
+					clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(CAST(? AS VARCHAR))", name, notKeyword)
 				} else {
 					clause = fmt.Sprintf("%s %s ILIKE ?", name, notKeyword)
 				}
@@ -290,6 +291,342 @@ func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev
 
 	// Done
 	return fmt.Sprintf("AND (%s) ", condsClause), args, nil
+}
+
+func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, name string, dialect drivers.Dialect) (string, bool) {
+	// check if identifier is a dimension
+	for _, dim := range mv.Dimensions {
+		if dim.Name == name {
+			return safeName(metricsViewDimensionColumn(dim)), true
+		}
+	}
+
+	// check if identifier is passed as an alias
+	for _, alias := range aliases {
+		if alias.Alias == name {
+			switch alias.Type {
+			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
+				runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
+				return safeName(alias.Name), true
+			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
+				return safeName(alias.Name + "__previous"), true
+			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
+				return safeName(alias.Name + "__delta_abs"), true
+			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
+				return safeName(alias.Name + "__delta_rel"), true
+			}
+		}
+	}
+
+	// check if identifier is measure but not passed as alias
+	for _, mes := range mv.Measures {
+		if mes.Name == name {
+			return safeName(mes.Name), true
+		}
+	}
+
+	return "", false
+}
+
+func identifierIsUnnest(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression) bool {
+	ident, isIdent := expr.Expression.(*runtimev1.Expression_Ident)
+	if isIdent {
+		for _, dim := range mv.Dimensions {
+			if dim.Name == ident.Ident {
+				return dim.Unnest
+			}
+		}
+	}
+	return false
+}
+
+func buildExpression(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
+	var emptyArg []any
+	switch e := expr.Expression.(type) {
+	case *runtimev1.Expression_Val:
+		arg, err := pbutil.FromValue(e.Val)
+		if err != nil {
+			return "", emptyArg, err
+		}
+		return "?", []any{arg}, nil
+
+	case *runtimev1.Expression_Ident:
+		expr, isIdent := columnIdentifierExpression(mv, aliases, e.Ident, dialect)
+		if !isIdent {
+			return "", emptyArg, fmt.Errorf("unknown column filter: %s", e.Ident)
+		}
+		return expr, emptyArg, nil
+
+	case *runtimev1.Expression_Cond:
+		return buildConditionExpression(mv, e.Cond, aliases, dialect)
+	}
+
+	return "", emptyArg, nil
+}
+
+func buildConditionExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
+	switch cond.Op {
+	case runtimev1.Operation_OPERATION_LIKE, runtimev1.Operation_OPERATION_NLIKE:
+		return buildLikeExpression(mv, cond, aliases, dialect)
+
+	case runtimev1.Operation_OPERATION_IN, runtimev1.Operation_OPERATION_NIN:
+		return buildInExpression(mv, cond, aliases, dialect)
+
+	case runtimev1.Operation_OPERATION_AND:
+		return buildAndOrExpressions(mv, cond, aliases, dialect, " AND ")
+
+	case runtimev1.Operation_OPERATION_OR:
+		return buildAndOrExpressions(mv, cond, aliases, dialect, " OR ")
+
+	default:
+		leftExpr, args, err := buildExpression(mv, cond.Exprs[0], aliases, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+
+		rightExpr, subArgs, err := buildExpression(mv, cond.Exprs[1], aliases, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		args = append(args, subArgs...)
+
+		return fmt.Sprintf("(%s) %s (%s)", leftExpr, conditionExpressionOperation(cond.Op), rightExpr), args, nil
+	}
+}
+
+func buildLikeExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
+	if len(cond.Exprs) != 2 {
+		return "", nil, fmt.Errorf("like/not like expression should have exactly 2 sub expressions")
+	}
+
+	leftExpr, args, err := buildExpression(mv, cond.Exprs[0], aliases, dialect)
+	if err != nil {
+		return "", nil, err
+	}
+
+	rightExpr, subArgs, err := buildExpression(mv, cond.Exprs[1], aliases, dialect)
+	if err != nil {
+		return "", nil, err
+	}
+	args = append(args, subArgs...)
+
+	notKeyword := ""
+	if cond.Op == runtimev1.Operation_OPERATION_NLIKE {
+		notKeyword = "NOT"
+	}
+
+	// identify if immediate identifier has unnest
+	unnest := identifierIsUnnest(mv, cond.Exprs[0])
+
+	var clause string
+	// Build [NOT] len(list_filter("dim", x -> x ILIKE ?)) > 0
+	if unnest && dialect != drivers.DialectDruid {
+		clause = fmt.Sprintf("%s len(list_filter(%s, x -> x %s ILIKE %s)) > 0", notKeyword, leftExpr, notKeyword, rightExpr)
+	} else {
+		if dialect == drivers.DialectDruid {
+			// Druid does not support ILIKE
+			clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(CAST(%s AS VARCHAR))", leftExpr, notKeyword, rightExpr)
+		} else {
+			clause = fmt.Sprintf("%s %s ILIKE %s", leftExpr, notKeyword, rightExpr)
+		}
+	}
+
+	// When you have "dim NOT ILIKE '...'", then NULL values are always excluded.
+	// We need to explicitly include it.
+	if cond.Op == runtimev1.Operation_OPERATION_NLIKE {
+		clause += fmt.Sprintf(" OR %s IS NULL", leftExpr)
+	}
+
+	return clause, args, nil
+}
+
+func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
+	if len(cond.Exprs) <= 1 {
+		return "", nil, fmt.Errorf("in/not in expression should have atleast 2 sub expressions")
+	}
+
+	leftExpr, args, err := buildExpression(mv, cond.Exprs[0], aliases, dialect)
+	if err != nil {
+		return "", nil, err
+	}
+
+	notKeyword := ""
+	exclude := cond.Op == runtimev1.Operation_OPERATION_NIN
+	if exclude {
+		notKeyword = "NOT"
+	}
+
+	inHasNull := false
+	var valClauses []string
+	// Add to args, skipping nulls
+	for _, subExpr := range cond.Exprs[1:] {
+		if v, isVal := subExpr.Expression.(*runtimev1.Expression_Val); isVal {
+			if _, isNull := v.Val.Kind.(*structpb.Value_NullValue); isNull {
+				inHasNull = true
+				continue // Handled later using "dim IS [NOT] NULL" clause
+			}
+		}
+		inVal, subArgs, err := buildExpression(mv, subExpr, aliases, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		args = append(args, subArgs...)
+		valClauses = append(valClauses, inVal)
+	}
+
+	// identify if immediate identifier has unnest
+	unnest := identifierIsUnnest(mv, cond.Exprs[0])
+
+	clauses := make([]string, 0)
+
+	// If there were non-null args, add a "dim [NOT] IN (...)" clause
+	if len(valClauses) > 0 {
+		questionMarks := strings.Join(valClauses, ",")
+		var clause string
+		// Build [NOT] list_has_any("dim", ARRAY[?, ?, ...])
+		if unnest && dialect != drivers.DialectDruid {
+			clause = fmt.Sprintf("%s list_has_any(%s, ARRAY[%s])", notKeyword, leftExpr, questionMarks)
+		} else {
+			clause = fmt.Sprintf("%s %s IN (%s)", leftExpr, notKeyword, questionMarks)
+		}
+		clauses = append(clauses, clause)
+	}
+
+	if inHasNull {
+		// Add null check
+		// NOTE: DuckDB doesn't handle NULL values in an "IN" expression. They must be checked with a "dim IS [NOT] NULL" clause.
+		clauses = append(clauses, fmt.Sprintf("%s IS %s NULL", leftExpr, notKeyword))
+	}
+	var condsClause string
+	if exclude {
+		condsClause = strings.Join(clauses, " AND ")
+	} else {
+		condsClause = strings.Join(clauses, " OR ")
+	}
+	if exclude && !inHasNull && len(clauses) > 0 {
+		// When you have "dim NOT IN (a, b, ...)", then NULL values are always excluded, even if NULL is not in the list.
+		// E.g. this returns zero rows: "select * from (select 1 as a union select null as a) where a not in (1)"
+		// We need to explicitly include it.
+		condsClause += fmt.Sprintf(" OR %s IS NULL", leftExpr)
+	}
+
+	return condsClause, args, nil
+}
+
+func buildAndOrExpressions(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect, joiner string) (string, []any, error) {
+	clauses := make([]string, 0)
+	var args []any
+	for _, expr := range cond.Exprs {
+		clause, subArgs, err := buildExpression(mv, expr, aliases, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		args = append(args, subArgs...)
+		clauses = append(clauses, fmt.Sprintf("(%s)", clause))
+	}
+	return strings.Join(clauses, joiner), args, nil
+}
+
+func conditionExpressionOperation(oprn runtimev1.Operation) string {
+	switch oprn {
+	case runtimev1.Operation_OPERATION_EQ:
+		return "="
+	case runtimev1.Operation_OPERATION_NEQ:
+		return "!="
+	case runtimev1.Operation_OPERATION_LT:
+		return "<"
+	case runtimev1.Operation_OPERATION_LTE:
+		return "<="
+	case runtimev1.Operation_OPERATION_GT:
+		return ">"
+	case runtimev1.Operation_OPERATION_GTE:
+		return ">="
+	}
+	panic(fmt.Sprintf("unknown condition operation: %v", oprn))
+}
+
+func convertFilterToExpression(filter *runtimev1.MetricsViewFilter) *runtimev1.Expression {
+	var exprs []*runtimev1.Expression
+
+	if len(filter.Include) > 0 {
+		var includeExprs []*runtimev1.Expression
+		for _, cond := range filter.Include {
+			domExpr := convertDimensionFilterToExpression(cond, false)
+			if domExpr != nil {
+				includeExprs = append(includeExprs, domExpr)
+			}
+		}
+		exprs = append(exprs, expressionpb.Or(includeExprs))
+	}
+
+	if len(filter.Exclude) > 0 {
+		for _, cond := range filter.Exclude {
+			domExpr := convertDimensionFilterToExpression(cond, true)
+			if domExpr != nil {
+				exprs = append(exprs, domExpr)
+			}
+		}
+	}
+
+	if len(exprs) == 1 {
+		return exprs[0]
+	} else if len(exprs) > 1 {
+		return expressionpb.And(exprs)
+	}
+	return nil
+}
+
+func convertDimensionFilterToExpression(cond *runtimev1.MetricsViewFilter_Cond, exclude bool) *runtimev1.Expression {
+	var inExpr *runtimev1.Expression
+	if len(cond.In) > 0 {
+		var inExprs []*runtimev1.Expression
+		for _, inVal := range cond.In {
+			inExprs = append(inExprs, expressionpb.Value(inVal))
+		}
+		if exclude {
+			inExpr = expressionpb.NotIn(expressionpb.Identifier(cond.Name), inExprs)
+		} else {
+			inExpr = expressionpb.In(expressionpb.Identifier(cond.Name), inExprs)
+		}
+	}
+
+	var likeExpr *runtimev1.Expression
+	if len(cond.Like) == 1 {
+		if exclude {
+			likeExpr = expressionpb.NotLike(expressionpb.Identifier(cond.Name), expressionpb.Value(structpb.NewStringValue(cond.Like[0])))
+		} else {
+			likeExpr = expressionpb.Like(expressionpb.Identifier(cond.Name), expressionpb.Value(structpb.NewStringValue(cond.Like[0])))
+		}
+	} else if len(cond.Like) > 1 {
+		var likeExprs []*runtimev1.Expression
+		for _, l := range cond.Like {
+			col := expressionpb.Identifier(cond.Name)
+			val := expressionpb.Value(structpb.NewStringValue(l))
+			if exclude {
+				likeExprs = append(likeExprs, expressionpb.NotLike(col, val))
+			} else {
+				likeExprs = append(likeExprs, expressionpb.Like(col, val))
+			}
+		}
+		if exclude {
+			likeExpr = expressionpb.And(likeExprs)
+		} else {
+			likeExpr = expressionpb.Or(likeExprs)
+		}
+	}
+
+	if inExpr != nil && likeExpr != nil {
+		if exclude {
+			return expressionpb.And([]*runtimev1.Expression{inExpr, likeExpr})
+		}
+		return expressionpb.Or([]*runtimev1.Expression{inExpr, likeExpr})
+	} else if inExpr != nil {
+		return inExpr
+	} else if likeExpr != nil {
+		return likeExpr
+	}
+
+	return nil
 }
 
 func repeatString(val string, n int) []string {
@@ -620,7 +957,7 @@ func duckDBCopyExport(ctx context.Context, w io.Writer, opts *runtime.ExportOpti
 
 func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsViewSpec) string {
 	filename := strings.ReplaceAll(mv.Table, `"`, `_`)
-	if q.TimeStart != nil || q.TimeEnd != nil || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+	if q.TimeStart != nil || q.TimeEnd != nil || q.Where != nil {
 		filename += "_filtered"
 	}
 	return filename

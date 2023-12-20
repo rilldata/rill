@@ -17,7 +17,13 @@
     $runtime.instanceId,
     modelName
   );
-  $: timestampColumns = $timestampColumnsQuery?.data;
+
+  // CAST SAFETY: must be string[], since we filter out undefined values
+  $: timestampColumns =
+    ($timestampColumnsQuery?.data?.filter(
+      (x) => x !== undefined
+    ) as string[]) ?? [];
+
   $: isReadOnlyDashboard = $featureFlags.readOnly === true;
 
   $: redirectToScreen = timestampColumns?.length > 0 ? "metrics" : "model";

@@ -70,8 +70,8 @@
   export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
 
   /** rollup grain, time range, etc. */
-  export let rollupTimeGrain: V1TimeGrain | undefined;
-  export let estimatedSmallestTimeGrain: V1TimeGrain | undefined;
+  export let rollupTimeGrain: V1TimeGrain;
+  export let estimatedSmallestTimeGrain: V1TimeGrain;
 
   let devicePixelRatio = 1;
   onMount(() => {
@@ -175,8 +175,8 @@
 
   let isZoomed = false;
 
-  let zoomedXStart: Date;
-  let zoomedXEnd: Date;
+  let zoomedXStart: Date | undefined;
+  let zoomedXEnd: Date | undefined;
   // establish basis values
   let xExtents = extent(data, (d) => d[xAccessor]);
   $: xExtents = extent(data, (d) => d[xAccessor]);
@@ -259,11 +259,14 @@
         })
         .reduce((sum, di) => (sum += di[yAccessor]), 0)
     );
-  } else if (zoomedXStart && zoomedXEnd) {
+  } else if (zoomedXStart !== undefined && zoomedXEnd !== undefined) {
+    // these two local constants are needed to appease the compiler.
+    const localXStart = zoomedXStart;
+    const localXEnd = zoomedXEnd;
     zoomedRows = Math.trunc(
       data
         .filter((di) => {
-          return di[xAccessor] >= zoomedXStart && di[xAccessor] <= zoomedXEnd;
+          return di[xAccessor] >= localXStart && di[xAccessor] <= localXEnd;
         })
         .reduce((sum, di) => (sum += di[yAccessor]), 0)
     );
@@ -276,12 +279,12 @@
   let movementTimeout: ReturnType<typeof setTimeout>;
 
   $: zoomMinBound =
-    ($zoomCoords.start.x
+    ($zoomCoords.start.x && $zoomCoords.stop.x
       ? $X.invert(Math.min($zoomCoords.start.x, $zoomCoords.stop.x))
       : min([zoomedXStart, zoomedXEnd])) || xExtents[0];
 
   $: zoomMaxBound =
-    ($zoomCoords.start.x
+    ($zoomCoords.start.x && $zoomCoords.stop.x
       ? $X.invert(Math.max($zoomCoords.start.x, $zoomCoords.stop.x))
       : max([zoomedXStart, zoomedXEnd])) || xExtents[1];
 
@@ -319,7 +322,7 @@
         }, 200);
       }}
       on:scrolling={(event) => {
-        if (isZoomed) {
+        if (isZoomed && zoomedXStart && zoomedXEnd) {
           // clear the tooltip shake effect zeroing timeout.
           clearTimeout(movementTimeout);
           // shake the word "pan" in the tooltip here.
@@ -483,12 +486,12 @@
         $tooltipPanShakeAmount}
         {zoomedRows}
         totalRows={Math.trunc(data.reduce((a, b) => a + b[yAccessor], 0))}
-        zoomed={$zoomCoords.start.x || zoomedXStart}
+        zoomed={$zoomCoords.start.x !== undefined || zoomedXStart !== undefined}
         zooming={zoomedXStart && !$zoomCoords.start.x}
-        zoomWindowXMin={$zoomCoords.start.x
+        zoomWindowXMin={$zoomCoords.start.x && $zoomCoords.stop.x
           ? $X.invert(Math.min($zoomCoords.start.x, $zoomCoords.stop.x))
           : min([zoomedXStart, zoomedXEnd])}
-        zoomWindowXMax={$zoomCoords.stop.x
+        zoomWindowXMax={$zoomCoords.start.x && $zoomCoords.stop.x
           ? $X.invert(Math.max($zoomCoords.start.x, $zoomCoords.stop.x))
           : max([zoomedXStart, zoomedXEnd])}
       />

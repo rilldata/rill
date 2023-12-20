@@ -46,9 +46,10 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           )
           .required("Source name is required"),
       });
-    case "motherduck":
+    case "duckdb":
       return yup.object().shape({
         sql: yup.string().required("sql is required"),
+        db: yup.string().required("db is required"),
         sourceName: yup
           .string()
           .matches(

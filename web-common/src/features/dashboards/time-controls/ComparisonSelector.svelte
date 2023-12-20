@@ -189,7 +189,9 @@ This component needs to do the following:
         <MenuItem
           selected={option.name === intermediateSelection}
           on:before-select={() => {
-            intermediateSelection = option.name;
+            if (option.name) {
+              intermediateSelection = option.name;
+            }
           }}
           on:select={() => {
             enableComparison("dimension", option.name);

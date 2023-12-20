@@ -2,6 +2,7 @@
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
+  import type { Point } from "@rilldata/web-common/components/data-graphic/marks/types";
 
   import { NumberKind } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
@@ -88,8 +89,9 @@
       : undefined;
 
   /** get the final point set*/
+  let pointSet: Point[] = [];
   $: pointSet =
-    showComparison && hasValidComparisonPoint
+    showComparison && comparisonPoint
       ? [comparisonPoint, mainPoint]
       : [mainPoint];
 

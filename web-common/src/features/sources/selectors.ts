@@ -88,7 +88,7 @@ export function useIsLocalFileConnector(
   );
 }
 
-type TableColumnsWithName = {
+export type TableColumnsWithName = {
   tableName: string;
   profileColumns: Array<V1ProfileColumn>;
 };
@@ -116,7 +116,7 @@ export function useAllSourceColumns(
 /**
  * Fetches columns and adds the table name. By using the selector the results will be cached.
  */
-function createTableColumnsWithName(
+export function createTableColumnsWithName(
   queryClient: QueryClient,
   instanceId: string,
   tableName: string

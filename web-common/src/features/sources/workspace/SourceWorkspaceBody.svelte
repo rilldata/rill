@@ -66,7 +66,7 @@
   >
     <SourceEditor {sourceName} {yaml} />
   </div>
-  <HorizontalSplitter />
+  <HorizontalSplitter className="px-5" />
   <div class="p-5" style:height="{$outputPosition}px">
     <div
       class="h-full border border-gray-300 rounded overflow-auto {isSourceUnsaved &&

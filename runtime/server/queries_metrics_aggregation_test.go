@@ -38,7 +38,7 @@ func TestMetricsViewAggregation_Toplist(t *testing.T) {
 
 	require.Equal(t, "yahoo.com", tr.Data[1].Fields["domain"].GetStringValue())
 	require.Equal(t, 1.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
-	require.Equal(t, 1.0, tr.Data[0].Fields["__count"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[1].Fields["__count"].GetNumberValue())
 }
 
 func TestMetricsViewAggregation_Totals(t *testing.T) {

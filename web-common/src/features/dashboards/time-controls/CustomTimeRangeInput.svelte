@@ -64,7 +64,7 @@
     start: Date,
     end: Date,
     minTimeGrain: V1TimeGrain
-  ): string {
+  ): string | undefined {
     const allowedTimeGrains = getAllowedTimeGrains(start, end);
     const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
 
@@ -80,7 +80,7 @@
   }
 
   // HAM, you left off here.
-  let error = undefined;
+  let error: string | undefined = undefined;
   $: if (start && end) {
     error = validateTimeRange(
       parseLocaleStringDate(start),

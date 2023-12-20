@@ -40,3 +40,8 @@ The CLI reference docs in `docs/reference/cli` are auto-generated based on the C
 ```bash
 make docs.generate
 ```
+
+## Hiding content
+
+Sometimes you want to merge documentation but hide it pending a future release, there are a few different short-hands available.  
+For individual pages add `sidebar_class_name: hidden` to the top of the page and to hide an entire category add `className: hidden` to the `_category_.yml` file. Note that the pages are only hidden but still generated so you can still link to them.
