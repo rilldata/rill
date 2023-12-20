@@ -77,6 +77,7 @@
     if (!disabled) {
       hovered = true;
     }
+    dispatch("hover");
   }
 
   function onFocus() {
@@ -84,6 +85,7 @@
       $currentItem = itemID;
       hovered = true;
     }
+    dispatch("focus");
   }
 
   function onBlur() {

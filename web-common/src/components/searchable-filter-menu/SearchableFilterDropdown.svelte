@@ -7,6 +7,7 @@
   import Button from "../button/Button.svelte";
   import { createEventDispatcher } from "svelte";
   import { matchSorter } from "match-sorter";
+  import { hoverTooltip } from "@codemirror/view";
 
   const dispatch = createEventDispatcher();
 
@@ -85,6 +86,12 @@
         icon
         animateSelect={false}
         focusOnMount={false}
+        on:hover={() => {
+          dispatch("hover", { index, name });
+        }}
+        on:focus={() => {
+          dispatch("focus", { index, name });
+        }}
         on:select={() => {
           if (singleSelection && selected) return;
           dispatch("item-clicked", { index, name });

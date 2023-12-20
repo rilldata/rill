@@ -55,6 +55,8 @@
     selectedItems={[]}
     allowMultiSelect={false}
     {selectableItems}
+    on:hover
+    on:focus
     on:escape={toggleFloatingElement}
     on:click-outside={toggleFloatingElement}
     on:item-clicked={(e) => {

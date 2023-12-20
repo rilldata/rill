@@ -50,7 +50,7 @@ The main feature-set component for dashboard filters
   $: dimensions = $metaQuery.data?.dimensions ?? [];
 
   let searchText = "";
-  let allValues: string[] | null = null;
+  let allValues: Record<string, string[]> = {};
   let activeDimensionName: string;
   let topListQuery: ReturnType<typeof getFilterSearchList> | undefined;
 
@@ -70,7 +70,8 @@ The main feature-set component for dashboard filters
 
   $: if (!$topListQuery?.isFetching) {
     const topListData = $topListQuery?.data?.data ?? [];
-    allValues = topListData.map((datum) => datum[activeColumn]) ?? [];
+    allValues[activeDimensionName] =
+      topListData.map((datum) => datum[activeColumn]) ?? [];
   }
 
   $: hasFilters = isFiltered($dashboardStore.filters);
@@ -174,7 +175,7 @@ The main feature-set component for dashboard filters
             colors={getColorForChip(isInclude)}
             label="View filter"
             {selectedValues}
-            {allValues}
+            allValues={allValues[activeDimensionName]}
           >
             <svelte:fragment slot="body-tooltip-content">
               Click to edit the the filters in this dimension
@@ -183,7 +184,14 @@ The main feature-set component for dashboard filters
         </div>
       {/each}
     {/if}
-    <FilterButton />
+    <FilterButton
+      on:focus={({ detail: { name } }) => {
+        activeDimensionName = name;
+      }}
+      on:hover={({ detail: { name } }) => {
+        activeDimensionName = name;
+      }}
+    />
     <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
     {#if hasFilters}
