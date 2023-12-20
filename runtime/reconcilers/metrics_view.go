@@ -160,9 +160,15 @@ func validateDimension(
 	d *runtimev1.MetricsViewSpec_DimensionV2,
 ) error {
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT %s from %s", d.Expression, safeSQLName(t.Name)),
+		Query:  fmt.Sprintf("SELECT %s from %s GROUP BY 1", d.Expression, safeSQLName(t.Name)),
 		DryRun: true,
 	})
+	if err == nil {
+		return nil
+	}
+	if strings.Contains(err.Error(), "GROUP BY clause cannot contain aggregates") {
+		return fmt.Errorf("dimension expression cannot have aggregates")
+	}
 	// TODO: validate non aggregate function used
 	return err
 }
