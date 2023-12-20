@@ -97,7 +97,7 @@ measures:
 	mvSpec := &runtimev1.MetricsViewSpec{
 		Connector:  "duckdb",
 		Table:      "bar",
-		Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", Expression: "a"}},
+		Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", Column: "a"}},
 		Measures:   []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", Expression: "count(*)"}},
 	}
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
@@ -1272,12 +1272,12 @@ func newMetricsView(name, table string, measures, dimensions []string) (*runtime
 	}
 	for i, dimension := range dimensions {
 		metrics.Spec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
-			Name:       dimension,
-			Expression: dimension,
+			Name:   dimension,
+			Column: dimension,
 		}
 		metrics.State.ValidSpec.Dimensions[i] = &runtimev1.MetricsViewSpec_DimensionV2{
-			Name:       dimension,
-			Expression: dimension,
+			Name:   dimension,
+			Column: dimension,
 		}
 	}
 	metricsRes := &runtimev1.Resource{

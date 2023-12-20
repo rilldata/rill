@@ -234,13 +234,6 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			}
 		}
 
-		// Backwards compatibility
-		if dim.Column != "" {
-			dim.Expression = dim.Column
-		} else if dim.Expression == "" {
-			dim.Expression = dim.Name
-		}
-
 		lower := strings.ToLower(dim.Name)
 		if ok := names[lower]; ok {
 			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
@@ -425,6 +418,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dim.Name,
+			Column:      dim.Column,
 			Expression:  dim.Expression,
 			Label:       dim.Label,
 			Description: dim.Description,

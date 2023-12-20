@@ -126,9 +126,9 @@ func (r *MetricsViewReconciler) validate(ctx context.Context, mv *runtimev1.Metr
 
 	// Check dimension columns exist
 	for _, d := range mv.Dimensions {
-		err = validateDimension(ctx, olap, t, d)
+		err = validateDimension(ctx, olap, t, d, fields)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("invalid expression for dimension %q: %w", d.Name, err))
+			errs = append(errs, err)
 		}
 	}
 
@@ -158,7 +158,18 @@ func validateDimension(
 	olap drivers.OLAPStore,
 	t *drivers.Table,
 	d *runtimev1.MetricsViewSpec_DimensionV2,
+	fields map[string]*runtimev1.StructType_Field,
 ) error {
+	if d.Expression == "" {
+		if d.Column == "" {
+			return nil
+		}
+		if _, isColumn := fields[d.Column]; !isColumn {
+			return fmt.Errorf("column not found: %s", d.Column)
+		}
+		return nil
+	}
+
 	err := olap.Exec(ctx, &drivers.Statement{
 		Query:  fmt.Sprintf("SELECT %s from %s GROUP BY 1", d.Expression, safeSQLName(t.Name)),
 		DryRun: true,
@@ -169,8 +180,7 @@ func validateDimension(
 	if strings.Contains(err.Error(), "GROUP BY clause cannot contain aggregates") {
 		return fmt.Errorf("dimension expression cannot have aggregates")
 	}
-	// TODO: validate non aggregate function used
-	return err
+	return fmt.Errorf("invalid expression for dimension %q: %w", d.Name, err)
 }
 
 func validateMeasure(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, m *runtimev1.MetricsViewSpec_MeasureV2) error {
