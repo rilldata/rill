@@ -13,7 +13,7 @@
 
   export let containerWidth = 0;
   // const queryClient = useQueryClient();
-  export let objectName: string;
+  export let objectName: string | undefined;
   export let indentLevel = 0;
 
   let mode = "summaries";
@@ -28,33 +28,28 @@
     return () => observer.unobserve(container);
   });
 
-  // get all column profiles.
-  let profileColumns;
-  $: profileColumns = createQueryServiceTableColumns(
-    $runtime?.instanceId,
-    objectName,
-    {},
-    { query: { keepPreviousData: true } }
-  );
+  $: profileColumns =
+    objectName === undefined
+      ? undefined
+      : createQueryServiceTableColumns(
+          $runtime?.instanceId,
+          objectName,
+          {},
+          { query: { keepPreviousData: true } }
+        );
 
   /** get single example */
-  let exampleValue;
-  $: exampleValue = createQueryServiceTableRows(
-    $runtime?.instanceId,
-    objectName,
-    {
-      limit: 1,
-    }
-  );
+  $: exampleValue =
+    objectName === undefined
+      ? undefined
+      : createQueryServiceTableRows($runtime?.instanceId, objectName, {
+          limit: 1,
+        });
 
-  let nestedColumnProfileQuery;
-  $: if ($profileColumns?.data?.profileColumns) {
-    nestedColumnProfileQuery = getSummaries(
-      objectName,
-      $runtime?.instanceId,
-      $profileColumns
-    );
-  }
+  $: nestedColumnProfileQuery =
+    objectName !== undefined && $profileColumns?.data?.profileColumns
+      ? getSummaries(objectName, $runtime?.instanceId, $profileColumns)
+      : undefined;
 
   $: profile = $nestedColumnProfileQuery;
   let sortedProfile;
@@ -96,7 +91,7 @@
 </div>
 
 <div class="pb-4">
-  {#if sortedProfile && exampleValue}
+  {#if sortedProfile && exampleValue && objectName}
     {#each sortedProfile as column (column.name)}
       {@const hideRight = containerWidth < COLUMN_PROFILE_CONFIG.hideRight}
       {@const hideNullPercentage =

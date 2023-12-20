@@ -35,7 +35,7 @@
   $: runtimeInstanceId = $runtime.instanceId;
 
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
-  let source: V1SourceV2;
+  let source: V1SourceV2 | undefined;
   $: source = $sourceQuery.data?.source;
 
   let showColumns = true;
@@ -49,8 +49,8 @@
   let columnCount;
   let nullPercentage: number | undefined;
 
-  $: connectorType = formatConnectorType(source);
-  $: fileExtension = getFileExtension(source);
+  $: connectorType = source && formatConnectorType(source);
+  $: fileExtension = source && getFileExtension(source);
 
   $: cardinalityQuery = createQueryServiceTableCardinality(
     $runtime.instanceId,
