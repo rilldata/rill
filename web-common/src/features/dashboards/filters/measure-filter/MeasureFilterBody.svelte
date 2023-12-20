@@ -1,60 +1,33 @@
+<!-- @component
+  renders the body content of a filter set chip:
+  - a label for the current dimension
+  - a certain number of "show" values (default 1)
+  - an indication of how many other dimensions are selected past the show values
+-->
 <script lang="ts">
-  import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
-  import SelectMenu from "@rilldata/web-common/components/menu/compositions/SelectMenu.svelte";
-  import type { SelectMenuItem } from "@rilldata/web-common/components/menu/types";
-  import { V1Operation } from "@rilldata/web-common/runtime-client";
+  import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
+  export let label: string | undefined;
   export let expr: V1Expression | undefined;
-
-  const options: Array<SelectMenuItem> = [
-    {
-      key: V1Operation.OPERATION_EQ,
-      main: "=",
-    },
-    {
-      key: V1Operation.OPERATION_NEQ,
-      main: "!=",
-    },
-    {
-      key: V1Operation.OPERATION_LT,
-      main: "<",
-    },
-    {
-      key: V1Operation.OPERATION_LTE,
-      main: "<=",
-    },
-    {
-      key: V1Operation.OPERATION_GT,
-      main: ">",
-    },
-    {
-      key: V1Operation.OPERATION_GTE,
-      main: ">=",
-    },
-    // TODO
-    // {
-    //   key: "b",
-    //   main: "Between",
-    // },
-    // {
-    //   key: "nb",
-    //   main: "Not Between",
-    // },
-  ];
-  $: selection = options.find((o) => o.key === expr.cond?.op);
-  $: val1 = expr?.cond?.exprs?.[1]?.val as string;
-  let err1: string;
-  $: val2 = expr?.cond?.exprs?.[2]?.val as string;
-  let err2: string;
-
-  $: console.log(selection, val1, err1, val2, err2);
+  export let labelMaxWidth = "160px";
+  export let active = false;
 </script>
 
-<SelectMenu ariaLabel="Select a filter for measure" bind:selection {options} />
-{#if selection}
-  <InputV2 bind:value={val1} bind:error={err1} />
-  {#if selection.key === "b" || selection.key === "nb"}
-    <InputV2 bind:value={val2} bind:error={err2} />
-  {/if}
-{/if}
+<div class="flex gap-x-2">
+  <div
+    class="font-bold text-ellipsis overflow-hidden whitespace-nowrap"
+    style:max-width={labelMaxWidth}
+  >
+    {label}
+  </div>
+  <div class="flex flex-wrap flex-row items-baseline gap-y-1">
+    {expr?.cond?.exprs?.[1].val}
+    <IconSpaceFixer className="pl-1" pullRight>
+      <div class="transition-transform" class:-rotate-180={active}>
+        <CaretDownIcon className="inline" size="10px" />
+      </div>
+    </IconSpaceFixer>
+  </div>
+</div>

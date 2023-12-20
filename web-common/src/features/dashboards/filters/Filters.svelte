@@ -36,6 +36,7 @@ The main feature-set component for dashboard filters
         toggleDimensionValueSelection,
         toggleDimensionFilterMode,
       },
+      measuresFilter: { toggleMeasureFilter },
     },
   } = StateManagers;
 
@@ -126,7 +127,7 @@ The main feature-set component for dashboard filters
   </div>
 
   <ChipContainer>
-    {#if !currentDimensionFilters.length && !currentDimensionFilters.length}
+    {#if !currentDimensionFilters.length && !currentMeasureFilters.length}
       <div
         in:fly|local={{ duration: 200, x: 8 }}
         class="ui-copy-disabled grid items-center"
@@ -168,7 +169,13 @@ The main feature-set component for dashboard filters
       {/each}
       {#each currentMeasureFilters as { name, label, expr } (name)}
         <div animate:flip={{ duration: 200 }}>
-          <MeasureFilter {name} {label} {expr} />
+          <MeasureFilter
+            on:remove={() => toggleMeasureFilter(name, expr)}
+            colors={defaultChipColors}
+            {name}
+            {label}
+            {expr}
+          />
         </div>
       {/each}
     {/if}

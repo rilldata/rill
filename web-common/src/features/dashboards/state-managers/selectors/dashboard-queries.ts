@@ -47,7 +47,8 @@ export function dimensionTableSortedQueryBody(
     sortingSelectors.sortMeasure(dashData),
     sortingSelectors.sortType(dashData),
     sortingSelectors.sortedAscending(dashData),
-    filters
+    filters,
+    dashData.dashboard.havingFilter
   );
 }
 
@@ -76,7 +77,8 @@ export function leaderboardSortedQueryBody(
       sortingSelectors.sortMeasure(dashData),
       sortingSelectors.sortType(dashData),
       sortingSelectors.sortedAscending(dashData),
-      getFiltersForOtherDimensions(dashData)(dimensionName)
+      getFiltersForOtherDimensions(dashData)(dimensionName),
+      dashData.dashboard.havingFilter
     );
 }
 

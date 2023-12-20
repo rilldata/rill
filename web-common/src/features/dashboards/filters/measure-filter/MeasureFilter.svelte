@@ -9,6 +9,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import MeasureFilterBody from "@rilldata/web-common/features/dashboards/filters/measure-filter/MeasureFilterBody.svelte";
+  import MeasureFilterMenu from "@rilldata/web-common/features/dashboards/filters/measure-filter/MeasureFilterMenu.svelte";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
@@ -21,10 +22,15 @@
   let active = expr !== undefined;
 
   const dispatch = createEventDispatcher();
+
+  function handleDismiss() {
+    active = false;
+  }
 </script>
 
 <WithTogglableFloatingElement
   alignment="start"
+  bind:active
   distance={8}
   let:toggleFloatingElement
 >
@@ -53,7 +59,7 @@
         </slot>
       </svelte:fragment>
       <!-- body -->
-      <MeasureFilterBody {expr} slot="body" />
+      <MeasureFilterBody {expr} {label} slot="body" />
     </Chip>
     <div slot="tooltip-content" transition:fly={{ duration: 100, y: 4 }}>
       <TooltipContent maxWidth="400px">
@@ -67,4 +73,11 @@
       </TooltipContent>
     </div>
   </Tooltip>
+  <MeasureFilterMenu
+    {expr}
+    {name}
+    on:click-outside={handleDismiss}
+    on:escape={handleDismiss}
+    slot="floating-element"
+  />
 </WithTogglableFloatingElement>
