@@ -1,17 +1,18 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import {
-    Popover,
-    PopoverButton,
-    PopoverPanel,
-  } from "@rgossiaux/svelte-headlessui";
-  import { MenuItem } from "@rilldata/web-common/components/menu";
-  import Menu from "@rilldata/web-common/components/menu/core/Menu.svelte";
-  import { createPopperActions } from "svelte-popperjs";
+    DropdownMenu,
+    DropdownMenuSub,
+    DropdownMenuTrigger,
+  } from "@rilldata/web-common/components/dropdown-menu";
+  import DropdownMenuContent from "@rilldata/web-common/components/dropdown-menu/dropdown-menu-content.svelte";
+  import DropdownMenuItem from "@rilldata/web-common/components/dropdown-menu/dropdown-menu-item.svelte";
+  import DropdownMenuSubContent from "@rilldata/web-common/components/dropdown-menu/dropdown-menu-sub-content.svelte";
+  import DropdownMenuSubTrigger from "@rilldata/web-common/components/dropdown-menu/dropdown-menu-sub-trigger.svelte";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
-  import ViewAsUserMenuItem from "../view-as-user/ViewAsUserMenuItem.svelte";
+  import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -32,64 +33,45 @@
   }
 
   const isDev = process.env.NODE_ENV === "development";
-
-  // Position the Menu popover
-  const [popperRef1, popperContent1] = createPopperActions();
-  const popperOptions1 = {
-    placement: "bottom-end",
-    strategy: "fixed",
-    modifiers: [{ name: "offset", options: { offset: [0, 4] } }],
-  };
-
-  // Position the View As User popover
-  const [popperRef2, popperContent2] = createPopperActions();
 </script>
 
-<Popover class="relative" let:close={close1}>
-  <PopoverButton use={[popperRef1]}>
+<DropdownMenu>
+  <DropdownMenuTrigger>
     <img
       src={$user.data?.user?.photoUrl}
       alt="avatar"
       class="h-7 inline-flex items-center rounded-full cursor-pointer"
       referrerpolicy={isDev ? "no-referrer" : ""}
     />
-  </PopoverButton>
-  <PopoverPanel
-    use={[popperRef2, [popperContent1, popperOptions1]]}
-    class="max-w-fit absolute z-[1000]"
-  >
-    <Menu minWidth="0px" focusOnMount={false} paddingBottom={0} paddingTop={0}>
-      {#if $page.params.organization && $page.params.project && $page.params.dashboard}
-        <ProjectAccessControls
-          organization={$page.params.organization}
-          project={$page.params.project}
-        >
-          <svelte:fragment slot="manage-project">
-            <ViewAsUserMenuItem
-              popperContent={popperContent2}
-              on:select-user={() => close1(undefined)}
-            />
-          </svelte:fragment>
-        </ProjectAccessControls>
-      {/if}
-
-      <MenuItem
-        focusOnMount={false}
-        on:select={() => {
-          // handleClose();
-          handleDocumentation();
-        }}>Documentation</MenuItem
+  </DropdownMenuTrigger>
+  <DropdownMenuContent>
+    {#if $page.params.organization && $page.params.project && $page.params.dashboard}
+      <ProjectAccessControls
+        organization={$page.params.organization}
+        project={$page.params.project}
       >
-      <MenuItem focusOnMount={false} on:select={() => handleAskForHelp()}
-        >Ask for help</MenuItem
-      >
-      <MenuItem
-        focusOnMount={false}
-        on:select={() => {
-          // handleClose();
-          handleLogOut();
-        }}>Logout</MenuItem
-      >
-    </Menu>
-  </PopoverPanel>
-</Popover>
+        <svelte:fragment slot="manage-project">
+          <!-- TODO: open this on click, rather than on hover  -->
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>View as</DropdownMenuSubTrigger>
+            <DropdownMenuSubContent
+              class="min-w-[150px] max-w-[300px] min-h-[150px] max-h-[190px]"
+            >
+              <ViewAsUserPopover
+                organization={$page.params.organization}
+                project={$page.params.project}
+              />
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+        </svelte:fragment>
+      </ProjectAccessControls>
+    {/if}
+    <DropdownMenuItem on:click={handleDocumentation}>
+      Documentation
+    </DropdownMenuItem>
+    <DropdownMenuItem on:click={handleAskForHelp}>
+      Ask for help
+    </DropdownMenuItem>
+    <DropdownMenuItem on:click={handleLogOut}>Logout</DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
