@@ -7,7 +7,6 @@
   import Button from "../button/Button.svelte";
   import { createEventDispatcher } from "svelte";
   import { matchSorter } from "match-sorter";
-  import { hoverTooltip } from "@codemirror/view";
 
   const dispatch = createEventDispatcher();
 
