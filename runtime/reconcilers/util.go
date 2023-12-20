@@ -228,31 +228,32 @@ func resolveTemplatedProps(ctx context.Context, c *runtime.Controller, self comp
 }
 
 func convert(value any, templateData *compilerv1.TemplateData) (res any, err error) {
-	if strValue, ok := value.(string); ok {
-		res, err = compilerv1.ResolveTemplate(strValue, *templateData)
+	switch v := value.(type) {
+	case string:
+		res, err = compilerv1.ResolveTemplate(v, *templateData)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve template: %w", err)
 		}
-	} else if mapValue, ok := value.(map[string]any); ok {
-		for key, item := range mapValue {
+	case map[string]any:
+		for key, item := range v {
 			item, err = convert(item, templateData)
 			if err != nil {
 				return nil, err
 			}
-			mapValue[key] = item
+			v[key] = item
 		}
-		res = mapValue
-	} else if sliceValue, ok := value.([]any); ok {
-		for i, item := range sliceValue {
+		res = v
+	case []any:
+		for i, item := range v {
 			item, err = convert(item, templateData)
 			if err != nil {
 				return nil, err
 			}
-			sliceValue[i] = item
+			v[i] = item
 		}
-		res = sliceValue
-	} else {
-		res = value
+		res = v
+	default:
+		res = v
 	}
 	return
 }
