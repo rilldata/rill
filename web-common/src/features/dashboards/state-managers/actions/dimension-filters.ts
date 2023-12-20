@@ -1,6 +1,7 @@
 import { removeIfExists } from "@rilldata/web-common/lib/arrayUtils";
 import type { DashboardMutables } from "./types";
 import { filtersForCurrentExcludeMode } from "../selectors/dimension-filters";
+import { potentialFilterName } from "../../filters/Filters.svelte";
 
 export function toggleDimensionValueSelection(
   { dashboard, cancelQueries }: DashboardMutables,
@@ -26,6 +27,7 @@ export function toggleDimensionValueSelection(
     if (removeIfExists(filtersIn, (value) => value === dimensionValue)) {
       if (filtersIn.length === 0) {
         filters.splice(dimensionEntryIndex, 1);
+        potentialFilterName.set(dimensionName);
       }
       return;
     }
