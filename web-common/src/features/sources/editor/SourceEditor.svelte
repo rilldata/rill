@@ -66,7 +66,7 @@
     // Save the source, if it's unsaved
     if (!isSourceUnsaved) return;
     overlay.set({ title: `Importing ${sourceName}.yaml` });
-    await saveAndRefresh(sourceName, $sourceStore.clientYAML);
+    await saveAndRefresh(sourceName, $sourceStore.clientYAML ?? undefined);
     checkSourceImported(queryClient, sourceName, filePath);
     overlay.set(null);
   }
@@ -79,7 +79,7 @@
     <YAMLEditor
       bind:this={editor}
       bind:view
-      content={$sourceStore.clientYAML}
+      content={$sourceStore.clientYAML ?? ""}
       on:update={handleUpdate}
     />
   </div>
