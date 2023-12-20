@@ -7,7 +7,7 @@ export function hasDuckDBUnicodeError(message: string) {
 }
 
 export function humanReadableErrorMessage(
-  connectorName: string,
+  connectorName: string | undefined,
   code: number,
   message: string
 ) {

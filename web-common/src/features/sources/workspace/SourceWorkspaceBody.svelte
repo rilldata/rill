@@ -54,6 +54,7 @@
     $sourceStore.clientYAML
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
+  $: table = $sourceQuery?.data?.source?.state?.table;
 </script>
 
 <svelte:window bind:innerHeight />
@@ -72,15 +73,15 @@
       class="h-full border border-gray-300 rounded overflow-auto {isSourceUnsaved &&
         'brightness-90'} transition duration-200"
     >
-      {#if !$allErrors?.length}
+      {#if !$allErrors?.length && table !== undefined}
         {#key sourceName}
           <ConnectedPreviewTable
-            objectName={$sourceQuery?.data?.source?.state?.table}
+            objectName={table}
             loading={resourceIsLoading($sourceQuery?.data)}
           />
         {/key}
       {:else}
-        <ErrorPane {sourceName} errorMessage={$allErrors[0].message} />
+        <ErrorPane {sourceName} errorMessage={$allErrors[0].message ?? ""} />
       {/if}
     </div>
   </div>
