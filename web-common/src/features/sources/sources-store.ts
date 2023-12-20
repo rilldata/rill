@@ -11,10 +11,10 @@ export const duplicateSourceAction: Writable<DuplicateActions> = writable(
   DuplicateActions.None
 );
 
-export const duplicateSourceName: Writable<string> = writable(null);
+export const duplicateSourceName: Writable<string | null> = writable(null);
 
 interface SourceStore {
-  clientYAML: string;
+  clientYAML: string | null;
 }
 
 // Dictionary of source stores
@@ -32,4 +32,4 @@ export function useSourceStore(sourceName: string): Writable<SourceStore> {
   return sourceStores[sourceName];
 }
 
-export const sourceImportedName = writable<string>(null);
+export const sourceImportedName = writable<string | null>(null);

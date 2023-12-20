@@ -148,6 +148,8 @@ export function useCreateDashboardFromSourceUIAction(
 
     // Wait for source query to have data
     await waitUntil(() => !!get(sourceQuery).data);
+    if (!get(sourceQuery).data)
+      throw new Error("Failed to create dashboard: Source is not ready");
 
     try {
       await get(createDashboardFromSourceMutation).mutateAsync({
