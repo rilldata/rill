@@ -54,7 +54,6 @@
     $sourceStore.clientYAML
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
-  $: table = $sourceQuery?.data?.source?.state?.table;
 </script>
 
 <svelte:window bind:innerHeight />
@@ -76,7 +75,7 @@
       {#if !$allErrors?.length}
         {#key sourceName}
           <ConnectedPreviewTable
-            objectName={table}
+            objectName={$sourceQuery?.data?.source?.state?.table}
             loading={resourceIsLoading($sourceQuery?.data)}
           />
         {/key}
