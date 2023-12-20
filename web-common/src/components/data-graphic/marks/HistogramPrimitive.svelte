@@ -21,8 +21,8 @@ it to do any automatic binning of data, which is done server-side.
   export let yAccessor;
   export let inferXExtent = true;
   export let inferYExtent = true;
-  export let xMin: number = undefined;
-  export let xMax: number = undefined;
+  export let xMin: number | undefined = undefined;
+  export let xMax: number | undefined = undefined;
   export let yMin = undefined;
   export let yMax = undefined;
   export let lineThickness = 1;

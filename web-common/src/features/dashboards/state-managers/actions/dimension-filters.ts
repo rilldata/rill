@@ -38,6 +38,34 @@ export function toggleDimensionValueSelection(
   }
 }
 
+export function toggleDimensionNameSelection(
+  { dashboard, cancelQueries }: DashboardMutables,
+  dimensionName: string
+) {
+  const filters = filtersForCurrentExcludeMode({ dashboard })(dimensionName);
+  // if there are no filters at this point we cannot update anything.
+  if (filters === undefined) {
+    return;
+  }
+
+  // if we are able to update the filters, we must cancel any queries
+  // that are currently running.
+  cancelQueries();
+
+  const filterIndex = filters.findIndex(
+    (filter) => filter.name === dimensionName
+  );
+
+  if (filterIndex === -1) {
+    filters.push({
+      name: dimensionName,
+      in: [],
+    });
+  } else {
+    filters.splice(filterIndex, 1);
+  }
+}
+
 export const dimensionFilterActions = {
   /**
    * Toggles whether the given dimension value is selected in the
@@ -48,4 +76,5 @@ export const dimensionFilterActions = {
    * the include/exclude mode is a toggle for the entire dimension.
    */
   toggleDimensionValueSelection,
+  toggleDimensionNameSelection,
 };

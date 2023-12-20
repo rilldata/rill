@@ -71,12 +71,6 @@ export function toggleDimensionValue(
           index,
           1
         );
-        if (
-          dashboard.filters[relevantFilterKey][dimensionEntryIndex].in
-            .length === 0
-        ) {
-          dashboard.filters[relevantFilterKey].splice(dimensionEntryIndex, 1);
-        }
 
         // Only decrement pinIndex if the removed value was before the pinned value
         if (dashboard.pinIndex >= index) {

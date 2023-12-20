@@ -1,12 +1,12 @@
 import { FormatterFactoryOptions, NumberKind } from "../humanizer-types";
 import {
-  IntTimesPowerOfTenFormatter,
+  SingleDigitTimesPowerOfTenFormatter,
   closeToIntTimesPowerOfTen,
-} from "./IntTimesPowerOfTen";
+} from "./SingleDigitTimesPowerOfTen";
 import { describe, it, expect } from "vitest";
 
 const baseOptions: FormatterFactoryOptions = {
-  strategy: "intTimesPowerOfTen",
+  strategy: "singleDigitTimesPowerOfTen",
   padWithInsignificantZeros: true,
   numberKind: NumberKind.ANY,
   onInvalidInput: "doNothing",
@@ -122,7 +122,7 @@ const testCases: [
 describe("default formatter, default options `.stringFormat()`", () => {
   testCases.forEach(([input, options, output]) => {
     it(`returns the correct split string in case: ${input}`, () => {
-      const formatter = new IntTimesPowerOfTenFormatter([input], {
+      const formatter = new SingleDigitTimesPowerOfTenFormatter([input], {
         ...baseOptions,
         ...options,
       });
@@ -165,10 +165,10 @@ describe("default formatter, default options `.stringFormat()`", () => {
 // ];
 
 //FIXME re-enable this test when we have a better way to handle invalid inputs
-// describe("IntTimesPowerOfTenFormatter, returns empty NumberParts on invalid inputs", () => {
+// describe("SingleDigitTimesPowerOfTenFormatter, returns empty NumberParts on invalid inputs", () => {
 //   errorCases.forEach(([input, options]) => {
 //     it(`throws an error for input: ${input}`, () => {
-//       const formatter = new IntTimesPowerOfTenFormatter([input], {
+//       const formatter = new SingleDigitTimesPowerOfTenFormatter([input], {
 //         ...baseOptions,
 //         ...options,
 //         ...{ onInvalidInput: "consoleWarn" },
@@ -187,10 +187,10 @@ const closeCases: [number, string][] = [
   [0.0030000000003, "3e-3"],
 ];
 
-describe("IntTimesPowerOfTenFormatter handles cases within an rounding error", () => {
+describe("SingleDigitTimesPowerOfTenFormatter handles cases within an rounding error", () => {
   closeCases.forEach(([input, output]) => {
     it(`returns the correct split string in case: ${input}, and does not throw an error`, () => {
-      const formatter = new IntTimesPowerOfTenFormatter([input], {
+      const formatter = new SingleDigitTimesPowerOfTenFormatter([input], {
         ...baseOptions,
         ...{ onInvalidInput: "throw" },
       });
