@@ -2,7 +2,6 @@
 The main feature-set component for dashboard filters
  -->
 <script context="module" lang="ts">
-  import { writable } from "svelte/store";
   import {
     Chip,
     ChipContainer,
@@ -15,17 +14,18 @@ The main feature-set component for dashboard filters
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filter/MeasureFilter.svelte";
-  import { useMetaQuery, getFilterSearchList } from "../selectors/index";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
-  import { getStateManagers } from "../state-managers/state-managers";
   import { clearAllFilters } from "../actions";
+  import { getFilterSearchList, useMetaQuery } from "../selectors/index";
+  import { getStateManagers } from "../state-managers/state-managers";
   import FilterButton from "./FilterButton.svelte";
-  import { formatFilters } from "./formatFilters";
-  import { getDisplayName } from "./getDisplayName";
-
-  export const potentialFilterName = writable<string | null>(null);
+  import {
+    getDimensionFilterItems,
+    getMeasureFilterItems,
+    potentialFilterName,
+  } from "@rilldata/web-common/features/dashboards/filters/filter-items";
 </script>
 
 <script lang="ts">
@@ -43,7 +43,7 @@ The main feature-set component for dashboard filters
         toggleDimensionValueSelection,
         toggleDimensionFilterMode,
       },
-      measuresFilter: { toggleMeasureFilter },
+      measuresFilter: { toggleMeasureFilter, setMeasureFilter },
     },
   } = StateManagers;
 
@@ -61,8 +61,6 @@ The main feature-set component for dashboard filters
   let activeDimensionName: string;
   let activeMeasureName: string;
   let topListQuery: ReturnType<typeof getFilterSearchList> | undefined;
-
-  $: filters = $dashboardStore.filters;
 
   $: activeColumn =
     dimensions.find((d) => d.name === activeDimensionName)?.column ??
@@ -86,32 +84,22 @@ The main feature-set component for dashboard filters
     $dimensionHasFilter(activeDimensionName) ||
     $measureHasFilter(activeMeasureName);
 
-  $: dimensionIdMap = getMapFromArray(
-    dimensions,
-    (dimension) => dimension.name as string
-  );
+  $: dimensionIdMap = getMapFromArray(dimensions, (d) => d.name as string);
 
-  $: currentFormattedFilters = formatFilters(
+  $: currentDimensionFilters = getDimensionFilterItems(
     $dashboardStore.whereFilter,
-    dimensionIdMap
+    dimensionIdMap,
+    $potentialFilterName
   );
 
-  $: temporaryFilter = $potentialFilterName
-    ? [
-        {
-          name: $potentialFilterName,
-          label: getDisplayName(dimensionIdMap.get($potentialFilterName)),
-          selectedValues: [],
-        },
-      ]
-    : [];
-
-  $: currentDimensionFilters = [
-    ...currentFormattedFilters,
-    ...temporaryFilter,
-  ].sort((a, b) => (a.name > b.name ? 1 : -1));
+  $: currentMeasureFilters = getMeasureFilterItems(
+    $dashboardStore.havingFilter,
+    getMapFromArray(measures, (m) => m.name as string),
+    $potentialFilterName
+  );
 
   function setActiveDimension(name: string, value = "") {
+    if (!dimensionIdMap.has(name)) return;
     activeDimensionName = name;
     searchText = value;
   }
@@ -191,7 +179,19 @@ The main feature-set component for dashboard filters
       {#each currentMeasureFilters as { name, label, expr } (name)}
         <div animate:flip={{ duration: 200 }}>
           <MeasureFilter
-            on:remove={() => toggleMeasureFilter(name, expr)}
+            on:remove={() => {
+              if ($potentialFilterName) {
+                $potentialFilterName = null;
+              } else {
+                toggleMeasureFilter(name);
+              }
+            }}
+            on:apply={(event) => {
+              if ($potentialFilterName) {
+                $potentialFilterName = null;
+              }
+              setMeasureFilter(name, event.detail);
+            }}
             colors={defaultChipColors}
             {name}
             {label}
@@ -202,10 +202,10 @@ The main feature-set component for dashboard filters
     {/if}
     <FilterButton
       on:focus={({ detail: { name } }) => {
-        activeDimensionName = name;
+        setActiveDimension(name);
       }}
       on:hover={({ detail: { name } }) => {
-        activeDimensionName = name;
+        setActiveDimension(name);
       }}
     />
     <!-- if filters are present, place a chip at the end of the flex container 

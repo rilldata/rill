@@ -3,9 +3,7 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { Menu } from "@rilldata/web-common/components/menu";
   import { MeasureFilterOptions } from "@rilldata/web-common/features/dashboards/filters/measure-filter/measure-filter-options";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
-    createAndExpression,
     createBetweenExpression,
     createBinaryExpression,
   } from "@rilldata/web-common/features/dashboards/stores/filter-generators";
@@ -13,18 +11,14 @@
     V1Expression,
     V1Operation,
   } from "@rilldata/web-common/runtime-client";
+  import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
 
-  const stateManagers = getStateManagers();
-  const {
-    actions: {
-      measuresFilter: { setMeasureFilter },
-    },
-  } = stateManagers;
-
   export let name: string;
   export let expr: V1Expression | undefined;
+
+  const dispatch = createEventDispatcher();
 
   const formState = createForm({
     initialValues: {
@@ -53,7 +47,7 @@
           Number(values.value1)
         );
       }
-      setMeasureFilter(name, newExpr);
+      dispatch("apply", newExpr);
     },
   });
 

@@ -19,7 +19,7 @@
   export let colors: ChipColors = defaultChipColors;
   export let expr: V1Expression | undefined;
 
-  let active = expr !== undefined;
+  let active = !expr;
 
   const dispatch = createEventDispatcher();
 
@@ -76,6 +76,7 @@
   <MeasureFilterMenu
     {expr}
     {name}
+    on:apply
     on:click-outside={handleDismiss}
     on:escape={handleDismiss}
     slot="floating-element"

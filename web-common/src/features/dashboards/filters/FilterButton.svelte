@@ -6,28 +6,22 @@
   import SearchableFilterDropdown from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterDropdown.svelte";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
-  import { getHavingFilterExpression } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
-  import { createBinaryExpression } from "@rilldata/web-common/features/dashboards/stores/filter-generators";
-  import { V1Operation } from "@rilldata/web-common/runtime-client";
-  import { potentialFilterName } from "./Filters.svelte";
+  import { potentialFilterName } from "./filter-items";
 </script>
 
 <script lang="ts">
   const {
-    dashboardStore,
     selectors: {
       measures: { allMeasures },
+      measureFilters: { measureHasFilter },
       dimensions: { allDimensions },
       dimensionFilters: { dimensionHasFilter },
-    },
-    actions: {
-      measuresFilter: { toggleMeasureFilter },
     },
   } = getStateManagers();
 
   let isDimension: Record<string, boolean> = {};
   let selectableItems: Array<SearchableFilterSelectableItem> = [];
-  if ($allDimensions && $allMeasures) {
+  $: if ($allDimensions && $allMeasures) {
     isDimension = {};
     selectableItems = [];
 
@@ -47,28 +41,12 @@
         name: m.name as string,
         label: m.label as string,
       }))
-      .filter((m) => {
-        return (
-          getHavingFilterExpression({ dashboard: $dashboardStore })(m.name) ===
-          undefined
-        );
-      })
+      .filter((m) => !$measureHasFilter(m.name))
       .forEach((m) => {
         selectableItems.push(m);
         isDimension[m.name] = false;
       });
-  }
-
-  function filterAdded(name: string) {
-    const dimIdx = $allDimensions?.findIndex((d) => d.name === name);
-    if (dimIdx === undefined || dimIdx === -1) {
-      toggleMeasureFilter(
-        name,
-        createBinaryExpression(name, V1Operation.OPERATION_LT, 0)
-      );
-    } else {
-      toggleDimensionNameSelection(name);
-    }
+    console.log(selectableItems);
   }
 </script>
 

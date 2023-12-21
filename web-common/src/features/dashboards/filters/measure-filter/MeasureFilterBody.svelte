@@ -23,7 +23,7 @@
     {label}
   </div>
   <div class="flex flex-wrap flex-row items-baseline gap-y-1">
-    {expr?.cond?.exprs?.[1].val}
+    {expr?.cond?.exprs?.[1].val ?? ""}
     <IconSpaceFixer className="pl-1" pullRight>
       <div class="transition-transform" class:-rotate-180={active}>
         <CaretDownIcon className="inline" size="10px" />

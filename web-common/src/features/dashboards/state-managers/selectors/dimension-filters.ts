@@ -1,13 +1,7 @@
-import { getDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
 import {
   createAndExpression,
-  forEachExpression,
   getValuesInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-generators";
-import {
-  MetricsViewSpecDimensionV2,
-  V1Operation,
-} from "@rilldata/web-common/runtime-client";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 import type { AtLeast } from "../types";
@@ -40,7 +34,9 @@ export const selectedDimensionValues = (
     // it in a set dedupes the values.
     return [
       ...new Set(
-        getValuesInExpression(getWhereFilterExpression(dashData)(dimName))
+        getValuesInExpression(
+          getWhereFilterExpression(dashData)(dimName)
+        ) as string[]
       ),
     ];
   };

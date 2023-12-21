@@ -1,7 +1,7 @@
 import { forEachExpression } from "@rilldata/web-common/features/dashboards/stores/filter-generators";
 import { V1Expression, V1Operation } from "@rilldata/web-common/runtime-client";
 import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
-import { getDisplayName } from "./getDisplayName";
+import { getDimensionDisplayName } from "./getDisplayName";
 
 export type DimensionFilter = {
   name: string;
@@ -39,7 +39,7 @@ export function formatFilters(
     addedDimension.add(ident);
     filteredDimensions.push({
       name: ident,
-      label: getDisplayName(dim),
+      label: getDimensionDisplayName(dim),
       selectedValues: e.cond.exprs?.slice(1).map((e) => e.val) as any[],
     });
   });
