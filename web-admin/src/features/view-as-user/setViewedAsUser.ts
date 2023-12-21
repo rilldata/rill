@@ -32,7 +32,7 @@ export async function setViewedAsUser(
           userId: user.id,
         }),
     });
-  const jwt = jwtResp.jwt;
+  const jwt = jwtResp.accessToken;
 
   runtime.update((runtimeState) => {
     runtimeState.jwt = jwt;
