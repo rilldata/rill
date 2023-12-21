@@ -33,6 +33,8 @@
   }
 
   const isDev = process.env.NODE_ENV === "development";
+
+  let subMenuOpen = false;
 </script>
 
 <DropdownMenu>
@@ -51,9 +53,13 @@
         project={$page.params.project}
       >
         <svelte:fragment slot="manage-project">
-          <!-- TODO: open this on click, rather than on hover  -->
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger>View as</DropdownMenuSubTrigger>
+          <DropdownMenuSub bind:open={subMenuOpen}>
+            <DropdownMenuSubTrigger
+              disabled={true}
+              on:click={() => (subMenuOpen = !subMenuOpen)}
+            >
+              View as
+            </DropdownMenuSubTrigger>
             <DropdownMenuSubContent
               class="flex flex-col min-w-[150px] max-w-[300px] min-h-[150px] max-h-[190px]"
             >
