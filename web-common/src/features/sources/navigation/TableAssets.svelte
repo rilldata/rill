@@ -45,7 +45,7 @@
   const queryHandler = async (tableName: string) => {
     await createModelFromSource(
       $runtime.instanceId,
-      $modelNames.data,
+      $modelNames?.data ?? [],
       tableName,
       tableName
     );
@@ -53,8 +53,7 @@
   };
 
   let showRenameTableModal = false;
-  let renameTableName = null;
-
+  let renameTableName: null | string = null;
   const openRenameTableModal = (tableName: string) => {
     showRenameTableModal = true;
     renameTableName = tableName;
@@ -118,7 +117,7 @@
   on:close={() => (showAddSourceModal = false)}
   open={showAddSourceModal}
 />
-{#if showRenameTableModal}
+{#if showRenameTableModal && renameTableName !== null}
   <RenameAssetModal
     entityType={EntityType.Table}
     closeModal={() => (showRenameTableModal = false)}

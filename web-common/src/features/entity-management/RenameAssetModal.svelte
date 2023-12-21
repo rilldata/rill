@@ -38,7 +38,7 @@
     onSubmit: async (values) => {
       if (
         isDuplicateName(
-          values.newName,
+          values?.newName,
           currentAssetName,
           $allNamesQuery?.data ?? []
         )
