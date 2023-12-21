@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from "@rilldata/web-common/components/button";
+  import { buttonClasses } from "@rilldata/web-common/components/button/classes";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Link from "@rilldata/web-common/components/icons/Link.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
@@ -15,8 +15,8 @@
 </script>
 
 <DropdownMenu.Root>
-  <DropdownMenu.Trigger>
-    <Button type="secondary">Share</Button>
+  <DropdownMenu.Trigger class={buttonClasses({ type: "secondary" })}>
+    Share
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="end">
     <DropdownMenu.Item
