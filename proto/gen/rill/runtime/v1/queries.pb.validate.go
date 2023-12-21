@@ -5582,7 +5582,16 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for TimeGranularity
+	if _, ok := _MetricsViewTimeSeriesRequest_TimeGranularity_NotInLookup[m.GetTimeGranularity()]; ok {
+		err := MetricsViewTimeSeriesRequestValidationError{
+			field:  "TimeGranularity",
+			reason: "value must not be in list [TIME_GRAIN_UNSPECIFIED]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if all {
 		switch v := interface{}(m.GetWhere()).(type) {
@@ -5755,6 +5764,10 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewTimeSeriesRequestValidationError{}
+
+var _MetricsViewTimeSeriesRequest_TimeGranularity_NotInLookup = map[TimeGrain]struct{}{
+	0: {},
+}
 
 // Validate checks the field values on MetricsViewTimeSeriesResponse with the
 // rules defined in the proto definition for this message. If any rules are
