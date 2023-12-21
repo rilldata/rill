@@ -50,7 +50,7 @@ export function useIsSourceUnsaved(
   instanceId: string,
   sourceName: string,
   // Include clientYAML in the function call to force the selector to recompute when it changes
-  clientYAML: string | null
+  clientYAML: string
 ) {
   return createRuntimeServiceGetFile(
     instanceId,
