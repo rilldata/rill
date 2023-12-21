@@ -214,7 +214,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	names := make(map[string]bool)
-	columns := make(map[string]bool)
+
 	for i, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
 			continue
@@ -259,10 +259,6 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			return fmt.Errorf("found duplicate dimension or measure name %q", measure.Name)
 		}
 		names[lower] = true
-
-		if ok := columns[lower]; ok {
-			return fmt.Errorf("measure name %q coincides with a dimension column name", measure.Name)
-		}
 
 		if measure.FormatPreset != "" && measure.FormatD3 != "" {
 			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)

@@ -280,28 +280,32 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 }
 
 func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAggregationDimension, dialect drivers.Dialect) (string, []any, error) {
-	var colName string
+	var col string
 	if dim.Name == q.MetricsView.TimeDimension {
-		colName = dim.Name
+		col = safeName(dim.Name)
 	} else {
-		col, err := metricsViewDimensionToSafeColumn(q.MetricsView, dim.Name)
+		d, err := metricsViewDimension(q.MetricsView, dim.Name)
 		if err != nil {
 			return "", nil, err
 		}
-		colName = col
+		if d.Expression != "" {
+			// TODO: we should add support for this in a future PR
+			return "", nil, fmt.Errorf("expression dimension not supported as time column")
+		}
+		col = metricsViewDimensionExpression(d)
 	}
 
 	switch dialect {
 	case drivers.DialectDuckDB:
 		if dim.TimeZone == "" || dim.TimeZone == "UTC" {
-			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), safeName(colName)), nil, nil
+			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), safeName(col)), nil, nil
 		}
-		return fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ)))", convertToDateTruncSpecifier(dim.TimeGrain), safeName(colName)), []any{dim.TimeZone, dim.TimeZone}, nil
+		return fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ)))", convertToDateTruncSpecifier(dim.TimeGrain), safeName(col)), []any{dim.TimeZone, dim.TimeZone}, nil
 	case drivers.DialectDruid:
 		if dim.TimeZone == "" || dim.TimeZone == "UTC" {
-			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), safeName(colName)), nil, nil
+			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), safeName(col)), nil, nil
 		}
-		return fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR)))", safeName(colName), convertToDruidTimeFloorSpecifier(dim.TimeGrain)), []any{dim.TimeZone}, nil
+		return fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR)))", safeName(col), convertToDruidTimeFloorSpecifier(dim.TimeGrain)), []any{dim.TimeZone}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", dialect)
 	}

@@ -139,160 +139,6 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 	return res
 }
 
-// buildFilterClauseForMetricsViewFilter builds a SQL string of conditions joined with AND.
-// Unless the result is empty, it is prefixed with "AND".
-// I.e. it has the format "AND (...) AND (...) ...".
-func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsViewSpec, filter *runtimev1.MetricsViewFilter, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
-	var clauses []string
-	var args []any
-
-	if filter != nil && filter.Include != nil {
-		clause, clauseArgs, err := buildFilterClauseForConditions(mv, filter.Include, false, dialect)
-		if err != nil {
-			return "", nil, err
-		}
-		clauses = append(clauses, clause)
-		args = append(args, clauseArgs...)
-	}
-
-	if filter != nil && filter.Exclude != nil {
-		clause, clauseArgs, err := buildFilterClauseForConditions(mv, filter.Exclude, true, dialect)
-		if err != nil {
-			return "", nil, err
-		}
-		clauses = append(clauses, clause)
-		args = append(args, clauseArgs...)
-	}
-
-	if policy != nil && policy.RowFilter != "" {
-		clauses = append(clauses, "AND "+policy.RowFilter)
-	}
-
-	return strings.Join(clauses, " "), args, nil
-}
-
-// buildFilterClauseForConditions returns a string with the format "AND (...) AND (...) ..."
-func buildFilterClauseForConditions(mv *runtimev1.MetricsViewSpec, conds []*runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
-	var clauses []string
-	var args []any
-
-	for _, cond := range conds {
-		condClause, condArgs, err := buildFilterClauseForCondition(mv, cond, exclude, dialect)
-		if err != nil {
-			return "", nil, err
-		}
-		if condClause == "" {
-			continue
-		}
-		clauses = append(clauses, condClause)
-		args = append(args, condArgs...)
-	}
-
-	return strings.Join(clauses, " "), args, nil
-}
-
-// buildFilterClauseForCondition returns a string with the format "AND (...)"
-func buildFilterClauseForCondition(mv *runtimev1.MetricsViewSpec, cond *runtimev1.MetricsViewFilter_Cond, exclude bool, dialect drivers.Dialect) (string, []any, error) {
-	var clauses []string
-	var args []any
-
-	// NOTE: Looking up for dimension like this will lead to O(nm).
-	//       Ideal way would be to create a map, but we need to find a clean solution down the line
-	dim, err := metricsViewDimension(mv, cond.Name)
-	if err != nil {
-		return "", nil, err
-	}
-	name := safeName(metricsViewDimensionColumn(dim))
-
-	notKeyword := ""
-	if exclude {
-		notKeyword = "NOT"
-	}
-
-	// Tracks if we found NULL(s) in cond.In
-	inHasNull := false
-
-	// Build "dim [NOT] IN (?, ?, ...)" clause
-	if len(cond.In) > 0 {
-		// Add to args, skipping nulls
-		for _, val := range cond.In {
-			if _, ok := val.Kind.(*structpb.Value_NullValue); ok {
-				inHasNull = true
-				continue // Handled later using "dim IS [NOT] NULL" clause
-			}
-			arg, err := pbutil.FromValue(val)
-			if err != nil {
-				return "", nil, fmt.Errorf("filter error: %w", err)
-			}
-			args = append(args, arg)
-		}
-
-		// If there were non-null args, add a "dim [NOT] IN (...)" clause
-		if len(args) > 0 {
-			questionMarks := strings.Join(repeatString("?", len(args)), ",")
-			var clause string
-			// Build [NOT] list_has_any("dim", ARRAY[?, ?, ...])
-			if dim.Unnest && dialect != drivers.DialectDruid {
-				clause = fmt.Sprintf("%s list_has_any(%s, ARRAY[%s])", notKeyword, name, questionMarks)
-			} else {
-				clause = fmt.Sprintf("%s %s IN (%s)", name, notKeyword, questionMarks)
-			}
-			clauses = append(clauses, clause)
-		}
-	}
-
-	// Build "dim [NOT] ILIKE ?"
-	if len(cond.Like) > 0 {
-		for _, val := range cond.Like {
-			var clause string
-			// Build [NOT] len(list_filter("dim", x -> x ILIKE ?)) > 0
-			if dim.Unnest && dialect != drivers.DialectDruid {
-				clause = fmt.Sprintf("%s len(list_filter(%s, x -> x %s ILIKE ?)) > 0", notKeyword, name, notKeyword)
-			} else {
-				if dialect == drivers.DialectDruid {
-					// Druid does not support ILIKE
-					clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(CAST(? AS VARCHAR))", name, notKeyword)
-				} else {
-					clause = fmt.Sprintf("%s %s ILIKE ?", name, notKeyword)
-				}
-			}
-
-			args = append(args, val)
-			clauses = append(clauses, clause)
-		}
-	}
-
-	// Add null check
-	// NOTE: DuckDB doesn't handle NULL values in an "IN" expression. They must be checked with a "dim IS [NOT] NULL" clause.
-	if inHasNull {
-		clauses = append(clauses, fmt.Sprintf("%s IS %s NULL", name, notKeyword))
-	}
-
-	// If no checks were added, exit
-	if len(clauses) == 0 {
-		return "", nil, nil
-	}
-
-	// Join conditions
-	var condJoiner string
-	if exclude {
-		condJoiner = " AND "
-	} else {
-		condJoiner = " OR "
-	}
-	condsClause := strings.Join(clauses, condJoiner)
-
-	// When you have "dim NOT IN (a, b, ...)", then NULL values are always excluded, even if NULL is not in the list.
-	// E.g. this returns zero rows: "select * from (select 1 as a union select null as a) where a not in (1)"
-	// We need to explicitly include it.
-	if exclude && !inHasNull && len(condsClause) > 0 {
-		condsClause += fmt.Sprintf(" OR %s IS NULL", name)
-	}
-
-	// Done
-	return fmt.Sprintf("AND (%s) ", condsClause), args, nil
-}
-
 func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, name string, dialect drivers.Dialect) (string, bool) {
 	// check if identifier is a dimension
 	for _, dim := range mv.Dimensions {
@@ -340,7 +186,7 @@ func identifierIsUnnest(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expressio
 	return false
 }
 
-func dimensionSelect(mv *runtimev1.MetricsViewSpec, dim *runtimev1.MetricsViewSpec_DimensionV2, dialect drivers.Dialect) (string, string) {
+func dimensionSelect(mv *runtimev1.MetricsViewSpec, dim *runtimev1.MetricsViewSpec_DimensionV2, dialect drivers.Dialect) (dimSelect, unnestClause string) {
 	colName := safeName(dim.Name)
 	if !dim.Unnest || dialect == drivers.DialectDruid {
 		return fmt.Sprintf(`%s as %s`, metricsViewDimensionExpression(dim), colName), ""
@@ -645,14 +491,6 @@ func convertDimensionFilterToExpression(cond *runtimev1.MetricsViewFilter_Cond, 
 	return nil
 }
 
-func repeatString(val string, n int) []string {
-	res := make([]string, n)
-	for i := 0; i < n; i++ {
-		res[i] = val
-	}
-	return res
-}
-
 func convertToString(pbvalue *structpb.Value) (string, error) {
 	switch pbvalue.GetKind().(type) {
 	case *structpb.Value_StructValue:
@@ -685,15 +523,6 @@ func convertToXLSXValue(pbvalue *structpb.Value) (interface{}, error) {
 	}
 }
 
-func metricsViewDimensionToSafeColumn(mv *runtimev1.MetricsViewSpec, dimName string) (string, error) {
-	dimName = strings.ToLower(dimName)
-	dimension, err := metricsViewDimension(mv, dimName)
-	if err != nil {
-		return "", err
-	}
-	return safeName(metricsViewDimensionColumn(dimension)), nil
-}
-
 func metricsViewDimension(mv *runtimev1.MetricsViewSpec, dimName string) (*runtimev1.MetricsViewSpec_DimensionV2, error) {
 	for _, dimension := range mv.Dimensions {
 		if strings.EqualFold(dimension.Name, dimName) {
@@ -703,21 +532,16 @@ func metricsViewDimension(mv *runtimev1.MetricsViewSpec, dimName string) (*runti
 	return nil, fmt.Errorf("dimension %s not found", dimName)
 }
 
-func metricsViewDimensionColumn(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
+func metricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
+	if dimension.Expression != "" {
+		return dimension.Expression
+	}
 	if dimension.Column != "" {
 		return dimension.Column
 	}
 	// backwards compatibility for older projects that have not run reconcile on this dashboard
 	// in that case `column` will not be present
 	return dimension.Name
-}
-
-func metricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
-	if dimension.Expression != "" {
-		return dimension.Expression
-	}
-	// if there is expression treat as a column reference
-	return safeName(metricsViewDimensionColumn(dimension))
 }
 
 func metricsViewMeasureExpression(mv *runtimev1.MetricsViewSpec, measureName string) (string, error) {
