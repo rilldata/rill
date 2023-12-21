@@ -37,12 +37,10 @@ export function getNextEntityName(
 }
 
 export function isDuplicateName(
-  name: string | null,
-  fromName: string | null,
-  names: Array<string | undefined> | undefined
+  name: string,
+  fromName: string,
+  names: Array<string>
 ) {
-  if (name === null || fromName === null) return false;
   if (name.toLowerCase() === fromName.toLowerCase()) return false;
-  if (!names) return false;
   return names.findIndex((n) => n?.toLowerCase() === name.toLowerCase()) >= 0;
 }
