@@ -1,14 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger,
-  } from "@rilldata/web-common/components/dropdown-menu";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
@@ -37,47 +29,47 @@
   let subMenuOpen = false;
 </script>
 
-<DropdownMenu>
-  <DropdownMenuTrigger>
+<DropdownMenu.Root>
+  <DropdownMenu.Trigger>
     <img
       src={$user.data?.user?.photoUrl}
       alt="avatar"
       class="h-7 inline-flex items-center rounded-full cursor-pointer"
       referrerpolicy={isDev ? "no-referrer" : ""}
     />
-  </DropdownMenuTrigger>
-  <DropdownMenuContent>
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content>
     {#if $page.params.organization && $page.params.project && $page.params.dashboard}
       <ProjectAccessControls
         organization={$page.params.organization}
         project={$page.params.project}
       >
         <svelte:fragment slot="manage-project">
-          <DropdownMenuSub bind:open={subMenuOpen}>
-            <DropdownMenuSubTrigger
+          <DropdownMenu.Sub bind:open={subMenuOpen}>
+            <DropdownMenu.SubTrigger
               disabled={true}
               on:click={() => (subMenuOpen = !subMenuOpen)}
             >
               View as
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent
+            </DropdownMenu.SubTrigger>
+            <DropdownMenu.SubContent
               class="flex flex-col min-w-[150px] max-w-[300px] min-h-[150px] max-h-[190px]"
             >
               <ViewAsUserPopover
                 organization={$page.params.organization}
                 project={$page.params.project}
               />
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
+            </DropdownMenu.SubContent>
+          </DropdownMenu.Sub>
         </svelte:fragment>
       </ProjectAccessControls>
     {/if}
-    <DropdownMenuItem on:click={handleDocumentation}>
+    <DropdownMenu.Item on:click={handleDocumentation}>
       Documentation
-    </DropdownMenuItem>
-    <DropdownMenuItem on:click={handleAskForHelp}>
+    </DropdownMenu.Item>
+    <DropdownMenu.Item on:click={handleAskForHelp}>
       Ask for help
-    </DropdownMenuItem>
-    <DropdownMenuItem on:click={handleLogOut}>Logout</DropdownMenuItem>
-  </DropdownMenuContent>
-</DropdownMenu>
+    </DropdownMenu.Item>
+    <DropdownMenu.Item on:click={handleLogOut}>Logout</DropdownMenu.Item>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>

@@ -1,12 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-  } from "@rilldata/web-common/components/dropdown-menu";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
@@ -114,21 +109,21 @@
         <div class="grow" />
         <RunNowButton {organization} {project} {report} />
         {#if !$isReportCreatedByCode.data}
-          <DropdownMenu>
-            <DropdownMenuTrigger>
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
               <IconButton>
                 <ThreeDot size="16px" />
               </IconButton>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem on:click={handleEditReport}>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="start">
+              <DropdownMenu.Item on:click={handleEditReport}>
                 Edit report
-              </DropdownMenuItem>
-              <DropdownMenuItem on:click={handleDeleteReport}>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item on:click={handleDeleteReport}>
                 Delete report
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
         {/if}
       </div>
     </div>

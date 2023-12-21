@@ -1,10 +1,5 @@
 <script lang="ts">
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-  } from "@rilldata/web-common/components/dropdown-menu";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
@@ -27,17 +22,17 @@
         : "text-gray-500 hover:text-gray-600"}>{label}</a
     >
     {#if menuOptions}
-      <DropdownMenu>
-        <DropdownMenuTrigger
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger
           class="flex flex-col justify-center items-center transition-transform hover:translate-y-[2px] {isCurrentPage
             ? 'text-gray-800'
             : 'text-gray-500'}"
         >
           <CaretDownIcon size="14px" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="start">
           {#each menuOptions as option}
-            <DropdownMenuItem on:click={() => onSelectMenuOption(option.key)}>
+            <DropdownMenu.Item on:click={() => onSelectMenuOption(option.key)}>
               {#if option.key === menuKey}
                 <!-- If currently, selected show a check mark and bold the text -->
                 <Check className="mr-2" />
@@ -47,10 +42,10 @@
                 <Spacer className="mr-2" />
                 <span>{option.main}</span>
               {/if}
-            </DropdownMenuItem>
+            </DropdownMenu.Item>
           {/each}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
     {/if}
   </div>
 </li>
