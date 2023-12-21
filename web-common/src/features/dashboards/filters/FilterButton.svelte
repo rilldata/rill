@@ -46,7 +46,6 @@
         selectableItems.push(m);
         isDimension[m.name] = false;
       });
-    console.log(selectableItems);
   }
 </script>
 

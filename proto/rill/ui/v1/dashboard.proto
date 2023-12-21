@@ -4,6 +4,7 @@ package rill.ui.v1;
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/time_grain.proto";
 import "rill/runtime/v1/queries.proto";
+import "rill/runtime/v1/expression.proto";
 
 // DashboardState represents the dashboard as seen by the user
 message DashboardState {
@@ -56,6 +57,8 @@ message DashboardState {
   DashboardTimeRange time_range = 1;
   // Dimension filters applied
   rill.runtime.v1.MetricsViewFilter filters = 2;
+  rill.runtime.v1.Expression where = 20;
+  rill.runtime.v1.Expression having = 21;
   // Selected time granularity
   rill.runtime.v1.TimeGrain time_grain = 3;
 

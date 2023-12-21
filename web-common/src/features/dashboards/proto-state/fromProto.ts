@@ -1,5 +1,7 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import { FromProtoOperationMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
+import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   DashboardTimeControls,
@@ -9,6 +11,7 @@ import {
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
+import type { Expression } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
 import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
 import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
@@ -17,6 +20,7 @@ import {
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
+  V1Expression,
   V1MetricsView,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
@@ -61,9 +65,12 @@ export function getDashboardStateFromProto(
   };
 
   if (dashboard.filters) {
-    entity.filters ??= {};
-    entity.filters.include = fromFiltersProto(dashboard.filters.include);
-    entity.filters.exclude = fromFiltersProto(dashboard.filters.exclude);
+    entity.whereFilter = convertFilterToExpression(dashboard.filters);
+  } else if (dashboard.where) {
+    entity.whereFilter = fromExpressionProto(dashboard.where);
+  }
+  if (dashboard.having) {
+    entity.havingFilter = fromExpressionProto(dashboard.having);
   }
   if (dashboard.compareTimeRange) {
     entity.selectedComparisonTimeRange = fromTimeRangeProto(
@@ -241,5 +248,32 @@ function fromTimeGrainProto(timeGrain: TimeGrain): V1TimeGrain {
       return V1TimeGrain.TIME_GRAIN_QUARTER;
     case TimeGrain.YEAR:
       return V1TimeGrain.TIME_GRAIN_YEAR;
+  }
+}
+
+function fromExpressionProto(expression: Expression) {
+  switch (expression.expression.case) {
+    case "ident":
+      return {
+        ident: expression.expression.value,
+      } as V1Expression;
+
+    case "val":
+      return {
+        val:
+          expression.expression.value.kind.case === "nullValue"
+            ? null
+            : expression.expression.value.kind.value,
+      } as V1Expression;
+
+    case "cond":
+      return {
+        cond: {
+          op: FromProtoOperationMap[expression.expression.value.op],
+          exprs: expression.expression.value.exprs.map((e) =>
+            fromExpressionProto(e)
+          ),
+        },
+      } as V1Expression;
   }
 }
