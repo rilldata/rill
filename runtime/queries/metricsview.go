@@ -537,11 +537,11 @@ func metricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_Dimensi
 		return dimension.Expression
 	}
 	if dimension.Column != "" {
-		return dimension.Column
+		return safeName(dimension.Column)
 	}
 	// backwards compatibility for older projects that have not run reconcile on this dashboard
 	// in that case `column` will not be present
-	return dimension.Name
+	return safeName(dimension.Name)
 }
 
 func metricsViewMeasureExpression(mv *runtimev1.MetricsViewSpec, measureName string) (string, error) {
