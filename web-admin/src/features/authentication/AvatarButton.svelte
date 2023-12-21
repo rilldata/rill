@@ -55,7 +55,7 @@
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>View as</DropdownMenuSubTrigger>
             <DropdownMenuSubContent
-              class="min-w-[150px] max-w-[300px] min-h-[150px] max-h-[190px]"
+              class="flex flex-col min-w-[150px] max-w-[300px] min-h-[150px] max-h-[190px]"
             >
               <ViewAsUserPopover
                 organization={$page.params.organization}
