@@ -28,14 +28,12 @@
     >
     {#if menuOptions}
       <DropdownMenu>
-        <DropdownMenuTrigger>
-          <button
-            class="flex flex-col justify-center items-center transition-transform hover:translate-y-[2px] {isCurrentPage
-              ? 'text-gray-800'
-              : 'text-gray-500'}"
-          >
-            <CaretDownIcon size="14px" />
-          </button>
+        <DropdownMenuTrigger
+          class="flex flex-col justify-center items-center transition-transform hover:translate-y-[2px] {isCurrentPage
+            ? 'text-gray-800'
+            : 'text-gray-500'}"
+        >
+          <CaretDownIcon size="14px" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           {#each menuOptions as option}
