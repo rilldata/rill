@@ -1,65 +1,64 @@
 <script lang="ts">
   import { Meta, Story } from "@storybook/addon-svelte-csf";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger,
-  } from "..";
-  import { Button } from "../../button";
+  import * as DropdownMenu from "..";
+  import { buttonClasses } from "../../button/classes";
   import CopyIcon from "../../icons/CopyIcon.svelte";
   import DashboardIcon from "../../icons/DashboardIcon.svelte";
+
+  let subMenuOpen = false;
 </script>
 
 <Meta title="Components/Dropdown Menu" />
 
 <Story name="Simple">
-  <DropdownMenu>
-    <DropdownMenuTrigger>
-      <Button type="secondary">Open menu</Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="start">
-      <DropdownMenuItem>Option 1</DropdownMenuItem>
-      <DropdownMenuItem>Option 2</DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger class={buttonClasses({ type: "secondary" })}>
+      Open menu
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="start">
+      <DropdownMenu.Item>Option 1</DropdownMenu.Item>
+      <DropdownMenu.Item>Option 2</DropdownMenu.Item>
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
 </Story>
 
 <Story name="With icons">
-  <DropdownMenu>
-    <DropdownMenuTrigger>
-      <Button type="secondary">Open menu</Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="start">
-      <DropdownMenuItem>
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger class={buttonClasses({ type: "secondary" })}>
+      Open menu
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="start">
+      <DropdownMenu.Item>
         <CopyIcon className="w-4 h-4 mr-2" />
         Option 1
-      </DropdownMenuItem>
-      <DropdownMenuItem>
+      </DropdownMenu.Item>
+      <DropdownMenu.Item>
         <DashboardIcon className="w-4 h-4 mr-2" />
         Option 2
-      </DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
+      </DropdownMenu.Item>
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
 </Story>
 
 <Story name="With submenu">
-  <DropdownMenu>
-    <DropdownMenuTrigger>
-      <Button type="secondary">Open menu</Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="start">
-      <DropdownMenuSub>
-        <DropdownMenuSubTrigger>Option 1</DropdownMenuSubTrigger>
-        <DropdownMenuSubContent class="whitespace-nowrap">
-          <DropdownMenuItem>Submenu option 1</DropdownMenuItem>
-          <DropdownMenuItem>Submenu option 2</DropdownMenuItem>
-        </DropdownMenuSubContent>
-      </DropdownMenuSub>
-      <DropdownMenuItem>Option 2</DropdownMenuItem>
-    </DropdownMenuContent>
-  </DropdownMenu>
+  <DropdownMenu.Root>
+    <DropdownMenu.Trigger class={buttonClasses({ type: "secondary" })}>
+      Open menu
+    </DropdownMenu.Trigger>
+    <DropdownMenu.Content align="start">
+      <DropdownMenu.Sub bind:open={subMenuOpen}>
+        <DropdownMenu.SubTrigger
+          disabled={true}
+          on:click={() => (subMenuOpen = !subMenuOpen)}
+        >
+          Option 1
+        </DropdownMenu.SubTrigger>
+        <DropdownMenu.SubContent class="whitespace-nowrap">
+          <DropdownMenu.Item>Submenu option 1</DropdownMenu.Item>
+          <DropdownMenu.Item>Submenu option 2</DropdownMenu.Item>
+        </DropdownMenu.SubContent>
+      </DropdownMenu.Sub>
+      <DropdownMenu.Item>Option 2</DropdownMenu.Item>
+    </DropdownMenu.Content>
+  </DropdownMenu.Root>
 </Story>
