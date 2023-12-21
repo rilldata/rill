@@ -154,10 +154,7 @@ func (r *MetricsViewReconciler) validate(ctx context.Context, mv *runtimev1.Metr
 }
 
 func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2, fields map[string]*runtimev1.StructType_Field) error {
-	if d.Expression == "" {
-		if d.Column == "" {
-			return nil
-		}
+	if d.Column != "" {
 		if _, isColumn := fields[d.Column]; !isColumn {
 			return fmt.Errorf("failed to validate dimension %q: column %q not found in table", d.Name, d.Column)
 		}
@@ -165,7 +162,7 @@ func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.T
 	}
 
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT %s FROM %s GROUP BY 1", d.Expression, safeSQLName(t.Name)),
+		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", d.Expression, safeSQLName(t.Name)),
 		DryRun: true,
 	})
 	if err != nil {

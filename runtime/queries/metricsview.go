@@ -189,7 +189,7 @@ func identifierIsUnnest(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expressio
 func dimensionSelect(mv *runtimev1.MetricsViewSpec, dim *runtimev1.MetricsViewSpec_DimensionV2, dialect drivers.Dialect) (dimSelect, unnestClause string) {
 	colName := safeName(dim.Name)
 	if !dim.Unnest || dialect == drivers.DialectDruid {
-		return fmt.Sprintf(`%s as %s`, metricsViewDimensionExpression(dim), colName), ""
+		return fmt.Sprintf(`(%s) as %s`, metricsViewDimensionExpression(dim), colName), ""
 	}
 
 	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
@@ -283,20 +283,20 @@ func buildLikeExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Conditio
 	var clause string
 	// Build [NOT] len(list_filter("dim", x -> x ILIKE ?)) > 0
 	if unnest && dialect != drivers.DialectDruid {
-		clause = fmt.Sprintf("%s len(list_filter(%s, x -> x ILIKE %s)) > 0", notKeyword, leftExpr, rightExpr)
+		clause = fmt.Sprintf("%s len(list_filter((%s), x -> x ILIKE %s)) > 0", notKeyword, leftExpr, rightExpr)
 	} else {
 		if dialect == drivers.DialectDruid {
 			// Druid does not support ILIKE
 			clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(CAST(%s AS VARCHAR))", leftExpr, notKeyword, rightExpr)
 		} else {
-			clause = fmt.Sprintf("%s %s ILIKE %s", leftExpr, notKeyword, rightExpr)
+			clause = fmt.Sprintf("(%s) %s ILIKE %s", leftExpr, notKeyword, rightExpr)
 		}
 	}
 
 	// When you have "dim NOT ILIKE '...'", then NULL values are always excluded.
 	// We need to explicitly include it.
 	if cond.Op == runtimev1.Operation_OPERATION_NLIKE {
-		clause += fmt.Sprintf(" OR %s IS NULL", leftExpr)
+		clause += fmt.Sprintf(" OR (%s) IS NULL", leftExpr)
 	}
 
 	return clause, args, nil
@@ -347,9 +347,9 @@ func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition,
 		var clause string
 		// Build [NOT] list_has_any("dim", ARRAY[?, ?, ...])
 		if unnest && dialect != drivers.DialectDruid {
-			clause = fmt.Sprintf("%s list_has_any(%s, ARRAY[%s])", notKeyword, leftExpr, questionMarks)
+			clause = fmt.Sprintf("%s list_has_any((%s), ARRAY[%s])", notKeyword, leftExpr, questionMarks)
 		} else {
-			clause = fmt.Sprintf("%s %s IN (%s)", leftExpr, notKeyword, questionMarks)
+			clause = fmt.Sprintf("(%s) %s IN (%s)", leftExpr, notKeyword, questionMarks)
 		}
 		clauses = append(clauses, clause)
 	}
@@ -357,7 +357,7 @@ func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition,
 	if inHasNull {
 		// Add null check
 		// NOTE: DuckDB doesn't handle NULL values in an "IN" expression. They must be checked with a "dim IS [NOT] NULL" clause.
-		clauses = append(clauses, fmt.Sprintf("%s IS %s NULL", leftExpr, notKeyword))
+		clauses = append(clauses, fmt.Sprintf("(%s) IS %s NULL", leftExpr, notKeyword))
 	}
 	var condsClause string
 	if exclude {
@@ -369,7 +369,7 @@ func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition,
 		// When you have "dim NOT IN (a, b, ...)", then NULL values are always excluded, even if NULL is not in the list.
 		// E.g. this returns zero rows: "select * from (select 1 as a union select null as a) where a not in (1)"
 		// We need to explicitly include it.
-		condsClause += fmt.Sprintf(" OR %s IS NULL", leftExpr)
+		condsClause += fmt.Sprintf(" OR (%s) IS NULL", leftExpr)
 	}
 
 	return condsClause, args, nil

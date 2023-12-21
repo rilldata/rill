@@ -234,6 +234,10 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			}
 		}
 
+		if (dim.Column == "" && dim.Expression == "") || (dim.Column != "" && dim.Expression != "") {
+			return fmt.Errorf("exactly one of column or expression should be set for dimension: %q", dim.Name)
+		}
+
 		lower := strings.ToLower(dim.Name)
 		if ok := names[lower]; ok {
 			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
