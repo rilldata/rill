@@ -159,20 +159,12 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if err != nil {
 				return "", nil, err
 			}
-			rawColName := metricsViewDimensionColumn(dim)
-			col := safeName(rawColName)
-			expr := metricsViewDimensionExpression(dim)
-
-			if dim.Unnest && dialect != drivers.DialectDruid {
-				// TODO: handle unnest for expressions
-				// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
-				unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", d.Name)))
-				selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, safeName(d.Name)))
-				unnestClauses = append(unnestClauses, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), col, unnestColName))
-			} else {
-				selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(d.Name)))
-				groupCols = append(groupCols, safeName(d.Name))
+			dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
+			selectCols = append(selectCols, dimSel)
+			if unnestClause != "" {
+				unnestClauses = append(unnestClauses, unnestClause)
 			}
+			groupCols = append(groupCols, safeName(d.Name))
 			continue
 		}
 

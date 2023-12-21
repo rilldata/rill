@@ -71,7 +71,7 @@ func TestMetricsViewsToplist_measure_filters(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	require.Len(t, q.Result.Data, 3)
-	require.Equal(t, "sports.yahoo.com", q.Result.Data[0].AsMap()["domain"])
-	require.Equal(t, "news.google.com", q.Result.Data[1].AsMap()["domain"])
-	require.Equal(t, "instagram.com", q.Result.Data[2].AsMap()["domain"])
+	require.Equal(t, "sports.yahoo.com", q.Result.Data[0].AsMap()["dom"])
+	require.Equal(t, "news.google.com", q.Result.Data[1].AsMap()["dom"])
+	require.Equal(t, "instagram.com", q.Result.Data[2].AsMap()["dom"])
 }
