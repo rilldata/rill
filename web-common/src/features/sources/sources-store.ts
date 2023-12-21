@@ -14,14 +14,14 @@ export const duplicateSourceAction: Writable<DuplicateActions> = writable(
 export const duplicateSourceName: Writable<string | null> = writable(null);
 
 interface SourceStore {
-  clientYAML: string | null;
+  clientYAML: string;
 }
 
 // Dictionary of source stores
 const sourceStores: { [key: string]: Writable<SourceStore> } = {};
 
 function createSourceStore(): Writable<SourceStore> {
-  return writable({ clientYAML: null });
+  return writable({ clientYAML: "" });
 }
 
 export function useSourceStore(sourceName: string): Writable<SourceStore> {
