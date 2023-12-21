@@ -1,5 +1,8 @@
 <script lang="ts">
-  import { DropdownMenuItem } from "@rilldata/web-common/components/dropdown-menu";
+  import {
+    DropdownMenuGroup,
+    DropdownMenuItem,
+  } from "@rilldata/web-common/components/dropdown-menu";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { Search } from "@rilldata/web-common/components/search";
@@ -49,7 +52,7 @@
   <Search bind:value={searchText} autofocus={false} />
 </div>
 {#if visibleUsers.length > 0}
-  <div class="overflow-auto pb-1">
+  <DropdownMenuGroup class="overflow-auto pb-1">
     {#each visibleUsers as user}
       <DropdownMenuItem on:click={() => handleViewAsUser(user)}>
         {#if user === $viewAsUserStore}
@@ -60,7 +63,7 @@
         {user.email}
       </DropdownMenuItem>
     {/each}
-  </div>
+  </DropdownMenuGroup>
 {:else}
   <div class="mt-5 ui-copy-disabled text-center">no results</div>
 {/if}
