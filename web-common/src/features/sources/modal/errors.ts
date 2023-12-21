@@ -7,11 +7,15 @@ export function hasDuckDBUnicodeError(message: string) {
 }
 
 export function humanReadableErrorMessage(
-  connectorName: string,
-  code: number,
-  message: string
+  connectorName: string | undefined,
+  code: number | undefined,
+  message: string | undefined
 ) {
+  const unknownErrorStr =
+    "An unknown error occurred. If the error persists, please reach out for help on <a href=https://bit.ly/3unvA05 target=_blank>Discord</a>.";
+
   const serverError = message;
+  if (serverError === undefined) return unknownErrorStr;
 
   switch (code) {
     // gRPC error codes: https://pkg.go.dev/google.golang.org/grpc@v1.49.0/codes
@@ -79,7 +83,7 @@ export function humanReadableErrorMessage(
       return serverError;
     }
     default:
-      return "An unknown error occurred. If the error persists, please reach out for help on <a href=https://bit.ly/3unvA05 target=_blank>Discord</a>.";
+      return unknownErrorStr;
   }
 }
 

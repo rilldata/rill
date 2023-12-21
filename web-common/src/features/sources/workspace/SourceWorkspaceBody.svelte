@@ -79,7 +79,7 @@
             loading={resourceIsLoading($sourceQuery?.data)}
           />
         {/key}
-      {:else}
+      {:else if $allErrors[0].message}
         <ErrorPane {sourceName} errorMessage={$allErrors[0].message} />
       {/if}
     </div>
