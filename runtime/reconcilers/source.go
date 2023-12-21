@@ -179,7 +179,11 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	ingestErr := r.ingestSource(ctx, src.Spec, stagingTableName)
 	if ingestErr != nil {
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)
+	} else if !r.C.Runtime.AllowHostAccess() {
+		// temporarily for debugging
+		logTableNameAndType(ctx, r.C, connector, stagingTableName)
 	}
+
 	if ingestErr == nil && src.Spec.StageChanges {
 		// Rename staging table to main table
 		err = olapForceRenameTable(ctx, r.C, connector, stagingTableName, false, tableName)

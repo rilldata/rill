@@ -22,11 +22,11 @@
   export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
   // the color of the zoom window boundaries
   export let zoomWindowBoundaryColor = "rgb(100,100,100)";
-  export let zoomWindowXMin: Date = undefined;
-  export let zoomWindowXMax: Date = undefined;
+  export let zoomWindowXMin: Date | undefined = undefined;
+  export let zoomWindowXMax: Date | undefined = undefined;
 
-  export let xAccessor: string = undefined;
-  export let yAccessor: string = undefined;
+  export let xAccessor: string | undefined = undefined;
+  export let yAccessor: string | undefined = undefined;
 
   // rowsize for table
   export let left = 0;

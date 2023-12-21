@@ -17,11 +17,13 @@ measures the bounding rect of this element's child
   }
   onMount(() => {
     observer = new ResizeObserver(() => {
-      rect = element.parentElement.getBoundingClientRect();
-      styles = window.getComputedStyle(element.parentElement);
+      rect = element.parentElement?.getBoundingClientRect();
+      styles =
+        element?.parentElement &&
+        window.getComputedStyle(element?.parentElement);
     });
     observer.observe(element.parentElement);
-    rect = element.parentElement.getBoundingClientRect();
+    rect = element.parentElement?.getBoundingClientRect();
   });
 
   onDestroy(() => {

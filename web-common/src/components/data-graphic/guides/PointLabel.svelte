@@ -17,7 +17,7 @@
   export let showPoint = true;
   export let showReferenceLine = true;
   export let showDistanceLine = true;
-  export let yComparisonAccessor: string = undefined;
+  export let yComparisonAccessor: string | undefined = undefined;
   export let format = justEnoughPrecision;
 
   let lastAvailablePoint;
@@ -66,6 +66,7 @@
 <WithGraphicContexts let:xScale let:yScale let:config>
   {@const isNull = point[yAccessor] == null}
   {@const comparisonIsNull =
+    yComparisonAccessor === undefined ||
     point[yComparisonAccessor] === null ||
     point[yComparisonAccessor] === undefined}
   {@const x = xScale(point[xAccessor])}
@@ -91,13 +92,14 @@
       : format
       ? format(point[yAccessor])
       : point[yAccessor]}
-    {@const comparisonText = isNull
-      ? "no data"
-      : format
-      ? format(point[yAccessor] - point[yComparisonAccessor])
-      : point[yAccessor] - point[yComparisonAccessor]}
+    {@const comparisonText =
+      isNull || yComparisonAccessor === undefined
+        ? "no data"
+        : format
+        ? format(point[yAccessor] - point[yComparisonAccessor])
+        : point[yAccessor] - point[yComparisonAccessor]}
     {@const percentageDifference =
-      isNull && comparisonIsNull
+      (isNull && comparisonIsNull) || yComparisonAccessor === undefined
         ? undefined
         : (point[yAccessor] - point[yComparisonAccessor]) /
           point[yComparisonAccessor]}
@@ -194,7 +196,7 @@
           : "fill-blue-500"}
       />
     {/if}
-    {#if showComparisonText}
+    {#if showComparisonText && percentageDifference}
       {@const diffParts =
         formatMeasurePercentageDifference(percentageDifference)}
       <text

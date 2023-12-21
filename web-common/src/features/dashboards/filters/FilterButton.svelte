@@ -9,6 +9,7 @@
   import { getHavingFilterExpression } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
   import { createBinaryExpression } from "@rilldata/web-common/features/dashboards/stores/filter-generators";
   import { V1Operation } from "@rilldata/web-common/runtime-client";
+  import { potentialFilterName } from "./Filters.svelte";
 </script>
 
 <script lang="ts">
@@ -20,7 +21,6 @@
       dimensionFilters: { dimensionHasFilter },
     },
     actions: {
-      dimensionsFilter: { toggleDimensionNameSelection },
       measuresFilter: { toggleMeasureFilter },
     },
   } = getStateManagers();
@@ -90,9 +90,11 @@
     let:toggleFloatingElement
     on:click-outside={toggleFloatingElement}
     on:escape={toggleFloatingElement}
+    on:focus
+    on:hover
     on:item-clicked={(e) => {
       toggleFloatingElement();
-      filterAdded(e.detail.name);
+      $potentialFilterName = e.detail.name;
     }}
     {selectableItems}
     selectedItems={[]}

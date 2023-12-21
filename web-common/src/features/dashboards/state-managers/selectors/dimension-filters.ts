@@ -90,49 +90,6 @@ export const getWhereFilterExpressionIndex = (
     );
 };
 
-export type FilteredDimension = {
-  name: string;
-  label: string;
-  selectedValues: any[];
-  isInclude: boolean;
-};
-export const getAllFilteredDimensions = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">
-) => {
-  return (dimensions: Map<string, MetricsViewSpecDimensionV2>) => {
-    const filteredDimensions = new Array<FilteredDimension>();
-    const addedDimension = new Set<string>();
-    forEachExpression(dashData.dashboard.whereFilter, (e) => {
-      if (
-        e.cond?.op !== V1Operation.OPERATION_IN &&
-        e.cond?.op !== V1Operation.OPERATION_NIN
-      ) {
-        return;
-      }
-      const ident = e.cond?.exprs?.[0].ident;
-      if (
-        ident === undefined ||
-        addedDimension.has(ident) ||
-        !dimensions.has(ident)
-      ) {
-        return;
-      }
-      const dim = dimensions.get(ident);
-      if (!dim) {
-        return;
-      }
-      addedDimension.add(ident);
-      filteredDimensions.push({
-        name: ident,
-        label: getDisplayName(dim),
-        selectedValues: e.cond.exprs?.slice(1).map((e) => e.val) as any[],
-        isInclude: e.cond.op === V1Operation.OPERATION_IN,
-      });
-    });
-    return filteredDimensions;
-  };
-};
-
 export const dimensionFilterSelectors = {
   /**
    * Returns a function that can be used to get
@@ -160,6 +117,4 @@ export const dimensionFilterSelectors = {
   isFilterExcludeMode,
 
   dimensionHasFilter,
-
-  getAllFilteredDimensions,
 };

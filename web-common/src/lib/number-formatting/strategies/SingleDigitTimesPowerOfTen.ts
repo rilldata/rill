@@ -43,7 +43,7 @@ export const closeToIntTimesPowerOfTen = (x: number) =>
  * or log a warning if a of a non integer multiple of a power
  * of ten given as an input.
  */
-export class IntTimesPowerOfTenFormatter implements Formatter {
+export class SingleDigitTimesPowerOfTenFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterOptionsIntTimesPowerOfTenStrategy;
   initialSample: number[];
 
@@ -75,7 +75,7 @@ export class IntTimesPowerOfTenFormatter implements Formatter {
     if (typeof x !== "number") {
       // FIXME add these warnings back in when the upstream code is robust enough
       // console.warn(
-      //   `Input to IntTimesPowerOfTenFormatter must be a number, got: ${x}. Returning empty NumberParts.`
+      //   `Input to SingleDigitTimesPowerOfTenFormatter must be a number, got: ${x}. Returning empty NumberParts.`
       // );
       return { int: "", dot: "", frac: "", suffix: "" };
     }
@@ -95,7 +95,7 @@ export class IntTimesPowerOfTenFormatter implements Formatter {
         // valid inputs must already be close to a single digit
         //  integer multiple of a power of ten
         if (!closeToIntTimesPowerOfTen(x)) {
-          const msg = `received invalid input for IntTimesPowerOfTenFormatter: ${x}`;
+          const msg = `received invalid input for SingleDigitTimesPowerOfTenFormatter: ${x}`;
           if (onInvalidInput === "consoleWarn") {
             console.warn(msg);
           } else {

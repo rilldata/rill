@@ -85,6 +85,12 @@
         icon
         animateSelect={false}
         focusOnMount={false}
+        on:hover={() => {
+          dispatch("hover", { index, name });
+        }}
+        on:focus={() => {
+          dispatch("focus", { index, name });
+        }}
         on:select={() => {
           if (singleSelection && selected) return;
           dispatch("item-clicked", { index, name });
