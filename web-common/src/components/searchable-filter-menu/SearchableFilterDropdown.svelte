@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import Check from "../icons/Check.svelte";
-  import Spacer from "../icons/Spacer.svelte";
   import { Menu, MenuItem } from "../menu";
   import { Search } from "../search";
   import Footer from "./Footer.svelte";
@@ -76,7 +75,7 @@
   rounded={false}
 >
   <!-- the min-height is set to have about 3 entries in it -->
-  <div class="px-1 pb-1">
+  <div class="px-3 py-2">
     <Search bind:value={searchText} showBorderOnFocus={false} />
   </div>
   <!-- apply a wrapped flex element to ensure proper bottom spacing between body and footer -->
@@ -86,6 +85,12 @@
         icon
         animateSelect={false}
         focusOnMount={false}
+        on:hover={() => {
+          dispatch("hover", { index, name });
+        }}
+        on:focus={() => {
+          dispatch("focus", { index, name });
+        }}
         on:select={() => {
           if (singleSelection && selected) return;
           dispatch("item-clicked", { index, name });
@@ -99,8 +104,6 @@
                 ? "#9CA3AF"
                 : "#15141A"}
             />
-          {:else}
-            <Spacer size="20px" />
           {/if}
         </svelte:fragment>
         <span class:ui-copy-disabled={!selected && allowMultiSelect}>

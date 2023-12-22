@@ -10,23 +10,9 @@ It is probably not the most up to date code; but it works very well in practice.
   import { WithTween } from "../functional-components";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
   import { preventVerticalOverlap } from "./prevent-vertical-overlap";
+  import type { Point } from "./types";
 
   const DIMENSION_HOVER_DURATION = 350;
-  interface Point {
-    x: number;
-    y: number;
-    value: string;
-    label: string;
-    key: string;
-    valueColorClass?: string;
-    valueStyleClass?: string;
-    labelColorClass?: string;
-    labelStyleClass?: string;
-    pointColorClass?: string;
-    yOverride?: boolean;
-    yOverrideLabel?: string;
-    yOverrideStyleClass?: string;
-  }
 
   export let point: Point[] = [];
 
@@ -54,8 +40,8 @@ It is probably not the most up to date code; but it works very well in practice.
   export let flipAtEdge: "body" | "graphic" | false = "graphic"; // "body", "graphic", or undefined
   export let attachPointToLabel = false;
 
-  let container;
-  let containerWidths = [];
+  let container: SVGGElement;
+  let containerWidths: number[] = [];
   // let labelWidth = 0;
 
   let fanOutLabels = true;
@@ -73,12 +59,17 @@ It is probably not the most up to date code; but it works very well in practice.
   );
 
   $: locations = point.map((p) => {
+    const locationValue = nonOverlappingLocations.find(
+      (l) => l.key === p.key
+    )?.value;
+
     return {
       ...p,
       xRange: $xScale(p.x),
-      yRange: fanOutLabels
-        ? nonOverlappingLocations.find((l) => l.key === p.key).value
-        : $yScale(p.y),
+      yRange:
+        fanOutLabels && locationValue !== undefined
+          ? locationValue
+          : $yScale(p.y),
     };
   });
 
@@ -101,14 +92,15 @@ It is probably not the most up to date code; but it works very well in practice.
 
   $: if (direction === "left") {
     let flip = !!flipAtEdge;
-    fcn = (c) =>
-      flip &&
-      locations[0].xRange - c <=
-        (flipAtEdge === "body"
-          ? plotLeft
-          : flipAtEdge === "graphic"
-          ? 0
-          : false);
+    fcn = (c) => {
+      const rhs_comparator =
+        flipAtEdge === "body" ? plotLeft : flipAtEdge === "graphic" ? 0 : false;
+      return (
+        flip &&
+        typeof rhs_comparator === "number" &&
+        locations[0].xRange - c <= rhs_comparator
+      );
+    };
   } else {
     let flip = !!flipAtEdge;
     fcn = (c) =>

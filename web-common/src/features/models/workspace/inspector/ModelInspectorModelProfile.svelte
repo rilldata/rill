@@ -32,7 +32,7 @@
         </CollapsibleSectionTitle>
       </div>
 
-      {#if showColumns}
+      {#if showColumns && model?.state?.table}
         <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
           <ColumnProfile objectName={model?.state?.table} indentLevel={0} />
         </div>

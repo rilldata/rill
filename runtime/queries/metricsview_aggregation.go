@@ -26,13 +26,17 @@ type MetricsViewAggregation struct {
 	Measures           []*runtimev1.MetricsViewAggregationMeasure   `json:"measures,omitempty"`
 	Sort               []*runtimev1.MetricsViewAggregationSort      `json:"sort,omitempty"`
 	TimeRange          *runtimev1.TimeRange                         `json:"time_range,omitempty"`
-	Filter             *runtimev1.MetricsViewFilter                 `json:"filter,omitempty"`
+	Where              *runtimev1.Expression                        `json:"where,omitempty"`
+	Having             *runtimev1.Expression                        `json:"having,omitempty"`
 	Priority           int32                                        `json:"priority,omitempty"`
 	Limit              *int64                                       `json:"limit,omitempty"`
 	Offset             int64                                        `json:"offset,omitempty"`
 	MetricsView        *runtimev1.MetricsViewSpec                   `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity         `json:"security"`
 	PivotOn            []string                                     `json:"pivot_on,omitempty"`
+
+	// backwards compatibility
+	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
@@ -86,6 +90,15 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsView)
 	}
 
+	// backwards compatibility
+	if q.Filter != nil {
+		if q.Where != nil {
+			return fmt.Errorf("both filter and where is provided")
+		}
+		q.Where = convertFilterToExpression(q.Filter)
+	}
+
+	// Build query
 	sqlString, args, err := q.buildMetricsAggregationSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
@@ -360,7 +373,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 
 	filename := strings.ReplaceAll(q.MetricsView.Table, `"`, `_`)
-	if !isTimeRangeNil(q.TimeRange) || q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+	if !isTimeRangeNil(q.TimeRange) || q.Where != nil || q.Having != nil {
 		filename += "_filtered"
 	}
 
@@ -473,16 +486,28 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 		whereClause += clause
 	}
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if q.Where != nil {
+		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += " " + clause
+		whereClause += " AND " + clause
 		args = append(args, clauseArgs...)
 	}
 	if len(whereClause) > 0 {
 		whereClause = "WHERE 1=1" + whereClause
+	}
+
+	havingClause := ""
+	if q.Having != nil {
+		var havingClauseArgs []any
+		var err error
+		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		havingClause = "HAVING " + havingClause
+		args = append(args, havingClauseArgs...)
 	}
 
 	sortingCriteria := make([]string, 0, len(q.Sort))
@@ -521,22 +546,24 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 
 		// select m1, m2, d1, d2 from t, lateral unnest(t.d1) tbl(unnested_d1_) where d1 = 'a' group by d1, d2
-		sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s %[7]s",
+		sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s %[7]s %[8]s",
 			strings.Join(selectCols, ", "),  // 1
 			safeName(mv.Table),              // 2
 			strings.Join(unnestClauses, ""), // 3
 			whereClause,                     // 4
 			groupClause,                     // 5
-			orderClause,                     // 6
-			limitClause,                     // 7
+			havingClause,                    // 6
+			orderClause,                     // 7
+			limitClause,                     // 8
 		)
 	} else {
-		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s OFFSET %d",
+		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
 			strings.Join(selectCols, ", "),
 			safeName(mv.Table),
 			strings.Join(unnestClauses, ""),
 			whereClause,
 			groupClause,
+			havingClause,
 			orderClause,
 			limitClause,
 			q.Offset,

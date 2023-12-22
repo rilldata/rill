@@ -61,16 +61,18 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		if err != nil {
 			return err
 		}
-		defer res.Close()
 
-		res.Next()
 		var localDB, localSchema string
-		if err := res.Scan(&localDB, &localSchema); err != nil {
-			return err
+		for res.Next() {
+			if err := res.Scan(&localDB, &localSchema); err != nil {
+				_ = res.Close()
+				return err
+			}
 		}
+		_ = res.Close()
 
 		// get token
-		token := config["token"]
+		token, _ := config["token"].(string)
 		if token == "" && config["allow_host_access"].(bool) {
 			token = os.Getenv("motherduck_token")
 		}

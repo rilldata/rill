@@ -6,6 +6,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/server"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -81,16 +82,16 @@ func TestServer_MetricsViewComparison(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Desc: false,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     false,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, "cars", rows[0].DimensionValue.GetStringValue())
 
@@ -137,16 +138,16 @@ func TestServer_MetricsViewComparison_inline_measures(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Desc: false,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     false,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, "cars", rows[0].DimensionValue.GetStringValue())
 
@@ -188,16 +189,16 @@ func TestServer_MetricsViewComparison_nulls(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Desc: false,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     false,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -255,16 +256,16 @@ func TestServer_MetricsViewComparison_sort_by_base(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Desc: true,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -313,16 +314,16 @@ func TestServer_MetricsViewComparison_sort_by_comparison(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE,
-				Desc: true,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
+				Desc:     true,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "msn.com", rows[0].DimensionValue.GetStringValue())
@@ -372,16 +373,16 @@ func TestServer_MetricsViewComparison_sort_by_abs_delta(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_1",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
-				Desc: true,
+				Name:     "measure_1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+				Desc:     true,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -430,16 +431,16 @@ func TestServer_MetricsViewComparison_sort_by_rel_delta(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_1",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA,
-				Desc: true,
+				Name:     "measure_1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA,
+				Desc:     true,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "msn.com", rows[0].DimensionValue.GetStringValue())
@@ -480,9 +481,9 @@ func TestServer_MetricsViewComparison_sort_error(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_1",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
-				Desc: true,
+				Name:     "measure_1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+				Desc:     true,
 			},
 		},
 		Exact: true,
@@ -523,17 +524,17 @@ func TestServer_MetricsViewComparison_sort_by_delta_limit_1(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
-				Desc: true,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+				Desc:     true,
 			},
 		},
 		Limit: 1,
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -568,17 +569,17 @@ func TestServer_MetricsViewComparison_sort_by_base_limit_1(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Desc: true,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
 			},
 		},
 		Limit: 1,
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -613,24 +614,20 @@ func TestServer_MetricsViewComparison_sort_by_base_filter(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-				Desc: true,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
 			},
 		},
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "domain",
-					In:   []*structpb.Value{structpb.NewStringValue("yahoo.com")},
-				},
-			},
-		},
+		Where: expressionpb.NotIn(
+			expressionpb.Identifier("domain"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("yahoo.com"))},
+		),
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 1, len(rows))
 
 	require.Equal(t, "msn.com", rows[0].DimensionValue.GetStringValue())
@@ -685,16 +682,16 @@ func TestServer_MetricsViewComparison_2_measures(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
-				Desc: true,
+				Name:     "measure_2",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+				Desc:     true,
 			},
 		},
 		Exact: true,
 	})
 
-	rows := tr.Rows
 	require.NoError(t, err)
+	rows := tr.Rows
 	require.Equal(t, 2, len(rows))
 
 	require.Equal(t, "yahoo.com", rows[0].DimensionValue.GetStringValue())
@@ -1075,16 +1072,10 @@ func TestServer_MetricsViewComparison_no_comparison_complete_source_sanity_test(
 				Desc: false,
 			},
 		},
-		Filter: &runtimev1.MetricsViewFilter{
-			Exclude: []*runtimev1.MetricsViewFilter_Cond{
-				{
-					Name: "pub",
-					In: []*structpb.Value{
-						structpb.NewStringValue("Yahoo"),
-					},
-				},
-			},
-		},
+		Where: expressionpb.NotIn(
+			expressionpb.Identifier("pub"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("Yahoo"))},
+		),
 		Exact: true,
 	})
 	require.NoError(t, err)

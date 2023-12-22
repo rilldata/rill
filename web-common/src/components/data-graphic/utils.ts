@@ -88,7 +88,11 @@ interface LineGeneratorArguments {
     | ScaleTime<Date, number>
     | ((d) => number);
   curve?: string;
-  pathDefined?: (datum: object, i: number, arr: ArrayLike<unknown>) => boolean;
+  pathDefined?: (
+    datum: object,
+    i?: number,
+    arr?: ArrayLike<unknown>
+  ) => boolean;
 }
 
 /**
@@ -101,7 +105,7 @@ export function lineFactory(args: LineGeneratorArguments) {
     line()
       .x((d) => args.xScale(d[args.xAccessor]))
       .y((d) => args.yScale(d[yAccessor]))
-      .curve(curves[args.curve] || curveLinear)
+      .curve(args.curve ? curves[args.curve] : curveLinear)
       .defined(args.pathDefined || pathDoesNotDropToZero(yAccessor));
 }
 
@@ -116,7 +120,7 @@ export function areaFactory(args: LineGeneratorArguments) {
       .x((d) => args.xScale(d[args.xAccessor]))
       .y0(args.yScale(0))
       .y1((d) => args.yScale(d[yAccessor]))
-      .curve(curves[args.curve] || curveLinear)
+      .curve(args.curve ? curves[args.curve] : curveLinear)
       .defined(args.pathDefined || pathDoesNotDropToZero(yAccessor));
 }
 
@@ -158,8 +162,8 @@ export function barplotPolyline(
   separator = 1,
   closeBottom = false,
   inflator = 1
-) {
-  if (!data?.length) return [];
+): string {
+  if (!data?.length) return "";
   const path = data.reduce((pointsPathString, datum, i) => {
     const low = datum[xLow];
     const high = datum[xHigh];
@@ -321,7 +325,7 @@ export function bisectData(
 export function createTimeFormat(
   scaleDomain: [Date, Date],
   numberOfValues: number
-): [(d: Date) => string, (d: Date) => string] {
+): [(d: Date) => string, ((d: Date) => string) | undefined] {
   const diff =
     Math.abs(scaleDomain[1]?.getTime() - scaleDomain[0]?.getTime()) / 1000;
   if (!diff) return [timeFormat("%d %b"), timeFormat("%Y")];
