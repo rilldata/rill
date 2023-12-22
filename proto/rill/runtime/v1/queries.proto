@@ -280,7 +280,7 @@ message MetricsViewAggregationRequest {
   TimeRange time_range = 12;
   google.protobuf.Timestamp time_start = 6; // Deprecated in favor of time_range
   google.protobuf.Timestamp time_end = 7; // Deprecated in favor of time_range
-  repeated string pivot_on = 14;
+  repeated string pivot_on = 15;
   Expression where = 8;
   Expression having = 13;
   int64 limit = 9 [(validate.rules).int64.gte = 0];
