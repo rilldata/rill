@@ -37,6 +37,8 @@ type MetricsViewAggregation struct {
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
 
+var maxPivotCells = 1_000_000
+
 var _ runtime.Query = &MetricsViewAggregation{}
 
 func (q *MetricsViewAggregation) Key() string {
@@ -106,14 +108,38 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		return olap.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, conn *databasesql.Conn) error {
 			temporaryTableName := tempName("_for_pivot_")
 
-			err = olap.Exec(ctx, &drivers.Statement{
-				Query:    fmt.Sprintf("CREATE TEMPORARY TABLE %s AS %s", temporaryTableName, sqlString),
+			err := olap.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("CREATE TEMPORARY TABLE %[1]s AS %[2]s", temporaryTableName, sqlString),
 				Args:     args,
 				Priority: priority,
 			})
 			if err != nil {
 				return err
 			}
+
+			res, err := olap.Execute(ctx, &drivers.Statement{ // a seperate query instead of the multi-statement query due to a DuckDB bug
+				Query:    fmt.Sprintf("SELECT COUNT(*) FROM %[1]s", temporaryTableName),
+				Priority: priority,
+			})
+			if err != nil {
+				return err
+			}
+
+			count := 0
+			if res.Next() {
+				err := res.Scan(&count)
+				if err != nil {
+					res.Close()
+					return err
+				}
+
+				if count > maxPivotCells/q.cols() {
+					res.Close()
+					return fmt.Errorf("PIVOT cells count exceeded %d", maxPivotCells)
+				}
+			}
+			res.Close()
+
 			defer func() {
 				_ = olap.Exec(ensuredCtx, &drivers.Statement{
 					Query: `DROP TABLE "` + temporaryTableName + `"`,
@@ -199,6 +225,8 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 				scanValues[i] = new(interface{})
 			}
 			count := 0
+			maxCount := maxPivotCells / q.cols()
+
 			for rows.Next() {
 				err = rows.Scan(scanValues...)
 				if err != nil {
@@ -212,6 +240,10 @@ func (q *MetricsViewAggregation) pivotDruid(ctx context.Context, rows *drivers.R
 					return err
 				}
 				count++
+				if count > maxCount {
+					return fmt.Errorf("PIVOT cells count limit exceeded %d", maxPivotCells)
+				}
+
 				if count >= batchSize {
 					appender.Flush()
 					count = 0
@@ -355,12 +387,16 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	return nil
 }
 
+func (q *MetricsViewAggregation) cols() int {
+	return len(q.Dimensions) + len(q.Measures)
+}
+
 func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
 	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
 		return "", nil, errors.New("no dimensions or measures specified")
 	}
 
-	cols := len(q.Dimensions) + len(q.Measures)
+	cols := q.cols()
 	selectCols := make([]string, 0, cols)
 
 	groupCols := make([]string, 0, len(q.Dimensions))
@@ -471,9 +507,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			*q.Limit = 100
 		}
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
-	} else if q.PivotOn != nil {
-		l := 1_000_000 / cols
-		limitClause = fmt.Sprintf("LIMIT %d", l)
+	}
+
+	if q.PivotOn != nil {
+		l := maxPivotCells / q.cols()
+		limitClause = fmt.Sprintf("LIMIT %d", l+1)
 	}
 
 	var sql string
