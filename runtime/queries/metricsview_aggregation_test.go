@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 )
@@ -643,28 +644,6 @@ func Ignore_TestMetricsViewsAggregation_Druid_pivot(t *testing.T) {
 	require.Equal(t, "", fieldsToString(rows[i], "publisher"))
 }
 
-func fieldsToString(row *structpb.Struct, args ...string) string {
-	s := make([]string, 0, len(args))
-	for _, arg := range args {
-		s = append(s, row.Fields[arg].GetStringValue())
-	}
-	return strings.Join(s, ",")
-}
-package queries_test
-
-import (
-	"context"
-	"testing"
-
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/queries"
-	"github.com/rilldata/rill/runtime/testruntime"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
-)
-
 func TestMetricsViewAggregation_measure_filters(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
@@ -736,4 +715,12 @@ func TestMetricsViewAggregation_measure_filters(t *testing.T) {
 	require.NotEmpty(t, "sports.yahoo.com", q.Result.Data[0].AsMap()["dom"])
 	require.NotEmpty(t, "news.google.com", q.Result.Data[1].AsMap()["dom"])
 	require.NotEmpty(t, "instagram.com", q.Result.Data[2].AsMap()["dom"])
+}
+
+func fieldsToString(row *structpb.Struct, args ...string) string {
+	s := make([]string, 0, len(args))
+	for _, arg := range args {
+		s = append(s, row.Fields[arg].GetStringValue())
+	}
+	return strings.Join(s, ",")
 }

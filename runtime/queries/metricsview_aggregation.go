@@ -130,7 +130,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 				return err
 			}
 
-			res, err := olap.Execute(ctx, &drivers.Statement{ // a seperate query instead of the multi-statement query due to a DuckDB bug
+			res, err := olap.Execute(ctx, &drivers.Statement{ // a separate query instead of the multi-statement query due to a DuckDB bug
 				Query:    fmt.Sprintf("SELECT COUNT(*) FROM %[1]s", temporaryTableName),
 				Priority: priority,
 			})
