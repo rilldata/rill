@@ -1071,6 +1071,11 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
   column = "";
 
   /**
+   * @generated from field: string expression = 6;
+   */
+  expression = "";
+
+  /**
    * @generated from field: string label = 3;
    */
   label = "";
@@ -1095,6 +1100,7 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "column", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },

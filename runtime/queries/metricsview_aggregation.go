@@ -159,18 +159,12 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if err != nil {
 				return "", nil, err
 			}
-			rawColName := metricsViewDimensionColumn(dim)
-			col := safeName(rawColName)
-
-			if dim.Unnest && dialect != drivers.DialectDruid {
-				// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
-				unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
-				selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, col))
-				unnestClauses = append(unnestClauses, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), col, unnestColName))
-			} else {
-				selectCols = append(selectCols, fmt.Sprintf("%s as %s", col, safeName(d.Name)))
-				groupCols = append(groupCols, col)
+			dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
+			selectCols = append(selectCols, dimSel)
+			if unnestClause != "" {
+				unnestClauses = append(unnestClauses, unnestClause)
 			}
+			groupCols = append(groupCols, safeName(d.Name))
 			continue
 		}
 
@@ -286,28 +280,32 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 }
 
 func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAggregationDimension, dialect drivers.Dialect) (string, []any, error) {
-	var colName string
+	var col string
 	if dim.Name == q.MetricsView.TimeDimension {
-		colName = dim.Name
+		col = safeName(dim.Name)
 	} else {
-		col, err := metricsViewDimensionToSafeColumn(q.MetricsView, dim.Name)
+		d, err := metricsViewDimension(q.MetricsView, dim.Name)
 		if err != nil {
 			return "", nil, err
 		}
-		colName = col
+		if d.Expression != "" {
+			// TODO: we should add support for this in a future PR
+			return "", nil, fmt.Errorf("expression dimension not supported as time column")
+		}
+		col = metricsViewDimensionExpression(d)
 	}
 
 	switch dialect {
 	case drivers.DialectDuckDB:
 		if dim.TimeZone == "" || dim.TimeZone == "UTC" {
-			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), safeName(colName)), nil, nil
+			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
 		}
-		return fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ)))", convertToDateTruncSpecifier(dim.TimeGrain), safeName(colName)), []any{dim.TimeZone, dim.TimeZone}, nil
+		return fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ)))", convertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
 	case drivers.DialectDruid:
 		if dim.TimeZone == "" || dim.TimeZone == "UTC" {
-			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), safeName(colName)), nil, nil
+			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
 		}
-		return fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR)))", safeName(colName), convertToDruidTimeFloorSpecifier(dim.TimeGrain)), []any{dim.TimeZone}, nil
+		return fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR)))", col, convertToDruidTimeFloorSpecifier(dim.TimeGrain)), []any{dim.TimeZone}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", dialect)
 	}

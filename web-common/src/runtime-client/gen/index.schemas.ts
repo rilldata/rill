@@ -1966,6 +1966,7 @@ export interface MetricsViewSpecMeasureV2 {
 export interface MetricsViewSpecDimensionV2 {
   column?: string;
   description?: string;
+  expression?: string;
   label?: string;
   name?: string;
   unnest?: boolean;
