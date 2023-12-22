@@ -44,7 +44,7 @@
     <IconSpaceFixer pullLeft pullRight={collapse}>
       <Add />
     </IconSpaceFixer>
-    <ResponsiveButtonText {collapse}>Create Dashboard</ResponsiveButtonText>
+    <ResponsiveButtonText {collapse}>Autogenerate Dashboard</ResponsiveButtonText>
   </Button>
   <TooltipContent slot="tooltip-content">
     {#if hasError}
