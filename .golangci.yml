@@ -156,9 +156,11 @@ linters-settings:
     disable-all: true
   gosec:
     excludes:
+      - G107
       - G108
       - G112
       - G203
+      - G204
       - G306
   revive:
     ignore-generated-header: false
@@ -172,7 +174,6 @@ linters-settings:
       - name: context-keys-type
       - name: dot-imports
       - name: error-return
-      - name: error-strings
       - name: error-naming
       - name: if-return
       - name: increment-decrement
@@ -189,8 +190,12 @@ linters-settings:
       - name: superfluous-else
       - name: unreachable-code
       - name: redefines-builtin-id
+  stylecheck:
+    checks: ["all", "-ST1000", "-ST1003", "-ST1005", "-ST1016", "-ST1020", "-ST1021", "-ST1022"]
 
 issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
   exclude-rules:
     - path: _test\.go # disable some linters for test files
       linters:
@@ -198,12 +203,3 @@ issues:
         - gosec
         - dupl
         - varnamelen
-    - linters:
-        - gosec
-      text: "weak cryptographic primitive"
-    - linters:
-        - stylecheck
-      text: "error strings should not be capitalized"
-
-  max-issues-per-linter: 0
-  max-same-issues: 0
