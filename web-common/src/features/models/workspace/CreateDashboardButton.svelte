@@ -50,7 +50,7 @@
     {#if hasError}
       Fix the errors in your model to autogenerate dashboard
     {:else}
-      Create a dashboard from this model
+      Autogenerate a dashboard from this model
     {/if}
   </TooltipContent>
 </Tooltip>
