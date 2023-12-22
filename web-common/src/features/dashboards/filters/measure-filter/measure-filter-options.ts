@@ -2,35 +2,33 @@ import { V1Operation } from "@rilldata/web-common/runtime-client";
 
 export const MeasureFilterOptions = [
   {
-    value: V1Operation.OPERATION_EQ,
-    label: "=",
-  },
-  {
-    value: V1Operation.OPERATION_NEQ,
-    label: "!=",
-  },
-  {
     value: V1Operation.OPERATION_LT,
-    label: "<",
+    label: "Less Than",
+    shortLabel: "<",
   },
   {
     value: V1Operation.OPERATION_LTE,
-    label: "<=",
+    label: "Less Than Or Equals",
+    shortLabel: "<=",
   },
   {
     value: V1Operation.OPERATION_GT,
-    label: ">",
+    label: "Greater Than",
+    shortLabel: ">",
   },
   {
     value: V1Operation.OPERATION_GTE,
-    label: ">=",
+    label: "Greater Than Or Equals",
+    shortLabel: ">=",
   },
   {
     value: "b",
     label: "Between",
+    shortLabel: "",
   },
   {
     value: "nb",
     label: "Not Between",
+    shortLabel: "",
   },
 ];

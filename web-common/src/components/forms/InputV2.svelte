@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import InfoCircle from "../icons/InfoCircle.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
@@ -14,8 +14,6 @@
   export let optional = false;
   export let claimFocusOnMount = false;
 
-  const dispatch = createEventDispatcher();
-
   let inputElement;
 
   if (claimFocusOnMount) {
@@ -27,14 +25,13 @@
   function handleKeyDown(event: KeyboardEvent) {
     if (event.key === "Enter") {
       event.preventDefault();
-      dispatch("enter-pressed");
     }
   }
 </script>
 
 <div class="flex flex-col gap-y-2">
   <div class="flex items-center gap-x-1">
-    <label class="text-gray-800 text-sm font-medium" for={id}>{label}</label>
+    <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
     {#if hint}
       <Tooltip location="right" alignment="middle" distance={8}>
         <div class="text-gray-500" style="transform:translateY(-.5px)">
@@ -50,18 +47,18 @@
     {/if}
   </div>
   <input
-    autocomplete="off"
     bind:this={inputElement}
     bind:value
-    class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {error &&
-      'border-red-500'}"
+    on:input
+    on:change
+    on:keydown={handleKeyDown}
     {id}
     name={id}
-    on:change
-    on:input
-    on:keydown={handleKeyDown}
-    {placeholder}
     type="text"
+    {placeholder}
+    autocomplete="off"
+    class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {error &&
+      'border-red-500'}"
   />
   {#if error}
     <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">

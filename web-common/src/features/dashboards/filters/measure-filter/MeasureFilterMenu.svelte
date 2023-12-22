@@ -2,6 +2,7 @@
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { Menu } from "@rilldata/web-common/components/menu";
+  import SelectMenu from "@rilldata/web-common/components/menu/compositions/SelectMenu.svelte";
   import { MeasureFilterOptions } from "@rilldata/web-common/features/dashboards/filters/measure-filter/measure-filter-options";
   import {
     createBetweenExpression,
@@ -71,29 +72,30 @@
   paddingTop={1}
   rounded={false}
 >
-  <form
-    autocomplete="off"
-    class="flex flex-col gap-y-6"
-    id="measure"
-    on:submit|preventDefault={handleSubmit}
-  >
-    <Select
-      bind:value={$form["operation"]}
-      id="operation"
-      label="Operation"
-      options={MeasureFilterOptions}
-    />
-    <InputV2
-      bind:value={$form["value1"]}
-      error={$errors["value1"]}
-      on:input={handleSubmit}
-    />
-    {#if $form["operation"] === "b" || $form["operation"] === "nb"}
+  <div class="p-4">
+    <form
+      autocomplete="off"
+      class="flex flex-col gap-y-6"
+      id="measure"
+      on:submit|preventDefault={handleSubmit}
+    >
+      <Select
+        bind:value={$form["operation"]}
+        id="operation"
+        options={MeasureFilterOptions}
+      />
       <InputV2
-        bind:value={$form["value2"]}
-        error={$errors["value2"]}
+        bind:value={$form["value1"]}
+        error={$errors["value1"]}
         on:input={handleSubmit}
       />
-    {/if}
-  </form>
+      {#if $form["operation"] === "b" || $form["operation"] === "nb"}
+        <InputV2
+          bind:value={$form["value2"]}
+          error={$errors["value2"]}
+          on:input={handleSubmit}
+        />
+      {/if}
+    </form>
+  </div>
 </Menu>

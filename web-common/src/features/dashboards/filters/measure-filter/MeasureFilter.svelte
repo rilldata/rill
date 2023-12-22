@@ -24,7 +24,11 @@
   const dispatch = createEventDispatcher();
 
   function handleDismiss() {
-    active = false;
+    if (!expr) {
+      dispatch("remove");
+    } else {
+      active = false;
+    }
   }
 </script>
 
@@ -44,6 +48,7 @@
     <Chip
       {...colors}
       {active}
+      extraRounded={false}
       {label}
       on:click={() => {
         toggleFloatingElement();

@@ -80,10 +80,6 @@ The main feature-set component for dashboard filters
       topListData.map((datum) => datum[activeColumn]) ?? [];
   }
 
-  $: hasFilters =
-    $dimensionHasFilter(activeDimensionName) ||
-    $measureHasFilter(activeMeasureName);
-
   $: dimensionIdMap = getMapFromArray(dimensions, (d) => d.name as string);
 
   $: currentDimensionFilters = getDimensionFilterItems(
@@ -97,6 +93,9 @@ The main feature-set component for dashboard filters
     getMapFromArray(measures, (m) => m.name as string),
     $potentialFilterName
   );
+
+  $: hasFilters =
+    currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
 
   function setActiveDimension(name: string, value = "") {
     if (!dimensionIdMap.has(name)) return;
@@ -125,7 +124,7 @@ The main feature-set component for dashboard filters
   </div>
 
   <ChipContainer>
-    {#if !currentDimensionFilters.length && !currentMeasureFilters.length}
+    {#if !hasFilters}
       <div
         in:fly|local={{ duration: 200, x: 8 }}
         class="ui-copy-disabled grid items-center"
@@ -218,7 +217,10 @@ The main feature-set component for dashboard filters
           textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
           bgActiveClass="bg-gray-200 dark:bg-gray-600"
           outlineClass="outline-gray-400"
-          on:click={() => clearAllFilters(StateManagers)}
+          on:click={() => {
+            $potentialFilterName = null;
+            clearAllFilters(StateManagers);
+          }}
         >
           <span slot="icon" class="ui-copy-disabled-faint">
             <FilterRemove size="16px" />
