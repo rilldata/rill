@@ -117,6 +117,11 @@ export function getYupSchema(connector: V1ConnectorSpec) {
           .required("Source name is required"),
         dsn: yup.string(),
       });
+    case "salesforce":
+      return yup.object().shape({
+        soql: yup.string().required("soql is required"),
+        sobject: yup.string().required("sobject is required"),
+      });
     case "athena":
       return yup.object().shape({
         sql: yup.string().required("sql is required"),
