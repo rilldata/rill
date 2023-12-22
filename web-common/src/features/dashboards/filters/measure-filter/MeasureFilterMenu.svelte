@@ -2,7 +2,6 @@
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { Menu } from "@rilldata/web-common/components/menu";
-  import SelectMenu from "@rilldata/web-common/components/menu/compositions/SelectMenu.svelte";
   import { MeasureFilterOptions } from "@rilldata/web-common/features/dashboards/filters/measure-filter/measure-filter-options";
   import {
     createBetweenExpression,
