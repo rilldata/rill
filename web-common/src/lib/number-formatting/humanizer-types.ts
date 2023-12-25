@@ -7,7 +7,8 @@ import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-clie
 export enum FormatPreset {
   HUMANIZE = "humanize",
   NONE = "none",
-  CURRENCY = "currency_usd",
+  CURRENCY_USD = "currency_usd",
+  CURRENCY_EUR = "currency_eur",
   PERCENTAGE = "percentage",
   INTERVAL = "interval_ms",
 }
@@ -25,6 +26,14 @@ export enum NumberKind {
    * this units.
    */
   DOLLAR = "DOLLAR",
+
+  /**
+   * A real number with units of EUROS. Note that this
+   * does not imply any restriction on the range of the number;
+   * ANY positive or negative real number of ANY SIZE can have
+   * this units.
+   */
+  EURO = "EURO",
 
   /**
    * A real number with units of "%". Note that this
@@ -56,8 +65,11 @@ export enum NumberKind {
  */
 export const formatPresetToNumberKind = (type: FormatPreset) => {
   switch (type) {
-    case FormatPreset.CURRENCY:
+    case FormatPreset.CURRENCY_USD:
       return NumberKind.DOLLAR;
+
+      case FormatPreset.CURRENCY_EUR:
+        return NumberKind.EURO;
 
     case FormatPreset.PERCENTAGE:
       return NumberKind.PERCENT;
@@ -99,6 +111,7 @@ export const numberKindForMeasure = (measure: MetricsViewSpecMeasureV2) => {
 export type NumberParts = {
   neg?: "-";
   dollar?: "$";
+  euro?: "€";
   int: string;
   dot: "" | ".";
   frac: string;
