@@ -51,7 +51,7 @@
 
   $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
 
-  $: modelSql = $modelSqlQuery?.data?.blob;
+  $: modelSql = $modelSqlQuery?.data?.blob ?? "";
   $: hasModelSql = typeof modelSql === "string";
 
   $: modelQuery = useModel(runtimeInstanceId, modelName);
@@ -68,13 +68,13 @@
 
   $: tableQuery = createQueryServiceTableRows(
     runtimeInstanceId,
-    $modelQuery.data?.model?.state?.table,
+    $modelQuery.data?.model?.state?.table ?? "",
     {
       limit,
     }
   );
 
-  $: runtimeError = ($tableQuery.error as any)?.response.data;
+  $: runtimeError = $tableQuery.error?.response.data;
 
   const outputLayout = getContext(
     "rill:app:output-layout"
@@ -117,7 +117,7 @@
     to: selection?.referenceIndex + selection?.reference?.length,
   })) as SelectionRange[];
 
-  let errors = [];
+  let errors: string[] = [];
   $: {
     errors = [];
     // only add error if sql is present
