@@ -36,7 +36,7 @@ export function useMainEntityFiles(
             // sort alphabetically case-insensitive
             .sort((a, b) =>
               a.localeCompare(b, undefined, { sensitivity: "base" })
-            ),
+            ) ?? [],
       },
     }
   );
