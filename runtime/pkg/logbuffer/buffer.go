@@ -7,7 +7,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/bufferutil"
-	"golang.org/x/exp/slog"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -27,30 +27,28 @@ func NewBuffer(maxMessageCount int, maxBufferSize int64) *Buffer {
 	}
 }
 
-func (b *Buffer) Add(record slog.Record) error {
+func (b *Buffer) AddZapEntry(entry zapcore.Entry, fields []zapcore.Field) error {
 	size := 0
 	attrs := make(map[string]any)
-	gatherAttr := func(attr slog.Attr) bool {
-		attrs[attr.Key] = attr.Value.Any()
-		size += len(attr.Key) + len(attr.Value.String()) // approx size
-		return true
+	for _, field := range fields {
+		attrs[field.Key] = field.String
+		size += len(field.Key) + len(field.String) // approx size
 	}
-	// hacky way of collecting attributes
-	record.Attrs(gatherAttr)
-	payload, err := json.Marshal(attrs)
-	if err != nil {
-		return err
-	}
-	size += len(record.Message)
+	size += len(entry.Message)
 	// add enum size, assuming upper bound for 64 bits system
 	size += 8
 	// add proto Timestamp size
 	size += 12
 
+	payload, err := json.Marshal(attrs)
+	if err != nil {
+		return err
+	}
+
 	message := &runtimev1.Log{
-		Level:       slogLevelToPBLevel(record.Level),
-		Time:        timestamppb.New(record.Time),
-		Message:     record.Message,
+		Level:       zapLevelToPBLevel(entry.Level),
+		Time:        timestamppb.New(entry.Time),
+		Message:     entry.Message,
 		JsonPayload: string(payload),
 	}
 
@@ -112,23 +110,18 @@ func (b *Buffer) GetLogs(asc bool, limit int) []*runtimev1.Log {
 	return logs
 }
 
-func min(x, y int) int {
-	if x < y {
-		return x
-	}
-	return y
-}
-
-func slogLevelToPBLevel(level slog.Level) runtimev1.LogLevel {
+func zapLevelToPBLevel(level zapcore.Level) runtimev1.LogLevel {
 	switch level {
-	case -4:
+	case zapcore.DebugLevel:
 		return runtimev1.LogLevel_LOG_LEVEL_DEBUG
-	case 0:
+	case zapcore.InfoLevel:
 		return runtimev1.LogLevel_LOG_LEVEL_INFO
-	case 4:
+	case zapcore.WarnLevel:
 		return runtimev1.LogLevel_LOG_LEVEL_WARN
-	case 8:
+	case zapcore.ErrorLevel:
 		return runtimev1.LogLevel_LOG_LEVEL_ERROR
+	case zapcore.DPanicLevel, zapcore.PanicLevel, zapcore.FatalLevel:
+		return runtimev1.LogLevel_LOG_LEVEL_FATAL
 	default:
 		return runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED
 	}

@@ -64,6 +64,11 @@ export enum LogLevel {
    * @generated from enum value: LOG_LEVEL_ERROR = 16;
    */
   ERROR = 16,
+
+  /**
+   * @generated from enum value: LOG_LEVEL_FATAL = 20;
+   */
+  FATAL = 20,
 }
 // Retrieve enum metadata with: proto3.getEnumType(LogLevel)
 proto3.util.setEnumType(LogLevel, "rill.runtime.v1.LogLevel", [
@@ -72,6 +77,7 @@ proto3.util.setEnumType(LogLevel, "rill.runtime.v1.LogLevel", [
   { no: 8, name: "LOG_LEVEL_INFO" },
   { no: 12, name: "LOG_LEVEL_WARN" },
   { no: 16, name: "LOG_LEVEL_ERROR" },
+  { no: 20, name: "LOG_LEVEL_FATAL" },
 ]);
 
 /**

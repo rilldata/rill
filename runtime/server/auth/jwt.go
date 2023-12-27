@@ -194,7 +194,7 @@ func OpenAudience(ctx context.Context, logger *zap.Logger, issuerURL, audienceUR
 			RefreshUnknownKID: true,
 		})
 		if err != nil {
-			logger.Info("JWKS fetch failed, retrying in 5s", zap.Error(err))
+			logger.Debug("JWKS fetch failed, retrying in 5s", zap.Error(err))
 			select {
 			case <-time.After(time.Second * 5):
 			case <-ctx.Done():

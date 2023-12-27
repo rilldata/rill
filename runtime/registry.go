@@ -9,6 +9,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/logbuffer"
+	"github.com/rilldata/rill/runtime/pkg/logutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -125,6 +127,9 @@ type instanceWithController struct {
 	instance      *drivers.Instance
 	controller    *Controller
 	controllerErr error
+
+	logger *zap.Logger
+	logs   *logbuffer.Buffer
 
 	// State for managing controller execution
 	ctx       context.Context
@@ -263,6 +268,15 @@ func (r *registryCache) add(inst *drivers.Instance) {
 
 	iwc := &instanceWithController{instance: inst}
 	r.instances[inst.ID] = iwc
+
+	iwcLogger := r.logger.With(zap.String("instance_id", iwc.instance.ID))
+
+	// Setup the logger to duplicate logs to a) the Zap logger, b) an in-memory buffer that exposes the logs over the API
+	buffer := logbuffer.NewBuffer(r.rt.opts.ControllerLogBufferCapacity, r.rt.opts.ControllerLogBufferSizeBytes)
+	iwcLogger = zap.New(zapcore.NewTee(iwcLogger.Core(), logutil.NewBufferedZapCore(buffer)))
+	iwc.logger = iwcLogger
+	iwc.logs = buffer
+
 	r.restartController(iwc)
 }
 
@@ -333,18 +347,18 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			// Before starting the controller, sync the repo.
 			// This is necessary for resources (usually sources or models) that reference files in the repo,
 			// and may be triggered before the project parser is triggered and syncs the repo.
-			r.logger.Info("syncing repo", zap.String("instance_id", iwc.instance.ID))
+			iwc.logger.Debug("syncing repo", zap.String("instance_id", iwc.instance.ID))
 			err := r.ensureRepoSync(iwc.ctx, iwc.instance.ID)
 			if err != nil {
-				r.logger.Warn("failed to sync repo", zap.String("instance_id", iwc.instance.ID), zap.Error(err))
+				iwc.logger.Warn("failed to sync repo", zap.String("instance_id", iwc.instance.ID), zap.Error(err))
 				// Even if repo sync failed, we'll start the controller
 			} else {
-				r.logger.Info("repo synced", zap.String("instance_id", iwc.instance.ID))
+				iwc.logger.Debug("repo synced", zap.String("instance_id", iwc.instance.ID))
 			}
 
 			// Start controller
-			r.logger.Info("controller starting", zap.String("instance_id", iwc.instance.ID))
-			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instance.ID, r.logger, r.activity)
+			iwc.logger.Debug("controller starting", zap.String("instance_id", iwc.instance.ID))
+			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instance.ID, iwc.logger, r.activity, iwc.logs)
 			if err == nil {
 				r.ensureProjectParser(iwc.ctx, iwc.instance.ID, ctrl)
 
@@ -354,7 +368,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 				close(iwc.readyCh)
 				r.mu.Unlock()
 
-				r.logger.Info("controller ready", zap.String("instance_id", iwc.instance.ID))
+				r.logger.Debug("controller ready", zap.String("instance_id", iwc.instance.ID))
 
 				err = ctrl.Run(iwc.ctx)
 			}
@@ -366,7 +380,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			r.mu.Unlock()
 
 			if errors.Is(err, iwc.ctx.Err()) {
-				r.logger.Warn("controller stopped", attrs...)
+				r.logger.Debug("controller stopped", attrs...)
 			} else {
 				r.logger.Error("controller failed", attrs...)
 			}

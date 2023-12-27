@@ -1,45 +1,41 @@
 package logutil
 
 import (
-	"context"
-
 	"github.com/rilldata/rill/runtime/pkg/logbuffer"
-	"go.uber.org/zap/exp/zapslog"
-	"golang.org/x/exp/slog"
+	"go.uber.org/zap/zapcore"
 )
 
-type DuplicatingHandler struct {
-	zapHandler *zapslog.Handler
-	logs       *logbuffer.Buffer
+type BufferedZapCore struct {
+	fields []zapcore.Field
+	logs   *logbuffer.Buffer
 }
 
-func NewDuplicatingHandler(zapHandler *zapslog.Handler, logs *logbuffer.Buffer) *DuplicatingHandler {
-	return &DuplicatingHandler{
-		zapHandler: zapHandler,
-		logs:       logs,
+func NewBufferedZapCore(logs *logbuffer.Buffer) *BufferedZapCore {
+	return &BufferedZapCore{
+		logs: logs,
 	}
 }
 
-func (d *DuplicatingHandler) Enabled(ctx context.Context, level slog.Level) bool {
-	return d.zapHandler.Enabled(ctx, level)
+func (d *BufferedZapCore) Enabled(level zapcore.Level) bool {
+	return true
 }
 
-func (d *DuplicatingHandler) Handle(ctx context.Context, record slog.Record) error {
-	err := d.zapHandler.Handle(ctx, record)
-	if err != nil {
-		return err
-	}
-	return d.logs.Add(record)
+func (d *BufferedZapCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
+	return d.logs.AddZapEntry(entry, fields)
 }
 
-func (d *DuplicatingHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	newHandler := *d
-	newHandler.zapHandler = d.zapHandler.WithAttrs(attrs).(*zapslog.Handler)
-	return &newHandler
+func (d *BufferedZapCore) With(fields []zapcore.Field) zapcore.Core {
+	// TODO: should ideally create a clone of the core with new log buffer and append the new fields
+	clone := *d
+	clone.fields = append(clone.fields, fields...)
+	return &clone
 }
 
-func (d *DuplicatingHandler) WithGroup(name string) slog.Handler {
-	newHandler := *d
-	newHandler.zapHandler = d.zapHandler.WithGroup(name).(*zapslog.Handler)
-	return &newHandler
+func (d *BufferedZapCore) Check(entry zapcore.Entry, checkedEntry *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	checkedEntry.AddCore(entry, d)
+	return checkedEntry
+}
+
+func (d *BufferedZapCore) Sync() error {
+	return nil
 }

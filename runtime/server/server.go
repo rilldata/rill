@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -122,11 +123,11 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 }
 
 // ServeGRPC Starts the gRPC server.
-func (s *Server) ServeGRPC(ctx context.Context) error {
+func (s *Server) ServeGRPC(ctx context.Context, grpcDefaultLvl zapcore.Level) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
-			observability.LoggingStreamServerInterceptor(s.logger),
+			observability.LoggingStreamServerInterceptor(s.logger, grpcDefaultLvl),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
 			middleware.ActivityStreamServerInterceptor(s.activity),
@@ -135,7 +136,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
-			observability.LoggingUnaryServerInterceptor(s.logger),
+			observability.LoggingUnaryServerInterceptor(s.logger, grpcDefaultLvl),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
 			middleware.ActivityUnaryServerInterceptor(s.activity),
@@ -148,7 +149,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	runtimev1.RegisterRuntimeServiceServer(server, s)
 	runtimev1.RegisterQueryServiceServer(server, s)
 	runtimev1.RegisterConnectorServiceServer(server, s)
-	s.logger.Named("console").Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
+	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
@@ -160,7 +161,7 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Named("console").Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
+	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 

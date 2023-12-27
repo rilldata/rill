@@ -176,7 +176,7 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 			var err error
 			r, access, err = s.applySecurityPolicy(ss.Context(), req.InstanceId, r)
 			if err != nil {
-				s.logger.Info("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
+				s.logger.Debug("failed to apply security policy", zap.String("name", n.Name), zap.Error(err))
 				return
 			}
 			if !access {

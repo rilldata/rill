@@ -103,7 +103,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 	if err == nil { // a old stage.db file exists
 		_ = os.Remove(filepath.Join(projectPath, "stage.db"))
 		_ = os.Remove(filepath.Join(projectPath, "stage.db.wal"))
-		logger.Named("console").Info("Dropping old stage.db file and rebuilding project")
+		logger.Info("Dropping old stage.db file and rebuilding project")
 	}
 
 	parsedVariables, err := variable.Parse(variables)
@@ -166,7 +166,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 	// Print start status – need to do it before creating the instance, since doing so immediately starts the controller
 	isInit := IsProjectInit(projectPath)
 	if isInit {
-		sugarLogger.Named("console").Infof("Hydrating project '%s'", projectPath)
+		sugarLogger.Infof("Hydrating project '%s'", projectPath)
 	}
 
 	// Create instance with its repo set to the project directory
@@ -228,14 +228,14 @@ func (a *App) Close() error {
 
 	err := a.observabilityShutdown(ctx)
 	if err != nil {
-		a.Logger.Named("console").Error("Observability shutdown failed", zap.Error(err))
+		a.Logger.Error("Observability shutdown failed", zap.Error(err))
 	}
 
 	err = a.Runtime.Close()
 	if err != nil {
-		a.Logger.Named("console").Error("Graceful shutdown failed", zap.Error(err))
+		a.Logger.Error("Graceful shutdown failed", zap.Error(err))
 	} else {
-		a.Logger.Named("console").Info("Rill shutdown gracefully")
+		a.Logger.Info("Rill shutdown gracefully")
 	}
 
 	a.loggerCleanUp()
@@ -246,7 +246,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	// Get analytics info
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
-		a.Logger.Named("console").Warnf("error finding install ID: %v", err)
+		a.Logger.Warnf("error finding install ID: %v", err)
 	}
 
 	// Build local info for frontend
@@ -264,14 +264,6 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		Readonly:         readonly,
 	}
 
-	// Create server logger.
-	// It only logs error messages when !verbose to prevent lots of req/res info messages.
-	lvl := zap.ErrorLevel
-	if a.Verbose {
-		lvl = zap.DebugLevel
-	}
-	serverLogger := a.BaseLogger.WithOptions(zap.IncreaseLevel(lvl))
-
 	// Prepare errgroup and context with graceful shutdown
 	gctx := graceful.WithCancelOnTerminate(a.Context)
 	group, ctx := errgroup.WithContext(gctx)
@@ -283,14 +275,14 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		AllowedOrigins:  []string{"*"},
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, serverLogger, ratelimit.NewNoop(), a.activity)
+	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, a.BaseLogger, ratelimit.NewNoop(), a.activity)
 	if err != nil {
 		return err
 	}
 
 	// Start the gRPC server
 	group.Go(func() error {
-		return runtimeServer.ServeGRPC(ctx)
+		return runtimeServer.ServeGRPC(ctx, zapcore.DebugLevel)
 	})
 
 	// Start the local HTTP server
@@ -347,7 +339,7 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 	}
 
 	// Health check succeeded
-	a.Logger.Named("console").Infof("Serving Rill on: %s", uri)
+	a.Logger.Infof("Serving Rill on: %s", uri)
 	if openOnHealthy {
 		err := browser.Open(uri)
 		if err != nil {
@@ -393,7 +385,7 @@ func (a *App) versionHandler() http.Handler {
 		// Get the latest version available
 		latestVersion, err := update.LatestVersion(r.Context())
 		if err != nil {
-			a.Logger.Named("console").Warnf("error finding latest version: %v", err)
+			a.Logger.Warnf("error finding latest version: %v", err)
 		}
 
 		inf := &versionInfo{
@@ -520,7 +512,7 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 	core := zapcore.NewTee(
 		fileCore,
 		// send all error logs and logs matching console namespace to stdout
-		zapfilter.NewFilteringCore(zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel), zapfilter.MustParseRules("error:* *:console")),
+		zapfilter.NewFilteringCore(zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel), zapfilter.MustParseRules("info+:*")),
 	)
 
 	return zap.New(core, opts...), func() {
