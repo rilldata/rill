@@ -107,31 +107,37 @@
   });
 </script>
 
-<div
-  use:drag={{
-    store: rowsViewerLayout,
-    minSize: MIN_HEIGHT_EXPANDED,
-    maxSize: MAX_HEIGHT_EXPANDED,
-    orientation: "vertical",
-    reverse: true,
-  }}
->
-  <button
-    aria-label="Toggle rows viewer"
-    class="w-full bg-gray-100 h-7 text-left px-2 border-t border-t-gray-200 text-xs text-gray-800 flex items-center gap-1"
-    on:click={toggle}
+<div>
+  <div
+    class="flex items-center px-2 h-7 w-full bg-gray-100 border-t border-t-gray-200 {isOpen
+      ? '!cursor-move'
+      : '!cursor-default'}"
+    use:drag={{
+      store: rowsViewerLayout,
+      minSize: MIN_HEIGHT_EXPANDED,
+      maxSize: MAX_HEIGHT_EXPANDED,
+      orientation: "vertical",
+      reverse: true,
+    }}
   >
-    {#if isOpen}
-      <CaretDownIcon size="14px" />
-    {:else}
-      <CaretUpIcon size="14px" />
-    {/if}
-    <span class="font-bold">Model Data</span>
-    {label}
+    <button
+      aria-label="Toggle rows viewer"
+      class="text-xs text-gray-800 rounded-sm hover:bg-gray-200 h-6 px-1.5 py-px flex items-center gap-1"
+      on:click={toggle}
+    >
+      {#if isOpen}
+        <CaretDownIcon size="14px" />
+      {:else}
+        <CaretUpIcon size="14px" />
+      {/if}
+      <span class="font-bold">Model Data</span>
+      {label}
+    </button>
     <div class="ml-auto">
       {#if isLocal}<ExportModelDataButton {metricViewName} />{/if}
     </div>
-  </button>
+  </div>
+
   {#if isOpen}
     <RowsViewer {metricViewName} height={$rowsViewerLayout.value} />
   {/if}
