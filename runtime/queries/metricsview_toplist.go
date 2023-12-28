@@ -214,13 +214,13 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		}
 	}
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
-		if err != nil {
-			return "", nil, err
-		}
-		whereClause += " " + clause
-		args = append(args, clauseArgs...)
+	filterClause, filterClauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if err != nil {
+		return "", nil, err
+	}
+	if filterClause != "" {
+		whereClause += " " + filterClause
+		args = append(args, filterClauseArgs...)
 	}
 
 	sortingCriteria := make([]string, 0, len(q.Sort))

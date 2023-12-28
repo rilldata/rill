@@ -164,7 +164,7 @@ func buildFilterClauseForMetricsViewFilter(mv *runtimev1.MetricsViewSpec, filter
 	}
 
 	if policy != nil && policy.RowFilter != "" {
-		clauses = append(clauses, "AND "+policy.RowFilter)
+		clauses = append(clauses, fmt.Sprintf("AND (%s)", policy.RowFilter))
 	}
 
 	return strings.Join(clauses, " "), args, nil

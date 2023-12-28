@@ -291,14 +291,13 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	}
 	baseWhereClause += trc
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
-		if err != nil {
-			return "", nil, err
-		}
-		baseWhereClause += " " + clause
-
-		args = append(args, clauseArgs...)
+	filterClause, filterClauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if err != nil {
+		return "", nil, err
+	}
+	if filterClause != "" {
+		baseWhereClause += " " + filterClause
+		args = append(args, filterClauseArgs...)
 	}
 
 	var orderClauses []string
@@ -484,20 +483,20 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	td := safeName(mv.TimeDimension)
 
+	filterClause, filterClauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if err != nil {
+		return "", nil, err
+	}
+
 	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
 	baseWhereClause += trc
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
-		if err != nil {
-			return "", nil, err
-		}
-		baseWhereClause += " " + clause
-
-		args = append(args, clauseArgs...)
+	if filterClause != "" {
+		baseWhereClause += " " + filterClause
+		args = append(args, filterClauseArgs...)
 	}
 
 	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, dialect, td, &args)
@@ -506,14 +505,9 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 	comparisonWhereClause += trc
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
-		if err != nil {
-			return "", nil, err
-		}
-		comparisonWhereClause += " " + clause
-
-		args = append(args, clauseArgs...)
+	if filterClause != "" {
+		comparisonWhereClause += " " + filterClause
+		args = append(args, filterClauseArgs...)
 	}
 
 	err = validateSort(q.Sort)
