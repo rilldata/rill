@@ -291,15 +291,12 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	}
 	baseWhereClause += trc
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
-		if err != nil {
-			return "", nil, err
-		}
-		baseWhereClause += " " + clause
-
-		args = append(args, clauseArgs...)
+	filterClause, filterClauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if err != nil {
+		return "", nil, err
 	}
+	baseWhereClause += " " + filterClause
+	args = append(args, filterClauseArgs...)
 
 	var orderClauses []string
 	for _, s := range q.Sort {
@@ -490,31 +487,20 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 	baseWhereClause += trc
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
-		if err != nil {
-			return "", nil, err
-		}
-		baseWhereClause += " " + clause
-
-		args = append(args, clauseArgs...)
-	}
-
 	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, dialect, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
 	comparisonWhereClause += trc
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
-		if err != nil {
-			return "", nil, err
-		}
-		comparisonWhereClause += " " + clause
-
-		args = append(args, clauseArgs...)
+	filterClause, filterClauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if err != nil {
+		return "", nil, err
 	}
+	baseWhereClause += " " + filterClause
+	comparisonWhereClause += " " + filterClause
+	args = append(args, filterClauseArgs...)
+	args = append(args, filterClauseArgs...)
 
 	err = validateSort(q.Sort)
 	if err != nil {

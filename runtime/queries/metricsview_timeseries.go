@@ -277,14 +277,12 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 		args = append(args, q.TimeEnd.AsTime())
 	}
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, olap.Dialect(), policy)
-		if err != nil {
-			return "", "", nil, err
-		}
-		whereClause += " " + clause
-		args = append(args, clauseArgs...)
+	filterClause, filterClauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, olap.Dialect(), policy)
+	if err != nil {
+		return "", "", nil, err
 	}
+	whereClause += " " + filterClause
+	args = append(args, filterClauseArgs...)
 
 	tsAlias := tempName("_ts_")
 	timezone := "UTC"

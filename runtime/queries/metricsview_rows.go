@@ -228,14 +228,12 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dia
 		}
 	}
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
-		if err != nil {
-			return "", nil, err
-		}
-		whereClause += " " + clause
-		args = append(args, clauseArgs...)
+	filterClause, filterClauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if err != nil {
+		return "", nil, err
 	}
+	whereClause += " " + filterClause
+	args = append(args, filterClauseArgs...)
 
 	sortingCriteria := make([]string, 0, len(q.Sort))
 	for _, s := range q.Sort {
