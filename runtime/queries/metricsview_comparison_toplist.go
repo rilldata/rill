@@ -483,11 +483,21 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	td := safeName(mv.TimeDimension)
 
+	filterClause, filterClauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if err != nil {
+		return "", nil, err
+	}
+
 	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
 	baseWhereClause += trc
+
+	if filterClause != "" {
+		baseWhereClause += " " + filterClause
+		args = append(args, filterClauseArgs...)
+	}
 
 	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, dialect, td, &args)
 	if err != nil {
@@ -495,14 +505,8 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 	comparisonWhereClause += trc
 
-	filterClause, filterClauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
-	if err != nil {
-		return "", nil, err
-	}
 	if filterClause != "" {
-		baseWhereClause += " " + filterClause
 		comparisonWhereClause += " " + filterClause
-		args = append(args, filterClauseArgs...)
 		args = append(args, filterClauseArgs...)
 	}
 
