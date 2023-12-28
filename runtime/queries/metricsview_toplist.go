@@ -218,8 +218,10 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	if err != nil {
 		return "", nil, err
 	}
-	whereClause += " " + filterClause
-	args = append(args, filterClauseArgs...)
+	if filterClause != "" {
+		whereClause += " " + filterClause
+		args = append(args, filterClauseArgs...)
+	}
 
 	sortingCriteria := make([]string, 0, len(q.Sort))
 	for _, s := range q.Sort {

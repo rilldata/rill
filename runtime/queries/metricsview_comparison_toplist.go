@@ -295,8 +295,10 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	if err != nil {
 		return "", nil, err
 	}
-	baseWhereClause += " " + filterClause
-	args = append(args, filterClauseArgs...)
+	if filterClause != "" {
+		baseWhereClause += " " + filterClause
+		args = append(args, filterClauseArgs...)
+	}
 
 	var orderClauses []string
 	for _, s := range q.Sort {
@@ -497,10 +499,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	if err != nil {
 		return "", nil, err
 	}
-	baseWhereClause += " " + filterClause
-	comparisonWhereClause += " " + filterClause
-	args = append(args, filterClauseArgs...)
-	args = append(args, filterClauseArgs...)
+	if filterClause != "" {
+		baseWhereClause += " " + filterClause
+		comparisonWhereClause += " " + filterClause
+		args = append(args, filterClauseArgs...)
+		args = append(args, filterClauseArgs...)
+	}
 
 	err = validateSort(q.Sort)
 	if err != nil {

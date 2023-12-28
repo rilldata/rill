@@ -210,12 +210,16 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 		whereClause += clause
 	}
+
 	filterClause, filterClauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
 	if err != nil {
 		return "", nil, err
 	}
-	whereClause += " " + filterClause
-	args = append(args, filterClauseArgs...)
+	if filterClause != "" {
+		whereClause += " " + filterClause
+		args = append(args, filterClauseArgs...)
+	}
+
 	if len(whereClause) > 0 {
 		whereClause = "WHERE 1=1" + whereClause
 	}

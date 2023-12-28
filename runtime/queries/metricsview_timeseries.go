@@ -281,8 +281,10 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 	if err != nil {
 		return "", "", nil, err
 	}
-	whereClause += " " + filterClause
-	args = append(args, filterClauseArgs...)
+	if filterClause != "" {
+		whereClause += " " + filterClause
+		args = append(args, filterClauseArgs...)
+	}
 
 	tsAlias := tempName("_ts_")
 	timezone := "UTC"

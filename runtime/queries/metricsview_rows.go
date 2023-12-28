@@ -232,8 +232,10 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dia
 	if err != nil {
 		return "", nil, err
 	}
-	whereClause += " " + filterClause
-	args = append(args, filterClauseArgs...)
+	if filterClause != "" {
+		whereClause += " " + filterClause
+		args = append(args, filterClauseArgs...)
+	}
 
 	sortingCriteria := make([]string, 0, len(q.Sort))
 	for _, s := range q.Sort {
