@@ -224,6 +224,9 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		whereClause += " AND " + clause
 		args = append(args, clauseArgs...)
 	}
+	if policy != nil && policy.RowFilter != "" {
+		whereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+	}
 	if len(whereClause) > 0 {
 		whereClause = "WHERE 1=1" + whereClause
 	}
