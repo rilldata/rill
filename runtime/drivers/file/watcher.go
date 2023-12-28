@@ -14,6 +14,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"golang.org/x/exp/maps"
+	"golang.org/x/sys/unix"
 )
 
 const batchInterval = 250 * time.Millisecond
@@ -193,6 +194,9 @@ func (w *watcher) runInner() error {
 func (w *watcher) addDir(path string, replay bool) error {
 	err := w.watcher.Add(path)
 	if err != nil {
+		if os.IsNotExist(err) || errors.Is(err, unix.ENOENT) {
+			return nil
+		}
 		return err
 	}
 
