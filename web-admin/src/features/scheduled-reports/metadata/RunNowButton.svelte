@@ -20,12 +20,12 @@
 
   async function handleRunNow() {
     const lastExecution =
-      $reportQuery.data?.resource.report.state.executionHistory[0];
+      $reportQuery.data?.resource?.report?.state?.executionHistory?.[0];
     await $triggerReport.mutateAsync({
       organization,
       project,
       name: report,
-      data: undefined,
+      data: {},
     });
 
     notifications.send({
@@ -35,7 +35,7 @@
 
     // Refetch the resource query until the new report run shows up in the recent history table
     while (
-      $reportQuery.data.resource.report.state.executionHistory[0] ===
+      $reportQuery.data?.resource?.report?.state?.executionHistory?.[0] ===
       lastExecution
     ) {
       queryClient.invalidateQueries(
