@@ -31,7 +31,6 @@
   const queryClient = useQueryClient();
 
   $: modelQuery = useModel($runtime.instanceId, modelName);
-  // let model: V1ModelV2;
   $: model = $modelQuery?.data?.model;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
