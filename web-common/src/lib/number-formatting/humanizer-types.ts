@@ -68,8 +68,8 @@ export const formatPresetToNumberKind = (type: FormatPreset) => {
     case FormatPreset.CURRENCY_USD:
       return NumberKind.DOLLAR;
 
-      case FormatPreset.CURRENCY_EUR:
-        return NumberKind.EURO;
+    case FormatPreset.CURRENCY_EUR:
+      return NumberKind.EURO;
 
     case FormatPreset.PERCENTAGE:
       return NumberKind.PERCENT;
@@ -156,31 +156,48 @@ export type FormatterOptionsDefaultStrategy = {
 };
 
 /**
- * Specifies a set of formatting options
+ * Specifies a set of formatting options for numbers within
+ * a given order of magnitude range.
  */
 export type RangeFormatSpec = {
-  // minimum order of magnitude for this range.
-  // Target number must have OoM >= minMag.
+  /**
+   * Minimum order of magnitude for this range.
+   * Target number must have OoM >= minMag.
+   */
   minMag: number;
-  // supremum number for this range.
-  // Target number must have OoM < supMag.
+
+  /**
+   * Supremum order of magnitude for this range.
+   * Target number must have OoM OoM < supMag.
+   */
   supMag: number;
 
-  // max number of digits left of decimal point
-  // if undefined, default is 3 digits
+  /**
+   *Max number of digits left of decimal point.
+   * If undefined, default is 3 digits
+   */
   maxDigitsLeft?: number;
-  // max number of digits right of decimal point
+
+  /**
+   * Max number of digits right of decimal point.
+   */
   maxDigitsRight: number;
-  // This sets the order of magnitude used to format numbers
-  // in this range. For example, if baseMagnitude=3, then we'd have:
-  // - 1,000,000 => 1,000k
-  // - 100 => .1k
-  // If this is set to 0, numbers in this range
-  // will be rendered as plain numbers (no suffix).
-  // If not set, the engineering magnitude of `min` is used by default.
+
+  /**
+   * If set, this will be used as the order of magnitude
+   * for formatting numbers in this range.
+   * For example, if baseMagnitude=3, then we'd have:
+   * - 1,000,000 => 1,000k
+   * - 100 => .1k
+   * If this is set to 0, numbers in this range
+   * will be rendered as plain numbers (no suffix).
+   * If not set, the engineering magnitude of `min` is used by default.
+   */
   baseMagnitude?: number;
 
-  // if not set, treated as true
+  /**
+   * Whether or not to pad numbers with insignificant zeros. If undefined, treated as true
+   */
   padWithInsignificantZeros?: boolean;
 
   /**
