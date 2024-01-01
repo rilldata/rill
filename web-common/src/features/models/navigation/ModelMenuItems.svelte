@@ -53,12 +53,14 @@
   }
 
   const handleDeleteModel = async (modelName: string) => {
-    await deleteFileArtifact(
-      $runtime.instanceId,
-      modelName,
-      EntityType.Model,
-      $modelNames.data
-    );
+    if ($modelNames.data) {
+      await deleteFileArtifact(
+        $runtime.instanceId,
+        modelName,
+        EntityType.Model,
+        $modelNames.data
+      );
+    }
     toggleMenu();
   };
 </script>
