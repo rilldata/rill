@@ -107,6 +107,8 @@ import type {
   V1SudoGetResourceResponse,
   V1SudoUpdateOrganizationQuotasRequest,
   V1SudoUpdateOrganizationQuotasResponse,
+  V1SudoUpdateSLARequest,
+  V1SudoUpdateSLAResponse,
   V1SudoUpdateUserQuotasRequest,
   V1SudoUpdateUserQuotasResponse,
   V1TelemetryRequest,
@@ -4944,6 +4946,76 @@ export const createAdminServiceSudoGetResource = <
   return query;
 };
 
+/**
+ * @summary Add a SudoUpdateSLA endpoint for superusers to toggle the SLA bool
+SudoUpdateSLA update the SLA for a project
+ */
+export const adminServiceSudoUpdateSLA = (
+  v1SudoUpdateSLARequest: V1SudoUpdateSLARequest
+) => {
+  return httpClient<V1SudoUpdateSLAResponse>({
+    url: `/v1/superuser/sla`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoUpdateSLARequest,
+  });
+};
+
+export const getAdminServiceSudoUpdateSLAMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateSLA>>,
+    TError,
+    { data: V1SudoUpdateSLARequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSudoUpdateSLA>>,
+  TError,
+  { data: V1SudoUpdateSLARequest },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateSLA>>,
+    { data: V1SudoUpdateSLARequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoUpdateSLA(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSudoUpdateSLAMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoUpdateSLA>>
+>;
+export type AdminServiceSudoUpdateSLAMutationBody = V1SudoUpdateSLARequest;
+export type AdminServiceSudoUpdateSLAMutationError = RpcStatus;
+
+/**
+ * @summary Add a SudoUpdateSLA endpoint for superusers to toggle the SLA bool
+SudoUpdateSLA update the SLA for a project
+ */
+export const createAdminServiceSudoUpdateSLA = <
+  TError = RpcStatus,
+  TContext = unknown
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateSLA>>,
+    TError,
+    { data: V1SudoUpdateSLARequest },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getAdminServiceSudoUpdateSLAMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
 export const adminServiceTelemetry = (
   v1TelemetryRequest: V1TelemetryRequest
 ) => {

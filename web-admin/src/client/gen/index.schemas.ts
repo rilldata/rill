@@ -28,6 +28,7 @@ export type AdminServiceSudoGetResourceParams = {
 
 export type AdminServiceSearchProjectNamesParams = {
   namePattern?: string;
+  prodSla?: boolean;
   pageSize?: number;
   pageToken?: string;
 };
@@ -306,6 +307,16 @@ export interface V1SudoUpdateUserQuotasRequest {
   singleuserOrgs?: number;
 }
 
+export interface V1SudoUpdateSLAResponse {
+  project?: V1Project;
+}
+
+export interface V1SudoUpdateSLARequest {
+  organization?: string;
+  project?: string;
+  sla?: boolean;
+}
+
 export interface V1SudoUpdateOrganizationQuotasResponse {
   organization?: V1Organization;
 }
@@ -443,6 +454,7 @@ export interface V1Project {
   prodDeploymentId?: string;
   prodOlapDriver?: string;
   prodOlapDsn?: string;
+  prodSla?: boolean;
   prodSlots?: string;
   prodTtlSeconds?: string;
   public?: boolean;

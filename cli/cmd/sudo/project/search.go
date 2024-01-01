@@ -9,9 +9,10 @@ import (
 func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pageSize uint32
 	var pageToken string
+	var sla bool
 
 	searchCmd := &cobra.Command{
-		Use:   "search",
+		Use:   "search <pattern>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Search projects by pattern",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -26,6 +27,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			res, err := client.SearchProjectNames(ctx, &adminv1.SearchProjectNamesRequest{
 				NamePattern: args[0],
+				ProdSla:     sla,
 				PageSize:    pageSize,
 				PageToken:   pageToken,
 			})
@@ -50,6 +52,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
+	searchCmd.Flags().BoolVar(&sla, "sla", false, "Show Projects with SLA enabled")
 	searchCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of projects to return per page")
 	searchCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 

@@ -174,8 +174,13 @@ func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProj
 		return nil, err
 	}
 	pageSize := validPageSize(req.PageSize)
+	var projectNames []string
 
-	projectNames, err := s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
+	if req.ProdSla {
+		projectNames, err = s.admin.DB.FindProjectPathsByPatternHasSLA(ctx, req.NamePattern, token.Val, pageSize)
+	} else {
+		projectNames, err = s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
+	}
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -390,6 +395,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
 		Region:               valOrDefault(req.Region, proj.Region),
+		ProdSLA:              proj.ProdSLA,
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
@@ -448,6 +454,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		Region:               proj.Region,
+		ProdSLA:              proj.ProdSLA,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
@@ -779,6 +786,48 @@ func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, githubURL,
 	return installationID, nil
 }
 
+// SudoUpdateSLA updates the SLA for a project in organization for superusers
+func (s *Server) SudoUpdateSLA(ctx context.Context, req *adminv1.SudoUpdateSLARequest) (*adminv1.SudoUpdateSLAResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.Bool("args.sla", req.Sla),
+	)
+
+	// Check the request is made by a superuser
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to update SLA")
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	proj, err = s.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:                 proj.Name,
+		Description:          proj.Description,
+		Public:               proj.Public,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdDeploymentID:     proj.ProdDeploymentID,
+		ProdSlots:            proj.ProdSlots,
+		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		Region:               proj.Region,
+		ProdSLA:              req.Sla,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.SudoUpdateSLAResponse{
+		Project: s.projToDTO(proj, req.Organization),
+	}, nil
+}
+
 func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {
 	frontendURL, _ := url.JoinPath(s.opts.FrontendURL, orgName, p.Name)
 
@@ -799,6 +848,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
 		FrontendUrl:      frontendURL,
+		ProdSla:          p.ProdSLA,
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),
 	}

@@ -222,6 +222,18 @@ func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern,
 	return res, nil
 }
 
+func (c *connection) FindProjectPathsByPatternHasSLA(ctx context.Context, namePattern, afterName string, limit int) ([]string, error) {
+	var res []string
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT concat(o.name,'/',p.name) as project_name FROM projects p JOIN orgs o ON p.org_id = o.id 
+	WHERE concat(o.name,'/',p.name) ilike $1 AND concat(o.name,'/',p.name) > $2 AND p.prod_sla = true
+	ORDER BY project_name 
+	LIMIT $3`, namePattern, afterName, limit)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]*database.Project, error) {
 	var res []*database.Project
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -345,9 +357,9 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, region=$9, prod_slots=$10, prod_ttl_seconds=$11, updated_on=now()
-		WHERE id=$12 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Region, opts.ProdSlots, opts.ProdTTLSeconds, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, region=$9, prod_slots=$10, prod_ttl_seconds=$11, prod_sla=$12, updated_on=now()
+		WHERE id=$13 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Region, opts.ProdSlots, opts.ProdTTLSeconds, opts.ProdSLA, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)

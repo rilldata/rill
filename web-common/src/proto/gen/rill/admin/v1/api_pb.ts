@@ -713,6 +713,11 @@ export class SearchProjectNamesRequest extends Message<SearchProjectNamesRequest
   namePattern = "";
 
   /**
+   * @generated from field: bool prod_sla = 4;
+   */
+  prodSla = false;
+
+  /**
    * @generated from field: uint32 page_size = 2;
    */
   pageSize = 0;
@@ -731,6 +736,7 @@ export class SearchProjectNamesRequest extends Message<SearchProjectNamesRequest
   static readonly typeName = "rill.admin.v1.SearchProjectNamesRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name_pattern", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "prod_sla", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -3217,6 +3223,92 @@ export class SudoUpdateUserQuotasResponse extends Message<SudoUpdateUserQuotasRe
 
   static equals(a: SudoUpdateUserQuotasResponse | PlainMessage<SudoUpdateUserQuotasResponse> | undefined, b: SudoUpdateUserQuotasResponse | PlainMessage<SudoUpdateUserQuotasResponse> | undefined): boolean {
     return proto3.util.equals(SudoUpdateUserQuotasResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoUpdateSLARequest
+ */
+export class SudoUpdateSLARequest extends Message<SudoUpdateSLARequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: bool sla = 3;
+   */
+  sla = false;
+
+  constructor(data?: PartialMessage<SudoUpdateSLARequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoUpdateSLARequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "sla", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateSLARequest {
+    return new SudoUpdateSLARequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoUpdateSLARequest {
+    return new SudoUpdateSLARequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoUpdateSLARequest {
+    return new SudoUpdateSLARequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoUpdateSLARequest | PlainMessage<SudoUpdateSLARequest> | undefined, b: SudoUpdateSLARequest | PlainMessage<SudoUpdateSLARequest> | undefined): boolean {
+    return proto3.util.equals(SudoUpdateSLARequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoUpdateSLAResponse
+ */
+export class SudoUpdateSLAResponse extends Message<SudoUpdateSLAResponse> {
+  /**
+   * @generated from field: rill.admin.v1.Project project = 1;
+   */
+  project?: Project;
+
+  constructor(data?: PartialMessage<SudoUpdateSLAResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoUpdateSLAResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project", kind: "message", T: Project },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateSLAResponse {
+    return new SudoUpdateSLAResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoUpdateSLAResponse {
+    return new SudoUpdateSLAResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoUpdateSLAResponse {
+    return new SudoUpdateSLAResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoUpdateSLAResponse | PlainMessage<SudoUpdateSLAResponse> | undefined, b: SudoUpdateSLAResponse | PlainMessage<SudoUpdateSLAResponse> | undefined): boolean {
+    return proto3.util.equals(SudoUpdateSLAResponse, a, b);
   }
 }
 
@@ -6399,6 +6491,11 @@ export class Project extends Message<Project> {
   prodTtlSeconds = protoInt64.zero;
 
   /**
+   * @generated from field: bool prod_sla = 19;
+   */
+  prodSla = false;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 14;
    */
   createdOn?: Timestamp;
@@ -6432,6 +6529,7 @@ export class Project extends Message<Project> {
     { no: 13, name: "prod_deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 18, name: "prod_ttl_seconds", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 19, name: "prod_sla", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "created_on", kind: "message", T: Timestamp },
     { no: 15, name: "updated_on", kind: "message", T: Timestamp },
   ]);

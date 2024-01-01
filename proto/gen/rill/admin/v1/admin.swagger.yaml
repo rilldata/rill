@@ -1525,6 +1525,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: prodSla
+          in: query
+          required: false
+          type: boolean
         - name: pageSize
           in: query
           required: false
@@ -1612,6 +1616,29 @@ paths:
           in: query
           required: false
           type: string
+      tags:
+        - AdminService
+  /v1/superuser/sla:
+    patch:
+      summary: |-
+        Add a SudoUpdateSLA endpoint for superusers to toggle the SLA bool
+        SudoUpdateSLA update the SLA for a project
+      operationId: AdminService_SudoUpdateSLA
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateSLAResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateSLARequest'
       tags:
         - AdminService
   /v1/telemetry:
@@ -2349,6 +2376,8 @@ definitions:
       prodTtlSeconds:
         type: string
         format: int64
+      prodSla:
+        type: boolean
       createdOn:
         type: string
         format: date-time
@@ -2539,6 +2568,20 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
+  v1SudoUpdateSLARequest:
+    type: object
+    properties:
+      organization:
+        type: string
+      project:
+        type: string
+      sla:
+        type: boolean
+  v1SudoUpdateSLAResponse:
+    type: object
+    properties:
+      project:
+        $ref: '#/definitions/v1Project'
   v1SudoUpdateUserQuotasRequest:
     type: object
     properties:

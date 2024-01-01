@@ -2088,6 +2088,8 @@ func (m *SearchProjectNamesRequest) validate(all bool) error {
 
 	// no validation rules for NamePattern
 
+	// no validation rules for ProdSla
+
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 1000 {
@@ -9206,6 +9208,263 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SudoUpdateUserQuotasResponseValidationError{}
+
+// Validate checks the field values on SudoUpdateSLARequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SudoUpdateSLARequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoUpdateSLARequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SudoUpdateSLARequestMultiError, or nil if none found.
+func (m *SudoUpdateSLARequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoUpdateSLARequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := SudoUpdateSLARequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := SudoUpdateSLARequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Sla
+
+	if len(errors) > 0 {
+		return SudoUpdateSLARequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoUpdateSLARequestMultiError is an error wrapping multiple validation
+// errors returned by SudoUpdateSLARequest.ValidateAll() if the designated
+// constraints aren't met.
+type SudoUpdateSLARequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoUpdateSLARequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoUpdateSLARequestMultiError) AllErrors() []error { return m }
+
+// SudoUpdateSLARequestValidationError is the validation error returned by
+// SudoUpdateSLARequest.Validate if the designated constraints aren't met.
+type SudoUpdateSLARequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoUpdateSLARequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoUpdateSLARequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoUpdateSLARequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoUpdateSLARequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoUpdateSLARequestValidationError) ErrorName() string {
+	return "SudoUpdateSLARequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoUpdateSLARequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoUpdateSLARequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoUpdateSLARequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoUpdateSLARequestValidationError{}
+
+// Validate checks the field values on SudoUpdateSLAResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SudoUpdateSLAResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoUpdateSLAResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SudoUpdateSLAResponseMultiError, or nil if none found.
+func (m *SudoUpdateSLAResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoUpdateSLAResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetProject()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SudoUpdateSLAResponseValidationError{
+					field:  "Project",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SudoUpdateSLAResponseValidationError{
+					field:  "Project",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetProject()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SudoUpdateSLAResponseValidationError{
+				field:  "Project",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return SudoUpdateSLAResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoUpdateSLAResponseMultiError is an error wrapping multiple validation
+// errors returned by SudoUpdateSLAResponse.ValidateAll() if the designated
+// constraints aren't met.
+type SudoUpdateSLAResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoUpdateSLAResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoUpdateSLAResponseMultiError) AllErrors() []error { return m }
+
+// SudoUpdateSLAResponseValidationError is the validation error returned by
+// SudoUpdateSLAResponse.Validate if the designated constraints aren't met.
+type SudoUpdateSLAResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoUpdateSLAResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoUpdateSLAResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoUpdateSLAResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoUpdateSLAResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoUpdateSLAResponseValidationError) ErrorName() string {
+	return "SudoUpdateSLAResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoUpdateSLAResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoUpdateSLAResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoUpdateSLAResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoUpdateSLAResponseValidationError{}
 
 // Validate checks the field values on ListProjectMembersRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -18249,6 +18508,8 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for FrontendUrl
 
 	// no validation rules for ProdTtlSeconds
+
+	// no validation rules for ProdSla
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
