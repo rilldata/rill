@@ -11,10 +11,6 @@ import {
 } from "./strategies/intervals";
 import { humanizedFormatterFactory } from "./humanizer";
 
-export function defaultHumanizer(value: number): string {
-  return humanizeDataType(value, FormatPreset.HUMANIZE);
-}
-
 /**
  * This function is intended to provides a compact,
  * potentially lossy, humanized string representation of a number.
