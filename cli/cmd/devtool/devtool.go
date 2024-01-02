@@ -7,8 +7,15 @@ import (
 
 func DevtoolCmd(ch *cmdutil.Helper) *cobra.Command {
 	devtoolCmd := &cobra.Command{
-		Use:    "devtool",
-		Short:  "Utilities for developing Rill",
+		Use:   "devtool",
+		Short: "Utilities for developing Rill",
+		Example: `  rill devtool start cloud
+  rill devtool start cloud --reset
+  rill devtool start cloud --except runtime
+  rill devtool start local
+  rill devtool start local --reset
+  rill devtool switch-env stage
+  rill devtool dotenv upload cloud`,
 		Hidden: true,
 	}
 

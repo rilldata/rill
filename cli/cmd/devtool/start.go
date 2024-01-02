@@ -156,9 +156,8 @@ func checkRillRepo(ctx context.Context) error {
 		return fmt.Errorf("error executing the 'git remote get-url origin' command: %w", err)
 	}
 
-	rillRepo := "https://github.com/rilldata/rill.git"
-
 	repo := strings.TrimSpace(string(out))
+	rillRepo := "https://github.com/rilldata/rill.git"
 	if repo != rillRepo {
 		return fmt.Errorf("you must run `rill devtool` from the rill repository (expected remote %q, got %q)", rillRepo, repo)
 	}
@@ -168,6 +167,7 @@ func checkRillRepo(ctx context.Context) error {
 
 type servicesCfg struct {
 	admin   bool
+	deps    bool
 	runtime bool
 	ui      bool
 	only    []string
@@ -175,8 +175,8 @@ type servicesCfg struct {
 }
 
 func (s *servicesCfg) addFlags(cmd *cobra.Command) {
-	cmd.Flags().StringSliceVar(&s.only, "only", []string{}, "Only start the listed services (options: admin, runtime, ui)")
-	cmd.Flags().StringSliceVar(&s.except, "except", []string{}, "Start all except the listed services (options: admin, runtime, ui)")
+	cmd.Flags().StringSliceVar(&s.only, "only", []string{}, "Only start the listed services (options: admin, deps, runtime, ui)")
+	cmd.Flags().StringSliceVar(&s.except, "except", []string{}, "Start all except the listed services (options: admin, deps, runtime, ui)")
 }
 
 func (s *servicesCfg) parse() error {
@@ -192,6 +192,7 @@ func (s *servicesCfg) parse() error {
 	}
 
 	s.admin = def
+	s.deps = def
 	s.runtime = def
 	s.ui = def
 
@@ -199,6 +200,8 @@ func (s *servicesCfg) parse() error {
 		switch v {
 		case "admin":
 			s.admin = !def
+		case "deps":
+			s.deps = !def
 		case "runtime":
 			s.runtime = !def
 		case "ui":
@@ -242,17 +245,21 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 
 	g, ctx := errgroup.WithContext(ctx)
 
-	g.Go(func() error { return s.runDeps(ctx) })
+	if services.deps {
+		g.Go(func() error { return s.runDeps(ctx, verbose) })
+	}
 
 	depsReadyCh := make(chan struct{})
 	g.Go(func() error {
-		err := s.awaitPostgres(ctx)
-		if err != nil {
-			return err
-		}
-		err = s.awaitRedis(ctx)
-		if err != nil {
-			return err
+		if services.deps {
+			err := s.awaitPostgres(ctx)
+			if err != nil {
+				return err
+			}
+			err = s.awaitRedis(ctx)
+			if err != nil {
+				return err
+			}
 		}
 		close(depsReadyCh)
 		return nil
@@ -346,6 +353,35 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 		})
 	}
 
+	uiReadyCh := make(chan struct{})
+	g.Go(func() error {
+		if services.ui {
+			err := s.awaitUI(ctx)
+			if err != nil {
+				return err
+			}
+		}
+		close(uiReadyCh)
+		return nil
+	})
+
+	g.Go(func() error {
+		// Wait for backend, then UI
+		select {
+		case <-backendReadyCh:
+			select {
+			case <-uiReadyCh:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+
+		logInfo.Printf("All services ready\n")
+		return nil
+	})
+
 	return g.Wait()
 }
 
@@ -363,11 +399,15 @@ func (s cloud) resetState(ctx context.Context) (err error) {
 	return newCmd(ctx, "docker", "compose", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "down", "--volumes").Run()
 }
 
-func (s cloud) runDeps(ctx context.Context) error {
+func (s cloud) runDeps(ctx context.Context, verbose bool) error {
 	logInfo.Printf("Starting dependencies\n")
 	defer logInfo.Printf("Stopped dependencies\n")
 
 	cmd := newCmd(ctx, "docker", "compose", "-f", "cli/cmd/devtool/data/cloud-deps.docker-compose.yml", "up", "--no-recreate")
+	if verbose {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stdout
+	}
 	return cmd.Run()
 }
 
@@ -519,6 +559,27 @@ func (s cloud) runUI(ctx context.Context) (err error) {
 	return cmd.Run()
 }
 
+func (s cloud) awaitUI(ctx context.Context) error {
+	uiURL := lookupDotenv("RILL_ADMIN_FRONTEND_URL") // TODO: This is a proxy for the frontend's external URL. Should be less implicit.
+
+	for {
+		resp, err := http.Get(uiURL)
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				logInfo.Printf("UI ready\n")
+				return nil
+			}
+		}
+
+		select {
+		case <-time.After(1 * time.Second):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+}
+
 type local struct{}
 
 func (s local) start(ctx context.Context, verbose, reset bool, services *servicesCfg) error {
@@ -565,6 +626,35 @@ func (s local) start(ctx context.Context, verbose, reset bool, services *service
 			return s.runUI(ctx)
 		})
 	}
+
+	uiReadyCh := make(chan struct{})
+	g.Go(func() error {
+		if services.ui {
+			err := s.awaitUI(ctx)
+			if err != nil {
+				return err
+			}
+		}
+		close(uiReadyCh)
+		return nil
+	})
+
+	g.Go(func() error {
+		// Wait for runtime, then UI
+		select {
+		case <-runtimeReadyCh:
+			select {
+			case <-uiReadyCh:
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+
+		logInfo.Printf("All services ready\n")
+		return nil
+	})
 
 	return g.Wait()
 }
@@ -628,6 +718,26 @@ func (s local) runUI(ctx context.Context) (err error) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	return cmd.Run()
+}
+
+func (s local) awaitUI(ctx context.Context) error {
+	uiURL := "http://localhost:3000"
+	for {
+		resp, err := http.Get(uiURL)
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				logInfo.Printf("UI ready\n")
+				return nil
+			}
+		}
+
+		select {
+		case <-time.After(1 * time.Second):
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
 }
 
 func newCmd(ctx context.Context, name string, args ...string) *exec.Cmd {

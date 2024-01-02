@@ -1,5 +1,5 @@
 {
-  "name": "web-admin",
+  "name": "@rilldata/web-admin",
   "version": "0.0.1",
   "scripts": {
     "dev": "vite dev",
@@ -17,6 +17,7 @@
     "@playwright/test": "^1.25.0",
     "@rgossiaux/svelte-headlessui": "^2.0.0",
     "@rilldata/svelte-query": "^4.29.20-0.0.3",
+    "@rilldata/web-common": "*",
     "@sveltejs/adapter-static": "^1.0.0",
     "@sveltejs/kit": "^1.20.4",
     "@tanstack/svelte-query": "npm:@rilldata/svelte-query@4.29.20-0.0.3",
