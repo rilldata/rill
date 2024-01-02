@@ -110,8 +110,7 @@ export const numberKindForMeasure = (measure: MetricsViewSpecMeasureV2) => {
 
 export type NumberParts = {
   neg?: "-";
-  dollar?: "$";
-  euro?: "€";
+  currencySymbol?: "$" | "€";
   int: string;
   dot: "" | ".";
   frac: string;
@@ -338,13 +337,4 @@ export interface Formatter {
   stringFormat(x: number): string;
 
   partsFormat(x: number): NumberParts;
-
-  // FIXME: we can add these parts of the interface back in if we want to implement
-  // alignment. If we decide that we don't want to pursue that,
-  // we can remove this commented code
-  // largestPossibleNumberStringParts: NumberParts;
-  // maxPxWidthsSampled(): FormatterWidths;
-  // maxPxWidthsPossible(): FormatterWidths;
-  // maxCharWidthsSampled(): FormatterWidths;
-  // maxCharWidthsPossible(): FormatterWidths;
 }

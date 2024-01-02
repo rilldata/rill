@@ -27,7 +27,6 @@ export class NonFormatter implements Formatter {
   partsFormat(x: number): NumberParts {
     let numParts;
 
-    const isCurrency = this.options.numberKind === NumberKind.DOLLAR;
     const isPercent = this.options.numberKind === NumberKind.PERCENT;
 
     if (isPercent) x = 100 * x;
@@ -48,9 +47,12 @@ export class NonFormatter implements Formatter {
       numParts.suffix = numParts.suffix.replace("E", "e");
     }
 
-    if (isCurrency) {
-      numParts.dollar = "$";
+    if (this.options.numberKind === NumberKind.DOLLAR) {
+      numParts.currencySymbol = "$";
+    } else if (this.options.numberKind === NumberKind.EURO) {
+      numParts.currencySymbol = "€";
     }
+
     if (isPercent) {
       numParts.percent = "%";
     }

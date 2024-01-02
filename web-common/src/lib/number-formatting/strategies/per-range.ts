@@ -52,14 +52,6 @@ export class PerRangeFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterRangeSpecsStrategy;
   initialSample: number[];
 
-  // FIXME: we can add this back in if we want to implement
-  // alignment. If we decide that we don't want to pursue that,
-  // we can remove this commented code
-  // largestPossibleNumberStringParts: NumberParts;
-  // maxPxWidthsSampledSoFar: FormatterWidths;
-  // maxCharWidthsSampledSoFar: FormatterWidths;
-  // largestPossibleNumberStringParts: NumberParts;
-
   constructor(
     sample: number[],
     options: FormatterRangeSpecsStrategy & FormatterOptionsCommon
@@ -115,7 +107,7 @@ export class PerRangeFormatter implements Formatter {
 
     if (isPercent) x = 100 * x;
 
-    let numParts: NumberParts;
+    let numParts: NumberParts | undefined;
 
     if (x === 0) {
       numParts = { int: "0", dot: "", frac: "", suffix: "" };
@@ -169,7 +161,9 @@ export class PerRangeFormatter implements Formatter {
       numParts.suffix = numParts.suffix.replace("E", "e");
     }
     if (this.options.numberKind === NumberKind.DOLLAR) {
-      numParts.dollar = "$";
+      numParts.currencySymbol = "$";
+    } else if (this.options.numberKind === NumberKind.EURO) {
+      numParts.currencySymbol = "€";
     }
     if (this.options.numberKind === NumberKind.PERCENT) {
       numParts.percent = "%";
