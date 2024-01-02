@@ -20,14 +20,16 @@ export async function createAdBidsModel(page: Page) {
   ]);
 
   await createModel(page, "AdBids_model");
-  await Promise.all([
-    waitForProfiling(page, "AdBids_model", [
-      "publisher",
-      "domain",
-      "timestamp",
-    ]),
-    updateCodeEditor(page, `select * from "AdBids"`),
+
+  await page.waitForTimeout(200);
+  await waitForProfiling(page, "AdBids_model", [
+    "publisher",
+    "domain",
+    "timestamp",
   ]);
+
+  await page.waitForTimeout(200);
+  await updateCodeEditor(page, `select * from "AdBids"`);
 }
 
 export async function assertAdBidsDashboard(page: Page) {

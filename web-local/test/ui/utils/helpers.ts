@@ -26,15 +26,20 @@ export async function waitForProfiling(
   name: string,
   columns: Array<string>
 ) {
-  await page.waitForResponse(
-    new RegExp(`/queries/columns-profile/tables/${name}`)
+  return Promise.all(
+    [
+      page.waitForResponse(
+        new RegExp(`/queries/columns-profile/tables/${name}`)
+      ),
+      columns.map((column) =>
+        page.waitForResponse(
+          new RegExp(
+            `/queries/null-count/tables/${name}\\?columnName=${column}`
+          )
+        )
+      ),
+    ].flat()
   );
-
-  for (const column of columns) {
-    await page.waitForResponse(
-      new RegExp(`/queries/null-count/tables/${name}\\?columnName=${column}`)
-    );
-  }
 }
 
 export function getEntityLink(page: Page, name: string) {
@@ -50,7 +55,7 @@ export async function wrapRetryAssertion(
   timeout = 1000,
   interval = 100
 ) {
-  let lastError: Error;
+  let lastError: Error | undefined;
   await asyncWaitUntil(
     async () => {
       try {
