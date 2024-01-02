@@ -162,6 +162,8 @@ linters-settings:
       - G203
       - G204
       - G306
+      - G401
+      - G501
   revive:
     ignore-generated-header: false
     severity: "warning"
@@ -191,7 +193,17 @@ linters-settings:
       - name: unreachable-code
       - name: redefines-builtin-id
   stylecheck:
-    checks: ["all", "-ST1000", "-ST1003", "-ST1005", "-ST1016", "-ST1020", "-ST1021", "-ST1022"]
+    checks:
+      [
+        "all",
+        "-ST1000",
+        "-ST1003",
+        "-ST1005",
+        "-ST1016",
+        "-ST1020",
+        "-ST1021",
+        "-ST1022",
+      ]
 
 issues:
   max-issues-per-linter: 0
