@@ -106,7 +106,6 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
           : [];
       }
 
-      console.log("createTimeSeriesDataStore", measures);
       const primaryTimeSeries = createMetricsViewTimeSeries(
         ctx,
         measures,

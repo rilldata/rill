@@ -6,7 +6,6 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
@@ -34,17 +33,18 @@
     MEASURES_PADDING_LEFT -
     LEADERBOARD_PADDING_RIGHT;
 
-  $: dashboardStore = useDashboardStore(metricViewName);
+  const {
+    dashboardStore,
+    selectors: {
+      activeMeasure: { selectedMeasureNames },
+    },
+  } = getStateManagers();
 
   $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
   const timeControlsStore = useTimeControlStore(getStateManagers());
-
-  $: selectedMeasureNames = $dashboardStore?.visibleMeasureKeys
-    ? [...$dashboardStore.visibleMeasureKeys]
-    : [];
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -130,13 +130,13 @@
     instanceId,
     metricViewName,
     {
-      measureNames: selectedMeasureNames,
+      measureNames: $selectedMeasureNames,
       filter: $dashboardStore?.filters,
     },
     {
       query: {
         enabled:
-          selectedMeasureNames?.length > 0 &&
+          $selectedMeasureNames?.length > 0 &&
           $timeControlsStore.ready &&
           !!$dashboardStore?.filters,
       },
