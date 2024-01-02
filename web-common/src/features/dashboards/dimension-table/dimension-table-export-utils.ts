@@ -45,7 +45,7 @@ export function getDimensionTableExportArgs(
         dimension: {
           name: dashboardState.selectedDimensionName,
         },
-        measures: dashboardState.selectedMeasureNames.map((name) => ({
+        measures: [...dashboardState.visibleMeasureKeys].map((name) => ({
           name: name,
         })),
         timeRange,

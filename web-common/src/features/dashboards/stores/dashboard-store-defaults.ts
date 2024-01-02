@@ -109,7 +109,6 @@ export function getDefaultMetricsExplorerEntity(
 ) {
   const metricsExplorer: MetricsExplorerEntity = {
     name,
-    selectedMeasureNames: metricsView.measures.map((measure) => measure.name),
 
     visibleMeasureKeys: new Set(
       metricsView.measures.map((measure) => measure.name)

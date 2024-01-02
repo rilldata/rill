@@ -42,7 +42,9 @@
   $: metaQuery = useMetaQuery(instanceId, metricViewName);
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
-  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
+  $: selectedMeasureNames = $dashboardStore?.visibleMeasureKeys
+    ? [...$dashboardStore.visibleMeasureKeys]
+    : [];
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
