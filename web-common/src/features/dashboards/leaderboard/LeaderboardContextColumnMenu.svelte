@@ -5,7 +5,6 @@
   import SelectMenu from "@rilldata/web-common/components/menu/compositions/SelectMenu.svelte";
   import type { SelectMenuItem } from "@rilldata/web-common/components/menu/types";
 
-  // export let metricViewName: string;
   export let validPercentOfTotal: boolean;
 
   const {
