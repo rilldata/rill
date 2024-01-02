@@ -26,7 +26,9 @@ export function drag(node, params: DragParams) {
     moving = true;
   }
 
-  function mousemove(e) {
+  function mousemove(e: MouseEvent) {
+    e.preventDefault();
+
     if (moving) {
       let size;
       if (orientation_ === "horizontal") {
