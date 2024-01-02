@@ -10,6 +10,7 @@ func DevtoolCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "devtool",
 		Short: "Utilities for developing Rill",
 		Example: `  rill devtool start cloud
+  rill devtool seed cloud
   rill devtool start cloud --reset
   rill devtool start cloud --except runtime
   rill devtool start local

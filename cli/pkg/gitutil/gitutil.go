@@ -72,7 +72,7 @@ func RemotesToGithubURL(remotes []Remote) (*Remote, string, error) {
 	// If no Github remotes were found, return the first error.
 	var firstErr error
 	for _, remote := range remotes {
-		ghurl, err := remoteToGithubURL(remote.URL)
+		ghurl, err := RemoteToGithubURL(remote.URL)
 		if err == nil {
 			// Found a Github remote. Success!
 			return &remote, ghurl, nil
@@ -89,7 +89,7 @@ func RemotesToGithubURL(remotes []Remote) (*Remote, string, error) {
 	return nil, "", firstErr
 }
 
-func remoteToGithubURL(remote string) (string, error) {
+func RemoteToGithubURL(remote string) (string, error) {
 	ep, err := transport.NewEndpoint(remote)
 	if err != nil {
 		return "", err
