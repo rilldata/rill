@@ -20,6 +20,7 @@
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import type { LeaderboardItemData } from "./leaderboard-utils";
+  import { potentialFilterName } from "../filters/Filters.svelte";
 
   export let dimensionName: string;
 
