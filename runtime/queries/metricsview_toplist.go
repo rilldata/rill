@@ -226,6 +226,10 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		args = append(args, clauseArgs...)
 	}
 
+	if policy != nil && policy.RowFilter != "" {
+		whereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+	}
+
 	havingClause := ""
 	if q.Having != nil {
 		var havingClauseArgs []any
