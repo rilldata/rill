@@ -19,6 +19,7 @@ on:
         options:
         - stage
         - prod
+        - test
 env:
   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
@@ -43,8 +44,13 @@ jobs:
             echo "NETLIFY_SITE_ID=afb26917-7a60-47d9-81dc-c0babbb0d9a9" >> $GITHUB_ENV
             echo "DOMAIN=rilldata.com" >> $GITHUB_ENV
           else
-            echo "NETLIFY_SITE_ID=e73ac785-882e-425a-8fc8-5432528bb374" >> $GITHUB_ENV
-            echo "DOMAIN=rilldata.io" >> $GITHUB_ENV
+            if [[ $ENV == "stage" ]]; then
+              echo "NETLIFY_SITE_ID=e73ac785-882e-425a-8fc8-5432528bb374" >> $GITHUB_ENV
+              echo "DOMAIN=rilldata.io" >> $GITHUB_ENV
+            else
+              echo "NETLIFY_SITE_ID=ad7b8d67-9b24-4b2a-8985-1a80b7b0ab11" >> $GITHUB_ENV
+              echo "DOMAIN=rilldata.dev" >> $GITHUB_ENV
+            fi
           fi
 
       - name: Build Cloud UI

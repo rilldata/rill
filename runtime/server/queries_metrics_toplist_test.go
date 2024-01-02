@@ -368,3 +368,61 @@ func TestServer_MetricsViewToplist_DimensionsByName(t *testing.T) {
 	require.True(t, len(tr.Data) > 1)
 	require.Equal(t, 2, len(tr.Data[0].Fields))
 }
+
+func TestServer_MetricsViewToplist__dimension_expression(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "tld",
+		MeasureNames:    []string{"measure_0"},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name:      "measure_0",
+				Ascending: true,
+			},
+		},
+		Where: expressionpb.NotLike(
+			expressionpb.Identifier("dom"),
+			expressionpb.Value(structpb.NewStringValue("%yahoo%")),
+		),
+	})
+	require.NoError(t, err)
+	require.Len(t, tr.Data, 4)
+	require.Equal(t, 2, len(tr.Data[0].Fields))
+	require.Equal(t, "instagram.com", tr.Data[0].AsMap()["tld"])
+	require.Equal(t, "msn.com", tr.Data[1].AsMap()["tld"])
+	require.Equal(t, "facebook.com", tr.Data[2].AsMap()["tld"])
+	require.Equal(t, "google.com", tr.Data[3].AsMap()["tld"])
+}
+
+func TestServer_MetricsViewToplist__dimension_expression_in_filter(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids")
+
+	tr, err := server.MetricsViewToplist(testCtx(), &runtimev1.MetricsViewToplistRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "domain_parts",
+		MeasureNames:    []string{"measure_0"},
+		Sort: []*runtimev1.MetricsViewSort{
+			{
+				Name:      "measure_0",
+				Ascending: true,
+			},
+		},
+		Where: expressionpb.NotIn(
+			expressionpb.Identifier("domain_parts"),
+			[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("yahoo")), expressionpb.Value(structpb.NewStringValue("google"))},
+		),
+	})
+	require.NoError(t, err)
+	require.Len(t, tr.Data, 4)
+	require.Equal(t, 2, len(tr.Data[0].Fields))
+	require.Equal(t, "instagram", tr.Data[0].AsMap()["domain_parts"])
+	require.Equal(t, "msn", tr.Data[1].AsMap()["domain_parts"])
+	require.Equal(t, "facebook", tr.Data[2].AsMap()["domain_parts"])
+	require.Equal(t, "com", tr.Data[3].AsMap()["domain_parts"])
+}

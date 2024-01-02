@@ -38,7 +38,7 @@
   async function handleUpload(files: Array<File>) {
     const uploadedFiles = uploadTableFiles(
       files,
-      [$sourceNames?.data, $modelNames?.data],
+      [$sourceNames?.data ?? [], $modelNames?.data ?? []],
       $runtime.instanceId,
       false
     );

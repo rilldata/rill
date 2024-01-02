@@ -2424,6 +2424,8 @@ definitions:
         type: string
       column:
         type: string
+      expression:
+        type: string
       label:
         type: string
       description:

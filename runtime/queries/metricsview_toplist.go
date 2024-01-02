@@ -194,19 +194,10 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	if err != nil {
 		return "", nil, err
 	}
-	rawColName := metricsViewDimensionColumn(dim)
-	colName := safeName(rawColName)
-	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
 
 	var selectCols []string
-	unnestClause := ""
-	if dim.Unnest && dialect != drivers.DialectDruid {
-		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
-		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
-		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
-	} else {
-		selectCols = append(selectCols, colName)
-	}
+	dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
+	selectCols = append(selectCols, dimSel)
 
 	for _, m := range ms {
 		expr := fmt.Sprintf(`%s as "%s"`, m.Expression, m.Name)
@@ -233,6 +224,10 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		}
 		whereClause += " AND " + clause
 		args = append(args, clauseArgs...)
+	}
+
+	if policy != nil && policy.RowFilter != "" {
+		whereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
 	}
 
 	havingClause := ""
@@ -267,17 +262,11 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
 
-	groupByCol := colName
-	if dim.Unnest && dialect != drivers.DialectDruid {
-		groupByCol = unnestColName
-	}
-
-	sql := fmt.Sprintf("SELECT %s FROM %s %s WHERE %s GROUP BY %s %s %s %s OFFSET %d",
+	sql := fmt.Sprintf("SELECT %s FROM %s %s WHERE %s GROUP BY 1 %s %s %s OFFSET %d",
 		strings.Join(selectCols, ", "),
 		safeName(mv.Table),
 		unnestClause,
 		whereClause,
-		groupByCol,
 		havingClause,
 		orderClause,
 		limitClause,

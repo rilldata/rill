@@ -67,11 +67,11 @@
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
   $: file = createRuntimeServiceGetFile(runtimeInstanceId, filePath);
 
-  let source: V1SourceV2;
+  let source: V1SourceV2 | undefined;
   $: source = $sourceQuery.data?.source;
   $: sourceIsReconciling = resourceIsLoading($sourceQuery.data);
 
-  let connector: string;
+  let connector: string | undefined;
   $: connector = source?.state?.connector;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
@@ -85,7 +85,9 @@
       e.target.value = sourceName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, sourceName, $allNamesQuery.data)) {
+    if (
+      isDuplicateName(e.target.value, sourceName, $allNamesQuery?.data ?? [])
+    ) {
       notifications.send({
         message: `Name ${e.target.value} is already in use`,
       });
@@ -122,6 +124,9 @@
   };
 
   const onRefreshClick = async (tableName: string) => {
+    // no-op if connector is undefined
+    if (connector === undefined) return;
+
     try {
       await refreshSource(connector, tableName, runtimeInstanceId);
     } catch (err) {

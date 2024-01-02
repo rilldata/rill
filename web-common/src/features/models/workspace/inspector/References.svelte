@@ -27,7 +27,7 @@
   let showSourceTables = true;
   let modelHasError = false;
 
-  const queryHighlight: Writable<QueryHighlightState> = getContext(
+  const queryHighlight: Writable<QueryHighlightState | undefined> = getContext(
     "rill:app:query-highlight"
   );
 
@@ -35,7 +35,7 @@
     $runtime?.instanceId,
     getFilePathFromNameAndType(modelName, EntityType.Model)
   );
-  $: references = getTableReferences($getModelFile?.data.blob ?? "");
+  $: references = getTableReferences($getModelFile?.data?.blob ?? "");
 
   $: getAllSources = useSources($runtime?.instanceId);
 
@@ -56,13 +56,13 @@
           writable(ref),
           createQueryServiceTableCardinality(
             $runtime?.instanceId,
-            resource.meta.name.name
+            resource?.meta?.name?.name ?? ""
           ),
         ],
         ([resource, ref, cardinality]) => ({
           resource,
           reference: ref,
-          totalRows: +cardinality?.data?.cardinality,
+          totalRows: +(cardinality?.data?.cardinality ?? 0),
         })
       );
     }),
