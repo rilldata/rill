@@ -38,7 +38,7 @@ var (
 )
 
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
-	var reset, refreshDotenv bool
+	var verbose, reset, refreshDotenv bool
 	services := &servicesCfg{}
 
 	cmd := &cobra.Command{
@@ -57,10 +57,11 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to parse services: %w", err)
 			}
 
-			return start(ch, preset, reset, refreshDotenv, services)
+			return start(ch, preset, verbose, reset, refreshDotenv, services)
 		},
 	}
 
+	cmd.Flags().BoolVar(&verbose, "verbose", false, "Set log level to debug")
 	cmd.Flags().BoolVar(&reset, "reset", false, "Reset local development state")
 	cmd.Flags().BoolVar(&refreshDotenv, "refresh-dotenv", true, "Reset local development state")
 	services.addFlags(cmd)
@@ -68,7 +69,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	return cmd
 }
 
-func start(ch *cmdutil.Helper, preset string, reset, refreshDotenv bool, services *servicesCfg) error {
+func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool, services *servicesCfg) error {
 	ctx := graceful.WithCancelOnTerminate(context.Background())
 
 	err := errors.Join(
@@ -83,9 +84,9 @@ func start(ch *cmdutil.Helper, preset string, reset, refreshDotenv bool, service
 
 	switch preset {
 	case "cloud":
-		err = cloud{}.start(ctx, ch, reset, refreshDotenv, services)
+		err = cloud{}.start(ctx, ch, verbose, reset, refreshDotenv, services)
 	case "local":
-		err = local{}.start(ctx, reset, services)
+		err = local{}.start(ctx, verbose, reset, services)
 	default:
 		err = fmt.Errorf("Unknown preset %q", preset)
 	}
@@ -212,7 +213,7 @@ func (s *servicesCfg) parse() error {
 
 type cloud struct{}
 
-func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, reset, refreshDotenv bool, services *servicesCfg) error {
+func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, refreshDotenv bool, services *servicesCfg) error {
 	if reset {
 		err := s.resetState(ctx)
 		if err != nil {
@@ -264,7 +265,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, reset, refreshDote
 			case <-ctx.Done():
 				return ctx.Err()
 			}
-			return s.runAdmin(ctx)
+			return s.runAdmin(ctx, verbose)
 		})
 	}
 
@@ -275,7 +276,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, reset, refreshDote
 			case <-ctx.Done():
 				return ctx.Err()
 			}
-			return s.runRuntime(ctx)
+			return s.runRuntime(ctx, verbose)
 		})
 	}
 
@@ -419,11 +420,14 @@ func (s cloud) awaitRedis(ctx context.Context) error {
 	}
 }
 
-func (s cloud) runAdmin(ctx context.Context) (err error) {
+func (s cloud) runAdmin(ctx context.Context, verbose bool) (err error) {
 	logInfo.Printf("Starting admin\n")
 	defer logInfo.Printf("Stopped admin\n")
 
 	cmd := newCmd(ctx, "go", "run", "cli/main.go", "admin", "start")
+	if verbose {
+		cmd.Env = append(os.Environ(), "RILL_ADMIN_LOG_LEVEL=debug")
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	return cmd.Run()
@@ -454,11 +458,14 @@ func (s cloud) awaitAdmin(ctx context.Context) error {
 	}
 }
 
-func (s cloud) runRuntime(ctx context.Context) (err error) {
+func (s cloud) runRuntime(ctx context.Context, verbose bool) (err error) {
 	logInfo.Printf("Starting runtime\n")
 	defer logInfo.Printf("Stopped runtime\n")
 
 	cmd := newCmd(ctx, "go", "run", "cli/main.go", "runtime", "start")
+	if verbose {
+		cmd.Env = append(os.Environ(), "RILL_RUNTIME_LOG_LEVEL=debug")
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
 	return cmd.Run()
@@ -514,11 +521,11 @@ func (s cloud) runUI(ctx context.Context) (err error) {
 
 type local struct{}
 
-func (s local) start(ctx context.Context, reset bool, services *servicesCfg) error {
+func (s local) start(ctx context.Context, verbose, reset bool, services *servicesCfg) error {
 	g, ctx := errgroup.WithContext(ctx)
 
 	if services.runtime {
-		g.Go(func() error { return s.runRuntime(ctx, reset) })
+		g.Go(func() error { return s.runRuntime(ctx, verbose, reset) })
 	}
 
 	runtimeReadyCh := make(chan struct{})
@@ -562,11 +569,14 @@ func (s local) start(ctx context.Context, reset bool, services *servicesCfg) err
 	return g.Wait()
 }
 
-func (s local) runRuntime(ctx context.Context, reset bool) error {
+func (s local) runRuntime(ctx context.Context, verbose, reset bool) error {
 	logInfo.Printf("Starting runtime\n")
 	defer func() { logInfo.Printf("Stopped runtime\n") }()
 
 	args := []string{"run", "cli/main.go", "start", stateDirLocal, "--no-ui", "--debug"}
+	if verbose {
+		args = append(args, "--verbose")
+	}
 	if reset {
 		args = append(args, "--reset")
 	}

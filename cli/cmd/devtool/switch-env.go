@@ -8,13 +8,11 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
-)
-
-const (
-	prodAdminURL    = "https://admin.rilldata.com"
-	stagingAdminURL = "https://admin.rilldata.io"
-	devAdminURL     = "http://localhost:9090"
+	"golang.org/x/exp/maps"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
@@ -42,7 +40,7 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				toEnv = args[0]
 			} else {
-				toEnv = cmdutil.SelectPrompt("Select environment", []string{"prod", "stage", "dev"}, fromEnv)
+				toEnv = cmdutil.SelectPrompt("Select environment", maps.Keys(envURLs), fromEnv)
 			}
 
 			err = switchEnv(cfg, fromEnv, toEnv)
@@ -59,30 +57,28 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 	return cmd
 }
 
+var envURLs = map[string]string{
+	"prod":  "https://admin.rilldata.com",
+	"stage": "https://admin.rilldata.io",
+	"test":  "https://admin.rilldata.dev",
+	"dev":   "http://localhost:9090",
+}
+
 func inferEnv(cfg *config.Config) (string, error) {
-	switch cfg.AdminURL {
-	case prodAdminURL:
-		return "prod", nil
-	case stagingAdminURL:
-		return "stage", nil
-	case devAdminURL:
-		return "dev", nil
-	default:
-		return "", fmt.Errorf("could not infer env from admin URL %q", cfg.AdminURL)
+	for env, url := range envURLs {
+		if url == cfg.AdminURL {
+			return env, nil
+		}
 	}
+	return "", fmt.Errorf("could not infer env from admin URL %q", cfg.AdminURL)
 }
 
 func adminURLForEnv(env string) string {
-	switch env {
-	case "prod":
-		return prodAdminURL
-	case "stage":
-		return stagingAdminURL
-	case "dev":
-		return devAdminURL
-	default:
+	u, ok := envURLs[env]
+	if !ok {
 		panic(fmt.Errorf("invalid environment %q", env))
 	}
+	return u
 }
 
 func switchEnv(cfg *config.Config, fromEnv, toEnv string) error {
@@ -117,6 +113,8 @@ func switchEnv(cfg *config.Config, fromEnv, toEnv string) error {
 	return nil
 }
 
+// switchEnvToDevTemporarily switches the CLI to the "dev" environment (if not already there),
+// and then switches it back and returns when the context is cancelled.
 func switchEnvToDevTemporarily(ctx context.Context, ch *cmdutil.Helper) {
 	env, err := inferEnv(ch.Config)
 	if err != nil {
@@ -137,12 +135,23 @@ func switchEnvToDevTemporarily(ctx context.Context, ch *cmdutil.Helper) {
 
 	logInfo.Printf("Switched CLI to dev environment\n")
 
-	// TODO: Clear token if not authenticated
-
-	prevOrg := ch.Config.Org
-	err = auth.SelectOrgFlow(ctx, ch, false)
+	authenticated, err := checkAuthenticated(ctx, ch)
 	if err != nil {
-		logWarn.Printf("Failed to select org in dev environment: %v\n", err)
+		logErr.Printf("Failed to check if authenticated: %v\n", err)
+	}
+
+	var prevOrg string
+	if authenticated {
+		prevOrg = ch.Config.Org
+		err = auth.SelectOrgFlow(ctx, ch, false)
+		if err != nil {
+			logWarn.Printf("Failed to select org in dev environment: %v\n", err)
+		}
+	} else {
+		// Since dev environments are frequently reset, clear the token if it's invalid
+		_ = dotrill.SetAccessToken("")
+		_ = dotrill.SetDefaultOrg("")
+		ch.Config.AdminTokenDefault = ""
 	}
 
 	<-ctx.Done()
@@ -161,4 +170,23 @@ func switchEnvToDevTemporarily(ctx context.Context, ch *cmdutil.Helper) {
 		return
 	}
 	ch.Config.Org = prevOrg
+}
+
+func checkAuthenticated(ctx context.Context, ch *cmdutil.Helper) (bool, error) {
+	client, err := cmdutil.Client(ch.Config)
+	if err != nil {
+		return false, err
+	}
+	defer client.Close()
+
+	res, err := client.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+	if err != nil {
+		if s, ok := status.FromError(err); ok && s.Code() == codes.Unauthenticated {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return res.User != nil, nil
 }
