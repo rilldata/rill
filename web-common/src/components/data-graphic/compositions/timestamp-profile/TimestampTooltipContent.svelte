@@ -12,6 +12,7 @@
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
+  import { isClipboardApiSupported } from "../../../../lib/actions/shift-click-action";
   import TimestampSpark from "./TimestampSpark.svelte";
 
   export let xAccessor: string;
@@ -55,17 +56,19 @@
     {/if}
   </div>
   <TooltipShortcutContainer>
-    <div>
-      <StackingWord key="shift">Copy</StackingWord> to clipboard
-    </div>
-    <Shortcut>
-      <span
-        style="
+    {#if isClipboardApiSupported()}
+      <div>
+        <StackingWord key="shift">Copy</StackingWord> to clipboard
+      </div>
+      <Shortcut>
+        <span
+          style="
           font-family: var(--system); 
           font-size: 11.5px;
         ">⇧</span
-      > + Click
-    </Shortcut>
+        > + Click
+      </Shortcut>
+    {/if}
     <div>
       <div style:transform="translateX({tooltipPanShakeAmount}px)">Pan</div>
     </div>
