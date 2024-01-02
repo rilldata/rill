@@ -26,20 +26,15 @@ export async function waitForProfiling(
   name: string,
   columns: Array<string>
 ) {
-  return Promise.all(
-    [
-      page.waitForResponse(
-        new RegExp(`/queries/columns-profile/tables/${name}`)
-      ),
-      columns.map((column) =>
-        page.waitForResponse(
-          new RegExp(
-            `/queries/null-count/tables/${name}\\?columnName=${column}`
-          )
-        )
-      ),
-    ].flat()
+  await page.waitForResponse(
+    new RegExp(`/queries/columns-profile/tables/${name}`)
   );
+
+  for (const column of columns) {
+    await page.waitForResponse(
+      new RegExp(`/queries/null-count/tables/${name}\\?columnName=${column}`)
+    );
+  }
 }
 
 export function getEntityLink(page: Page, name: string) {
