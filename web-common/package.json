@@ -1,5 +1,5 @@
 {
-  "name": "@rilldata/web-common",
+  "name": "web-common",
   "version": "0.0.1",
   "scripts": {
     "lint": "prettier --check . && eslint .",

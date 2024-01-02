@@ -35,6 +35,7 @@
     "svelte-check": "^3.4.3",
     "svelte-preprocess": "^5.0.3",
     "tree-kill": "^1.2.2",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "web-common": "*"
   }
 }
