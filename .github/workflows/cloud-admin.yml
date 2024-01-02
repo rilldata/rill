@@ -19,7 +19,7 @@ on:
         options:
         - stage
         - prod
-        - dev
+        - test
 env:
   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
