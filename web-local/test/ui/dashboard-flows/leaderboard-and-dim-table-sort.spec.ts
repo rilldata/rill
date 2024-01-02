@@ -1,7 +1,6 @@
-import { createDashboardFromModel } from "../utils/dashboardHelpers";
-import { createAdBidsModel } from "../utils/dataSpecifcHelpers";
 import { test, expect, Locator } from "@playwright/test";
 import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
+import { useDashboardFlowTestSetup } from "./dashboard-flow-test-setup";
 
 async function assertAAboveB(locA: Locator, locB: Locator) {
   const topA = await locA.boundingBox().then((box) => box?.y);
@@ -16,22 +15,9 @@ async function assertAAboveB(locA: Locator, locB: Locator) {
 
 test.describe("leaderboard and dimension table sorting", () => {
   startRuntimeForEachTest();
+  useDashboardFlowTestSetup();
 
   test("leaderboard and dimension table sorting", async ({ page }) => {
-    test.setTimeout(30000);
-    await page.goto("/");
-    // disable animations
-    await page.addStyleTag({
-      content: `
-        *, *::before, *::after {
-          animation-duration: 0s !important;
-          transition-duration: 0s !important;
-        }
-      `,
-    });
-    await createAdBidsModel(page);
-    await createDashboardFromModel(page, "AdBids_model");
-
     /**
      * LEADERBOARD
      */
