@@ -110,7 +110,7 @@
 <div>
   <div
     class="flex items-center px-2 h-7 w-full bg-gray-100 border-t border-t-gray-200 {isOpen
-      ? '!cursor-move'
+      ? '!cursor-ns-resize'
       : '!cursor-default'}"
     use:drag={{
       store: rowsViewerLayout,
