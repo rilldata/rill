@@ -112,8 +112,8 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	var isLocalGitPath bool
 	var githubURL string
 	if opts.GitPath != "" {
-		url, err := url.Parse(opts.GitPath)
-		if err != nil || url.Scheme == "" {
+		u, err := url.Parse(opts.GitPath)
+		if err != nil || u.Scheme == "" {
 			isLocalGitPath = true
 		} else {
 			githubURL, err = gitutil.RemoteToGithubURL(opts.GitPath)
