@@ -107,8 +107,8 @@ import type {
   V1SudoGetResourceResponse,
   V1SudoUpdateOrganizationQuotasRequest,
   V1SudoUpdateOrganizationQuotasResponse,
-  V1SudoUpdateSLARequest,
-  V1SudoUpdateSLAResponse,
+  V1SudoUpdateTagsRequest,
+  V1SudoUpdateTagsResponse,
   V1SudoUpdateUserQuotasRequest,
   V1SudoUpdateUserQuotasResponse,
   V1TelemetryRequest,
@@ -4947,72 +4947,70 @@ export const createAdminServiceSudoGetResource = <
 };
 
 /**
- * @summary Add a SudoUpdateSLA endpoint for superusers to toggle the SLA bool
-SudoUpdateSLA update the SLA for a project
+ * @summary Add a SudoUpdateTags endpoint for superusers to update tags
  */
-export const adminServiceSudoUpdateSLA = (
-  v1SudoUpdateSLARequest: V1SudoUpdateSLARequest
+export const adminServiceSudoUpdateTags = (
+  v1SudoUpdateTagsRequest: V1SudoUpdateTagsRequest
 ) => {
-  return httpClient<V1SudoUpdateSLAResponse>({
-    url: `/v1/superuser/sla`,
+  return httpClient<V1SudoUpdateTagsResponse>({
+    url: `/v1/superuser/tags`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    data: v1SudoUpdateSLARequest,
+    data: v1SudoUpdateTagsRequest,
   });
 };
 
-export const getAdminServiceSudoUpdateSLAMutationOptions = <
+export const getAdminServiceSudoUpdateTagsMutationOptions = <
   TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoUpdateSLA>>,
+    Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>,
     TError,
-    { data: V1SudoUpdateSLARequest },
+    { data: V1SudoUpdateTagsRequest },
     TContext
   >;
 }): CreateMutationOptions<
-  Awaited<ReturnType<typeof adminServiceSudoUpdateSLA>>,
+  Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>,
   TError,
-  { data: V1SudoUpdateSLARequest },
+  { data: V1SudoUpdateTagsRequest },
   TContext
 > => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceSudoUpdateSLA>>,
-    { data: V1SudoUpdateSLARequest }
+    Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>,
+    { data: V1SudoUpdateTagsRequest }
   > = (props) => {
     const { data } = props ?? {};
 
-    return adminServiceSudoUpdateSLA(data);
+    return adminServiceSudoUpdateTags(data);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type AdminServiceSudoUpdateSLAMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSudoUpdateSLA>>
+export type AdminServiceSudoUpdateTagsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>
 >;
-export type AdminServiceSudoUpdateSLAMutationBody = V1SudoUpdateSLARequest;
-export type AdminServiceSudoUpdateSLAMutationError = RpcStatus;
+export type AdminServiceSudoUpdateTagsMutationBody = V1SudoUpdateTagsRequest;
+export type AdminServiceSudoUpdateTagsMutationError = RpcStatus;
 
 /**
- * @summary Add a SudoUpdateSLA endpoint for superusers to toggle the SLA bool
-SudoUpdateSLA update the SLA for a project
+ * @summary Add a SudoUpdateTags endpoint for superusers to update tags
  */
-export const createAdminServiceSudoUpdateSLA = <
+export const createAdminServiceSudoUpdateTags = <
   TError = RpcStatus,
   TContext = unknown
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoUpdateSLA>>,
+    Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>,
     TError,
-    { data: V1SudoUpdateSLARequest },
+    { data: V1SudoUpdateTagsRequest },
     TContext
   >;
 }) => {
-  const mutationOptions = getAdminServiceSudoUpdateSLAMutationOptions(options);
+  const mutationOptions = getAdminServiceSudoUpdateTagsMutationOptions(options);
 
   return createMutation(mutationOptions);
 };

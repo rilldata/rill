@@ -277,7 +277,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			ProdSlots:            proj.ProdSlots,
 			Region:               proj.Region,
 			ProdTTLSeconds:       proj.ProdTTLSeconds,
-			ProdSLA:              proj.ProdSLA,
+			Tags:                 proj.Tags,
 			ProdDeploymentID:     nil,
 		})
 		if err != nil {
@@ -343,16 +343,21 @@ type deploymentAnnotations struct {
 	orgName  string
 	projID   string
 	projName string
-	prodSLA  bool
+	tags     []string
 }
 
 func newDeploymentAnnotations(org *database.Organization, proj *database.Project) deploymentAnnotations {
+	// tags := []string{}
+	// if proj.Tags != nil {
+	// 	tags = *proj.Tags
+	// }
+
 	return deploymentAnnotations{
 		orgID:    org.ID,
 		orgName:  org.Name,
 		projID:   proj.ID,
 		projName: proj.Name,
-		prodSLA:  proj.ProdSLA,
+		tags:     proj.Tags,
 	}
 }
 
@@ -362,7 +367,7 @@ func (da *deploymentAnnotations) toMap() map[string]string {
 		"organization_name": da.orgName,
 		"project_id":        da.projID,
 		"project_name":      da.projName,
-		"prod_sla":          strconv.FormatBool(da.prodSLA),
+		"tags":              strings.Join(da.tags, ","),
 	}
 }
 

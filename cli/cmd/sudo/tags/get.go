@@ -1,4 +1,4 @@
-package sla
+package tags
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get",
 		Args:  cobra.ExactArgs(2),
-		Short: "Get SLA for project in an organization",
+		Short: "Get Tags for project in an organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			cfg := ch.Config
@@ -30,10 +30,10 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			sla := res.Project.ProdSla
+			tags := res.Project.Tags
 			fmt.Printf("Project: %s\n", res.Project.Name)
 			fmt.Printf("Organization: %s\n", res.Project.OrgName)
-			fmt.Printf("SLA: %v\n", sla)
+			fmt.Printf("Tags: %v\n", tags)
 
 			return nil
 		},

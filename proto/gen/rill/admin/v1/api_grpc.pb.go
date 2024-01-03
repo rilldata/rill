@@ -65,7 +65,7 @@ const (
 	AdminService_SudoGetResource_FullMethodName              = "/rill.admin.v1.AdminService/SudoGetResource"
 	AdminService_SudoUpdateUserQuotas_FullMethodName         = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
-	AdminService_SudoUpdateSLA_FullMethodName                = "/rill.admin.v1.AdminService/SudoUpdateSLA"
+	AdminService_SudoUpdateTags_FullMethodName               = "/rill.admin.v1.AdminService/SudoUpdateTags"
 	AdminService_ListServices_FullMethodName                 = "/rill.admin.v1.AdminService/ListServices"
 	AdminService_CreateService_FullMethodName                = "/rill.admin.v1.AdminService/CreateService"
 	AdminService_UpdateService_FullMethodName                = "/rill.admin.v1.AdminService/UpdateService"
@@ -187,9 +187,8 @@ type AdminServiceClient interface {
 	SudoUpdateUserQuotas(ctx context.Context, in *SudoUpdateUserQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateUserQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
-	// Add a SudoUpdateSLA endpoint for superusers to toggle the SLA bool
-	// SudoUpdateSLA update the SLA for a project
-	SudoUpdateSLA(ctx context.Context, in *SudoUpdateSLARequest, opts ...grpc.CallOption) (*SudoUpdateSLAResponse, error)
+	// Add a SudoUpdateTags endpoint for superusers to update tags
+	SudoUpdateTags(ctx context.Context, in *SudoUpdateTagsRequest, opts ...grpc.CallOption) (*SudoUpdateTagsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
 	// CreateService creates a new service per organization
@@ -657,9 +656,9 @@ func (c *adminServiceClient) SudoUpdateOrganizationQuotas(ctx context.Context, i
 	return out, nil
 }
 
-func (c *adminServiceClient) SudoUpdateSLA(ctx context.Context, in *SudoUpdateSLARequest, opts ...grpc.CallOption) (*SudoUpdateSLAResponse, error) {
-	out := new(SudoUpdateSLAResponse)
-	err := c.cc.Invoke(ctx, AdminService_SudoUpdateSLA_FullMethodName, in, out, opts...)
+func (c *adminServiceClient) SudoUpdateTags(ctx context.Context, in *SudoUpdateTagsRequest, opts ...grpc.CallOption) (*SudoUpdateTagsResponse, error) {
+	out := new(SudoUpdateTagsResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoUpdateTags_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -961,9 +960,8 @@ type AdminServiceServer interface {
 	SudoUpdateUserQuotas(context.Context, *SudoUpdateUserQuotasRequest) (*SudoUpdateUserQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
-	// Add a SudoUpdateSLA endpoint for superusers to toggle the SLA bool
-	// SudoUpdateSLA update the SLA for a project
-	SudoUpdateSLA(context.Context, *SudoUpdateSLARequest) (*SudoUpdateSLAResponse, error)
+	// Add a SudoUpdateTags endpoint for superusers to update tags
+	SudoUpdateTags(context.Context, *SudoUpdateTagsRequest) (*SudoUpdateTagsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
 	// CreateService creates a new service per organization
@@ -1152,8 +1150,8 @@ func (UnimplementedAdminServiceServer) SudoUpdateUserQuotas(context.Context, *Su
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationQuotas not implemented")
 }
-func (UnimplementedAdminServiceServer) SudoUpdateSLA(context.Context, *SudoUpdateSLARequest) (*SudoUpdateSLAResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateSLA not implemented")
+func (UnimplementedAdminServiceServer) SudoUpdateTags(context.Context, *SudoUpdateTagsRequest) (*SudoUpdateTagsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateTags not implemented")
 }
 func (UnimplementedAdminServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListServices not implemented")
@@ -2062,20 +2060,20 @@ func _AdminService_SudoUpdateOrganizationQuotas_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_SudoUpdateSLA_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SudoUpdateSLARequest)
+func _AdminService_SudoUpdateTags_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoUpdateTagsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).SudoUpdateSLA(ctx, in)
+		return srv.(AdminServiceServer).SudoUpdateTags(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_SudoUpdateSLA_FullMethodName,
+		FullMethod: AdminService_SudoUpdateTags_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).SudoUpdateSLA(ctx, req.(*SudoUpdateSLARequest))
+		return srv.(AdminServiceServer).SudoUpdateTags(ctx, req.(*SudoUpdateTagsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2668,8 +2666,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_SudoUpdateOrganizationQuotas_Handler,
 		},
 		{
-			MethodName: "SudoUpdateSLA",
-			Handler:    _AdminService_SudoUpdateSLA_Handler,
+			MethodName: "SudoUpdateTags",
+			Handler:    _AdminService_SudoUpdateTags_Handler,
 		},
 		{
 			MethodName: "ListServices",

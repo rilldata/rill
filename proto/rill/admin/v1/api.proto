@@ -298,11 +298,10 @@ service AdminService {
     };
   }
 
-  // Add a SudoUpdateSLA endpoint for superusers to toggle the SLA bool
-  // SudoUpdateSLA update the SLA for a project
-  rpc SudoUpdateSLA(SudoUpdateSLARequest) returns (SudoUpdateSLAResponse) {
+  // Add a SudoUpdateTags endpoint for superusers to update tags
+  rpc SudoUpdateTags(SudoUpdateTagsRequest) returns (SudoUpdateTagsResponse) {
     option (google.api.http) = {
-      patch: "/v1/superuser/sla",
+      patch: "/v1/superuser/tags",
       body: "*"
     };
   }
@@ -525,7 +524,7 @@ message GetProjectResponse {
 
 message SearchProjectNamesRequest {
   string name_pattern = 1;
-  bool prod_sla = 4;
+  repeated string tags = 4;
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
@@ -649,6 +648,7 @@ message CreateProjectRequest {
   string prod_branch = 9;
   string github_url = 10;
   map<string, string> variables = 11;
+  repeated string tags = 13;
 }
 
 message CreateProjectResponse {
@@ -821,13 +821,13 @@ message SudoUpdateUserQuotasResponse {
   User user = 1;
 }
 
-message SudoUpdateSLARequest {
+message SudoUpdateTagsRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
-  bool sla = 3;
+  repeated string tags = 3;
 }
 
-message SudoUpdateSLAResponse {
+message SudoUpdateTagsResponse {
   Project project = 1;
 }
 
@@ -1198,7 +1198,7 @@ message Project {
   string prod_deployment_id = 13;
   string frontend_url = 16;
   int64 prod_ttl_seconds = 18;
-  bool prod_sla = 19;
+  repeated string tags = 19;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -66,7 +67,7 @@ type DB interface {
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
 	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
-	FindProjectPathsByPatternHasSLA(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
+	FindProjectPathsByPatternHasTags(ctx context.Context, namePattern, afterName string, tags []string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
@@ -266,9 +267,10 @@ type Project struct {
 	ProdSlots            int       `db:"prod_slots"`
 	ProdTTLSeconds       *int64    `db:"prod_ttl_seconds"`
 	ProdDeploymentID     *string   `db:"prod_deployment_id"`
-	ProdSLA              bool      `db:"prod_sla"`
-	CreatedOn            time.Time `db:"created_on"`
-	UpdatedOn            time.Time `db:"updated_on"`
+	// Tags                 *[]string `db:"tags"`
+	Tags      Tags      `db:"tags"`
+	CreatedOn time.Time `db:"created_on"`
+	UpdatedOn time.Time `db:"updated_on"`
 }
 
 // Variables implements JSON SQL encoding of variables in Project.
@@ -280,6 +282,44 @@ func (e *Variables) Scan(value interface{}) error {
 		return errors.New("failed type assertion to []byte")
 	}
 	return json.Unmarshal(b, &e)
+}
+
+// Tags implements array SQL encoding of tags in Project.
+type Tags []string
+
+// func (e *Tags) Scan(value interface{}) error {
+// 	b, ok := value.([]byte)
+// 	if !ok {
+// 		return errors.New("failed type assertion to []byte")
+// 	}
+// 	return json.Unmarshal(b, &e)
+// }
+
+// Scan converts a PostgreSQL array string to Tags
+func (t *Tags) Scan(src interface{}) error {
+	if src == nil {
+		*t = nil
+		return nil
+	}
+
+	var str string
+	switch v := src.(type) {
+	case []byte:
+		str = string(v)
+	case string:
+		str = v
+	default:
+		return errors.New("invalid type for tags")
+	}
+
+	if len(str) < 2 || str[0] != '{' || str[len(str)-1] != '}' {
+		return errors.New("invalid array format")
+	}
+
+	elements := strings.Split(str[1:len(str)-1], ",")
+	*t = make(Tags, len(elements))
+	copy(*t, elements)
+	return nil
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
@@ -298,6 +338,7 @@ type InsertProjectOptions struct {
 	ProdOLAPDSN          string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
+	Tags                 *[]string
 }
 
 // UpdateProjectOptions defines options for updating a Project.
@@ -313,7 +354,7 @@ type UpdateProjectOptions struct {
 	ProdSlots            int
 	ProdTTLSeconds       *int64
 	Region               string
-	ProdSLA              bool
+	Tags                 []string
 }
 
 // DeploymentStatus is an enum representing the state of a deployment

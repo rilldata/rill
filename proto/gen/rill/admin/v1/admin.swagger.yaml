@@ -1023,6 +1023,10 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
+              tags:
+                type: array
+                items:
+                  type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}:
@@ -1525,10 +1529,13 @@ paths:
           in: query
           required: false
           type: string
-        - name: prodSla
+        - name: tags
           in: query
           required: false
-          type: boolean
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
         - name: pageSize
           in: query
           required: false
@@ -1618,17 +1625,15 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/superuser/sla:
+  /v1/superuser/tags:
     patch:
-      summary: |-
-        Add a SudoUpdateSLA endpoint for superusers to toggle the SLA bool
-        SudoUpdateSLA update the SLA for a project
-      operationId: AdminService_SudoUpdateSLA
+      summary: Add a SudoUpdateTags endpoint for superusers to update tags
+      operationId: AdminService_SudoUpdateTags
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SudoUpdateSLAResponse'
+            $ref: '#/definitions/v1SudoUpdateTagsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1638,7 +1643,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1SudoUpdateSLARequest'
+            $ref: '#/definitions/v1SudoUpdateTagsRequest'
       tags:
         - AdminService
   /v1/telemetry:
@@ -2376,8 +2381,10 @@ definitions:
       prodTtlSeconds:
         type: string
         format: int64
-      prodSla:
-        type: boolean
+      tags:
+        type: array
+        items:
+          type: string
       createdOn:
         type: string
         format: date-time
@@ -2568,16 +2575,18 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-  v1SudoUpdateSLARequest:
+  v1SudoUpdateTagsRequest:
     type: object
     properties:
       organization:
         type: string
       project:
         type: string
-      sla:
-        type: boolean
-  v1SudoUpdateSLAResponse:
+      tags:
+        type: array
+        items:
+          type: string
+  v1SudoUpdateTagsResponse:
     type: object
     properties:
       project:

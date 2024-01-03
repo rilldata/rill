@@ -91,7 +91,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProdSlots:            proj.ProdSlots,
 		Region:               proj.Region,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
-		ProdSLA:              proj.ProdSLA,
+		Tags:                 proj.Tags,
 		ProdDeploymentID:     &depl.ID,
 	})
 	if err != nil {
@@ -270,7 +270,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		Region:               proj.Region,
-		ProdSLA:              proj.ProdSLA,
+		Tags:                 proj.Tags,
 	})
 	if err != nil {
 		err2 := s.teardownDeployment(ctx, proj, newDepl)

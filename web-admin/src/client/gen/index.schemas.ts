@@ -28,7 +28,7 @@ export type AdminServiceSudoGetResourceParams = {
 
 export type AdminServiceSearchProjectNamesParams = {
   namePattern?: string;
-  prodSla?: boolean;
+  tags?: string[];
   pageSize?: number;
   pageToken?: string;
 };
@@ -92,6 +92,7 @@ export type AdminServiceCreateProjectBody = {
   public?: boolean;
   region?: string;
   subpath?: string;
+  tags?: string[];
   variables?: AdminServiceCreateProjectBodyVariables;
 };
 
@@ -307,14 +308,14 @@ export interface V1SudoUpdateUserQuotasRequest {
   singleuserOrgs?: number;
 }
 
-export interface V1SudoUpdateSLAResponse {
+export interface V1SudoUpdateTagsResponse {
   project?: V1Project;
 }
 
-export interface V1SudoUpdateSLARequest {
+export interface V1SudoUpdateTagsRequest {
   organization?: string;
   project?: string;
-  sla?: boolean;
+  tags?: string[];
 }
 
 export interface V1SudoUpdateOrganizationQuotasResponse {
@@ -454,12 +455,12 @@ export interface V1Project {
   prodDeploymentId?: string;
   prodOlapDriver?: string;
   prodOlapDsn?: string;
-  prodSla?: boolean;
   prodSlots?: string;
   prodTtlSeconds?: string;
   public?: boolean;
   region?: string;
   subpath?: string;
+  tags?: string[];
   updatedOn?: string;
 }
 
