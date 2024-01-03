@@ -23,6 +23,7 @@
   import DashboardTitle from "./DashboardTitle.svelte";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
+  import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
 
   export let metricViewName: string;
   export let leftMargin = undefined;
@@ -92,11 +93,14 @@
     {#if mockUserHasNoAccess}
       <div class="mb-3" />
     {:else}
-      <div class="-ml-3 p-1 py-2 space-y-2">
+      <div class="-ml-3 px-1 pt-2 space-y-2">
         <TimeControls {metricViewName} />
-        {#key metricViewName}
-          <Filters />
-        {/key}
+        <div class="flex justify-between">
+          {#key metricViewName}
+            <Filters />
+            <TabBar/>
+          {/key}
+        </div>
       </div>
     {/if}
   </div>

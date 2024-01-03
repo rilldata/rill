@@ -105,12 +105,7 @@
   <div class="flex gap-x-3 items-center font-normal text-gray-500">
     <div class="flex items-center gap-x-2">
       <!-- svelte-ignore a11y-click-events-have-key-events -->
-      <!-- Hidden path for opening full pivot -->
-      <div
-        on:dblclick={() =>
-          metricsExplorerStore.setPivotMode(metricViewName, true)}
-        class="flex items-center gap-x-1"
-      >
+      <div class="flex items-center gap-x-1">
         <Row size="16px" /> Rows
       </div>
 
