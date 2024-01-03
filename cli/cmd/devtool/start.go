@@ -93,7 +93,7 @@ func start(ch *cmdutil.Helper, preset string, verbose, reset, refreshDotenv bool
 	}
 	// If ctx.Err() != nil, we don't return the err because any graceful shutdown will cause sub-commands to return non-zero exit code errors.
 	// In these cases, ignoring the error doesn't really matter since "real" errors are probably also logged to stdout anyway.
-	if err != nil && ctx.Err() == nil {
+	if err != nil && (ctx.Err() == nil || verbose) {
 		return err
 	}
 	return nil
@@ -136,7 +136,7 @@ func checkDocker(ctx context.Context) error {
 	}
 
 	if sv, ok := info["ServerVersion"].(string); !ok || sv == "" {
-		return errors.New("error extracting the Docker server version")
+		return errors.New("error extracting the Docker server version (is Docker running?)")
 	}
 
 	if se, ok := info["ServerErrors"].([]string); ok && len(se) > 0 {
@@ -225,6 +225,11 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 		logInfo.Printf("Reset cloud dependencies\n")
 	}
 
+	err := os.MkdirAll(stateDirCloud, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to create state dir %q: %w", stateDirCloud, err)
+	}
+
 	if refreshDotenv {
 		err := downloadDotenv(ctx, "cloud")
 		if err != nil {
@@ -234,7 +239,7 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	}
 
 	// Validate the .env file is well-formed.
-	err := checkDotenv()
+	err = checkDotenv()
 	if err != nil {
 		return err
 	}
