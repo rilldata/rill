@@ -6,7 +6,8 @@ import { potentialFilterName } from "../../filters/Filters.svelte";
 export function toggleDimensionValueSelection(
   { dashboard, cancelQueries }: DashboardMutables,
   dimensionName: string,
-  dimensionValue: string
+  dimensionValue: string,
+  keepPillVisible?: boolean
 ) {
   const filters = filtersForCurrentExcludeMode({ dashboard })(dimensionName);
   // if there are no filters at this point we cannot update anything.
@@ -27,12 +28,14 @@ export function toggleDimensionValueSelection(
     if (removeIfExists(filtersIn, (value) => value === dimensionValue)) {
       if (filtersIn.length === 0) {
         filters.splice(dimensionEntryIndex, 1);
-        potentialFilterName.set(dimensionName);
+        if (keepPillVisible) potentialFilterName.set(dimensionName);
       }
       return;
     }
     filtersIn.push(dimensionValue);
   } else {
+    potentialFilterName.set(null);
+
     filters.push({
       name: dimensionName,
       in: [dimensionValue],
