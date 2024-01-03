@@ -49,7 +49,7 @@ jobs:
               echo "DOMAIN=rilldata.io" >> $GITHUB_ENV
             else
               echo "NETLIFY_SITE_ID=ad7b8d67-9b24-4b2a-8985-1a80b7b0ab11" >> $GITHUB_ENV
-              echo "DOMAIN=rilldata.dev" >> $GITHUB_ENV
+              echo "DOMAIN=rilldata.in" >> $GITHUB_ENV
             fi
           fi
 

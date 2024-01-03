@@ -37,7 +37,7 @@ func LoginCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Set default org after login
-			err = SelectOrgFlow(ctx, ch)
+			err = SelectOrgFlow(ctx, ch, true)
 			if err != nil {
 				return err
 			}
@@ -91,7 +91,7 @@ func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	return nil
 }
 
-func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper) error {
+func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper, interactive bool) error {
 	cfg := ch.Config
 	client, err := cmdutil.Client(cfg)
 	if err != nil {
@@ -105,7 +105,9 @@ func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper) error {
 	}
 
 	if len(res.Organizations) == 0 {
-		ch.Printer.PrintlnWarn("You are not part of an org. Run `rill org create` or `rill deploy` to create one.")
+		if interactive {
+			ch.Printer.PrintlnWarn("You are not part of an org. Run `rill org create` or `rill deploy` to create one.")
+		}
 		return nil
 	}
 
@@ -115,7 +117,7 @@ func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper) error {
 	}
 
 	defaultOrg := orgNames[0]
-	if len(orgNames) > 1 {
+	if interactive && len(orgNames) > 1 {
 		defaultOrg = cmdutil.SelectPrompt("Select default org (to change later, run `rill org switch`).", orgNames, defaultOrg)
 	}
 
@@ -123,9 +125,10 @@ func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper) error {
 	if err != nil {
 		return err
 	}
-
 	cfg.Org = defaultOrg
 
-	ch.Printer.Print(fmt.Sprintf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg))
+	if interactive {
+		ch.Printer.Print(fmt.Sprintf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg))
+	}
 	return nil
 }

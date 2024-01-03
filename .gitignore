@@ -21,6 +21,7 @@ tsc-tmp/
 /rill
 /cli/pkg/examples/embed/dist
 /dev-project*
+/dev-cloud-state*
 
 # data files
 *.duckdb
