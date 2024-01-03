@@ -41,13 +41,10 @@
 <!-- container for the metrics leaderboard components and controls -->
 <div
   bind:this={leaderboardContainer}
-  class="flex flex-col overflow-hidden"
-  style:height="calc(100vh - 130px - 4rem)"
+  class="flex flex-col overflow-hidden h-full"
   style:min-width="365px"
 >
-  <div
-    class="grid grid-auto-cols justify-between grid-flow-col items-center pl-1 pb-3 flex-grow-0"
-  >
+  <div class="pl-1 pb-3">
     <LeaderboardControls metricViewName={$metricsViewName} />
   </div>
   <div class="grow overflow-hidden">
