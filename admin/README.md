@@ -6,7 +6,7 @@ This directory contains the control-plane for the managed, multi-user version of
 
 Run the following command from the repository root to start a full development environment except the admin service:
 ```bash
-rill devtool start cloud # optional: --reset 
+rill devtool start cloud --except admin # optional: --reset 
 ```
 
 For as long as the devtool is running, `rill` commands will target your local development environment instead of `rilldata.com` (you can manually switch environments using `rill devtool switch-env`.)
