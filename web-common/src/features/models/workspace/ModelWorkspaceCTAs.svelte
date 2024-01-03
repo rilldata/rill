@@ -110,7 +110,9 @@
   <Tooltip distance={8} alignment="end">
     <Button
       on:click={() => {
-        goto(`/dashboard/${availableDashboards[0].meta.name.name}`);
+        if (availableDashboards[0]?.meta?.name?.name) {
+          goto(`/dashboard/${availableDashboards[0].meta.name.name}`);
+        }
       }}
     >
       <IconSpaceFixer pullLeft pullRight={collapse}>
@@ -145,11 +147,13 @@
         {#each availableDashboards as resource}
           <MenuItem
             on:select={() => {
-              goto(`/dashboard/${resource.meta.name.name}`);
-              toggleFloatingElement();
+              if (resource?.meta?.name?.name) {
+                goto(`/dashboard/${resource.meta.name.name}`);
+                toggleFloatingElement();
+              }
             }}
           >
-            {resource.meta.name.name}
+            {resource?.meta?.name?.name ?? "Loading..."}
           </MenuItem>
         {/each}
       </Menu>

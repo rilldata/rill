@@ -300,6 +300,10 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 		args = append(args, clauseArgs...)
 	}
 
+	if policy != nil && policy.RowFilter != "" {
+		whereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+	}
+
 	havingClause := ""
 	if q.Having != nil {
 		clause, clauseArgs, err := buildExpression(mv, q.Having, nil, olap.Dialect())

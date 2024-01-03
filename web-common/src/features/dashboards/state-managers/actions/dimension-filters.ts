@@ -9,7 +9,8 @@ import { getWhereFilterExpressionIndex } from "../selectors/dimension-filters";
 export function toggleDimensionValueSelection(
   { dashboard, cancelQueries }: DashboardMutables,
   dimensionName: string,
-  dimensionValue: string
+  dimensionValue: string,
+  keepPillVisible?: boolean
 ) {
   // if we are able to update the filters, we must cancel any queries
   // that are currently running.

@@ -105,13 +105,8 @@ func (q *ColumnTimeseries) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 
 	return olap.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
-		filter, args, err := buildFilterClauseForMetricsViewFilter(q.MetricsView, q.MetricsViewFilter, olap.Dialect(), q.MetricsViewPolicy)
-		if err != nil {
-			return err
-		}
-		if filter != "" {
-			filter = "WHERE 1=1 " + filter
-		}
+		filter := ""
+		var args []any
 
 		measures := normaliseMeasures(q.Measures, q.Pixels != 0)
 		dateTruncSpecifier := convertToDateTruncSpecifier(timeRange.Interval)

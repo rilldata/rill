@@ -158,6 +158,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			Offset:             r.Offset,
 			MetricsView:        mv,
 			ResolvedMVSecurity: security,
+			PivotOn:            r.PivotOn,
 		}
 	case *runtimev1.Query_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest

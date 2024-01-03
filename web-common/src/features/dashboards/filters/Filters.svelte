@@ -147,10 +147,7 @@ The main feature-set component for dashboard filters
               }
             }}
             on:apply={(event) => {
-              if ($potentialFilterName) {
-                $potentialFilterName = null;
-              }
-              toggleDimensionValueSelection(name, event.detail);
+              toggleDimensionValueSelection(name, event.detail, true);
             }}
             on:search={(event) => {
               setActiveDimension(name, event.detail);

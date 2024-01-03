@@ -467,7 +467,7 @@ func (s *Server) resourceToEntry(ctx context.Context, instanceID string, r *runt
 				Name:        d.Name,
 				Label:       d.Label,
 				Description: d.Description,
-				Column:      d.Column,
+				Column:      d.Expression,
 			})
 		}
 		var ms []*runtimev1.MetricsView_Measure

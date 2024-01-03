@@ -6307,6 +6307,8 @@ func (m *MetricsViewSpec_DimensionV2) validate(all bool) error {
 
 	// no validation rules for Column
 
+	// no validation rules for Expression
+
 	// no validation rules for Label
 
 	// no validation rules for Description

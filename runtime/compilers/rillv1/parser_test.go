@@ -89,6 +89,7 @@ materialize: true
 model: m2
 dimensions:
   - name: a
+    column: a
 measures:
   - name: b
     expression: count(*)
@@ -174,7 +175,7 @@ SELECT * FROM {{ ref "m2" }}
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Table: "m2",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a"},
+					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
@@ -841,6 +842,7 @@ dashboards:
 table: t1
 dimensions:
   - name: a
+    column: a
 measures:
   - name: b
     expression: count(*)
@@ -850,6 +852,7 @@ measures:
 table: t2
 dimensions:
   - name: a
+    column: a
 measures:
   - name: b
     expression: count(*)
@@ -868,7 +871,7 @@ security:
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Table: "t1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a"},
+					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
@@ -887,7 +890,7 @@ security:
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Table: "t2",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a"},
+					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
@@ -971,6 +974,7 @@ func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
 model: d1
 dimensions:
   - name: a
+    column: a
 measures:
   - name: b
     expression: count(*)
@@ -985,7 +989,7 @@ measures:
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Table: "d1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a"},
+					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},

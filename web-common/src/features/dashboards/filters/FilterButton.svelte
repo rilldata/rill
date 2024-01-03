@@ -82,7 +82,7 @@
 <style lang="postcss">
   button {
     @apply w-[34px] h-[26px] rounded-2xl;
-    @apply px-[8px] py-[4px];
+    @apply flex items-center justify-center;
     @apply border border-dashed border-slate-300;
   }
 
