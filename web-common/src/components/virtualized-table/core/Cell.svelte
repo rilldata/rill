@@ -108,6 +108,8 @@
 
 <Tooltip location="top" distance={16} suppress={suppressTooltip}>
   <div
+    role="gridcell"
+    tabindex="0"
     on:mouseover={onFocus}
     on:mouseout={onBlur}
     on:focus={onFocus}

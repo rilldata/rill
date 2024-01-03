@@ -14,10 +14,10 @@
     insertNewline,
   } from "@codemirror/commands";
   import {
+    SQLDialect,
     keywordCompletionSource,
     schemaCompletionSource,
     sql,
-    SQLDialect,
   } from "@codemirror/lang-sql";
   import {
     bracketMatching,
@@ -38,9 +38,9 @@
   import {
     Decoration,
     DecorationSet,
+    EditorView,
     drawSelection,
     dropCursor,
-    EditorView,
     highlightActiveLine,
     highlightActiveLineGutter,
     highlightSpecialChars,
@@ -55,6 +55,7 @@
   import { editorTheme } from "../../../components/editor/theme";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useAllSourceColumns } from "../../sources/selectors";
+  import { useAllModelColumns } from "../selectors";
 
   export let content: string;
   export let editorHeight = 0;
@@ -89,26 +90,40 @@
       "select from where group by all having order limit sample unnest with window qualify values filter exclude replace like ilike glob as case when then else end in cast left join on not desc asc sum union",
   });
 
+  const schema: { [table: string]: string[] } = {};
+
   // Autocomplete: source tables
-  let schema: { [table: string]: string[] };
   $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
   $: if ($allSourceColumns?.length) {
-    schema = {};
     for (const sourceTable of $allSourceColumns) {
       const sourceIdentifier = sourceTable?.tableName;
-      schema[sourceIdentifier] =
-        sourceTable.profileColumns?.map((c) => c.name) ?? [];
+      schema[sourceIdentifier] = sourceTable.profileColumns
+        ?.filter((c) => c.name !== undefined)
+        // CAST SAFETY: already filtered out undefined values
+        .map((c) => c.name as string);
+    }
+  }
+
+  //Auto complete: model tables
+  $: allModelColumns = useAllModelColumns(queryClient, $runtime?.instanceId);
+  $: if ($allModelColumns?.length) {
+    for (const modelTable of $allModelColumns) {
+      const modelIdentifier = modelTable?.tableName;
+      schema[modelIdentifier] = modelTable.profileColumns
+        ?.filter((c) => c.name !== undefined)
+        // CAST SAFETY: already filtered out undefined values
+        ?.map((c) => c.name as string);
     }
   }
 
   function getTableNameFromFromClause(
     sql: string,
     schema: { [table: string]: string[] }
-  ): string | null {
-    if (!sql || !schema) return null;
+  ): string | undefined {
+    if (!sql || !schema) return undefined;
 
     const fromMatch = sql.toUpperCase().match(/\bFROM\b\s+(\w+)/);
-    const tableName = fromMatch ? fromMatch[1] : null;
+    const tableName = fromMatch ? fromMatch[1] : undefined;
 
     // Get the tableName from the schema map, so we can use the correct case
     for (const schemaTableName of Object.keys(schema)) {
@@ -117,7 +132,7 @@
       }
     }
 
-    return null;
+    return undefined;
   }
 
   function makeAutocompleteConfig(
@@ -293,6 +308,8 @@
     class="editor-container h-full w-full overflow-x-auto"
   >
     <div
+      role="textbox"
+      tabindex="0"
       bind:this={editorContainerComponent}
       class="w-full overflow-x-auto h-full"
       on:click={() => {

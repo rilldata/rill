@@ -60,6 +60,7 @@ Otherwise, the page will jump around as the data is fetched.
 </script>
 
 <div
+  role="group"
   on:mouseleave={() => {
     focusPoint = undefined;
   }}
@@ -146,7 +147,7 @@ Otherwise, the page will jump around as the data is fetched.
             <!-- show mouseover support shapes -->
             {#if point}
               <g
-                transition:fade={{ duration: 50 }}
+                transition:fade|global={{ duration: 50 }}
                 shape-rendering="crispEdges"
               >
                 <rect
@@ -202,8 +203,8 @@ Otherwise, the page will jump around as the data is fetched.
             <!-- mouseovers -->
             {#if point?.low !== undefined}
               <g
-                in:fly={{ duration: 200, x: -16 }}
-                out:fly={{ duration: 200, x: -16 }}
+                in:fly|global={{ duration: 200, x: -16 }}
+                out:fly|global={{ duration: 200, x: -16 }}
                 font-size={config.fontSize}
                 style:user-select={"none"}
               >
@@ -232,7 +233,7 @@ Otherwise, the page will jump around as the data is fetched.
 
             <!-- support topK mouseover effect on graphs -->
             {#if focusPoint && topK && summaryMode === "topk"}
-              <g transition:fade|local={{ duration: 200 }}>
+              <g transition:fade={{ duration: 200 }}>
                 <WithTween
                   value={[xScale(+focusPoint.value), yScale(focusPoint.count)]}
                   let:output

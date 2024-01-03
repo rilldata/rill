@@ -31,8 +31,8 @@
   // this determines the "shake" of the pan label when panning.
   export let tooltipPanShakeAmount = 0;
   // the window bounds for the spark within the zoom row of the tooltip.
-  export let zoomWindowXMin: Date = undefined;
-  export let zoomWindowXMax: Date = undefined;
+  export let zoomWindowXMin: Date | undefined = undefined;
+  export let zoomWindowXMax: Date | undefined = undefined;
 </script>
 
 <TooltipContent>
@@ -74,14 +74,11 @@
       Zoom
       <div style:display="inline-grid">
         <TimestampSpark
-          area
-          tweenIn
           {data}
           {xAccessor}
           {yAccessor}
           {width}
           {height}
-          buffer={0}
           left={0}
           right={0}
           top={0}

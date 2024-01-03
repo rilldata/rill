@@ -26,6 +26,15 @@ export const measureLabel = ({
       (d) => d.name === measureName
     );
     return measure?.label ?? measureName;
+    }
+  };
+export const isMeasureValidPercentOfTotal = ({
+  metricsSpecQueryResult,
+}: DashboardDataSources): ((measureName: string) => boolean) => {
+  return (measureName: string) => {
+    const measures = metricsSpecQueryResult.data?.measures;
+    const selectedMeasure = measures?.find((m) => m.name === measureName);
+    return selectedMeasure?.validPercentOfTotal ?? false;
   };
 };
 
@@ -34,9 +43,12 @@ export const measureSelectors = {
    * Gets all visible measures in the dashboard.
    */
   visibleMeasures,
-
   /**
    * Get label for a measure by name
    */
   measureLabel,
+  /**
+   * Checks if the provided measure is a valid percent of total
+   */
+  isMeasureValidPercentOfTotal,
 };

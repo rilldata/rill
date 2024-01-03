@@ -77,11 +77,11 @@
       {#if $sortedByDimensionValue}
         <div class="ui-copy-icon">
           {#if $sortedAscending}
-            <div in:fly={{ duration: 200, y: -8 }} style:opacity={1}>
+            <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>
               <ArrowDown size="12px" />
             </div>
           {:else}
-            <div in:fly={{ duration: 200, y: 8 }} style:opacity={1}>
+            <div in:fly|global={{ duration: 200, y: 8 }} style:opacity={1}>
               <ArrowDown transform="scale(1 -1)" size="12px" />
             </div>
           {/if}

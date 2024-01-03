@@ -20,8 +20,8 @@ FIXME: In the future, we should also be listening to focus events from the child
 <script lang="ts">
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
-  import FloatingElement from "../floating-element/FloatingElement.svelte";
   import Portal from "../Portal.svelte";
+  import FloatingElement from "../floating-element/FloatingElement.svelte";
 
   export let location = "bottom";
   export let alignment = "middle";
@@ -58,6 +58,7 @@ FIXME: In the future, we should also be listening to focus events from the child
 </script>
 
 <div
+  role="tooltip"
   class="contents"
   bind:this={parent}
   on:mouseenter={() => {

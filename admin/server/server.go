@@ -27,6 +27,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -121,7 +122,6 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
-			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
 			errorMappingStreamServerInterceptor(),
 			grpc_auth.StreamServerInterceptor(checkUserAgent),
@@ -131,7 +131,6 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
-			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
 			errorMappingUnaryServerInterceptor(),
 			grpc_auth.UnaryServerInterceptor(checkUserAgent),
@@ -139,6 +138,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			s.authenticator.UnaryServerInterceptor(),
 			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
 		),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
 
 	adminv1.RegisterAdminServiceServer(server, s)

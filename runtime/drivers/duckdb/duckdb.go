@@ -2,7 +2,6 @@ package duckdb
 
 import (
 	"context"
-	databasesql "database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -50,6 +49,14 @@ var spec = drivers.Spec{
 			Description: "DuckDB SQL query.",
 			Placeholder: "select * from read_csv('data/file.csv', header=true);",
 		},
+		{
+			Key:         "db",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "DB",
+			Description: "Path to external DuckDB database. Use md:<dbname> for motherduckb.",
+			Placeholder: "/path/to/main.db or md:main.db(for motherduck)",
+		},
 	},
 	ConfigProperties: []drivers.PropertySchema{
 		{
@@ -59,18 +66,6 @@ var spec = drivers.Spec{
 }
 
 var motherduckSpec = drivers.Spec{
-	DisplayName: "MotherDuck",
-	Description: "Import data from MotherDuck.",
-	SourceProperties: []drivers.PropertySchema{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "Query to extract data from MotherDuck.",
-			Placeholder: "select * from my_db.my_table;",
-		},
-	},
 	ConfigProperties: []drivers.PropertySchema{
 		{
 			Key:    "token",
@@ -318,12 +313,6 @@ func (c *connection) Config() map[string]any {
 
 // Close implements drivers.Connection.
 func (c *connection) Close() error {
-	// Gracefully detach all databases (otherwise DuckDB may leak memory)
-	_ = c.WithConnection(context.Background(), 9000, true, false, func(ctx, ensuredCtx context.Context, conn *databasesql.Conn) error {
-		c.detachAllDBs(ctx, conn)
-		return nil
-	})
-
 	c.cancel()
 	_ = c.registration.Unregister()
 	return c.db.Close()
@@ -404,14 +393,7 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 func (c *connection) reopenDB() error {
 	// If c.db is already open, close it first
 	if c.db != nil {
-		// Try to detach all attached DBs (otherwise DuckDB leaks memory)
-		conn, err := c.db.Conn(context.Background())
-		if err == nil { // If it's so broken we can't get a conn, we'll just risk a leak
-			c.detachAllDBs(context.Background(), conn)
-			conn.Close()
-		}
-
-		err = c.db.Close()
+		err := c.db.Close()
 		if err != nil {
 			return err
 		}
@@ -494,6 +476,27 @@ func (c *connection) reopenDB() error {
 	defer conn.Close()
 
 	c.logLimits(conn)
+
+	// 2023-12-11: Hail mary for solving this issue: https://github.com/duckdblabs/rilldata/issues/6.
+	// Forces DuckDB to create catalog entries for the information schema up front (they are normally created lazily).
+	// Can be removed if the issue persists.
+	_, err = conn.ExecContext(context.Background(), `
+		select
+			coalesce(t.table_catalog, current_database()) as "database",
+			t.table_schema as "schema",
+			t.table_name as "name",
+			t.table_type as "type", 
+			array_agg(c.column_name order by c.ordinal_position) as "column_names",
+			array_agg(c.data_type order by c.ordinal_position) as "column_types",
+			array_agg(c.is_nullable = 'YES' order by c.ordinal_position) as "column_nullable"
+		from information_schema.tables t
+		join information_schema.columns c on t.table_schema = c.table_schema and t.table_name = c.table_name
+		group by 1, 2, 3, 4
+		order by 1, 2, 3, 4
+	`)
+	if err != nil {
+		return err
+	}
 
 	// List the directories directly in the external storage directory
 	// Load the version.txt from each sub-directory
@@ -806,42 +809,10 @@ func (c *connection) periodicallyCheckConnDurations(d time.Duration) {
 			c.connTimesMu.Lock()
 			for connID, connTime := range c.connTimes {
 				if time.Since(connTime) > maxAcquiredConnDuration {
-					c.logger.Error("duckdb: a connection has been held for more longer than the maximum allowed duration", zap.Int("conn_id", connID), zap.Duration("duration", time.Since(connTime)))
+					c.logger.Error("duckdb: a connection has been held for longer than the maximum allowed duration", zap.Int("conn_id", connID), zap.Duration("duration", time.Since(connTime)))
 				}
 			}
 			c.connTimesMu.Unlock()
-		}
-	}
-}
-
-// detachAllDBs detaches all attached dbs if external_table_storage config is true
-func (c *connection) detachAllDBs(ctx context.Context, conn *databasesql.Conn) {
-	if !c.config.ExtTableStorage {
-		return
-	}
-
-	entries, err := os.ReadDir(c.config.ExtStoragePath)
-	if err != nil {
-		c.logger.Error("unable to read ExtStoragePath", zap.String("path", c.config.ExtStoragePath), zap.Error(err))
-		return
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-		version, exist, err := c.tableVersion(entry.Name())
-		if err != nil {
-			continue
-		}
-		if !exist {
-			continue
-		}
-
-		db := dbName(entry.Name(), version)
-		_, err = conn.ExecContext(ctx, fmt.Sprintf("DETACH %s", safeSQLName(db)))
-		if err != nil {
-			c.logger.Error("detach failed", zap.String("db", db), zap.Error(err))
 		}
 	}
 }

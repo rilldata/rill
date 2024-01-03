@@ -36,7 +36,7 @@
   const dispatch = createEventDispatcher();
 </script>
 
-<div in:slideRight|local={{ duration: 150 }}>
+<div in:slideRight={{ duration: 150 }}>
   <button
     on:click
     class="

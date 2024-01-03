@@ -28,8 +28,7 @@ func New(adminHost, bearerToken, userAgent string) (*Client, error) {
 
 	opts := []grpc.DialOption{
 		grpc.WithUserAgent(userAgent),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 	}
 
 	if uri.Scheme == "http" {

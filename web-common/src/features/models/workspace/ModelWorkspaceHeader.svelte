@@ -8,7 +8,6 @@
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
@@ -62,7 +61,9 @@
       e.target.value = modelName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, modelName, $allNamesQuery.data)) {
+    if (
+      isDuplicateName(e.target.value, modelName, $allNamesQuery?.data ?? [])
+    ) {
       notifications.send({
         message: `Name ${e.target.value} is already in use`,
       });
@@ -92,7 +93,6 @@
 
 <WorkspaceHeader
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
-  appRunning={$appQueryStatusStore}
 >
   <svelte:fragment slot="workspace-controls">
     <IconButton
@@ -114,7 +114,7 @@
     {@const collapse = width < 800}
     <PanelCTA side="right">
       <ModelWorkspaceCTAs
-        availableDashboards={$availableDashboards?.data}
+        availableDashboards={$availableDashboards?.data ?? []}
         {collapse}
         modelHasError={$modelHasError}
         {modelName}

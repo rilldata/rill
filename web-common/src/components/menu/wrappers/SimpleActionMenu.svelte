@@ -41,6 +41,7 @@ and the menu closes.
   <slot {handleClose} toggleMenu={toggleFloatingElement} {active} />
   <Menu
     slot="floating-element"
+    let:handleClose
     {dark}
     {minWidth}
     focusOnMount={false}
@@ -50,7 +51,7 @@ and the menu closes.
     }}
     on:escape={handleClose}
   >
-    {#each options as { main, right, callback }, i}
+    {#each options as { main, right, callback }}
       <MenuItem
         on:select={createOnClickHandler(callback, handleClose)}
         focusOnMount={false}

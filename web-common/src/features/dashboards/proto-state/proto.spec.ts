@@ -11,7 +11,7 @@ import {
   initLocalUserPreferenceStore,
 } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { describe, it, beforeAll, beforeEach, expect } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 describe("toProto/fromProto", () => {
   beforeAll(() => {

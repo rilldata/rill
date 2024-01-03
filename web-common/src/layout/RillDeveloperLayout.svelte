@@ -40,20 +40,7 @@
     return resourcesStore.init(config.instance_id);
   });
 
-  let dbRunState = "disconnected";
-  let runstateTimer;
-
-  function debounceRunstate(state) {
-    if (runstateTimer) clearTimeout(runstateTimer);
-    setTimeout(() => {
-      dbRunState = state;
-    }, 500);
-  }
-
   let showDropOverlay = false;
-
-  // TODO: add new global run state
-  $: debounceRunstate("disconnected");
 
   function isEventWithFiles(event: DragEvent) {
     let types = event?.dataTransfer?.types;
@@ -85,6 +72,7 @@
   <SourceImportedModal open={!!$sourceImportedName} />
 
   <div
+    role="application"
     class="index-body absolute w-screen h-screen"
     on:dragenter|preventDefault|stopPropagation
     on:dragleave|preventDefault|stopPropagation

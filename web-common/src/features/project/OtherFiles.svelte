@@ -13,7 +13,7 @@
 </NavigationHeader>
 
 {#if showOtherFiles}
-  <div class="pb-3" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+  <div class="pb-3" transition:slide={{ duration: LIST_SLIDE_DURATION }}>
     <!-- rill.yaml -->
     <NavigationEntry
       showContextMenu={false}

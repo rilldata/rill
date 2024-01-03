@@ -51,9 +51,6 @@
   export let mouseover = false;
   export let smooth = true;
 
-  export let separate = true;
-  $: separateQuantity = separate ? 0.25 : 0;
-
   export let xAccessor: string;
   export let yAccessor: string;
 
@@ -73,8 +70,8 @@
   export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
 
   /** rollup grain, time range, etc. */
-  export let rollupTimeGrain: V1TimeGrain | undefined;
-  export let estimatedSmallestTimeGrain: V1TimeGrain | undefined;
+  export let rollupTimeGrain: V1TimeGrain;
+  export let estimatedSmallestTimeGrain: V1TimeGrain;
 
   let devicePixelRatio = 1;
   onMount(() => {
@@ -178,8 +175,8 @@
 
   let isZoomed = false;
 
-  let zoomedXStart: Date;
-  let zoomedXEnd: Date;
+  let zoomedXStart: Date | undefined;
+  let zoomedXEnd: Date | undefined;
   // establish basis values
   let xExtents = extent(data, (d) => d[xAccessor]);
   $: xExtents = extent(data, (d) => d[xAccessor]);
@@ -262,11 +259,14 @@
         })
         .reduce((sum, di) => (sum += di[yAccessor]), 0)
     );
-  } else if (zoomedXStart && zoomedXEnd) {
+  } else if (zoomedXStart !== undefined && zoomedXEnd !== undefined) {
+    // these two local constants are needed to appease the compiler.
+    const localXStart = zoomedXStart;
+    const localXEnd = zoomedXEnd;
     zoomedRows = Math.trunc(
       data
         .filter((di) => {
-          return di[xAccessor] >= zoomedXStart && di[xAccessor] <= zoomedXEnd;
+          return di[xAccessor] >= localXStart && di[xAccessor] <= localXEnd;
         })
         .reduce((sum, di) => (sum += di[yAccessor]), 0)
     );
@@ -279,12 +279,12 @@
   let movementTimeout: ReturnType<typeof setTimeout>;
 
   $: zoomMinBound =
-    ($zoomCoords.start.x
+    ($zoomCoords.start.x && $zoomCoords.stop.x
       ? $X.invert(Math.min($zoomCoords.start.x, $zoomCoords.stop.x))
       : min([zoomedXStart, zoomedXEnd])) || xExtents[0];
 
   $: zoomMaxBound =
-    ($zoomCoords.start.x
+    ($zoomCoords.start.x && $zoomCoords.stop.x
       ? $X.invert(Math.max($zoomCoords.start.x, $zoomCoords.stop.x))
       : max([zoomedXStart, zoomedXEnd])) || xExtents[1];
 
@@ -303,6 +303,7 @@
   />
   <Tooltip location="right" alignment="center" distance={32}>
     <svg
+      role="img"
       {width}
       {height}
       style:cursor={setCursor($isZooming, $isScrolling)}
@@ -321,7 +322,7 @@
         }, 200);
       }}
       on:scrolling={(event) => {
-        if (isZoomed) {
+        if (isZoomed && zoomedXStart && zoomedXEnd) {
           // clear the tooltip shake effect zeroing timeout.
           clearTimeout(movementTimeout);
           // shake the word "pan" in the tooltip here.
@@ -387,7 +388,7 @@
         {#if isZoomed}
           <!-- fadeout gradients on each side? -->
           <rect
-            transition:fade
+            transition:fade|global
             x={$plotConfig.plotLeft}
             y={$plotConfig.plotTop}
             width={20}
@@ -395,7 +396,7 @@
             fill="url(#left-side)"
           />
           <rect
-            transition:fade
+            transition:fade|global
             x={$plotConfig.plotRight - 20}
             y={$plotConfig.plotTop}
             width={20}
@@ -432,6 +433,8 @@
       <!-- scrub-clearing click region -->
       {#if zoomedXStart && zoomedXEnd}
         <text
+          role="button"
+          tabindex="0"
           font-size={fontSize}
           x={$plotConfig.plotRight}
           y={fontSize}
@@ -439,8 +442,8 @@
           style:user-select="none"
           style:cursor="pointer"
           class="transition-color fill-gray-500 hover:fill-black"
-          in:fly={{ duration: 200, x: 16, delay: 200 }}
-          out:fly={{ duration: 200, x: 16 }}
+          in:fly|global={{ duration: 200, x: 16, delay: 200 }}
+          out:fly|global={{ duration: 200, x: 16 }}
           use:outline
           on:keydown={() => {
             /** no-op */
@@ -466,8 +469,8 @@
     -->
     <div
       slot="tooltip-content"
-      in:fly={{ duration: 100, y: 4 }}
-      out:fly={{ duration: 100, y: 4 }}
+      in:fly|global={{ duration: 100, y: 4 }}
+      out:fly|global={{ duration: 100, y: 4 }}
       style="
             display: grid; 
             justify-content: center; 
@@ -483,12 +486,12 @@
         $tooltipPanShakeAmount}
         {zoomedRows}
         totalRows={Math.trunc(data.reduce((a, b) => a + b[yAccessor], 0))}
-        zoomed={$zoomCoords.start.x || zoomedXStart}
+        zoomed={$zoomCoords.start.x !== undefined || zoomedXStart !== undefined}
         zooming={zoomedXStart && !$zoomCoords.start.x}
-        zoomWindowXMin={$zoomCoords.start.x
+        zoomWindowXMin={$zoomCoords.start.x && $zoomCoords.stop.x
           ? $X.invert(Math.min($zoomCoords.start.x, $zoomCoords.stop.x))
           : min([zoomedXStart, zoomedXEnd])}
-        zoomWindowXMax={$zoomCoords.stop.x
+        zoomWindowXMax={$zoomCoords.start.x && $zoomCoords.stop.x
           ? $X.invert(Math.max($zoomCoords.start.x, $zoomCoords.stop.x))
           : max([zoomedXStart, zoomedXEnd])}
       />

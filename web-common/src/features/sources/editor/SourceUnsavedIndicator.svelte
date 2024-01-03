@@ -19,7 +19,7 @@
 
 {#if isSourceUnsaved}
   <div
-    transition:scale={{ duration: 200, easing: cubicOut }}
+    transition:scale|global={{ duration: 200, easing: cubicOut }}
     class="w-1.5 h-1.5 bg-gray-300 rounded"
   />
 {/if}

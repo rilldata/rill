@@ -3,8 +3,8 @@
   import { Meta, Story, Template } from "@storybook/addon-svelte-csf";
   import Button from "../../button/Button.svelte";
   import { setLineStatuses } from "../line-status";
-  import YAMLEditor from "../YAMLEditor.svelte";
   import type { LineStatus } from "../line-status/state";
+  import YAMLEditor from "../YAMLEditor.svelte";
 
   let content = `name: this is the name
 values:
@@ -36,7 +36,7 @@ values:
 
 <Meta title="Editor Components" />
 
-<Template let:args>
+<Template>
   <section class="space-y-3">
     <h1>Generic YAML editor</h1>
     <p class="w-96 ui-copy">

@@ -11,7 +11,7 @@
 
 <VerticalScrollContainer>
   <div class="pt-4 flex flex-col gap-y-6">
-    <div class="px-12 flex gap-x-9 items-start">
+    <div class="px-12 flex gap-x-20 items-start">
       <ProjectDeploymentStatus {organization} {project} />
       <ProjectGithubConnection {organization} {project} />
     </div>

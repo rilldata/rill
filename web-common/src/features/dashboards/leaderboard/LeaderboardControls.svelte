@@ -121,7 +121,7 @@
       class="flex flex-row items-center ui-copy-muted"
       style:padding-left="22px"
       style:grid-column-gap=".4rem"
-      in:send={{ key: "leaderboard-metric" }}
+      in:send|global={{ key: "leaderboard-metric" }}
       style:max-width="450px"
     >
       <SeachableFilterButton
@@ -151,7 +151,7 @@
     <div
       class="flex flex-row items-center"
       style:grid-column-gap=".4rem"
-      in:receive={{ key: "loading-leaderboard-metric" }}
+      in:receive|global={{ key: "loading-leaderboard-metric" }}
     >
       pulling leaderboards <Spinner status={EntityStatus.Running} />
     </div>

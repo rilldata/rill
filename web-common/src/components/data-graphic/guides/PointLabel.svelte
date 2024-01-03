@@ -17,7 +17,7 @@
   export let showPoint = true;
   export let showReferenceLine = true;
   export let showDistanceLine = true;
-  export let yComparisonAccessor: string = undefined;
+  export let yComparisonAccessor: string | undefined = undefined;
   export let format = justEnoughPrecision;
 
   let lastAvailablePoint;
@@ -66,6 +66,7 @@
 <WithGraphicContexts let:xScale let:yScale let:config>
   {@const isNull = point[yAccessor] == null}
   {@const comparisonIsNull =
+    yComparisonAccessor === undefined ||
     point[yComparisonAccessor] === null ||
     point[yComparisonAccessor] === undefined}
   {@const x = xScale(point[xAccessor])}
@@ -91,13 +92,14 @@
       : format
       ? format(point[yAccessor])
       : point[yAccessor]}
-    {@const comparisonText = isNull
-      ? "no data"
-      : format
-      ? format(point[yAccessor] - point[yComparisonAccessor])
-      : point[yAccessor] - point[yComparisonAccessor]}
+    {@const comparisonText =
+      isNull || yComparisonAccessor === undefined
+        ? "no data"
+        : format
+        ? format(point[yAccessor] - point[yComparisonAccessor])
+        : point[yAccessor] - point[yComparisonAccessor]}
     {@const percentageDifference =
-      isNull && comparisonIsNull
+      (isNull && comparisonIsNull) || yComparisonAccessor === undefined
         ? undefined
         : (point[yAccessor] - point[yComparisonAccessor]) /
           point[yComparisonAccessor]}
@@ -106,7 +108,7 @@
       : undefined}
     {#if showReferenceLine}
       <line
-        transition:fade|local={{ duration: 100 }}
+        transition:fade={{ duration: 100 }}
         x1={output.x}
         x2={output.x}
         y1={config.plotTop}
@@ -132,7 +134,7 @@
     {/if}
     {#if !isNull && showDistanceLine}
       <line
-        transition:fade|local={{ duration: 100 }}
+        transition:fade={{ duration: 100 }}
         x1={output.x}
         x2={output.x}
         y1={showComparisonText ? output.cdy : yScale(0)}
@@ -174,7 +176,7 @@
     {/if}
     {#if !isNull && showPoint}
       <circle
-        transition:scaleFromOrigin|local
+        transition:scaleFromOrigin
         cx={output.x}
         cy={output.y}
         r="3"
@@ -185,7 +187,7 @@
     {/if}
     {#if !isNull && showPoint && showComparisonText}
       <circle
-        transition:scaleFromOrigin|local
+        transition:scaleFromOrigin
         cx={output.x}
         cy={output.cdy}
         r="3"
@@ -194,7 +196,7 @@
           : "fill-blue-500"}
       />
     {/if}
-    {#if showComparisonText}
+    {#if showComparisonText && percentageDifference}
       {@const diffParts =
         formatMeasurePercentageDifference(percentageDifference)}
       <text

@@ -16,12 +16,12 @@
   } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
+    V1GetResourceResponse,
     connectorServiceOLAPGetTable,
     getConnectorServiceOLAPGetTableQueryKey,
     getRuntimeServiceGetResourceQueryKey,
     runtimeServiceGetResource,
     runtimeServicePutFile,
-    V1GetResourceResponse,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -144,6 +144,7 @@
       on:click-outside={toggleFloatingElement}
       on:escape={toggleFloatingElement}
       slot="floating-element"
+      let:toggleFloatingElement
     >
       {#each $models?.data ?? [] as model}
         <MenuItem

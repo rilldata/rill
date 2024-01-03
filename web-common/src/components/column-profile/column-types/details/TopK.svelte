@@ -75,7 +75,7 @@
 </script>
 
 {#if topKCopy && totalRows}
-  <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+  <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
     {#each topKCopy.slice(0, k) as item (item.value)}
       {@const negligiblePercentage = item.count / totalRows < 0.0002}
       {@const percentage = negligiblePercentage

@@ -1,18 +1,25 @@
 <script lang="ts">
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import RowsViewer from "./RowsViewer.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
+  import { writable } from "svelte/store";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { useModelHasTimeSeries } from "../selectors";
-  import ExportModelDataButton from "./ExportModelDataButton.svelte";
+  import { drag } from "../../../layout/drag";
+  import type { LayoutElement } from "../../../layout/workspace/types";
   import { featureFlags } from "../../feature-flags";
+  import ExportModelDataButton from "./ExportModelDataButton.svelte";
+  import RowsViewer from "./RowsViewer.svelte";
 
   export let metricViewName: string;
+
+  const INITIAL_HEIGHT_EXPANDED = 300;
+  const MIN_HEIGHT_EXPANDED = 30;
+  const MAX_HEIGHT_EXPANDED = 1000;
+
   let isOpen = false;
   const toggle = () => {
     isOpen = !isOpen;
@@ -42,12 +49,6 @@
 
   $: dashboardStore = useDashboardStore(metricViewName);
   const timeControlsStore = useTimeControlStore(getStateManagers());
-
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
-  $: hasTimeSeries = $metricTimeSeries.data;
 
   let timeEnd: string;
   $: {
@@ -99,26 +100,45 @@
   }
 
   $: isLocal = $featureFlags.readOnly === false;
+
+  const rowsViewerLayout = writable<LayoutElement>({
+    value: INITIAL_HEIGHT_EXPANDED,
+    visible: true,
+  });
 </script>
 
 <div>
-  <button
-    aria-label="Toggle rows viewer"
-    class="w-full bg-gray-100 h-7 text-left px-2 border-t border-t-gray-200 text-xs text-gray-800 flex items-center gap-1"
-    on:click={toggle}
+  <div
+    class="flex items-center px-2 h-7 w-full bg-gray-100 border-t border-t-gray-200 {isOpen
+      ? '!cursor-ns-resize'
+      : '!cursor-default'}"
+    use:drag={{
+      store: rowsViewerLayout,
+      minSize: MIN_HEIGHT_EXPANDED,
+      maxSize: MAX_HEIGHT_EXPANDED,
+      orientation: "vertical",
+      reverse: true,
+    }}
   >
-    {#if isOpen}
-      <CaretDownIcon size="14px" />
-    {:else}
-      <CaretUpIcon size="14px" />
-    {/if}
-    <span class="font-bold">Model Data</span>
-    {label}
+    <button
+      aria-label="Toggle rows viewer"
+      class="text-xs text-gray-800 rounded-sm hover:bg-gray-200 h-6 px-1.5 py-px flex items-center gap-1"
+      on:click={toggle}
+    >
+      {#if isOpen}
+        <CaretDownIcon size="14px" />
+      {:else}
+        <CaretUpIcon size="14px" />
+      {/if}
+      <span class="font-bold">Model Data</span>
+      {label}
+    </button>
     <div class="ml-auto">
       {#if isLocal}<ExportModelDataButton {metricViewName} />{/if}
     </div>
-  </button>
+  </div>
+
   {#if isOpen}
-    <RowsViewer {metricViewName} />
+    <RowsViewer {metricViewName} height={$rowsViewerLayout.value} />
   {/if}
 </div>

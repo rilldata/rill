@@ -11,6 +11,11 @@
 			to enforce using \`import type\` instead of \`import\` for Types.
 			*/
     "importsNotUsedAsValues": "error",
+    /**
+      ignoreDeprecations is recommended by the SvelteKit maintainers until SvelteKit 2.0. 
+      See: https://github.com/sveltejs/kit/issues/8650#issuecomment-1607282327
+    */
+    "ignoreDeprecations": "5.0",
     "isolatedModules": true,
     "resolveJsonModule": true,
     /**

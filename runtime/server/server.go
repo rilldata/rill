@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/securetoken"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -125,7 +126,6 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
-			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
@@ -135,7 +135,6 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
-			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
@@ -143,6 +142,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			errorMappingUnaryServerInterceptor(),
 			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
 		),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
 
 	runtimev1.RegisterRuntimeServiceServer(server, s)

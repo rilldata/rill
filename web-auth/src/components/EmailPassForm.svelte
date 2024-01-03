@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
-  import { createEventDispatcher } from "svelte";
-  import EyeInvisible from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
-  import Eye from "@rilldata/web-common/components/icons/Eye.svelte";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
+  import Eye from "@rilldata/web-common/components/icons/Eye.svelte";
+  import EyeInvisible from "@rilldata/web-common/components/icons/EyeInvisible.svelte";
+  import { createEventDispatcher } from "svelte";
+  import { slide } from "svelte/transition";
   import { validateEmail } from "./utils";
 
   const dispatch = createEventDispatcher();
@@ -68,7 +68,7 @@
 
 <div>
   {#if showForm}
-    <div class="mt-6 mb-4 flex flex-col gap-y-4" transition:slide>
+    <div class="mt-6 mb-4 flex flex-col gap-y-4" transition:slide|global>
       <input
         class="{inputClasses} {focusClasses}"
         style:width="400px"
@@ -96,6 +96,8 @@
 
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <span
+          role="button"
+          tabindex="0"
           style:right="10px"
           class="absolute top-1/2 transform -translate-y-1/2 cursor-pointer"
           on:click={() => (showPassword = !showPassword)}

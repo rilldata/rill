@@ -99,7 +99,7 @@ export function getComparisonProperties(
    * "component" in this context is a Svelte component that will be
    * used to render the column header.
    */
-  component: typeof SvelteComponent;
+  component: typeof SvelteComponent<any>;
   type: string;
   format: string;
   description: string;

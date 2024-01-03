@@ -1,6 +1,6 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/svelte";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ButtonGroupTestingWrapper from "./ButtonGroupTestingWrapper.svelte";
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, waitFor, fireEvent, screen } from "@testing-library/svelte";
 
 describe("ButtonGroup", () => {
   it("ButtonGroupTestingWrapper -- buttons in test wrapper exist", async () => {

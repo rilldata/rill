@@ -6,7 +6,9 @@
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import DefaultTimeRangeMenuItem from "@rilldata/web-common/features/dashboards/time-controls/DefaultTimeRangeMenuItem.svelte";
+  import TimeRangeScrubChip from "@rilldata/web-common/features/dashboards/time-controls/TimeRangeScrubChip.svelte";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import {
     ALL_TIME,
     DEFAULT_TIME_RANGES,
@@ -20,15 +22,13 @@
   } from "@rilldata/web-common/lib/time/types";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { Menu, MenuItem } from "../../../components/menu";
   import Divider from "../../../components/menu/core/Divider.svelte";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import type { V1TimeGrain } from "../../../runtime-client";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import CustomTimeRangeInput from "./CustomTimeRangeInput.svelte";
   import CustomTimeRangeMenuItem from "./CustomTimeRangeMenuItem.svelte";
-  import TimeRangeScrubChip from "@rilldata/web-common/features/dashboards/time-controls/TimeRangeScrubChip.svelte";
-  import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 
   export let metricViewName: string;
   export let boundaryStart: Date;
@@ -194,6 +194,7 @@
     on:click-outside={() => onClickOutside(toggleFloatingElement)}
     on:escape={toggleFloatingElement}
     slot="floating-element"
+    let:toggleFloatingElement
   >
     {@const allTime = {
       name: TimeRangePreset.ALL_TIME,
@@ -271,7 +272,7 @@
       selected={intermediateSelection === TimeRangePreset.CUSTOM}
     />
     {#if isCustomRangeOpen}
-      <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+      <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
         <CustomTimeRangeInput
           {boundaryStart}
           {boundaryEnd}

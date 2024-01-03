@@ -1,23 +1,8 @@
 <script lang="ts">
-  import {
-    Popover,
-    PopoverButton,
-    PopoverPanel,
-  } from "@rgossiaux/svelte-headlessui";
-  import { Button } from "@rilldata/web-common/components/button";
+  import { buttonClasses } from "@rilldata/web-common/components/button/classes";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Link from "@rilldata/web-common/components/icons/Link.svelte";
-  import { Menu } from "@rilldata/web-common/components/menu";
-  import MenuItem from "@rilldata/web-common/components/menu/core/MenuItem.svelte";
   import { notifications } from "@rilldata/web-common/components/notifications";
-  import { createPopperActions } from "svelte-popperjs";
-
-  // Position the Menu popover
-  const [popperRef, popperContent] = createPopperActions();
-  const popperOptions = {
-    placement: "bottom-end",
-    strategy: "fixed",
-    modifiers: [{ name: "offset", options: { offset: [0, 4] } }],
-  };
 
   function handleCopyLink() {
     // Copy the current URL to the clipboard
@@ -29,29 +14,18 @@
   }
 </script>
 
-<Popover class="relative">
-  <PopoverButton use={[popperRef]}>
-    <Button type="secondary">Share</Button>
-  </PopoverButton>
-  <PopoverPanel
-    use={[[popperContent, popperOptions]]}
-    class="max-w-fit absolute z-[1000]"
-    let:close
-  >
-    <Menu minWidth="0px" focusOnMount={false} paddingBottom={0} paddingTop={0}>
-      <MenuItem
-        focusOnMount={false}
-        icon
-        on:select={() => {
-          handleCopyLink();
-          close(undefined);
-        }}
-      >
-        <svelte:fragment slot="icon">
-          <Link size="16px" className="text-gray-900" />
-        </svelte:fragment>
-        Copy shareable link
-      </MenuItem>
-    </Menu>
-  </PopoverPanel>
-</Popover>
+<DropdownMenu.Root>
+  <DropdownMenu.Trigger class={buttonClasses({ type: "secondary" })}>
+    Share
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="end">
+    <DropdownMenu.Item
+      on:click={() => {
+        handleCopyLink();
+      }}
+    >
+      <Link size="16px" className="text-gray-900 mr-2 h-4 w-4" />
+      Copy shareable link
+    </DropdownMenu.Item>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>

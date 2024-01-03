@@ -14,7 +14,6 @@
   import {
     createQueryServiceTableCardinality,
     createQueryServiceTableColumns,
-    V1ModelV2,
     V1TableCardinalityResponse,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -32,7 +31,6 @@
   const queryClient = useQueryClient();
 
   $: modelQuery = useModel($runtime.instanceId, modelName);
-  let model: V1ModelV2;
   $: model = $modelQuery?.data?.model;
 
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
@@ -71,9 +69,9 @@
     cardinalityQueries = referencedThings?.map(([resource]) => {
       return createQueryServiceTableCardinality(
         $runtime?.instanceId,
-        resource.meta.name.name,
+        resource.meta?.name?.name ?? "",
         {},
-        { query: { select: (data) => +data?.cardinality || 0 } }
+        { query: { select: (data) => +(data?.cardinality ?? 0) } }
       );
     });
 
@@ -81,7 +79,7 @@
     sourceProfileColumns = referencedThings?.map(([resource]) => {
       return createQueryServiceTableColumns(
         $runtime?.instanceId,
-        resource.meta.name.name,
+        resource.meta?.name?.name ?? "",
         {},
         { query: { select: (data) => data?.profileColumns?.length || 0 } }
       );
@@ -92,7 +90,7 @@
 
   $: inputCardinalities = derived(cardinalityQueries, ($cardinalities) => {
     return $cardinalities
-      .map((c: { data: number }) => c?.data)
+      .map((c) => c?.data ?? 0)
       .reduce((total: number, cardinality: number) => total + cardinality, 0);
   });
 
@@ -101,7 +99,7 @@
     sourceProfileColumns,
     (columns) => {
       return columns
-        .map((col) => col.data)
+        .map((col) => col.data ?? 0)
         .reduce((total: number, columns: number) => columns + total, 0);
     },
     0

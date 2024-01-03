@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { FormattedDataType } from "@rilldata/web-common/components/data-types";
   import { fly, slide } from "svelte/transition";
   import BarAndLabel from "../../../components/BarAndLabel.svelte";
-  import { FormattedDataType } from "@rilldata/web-common/components/data-types";
 
-  import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
+  import { slideRight } from "@rilldata/web-common/lib/transitions";
 
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
 
@@ -15,11 +15,11 @@
 
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
 
+  import { getStateManagers } from "../state-managers/state-managers";
+  import ContextColumnValue from "./ContextColumnValue.svelte";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import type { LeaderboardItemData } from "./leaderboard-utils";
-  import ContextColumnValue from "./ContextColumnValue.svelte";
-  import { getStateManagers } from "../state-managers/state-managers";
 
   export let dimensionName: string;
 
@@ -105,7 +105,7 @@
     on:mouseleave={onLeave}
     on:mouseover={onHover}
     on:shift-click={() => shiftClickHandler(label)}
-    transition:slide|local={{ duration: 200 }}
+    transition:slide={{ duration: 200 }}
     use:shiftClickAction
   >
     <LeaderboardItemFilterIcon

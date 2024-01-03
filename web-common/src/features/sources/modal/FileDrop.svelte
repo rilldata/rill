@@ -29,9 +29,14 @@
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
 
+    const files = e?.dataTransfer?.files;
+
+    // no-op if no files are dropped
+    if (files === undefined) return;
+
     const uploadedFiles = uploadTableFiles(
-      Array.from(e?.dataTransfer?.files),
-      [$sourceNames?.data, $modelNames?.data],
+      Array.from(files),
+      [$sourceNames?.data ?? [], $modelNames?.data ?? []],
       $runtime.instanceId
     );
     for await (const { tableName, filePath } of uploadedFiles) {
@@ -69,6 +74,7 @@
 
 <Overlay bg="rgba(0,0,0,.6)">
   <div
+    role="presentation"
     class="w-screen h-screen grid place-content-center"
     on:dragenter|preventDefault|stopPropagation
     on:dragleave|preventDefault|stopPropagation

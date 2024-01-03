@@ -48,10 +48,7 @@
   class="border border-gray-300 rounded-sm px-3 py-1 cursor-pointer focus:outline-blue-500 w-full text-xs"
 />
 {#if error}
-  <div
-    in:slide|local={{ duration: 200 }}
-    class="pl-1 text-red-500 text-xs pt-1"
-  >
+  <div in:slide={{ duration: 200 }} class="pl-1 text-red-500 text-xs pt-1">
     {error}
   </div>
 {/if}

@@ -50,6 +50,8 @@ to the props.
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <svg
+  role="button"
+  tabindex="0"
   style="overflow: {overflowHidden ? 'hidden' : 'visible'}"
   use:scrub
   on:scrub-start

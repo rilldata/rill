@@ -14,12 +14,12 @@
   } from "@rilldata/web-common/runtime-client";
 
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
+  import LeaderboardListItem from "./LeaderboardListItem.svelte";
   import {
     LeaderboardItemData,
     getLabeledComparisonFromComparisonRow,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import LeaderboardListItem from "./LeaderboardListItem.svelte";
 
   export let dimensionName: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
@@ -88,6 +88,8 @@
 
 {#if $sortedQuery !== undefined}
   <div
+    role="grid"
+    tabindex="0"
     style:width="315px"
     on:mouseenter={() => (hovered = true)}
     on:mouseleave={() => (hovered = false)}

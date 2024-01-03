@@ -47,6 +47,10 @@ func RefreshCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			if resp.ProdDeployment == nil {
+				return fmt.Errorf("no production deployment found for project %q", project)
+			}
+
 			_, err = client.TriggerRefreshSources(ctx, &adminv1.TriggerRefreshSourcesRequest{DeploymentId: resp.ProdDeployment.Id, Sources: source})
 			if err != nil {
 				return fmt.Errorf("failed to trigger refresh: %w", err)

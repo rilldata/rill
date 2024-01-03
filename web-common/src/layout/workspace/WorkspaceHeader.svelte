@@ -5,7 +5,6 @@
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { dynamicTextInputWidth } from "@rilldata/web-common/lib/actions/dynamic-text-input-width";
   import { getContext } from "svelte";
@@ -16,15 +15,12 @@
 
   export let onChangeCallback;
   export let titleInput;
-  export let appRunning = true;
   export let editable = true;
   export let showInspectorToggle = true;
-  export let width: number | undefined = undefined;
 
   let titleInputElement;
   let editingTitle = false;
 
-  let titleInputValue;
   let tooltipActive;
 
   const { listenToNodeResize, observedNode } =
@@ -44,17 +40,10 @@
     }
   }
 
-  $: applicationStatus = appRunning ? EntityStatus.Running : EntityStatus.Idle;
-
   $: width = $observedNode?.getBoundingClientRect()?.width;
 
-  function onInput(
-    event: Event & {
-      currentTarget: EventTarget & HTMLInputElement;
-    } & { target: EventTarget & HTMLInputElement }
-  ) {
+  function onInput() {
     if (editable) {
-      titleInputValue = event?.target?.value;
       editingTitle = true;
     }
   }
@@ -86,7 +75,6 @@
             bind:this={titleInputElement}
             on:focus={() => {
               editingTitle = true;
-              titleInputValue = titleInput;
             }}
             on:input={onInput}
             class="bg-transparent border border-transparent border-2 {editable

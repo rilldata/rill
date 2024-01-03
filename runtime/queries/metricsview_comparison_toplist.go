@@ -18,18 +18,23 @@ import (
 )
 
 type MetricsViewComparison struct {
-	MetricsViewName     string                                     `json:"metrics_view_name,omitempty"`
-	DimensionName       string                                     `json:"dimension_name,omitempty"`
-	Measures            []*runtimev1.MetricsViewAggregationMeasure `json:"measures,omitempty"`
-	TimeRange           *runtimev1.TimeRange                       `json:"base_time_range,omitempty"`
-	ComparisonTimeRange *runtimev1.TimeRange                       `json:"comparison_time_range,omitempty"`
-	Limit               int64                                      `json:"limit,omitempty"`
-	Offset              int64                                      `json:"offset,omitempty"`
-	Sort                []*runtimev1.MetricsViewComparisonSort     `json:"sort,omitempty"`
-	Filter              *runtimev1.MetricsViewFilter               `json:"filter,omitempty"`
-	MetricsView         *runtimev1.MetricsViewSpec                 `json:"-"`
-	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity       `json:"security"`
-	Exact               bool                                       `json:"exact"`
+	MetricsViewName     string                                         `json:"metrics_view_name,omitempty"`
+	DimensionName       string                                         `json:"dimension_name,omitempty"`
+	Measures            []*runtimev1.MetricsViewAggregationMeasure     `json:"measures,omitempty"`
+	TimeRange           *runtimev1.TimeRange                           `json:"base_time_range,omitempty"`
+	ComparisonTimeRange *runtimev1.TimeRange                           `json:"comparison_time_range,omitempty"`
+	Limit               int64                                          `json:"limit,omitempty"`
+	Offset              int64                                          `json:"offset,omitempty"`
+	Sort                []*runtimev1.MetricsViewComparisonSort         `json:"sort,omitempty"`
+	Where               *runtimev1.Expression                          `json:"where,omitempty"`
+	Having              *runtimev1.Expression                          `json:"having,omitempty"`
+	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
+	MetricsView         *runtimev1.MetricsViewSpec                     `json:"-"`
+	ResolvedMVSecurity  *runtime.ResolvedMetricsViewSecurity           `json:"security"`
+	Exact               bool                                           `json:"exact"`
+
+	// backwards compatibility
+	Filter *runtimev1.MetricsViewFilter `json:"filter"`
 
 	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
 }
@@ -84,6 +89,14 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 	err = validateSort(q.Sort)
 	if err != nil {
 		return err
+	}
+
+	// backwards compatibility
+	if q.Filter != nil {
+		if q.Where != nil {
+			return fmt.Errorf("both filter and where is provided")
+		}
+		q.Where = convertFilterToExpression(q.Filter)
 	}
 
 	if !isTimeRangeNil(q.ComparisonTimeRange) {
@@ -224,9 +237,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	if err != nil {
 		return "", nil, err
 	}
-	rawColName := metricsViewDimensionColumn(dim)
-	colName := safeName(rawColName)
-	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
+	colName := safeName(dim.Name)
 
 	labelMap := make(map[string]string, len(mv.Measures))
 	for _, m := range mv.Measures {
@@ -238,18 +249,12 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 
 	var labelCols []string
 	var selectCols []string
-	unnestClause := ""
 	dimLabel := colName
 	if dim.Label != "" {
 		dimLabel = safeName(dim.Label)
 	}
-	if dim.Unnest && dialect != drivers.DialectDruid {
-		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
-		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
-		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
-	} else {
-		selectCols = append(selectCols, colName)
-	}
+	dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
+	selectCols = append(selectCols, dimSel)
 	labelCols = []string{fmt.Sprintf("%s as %s", safeName(dim.Name), dimLabel)}
 
 	for _, m := range q.Measures {
@@ -279,6 +284,13 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		}
 	}
 
+	if q.Aliases != nil {
+		err = validateMeasureAliases(q.Aliases, false)
+		if err != nil {
+			return "", nil, err
+		}
+	}
+
 	selectClause := strings.Join(selectCols, ", ")
 	baseWhereClause := "1=1"
 
@@ -291,36 +303,57 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	}
 	baseWhereClause += trc
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if q.Where != nil {
+		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		baseWhereClause += " " + clause
+		baseWhereClause += " AND " + clause
 
 		args = append(args, clauseArgs...)
 	}
 
-	orderClause := "true"
+	if policy != nil && policy.RowFilter != "" {
+		baseWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+	}
+
+	havingClause := ""
+	if q.Having != nil {
+		var havingClauseArgs []any
+		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		havingClause = "HAVING " + havingClause
+		args = append(args, havingClauseArgs...)
+	}
+
+	var orderClauses []string
 	for _, s := range q.Sort {
 		if s.Name == q.DimensionName {
-			orderClause += ", 1"
+			clause := "1"
 			if s.Desc {
-				orderClause += " DESC"
+				clause += " DESC"
 			}
 			if dialect == drivers.DialectDuckDB {
-				orderClause += " NULLS LAST"
+				clause += " NULLS LAST"
 			}
+			orderClauses = append(orderClauses, clause)
 			break
 		}
-		orderClause += ", "
-		orderClause += safeName(s.Name)
+		clause := safeName(s.Name)
 		if s.Desc {
-			orderClause += " DESC"
+			clause += " DESC"
 		}
 		if dialect == drivers.DialectDuckDB {
-			orderClause += " NULLS LAST"
+			clause += " NULLS LAST"
 		}
+		orderClauses = append(orderClauses, clause)
+	}
+
+	orderByClause := ""
+	if len(orderClauses) > 0 {
+		orderByClause = "ORDER BY " + strings.Join(orderClauses, ", ")
 	}
 
 	limitClause := ""
@@ -328,37 +361,32 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
 	}
 
-	groupByCol := colName
-	if dim.Unnest && dialect != drivers.DialectDruid {
-		groupByCol = unnestColName
-	}
-
 	var sql string
 	if export {
 		labelSelectClause := strings.Join(labelCols, ", ")
 		sql = fmt.Sprintf(
-			`SELECT %[9]s FROM (SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d)`,
+			`SELECT %[8]s FROM (SELECT %[1]s FROM %[2]s %[7]s WHERE %[3]s GROUP BY 1 %[9]s %[4]s %[5]s OFFSET %[6]d)`,
 			selectClause,       // 1
-			groupByCol,         // 2
-			safeName(mv.Table), // 3
-			baseWhereClause,    // 4
-			orderClause,        // 5
-			limitClause,        // 6
-			q.Offset,           // 7
-			unnestClause,       // 8
-			labelSelectClause,  // 9
+			safeName(mv.Table), // 2
+			baseWhereClause,    // 3
+			orderByClause,      // 4
+			limitClause,        // 5
+			q.Offset,           // 6
+			unnestClause,       // 7
+			labelSelectClause,  // 8
+			havingClause,       // 9
 		)
 	} else {
 		sql = fmt.Sprintf(
-			`SELECT %[1]s FROM %[3]s %[8]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[5]s %[6]s OFFSET %[7]d`,
+			`SELECT %[1]s FROM %[2]s %[7]s WHERE %[3]s GROUP BY 1 %[8]s %[4]s %[5]s OFFSET %[6]d`,
 			selectClause,       // 1
-			groupByCol,         // 2
-			safeName(mv.Table), // 3
-			baseWhereClause,    // 4
-			orderClause,        // 5
-			limitClause,        // 6
-			q.Offset,           // 7
-			unnestClause,       // 8
+			safeName(mv.Table), // 2
+			baseWhereClause,    // 3
+			orderByClause,      // 4
+			limitClause,        // 5
+			q.Offset,           // 6
+			unnestClause,       // 7
+			havingClause,       // 8
 		)
 	}
 
@@ -371,9 +399,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		return "", nil, err
 	}
 
-	rawColName := metricsViewDimensionColumn(dim)
-	colName := safeName(rawColName)
-	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", rawColName)))
+	colName := safeName(dim.Name)
 
 	labelMap := make(map[string]string, len(mv.Measures))
 	for _, m := range mv.Measures {
@@ -384,14 +410,8 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 
 	var selectCols []string
-	unnestClause := ""
-	if dim.Unnest && dialect != drivers.DialectDruid {
-		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
-		selectCols = append(selectCols, fmt.Sprintf(`%s as %s`, unnestColName, colName))
-		unnestClause = fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, safeName(mv.Table), colName, unnestColName)
-	} else {
-		selectCols = append(selectCols, colName)
-	}
+	dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
+	selectCols = append(selectCols, dimSel)
 
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
@@ -426,7 +446,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		var labelTuple string
 		if dialect != drivers.DialectDruid {
 			columnsTuple = fmt.Sprintf(
-				"base.%[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
+				"base.%[1]s AS %[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
 				safeName(m.Name),
 				safeName(m.Name+"__previous"),
 				safeName(m.Name+"__delta_abs"),
@@ -442,8 +462,11 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			)
 		} else {
 			columnsTuple = fmt.Sprintf(
-				"ANY_VALUE(base.%[1]s), ANY_VALUE(comparison.%[1]s), ANY_VALUE(base.%[1]s - comparison.%[1]s), ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE)))",
+				"ANY_VALUE(base.%[1]s) AS %[1]s, ANY_VALUE(comparison.%[1]s) AS %[2]s, ANY_VALUE(base.%[1]s - comparison.%[1]s) AS %[3]s, ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[4]s",
 				safeName(m.Name),
+				safeName(m.Name+"__previous"),
+				safeName(m.Name+"__delta_abs"),
+				safeName(m.Name+"__delta_rel"),
 			)
 			labelTuple = fmt.Sprintf(
 				"ANY_VALUE(base.%[1]s) AS %[2]s, ANY_VALUE(comparison.%[1]s) AS %[3]s, ANY_VALUE(base.%[1]s - comparison.%[1]s) AS %[4]s, ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[5]s",
@@ -459,6 +482,13 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			columnsTuple,
 		)
 		labelCols = append(labelCols, labelTuple)
+	}
+
+	if q.Aliases != nil {
+		err = validateMeasureAliases(q.Aliases, true)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 
 	subSelectClause := strings.Join(selectCols, ", ")
@@ -478,20 +508,20 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	td := safeName(mv.TimeDimension)
 
+	whereClause, whereClauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
+	if err != nil {
+		return "", nil, err
+	}
+
 	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
 	baseWhereClause += trc
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
-		if err != nil {
-			return "", nil, err
-		}
-		baseWhereClause += " " + clause
-
-		args = append(args, clauseArgs...)
+	if whereClause != "" {
+		baseWhereClause += " AND " + whereClause
+		args = append(args, whereClauseArgs...)
 	}
 
 	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, dialect, td, &args)
@@ -500,14 +530,24 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 	comparisonWhereClause += trc
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if whereClause != "" {
+		comparisonWhereClause += " AND " + whereClause
+		args = append(args, whereClauseArgs...)
+	}
+
+	if policy != nil && policy.RowFilter != "" {
+		baseWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+		comparisonWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+	}
+
+	havingClause := "1=1"
+	if q.Having != nil {
+		var havingClauseArgs []any
+		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, q.Aliases, dialect)
 		if err != nil {
 			return "", nil, err
 		}
-		comparisonWhereClause += " " + clause
-
-		args = append(args, clauseArgs...)
+		args = append(args, havingClauseArgs...)
 	}
 
 	err = validateSort(q.Sort)
@@ -515,12 +555,14 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		return "", nil, err
 	}
 
-	orderClause := "true"
-	subQueryOrderClause := "true"
+	// Update sort to make sure it is backwards compatible
+	updateComparisonSort(q.Sort)
+	var orderClauses []string
+	var subQueryOrderClauses []string
 	for _, s := range q.Sort {
 		if s.Name == q.DimensionName {
-			orderClause += ", 1"
-			subQueryOrderClause += ", 1"
+			clause := "1"
+			subQueryClause := "1"
 			var ending string
 			if s.Desc {
 				ending += " DESC"
@@ -528,31 +570,32 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			if dialect == drivers.DialectDuckDB {
 				ending += " NULLS LAST"
 			}
-			orderClause += ending
-			subQueryOrderClause += ending
+			clause += ending
+			subQueryClause += ending
+			orderClauses = append(orderClauses, clause)
+			subQueryOrderClauses = append(subQueryOrderClauses, subQueryClause)
 			break
 		}
 		i, ok := measureMap[s.Name]
 		if !ok {
 			return "", nil, fmt.Errorf("metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.Name)
 		}
-		orderClause += ", "
-		subQueryOrderClause += ", "
+
 		var pos int
-		switch s.Type {
-		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
+		switch s.SortType {
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
 			pos = 2 + i*4
-		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
 			pos = 3 + i*4
-		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA:
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
 			pos = 4 + i*4
-		case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA:
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
 			pos = 5 + i*4
 		default:
 			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.Name)
 		}
-		orderClause += fmt.Sprint(pos)
-		subQueryOrderClause += fmt.Sprint(i + 2) // 1-based + skip the first dim column
+		orderClause := fmt.Sprint(pos)
+		subQueryOrderClause := fmt.Sprint(i + 2) // 1-based + skip the first dim column
 		ending := ""
 		if s.Desc {
 			ending += " DESC"
@@ -562,6 +605,15 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		}
 		orderClause += ending
 		subQueryOrderClause += ending
+		orderClauses = append(orderClauses, orderClause)
+		subQueryOrderClauses = append(subQueryOrderClauses, subQueryOrderClause)
+	}
+
+	orderByClause := ""
+	subQueryOrderByClause := ""
+	if len(orderClauses) > 0 {
+		orderByClause = "ORDER BY " + strings.Join(orderClauses, ", ")
+		subQueryOrderByClause = "ORDER BY " + strings.Join(subQueryOrderClauses, ", ")
 	}
 
 	limitClause := ""
@@ -578,23 +630,23 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	joinType := "FULL"
 	if !q.Exact {
-		deltaComparison := q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA ||
-			q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA
+		deltaComparison := q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA ||
+			q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
 
 		approximationLimit := q.Limit
 		if q.Limit != 0 && q.Limit < 100 && deltaComparison {
 			approximationLimit = 100
 		}
 
-		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE || deltaComparison {
+		if q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE || deltaComparison {
 			joinType = "LEFT OUTER"
-			baseLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
+			baseLimitClause = subQueryOrderByClause
 			if approximationLimit > 0 {
 				baseLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
 			}
-		} else if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
+		} else if q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE {
 			joinType = "RIGHT OUTER"
-			comparisonLimitClause = fmt.Sprintf("ORDER BY %s", subQueryOrderClause)
+			comparisonLimitClause = subQueryOrderByClause
 			if approximationLimit > 0 {
 				comparisonLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
 			}
@@ -619,10 +671,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		LIMIT 10
 		OFFSET 0
 	*/
-	groupByCol := colName
-	if dim.Unnest && dialect != drivers.DialectDruid {
-		groupByCol = unnestColName
-	}
 
 	finalDimName := safeName(q.DimensionName)
 	if export && dim.Label != "" {
@@ -630,39 +678,77 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 	var sql string
 	if dialect != drivers.DialectDruid {
-		sql = fmt.Sprintf(`
+		if havingClause != "" {
+			// measure filter could include the base measure name.
+			// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
+			// to keep the clause builder consistent we add an outer query here.
+			sql = fmt.Sprintf(`
+  SELECT * from (
 		SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
 			(
-				SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY %[15]s %[12]s 
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY 1 %[12]s 
 			) base
 		%[11]s JOIN
 			(
-				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY %[15]s %[13]s 
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
 			) comparison
 		ON
 				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
-		ORDER BY
-			%[6]s
+		%[6]s
+		%[7]s
+		OFFSET
+			%[8]d
+  ) WHERE %[15]s 
+		`,
+				subSelectClause,       // 1
+				colName,               // 2
+				safeName(mv.Table),    // 3
+				baseWhereClause,       // 4
+				comparisonWhereClause, // 5
+				orderByClause,         // 6
+				limitClause,           // 7
+				q.Offset,              // 8
+				finalSelectClause,     // 9
+				finalDimName,          // 10
+				joinType,              // 11
+				baseLimitClause,       // 12
+				comparisonLimitClause, // 13
+				unnestClause,          // 14
+				havingClause,          // 15
+			)
+		} else {
+			sql = fmt.Sprintf(`
+		SELECT COALESCE(base.%[2]s, comparison.%[2]s) AS %[10]s, %[9]s FROM 
+			(
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY 1 %[12]s 
+			) base
+		%[11]s JOIN
+			(
+				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
+			) comparison
+		ON
+				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
+		%[6]s
 		%[7]s
 		OFFSET
 			%[8]d
 		`,
-			subSelectClause,       // 1
-			colName,               // 2
-			safeName(mv.Table),    // 3
-			baseWhereClause,       // 4
-			comparisonWhereClause, // 5
-			orderClause,           // 6
-			limitClause,           // 7
-			q.Offset,              // 8
-			finalSelectClause,     // 9
-			finalDimName,          // 10
-			joinType,              // 11
-			baseLimitClause,       // 12
-			comparisonLimitClause, // 13
-			unnestClause,          // 14
-			groupByCol,            // 15
-		)
+				subSelectClause,       // 1
+				colName,               // 2
+				safeName(mv.Table),    // 3
+				baseWhereClause,       // 4
+				comparisonWhereClause, // 5
+				orderByClause,         // 6
+				limitClause,           // 7
+				q.Offset,              // 8
+				finalSelectClause,     // 9
+				finalDimName,          // 10
+				joinType,              // 11
+				baseLimitClause,       // 12
+				comparisonLimitClause, // 13
+				unnestClause,          // 14
+			)
+		}
 	} else {
 		/*
 			Example of the SQL query:
@@ -707,7 +793,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		leftWhereClause := baseWhereClause
 		rightWhereClause := comparisonWhereClause
 
-		if q.Sort[0].Type == runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE {
+		if q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE {
 			leftSubQueryAlias = "comparison"
 			rightSubQueryAlias = "base"
 			leftWhereClause = comparisonWhereClause
@@ -716,30 +802,32 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 		sql = fmt.Sprintf(`
 				WITH %[11]s AS (
-					SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY %[2]s ORDER BY %[13]s %[10]s OFFSET %[8]d 
+					SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY %[2]s %[13]s %[10]s OFFSET %[8]d
 				), %[12]s AS (
 					SELECT %[1]s FROM %[3]s WHERE %[5]s AND %[2]s IN (SELECT %[2]s FROM %[11]s) GROUP BY %[2]s %[10]s
 				)
 				SELECT %[11]s.%[2]s AS %[14]s, %[9]s FROM %[11]s LEFT JOIN %[12]s ON base.%[2]s = comparison.%[2]s
 				GROUP BY 1
-				ORDER BY %[6]s
+        HAVING %[15]s
+				%[6]s
 				%[7]s
 				OFFSET %[8]d
 			`,
-			subSelectClause,     // 1
-			colName,             // 2
-			safeName(mv.Table),  // 3
-			leftWhereClause,     // 4
-			rightWhereClause,    // 5
-			orderClause,         // 6
-			limitClause,         // 7
-			q.Offset,            // 8
-			finalSelectClause,   // 9
-			twiceTheLimitClause, // 10
-			leftSubQueryAlias,   // 11
-			rightSubQueryAlias,  // 12
-			subQueryOrderClause, // 13
-			finalDimName,        // 14
+			subSelectClause,       // 1
+			colName,               // 2
+			safeName(mv.Table),    // 3
+			leftWhereClause,       // 4
+			rightWhereClause,      // 5
+			orderByClause,         // 6
+			limitClause,           // 7
+			q.Offset,              // 8
+			finalSelectClause,     // 9
+			twiceTheLimitClause,   // 10
+			leftSubQueryAlias,     // 11
+			rightSubQueryAlias,    // 12
+			subQueryOrderByClause, // 13
+			finalDimName,          // 14
+			havingClause,          // 15
 		)
 	}
 
@@ -910,7 +998,7 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 func (q *MetricsViewComparison) generateFilename() string {
 	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
 	filename += "_" + q.DimensionName
-	if q.Filter != nil && (len(q.Filter.Include) > 0 || len(q.Filter.Exclude) > 0) {
+	if q.Where != nil || q.Having != nil {
 		filename += "_filtered"
 	}
 	return filename
@@ -958,4 +1046,35 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {
 
 func isTimeRangeNil(tr *runtimev1.TimeRange) bool {
 	return tr == nil || (tr.Start == nil && tr.End == nil)
+}
+
+func updateComparisonSort(sort []*runtimev1.MetricsViewComparisonSort) {
+	for _, comparisonSort := range sort {
+		if comparisonSort.SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED && comparisonSort.Type != runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED {
+			switch comparisonSort.Type {
+			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
+				comparisonSort.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
+			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
+				comparisonSort.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE
+			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA:
+				comparisonSort.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA
+			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA:
+				comparisonSort.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
+			}
+		}
+	}
+}
+
+func validateMeasureAliases(aliases []*runtimev1.MetricsViewComparisonMeasureAlias, hasComparison bool) error {
+	for _, alias := range aliases {
+		switch alias.Type {
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
+			runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+			runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
+			if !hasComparison {
+				return fmt.Errorf("comparison not enabled for alias %s", alias.Alias)
+			}
+		}
+	}
+	return nil
 }

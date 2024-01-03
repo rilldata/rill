@@ -261,7 +261,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Run flow to check connector credentials
 			variablesFlow(ctx, ch, fullProjectPath, name)
 			if res.Project.FrontendUrl != "" {
-				ch.Printer.PrintlnSuccess(fmt.Sprintf("Your project can be accessed at: %s" + res.Project.FrontendUrl))
+				ch.Printer.PrintlnSuccess(fmt.Sprintf("Your project can be accessed at: %s", res.Project.FrontendUrl))
 				// TODO :: add a doc link here
 				ch.Printer.PrintlnSuccess("Opening project in browser...")
 				time.Sleep(3 * time.Second)

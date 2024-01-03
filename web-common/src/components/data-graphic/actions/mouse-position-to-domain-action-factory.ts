@@ -15,7 +15,7 @@ import type { ScaleStore } from "../state/types";
 
 export interface MousePositionToDomainActionSet {
   coordinates: Readable<DomainCoordinates>;
-  mousePositionToDomain: Action<HTMLElement | SVGElement>;
+  mousePositionToDomain: Action<HTMLElement | SVGElement, any>;
 }
 
 export function mousePositionToDomainActionFactory(): MousePositionToDomainActionSet {

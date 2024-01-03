@@ -67,7 +67,7 @@ In your Rill project directory, create a `<source_name>.yaml` file in the `sourc
  — The maximum time to wait for souce ingestion.
 
 **`refresh`** - Optionally specify a schedule after which Rill should re-ingest the source
-  - **`cron`** - a cron schedule expression (optional)
+  - **`cron`** - a cron schedule expression, which should be encapsulated in single quotes e.g. `'* * * * *'` (optional)
   - **`every`** - a Go duration string, such as `24h` ([docs](https://pkg.go.dev/time#ParseDuration)) (optional)
 
 **`extract`** - Optionally limit the data ingested from remote sources (S3/GCS only)
@@ -96,4 +96,4 @@ duckdb:
   columns: "columns={'FlightDate': 'DATE', 'UniqueCarrier': 'VARCHAR', 'OriginCityName': 'VARCHAR', 'DestCityName': 'VARCHAR'}"
 ```
 
-**`dsn`** - Optionally set Snowflake connection string. Refer Snowflake [docs](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) for format
+**`dsn`** - Optionally sets the Snowflake connection string. For more information, refer to our [Snowflake page](../../deploy/credentials/snowflake.md) and the official [Go Snowflake Driver](https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String) documentation for the correct syntax to use.

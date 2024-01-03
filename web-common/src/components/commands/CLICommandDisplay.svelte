@@ -21,6 +21,8 @@
     {command}
   </div>
   <div
+    role="button"
+    tabindex="0"
     class="p-1 border border-gray-200 rounded-br-sm rounded-tr-sm bg-gray-50
     {copied ? '' : 'cursor-pointer'}"
     on:click={copyCommand}

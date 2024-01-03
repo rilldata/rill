@@ -81,12 +81,19 @@ export function useFilteredResourceNames(
 }
 
 export function useAllNames(instanceId: string) {
+  const select = (data: V1ListResourcesResponse) =>
+    // CAST SAFETY: must be a string[], because we filter
+    // out undefined values
+    (data?.resources
+      ?.map((res) => res?.meta?.name?.name)
+      .filter((name) => name !== undefined) ?? []) as string[];
+
   return createRuntimeServiceListResources(
     instanceId,
     {},
     {
       query: {
-        select: (data) => data.resources.map((res) => res.meta.name.name),
+        select,
       },
     }
   );
@@ -119,7 +126,7 @@ export function createSchemaForTable(
   ) as ReturnType<typeof createConnectorServiceOLAPGetTable>;
 }
 
-export function resourceIsLoading(resource: V1Resource) {
+export function resourceIsLoading(resource?: V1Resource) {
   return (
     !!resource &&
     resource.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE

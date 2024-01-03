@@ -1,25 +1,25 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import { CHECKMARK_COLORS } from "@rilldata/web-common/features/dashboards/config";
   import Pivot from "@rilldata/web-common/features/dashboards/pivot/RegularTable.svelte";
   import type {
     PivotPos,
     PivotRenderCallback,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
+  import { SortType } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import {
-    SelectedCheckmark,
     ExcludeIcon,
     MeasureArrow,
     PieChart,
-    PinSetIcon,
-    PinSetHoverIcon,
     PinHoverUnsetIcon,
+    PinSetHoverIcon,
+    PinSetIcon,
     PinUnsetIcon,
+    SelectedCheckmark,
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDIcons";
-  import type { TableData, TablePosition, TDDComparison } from "./types";
-  import { SortType } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
+  import { createEventDispatcher } from "svelte";
   import { lastKnownPosition } from "./time-dimension-data-store";
+  import type { TDDComparison, TableData, TablePosition } from "./types";
 
   export let dimensionLabel: string;
   export let measureLabel: string;
@@ -131,10 +131,8 @@
     }
   };
 
-  let noSelectionMarkerCount = 0;
   const getMarker = (value, y) => {
     if (y === 0) {
-      noSelectionMarkerCount = 0;
       return { icon: "", muted: false };
     }
     const visibleIdx = tableData?.selectedValues.indexOf(value.value);
@@ -357,6 +355,8 @@
 </script>
 
 <div
+  role="grid"
+  tabindex="0"
   on:mouseleave={resetHighlight}
   style:height={comparing === "none" ? "80px" : "calc(100% - 50px)"}
   style={cssVarStyles}

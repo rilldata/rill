@@ -1,7 +1,7 @@
 <script lang="ts">
+  import Portal from "@rilldata/web-common/components/Portal.svelte";
   import HideLeftSidebar from "@rilldata/web-common/components/icons/HideLeftSidebar.svelte";
   import SurfaceViewIcon from "@rilldata/web-common/components/icons/SurfaceView.svelte";
-  import Portal from "@rilldata/web-common/components/Portal.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { ModelAssets } from "@rilldata/web-common/features/models";
   import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
@@ -58,6 +58,7 @@
     {#if $navigationLayout?.visible}
       <Portal>
         <div
+          role="separator"
           on:dblclick={() => {
             navigationLayout.update((state) => {
               state.value = DEFAULT_NAV_WIDTH;
@@ -69,7 +70,6 @@
           use:drag={{
             minSize: DEFAULT_NAV_WIDTH,
             maxSize: 440,
-            side: "assetsWidth",
             store: navigationLayout,
           }}
         />

@@ -36,4 +36,6 @@
   });
 </script>
 
-<slot visibility={showLabel ? "visible" : "hidden"} />
+<slot
+  visibility={isDimension ? (showLabel ? "visible" : "hidden") : "visible"}
+/>

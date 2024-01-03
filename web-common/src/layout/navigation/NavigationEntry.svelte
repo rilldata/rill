@@ -175,6 +175,7 @@
           on:escape={toggleFloatingElement}
           on:item-select={toggleFloatingElement}
           slot="floating-element"
+          let:toggleFloatingElement
         >
           <slot name="menu-items" toggleMenu={toggleFloatingElement} />
         </Menu>
