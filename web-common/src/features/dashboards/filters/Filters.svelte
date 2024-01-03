@@ -33,10 +33,6 @@ The main feature-set component for dashboard filters
 
   const {
     dashboardStore,
-    selectors: {
-      dimensionFilters: { dimensionHasFilter },
-      measureFilters: { measureHasFilter },
-    },
     actions: {
       dimensionsFilter: {
         toggleDimensionNameSelection,
@@ -59,7 +55,6 @@ The main feature-set component for dashboard filters
   let searchText = "";
   let allValues: Record<string, string[]> = {};
   let activeDimensionName: string;
-  let activeMeasureName: string;
   let topListQuery: ReturnType<typeof getFilterSearchList> | undefined;
 
   $: activeColumn =
@@ -147,7 +142,10 @@ The main feature-set component for dashboard filters
               }
             }}
             on:apply={(event) => {
-              toggleDimensionValueSelection(name, event.detail, true);
+              if ($potentialFilterName) {
+                $potentialFilterName = null;
+              }
+              toggleDimensionValueSelection(name, event.detail);
             }}
             on:search={(event) => {
               setActiveDimension(name, event.detail);

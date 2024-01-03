@@ -178,15 +178,15 @@ function toTimeGrainProto(timeGrain: V1TimeGrain) {
 
 function toExpressionProto(expression: V1Expression | undefined) {
   if (!expression) return undefined;
-  if (expression.ident) {
+  if ("ident" in expression) {
     return new Expression({
       expression: {
         case: "ident",
-        value: expression.ident,
+        value: expression.ident as string,
       },
     });
   }
-  if (expression.val) {
+  if ("val" in expression) {
     return new Expression({
       expression: {
         case: "val",
@@ -243,10 +243,11 @@ function toPbValue(val: unknown) {
       });
     // TODO: other options are not currently in a filter. but we might need them in future
   }
+  // force as string. this is the older behaviour
   return new Value({
     kind: {
-      case: "nullValue",
-      value: NullValue.NULL_VALUE,
+      case: "stringValue",
+      value: val as string,
     },
   });
 }

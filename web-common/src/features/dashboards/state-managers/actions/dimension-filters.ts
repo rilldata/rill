@@ -9,13 +9,13 @@ import { getWhereFilterExpressionIndex } from "../selectors/dimension-filters";
 export function toggleDimensionValueSelection(
   { dashboard, cancelQueries }: DashboardMutables,
   dimensionName: string,
-  dimensionValue: string,
-  keepPillVisible?: boolean
+  dimensionValue: string
 ) {
   // if we are able to update the filters, we must cancel any queries
   // that are currently running.
   cancelQueries();
 
+  console.log(dashboard.whereFilter);
   const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {

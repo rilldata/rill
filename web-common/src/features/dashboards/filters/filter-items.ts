@@ -11,7 +11,7 @@ import type {
   MetricsViewSpecDimensionV2,
   V1Expression,
 } from "@rilldata/web-common/runtime-client";
-import { get, writable } from "svelte/store";
+import { writable } from "svelte/store";
 
 export const potentialFilterName = writable<string | null>(null);
 

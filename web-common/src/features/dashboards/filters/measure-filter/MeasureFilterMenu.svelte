@@ -86,13 +86,13 @@
       <InputV2
         bind:value={$form["value1"]}
         error={$errors["value1"]}
-        on:input={handleSubmit}
+        on:change={handleSubmit}
       />
       {#if $form["operation"] === "b" || $form["operation"] === "nb"}
         <InputV2
           bind:value={$form["value2"]}
           error={$errors["value2"]}
-          on:input={handleSubmit}
+          on:change={handleSubmit}
         />
       {/if}
     </form>

@@ -10,6 +10,11 @@
 </script>
 
 <script lang="ts">
+  import {
+    getDimensionDisplayName,
+    getMeasureDisplayName,
+  } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+
   const {
     selectors: {
       measures: { allMeasures },
@@ -28,7 +33,7 @@
     $allDimensions
       .map((d) => ({
         name: d.name as string,
-        label: d.label as string,
+        label: getDimensionDisplayName(d),
       }))
       .filter((d) => !$dimensionHasFilter(d.name))
       .forEach((d) => {
@@ -39,7 +44,7 @@
     $allMeasures
       .map((m) => ({
         name: m.name as string,
-        label: m.label as string,
+        label: getMeasureDisplayName(m),
       }))
       .filter((m) => !$measureHasFilter(m.name))
       .forEach((m) => {

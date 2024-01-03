@@ -18,8 +18,10 @@ export const getHavingFilterExpressionIndex = (
   dashData: AtLeast<DashboardDataSources, "dashboard">
 ): ((name: string) => number | undefined) => {
   return (name: string) =>
-    dashData.dashboard.havingFilter?.cond?.exprs?.findIndex((e) =>
-      matchExpressionByName(e, name)
+    dashData.dashboard.havingFilter?.cond?.exprs?.findIndex(
+      (e) =>
+        matchExpressionByName(e, name) ||
+        (e.cond?.exprs?.length && matchExpressionByName(e.cond?.exprs[0], name))
     );
 };
 
