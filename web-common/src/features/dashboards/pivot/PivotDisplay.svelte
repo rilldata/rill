@@ -2,6 +2,7 @@
   import PivotTable from "./PivotTable.svelte";
   import PivotSidebar from "./PivotSidebar.svelte";
   import PivotHeader from "./PivotHeader.svelte";
+  import PivotToolbar from "./PivotToolbar.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { usePivotDataStore } from "./pivot-data-store";
   import type { TableOptions } from "@tanstack/svelte-table";
@@ -33,6 +34,7 @@
   <PivotSidebar />
   <div class="content">
     <PivotHeader />
+    <PivotToolbar />
     <div class="table-view">
       {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
         <div class="empty-state">

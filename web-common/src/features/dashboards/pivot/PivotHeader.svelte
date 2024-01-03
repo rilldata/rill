@@ -29,7 +29,7 @@
 
 <div class="header">
   <div class="header-row">
-    <Column size="16px" /> Columns
+    <span class="row-label"> <Column size="16px" /> Columns</span>
     <DragList
       on:update={(e) =>
         metricsExplorerStore.setPivotColumns(
@@ -41,7 +41,8 @@
     />
   </div>
   <div class="header-row">
-    <Row size="16px" /> Rows
+    <span class="row-label"> <Row size="16px" /> Rows</span>
+
     <DragList
       on:update={(e) =>
         metricsExplorerStore.setPivotRows(
@@ -60,6 +61,9 @@
     border-bottom: 1px solid #ddd;
   }
   .header-row {
-    @apply flex items-center gap-x-1 px-2 py-1;
+    @apply flex items-center gap-x-2 px-2 py-1;
+  }
+  .row-label {
+    @apply flex items-center gap-x-1 w-20;
   }
 </style>
