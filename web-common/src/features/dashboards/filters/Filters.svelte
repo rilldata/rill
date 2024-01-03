@@ -78,7 +78,7 @@ The main feature-set component for dashboard filters
 
   $: dimensionIdMap = getMapFromArray(
     dimensions,
-    (dimension) => dimension.name
+    (dimension) => dimension.name as string
   );
 
   $: currentFormattedFilters = formatFilters(

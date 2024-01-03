@@ -1,3 +1,4 @@
+import { compareLeaderboardValues } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { removeIfExists } from "@rilldata/web-common/lib/arrayUtils";
 import type { DashboardMutables } from "./types";
 import { filtersForCurrentExcludeMode } from "../selectors/dimension-filters";
@@ -25,7 +26,11 @@ export function toggleDimensionValueSelection(
   if (dimensionEntryIndex >= 0) {
     const filtersIn = filters[dimensionEntryIndex].in;
     if (filtersIn === undefined) return;
-    if (removeIfExists(filtersIn, (value) => value === dimensionValue)) {
+    if (
+      removeIfExists(filtersIn, (value) =>
+        compareLeaderboardValues(value as string, dimensionValue)
+      )
+    ) {
       if (filtersIn.length === 0) {
         filters.splice(dimensionEntryIndex, 1);
         if (keepPillVisible) potentialFilterName.set(dimensionName);
