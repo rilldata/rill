@@ -13,6 +13,7 @@ func DevtoolCmd(ch *cmdutil.Helper) *cobra.Command {
   rill devtool seed cloud
   rill devtool start cloud --reset
   rill devtool start cloud --except runtime
+  rill devtool start cloud --only admin,deps
   rill devtool start local
   rill devtool start local --reset
   rill devtool switch-env stage

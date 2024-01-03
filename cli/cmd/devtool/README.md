@@ -22,6 +22,11 @@ Start a cloud development environment without the runtime:
 rill devtool start cloud --except runtime
 ```
 
+Start a cloud development environment with only the admin server and external dependencies (Postgres, etc.):
+```bash
+rill devtool start cloud --only admin,deps
+```
+
 Start a local development environment:
 ```bash
 rill devtool start local
