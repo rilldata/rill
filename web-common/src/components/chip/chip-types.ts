@@ -25,8 +25,8 @@ export const excludeChipColors = {
   bgHoverClass: "hover:bg-gray-100 hover:dark:bg-gray-600",
   textClass: "text-gray-600",
   bgActiveClass: "bg-gray-100 dark:bg-gray-600",
-  outlineClass: "",
-  outlineActiveClass: "",
+  outlineClass: "outline outline-1 outline-gray-200",
+  outlineActiveClass: "!outline-gray-400",
 };
 
 export const subrangeChipColors = {

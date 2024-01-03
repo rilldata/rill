@@ -76,6 +76,7 @@ are details left to the consumer of the component; this component should remain 
       {active}
       {...colors}
       {label}
+      outline
     >
       <!-- remove button tooltip -->
       <svelte:fragment slot="remove-tooltip">
