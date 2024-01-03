@@ -29,6 +29,7 @@ const (
 	minNodeVersion = "18"
 	stateDirCloud  = "dev-cloud-state"
 	stateDirLocal  = "dev-project"
+	rillRepo       = "https://github.com/rilldata/rill.git"
 )
 
 var (
@@ -63,7 +64,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Set log level to debug")
 	cmd.Flags().BoolVar(&reset, "reset", false, "Reset local development state")
-	cmd.Flags().BoolVar(&refreshDotenv, "refresh-dotenv", true, "Reset local development state")
+	cmd.Flags().BoolVar(&refreshDotenv, "refresh-dotenv", true, "Refresh .env file from shared storage")
 	services.addFlags(cmd)
 
 	return cmd
@@ -157,7 +158,6 @@ func checkRillRepo(ctx context.Context) error {
 	}
 
 	repo := strings.TrimSpace(string(out))
-	rillRepo := "https://github.com/rilldata/rill.git"
 	if repo != rillRepo {
 		return fmt.Errorf("you must run `rill devtool` from the rill repository (expected remote %q, got %q)", rillRepo, repo)
 	}
@@ -267,10 +267,8 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 
 	if services.admin {
 		g.Go(func() error {
-			select {
-			case <-depsReadyCh:
-			case <-ctx.Done():
-				return ctx.Err()
+			if err := awaitClose(ctx, depsReadyCh); err != nil {
+				return err
 			}
 			return s.runAdmin(ctx, verbose)
 		})
@@ -278,10 +276,8 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 
 	if services.runtime {
 		g.Go(func() error {
-			select {
-			case <-depsReadyCh:
-			case <-ctx.Done():
-				return ctx.Err()
+			if err := awaitClose(ctx, depsReadyCh); err != nil {
+				return err
 			}
 			return s.runRuntime(ctx, verbose)
 		})
@@ -289,10 +285,8 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 
 	backendReadyCh := make(chan struct{})
 	g.Go(func() error {
-		select {
-		case <-depsReadyCh:
-		case <-ctx.Done():
-			return ctx.Err()
+		if err := awaitClose(ctx, depsReadyCh); err != nil {
+			return err
 		}
 		if services.admin {
 			err := s.awaitAdmin(ctx)
@@ -315,10 +309,8 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 			return nil
 		}
 
-		select {
-		case <-backendReadyCh:
-		case <-ctx.Done():
-			return ctx.Err()
+		if err := awaitClose(ctx, backendReadyCh); err != nil {
+			return err
 		}
 
 		// NOTE: Will revert back to previous env on ctx.Done()
@@ -339,15 +331,8 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 		})
 
 		g.Go(func() error {
-			select {
-			case <-backendReadyCh:
-				select {
-				case <-npmReadyCh:
-				case <-ctx.Done():
-					return ctx.Err()
-				}
-			case <-ctx.Done():
-				return ctx.Err()
+			if err := awaitClose(ctx, backendReadyCh, npmReadyCh); err != nil {
+				return err
 			}
 			return s.runUI(ctx)
 		})
@@ -366,18 +351,9 @@ func (s cloud) start(ctx context.Context, ch *cmdutil.Helper, verbose, reset, re
 	})
 
 	g.Go(func() error {
-		// Wait for backend, then UI
-		select {
-		case <-backendReadyCh:
-			select {
-			case <-uiReadyCh:
-			case <-ctx.Done():
-				return ctx.Err()
-			}
-		case <-ctx.Done():
-			return ctx.Err()
+		if err := awaitClose(ctx, backendReadyCh, uiReadyCh); err != nil {
+			return err
 		}
-
 		logInfo.Printf("All services ready\n")
 		return nil
 	})
@@ -613,15 +589,8 @@ func (s local) start(ctx context.Context, verbose, reset bool, services *service
 		})
 
 		g.Go(func() error {
-			select {
-			case <-runtimeReadyCh:
-				select {
-				case <-npmReadyCh:
-				case <-ctx.Done():
-					return ctx.Err()
-				}
-			case <-ctx.Done():
-				return ctx.Err()
+			if err := awaitClose(ctx, runtimeReadyCh, npmReadyCh); err != nil {
+				return err
 			}
 			return s.runUI(ctx)
 		})
@@ -641,17 +610,9 @@ func (s local) start(ctx context.Context, verbose, reset bool, services *service
 
 	g.Go(func() error {
 		// Wait for runtime, then UI
-		select {
-		case <-runtimeReadyCh:
-			select {
-			case <-uiReadyCh:
-			case <-ctx.Done():
-				return ctx.Err()
-			}
-		case <-ctx.Done():
-			return ctx.Err()
+		if err := awaitClose(ctx, runtimeReadyCh, uiReadyCh); err != nil {
+			return err
 		}
-
 		logInfo.Printf("All services ready\n")
 		return nil
 	})
@@ -740,6 +701,20 @@ func (s local) awaitUI(ctx context.Context) error {
 	}
 }
 
+// awaitClose waits for all of the given channels to close.
+// It returns an error if the context is canceled.
+func awaitClose(ctx context.Context, chs ...<-chan struct{}) error {
+	for _, ch := range chs {
+		select {
+		case <-ch:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return nil
+}
+
+// newCmd initializes an exec.Cmd that sends SIGINT instead of SIGKILL when the ctx is canceled.
 func newCmd(ctx context.Context, name string, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Cancel = func() error {

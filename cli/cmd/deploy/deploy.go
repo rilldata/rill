@@ -49,10 +49,10 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	deployCmd.Flags().SortFlags = false
-	deployCmd.Flags().StringVar(&opts.GitPath, "path", ".", "Path to project repository (default: current directory)")
+	deployCmd.Flags().StringVar(&opts.GitPath, "path", ".", "Path to project repository (default: current directory)") // This can also be a remote .git URL (undocumented feature)
 	deployCmd.Flags().StringVar(&opts.SubPath, "subpath", "", "Relative path to project in the repository (for monorepos)")
 	deployCmd.Flags().StringVar(&opts.RemoteName, "remote", "", "Remote name (default: first Git remote)")
-	deployCmd.Flags().StringVar(&opts.OrgName, "org", ch.Config.Org, "Org to deploy project in")
+	deployCmd.Flags().StringVar(&ch.Config.Org, "org", ch.Config.Org, "Org to deploy project in")
 	deployCmd.Flags().StringVar(&opts.Name, "project", "", "Project name (default: Git repo name)")
 	deployCmd.Flags().StringVar(&opts.Description, "description", "", "Project description")
 	deployCmd.Flags().BoolVar(&opts.Public, "public", false, "Make dashboards publicly accessible")
@@ -75,7 +75,6 @@ type Options struct {
 	GitPath     string
 	SubPath     string
 	RemoteName  string
-	OrgName     string
 	Name        string
 	Description string
 	Public      bool
@@ -138,10 +137,10 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 			return err
 		}
 
-		if opts.SubPath != "" {
-			localProjectPath = filepath.Join(localGitPath, opts.SubPath)
-		} else {
+		if opts.SubPath == "" {
 			localProjectPath = localGitPath
+		} else {
+			localProjectPath = filepath.Join(localGitPath, opts.SubPath)
 		}
 
 		// Verify that localProjectPath contains a Rill project.
@@ -175,11 +174,13 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		}
 
 		// Error if the repository is not in sync with the remote
-		if !repoInSyncFlow(ch, localProjectPath, opts.ProdBranch, remote.Name) {
+		if !repoInSyncFlow(ch, localGitPath, opts.ProdBranch, remote.Name) {
 			ch.Printer.PrintlnInfo("You can run `rill deploy` again when you have pushed your local changes to the remote.")
 			return nil
 		}
 	}
+
+	// We now have a githubURL.
 
 	// Extract Github account and repo name from the githubURL
 	ghAccount, ghRepo, ok := gitutil.SplitGithubURL(githubURL)
@@ -224,11 +225,6 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	// If no project name was provided, default to Git repo name
 	if opts.Name == "" {
 		opts.Name = ghRepo
-	}
-
-	// Allow passing an org name to create the project in a new org.
-	if opts.OrgName != "" {
-		cfg.Org = opts.OrgName
 	}
 
 	// Set a default org for the user if necessary
@@ -580,9 +576,9 @@ func repoInSyncFlow(ch *cmdutil.Helper, gitPath, branch, remoteName string) bool
 	case gitutil.SyncStatusSynced:
 		return true
 	case gitutil.SyncStatusModified:
-		ch.Printer.PrintlnWarn("Some files have been locally modified. These changes will not be present in deployed project.")
+		ch.Printer.PrintlnWarn("Some files have been locally modified. These changes will not be present in the deployed project.")
 	case gitutil.SyncStatusAhead:
-		ch.Printer.PrintlnWarn("Local commits are not pushed to remote yet. These changes will not be present in deployed project.")
+		ch.Printer.PrintlnWarn("Local commits are not pushed to remote yet. These changes will not be present in the deployed project.")
 	}
 
 	return cmdutil.ConfirmPrompt("Do you want to continue", "", true)

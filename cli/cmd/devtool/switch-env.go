@@ -17,8 +17,8 @@ import (
 
 func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "switch-env [prod|stage|dev]",
-		Short: "Switch between environments",
+		Use:   "switch-env [prod|stage|test|dev]",
+		Short: "Switch between admin environments",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ch.Config
@@ -60,7 +60,7 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 var envURLs = map[string]string{
 	"prod":  "https://admin.rilldata.com",
 	"stage": "https://admin.rilldata.io",
-	"test":  "https://admin.rilldata.dev",
+	"test":  "https://admin.rilldata.in",
 	"dev":   "http://localhost:9090",
 }
 
@@ -154,6 +154,7 @@ func switchEnvToDevTemporarily(ctx context.Context, ch *cmdutil.Helper) {
 		ch.Config.AdminTokenDefault = ""
 	}
 
+	// Wait for ctx cancellation, then switch back to the previous environment before returning.
 	<-ctx.Done()
 
 	err = switchEnv(ch.Config, "dev", env)
@@ -162,7 +163,7 @@ func switchEnvToDevTemporarily(ctx context.Context, ch *cmdutil.Helper) {
 		return
 	}
 
-	logInfo.Printf("Switched CLI back to to %s environment\n", env)
+	logInfo.Printf("Switched CLI back to %s environment\n", env)
 
 	err = dotrill.SetDefaultOrg(prevOrg)
 	if err != nil {

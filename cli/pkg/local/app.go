@@ -111,21 +111,6 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 		return nil, err
 	}
 
-	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
-	defaultOLAP := false
-	if olapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
-		defaultOLAP = true
-		olapDSN = path.Join(dbDirPath, olapDSN)
-	}
-
-	if reset {
-		err := drivers.Drop(olapDriver, map[string]any{"dsn": olapDSN}, logger)
-		if err != nil {
-			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
-		}
-		_ = os.RemoveAll(dbDirPath)
-	}
-
 	// Create a local runtime with an in-memory metastore
 	systemConnectors := []*runtimev1.Connector{
 		{
@@ -148,6 +133,25 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 	rt, err := runtime.New(ctx, rtOpts, logger, client, email.New(email.NewNoopSender()))
 	if err != nil {
 		return nil, err
+	}
+
+	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
+	defaultOLAP := false
+	if olapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
+		defaultOLAP = true
+		olapDSN = path.Join(dbDirPath, olapDSN)
+	}
+
+	if reset {
+		err := drivers.Drop(olapDriver, map[string]any{"dsn": olapDSN}, logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
+		}
+		_ = os.RemoveAll(dbDirPath)
+		err = os.MkdirAll(dbDirPath, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Set default DuckDB pool size to 4

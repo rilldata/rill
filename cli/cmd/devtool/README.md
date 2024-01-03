@@ -7,6 +7,11 @@ Start a cloud development environment (automatically refreshes `.env` and switch
 rill devtool start cloud
 ```
 
+Authenticate and deploy the `github.com/rilldata/rill-examples/rill-openrtb-prog-ads` project in your dev environment:
+```bash
+rill devtool seed cloud
+```
+
 Start a clean cloud development environment:
 ```bash
 rill devtool start cloud --reset

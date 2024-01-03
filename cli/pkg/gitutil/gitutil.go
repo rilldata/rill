@@ -208,7 +208,7 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	}
 
 	// check if there are local commits not pushed to remote yet
-	// no easy way to get it from go-get library so running git command directly and checking response
+	// no easy way to get it from go-git library so running git command directly and checking response
 	cmd := exec.Command("git", "-C", repoPath, "log", "@{u}..")
 	data, err := cmd.Output()
 	if err != nil {

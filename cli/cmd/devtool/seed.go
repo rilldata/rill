@@ -23,7 +23,6 @@ func SeedCmd(ch *cmdutil.Helper) *cobra.Command {
 				GitPath:  "https://github.com/rilldata/rill-examples.git",
 				SubPath:  "rill-openrtb-prog-ads",
 				Name:     "rill-openrtb-prog-ads",
-				OrgName:  ch.Config.Org,
 				DBDriver: "duckdb",
 				Slots:    2,
 			})
