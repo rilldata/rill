@@ -51,7 +51,7 @@ function setSecondaryColor(secondary: V1Color, variance: number) {
 
   root.style.setProperty(
     `${SecondaryCSSVariablePrefix}gradient-max-hue`,
-    ((hue + variance) % 360) + ""
+    (hue % 360) + ""
   );
   root.style.setProperty(
     `${SecondaryCSSVariablePrefix}gradient-min-hue`,
@@ -79,10 +79,10 @@ export function generateColorPalette(
   input: V1Color,
   defaultColors: Array<HSLColor>
 ) {
-  const [hue] = RGBToHSL(convertColor(input));
+  const [hue, saturation] = RGBToHSL(convertColor(input));
   const colors = new Array<HSLColor>(TailwindColorSpacing.length);
   for (let i = 0; i < defaultColors.length; i++) {
-    colors[i] = [hue, defaultColors[i][1], defaultColors[i][2]];
+    colors[i] = [hue, saturation, defaultColors[i][2]];
   }
   return colors;
 }
