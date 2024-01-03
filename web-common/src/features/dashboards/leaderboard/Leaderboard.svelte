@@ -51,14 +51,14 @@
     $runtime.instanceId,
     $metricsViewName,
     $leaderboardSortedQueryBody(dimensionName),
-    $leaderboardSortedQueryOptions(dimensionName)
+    $leaderboardSortedQueryOptions(dimensionName),
   );
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
     $metricsViewName,
     $leaderboardDimensionTotalQueryBody(dimensionName),
-    $leaderboardDimensionTotalQueryOptions(dimensionName)
+    $leaderboardDimensionTotalQueryOptions(dimensionName),
   );
 
   $: leaderboardTotal = $totalsQuery?.data?.data?.[$activeMeasureName];
@@ -70,11 +70,11 @@
   $: if (sortedQuery && !$sortedQuery?.isFetching) {
     const leaderboardData = prepareLeaderboardItemData(
       $sortedQuery?.data?.rows?.map((r) =>
-        getLabeledComparisonFromComparisonRow(r, $activeMeasureName)
+        getLabeledComparisonFromComparisonRow(r, $activeMeasureName),
       ) ?? [],
       slice,
       $selectedDimensionValues(dimensionName),
-      leaderboardTotal
+      leaderboardTotal,
     );
 
     aboveTheFold = leaderboardData.aboveTheFold;

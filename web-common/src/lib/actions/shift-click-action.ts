@@ -13,7 +13,7 @@ export async function copyToClipboard(value, message = "copied to clipboard") {
 }
 
 export function createShiftClickAction(
-  params: CreateShiftClick = { stopImmediatePropagation: true }
+  params: CreateShiftClick = { stopImmediatePropagation: true },
 ) {
   const _stopImmediatePropagation = params?.stopImmediatePropagation || false;
   // set a context for children to consume transient state.

@@ -67,7 +67,7 @@ export function useProjectRuntime(orgName: string, projName: string) {
           // Hack: in development, the runtime host is actually on port 8081
           host: data.prodDeployment.runtimeHost.replace(
             "localhost:9091",
-            "localhost:8081"
+            "localhost:8081",
           ),
           instanceId: data.prodDeployment.runtimeInstanceId,
           jwt: data?.jwt,
@@ -90,14 +90,14 @@ export function useProjectMembersEmails(organization: string, project: string) {
             .map((member) => member.userEmail as string);
         },
       },
-    }
+    },
   );
 }
 
 // This function returns the most recent refreshedOn date of all the project's resources.
 // In the future, we really should display the refreshedOn date for all resources individually.
 export function useProjectDataLastRefreshed(
-  instanceId: string
+  instanceId: string,
 ): CreateQueryResult<Date> {
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {

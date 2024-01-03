@@ -35,7 +35,7 @@
 
   $: filePath = getFilePathFromNameAndType(
     metricsDefName,
-    EntityType.MetricsDefinition
+    EntityType.MetricsDefinition,
   );
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
@@ -51,7 +51,7 @@
   $: allErrors = getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
-    filePath
+    filePath,
   );
 
   $: lineBasedRuntimeErrors = mapParseErrorsToLines($allErrors, yaml);

@@ -70,16 +70,16 @@
 
   function calculateGridColumns() {
     measuresHeight = measureNodes.map(
-      (measureNode) => measureNode?.offsetHeight
+      (measureNode) => measureNode?.offsetHeight,
     );
 
     const minInMeasures = Math.min(...measuresHeight);
     measuresHeight = measuresHeight.map((height) =>
-      height > minInMeasures ? MEASURE_HEIGHT_MULTILINE : MEASURE_HEIGHT
+      height > minInMeasures ? MEASURE_HEIGHT_MULTILINE : MEASURE_HEIGHT,
     );
     const totalMeasuresHeight = measuresHeight.reduce(
       (s, v) => s + v + MARGIN_TOP,
-      0
+      0,
     );
 
     if (totalMeasuresHeight && metricsContainerHeight) {
@@ -88,7 +88,7 @@
         numColumns = Math.min(Math.ceil(columns), 3);
         measureGridHeights = getMeasureHeightsForColumn(
           measuresHeight,
-          numColumns
+          numColumns,
         );
       } else {
         numColumns = 2;
@@ -115,7 +115,7 @@
           numColumns = numColumns - 1;
           measureGridHeights = getMeasureHeightsForColumn(
             measuresHeight,
-            numColumns
+            numColumns,
           );
         } else break;
       }
@@ -138,7 +138,7 @@
           $timeControlsStore.ready &&
           !!$dashboardStore?.filters,
       },
-    }
+    },
   );
 
   let measureNodes: HTMLDivElement[] = [];

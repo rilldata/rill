@@ -16,7 +16,7 @@
             ? EntityStatus.Idle
             : EntityStatus.Running;
       }, 1000),
-    500
+    500,
   );
 </script>
 

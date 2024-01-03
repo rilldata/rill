@@ -8,7 +8,7 @@ export enum DuplicateActions {
 }
 
 export const duplicateSourceAction: Writable<DuplicateActions> = writable(
-  DuplicateActions.None
+  DuplicateActions.None,
 );
 
 export const duplicateSourceName: Writable<string | null> = writable(null);

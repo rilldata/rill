@@ -74,7 +74,7 @@ export const appScreen = derived(page, ($page) => {
 
   appStore.setActiveEntity(
     activeEntity.name,
-    ScreenToEntityMap[activeEntity.type]
+    ScreenToEntityMap[activeEntity.type],
   );
   return activeEntity;
 });

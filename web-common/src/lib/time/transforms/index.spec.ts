@@ -23,7 +23,7 @@ describe("getStartOfPeriod", () => {
     const timeGrain = getStartOfPeriod(
       new Date("2020-03-15"),
       Period.MONTH,
-      "Asia/Kolkata"
+      "Asia/Kolkata",
     );
     expect(timeGrain).toEqual(new Date("2020-02-29T18:30:00.000Z"));
   });
@@ -43,7 +43,7 @@ describe("getEndOfPeriod", () => {
     const timeGrain = getEndOfPeriod(
       new Date("2020-03-15"),
       Period.MONTH,
-      "Asia/Kolkata"
+      "Asia/Kolkata",
     );
     expect(timeGrain).toEqual(new Date("2020-03-31T18:29:59.999Z"));
   });
@@ -54,7 +54,7 @@ describe("getOffset", () => {
     const timeGrain = getOffset(
       new Date("2020-02-15"),
       "P2W",
-      TimeOffsetType.ADD
+      TimeOffsetType.ADD,
     );
     expect(timeGrain).toEqual(new Date("2020-02-29"));
   });
@@ -62,7 +62,7 @@ describe("getOffset", () => {
     const timeGrain = getOffset(
       new Date("2020-02-15"),
       "P2M",
-      TimeOffsetType.SUBTRACT
+      TimeOffsetType.SUBTRACT,
     );
     expect(timeGrain).toEqual(new Date("2019-12-15"));
   });
@@ -72,7 +72,7 @@ describe("getTimeWidth", () => {
   it("should give correct amount of time width in milliseconds for given dates", () => {
     const timeGrain = getTimeWidth(
       new Date("2020-03-15"),
-      new Date("2020-04-01")
+      new Date("2020-04-01"),
     );
     expect(timeGrain).toEqual(durationToMillis("P1D") * 17);
   });
@@ -82,7 +82,7 @@ describe("getTimeWidth", () => {
 
 function offsetOperation(
   duration: string,
-  operationType: TimeOffsetType
+  operationType: TimeOffsetType,
 ): RelativeTimeTransformation {
   return {
     duration,
@@ -92,7 +92,7 @@ function offsetOperation(
 
 function truncation(
   period: Period,
-  truncationType: TimeTruncationType
+  truncationType: TimeTruncationType,
 ): RelativeTimeTransformation {
   return {
     period,
@@ -216,8 +216,8 @@ describe("transformDate", () => {
       expect(
         transformDate(
           transformation.input.referenceTime,
-          transformation.input.transformation
-        ).toISOString()
+          transformation.input.transformation,
+        ).toISOString(),
       ).toEqual(transformation.output.toISOString());
     });
   }

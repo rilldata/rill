@@ -40,7 +40,7 @@
   // over the number. If not present, we'll use the string "no data"
   $: measureValueFormatterUnabridged = createMeasureValueFormatter<null>(
     measure,
-    true
+    true,
   );
 
   $: name = measure?.label || measure?.expression;
@@ -62,7 +62,7 @@
   $: isComparisonPositive = diff >= 0;
 
   $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
-    diff
+    diff,
   )}`;
 
   /** when the measure is a percentage, we don't show a percentage change. */
@@ -153,8 +153,8 @@
                     on:mouseenter={() =>
                       (hoveredValue = numberPartsToString(
                         formatMeasurePercentageDifference(
-                          comparisonPercChange ?? 0
-                        )
+                          comparisonPercChange ?? 0,
+                        ),
                       ))}
                     on:mouseleave={() =>
                       (hoveredValue =
@@ -202,7 +202,8 @@
       --gradient_white-slate50,
       linear-gradient(180deg, #fff 0%, #f8fafc 100%)
     );
-    box-shadow: 0px 4px 6px 0px rgba(15, 23, 42, 0.09),
+    box-shadow:
+      0px 4px 6px 0px rgba(15, 23, 42, 0.09),
       0px 0px 0px 1px rgba(15, 23, 42, 0.06),
       0px 1px 3px 0px rgba(15, 23, 42, 0.04),
       0px 2px 3px 0px rgba(15, 23, 42, 0.03);

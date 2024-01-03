@@ -28,7 +28,7 @@
 
 <button
   class="text-sm font-medium w-full max-w-[400px] h-10 border rounded-sm {getVariantClass(
-    variant
+    variant,
   )} {disabled && disabledClasses}"
   on:click={handleClick}
   {disabled}

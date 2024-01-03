@@ -21,7 +21,7 @@ import { get } from "svelte/store";
 export function setDefaultTimeRange(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+  fullTimeRange: V1ColumnTimeRangeResponse | undefined,
 ) {
   // This function implementation mirrors some code in the metricsExplorer.init() function
   if (!fullTimeRange) return;
@@ -32,7 +32,7 @@ export function setDefaultTimeRange(
     metricsView.defaultTimeRange,
     fullTimeStart,
     fullTimeEnd,
-    timeZone
+    timeZone,
   );
   const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
   metricsExplorer.selectedTimeRange = {
@@ -48,7 +48,7 @@ export function setDefaultTimeRange(
 function setDefaultComparison(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+  fullTimeRange: V1ColumnTimeRangeResponse | undefined,
 ) {
   switch (metricsView.defaultComparisonMode) {
     case MetricsViewSpecComparisonMode.COMPARISON_MODE_DIMENSION:
@@ -63,7 +63,7 @@ function setDefaultComparison(
       setDefaultComparisonTimeRange(
         metricsView,
         metricsExplorer,
-        fullTimeRange
+        fullTimeRange,
       );
       break;
   }
@@ -72,7 +72,7 @@ function setDefaultComparison(
 function setDefaultComparisonTimeRange(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+  fullTimeRange: V1ColumnTimeRangeResponse | undefined,
 ) {
   if (!fullTimeRange) return;
 
@@ -88,7 +88,7 @@ function setDefaultComparisonTimeRange(
     fullTimeStart,
     fullTimeEnd,
     metricsExplorer.selectedTimeRange.start,
-    metricsExplorer.selectedTimeRange.end
+    metricsExplorer.selectedTimeRange.end,
   );
   if (!comparisonRange.isComparisonRangeAvailable) return;
 
@@ -105,18 +105,18 @@ function setDefaultComparisonTimeRange(
 export function getDefaultMetricsExplorerEntity(
   name: string,
   metricsView: V1MetricsViewSpec,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+  fullTimeRange: V1ColumnTimeRangeResponse | undefined,
 ) {
   const metricsExplorer: MetricsExplorerEntity = {
     name,
     selectedMeasureNames: metricsView.measures.map((measure) => measure.name),
 
     visibleMeasureKeys: new Set(
-      metricsView.measures.map((measure) => measure.name)
+      metricsView.measures.map((measure) => measure.name),
     ),
     allMeasuresVisible: true,
     visibleDimensionKeys: new Set(
-      metricsView.dimensions.map((dim) => dim.name)
+      metricsView.dimensions.map((dim) => dim.name),
     ),
     allDimensionsVisible: true,
     leaderboardMeasureName: metricsView.measures[0]?.name,

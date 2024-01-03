@@ -24,7 +24,7 @@
   export const setItemsVisibleBySearchString = (
     items: SearchableFilterSelectableItem[],
     selected: boolean[],
-    searchText: string
+    searchText: string,
   ): MenuItemData[] => {
     let menuEntries = items.map((item, i) => ({
       name: item.name,
@@ -43,7 +43,7 @@
   $: menuItems = setItemsVisibleBySearchString(
     selectableItems,
     selectedItems,
-    searchText
+    searchText,
   );
 
   $: numSelected = selectedItems?.filter((s) => s)?.length || 0;

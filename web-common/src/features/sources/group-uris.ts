@@ -36,19 +36,22 @@ export function groupURIs(uris: ViableSourceCatalogEntry[]): GroupedURIObject {
   const groupedURIs: Record<
     string,
     Array<ViableSourceCatalogEntry>
-  > = uris.reduce((obj, entry) => {
-    const uri = entry.path;
-    const [, , rest] = uri.trim().split(/(gs:\/\/|s3:\/\/|https:\/\/)/);
+  > = uris.reduce(
+    (obj, entry) => {
+      const uri = entry.path;
+      const [, , rest] = uri.trim().split(/(gs:\/\/|s3:\/\/|https:\/\/)/);
 
-    const components = rest ? rest.split("/") : [uri];
-    const domain =
-      components.length > 2
-        ? components.slice(0, 2).join("/")
-        : components.join("/");
+      const components = rest ? rest.split("/") : [uri];
+      const domain =
+        components.length > 2
+          ? components.slice(0, 2).join("/")
+          : components.join("/");
 
-    obj[domain] = obj[domain] ? [...obj[domain], entry] : [entry];
-    return obj;
-  }, {} as Record<string, Array<ViableSourceCatalogEntry>>);
+      obj[domain] = obj[domain] ? [...obj[domain], entry] : [entry];
+      return obj;
+    },
+    {} as Record<string, Array<ViableSourceCatalogEntry>>,
+  );
 
   const groupedURIObjects: GroupedURIObject = {};
 

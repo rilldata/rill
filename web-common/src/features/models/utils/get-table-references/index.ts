@@ -38,7 +38,7 @@ export function getEmbeddedReferences(sql: string): Array<Reference> {
     if (dedupe.has(reference.reference)) continue;
     const tableRef = reference.reference.substring(
       1,
-      reference.reference.length - 1
+      reference.reference.length - 1,
     );
     dedupe.add(tableRef);
     if (!tableRef.match(/\//) && !ProtocolMatcher.test(tableRef)) continue;
@@ -51,7 +51,7 @@ export function getEmbeddedReferences(sql: string): Array<Reference> {
 
 export function getTableName(
   ref: Reference,
-  entities: Record<string, FileArtifactsData>
+  entities: Record<string, FileArtifactsData>,
 ): string {
   if (!ref.reference) return "";
   const tableRef = ref.reference.substring(1, ref.reference.length - 1);
@@ -69,11 +69,11 @@ function sourcePathMatchesReference(source: V1CatalogEntry, table: Reference) {
 
 function sourceTableReferenceIsEmbedded(
   table: Reference,
-  embeddedSources: V1CatalogEntry[]
+  embeddedSources: V1CatalogEntry[],
 ) {
   // check to see if the quoted version of this reference is in the embedded sources
   return embeddedSources?.some((source) =>
-    sourcePathMatchesReference(source, table)
+    sourcePathMatchesReference(source, table),
   );
 }
 
@@ -83,12 +83,12 @@ function sourceTableReferenceIsEmbedded(
 export function getMatchingCatalogReference(
   table: Reference,
   embeddedSources: V1CatalogEntry[],
-  existingEntities: Record<string, FileArtifactsData>
+  existingEntities: Record<string, FileArtifactsData>,
 ) {
   // if this reference is embedded, return the cached name
   if (sourceTableReferenceIsEmbedded(table, embeddedSources)) {
     return embeddedSources?.find((source) =>
-      sourcePathMatchesReference(source, table)
+      sourcePathMatchesReference(source, table),
     ).name;
   } else {
     return getTableName(table, existingEntities);

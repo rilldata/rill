@@ -203,7 +203,7 @@
   $: X.set(
     scaleLinear()
       .domain([$xMin, $xMax])
-      .range([$plotConfig.plotLeft, $plotConfig.plotRight])
+      .range([$plotConfig.plotLeft, $plotConfig.plotRight]),
   );
 
   // Generate the line density by dividing the total available pixels by the window length.
@@ -218,7 +218,7 @@
   $: Y.set(
     scaleLinear()
       .domain([0, $yMax])
-      .range([$plotConfig.plotBottom, $plotConfig.plotTop])
+      .range([$plotConfig.plotBottom, $plotConfig.plotTop]),
   );
 
   // get the nearest point to where the cursor is.
@@ -257,7 +257,7 @@
         .filter((di) => {
           return di[xAccessor] >= xStart && di[xAccessor] <= xEnd;
         })
-        .reduce((sum, di) => (sum += di[yAccessor]), 0)
+        .reduce((sum, di) => (sum += di[yAccessor]), 0),
     );
   } else if (zoomedXStart !== undefined && zoomedXEnd !== undefined) {
     // these two local constants are needed to appease the compiler.
@@ -268,7 +268,7 @@
         .filter((di) => {
           return di[xAccessor] >= localXStart && di[xAccessor] <= localXEnd;
         })
-        .reduce((sum, di) => (sum += di[yAccessor]), 0)
+        .reduce((sum, di) => (sum += di[yAccessor]), 0),
     );
   }
 
@@ -312,7 +312,7 @@
       use:shiftClickAction
       on:shift-click={async () => {
         const exportedValue = `TIMESTAMP '${removeLocalTimezoneOffset(
-          nearestPoint[xAccessor]
+          nearestPoint[xAccessor],
         ).toISOString()}'`;
         await navigator.clipboard.writeText(exportedValue);
         setTimeout(() => {
@@ -349,10 +349,10 @@
       on:scrub={(event) => {
         // set max and min here.
         zoomedXStart = new Date(
-          $X.invert(Math.min(event.detail.start.x, event.detail.stop.x))
+          $X.invert(Math.min(event.detail.start.x, event.detail.stop.x)),
         );
         zoomedXEnd = new Date(
-          $X.invert(Math.max(event.detail.start.x, event.detail.stop.x))
+          $X.invert(Math.max(event.detail.start.x, event.detail.stop.x)),
         );
         // mark that this graphic has been scrubbed.
         setTimeout(() => {

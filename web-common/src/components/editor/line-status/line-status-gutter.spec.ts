@@ -25,7 +25,7 @@ function newEditorView(content: string, parent: HTMLElement) {
 /** convenience function for selecting the gutter elements */
 function getLineStatusElements(container: HTMLElement) {
   return container.querySelectorAll(
-    `.${LINE_STATUS_GUTTER_CLASS} > .cm-gutterElement`
+    `.${LINE_STATUS_GUTTER_CLASS} > .cm-gutterElement`,
   ) as NodeListOf<HTMLElement>;
 }
 
@@ -69,7 +69,7 @@ describe("Line Status Gutter Extension (CodeMirror)", () => {
         { line: 2, level: "error" },
         { line: 3, level: "error" },
       ],
-      view
+      view,
     );
 
     let lineStatuses = getLineStatusElements(container);

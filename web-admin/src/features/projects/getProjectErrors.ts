@@ -9,7 +9,7 @@ import { derived, Readable } from "svelte/store";
 
 export function getProjectErrors(
   queryClient: QueryClient,
-  instanceId: string
+  instanceId: string,
 ): Readable<Array<V1ParseError>> {
   return derived(
     [
@@ -23,13 +23,13 @@ export function getProjectErrors(
         resourcesResp.data?.resources
           ?.filter(
             (r) =>
-              !!r.meta.reconcileError && MainResourceKinds[r.meta.name.kind]
+              !!r.meta.reconcileError && MainResourceKinds[r.meta.name.kind],
           )
           .map((r) => ({
             filePath: r.meta.filePaths[0], // TODO: handle multiple files mapping to same resource
             message: r.meta.reconcileError,
           })) ?? [];
       return [...projectParserErrors, ...resourceErrors];
-    }
+    },
   );
 }

@@ -19,7 +19,7 @@ export const isTimeControlReady = (dashData: DashboardDataSources): boolean =>
   timeControlsState(dashData).ready === true;
 
 export const isTimeComparisonActive = (
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): boolean => timeControlsState(dashData).showComparison === true;
 
 export const timeRangeSelectorState = (dashData: DashboardDataSources) =>

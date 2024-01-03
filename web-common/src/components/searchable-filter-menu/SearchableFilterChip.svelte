@@ -49,7 +49,7 @@ props as needed.
       selectableItems?.length !== selectedItems?.length
     ) {
       throw new Error(
-        "SearchableFilterButton component requires props `selectableItems` and `selectedItems` to be arrays of equal length"
+        "SearchableFilterButton component requires props `selectableItems` and `selectedItems` to be arrays of equal length",
       );
     }
   }

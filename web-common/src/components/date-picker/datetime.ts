@@ -8,7 +8,7 @@ export class DateTime {
   public static parseDateTime(
     date: Date | DateTime | string | number,
     format = "YYYY-MM-DD",
-    lang = "en-US"
+    lang = "en-US",
   ): Date {
     if (!date) return new Date(NaN);
 
@@ -66,7 +66,7 @@ export class DateTime {
             month = Number(d[datePattern.month]) - 1;
           } else if (datePattern.shortMonth) {
             month = DateTime.shortMonths(lang).indexOf(
-              d[datePattern.shortMonth]
+              d[datePattern.shortMonth],
             );
           } else if (datePattern.longMonth) {
             month = DateTime.longMonths(lang).indexOf(d[datePattern.longMonth]);
@@ -84,12 +84,12 @@ export class DateTime {
 
   public static convertArray(
     array: Array<Date | Date[] | string | string[]>,
-    format: string
+    format: string,
   ): Array<DateTime | DateTime[]> {
     return array.map((d) => {
       if (d instanceof Array) {
         return (d as Array<Date | string>).map(
-          (d1) => new DateTime(d1, format)
+          (d1) => new DateTime(d1, format),
         );
       }
       return new DateTime(d, format);
@@ -104,7 +104,7 @@ export class DateTime {
       0,
       0,
       0,
-      0
+      0,
     );
   }
 
@@ -117,13 +117,13 @@ export class DateTime {
 
   private static shortMonths(lang): string[] {
     return DateTime.MONTH_JS.map((x) =>
-      new Date(2019, x).toLocaleString(lang, { month: "short" })
+      new Date(2019, x).toLocaleString(lang, { month: "short" }),
     );
   }
 
   private static longMonths(lang): string[] {
     return DateTime.MONTH_JS.map((x) =>
-      new Date(2019, x).toLocaleString(lang, { month: "long" })
+      new Date(2019, x).toLocaleString(lang, { month: "long" }),
     );
   }
 
@@ -181,12 +181,12 @@ export class DateTime {
   constructor(
     date: Date | DateTime | number | string = null,
     format: object | string = null,
-    lang = "en-US"
+    lang = "en-US",
   ) {
     if (typeof format === "object" && format !== null) {
       // tslint:disable-next-line: max-line-length
       this.dateInstance = (format as any).parse(
-        isDateTime(date) ? (date as DateTime).clone().toJSDate() : date
+        isDateTime(date) ? (date as DateTime).clone().toJSDate() : date,
       );
     } else if (typeof format === "string") {
       this.dateInstance = DateTime.parseDateTime(date, format, lang);
@@ -205,7 +205,7 @@ export class DateTime {
 
   public toLocaleString(
     arg0: string,
-    arg1: Intl.DateTimeFormatOptions
+    arg1: Intl.DateTimeFormatOptions,
   ): string {
     return this.dateInstance.toLocaleString(arg0, arg1);
   }
@@ -277,7 +277,7 @@ export class DateTime {
   public isBetween(
     date1: DateTime,
     date2: DateTime,
-    inclusivity = "()"
+    inclusivity = "()",
   ): boolean {
     switch (inclusivity) {
       default:
@@ -319,12 +319,12 @@ export class DateTime {
           new Date(
             date.getFullYear(),
             date.getMonth(),
-            date.getDate()
+            date.getDate(),
           ).getTime() >
           new Date(
             this.getFullYear(),
             this.getMonth(),
-            this.getDate()
+            this.getDate(),
           ).getTime()
         );
 
@@ -355,12 +355,12 @@ export class DateTime {
           new Date(
             date.getFullYear(),
             date.getMonth(),
-            date.getDate()
+            date.getDate(),
           ).getTime() >=
           new Date(
             this.getFullYear(),
             this.getMonth(),
-            this.getDate()
+            this.getDate(),
           ).getTime()
         );
 
@@ -387,12 +387,12 @@ export class DateTime {
           new Date(
             this.getFullYear(),
             this.getMonth(),
-            this.getDate()
+            this.getDate(),
           ).getTime() >
           new Date(
             date.getFullYear(),
             date.getMonth(),
-            date.getDate()
+            date.getDate(),
           ).getTime()
         );
 
@@ -423,12 +423,12 @@ export class DateTime {
           new Date(
             this.getFullYear(),
             this.getMonth(),
-            this.getDate()
+            this.getDate(),
           ).getTime() >=
           new Date(
             date.getFullYear(),
             date.getMonth(),
-            date.getDate()
+            date.getDate(),
           ).getTime()
         );
 
@@ -455,12 +455,12 @@ export class DateTime {
           new Date(
             this.getFullYear(),
             this.getMonth(),
-            this.getDate()
+            this.getDate(),
           ).getTime() ===
           new Date(
             date.getFullYear(),
             date.getMonth(),
-            date.getDate()
+            date.getDate(),
           ).getTime()
         );
 
@@ -566,7 +566,7 @@ export class DateTime {
         if (matches[key + 1]) {
           response += format.substring(
             match.index + match[0].length,
-            matches[key + 1].index
+            matches[key + 1].index,
           );
         }
 
@@ -589,7 +589,7 @@ export class DateTime {
       0,
       0,
       0,
-      0
+      0,
     ).getTime();
   }
 

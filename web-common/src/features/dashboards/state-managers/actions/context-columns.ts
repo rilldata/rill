@@ -5,10 +5,10 @@ import type { DashboardMutables } from "./types";
 export const setContextColumn = (
   { dashboard }: DashboardMutables,
 
-  contextColumn: LeaderboardContextColumn
+  contextColumn: LeaderboardContextColumn,
 ) => {
   const initialSort = sortTypeForContextColumnType(
-    dashboard.leaderboardContextColumn
+    dashboard.leaderboardContextColumn,
   );
   switch (contextColumn) {
     case LeaderboardContextColumn.DELTA_ABSOLUTE:

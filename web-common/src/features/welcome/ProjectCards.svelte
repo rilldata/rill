@@ -47,7 +47,7 @@
       BehaviourEventAction.ExampleAdd,
       BehaviourEventMedium.Card,
       MetricsEventSpace.Workspace,
-      example.name
+      example.name,
     );
 
     const firstPage = example.firstPage;

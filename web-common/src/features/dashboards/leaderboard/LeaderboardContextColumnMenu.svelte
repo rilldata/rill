@@ -47,7 +47,7 @@
 
   // CAST SAFETY: the selection will always be one of the options
   $: selection = options.find(
-    (option) => option.key === metricsExplorer.leaderboardContextColumn
+    (option) => option.key === metricsExplorer.leaderboardContextColumn,
   ) as SelectMenuItem;
 </script>
 

@@ -26,7 +26,7 @@
   function handleMeasureUpdate(event: CustomEvent) {
     metricsExplorerStore.setLeaderboardMeasureName(
       metricViewName,
-      event.detail.key
+      event.detail.key,
     );
   }
 
@@ -43,7 +43,7 @@
   }
 
   function formatForSelector(
-    measure: MetricsViewSpecMeasureV2
+    measure: MetricsViewSpecMeasureV2,
   ): (MetricsViewSpecMeasureV2 & { key: string; main: string }) | undefined {
     if (!measure) return undefined;
     return {
@@ -63,7 +63,7 @@
   $: unformattedMeasure =
     measures?.length && metricsExplorer?.leaderboardMeasureName
       ? measures.find(
-          (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
+          (measure) => measure.name === metricsExplorer?.leaderboardMeasureName,
         )
       : undefined;
 
@@ -95,13 +95,13 @@
   ) {
     metricsExplorerStore.setContextColumn(
       metricViewName,
-      LeaderboardContextColumn.HIDDEN
+      LeaderboardContextColumn.HIDDEN,
     );
   }
 
   $: showHideDimensions = createShowHideDimensionsStore(
     metricViewName,
-    metaQuery
+    metaQuery,
   );
 
   const toggleDimensionVisibility = (e) => {

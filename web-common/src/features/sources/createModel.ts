@@ -14,13 +14,13 @@ export async function createModelFromSource(
   instanceId: string,
   modelNames: Array<string>,
   sourceName: string,
-  sourceNameInQuery: string
+  sourceNameInQuery: string,
 ): Promise<string> {
   const newModelName = getName(`${sourceName}_model`, modelNames);
   await createModel(
     instanceId,
     newModelName,
-    `select * from ${sourceNameInQuery}`
+    `select * from ${sourceNameInQuery}`,
   );
   notifications.send({
     message: `Queried ${sourceNameInQuery} in workspace`,
@@ -30,7 +30,7 @@ export async function createModelFromSource(
 
 export async function createModelFromSourceV2(
   queryClient: QueryClient,
-  sourceName: string
+  sourceName: string,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
@@ -45,7 +45,7 @@ export async function createModelFromSourceV2(
     {
       blob: `select * from ${sourceName}`,
       createOnly: true,
-    }
+    },
   );
 
   // Done

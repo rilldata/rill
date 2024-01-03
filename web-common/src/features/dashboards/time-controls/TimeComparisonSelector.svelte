@@ -55,7 +55,7 @@ This component needs to do the following:
   function onSelectCustomComparisonRange(
     startDate: string,
     endDate: string,
-    closeMenu: () => void
+    closeMenu: () => void,
   ) {
     intermediateSelection = TimeComparisonOption.CUSTOM;
     closeMenu();
@@ -70,7 +70,7 @@ This component needs to do the following:
     const comparisonTimeRange = getComparisonRange(
       currentStart,
       currentEnd,
-      comparisonOption
+      comparisonOption,
     );
 
     dispatch("select-comparison", {
@@ -181,7 +181,7 @@ This component needs to do the following:
             onSelectCustomComparisonRange(
               e.detail.startDate,
               e.detail.endDate,
-              toggleFloatingElement
+              toggleFloatingElement,
             );
           }}
           on:close-calendar={onCalendarClose}

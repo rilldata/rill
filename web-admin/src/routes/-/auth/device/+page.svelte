@@ -29,7 +29,7 @@
       {
         method: "POST",
         credentials: "include",
-      }
+      },
     ).then((response) => {
       if (response.ok) {
         if (redirectURL && redirectURL !== "") {
@@ -58,7 +58,7 @@
       {
         method: "POST",
         credentials: "include",
-      }
+      },
     ).then((response) => {
       if (response.ok) {
         errorMsg = "User code rejected, this page can be closed now";

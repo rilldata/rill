@@ -11,7 +11,7 @@ export function lockBodyScrolling(lockingEl) {
     document.body.classList.add("sl-scroll-lock");
     document.body.style.setProperty(
       "--sl-scroll-lock-size",
-      `${scrollbarWidth}px`
+      `${scrollbarWidth}px`,
     );
   }
 }
@@ -26,7 +26,7 @@ export function scrollIntoView(
   element,
   container,
   direction = "vertical",
-  behavior = "smooth"
+  behavior = "smooth",
 ) {
   const offset = getOffset(element, container);
   const offsetTop = offset.top + container.scrollTop;

@@ -12,7 +12,7 @@
 
   $: projRuntime = useProjectRuntime(
     $page.params.organization,
-    $page.params.project
+    $page.params.project,
   );
   const user = createAdminServiceGetCurrentUser();
 

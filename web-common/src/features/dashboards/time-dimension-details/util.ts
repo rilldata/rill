@@ -17,7 +17,7 @@ export function getClassForCell(
   highlightedRow,
   highlightedCol,
   rowIdx,
-  colIdx
+  colIdx,
 ) {
   const bgColors = {
     fixed: {

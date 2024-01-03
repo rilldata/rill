@@ -24,7 +24,7 @@ const { update, subscribe } = writable({
 
 const createOrUpdateFileArtifact = (
   path: string,
-  callback: (entityData: FileArtifactsData) => void
+  callback: (entityData: FileArtifactsData) => void,
 ) => {
   update((state) => {
     if (!state.entities[path]) {
@@ -49,7 +49,7 @@ const fileArtifactsEntitiesReducers = {
   setErrors(affectedPaths: Array<string>, errors: Array<V1ReconcileError>) {
     const errorsForPaths = new Map<string, Array<V1ReconcileError>>();
     affectedPaths.forEach((affectedPath) =>
-      errorsForPaths.set(correctFilePath(affectedPath), [])
+      errorsForPaths.set(correctFilePath(affectedPath), []),
     );
 
     errors.forEach((error) => {
@@ -83,7 +83,7 @@ const fileArtifactsEntitiesReducers = {
       affectedPath,
       (entityData: FileArtifactsData) => {
         entityData.jsonRepresentation = jsonRepresentation;
-      }
+      },
     );
   },
 
@@ -92,7 +92,7 @@ const fileArtifactsEntitiesReducers = {
       affectedPath,
       (entityData: FileArtifactsData) => {
         entityData.isReconciling = isReconciling;
-      }
+      },
     );
   },
 };
@@ -108,7 +108,7 @@ export const fileArtifactsStore: FileArtifactsStore = {
 export function getIsFileReconcilingStore(file: string) {
   return derived(
     fileArtifactsStore,
-    ($store) => $store.entities[file]?.isReconciling
+    ($store) => $store.entities[file]?.isReconciling,
   );
 }
 
@@ -122,7 +122,7 @@ function correctFilePath(filePath: string) {
 
 export function getFileArtifactReconciliationErrors(
   fileState: FileArtifactsState,
-  fileName: string
+  fileName: string,
 ): V1ReconcileError[] {
   const path = Object.keys(fileState?.entities)?.find((key) => {
     return key.endsWith(fileName);

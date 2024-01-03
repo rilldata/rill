@@ -37,7 +37,7 @@
   $: modelHasError = getFileHasErrors(
     queryClient,
     $runtime.instanceId,
-    modelPath
+    modelPath,
   );
 
   let rollup: number;
@@ -60,7 +60,7 @@
   $: referencedThings = getMatchingReferencesAndEntries(
     modelName,
     sourceTableReferences,
-    [...($getAllSources?.data || []), ...($getAllModels?.data || [])]
+    [...($getAllSources?.data || []), ...($getAllModels?.data || [])],
   );
   $: if (sourceTableReferences?.length) {
     // first, pull out all references that are in the catalog.
@@ -71,7 +71,7 @@
         $runtime?.instanceId,
         resource.meta?.name?.name ?? "",
         {},
-        { query: { select: (data) => +(data?.cardinality ?? 0) } }
+        { query: { select: (data) => +(data?.cardinality ?? 0) } },
       );
     });
 
@@ -81,7 +81,7 @@
         $runtime?.instanceId,
         resource.meta?.name?.name ?? "",
         {},
-        { query: { select: (data) => data?.profileColumns?.length || 0 } }
+        { query: { select: (data) => data?.profileColumns?.length || 0 } },
       );
     });
   }
@@ -102,21 +102,21 @@
         .map((col) => col.data ?? 0)
         .reduce((total: number, columns: number) => columns + total, 0);
     },
-    0
+    0,
   );
   $: modelColumns = createQueryServiceTableColumns(
     $runtime?.instanceId,
-    modelName
+    modelName,
   );
 
   let modelCardinalityQuery: CreateQueryResult<V1TableCardinalityResponse>;
   $: modelCardinalityQuery = createQueryServiceTableCardinality(
     $runtime.instanceId,
-    modelName
+    modelName,
   );
   let outputRowCardinalityValue: number;
   $: outputRowCardinalityValue = Number(
-    $modelCardinalityQuery?.data?.cardinality ?? 0
+    $modelCardinalityQuery?.data?.cardinality ?? 0,
   );
 
   $: if (
