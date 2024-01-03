@@ -222,8 +222,8 @@ func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern,
 	return res, nil
 }
 
-// FindProjectPathsByPatternHasTags returns project paths that match the pattern and have tags in the given list.
-func (c *connection) FindProjectPathsByPatternHasTags(ctx context.Context, namePattern, afterName string, tags []string, limit int) ([]string, error) {
+// FindProjectPathsByPatternAndTags returns project paths that match the pattern and have tags in the given list.
+func (c *connection) FindProjectPathsByPatternAndTags(ctx context.Context, namePattern, afterName string, tags []string, limit int) ([]string, error) {
 	var res []string
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT concat(o.name,'/',p.name) as project_name FROM projects p JOIN orgs o ON p.org_id = o.id 
 	WHERE concat(o.name,'/',p.name) ilike $1 AND concat(o.name,'/',p.name) > $2 AND p.tags @> $3

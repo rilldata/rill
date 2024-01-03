@@ -67,7 +67,7 @@ type DB interface {
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
 	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
-	FindProjectPathsByPatternHasTags(ctx context.Context, namePattern, afterName string, tags []string, limit int) ([]string, error)
+	FindProjectPathsByPatternAndTags(ctx context.Context, namePattern, afterName string, tags []string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
@@ -267,10 +267,9 @@ type Project struct {
 	ProdSlots            int       `db:"prod_slots"`
 	ProdTTLSeconds       *int64    `db:"prod_ttl_seconds"`
 	ProdDeploymentID     *string   `db:"prod_deployment_id"`
-	// Tags                 *[]string `db:"tags"`
-	Tags      Tags      `db:"tags"`
-	CreatedOn time.Time `db:"created_on"`
-	UpdatedOn time.Time `db:"updated_on"`
+	Tags                 Tags      `db:"tags"`
+	CreatedOn            time.Time `db:"created_on"`
+	UpdatedOn            time.Time `db:"updated_on"`
 }
 
 // Variables implements JSON SQL encoding of variables in Project.
@@ -286,14 +285,6 @@ func (e *Variables) Scan(value interface{}) error {
 
 // Tags implements array SQL encoding of tags in Project.
 type Tags []string
-
-// func (e *Tags) Scan(value interface{}) error {
-// 	b, ok := value.([]byte)
-// 	if !ok {
-// 		return errors.New("failed type assertion to []byte")
-// 	}
-// 	return json.Unmarshal(b, &e)
-// }
 
 // Scan converts a PostgreSQL array string to Tags
 func (t *Tags) Scan(src interface{}) error {
@@ -338,7 +329,7 @@ type InsertProjectOptions struct {
 	ProdOLAPDSN          string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
-	Tags                 *[]string
+	Tags                 []string
 }
 
 // UpdateProjectOptions defines options for updating a Project.

@@ -178,7 +178,7 @@ func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProj
 	var projectNames []string
 
 	if req.Tags != nil && len(req.Tags) > 0 {
-		projectNames, err = s.admin.DB.FindProjectPathsByPatternHasTags(ctx, req.NamePattern, token.Val, req.Tags, pageSize)
+		projectNames, err = s.admin.DB.FindProjectPathsByPatternAndTags(ctx, req.NamePattern, token.Val, req.Tags, pageSize)
 	} else {
 		projectNames, err = s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
 	}
@@ -282,7 +282,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
 		ProdVariables:        req.Variables,
-		Tags:                 &req.Tags,
+		Tags:                 req.Tags,
 		ProdTTLSeconds:       prodTTL,
 	})
 	if err != nil {
@@ -451,7 +451,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdBranch:           proj.ProdBranch,
-		ProdVariables:        proj.ProdVariables,
+		ProdVariables:        req.Variables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
@@ -850,10 +850,9 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
 		FrontendUrl:      frontendURL,
-		// Tags:             safeStrSlice(p.Tags),
-		Tags:      p.Tags,
-		CreatedOn: timestamppb.New(p.CreatedOn),
-		UpdatedOn: timestamppb.New(p.UpdatedOn),
+		Tags:             p.Tags,
+		CreatedOn:        timestamppb.New(p.CreatedOn),
+		UpdatedOn:        timestamppb.New(p.UpdatedOn),
 	}
 }
 
@@ -889,13 +888,6 @@ func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
 func safeStr(s *string) string {
 	if s == nil {
 		return ""
-	}
-	return *s
-}
-
-func safeStrSlice(s *[]string) []string {
-	if s == nil {
-		return []string{}
 	}
 	return *s
 }

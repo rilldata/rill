@@ -347,11 +347,6 @@ type deploymentAnnotations struct {
 }
 
 func newDeploymentAnnotations(org *database.Organization, proj *database.Project) deploymentAnnotations {
-	// tags := []string{}
-	// if proj.Tags != nil {
-	// 	tags = *proj.Tags
-	// }
-
 	return deploymentAnnotations{
 		orgID:    org.ID,
 		orgName:  org.Name,
