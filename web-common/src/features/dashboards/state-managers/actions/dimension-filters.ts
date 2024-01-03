@@ -15,7 +15,6 @@ export function toggleDimensionValueSelection(
   // that are currently running.
   cancelQueries();
 
-  console.log(dashboard.whereFilter);
   const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {

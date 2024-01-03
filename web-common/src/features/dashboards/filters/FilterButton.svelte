@@ -5,11 +5,11 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import SearchableFilterDropdown from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterDropdown.svelte";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import { potentialFilterName } from "./filter-items";
 </script>
 
 <script lang="ts">
+  import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
   import {
     getDimensionDisplayName,
     getMeasureDisplayName,
@@ -25,22 +25,15 @@
   } = getStateManagers();
 
   let isDimension: Record<string, boolean> = {};
-  let selectableItems: Array<SearchableFilterSelectableItem> = [];
+  let selectableGroups: SearchableFilterSelectableGroup[] = [];
   $: if ($allDimensions && $allMeasures) {
     isDimension = {};
-    selectableItems = [];
+    selectableGroups = [];
 
-    $allDimensions
-      .map((d) => ({
-        name: d.name as string,
-        label: getDimensionDisplayName(d),
-      }))
-      .filter((d) => !$dimensionHasFilter(d.name))
-      .forEach((d) => {
-        selectableItems.push(d);
-        isDimension[d.name] = true;
-      });
-
+    const measureSelectableGroup = <SearchableFilterSelectableGroup>{
+      name: "MEASURES",
+      items: [],
+    };
     $allMeasures
       .map((m) => ({
         name: m.name as string,
@@ -48,9 +41,26 @@
       }))
       .filter((m) => !$measureHasFilter(m.name))
       .forEach((m) => {
-        selectableItems.push(m);
+        measureSelectableGroup.items.push(m);
         isDimension[m.name] = false;
       });
+    selectableGroups.push(measureSelectableGroup);
+
+    const dimensionSelectableGroup = <SearchableFilterSelectableGroup>{
+      name: "DIMENSIONS",
+      items: [],
+    };
+    $allDimensions
+      .map((d) => ({
+        name: d.name as string,
+        label: getDimensionDisplayName(d),
+      }))
+      .filter((d) => !$dimensionHasFilter(d.name))
+      .forEach((d) => {
+        dimensionSelectableGroup.items.push(d);
+        isDimension[d.name] = true;
+      });
+    selectableGroups.push(dimensionSelectableGroup);
   }
 </script>
 
@@ -78,7 +88,7 @@
       toggleFloatingElement();
       $potentialFilterName = e.detail.name;
     }}
-    {selectableItems}
+    {selectableGroups}
     selectedItems={[]}
     slot="floating-element"
   />

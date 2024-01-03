@@ -34,6 +34,9 @@
     onSubmit: (values) => {
       let newExpr: V1Expression;
       if (values.operation === "b" || values.operation === "nb") {
+        if (values.value2 === undefined) {
+          return;
+        }
         newExpr = createBetweenExpression(
           name,
           Number(values.value1),
@@ -74,24 +77,27 @@
   <div class="p-4">
     <form
       autocomplete="off"
-      class="flex flex-col gap-y-6"
+      class="flex flex-col gap-y-3"
       id="measure"
       on:submit|preventDefault={handleSubmit}
     >
       <Select
         bind:value={$form["operation"]}
         id="operation"
+        label="Threshold"
         options={MeasureFilterOptions}
       />
       <InputV2
         bind:value={$form["value1"]}
         error={$errors["value1"]}
+        id="value1"
         on:change={handleSubmit}
       />
       {#if $form["operation"] === "b" || $form["operation"] === "nb"}
         <InputV2
           bind:value={$form["value2"]}
           error={$errors["value2"]}
+          id="value2"
           on:change={handleSubmit}
         />
       {/if}

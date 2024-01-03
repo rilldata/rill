@@ -9,8 +9,10 @@ export const getHavingFilterExpression = (
   dashData: AtLeast<DashboardDataSources, "dashboard">
 ): ((name: string) => V1Expression | undefined) => {
   return (name: string) =>
-    dashData.dashboard.havingFilter?.cond?.exprs?.find((e) =>
-      matchExpressionByName(e, name)
+    dashData.dashboard.havingFilter?.cond?.exprs?.find(
+      (e) =>
+        matchExpressionByName(e, name) ||
+        (e.cond?.exprs?.length && matchExpressionByName(e.cond?.exprs[0], name))
     );
 };
 

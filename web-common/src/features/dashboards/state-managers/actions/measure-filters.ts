@@ -32,7 +32,6 @@ export function setMeasureFilter(
   cancelQueries();
 
   const exprIdx = getHavingFilterExpressionIndex({ dashboard })(measureName);
-  console.log(dashboard.havingFilter, exprIdx);
   if (exprIdx === undefined || exprIdx === -1) {
     dashboard.havingFilter.cond?.exprs?.push(filter);
   } else if (exprIdx >= 0) {
