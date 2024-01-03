@@ -169,7 +169,7 @@ The main feature-set component for dashboard filters
               }
             }}
             on:apply={(event) => {
-              handleDimensionValueToggle(name, event.detail);
+              toggleDimensionValueSelection(name, event.detail, true);
             }}
             on:search={(event) => {
               setActiveDimension(name, event.detail);
