@@ -8,14 +8,16 @@ This file should serve as an entrypoint for learning about and contributing to R
 
 ## Development environment
 
+If you're a Rill team member, you can run `rill devtool start` from the project root to start a full local development environment. If you select the cloud preset, you can fill it with seed data using `rill devtool seed cloud`. See `cli/cmd/devtool/README.md` for more details.
+
+### Development dependencies
+
 This is a full list of development dependencies:
 
 - [Docker](https://www.docker.com)
 - [Node.js 18](https://nodejs.org/en/) (we recommend installing it with [nvm](https://github.com/nvm-sh/nvm))
 - [Go 1.21](https://go.dev) (on macOS, install with `brew install go`)
 - [Buf](https://buf.build) (Protocol Buffers) (on macOS, install with `brew install bufbuild/buf/buf`)
-
-Run `sh scripts/devtool.sh` from project root to run all services locally. Refer `scripts/devtool/README.md` for more details.
 
 ### Editor setup
 
@@ -71,11 +73,13 @@ The project uses NPM for Node.js (specifically, NPM [workspaces](https://docs.np
 Here's a guide to the top-level structure of the repository:
 
 - `.github` contain CI/CD workflows.
-- `admin` contains the backend control plane for a multi-user, hosted version of Rill (in progress, not launched yet).
+- `admin` contains the backend control plane for the managed, multi-user version of Rill.
 - `cli` contains the CLI and a server for the local frontend (used only in production).
 - `docs` contains the user-facing documentation that we deploy to [docs.rilldata.com](https://docs.rilldata.com).
 - `proto` contains protocol buffer definitions for all Rill components, which notably includes our API interfaces.
-- `runtime` is our data plane, responsible for querying and orchestrating data infra. It currently supports DuckDB and Druid.
-- `web-admin` contains the frontend control plane for a multi-user, hosted version of Rill (in progress, not launched yet).
-- `web-common` contains common functionality shared across the local and cloud frontends.
-- `web-local` contains the local Rill Developer application, including the data modeller and current CLI.
+- `runtime` contains the engine (data plane) responsible for orchestrating and serving data.
+- `scripts` contains various scripts and other resources used in development.
+- `web-admin` contains the frontend control plane for the managed, multi-user version of Rill.
+- `web-auth` contains the frontend code for `auth.rilldata.com` (managed with Auth0).
+- `web-common` contains common functionality shared across the local and admin frontend applications.
+- `web-local` contains the local Rill application, notably the data modeller.

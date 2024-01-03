@@ -27,6 +27,7 @@
     "svelte": "^4.0.0",
     "svelte-check": "^3.4.3",
     "svelte-preprocess": "^5.0.3",
-    "tree-kill": "^1.2.2"
-    }
+    "tree-kill": "^1.2.2",
+    "web-common": "*"
+  }
 }
