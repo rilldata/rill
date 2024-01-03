@@ -1,4 +1,4 @@
-import { leaderboardValuesCompare } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
+import { compareLeaderboardValues } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { removeIfExists } from "@rilldata/web-common/lib/arrayUtils";
 import type { DashboardMutables } from "./types";
 import { filtersForCurrentExcludeMode } from "../selectors/dimension-filters";
@@ -28,7 +28,7 @@ export function toggleDimensionValueSelection(
     if (filtersIn === undefined) return;
     if (
       removeIfExists(filtersIn, (value) =>
-        leaderboardValuesCompare(value as string, dimensionValue)
+        compareLeaderboardValues(value as string, dimensionValue)
       )
     ) {
       if (filtersIn.length === 0) {

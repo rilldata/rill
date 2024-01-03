@@ -146,7 +146,7 @@ export function prepareLeaderboardItemData(
 
   values.forEach((v, i) => {
     const selectedIndex = selectedValues.findIndex((value) =>
-      leaderboardValuesCompare(value, v.dimensionValue)
+      compareLeaderboardValues(value, v.dimensionValue)
     );
     // if we have found this selected value in the API results,
     // remove it from the selectedButNotInAPIResults array
@@ -258,7 +258,7 @@ export function getQuerySortType(sortType: SortType) {
 }
 
 // Backwards compatibility fix for older filters that converted all non-null values to string
-export function leaderboardValuesCompare(selected: string, value: any) {
+export function compareLeaderboardValues(selected: string, value: any) {
   if (selected === null || value === null) {
     return selected === value;
   }
