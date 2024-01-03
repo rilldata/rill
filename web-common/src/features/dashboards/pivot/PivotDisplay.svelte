@@ -6,6 +6,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { usePivotDataStore } from "./pivot-data-store";
   import type { TableOptions } from "@tanstack/svelte-table";
+  import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
 
   const stateManagers = getStateManagers();
   const {
@@ -37,9 +38,7 @@
     <PivotToolbar />
     <div class="table-view">
       {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
-        <div class="empty-state">
-          <p>No data available</p>
-        </div>
+        <PivotEmpty />
       {:else}
         <PivotTable data={$pivotDataStore.data} columns={columnCopy} />
       {/if}

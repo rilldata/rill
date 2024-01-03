@@ -16,6 +16,7 @@
   $: columnsInTable = $dashboardStore?.pivot?.columns;
   $: rowsInTable = $dashboardStore?.pivot?.columns;
 
+  // Todo: Move to external selectors
   $: measures = $visibleMeasures
     .filter((m) => !columnsInTable.includes(m.name as string))
     .map((measure) => ({

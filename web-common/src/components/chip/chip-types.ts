@@ -48,6 +48,15 @@ export const measureChipColors = {
   outlineActiveClass: "!outline-indigo-500 dark:outline-indigo-500",
 };
 
+export const timeChipColors = {
+  bgBaseClass: "bg-gray-50 dark:bg-gray-700",
+  bgHoverClass: "hover:bg-gray-100 hover:dark:bg-gray-600",
+  textClass: "text-gray-600",
+  bgActiveClass: "bg-gray-100 dark:bg-gray-600",
+  outlineClass: "",
+  outlineActiveClass: "",
+};
+
 export const specialChipColors = {
   bgBaseClass: "bg-purple-50 dark:bg-purple-600",
   bgHoverClass: "hover:bg-purple-100 hover:dark:bg-purple-800",
