@@ -114,11 +114,15 @@ function getMeasureFiltersFromHavingClause(
 
   const filteredMeasures = new Array<MeasureFilterItem>();
   const addedMeasure = new Set<string>();
-  forEachExpression(havingClause, (e) => {
+  forEachExpression(havingClause, (e, depth) => {
     if (!e.cond?.exprs?.length) {
       return;
     }
-    const ident = e.cond?.exprs?.[0].ident;
+    const ident =
+      e.cond?.exprs?.[0].ident ||
+      (depth === 0 && e.cond?.exprs?.[0]?.cond?.exprs?.length
+        ? e.cond?.exprs?.[0]?.cond?.exprs?.[0].ident
+        : undefined);
     if (
       ident === undefined ||
       addedMeasure.has(ident) ||

@@ -7,8 +7,8 @@
     createBetweenExpression,
     createBinaryExpression,
   } from "@rilldata/web-common/features/dashboards/stores/filter-generators";
-  import type {
-    V1Expression,
+  import {
+    type V1Expression,
     V1Operation,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
@@ -20,11 +20,33 @@
 
   const dispatch = createEventDispatcher();
 
+  let operation: string = MeasureFilterOptions[0].value;
+  let value1;
+  let value2;
+  if (!expr?.cond?.op) {
+    operation = MeasureFilterOptions[0].value;
+    value1 = undefined;
+    value2 = undefined;
+  } else {
+    if (expr?.cond?.op === V1Operation.OPERATION_AND) {
+      operation = "b";
+      value1 = expr?.cond?.exprs?.[0].cond?.exprs?.[1]?.val as string;
+      value2 = expr?.cond?.exprs?.[1].cond?.exprs?.[1]?.val as string;
+    } else if (expr?.cond?.op === V1Operation.OPERATION_OR) {
+      operation = "nb";
+      value1 = expr?.cond?.exprs?.[0].cond?.exprs?.[1]?.val as string;
+      value2 = expr?.cond?.exprs?.[1].cond?.exprs?.[1]?.val as string;
+    } else {
+      operation = expr?.cond?.op;
+      value1 = expr?.cond?.exprs?.[1]?.val as string;
+    }
+  }
+
   const formState = createForm({
     initialValues: {
-      operation: expr?.cond?.op ?? MeasureFilterOptions[0].value,
-      value1: expr?.cond?.exprs?.[1]?.val as string,
-      value2: expr?.cond?.exprs?.[2]?.val as string,
+      operation,
+      value1,
+      value2,
     },
     validationSchema: yup.object({
       operation: yup.string().required("Required"),

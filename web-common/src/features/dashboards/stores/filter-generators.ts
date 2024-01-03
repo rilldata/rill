@@ -113,16 +113,17 @@ export function negateExpression(expr: V1Expression): V1Expression {
 
 export function forEachExpression(
   expr: V1Expression,
-  cb: (e: V1Expression) => void
+  cb: (e: V1Expression, depth?: number) => void,
+  depth = 0
 ) {
   if (!expr.cond?.exprs) {
-    cb(expr);
+    cb(expr, depth);
     return;
   }
 
   for (const subExpr of expr.cond.exprs) {
-    cb(subExpr);
-    forEachExpression(subExpr, cb);
+    cb(subExpr, depth);
+    forEachExpression(subExpr, cb, depth + 1);
   }
 }
 
