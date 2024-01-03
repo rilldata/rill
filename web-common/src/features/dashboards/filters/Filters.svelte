@@ -39,6 +39,9 @@ The main feature-set component for dashboard filters
         toggleDimensionValueSelection,
       },
     },
+    selectors: {
+      dimensionFilters: { atLeastOneSelection },
+    },
   } = StateManagers;
 
   /** the height of a row of chips */
@@ -114,6 +117,17 @@ The main feature-set component for dashboard filters
     if (!filters || !filters.include || !filters.exclude) return false;
     return filters.include.length > 0 || filters.exclude.length > 0;
   }
+
+  function handleDimensionValueToggle(name: string, value: string) {
+    toggleDimensionValueSelection(name, value);
+    if ($atLeastOneSelection(name)) {
+      $potentialFilterName = null;
+    } else {
+      // since this toggle is only from the filter pill dropdown,
+      // set potentialFilterName to keep the dropdown open when there are no values selected
+      $potentialFilterName = name;
+    }
+  }
 </script>
 
 <section
@@ -155,10 +169,7 @@ The main feature-set component for dashboard filters
               }
             }}
             on:apply={(event) => {
-              if ($potentialFilterName) {
-                $potentialFilterName = null;
-              }
-              toggleDimensionValueSelection(name, event.detail);
+              handleDimensionValueToggle(name, event.detail);
             }}
             on:search={(event) => {
               setActiveDimension(name, event.detail);
