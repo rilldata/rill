@@ -32,10 +32,8 @@
 <div class="layout">
   <PivotSidebar />
   <div class="content">
-    <header>
-      <PivotHeader />
-    </header>
-    <main>
+    <PivotHeader />
+    <div class="table-view">
       {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
         <div class="empty-state">
           <p>No data available</p>
@@ -43,25 +41,24 @@
       {:else}
         <PivotTable data={$pivotDataStore.data} columns={columnCopy} />
       {/if}
-    </main>
+    </div>
   </div>
 </div>
 
 <style>
   .layout {
     display: flex;
-    height: 100vh;
+    height: 100%;
     box-sizing: border-box;
   }
 
   .content {
-    flex: 1;
+    width: 100%;
     display: flex;
     flex-direction: column;
   }
 
-  main {
-    flex: 1;
+  .table-view {
     overflow-y: auto;
   }
 </style>

@@ -98,7 +98,7 @@
         <div class="flex justify-between">
           {#key metricViewName}
             <Filters />
-            <TabBar/>
+            <TabBar />
           {/key}
         </div>
       </div>
@@ -113,7 +113,7 @@
       style:padding-left={leftSide}
     >
       {#if showPivot}
-        <div class="overflow-y-hidden flex-none">
+        <div class="overflow-y-hidden flex-1">
           <PivotDisplay />
         </div>
       {:else}

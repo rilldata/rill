@@ -47,12 +47,8 @@
     @apply font-semibold text-gray-700 pt-2;
   }
   .sidebar {
-    @apply bg-slate-50;
-    width: 200px;
-    padding: 10px;
-    height: calc(100% - 50px);
-    flex: 0 0 200px;
-    padding: 1rem;
+    @apply bg-slate-50 p-2;
+    min-width: 250px;
     overflow-y: auto;
   }
 </style>
