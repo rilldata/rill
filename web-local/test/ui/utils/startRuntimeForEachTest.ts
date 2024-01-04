@@ -50,10 +50,10 @@ export function startRuntimeForEachTest() {
   });
 
   test.afterEach(async () => {
-    const processExit = new Promise((resolve) => {
-      childProcess.on("exit", resolve);
+    const processExit = new Promise<void>((resolve) => {
+      if (childProcess.pid) treeKill(childProcess.pid, resolve as any);
+      else resolve();
     });
-    if (childProcess.pid) treeKill(childProcess.pid);
     await asyncWaitUntil(async () => !(await isPortOpen(TEST_PORT)));
     await processExit;
 
