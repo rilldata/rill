@@ -355,6 +355,9 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
+	if opts.Tags == nil {
+		opts.Tags = make([]string, 0)
+	}
 
 	res := &database.Project{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
