@@ -282,7 +282,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		GithubURL:            &req.GithubUrl,
 		GithubInstallationID: &installationID,
 		ProdVariables:        req.Variables,
-		Tags:                 req.Tags,
 		ProdTTLSeconds:       prodTTL,
 	})
 	if err != nil {

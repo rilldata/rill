@@ -1,1 +1,1 @@
-ALTER TABLE projects ADD COLUMN tags TEXT[];
+ALTER TABLE projects ADD COLUMN tags TEXT[] DEFAULT '{}'::TEXT[] NOT NULL;

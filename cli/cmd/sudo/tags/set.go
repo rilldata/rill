@@ -11,7 +11,7 @@ import (
 func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 	var tags []string
 	setCmd := &cobra.Command{
-		Use:   "set <organization> <project> --tags <tag1> --tags <tag2> ...",
+		Use:   "set <organization> <project>",
 		Args:  cobra.ExactArgs(2),
 		Short: "Set Tags for project in an organization",
 		RunE: func(cmd *cobra.Command, args []string) error {

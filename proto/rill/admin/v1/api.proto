@@ -301,7 +301,7 @@ service AdminService {
   // Add a SudoUpdateTags endpoint for superusers to update tags
   rpc SudoUpdateTags(SudoUpdateTagsRequest) returns (SudoUpdateTagsResponse) {
     option (google.api.http) = {
-      patch: "/v1/superuser/tags",
+      patch: "/v1/superuser/projects/tags",
       body: "*"
     };
   }
@@ -648,7 +648,6 @@ message CreateProjectRequest {
   string prod_branch = 9;
   string github_url = 10;
   map<string, string> variables = 11;
-  repeated string tags = 13;
 }
 
 message CreateProjectResponse {

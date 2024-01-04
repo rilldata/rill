@@ -277,8 +277,8 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			ProdSlots:            proj.ProdSlots,
 			Region:               proj.Region,
 			ProdTTLSeconds:       proj.ProdTTLSeconds,
-			Tags:                 proj.Tags,
 			ProdDeploymentID:     nil,
+			Tags:                 proj.Tags,
 		})
 		if err != nil {
 			return err

@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 // Drivers is a registry of drivers
@@ -257,19 +258,19 @@ type Project struct {
 	Description          string
 	Public               bool
 	Region               string
-	GithubURL            *string   `db:"github_url"`
-	GithubInstallationID *int64    `db:"github_installation_id"`
-	Subpath              string    `db:"subpath"`
-	ProdBranch           string    `db:"prod_branch"`
-	ProdVariables        Variables `db:"prod_variables"`
-	ProdOLAPDriver       string    `db:"prod_olap_driver"`
-	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
-	ProdSlots            int       `db:"prod_slots"`
-	ProdTTLSeconds       *int64    `db:"prod_ttl_seconds"`
-	ProdDeploymentID     *string   `db:"prod_deployment_id"`
-	Tags                 Tags      `db:"tags"`
-	CreatedOn            time.Time `db:"created_on"`
-	UpdatedOn            time.Time `db:"updated_on"`
+	GithubURL            *string        `db:"github_url"`
+	GithubInstallationID *int64         `db:"github_installation_id"`
+	Subpath              string         `db:"subpath"`
+	ProdBranch           string         `db:"prod_branch"`
+	ProdVariables        Variables      `db:"prod_variables"`
+	ProdOLAPDriver       string         `db:"prod_olap_driver"`
+	ProdOLAPDSN          string         `db:"prod_olap_dsn"`
+	ProdSlots            int            `db:"prod_slots"`
+	ProdTTLSeconds       *int64         `db:"prod_ttl_seconds"`
+	ProdDeploymentID     *string        `db:"prod_deployment_id"`
+	Tags                 pq.StringArray `db:"tags"`
+	CreatedOn            time.Time      `db:"created_on"`
+	UpdatedOn            time.Time      `db:"updated_on"`
 }
 
 // Variables implements JSON SQL encoding of variables in Project.
@@ -281,36 +282,6 @@ func (e *Variables) Scan(value interface{}) error {
 		return errors.New("failed type assertion to []byte")
 	}
 	return json.Unmarshal(b, &e)
-}
-
-// Tags implements array SQL encoding of tags in Project.
-type Tags []string
-
-// Scan converts a PostgreSQL array string to Tags
-func (t *Tags) Scan(src interface{}) error {
-	if src == nil {
-		*t = nil
-		return nil
-	}
-
-	var str string
-	switch v := src.(type) {
-	case []byte:
-		str = string(v)
-	case string:
-		str = v
-	default:
-		return errors.New("invalid type for tags")
-	}
-
-	if len(str) < 2 || str[0] != '{' || str[len(str)-1] != '}' {
-		return errors.New("invalid array format")
-	}
-
-	elements := strings.Split(str[1:len(str)-1], ",")
-	*t = make(Tags, len(elements))
-	copy(*t, elements)
-	return nil
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
@@ -329,7 +300,6 @@ type InsertProjectOptions struct {
 	ProdOLAPDSN          string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
-	Tags                 []string
 }
 
 // UpdateProjectOptions defines options for updating a Project.

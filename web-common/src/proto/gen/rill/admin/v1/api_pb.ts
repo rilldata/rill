@@ -1671,11 +1671,6 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
    */
   variables: { [key: string]: string } = {};
 
-  /**
-   * @generated from field: repeated string tags = 13;
-   */
-  tags: string[] = [];
-
   constructor(data?: PartialMessage<CreateProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1696,7 +1691,6 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 13, name: "tags", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateProjectRequest {

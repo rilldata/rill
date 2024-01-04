@@ -92,7 +92,6 @@ export type AdminServiceCreateProjectBody = {
   public?: boolean;
   region?: string;
   subpath?: string;
-  tags?: string[];
   variables?: AdminServiceCreateProjectBodyVariables;
 };
 

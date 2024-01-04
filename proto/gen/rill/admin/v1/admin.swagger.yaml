@@ -1023,10 +1023,6 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
-              tags:
-                type: array
-                items:
-                  type: string
       tags:
         - AdminService
   /v1/organizations/{organizationName}/projects/{name}:
@@ -1547,6 +1543,27 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/superuser/projects/tags:
+    patch:
+      summary: Add a SudoUpdateTags endpoint for superusers to update tags
+      operationId: AdminService_SudoUpdateTags
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateTagsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateTagsRequest'
+      tags:
+        - AdminService
   /v1/superuser/quotas/organization:
     patch:
       summary: SudoUpdateOrganizationQuotas update the quotas available for orgs
@@ -1623,27 +1640,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
-  /v1/superuser/tags:
-    patch:
-      summary: Add a SudoUpdateTags endpoint for superusers to update tags
-      operationId: AdminService_SudoUpdateTags
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1SudoUpdateTagsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1SudoUpdateTagsRequest'
       tags:
         - AdminService
   /v1/telemetry:

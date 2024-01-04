@@ -91,8 +91,8 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProdSlots:            proj.ProdSlots,
 		Region:               proj.Region,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
-		Tags:                 proj.Tags,
 		ProdDeploymentID:     &depl.ID,
+		Tags:                 proj.Tags,
 	})
 	if err != nil {
 		err2 := s.teardownDeployment(ctx, proj, depl)

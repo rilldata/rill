@@ -10,7 +10,7 @@ import (
 
 func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 	getCmd := &cobra.Command{
-		Use:   "get",
+		Use:   "get <org> <project>",
 		Args:  cobra.ExactArgs(2),
 		Short: "Get Tags for project in an organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
