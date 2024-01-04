@@ -104,7 +104,7 @@
 
   function rerender() {
     // FIXME: Updating data does not update tanstack table
-    console.log("rerender called with data", data);
+    // console.log("rerender called with data", data);
     options.update((options) => ({
       ...options,
       data: data,
