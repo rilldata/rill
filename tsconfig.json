@@ -44,5 +44,6 @@
     "**/*.ts",
     "**/*.svelte",
     "prettier.config.js",
+    "**/rollup.config.js",
   ]
 }
