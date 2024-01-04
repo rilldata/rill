@@ -1,3 +1,5 @@
 web-admin/build
 web-local/build
 **/svelte.config.js
+
+web-common/src/components/modal/*.js
