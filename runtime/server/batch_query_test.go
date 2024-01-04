@@ -55,9 +55,9 @@ func TestServer_QueryBatch_MetricsViewQueries(t *testing.T) {
 						},
 						Sort: []*runtimev1.MetricsViewComparisonSort{
 							{
-								Name: "measure_2",
-								Type: runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-								Desc: false,
+								Name:     "measure_2",
+								SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+								Desc:     false,
 							},
 						},
 					},

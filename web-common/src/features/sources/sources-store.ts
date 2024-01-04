@@ -11,7 +11,7 @@ export const duplicateSourceAction: Writable<DuplicateActions> = writable(
   DuplicateActions.None
 );
 
-export const duplicateSourceName: Writable<string> = writable(null);
+export const duplicateSourceName: Writable<string | null> = writable(null);
 
 interface SourceStore {
   clientYAML: string;
@@ -21,7 +21,7 @@ interface SourceStore {
 const sourceStores: { [key: string]: Writable<SourceStore> } = {};
 
 function createSourceStore(): Writable<SourceStore> {
-  return writable({ clientYAML: null });
+  return writable({ clientYAML: "" });
 }
 
 export function useSourceStore(sourceName: string): Writable<SourceStore> {
@@ -32,4 +32,4 @@ export function useSourceStore(sourceName: string): Writable<SourceStore> {
   return sourceStores[sourceName];
 }
 
-export const sourceImportedName = writable<string>(null);
+export const sourceImportedName = writable<string | null>(null);

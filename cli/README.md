@@ -18,7 +18,7 @@ make cli
 
 In development, the CLI will serve a dummy frontend and not embed any examples. You can run it like this:
 ```bash
-# Optionally run this to embed the UI and examples in the cli (not needed if using `npm run dev`)
+# Optionally run this to embed the UI and examples in the CLI
 make cli.prepare
 
 # To output usage:

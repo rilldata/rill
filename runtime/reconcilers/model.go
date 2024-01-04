@@ -222,6 +222,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if createErr != nil {
 		createErr = fmt.Errorf("failed to create model: %w", createErr)
 	}
+
 	if createErr == nil && stage {
 		// Rename the staging table to main view/table
 		err = olapForceRenameTable(ctx, r.C, connector, stagingTableName, !materialize, tableName)

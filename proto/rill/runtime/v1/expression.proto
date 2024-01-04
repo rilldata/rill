@@ -1,0 +1,34 @@
+syntax = "proto3";
+package rill.runtime.v1;
+
+import "google/protobuf/struct.proto";
+import "validate/validate.proto";
+
+message Expression {
+  oneof expression {
+    string ident = 1;
+    google.protobuf.Value val = 2;
+    Condition cond = 3;
+  }
+}
+
+message Condition {
+  Operation op = 1 [(validate.rules).enum.defined_only = true];
+  repeated Expression exprs = 2;
+}
+
+enum Operation {
+  OPERATION_UNSPECIFIED = 0;
+  OPERATION_EQ = 1;
+  OPERATION_NEQ = 2;
+  OPERATION_LT = 3;
+  OPERATION_LTE = 4;
+  OPERATION_GT = 5;
+  OPERATION_GTE = 6;
+  OPERATION_OR = 7;
+  OPERATION_AND = 8;
+  OPERATION_IN = 9;
+  OPERATION_NIN = 10;
+  OPERATION_LIKE = 11;
+  OPERATION_NLIKE = 12;
+}

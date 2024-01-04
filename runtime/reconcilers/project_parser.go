@@ -201,8 +201,10 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 			err = r.reconcileParser(ctx, inst, self, parser, diff, changedPaths)
 		}
 		if err != nil && !errors.Is(err, ErrParserHasParseErrors) {
-			reparseErr = err
-			cancel()
+			if reparseErr == nil { // In case a callback is somehow invoked after cancel() is called in a previous callback
+				reparseErr = err
+				cancel()
+			}
 			return
 		}
 	})

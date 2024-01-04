@@ -1,5 +1,5 @@
 import { Formatter, FormatterFactory, NumberKind } from "./humanizer-types";
-import { IntTimesPowerOfTenFormatter } from "./strategies/IntTimesPowerOfTen";
+import { SingleDigitTimesPowerOfTenFormatter } from "./strategies/SingleDigitTimesPowerOfTen";
 import { NonFormatter } from "./strategies/none";
 import { IntervalFormatter } from "./strategies/intervals";
 import { PerRangeFormatter } from "./strategies/per-range";
@@ -52,8 +52,8 @@ export const humanizedFormatterFactory: FormatterFactory = (
       }
       break;
 
-    case "intTimesPowerOfTen":
-      formatter = new IntTimesPowerOfTenFormatter(sample, options);
+    case "singleDigitTimesPowerOfTen":
+      formatter = new SingleDigitTimesPowerOfTenFormatter(sample, options);
       break;
 
     default:

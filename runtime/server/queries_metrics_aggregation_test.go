@@ -4,7 +4,9 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 func TestMetricsViewAggregation_Toplist(t *testing.T) {
@@ -37,7 +39,7 @@ func TestMetricsViewAggregation_Toplist(t *testing.T) {
 
 	require.Equal(t, "yahoo.com", tr.Data[1].Fields["domain"].GetStringValue())
 	require.Equal(t, 1.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
-	require.Equal(t, 1.0, tr.Data[0].Fields["__count"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[1].Fields["__count"].GetNumberValue())
 }
 
 func TestMetricsViewAggregation_Totals(t *testing.T) {
@@ -106,4 +108,102 @@ func TestMetricsViewAggregation_Timeseries(t *testing.T) {
 	require.Equal(t, "2022-01-02T11:00:00Z", tr.Data[1].Fields["timestamp"].GetStringValue())
 	require.Equal(t, 1.0, tr.Data[1].Fields["measure_0"].GetNumberValue())
 	require.Equal(t, 1.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
+}
+
+func TestMetricsViewAggregation_dimension_expression(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewAggregation(testCtx(), &runtimev1.MetricsViewAggregationRequest{
+		InstanceId:  instanceId,
+		MetricsView: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{Name: "domain"},
+			{Name: "domain_parts"},
+			{Name: "tld"},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{Name: "measure_2"},
+			{Name: "__count", BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{Name: "tld", Desc: true},
+			{Name: "domain_parts", Desc: true},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 4, len(tr.Data))
+	require.Equal(t, 5, len(tr.Data[0].Fields))
+
+	require.Equal(t, 1.0, tr.Data[0].Fields["__count"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[0].Fields["measure_2"].GetNumberValue())
+	require.Equal(t, "yahoo.com", tr.Data[0].Fields["domain"].GetStringValue())
+	require.Equal(t, "yahoo", tr.Data[0].Fields["domain_parts"].GetStringValue())
+	require.Equal(t, "yahoo.com", tr.Data[0].Fields["tld"].GetStringValue())
+
+	require.Equal(t, 1.0, tr.Data[1].Fields["__count"].GetNumberValue())
+	require.Equal(t, 1.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
+	require.Equal(t, "yahoo.com", tr.Data[1].Fields["domain"].GetStringValue())
+	require.Equal(t, "com", tr.Data[1].Fields["domain_parts"].GetStringValue())
+	require.Equal(t, "yahoo.com", tr.Data[1].Fields["tld"].GetStringValue())
+
+	require.Equal(t, 1.0, tr.Data[2].Fields["__count"].GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[2].Fields["measure_2"].GetNumberValue())
+	require.Equal(t, "msn.com", tr.Data[2].Fields["domain"].GetStringValue())
+	require.Equal(t, "msn", tr.Data[2].Fields["domain_parts"].GetStringValue())
+	require.Equal(t, "msn.com", tr.Data[2].Fields["tld"].GetStringValue())
+
+	require.Equal(t, 1.0, tr.Data[3].Fields["__count"].GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[3].Fields["measure_2"].GetNumberValue())
+	require.Equal(t, "msn.com", tr.Data[3].Fields["domain"].GetStringValue())
+	require.Equal(t, "com", tr.Data[3].Fields["domain_parts"].GetStringValue())
+	require.Equal(t, "msn.com", tr.Data[3].Fields["tld"].GetStringValue())
+}
+
+func TestMetricsViewAggregation_dimension_expression_filters(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	tr, err := server.MetricsViewAggregation(testCtx(), &runtimev1.MetricsViewAggregationRequest{
+		InstanceId:  instanceId,
+		MetricsView: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{Name: "domain"},
+			{Name: "domain_parts"},
+			{Name: "tld"},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{Name: "measure_2"},
+			{Name: "__count", BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{Name: "tld", Desc: true},
+			{Name: "domain_parts", Desc: true},
+		},
+		Where: expressionpb.And([]*runtimev1.Expression{
+			expressionpb.In(
+				expressionpb.Identifier("tld"),
+				[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("msn.com"))},
+			),
+			expressionpb.In(
+				expressionpb.Identifier("domain_parts"),
+				[]*runtimev1.Expression{expressionpb.Value(structpb.NewStringValue("com"))},
+			),
+		}),
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, len(tr.Data))
+	require.Equal(t, 5, len(tr.Data[0].Fields))
+
+	require.Equal(t, 1.0, tr.Data[0].Fields["__count"].GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[0].Fields["measure_2"].GetNumberValue())
+	require.Equal(t, "msn.com", tr.Data[0].Fields["domain"].GetStringValue())
+	require.Equal(t, "msn", tr.Data[0].Fields["domain_parts"].GetStringValue())
+	require.Equal(t, "msn.com", tr.Data[0].Fields["tld"].GetStringValue())
+
+	require.Equal(t, 1.0, tr.Data[1].Fields["__count"].GetNumberValue())
+	require.Equal(t, 2.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
+	require.Equal(t, "msn.com", tr.Data[1].Fields["domain"].GetStringValue())
+	require.Equal(t, "com", tr.Data[1].Fields["domain_parts"].GetStringValue())
+	require.Equal(t, "msn.com", tr.Data[1].Fields["tld"].GetStringValue())
 }

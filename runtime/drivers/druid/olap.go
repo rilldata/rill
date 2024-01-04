@@ -13,32 +13,32 @@ var _ drivers.OLAPStore = &connection{}
 
 // AddTableColumn implements drivers.OLAPStore.
 func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, typ string) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // AlterTableColumn implements drivers.OLAPStore.
 func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName, newType string) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // DropTable implements drivers.OLAPStore.
 func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
 func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // RenameTable implements drivers.OLAPStore.
 func (c *connection) RenameTable(ctx context.Context, name, newName string, view bool) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 func (c *connection) Dialect() drivers.Dialect {
@@ -46,7 +46,7 @@ func (c *connection) Dialect() drivers.Dialect {
 }
 
 func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: WithConnection not supported")
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {

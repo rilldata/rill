@@ -26,7 +26,7 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		attribute.StringSlice("args.sort.names", marshalMetricsViewAggregationSort(req.Sort)),
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int64("args.limit", req.Limit),
 		attribute.Int64("args.offset", req.Offset),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -75,11 +75,14 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Measures:           req.Measures,
 		Sort:               req.Sort,
 		TimeRange:          tr,
-		Filter:             req.Filter,
+		Where:              req.Where,
+		Having:             req.Having,
 		Limit:              &req.Limit,
 		Offset:             req.Offset,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
+		PivotOn:            req.PivotOn,
+		Filter:             req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -101,9 +104,9 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		attribute.Int("args.priority", int(req.Priority)),
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
+		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.StringSlice("args.sort.names", marshalMetricsViewSort(req.Sort)),
 		attribute.StringSlice("args.inline_measures", marshalInlineMeasure(req.InlineMeasures)),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
 	)
 
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -147,9 +150,11 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 		Limit:              &req.Limit,
 		Offset:             req.Offset,
 		Sort:               req.Sort,
-		Filter:             req.Filter,
+		Where:              req.Where,
+		Having:             req.Having,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
+		Filter:             req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -171,7 +176,7 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		attribute.String("args.dimension", req.Dimension.Name),
 		attribute.StringSlice("args.measures", measureNames),
 		attribute.StringSlice("args.sort.names", marshalMetricsViewComparisonSort(req.Sort)),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int64("args.limit", req.Limit),
 		attribute.Int64("args.offset", req.Offset),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -221,10 +226,12 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		Limit:               req.Limit,
 		Offset:              req.Offset,
 		Sort:                req.Sort,
-		Filter:              req.Filter,
+		Where:               req.Where,
+		Having:              req.Having,
 		MetricsView:         mv,
 		ResolvedMVSecurity:  security,
 		Exact:               req.Exact,
+		Filter:              req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -244,7 +251,7 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
 		attribute.String("args.time_granularity", req.TimeGranularity.String()),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
@@ -278,10 +285,12 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 		TimeStart:          req.TimeStart,
 		TimeEnd:            req.TimeEnd,
 		TimeGranularity:    req.TimeGranularity,
-		Filter:             req.Filter,
+		Where:              req.Where,
+		Having:             req.Having,
 		TimeZone:           req.TimeZone,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
+		Filter:             req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -299,7 +308,7 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		attribute.StringSlice("args.inline_measures.names", marshalInlineMeasure(req.InlineMeasures)),
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
 
@@ -332,9 +341,10 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 		InlineMeasures:     req.InlineMeasures,
 		TimeStart:          req.TimeStart,
 		TimeEnd:            req.TimeEnd,
-		Filter:             req.Filter,
+		Where:              req.Where,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
+		Filter:             req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -351,7 +361,7 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		attribute.String("args.time_start", safeTimeStr(req.TimeStart)),
 		attribute.String("args.time_end", safeTimeStr(req.TimeEnd)),
 		attribute.String("args.time_granularity", req.TimeGranularity.String()),
-		attribute.Int("args.filter_count", filterCount(req.Filter)),
+		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.StringSlice("args.sort.names", marshalMetricsViewSort(req.Sort)),
 		attribute.Int("args.limit", int(req.Limit)),
 		attribute.Int64("args.offset", req.Offset),
@@ -376,13 +386,14 @@ func (s *Server) MetricsViewRows(ctx context.Context, req *runtimev1.MetricsView
 		TimeStart:          req.TimeStart,
 		TimeEnd:            req.TimeEnd,
 		TimeGranularity:    req.TimeGranularity,
-		Filter:             req.Filter,
+		Where:              req.Where,
 		Sort:               req.Sort,
 		Limit:              &limit,
 		Offset:             req.Offset,
 		TimeZone:           req.TimeZone,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
+		Filter:             req.Filter,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

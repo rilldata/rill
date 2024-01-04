@@ -5,6 +5,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/export_format.proto";
+import "rill/runtime/v1/expression.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
 import "validate/validate.proto";
@@ -279,10 +280,13 @@ message MetricsViewAggregationRequest {
   TimeRange time_range = 12;
   google.protobuf.Timestamp time_start = 6; // Deprecated in favor of time_range
   google.protobuf.Timestamp time_end = 7; // Deprecated in favor of time_range
-  MetricsViewFilter filter = 8;
+  repeated string pivot_on = 15;
+  Expression where = 8;
+  Expression having = 13;
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   int32 priority = 11;
+  MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
 }
 
 message MetricsViewAggregationResponse {
@@ -302,15 +306,15 @@ message MetricsViewAggregationMeasure {
   repeated google.protobuf.Value builtin_measure_args = 3;
 }
 
+message MetricsViewAggregationSort {
+  string name = 1;
+  bool desc = 2;
+}
+
 enum BuiltinMeasure {
   BUILTIN_MEASURE_UNSPECIFIED = 0;
   BUILTIN_MEASURE_COUNT = 1;
   BUILTIN_MEASURE_COUNT_DISTINCT = 2;
-}
-
-message MetricsViewAggregationSort {
-  string name = 1;
-  bool desc = 2;
 }
 
 message MetricsViewToplistRequest {
@@ -324,8 +328,10 @@ message MetricsViewToplistRequest {
   int64 limit = 7 [(validate.rules).int64.gte = 0];
   int64 offset = 8 [(validate.rules).int64.gte = 0];
   repeated MetricsViewSort sort = 9;
-  MetricsViewFilter filter = 10;
+  Expression where = 10;
+  Expression having = 13;
   int32 priority = 11;
+  MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
 }
 
 message MetricsViewToplistResponse {
@@ -342,11 +348,14 @@ message MetricsViewComparisonRequest {
   repeated MetricsViewComparisonSort sort = 5;
   TimeRange time_range = 6;
   TimeRange comparison_time_range = 7;
-  MetricsViewFilter filter = 8;
+  Expression where = 8;
+  Expression having = 12;
+  repeated MetricsViewComparisonMeasureAlias aliases = 15;
   int64 limit = 9 [(validate.rules).int64.gte = 0];
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   int32 priority = 11;
   bool exact = 13;
+  MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
 }
 
 // Response message for QueryService.MetricsViewComparison
@@ -363,6 +372,7 @@ message TimeRange {
   string time_zone = 6;
 }
 
+// Present for backwards compatibility
 enum MetricsViewComparisonSortType {
   METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED = 0;
   METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE = 1;
@@ -371,10 +381,19 @@ enum MetricsViewComparisonSortType {
   METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA = 4;
 }
 
+enum MetricsViewComparisonMeasureType {
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED = 0;
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE = 1;
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE = 2;
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA = 3;
+  METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA = 4;
+}
+
 message MetricsViewComparisonSort {
   string name = 1 [(validate.rules).string.min_len = 1];
   bool desc = 2;
-  MetricsViewComparisonSortType type = 3;
+  MetricsViewComparisonSortType type = 3; // Deprecated. Present for backwards compatibility for older reports
+  MetricsViewComparisonMeasureType sort_type = 4;
 }
 
 message MetricsViewComparisonRow {
@@ -390,6 +409,12 @@ message MetricsViewComparisonValue {
   google.protobuf.Value delta_rel = 5;
 }
 
+message MetricsViewComparisonMeasureAlias {
+  string name = 1;
+  MetricsViewComparisonMeasureType type = 2;
+  string alias = 3;
+}
+
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
@@ -397,10 +422,14 @@ message MetricsViewTimeSeriesRequest {
   repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
-  TimeGrain time_granularity = 6;
-  MetricsViewFilter filter = 7;
+  TimeGrain time_granularity = 6 [(validate.rules).enum = {
+    not_in: [0]
+  }];
+  Expression where = 7;
+  Expression having = 11;
   string time_zone = 10;
   int32 priority = 8;
+  MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
 }
 
 message MetricsViewTimeSeriesResponse {
@@ -415,8 +444,9 @@ message MetricsViewTotalsRequest {
   repeated InlineMeasure inline_measures = 9;
   google.protobuf.Timestamp time_start = 4;
   google.protobuf.Timestamp time_end = 5;
-  MetricsViewFilter filter = 7;
+  Expression where = 7;
   int32 priority = 8;
+  MetricsViewFilter filter = 10; // Deprecated. should be removed once UI is moved to use new filters
 }
 
 message MetricsViewTotalsResponse {
@@ -430,12 +460,13 @@ message MetricsViewRowsRequest {
   google.protobuf.Timestamp time_start = 3;
   google.protobuf.Timestamp time_end = 4;
   TimeGrain time_granularity = 10;
-  MetricsViewFilter filter = 5;
+  Expression where = 5;
   repeated MetricsViewSort sort = 6;
   int32 limit = 7 [(validate.rules).int32.gte = 0];
   int64 offset = 8 [(validate.rules).int64.gte = 0];
   int32 priority = 9;
   string time_zone = 11;
+  MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
 }
 
 message MetricsViewRowsResponse {

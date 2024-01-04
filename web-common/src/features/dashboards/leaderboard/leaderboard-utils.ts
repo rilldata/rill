@@ -1,5 +1,5 @@
 import {
-  V1MetricsViewComparisonSortType as ApiSortType,
+  V1MetricsViewComparisonMeasureType as ApiSortType,
   type V1MetricsViewComparisonRow,
   type V1MetricsViewComparisonValue,
 } from "@rilldata/web-common/runtime-client";
@@ -12,7 +12,6 @@ import { SortType } from "../proto-state/derived-types";
  * to convert to rows of leaderboard data, we need to extract a single
  * measure from the dimension table shaped data (namely, the active
  * measure in the leaderboard).
- * @param params
  */
 export function getLabeledComparisonFromComparisonRow(
   row: V1MetricsViewComparisonRow,
@@ -142,16 +141,16 @@ export function prepareLeaderboardItemData(
   // selected values that _are_ in the API results.
   //
   // We also need to retain the original selection indices
-  const selectedButNotInAPIResults = new Map<string, number>();
-  selectedValues.map((v, i) => selectedButNotInAPIResults.set(v, i));
+  const selectedButNotInAPIResults = new Set<number>();
+  selectedValues.map((v, i) => selectedButNotInAPIResults.add(i));
 
   values.forEach((v, i) => {
-    const selectedIndex = selectedValues.findIndex(
-      (value) => value === v.dimensionValue
+    const selectedIndex = selectedValues.findIndex((value) =>
+      compareLeaderboardValues(value, v.dimensionValue)
     );
     // if we have found this selected value in the API results,
     // remove it from the selectedButNotInAPIResults array
-    if (selectedIndex > -1) selectedButNotInAPIResults.delete(v.dimensionValue);
+    if (selectedIndex > -1) selectedButNotInAPIResults.delete(selectedIndex);
 
     const cleanValue = cleanUpComparisonValue(v, total, selectedIndex);
 
@@ -170,9 +169,9 @@ export function prepareLeaderboardItemData(
   // that pushes it out of the top N. In that case, we will follow
   // the previous strategy, and just push a dummy value with only
   // the dimension value and nulls for all measure values.
-  for (const [dimensionValue, selectedIndex] of selectedButNotInAPIResults) {
+  for (const selectedIndex of selectedButNotInAPIResults) {
     selectedBelowTheFold.push({
-      dimensionValue,
+      dimensionValue: selectedValues[selectedIndex],
       selectedIndex,
       value: null,
       pctOfTotal: null,
@@ -232,28 +231,48 @@ export function getQuerySortType(sortType: SortType) {
   return (
     {
       [SortType.VALUE]:
-        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 
       [SortType.DELTA_ABSOLUTE]:
-        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA,
+        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
 
       [SortType.DELTA_PERCENT]:
-        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA,
+        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA,
 
       // NOTE: sorting by percent-of-total has the same effect
       // as sorting by base value
       [SortType.PERCENT]:
-        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 
       // NOTE: UNSPECIFIED is not actually a valid sort type,
       // but it is required by protobuf serialization
       [SortType.UNSPECIFIED]:
-        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
+        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 
       // FIXME: sort by dimension value is not yet implemented,
       // for now fall back to sorting by base value
       [SortType.DIMENSION]:
-        ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE,
-    }[sortType] || ApiSortType.METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE
+        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+    }[sortType] || ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
   );
+}
+
+// Backwards compatibility fix for older filters that converted all non-null values to string
+export function compareLeaderboardValues(selected: string, value: any) {
+  if (selected === null || value === null) {
+    return selected === value;
+  }
+  if (typeof selected === typeof value) {
+    return selected === value;
+  }
+  switch (typeof value) {
+    case "boolean":
+      return (selected.toLowerCase() === "true") === value;
+
+    case "number":
+      return Number(selected) === value;
+
+    default:
+      return selected === value;
+  }
 }

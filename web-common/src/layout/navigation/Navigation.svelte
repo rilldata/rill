@@ -70,7 +70,6 @@
           use:drag={{
             minSize: DEFAULT_NAV_WIDTH,
             maxSize: 440,
-            side: "assetsWidth",
             store: navigationLayout,
           }}
         />

@@ -129,7 +129,7 @@ export type FormatterOptionsNoneStrategy = {
  * of ten given as an input.
  */
 export type FormatterOptionsIntTimesPowerOfTenStrategy = {
-  strategy: "intTimesPowerOfTen";
+  strategy: "singleDigitTimesPowerOfTen";
   onInvalidInput?: "doNothing" | "throw" | "consoleWarn";
 };
 

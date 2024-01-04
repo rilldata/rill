@@ -34,6 +34,7 @@ type MetricsViewYAML struct {
 		Name        string
 		Label       string
 		Column      string
+		Expression  string
 		Property    string // For backwards compatibility
 		Description string
 		Ignore      bool `yaml:"ignore"`
@@ -213,7 +214,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	names := make(map[string]bool)
-	columns := make(map[string]bool)
+
 	for i, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
 			continue
@@ -233,17 +234,15 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			}
 		}
 
+		if (dim.Column == "" && dim.Expression == "") || (dim.Column != "" && dim.Expression != "") {
+			return fmt.Errorf("exactly one of column or expression should be set for dimension: %q", dim.Name)
+		}
+
 		lower := strings.ToLower(dim.Name)
 		if ok := names[lower]; ok {
 			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
 		}
 		names[lower] = true
-
-		lower = strings.ToLower(dim.Column)
-		if ok := columns[lower]; ok {
-			return fmt.Errorf("found duplicate dimension column name %q", dim.Column)
-		}
-		columns[lower] = true
 	}
 
 	measureCount := 0
@@ -264,10 +263,6 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			return fmt.Errorf("found duplicate dimension or measure name %q", measure.Name)
 		}
 		names[lower] = true
-
-		if ok := columns[lower]; ok {
-			return fmt.Errorf("measure name %q coincides with a dimension column name", measure.Name)
-		}
 
 		if measure.FormatPreset != "" && measure.FormatD3 != "" {
 			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)
@@ -424,6 +419,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dim.Name,
 			Column:      dim.Column,
+			Expression:  dim.Expression,
 			Label:       dim.Label,
 			Description: dim.Description,
 			Unnest:      dim.Unnest,

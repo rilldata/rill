@@ -50,8 +50,8 @@ type Options struct {
 	GRPCPort               int
 	ExternalURL            string
 	FrontendURL            string
-	SessionKeyPairs        [][]byte
 	AllowedOrigins         []string
+	SessionKeyPairs        [][]byte
 	ServePrometheus        bool
 	AuthDomain             string
 	AuthClientID           string

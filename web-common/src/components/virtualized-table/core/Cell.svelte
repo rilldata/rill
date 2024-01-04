@@ -8,7 +8,10 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import {
+    createShiftClickAction,
+    isClipboardApiSupported,
+  } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher, getContext } from "svelte";
@@ -106,7 +109,11 @@
   };
 </script>
 
-<Tooltip location="top" distance={16} suppress={suppressTooltip}>
+<Tooltip
+  location="top"
+  distance={16}
+  suppress={suppressTooltip || !isClipboardApiSupported()}
+>
   <div
     role="gridcell"
     tabindex="0"

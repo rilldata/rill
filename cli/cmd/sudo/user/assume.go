@@ -58,7 +58,7 @@ func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 			cfg.AdminTokenDefault = res.Token
 
 			// Select org for new user
-			err = auth.SelectOrgFlow(ctx, ch)
+			err = auth.SelectOrgFlow(ctx, ch, true)
 			if err != nil {
 				return err
 			}
