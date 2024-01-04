@@ -35,6 +35,7 @@ export function startRuntimeForEachTest() {
       shell: true,
     });
     childProcess.on("error", console.log);
+    childProcess.on("exit", console.log);
 
     // Ping runtime until it's ready
     await asyncWaitUntil(async () => {
@@ -51,8 +52,15 @@ export function startRuntimeForEachTest() {
 
   test.afterEach(async () => {
     const processExit = new Promise<void>((resolve) => {
-      if (childProcess.pid) treeKill(childProcess.pid, resolve as any);
-      else resolve();
+      if (childProcess.pid)
+        treeKill(childProcess.pid, () => {
+          console.log("Killed child processes");
+          resolve();
+        });
+      else {
+        console.log("No child processes");
+        resolve();
+      }
     });
     await asyncWaitUntil(async () => !(await isPortOpen(TEST_PORT)));
     await processExit;
