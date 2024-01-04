@@ -9,6 +9,7 @@
   import {
     copyToClipboard,
     createShiftClickAction,
+    isClipboardApiSupported,
   } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { isNested } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
@@ -88,7 +89,7 @@
         on:blur={handleBlur(item)}
       >
         <svelte:fragment slot="title">
-          <Tooltip {...tooltipProps}>
+          <Tooltip {...tooltipProps} suppress={!isClipboardApiSupported()}>
             <div
               style:font-size="12px"
               class="text-ellipsis overflow-hidden whitespace-nowrap"
@@ -126,7 +127,7 @@
           </Tooltip>
         </svelte:fragment>
         <svelte:fragment slot="right">
-          <Tooltip {...tooltipProps}>
+          <Tooltip {...tooltipProps} suppress={!isClipboardApiSupported()}>
             <div
               use:shiftClickAction
               on:shift-click={() =>

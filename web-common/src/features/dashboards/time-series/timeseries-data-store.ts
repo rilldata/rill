@@ -101,7 +101,9 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
           (measure) => measure === dashboardStore.expandedMeasureName,
         );
       } else {
-        measures = dashboardStore?.selectedMeasureNames;
+        measures = dashboardStore?.visibleMeasureKeys
+          ? [...dashboardStore.visibleMeasureKeys]
+          : [];
       }
 
       const primaryTimeSeries = createMetricsViewTimeSeries(

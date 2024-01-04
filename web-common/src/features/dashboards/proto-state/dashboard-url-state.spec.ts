@@ -135,9 +135,9 @@ describe("useDashboardUrlSync", () => {
     expect(get(pageMock).url.searchParams.has("state")).toBeFalsy();
     // This is not updated since the sync is called in a component
     // TODO: We should add tests for the sync component
-    expect(
-      get(metricsExplorerStore).entities[AD_BIDS_NAME].selectedMeasureNames,
-    ).toEqual([AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE]);
+    expect([
+      ...get(metricsExplorerStore).entities[AD_BIDS_NAME].visibleMeasureKeys,
+    ]).toEqual([AD_BIDS_IMPRESSIONS_MEASURE, AD_BIDS_BID_PRICE_MEASURE]);
 
     teardown();
   });

@@ -77,10 +77,6 @@ function syncMeasures(
   } else if (!metricsView.measures.length) {
     metricsExplorer.leaderboardMeasureName = undefined;
   }
-  // TODO: how does this differ from visibleMeasureKeys?
-  metricsExplorer.selectedMeasureNames = metricsView.measures.map(
-    (measure) => measure.name,
-  );
 
   if (metricsExplorer.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures

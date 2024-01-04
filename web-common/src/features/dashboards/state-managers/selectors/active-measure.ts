@@ -23,7 +23,7 @@ export const activeMeasureName = (dashData: DashboardDataSources): string => {
 export const selectedMeasureNames = (
   dashData: DashboardDataSources,
 ): string[] => {
-  return dashData.dashboard.selectedMeasureNames;
+  return [...dashData.dashboard.visibleMeasureKeys];
 };
 
 export const isAnyMeasureSelected = (
