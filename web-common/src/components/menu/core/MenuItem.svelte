@@ -127,6 +127,8 @@
   $: bgColor = dark
     ? `${hovered ? "bg-gray-600" : ""}`
     : `${hovered ? "bg-gray-200" : ""}`;
+
+  $: console.log(icon, selected);
 </script>
 
 <button
