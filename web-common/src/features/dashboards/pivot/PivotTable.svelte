@@ -100,6 +100,8 @@
     enableExpanding: true,
   });
 
+  let table = createSvelteTable(options);
+
   function rerender() {
     // FIXME: Updating data does not update tanstack table
     console.log("rerender called with data", data);
@@ -107,12 +109,12 @@
       ...options,
       data: data,
     }));
+
+    table = createSvelteTable(options);
   }
 
   // Whenever the input data changes, rerender the table
   $: data && rerender();
-
-  const table = createSvelteTable(options);
 </script>
 
 <div class="p-2">
