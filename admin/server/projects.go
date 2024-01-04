@@ -795,6 +795,11 @@ func (s *Server) SudoUpdateTags(ctx context.Context, req *adminv1.SudoUpdateTags
 		attribute.StringSlice("args.tags", req.Tags),
 	)
 
+	// if tags is nil, set it to empty slice
+	if req.Tags == nil {
+		req.Tags = []string{}
+	}
+
 	// Check the request is made by a superuser
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {

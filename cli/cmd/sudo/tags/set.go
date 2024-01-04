@@ -24,6 +24,14 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			defer client.Close()
 
+			// if tags is empty, prompt for a warning
+			if len(tags) == 0 {
+				ch.Printer.PrintlnWarn("Warn: Setting an empty tag list will remove all tags from the project")
+				if !cmdutil.ConfirmPrompt("Do you want to continue?", "", false) {
+					return nil
+				}
+			}
+
 			res, err := client.SudoUpdateTags(ctx, &adminv1.SudoUpdateTagsRequest{
 				Organization: args[0],
 				Project:      args[1],
