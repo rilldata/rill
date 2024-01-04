@@ -11,10 +11,6 @@ import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
 
 export interface MetricsExplorerEntity {
   name: string;
-  /**
-   * selected measure names to be shown
-   */
-  selectedMeasureNames: Array<string>;
 
   /**
    * This array controls which measures are visible in

@@ -200,7 +200,6 @@ export function createDashboardState(
   return {
     name,
 
-    selectedMeasureNames: [],
     visibleDimensionKeys: new Set(metrics.dimensions.map((d) => d.name)),
     allDimensionsVisible: true,
     visibleMeasureKeys: new Set(metrics.measures.map((m) => m.name)),
