@@ -83,6 +83,8 @@
     oprn = $form["operation"];
     handleSubmit(new SubmitEvent(""));
   }
+
+  $: isBetweenExpression = oprn === "b" || oprn === "nb";
 </script>
 
 <Menu
@@ -114,13 +116,18 @@
         error={$errors["value1"]}
         id="value1"
         on:change={handleSubmit}
+        on:enter-pressed={(e) => {
+          // TODO: focus next input if isBetweenExpression
+          handleSubmit(e);
+        }}
       />
-      {#if $form["operation"] === "b" || $form["operation"] === "nb"}
+      {#if isBetweenExpression}
         <InputV2
           bind:value={$form["value2"]}
           error={$errors["value2"]}
           id="value2"
           on:change={handleSubmit}
+          on:enter-pressed={handleSubmit}
         />
       {/if}
     </form>

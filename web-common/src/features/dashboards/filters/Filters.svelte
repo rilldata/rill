@@ -29,6 +29,8 @@ The main feature-set component for dashboard filters
 </script>
 
 <script lang="ts">
+  import { measureChipColors } from "@rilldata/web-common/components/chip/chip-types";
+
   const StateManagers = getStateManagers();
 
   const {
@@ -186,7 +188,7 @@ The main feature-set component for dashboard filters
               }
               setMeasureFilter(name, event.detail);
             }}
-            colors={defaultChipColors}
+            colors={measureChipColors}
             {name}
             {label}
             {expr}
