@@ -94,7 +94,6 @@ type configProperties struct {
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
 	SessionToken    string `mapstructure:"aws_access_token"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
-	RetainFiles     bool   `mapstructure:"retain_files"`
 }
 
 // Open implements drivers.Driver
@@ -104,7 +103,7 @@ func (d driver) Open(cfgMap map[string]any, shared bool, client activity.Client,
 	}
 
 	cfg := &configProperties{}
-	err := mapstructure.WeakDecode(cfgMap, cfg)
+	err := mapstructure.Decode(cfgMap, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +321,6 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 		ExtractPolicy:         conf.extractPolicy,
 		BatchSizeBytes:        int64(batchSize.Bytes()),
 		KeepFilesUntilClose:   conf.BatchSize == "-1",
-		RetainFiles:           c.config.RetainFiles,
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
