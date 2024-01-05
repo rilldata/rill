@@ -112,7 +112,8 @@ export function getDefaultMetricsExplorerEntity(
 ): MetricsExplorerEntity {
   // CAST SAFETY: safe b/c (1) measure.name is a string if defined,
   // and (2) we filter out undefined values
-  const defaultMeasureNames = (metricsView?.measures?.map((measure) => measure?.name)
+  const defaultMeasureNames = (metricsView?.measures
+    ?.map((measure) => measure?.name)
     .filter((name) => name !== undefined) ?? []) as string[];
 
   // CAST SAFETY: safe b/c (1) measure.name is a string if defined,
