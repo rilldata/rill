@@ -21,9 +21,8 @@
 </script>
 
 <section class="flex flex-col gap-y-4">
-  <!-- Title -->
   <h2 class="text-lg font-medium">Parse errors</h2>
-  <!-- Parse errors -->
+
   {#if $parserErrors.isSuccess}
     {#if !$parserErrors.data || $parserErrors.data.length === 0}
       <div class="text-gray-600">None!</div>
