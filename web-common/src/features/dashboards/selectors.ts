@@ -1,4 +1,4 @@
-import { removeExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-generators";
+import { removeExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,

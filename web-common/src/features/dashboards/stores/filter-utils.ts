@@ -1,10 +1,12 @@
-import { V1Operation } from "@rilldata/web-common/runtime-client";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import {
+  type V1Expression,
+  V1Operation,
+} from "@rilldata/web-common/runtime-client";
 
 export function createLikeExpression(
   ident: string,
   like: string,
-  negate: boolean
+  negate = false
 ) {
   return {
     cond: {
@@ -17,7 +19,7 @@ export function createLikeExpression(
 export function createInExpression(
   ident: string,
   vals: Array<any>,
-  negate: boolean
+  negate = false
 ) {
   return {
     cond: {
@@ -173,3 +175,7 @@ export function getValueIndexInExpression(expr: V1Expression, value: any) {
 export function getValuesInExpression(expr?: V1Expression) {
   return expr ? (expr.cond?.exprs?.slice(1).map((e) => e.val) as any[]) : [];
 }
+
+export const matchExpressionByName = (e: V1Expression, name: string) => {
+  return e.cond?.exprs?.[0].ident === name;
+};

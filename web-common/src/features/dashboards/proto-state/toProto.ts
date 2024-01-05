@@ -53,12 +53,12 @@ export function getProtoFromDashboardState(
   if (!metrics) return "";
 
   const state: PartialMessage<DashboardState> = {};
-  // if (metrics.whereFilter) {
-  //   state.where = toExpressionProto(metrics.whereFilter);
-  // }
-  // if (metrics.havingFilter) {
-  //   state.having = toExpressionProto(metrics.havingFilter);
-  // }
+  if (metrics.whereFilter) {
+    state.where = toExpressionProto(metrics.whereFilter);
+  }
+  if (metrics.havingFilter) {
+    state.having = toExpressionProto(metrics.havingFilter);
+  }
   if (metrics.selectedTimeRange) {
     state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
     if (metrics.selectedTimeRange.interval) {
@@ -117,6 +117,7 @@ export function getProtoFromDashboardState(
     state.leaderboardSortType = metrics.dashboardSortType;
   }
 
+  console.log(state);
   const message = new DashboardState(state);
   return protoToBase64(message.toBinary());
 }
@@ -217,7 +218,7 @@ function toExpressionProto(expression: V1Expression | undefined) {
 
 function toPbValue(val: unknown) {
   if (val === null) {
-    new Value({
+    return new Value({
       kind: {
         case: "nullValue",
         value: NullValue.NULL_VALUE,

@@ -1,12 +1,12 @@
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
-import { matchExpressionByName } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
   createInExpression,
   createLikeExpression,
   createOrExpression,
+  matchExpressionByName,
   removeExpressions,
-} from "@rilldata/web-common/features/dashboards/stores/filter-generators";
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { V1Operation } from "../../../runtime-client";
 import PercentOfTotal from "./PercentOfTotal.svelte";
 
@@ -52,13 +52,13 @@ export function updateFilterOnSearch(
         filterForDimension.cond?.exprs?.push(
           createOrExpression([
             // TODO: do we need a `IS NULL` expression?
-            createInExpression(dimensionName, [null], false),
-            createLikeExpression(dimensionName, `%${searchText}%`, false),
+            createInExpression(dimensionName, [null]),
+            createLikeExpression(dimensionName, `%${searchText}%`),
           ])
         );
       } else {
         filterForDimension.cond?.exprs?.push(
-          createLikeExpression(dimensionName, `%${searchText}%`, false)
+          createLikeExpression(dimensionName, `%${searchText}%`)
         );
       }
     } else {

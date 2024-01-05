@@ -91,6 +91,12 @@ export interface MetricsExplorerEntity {
   dimensionFilterExcludeMode: Map<string, boolean>;
 
   /**
+   * Used to add a dropdown for newly added dimension/measure filters.
+   * Such filter will not have an entry in where/having expression objects.
+   */
+  temporaryFilterName: string | null;
+
+  /**
    * user selected time range
    */
   selectedTimeRange?: DashboardTimeControls;

@@ -1,8 +1,8 @@
-import { matchExpressionByName } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
   createAndExpression,
+  matchExpressionByName,
   removeExpressions,
-} from "@rilldata/web-common/features/dashboards/stores/filter-generators";
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
 import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";

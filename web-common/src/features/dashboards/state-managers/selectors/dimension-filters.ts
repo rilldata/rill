@@ -1,10 +1,18 @@
+import { getDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
 import {
   createAndExpression,
+  forEachExpression,
   getValuesInExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-generators";
+  matchExpressionByName,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  MetricsViewSpecDimensionV2,
+  V1Operation,
+} from "@rilldata/web-common/runtime-client";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
-import type { DashboardDataSources } from "./types";
 import type { AtLeast } from "../types";
+import type { DashboardDataSources } from "./types";
 
 export const getFiltersForOtherDimensions = (
   dashData: AtLeast<DashboardDataSources, "dashboard">
@@ -64,10 +72,6 @@ export const dimensionHasFilter = (
   };
 };
 
-export const matchExpressionByName = (e: V1Expression, name: string) => {
-  return e.cond?.exprs?.[0].ident === name;
-};
-
 export const getWhereFilterExpression = (
   dashData: AtLeast<DashboardDataSources, "dashboard">
 ): ((name: string) => V1Expression | undefined) => {
@@ -84,6 +88,79 @@ export const getWhereFilterExpressionIndex = (
     dashData.dashboard.whereFilter?.cond?.exprs?.findIndex((e) =>
       matchExpressionByName(e, name)
     );
+};
+
+export type DimensionFilterItem = {
+  name: string;
+  label: string;
+  selectedValues: string[];
+};
+export function getDimensionFilterItems(
+  dashData: AtLeast<DashboardDataSources, "dashboard">
+) {
+  return (dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>) => {
+    if (!dashData.dashboard.whereFilter) return [];
+
+    const filteredDimensions = new Array<DimensionFilterItem>();
+    const addedDimension = new Set<string>();
+    forEachExpression(dashData.dashboard.whereFilter, (e) => {
+      if (
+        e.cond?.op !== V1Operation.OPERATION_IN &&
+        e.cond?.op !== V1Operation.OPERATION_NIN
+      ) {
+        return;
+      }
+      const ident = e.cond?.exprs?.[0].ident;
+      if (
+        ident === undefined ||
+        addedDimension.has(ident) ||
+        !dimensionIdMap.has(ident)
+      ) {
+        return;
+      }
+      const dim = dimensionIdMap.get(ident);
+      if (!dim) {
+        return;
+      }
+      addedDimension.add(ident);
+      filteredDimensions.push({
+        name: ident,
+        label: getDisplayName(dim),
+        selectedValues: e.cond.exprs?.slice(1).map((e) => e.val) as any[],
+      });
+    });
+
+    // sort based on name to make sure toggling include/exclude is not jarring
+    return filteredDimensions.sort(filterItemsSortFunction);
+  };
+}
+
+export const getAllDimensionFilterItems = (
+  dashData: AtLeast<DashboardDataSources, "dashboard">
+) => {
+  return (
+    dimensionFilterItem: Array<DimensionFilterItem>,
+    dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>
+  ) => {
+    const allDimensionFilterItem = [...dimensionFilterItem];
+
+    // if the temporary filter is a dimension filter add it
+    if (
+      dashData.dashboard.temporaryFilterName &&
+      dimensionIdMap.has(dashData.dashboard.temporaryFilterName)
+    ) {
+      allDimensionFilterItem.push({
+        name: dashData.dashboard.temporaryFilterName,
+        label: getDisplayName(
+          dimensionIdMap.get(dashData.dashboard.temporaryFilterName)
+        ),
+        selectedValues: [],
+      });
+    }
+
+    // sort based on name to make sure toggling include/exclude is not jarring
+    return allDimensionFilterItem.sort(filterItemsSortFunction);
+  };
 };
 
 export const dimensionFilterSelectors = {
@@ -112,5 +189,18 @@ export const dimensionFilterSelectors = {
    */
   isFilterExcludeMode,
 
+  /**
+   * Check if a dimension has any filter
+   */
   dimensionHasFilter,
+
+  /**
+   * Get filter items based on currently selected values for a dimension
+   */
+  getDimensionFilterItems,
+
+  /**
+   * Get filter items on dimension along with an empty entry for temporary filter if it is a dimension
+   */
+  getAllDimensionFilterItems,
 };

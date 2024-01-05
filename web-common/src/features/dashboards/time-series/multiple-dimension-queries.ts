@@ -2,7 +2,7 @@ import { selectedDimensionValues } from "@rilldata/web-common/features/dashboard
 import {
   createInExpression,
   removeExpressions,
-} from "@rilldata/web-common/features/dashboards/stores/filter-generators";
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { Readable, derived, writable } from "svelte/store";
 
 import {
@@ -213,7 +213,7 @@ export function getDimensionValueTimeSeries(
           );
           // add the value to "in" expression
           updatedFilter?.cond?.exprs?.push(
-            createInExpression(dimensionName, [value], false)
+            createInExpression(dimensionName, [value])
           );
 
           return derived(

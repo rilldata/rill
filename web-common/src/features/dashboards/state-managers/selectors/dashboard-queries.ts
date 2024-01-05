@@ -95,7 +95,7 @@ export function leaderboardDimensionTotalQueryBody(
 ): (dimensionName: string) => QueryServiceMetricsViewTotalsBody {
   return (dimensionName: string) => ({
     measureNames: [activeMeasureName(dashData)],
-    filter: getFiltersForOtherDimensions(dashData)(dimensionName),
+    where: getFiltersForOtherDimensions(dashData)(dimensionName),
     timeStart: timeControlsState(dashData).timeStart,
     timeEnd: timeControlsState(dashData).timeEnd,
   });

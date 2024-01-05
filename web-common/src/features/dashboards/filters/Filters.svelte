@@ -2,7 +2,6 @@
 The main feature-set component for dashboard filters
  -->
 <script context="module" lang="ts">
-  import { writable } from "svelte/store";
   import {
     Chip,
     ChipContainer,
@@ -14,30 +13,29 @@ The main feature-set component for dashboard filters
   } from "@rilldata/web-common/components/chip/chip-types";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
+  import { writable } from "svelte/store";
   import { useMetaQuery, getFilterSearchList } from "../selectors/index";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
-  import { clearAllFilters } from "../actions";
   import FilterButton from "./FilterButton.svelte";
-  import { formatFilters } from "./formatFilters";
-  import { getDisplayName } from "./getDisplayName";
-
-  export const potentialFilterName = writable<string | null>(null);
 </script>
 
 <script lang="ts">
   const StateManagers = getStateManagers();
-
   const {
     dashboardStore,
     actions: {
       dimensionsFilter: {
-        toggleDimensionNameSelection,
         toggleDimensionValueSelection,
         toggleDimensionFilterMode,
+        removeDimensionFilter,
       },
+      filters: { clearAllFilters },
+    },
+    selectors: {
+      dimensionFilters: { getDimensionFilterItems, getAllDimensionFilterItems },
     },
   } = StateManagers;
 
@@ -77,27 +75,14 @@ The main feature-set component for dashboard filters
     (dimension) => dimension.name as string
   );
 
-  $: currentFormattedFilters = formatFilters(
-    $dashboardStore.whereFilter,
-    dimensionIdMap,
-    $potentialFilterName
+  $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
+  // hasFilter only checks for complete filters and excludes temporary ones
+  $: hasFilters = currentDimensionFilters.length > 0;
+
+  $: allDimensionFilters = $getAllDimensionFilterItems(
+    currentDimensionFilters,
+    dimensionIdMap
   );
-  $: hasFilters = currentFormattedFilters.length > 0;
-
-  $: temporaryFilter = $potentialFilterName
-    ? [
-        {
-          name: $potentialFilterName,
-          label: getDisplayName(dimensionIdMap.get($potentialFilterName)),
-          selectedValues: [],
-        },
-      ]
-    : [];
-
-  $: currentDimensionFilters = [
-    ...currentFormattedFilters,
-    ...temporaryFilter,
-  ].sort((a, b) => (a.name > b.name ? 1 : -1));
 
   function setActiveDimension(name: string, value = "") {
     activeDimensionName = name;
@@ -125,7 +110,7 @@ The main feature-set component for dashboard filters
   </div>
 
   <ChipContainer>
-    {#if !currentDimensionFilters.length}
+    {#if !allDimensionFilters.length}
       <div
         in:fly|local={{ duration: 200, x: 8 }}
         class="ui-copy-disabled grid items-center"
@@ -134,24 +119,17 @@ The main feature-set component for dashboard filters
         No filters selected
       </div>
     {:else}
-      {#each currentDimensionFilters as { name, label, selectedValues } (name)}
+      {#each allDimensionFilters as { name, label, selectedValues } (name)}
         {@const isInclude =
           !$dashboardStore.dimensionFilterExcludeMode.get(name)}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
             on:toggle={() => toggleDimensionFilterMode(name)}
             on:remove={() => {
-              if ($potentialFilterName) {
-                $potentialFilterName = null;
-              } else {
-                toggleDimensionNameSelection(name);
-              }
+              removeDimensionFilter(name);
             }}
             on:apply={(event) => {
-              if ($potentialFilterName) {
-                $potentialFilterName = null;
-              }
-              toggleDimensionValueSelection(name, event.detail);
+              toggleDimensionValueSelection(name, event.detail, true);
             }}
             on:search={(event) => {
               setActiveDimension(name, event.detail);
@@ -196,8 +174,7 @@ The main feature-set component for dashboard filters
           bgActiveClass="bg-gray-200 dark:bg-gray-600"
           outlineClass="outline-gray-400"
           on:click={() => {
-            $potentialFilterName = null;
-            clearAllFilters(StateManagers);
+            clearAllFilters();
           }}
         >
           <span slot="icon" class="ui-copy-disabled-faint">

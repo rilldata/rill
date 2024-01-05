@@ -5,7 +5,6 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import SearchableFilterDropdown from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterDropdown.svelte";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import { potentialFilterName } from "./Filters.svelte";
   import { getDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
 </script>
 
@@ -14,6 +13,9 @@
     selectors: {
       dimensions: { allDimensions },
       dimensionFilters: { dimensionHasFilter },
+    },
+    actions: {
+      filters: { setTemporaryFilterName },
     },
   } = getStateManagers();
 
@@ -48,7 +50,7 @@
     on:hover
     on:item-clicked={(e) => {
       toggleFloatingElement();
-      $potentialFilterName = e.detail.name;
+      setTemporaryFilterName(e.detail.name);
     }}
     {selectableItems}
     selectedItems={[]}

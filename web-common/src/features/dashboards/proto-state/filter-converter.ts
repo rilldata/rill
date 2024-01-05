@@ -3,7 +3,7 @@ import {
   createInExpression,
   createLikeExpression,
   createOrExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-generators";
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   MetricsViewFilterCond,
   V1Expression,
