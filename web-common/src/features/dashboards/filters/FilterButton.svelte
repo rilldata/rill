@@ -6,6 +6,7 @@
   import SearchableFilterDropdown from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterDropdown.svelte";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import { getDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+  import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
 </script>
 
 <script lang="ts">
@@ -19,13 +20,17 @@
     },
   } = getStateManagers();
 
-  $: selectableItems =
-    $allDimensions
-      ?.map((d) => ({
-        name: d.name as string,
-        label: getDisplayName(d),
-      }))
-      .filter((d) => !$dimensionHasFilter(d.name)) ?? [];
+  $: selectableGroups = [
+    <SearchableFilterSelectableGroup>{
+      items:
+        $allDimensions
+          ?.map((d) => ({
+            name: d.name as string,
+            label: getDisplayName(d),
+          }))
+          .filter((d) => !$dimensionHasFilter(d.name)) ?? [],
+    },
+  ];
 </script>
 
 <WithTogglableFloatingElement
@@ -52,7 +57,7 @@
       toggleFloatingElement();
       setTemporaryFilterName(e.detail.name);
     }}
-    {selectableItems}
+    {selectableGroups}
     selectedItems={[]}
     slot="floating-element"
   />
