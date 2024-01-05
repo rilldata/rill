@@ -44,7 +44,7 @@ export const setContextColumn = (
 };
 
 export const resetAllContextColumnWidths = (
-  contextColumnWidths: ContextColWidths
+  contextColumnWidths: ContextColWidths,
 ) => {
   for (const contextColumn in contextColumnWidths) {
     contextColumnWidths[contextColumn as LeaderboardContextColumn] =
@@ -60,11 +60,11 @@ export const resetAllContextColumnWidths = (
 export const observeContextColumnWidth = (
   { dashboard }: DashboardMutables,
   contextColumn: LeaderboardContextColumn,
-  width: number
+  width: number,
 ) => {
   dashboard.contextColumnWidths[contextColumn] = Math.min(
     Math.max(width, dashboard.contextColumnWidths[contextColumn]),
-    CONTEXT_COL_MAX_WIDTH
+    CONTEXT_COL_MAX_WIDTH,
   );
 };
 
