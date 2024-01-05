@@ -244,7 +244,9 @@ func (q *MetricsViewRows) buildMetricsRowsSQL(mv *runtimev1.MetricsViewSpec, dia
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += " AND " + clause
+		if strings.TrimSpace(clause) != "" {
+			whereClause += " AND " + clause
+		}
 		args = append(args, clauseArgs...)
 	}
 

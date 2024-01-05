@@ -294,7 +294,9 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 		if err != nil {
 			return "", "", nil, err
 		}
-		whereClause += " AND " + clause
+		if strings.TrimSpace(clause) != "" {
+			whereClause += " AND " + clause
+		}
 		args = append(args, clauseArgs...)
 	}
 
@@ -308,7 +310,9 @@ func (q *MetricsViewTimeSeries) buildMetricsTimeseriesSQL(olap drivers.OLAPStore
 		if err != nil {
 			return "", "", nil, err
 		}
-		havingClause = " HAVING " + clause
+		if strings.TrimSpace(clause) != "" {
+			havingClause = " HAVING " + clause
+		}
 		args = append(args, clauseArgs...)
 	}
 
