@@ -77,8 +77,8 @@ export function groupURIs(uris: ViableSourceCatalogEntry[]): GroupedURIObject {
       endingIndex,
       domain,
       connector: identifier.replace("://", ""),
-      leftPart: domainURIs[0].path?
-        .slice(0, endingIndex - 1)
+      leftPart: domainURIs[0].path
+        ?.slice(0, endingIndex - 1)
         .replace(identifier, ""),
       /** return */
       uris:
