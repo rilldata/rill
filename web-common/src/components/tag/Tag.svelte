@@ -1,6 +1,5 @@
 <script lang="ts">
   type Color =
-    | "default"
     | "red"
     | "blue"
     | "green"
@@ -9,12 +8,10 @@
     | "yellow"
     | "gray";
 
-  export let color: Color = "default";
+  export let color: Color = "gray";
 
   function getColorClass(color: string) {
     switch (color) {
-      case "default":
-        return "bg-gray-100 border-gray-300 text-gray-600";
       case "red":
         return "bg-red-50 border-red-300 text-red-600";
       case "blue":
