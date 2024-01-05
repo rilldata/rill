@@ -7,7 +7,7 @@ import {
   PollTimeDuringError,
   PollTimeDuringReconcile,
   PollTimeWhenProjectReady,
-} from "@rilldata/web-admin/features/projects/selectors";
+} from "@rilldata/web-admin/features/projects/status/selectors";
 import { refreshResource } from "@rilldata/web-common/features/entity-management/resource-invalidations";
 import {
   ResourceKind,

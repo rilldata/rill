@@ -8,7 +8,7 @@
     useDashboardsStatus,
   } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
-  import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/status/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
