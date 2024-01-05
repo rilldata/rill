@@ -1,3 +1,4 @@
+import { resetAllContextColumnWidths } from "./context-columns";
 import type { DashboardMutables } from "./types";
 
 export const setLeaderboardMeasureName = (
@@ -5,4 +6,7 @@ export const setLeaderboardMeasureName = (
   name: string,
 ) => {
   dashboard.leaderboardMeasureName = name;
+
+  // reset column widths when changing the leaderboard measure
+  resetAllContextColumnWidths(dashboard.contextColumnWidths);
 };

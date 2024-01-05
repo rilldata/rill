@@ -58,8 +58,8 @@ props as needed.
 <WithTogglableFloatingElement
   alignment="start"
   distance={8}
-  let:toggleFloatingElement
   let:active
+  let:toggleFloatingElement
 >
   <Tooltip
     activeDelay={60}
@@ -70,14 +70,14 @@ props as needed.
   >
     <!-- TODO: Switch to Measure colors once Theming supports it -->
     <Chip
+      {...defaultChipColors}
+      {active}
       extraRounded={false}
       {label}
-      outline={true}
-      {active}
-      {...defaultChipColors}
       on:click={toggleFloatingElement}
+      outline={true}
     >
-      <div slot="body" class="flex gap-x-2">
+      <div class="flex gap-x-2" slot="body">
         <div
           class="font-bold text-ellipsis overflow-hidden whitespace-nowrap ml-2"
         >
@@ -100,6 +100,8 @@ props as needed.
     </div>
   </Tooltip>
   <SearchableFilterDropdown
+    allowMultiSelect={false}
+    let:toggleFloatingElement
     on:apply
     on:click-outside={toggleFloatingElement}
     on:deselect-all
@@ -110,10 +112,8 @@ props as needed.
     }}
     on:search
     on:select-all
-    {selectableItems}
-    {selectedItems}
-    allowMultiSelect={false}
+    selectableGroups={[{ name: "", items: selectableItems }]}
+    selectedItems={[selectedItems]}
     slot="floating-element"
-    let:toggleFloatingElement
   />
 </WithTogglableFloatingElement>

@@ -13,8 +13,16 @@
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { useMetaQuery } from "../selectors";
   import LeaderboardContextColumnMenu from "./LeaderboardContextColumnMenu.svelte";
+  import { getStateManagers } from "../state-managers/state-managers";
 
   export let metricViewName;
+
+  const {
+    actions: {
+      contextCol: { setContextColumn },
+      setLeaderboardMeasureName,
+    },
+  } = getStateManagers();
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
@@ -24,10 +32,7 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   function handleMeasureUpdate(event: CustomEvent) {
-    metricsExplorerStore.setLeaderboardMeasureName(
-      metricViewName,
-      event.detail.key,
-    );
+    setLeaderboardMeasureName(event.detail.key);
   }
 
   function measureKeyAndMain(measure: MetricsViewSpecMeasureV2) {
@@ -93,10 +98,7 @@
     metricsExplorer?.leaderboardContextColumn ===
       LeaderboardContextColumn.PERCENT
   ) {
-    metricsExplorerStore.setContextColumn(
-      metricViewName,
-      LeaderboardContextColumn.HIDDEN,
-    );
+    setContextColumn(LeaderboardContextColumn.HIDDEN);
   }
 
   $: showHideDimensions = createShowHideDimensionsStore(
@@ -145,7 +147,7 @@
         on:select={handleMeasureUpdate}
       />
 
-      <LeaderboardContextColumnMenu {metricViewName} {validPercentOfTotal} />
+      <LeaderboardContextColumnMenu {validPercentOfTotal} />
     </div>
   {:else}
     <div
