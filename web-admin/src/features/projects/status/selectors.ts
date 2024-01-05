@@ -11,7 +11,7 @@ export function useProjectDeploymentStatus(orgName: string, projName: string) {
   return createAdminServiceGetProject<V1DeploymentStatus>(orgName, projName, {
     query: {
       select: (data) => {
-        // There may not be a prodDeployment if the project was hibernated
+        // There may not be a prodDeployment if the project is hibernating
         return (
           data?.prodDeployment?.status ||
           V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED
