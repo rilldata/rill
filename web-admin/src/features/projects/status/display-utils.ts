@@ -1,14 +1,14 @@
-import type { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
+import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
 
 export function prettyReconcileStatus(status: V1ReconcileStatus) {
   switch (status) {
-    case "RECONCILE_STATUS_IDLE":
+    case V1ReconcileStatus.RECONCILE_STATUS_IDLE:
       return "Idle";
-    case "RECONCILE_STATUS_PENDING":
+    case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
       return "Pending";
-    case "RECONCILE_STATUS_RUNNING":
+    case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
       return "Running";
-    case "RECONCILE_STATUS_UNSPECIFIED":
+    case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
       return "Unspecified";
   }
 }
