@@ -50,11 +50,6 @@ export const resetAllContextColumnWidths = (
     contextColumnWidths[contextColumn as LeaderboardContextColumn] =
       contextColWidthDefaults[contextColumn as LeaderboardContextColumn];
   }
-  console.log(
-    "resetAllContextColumnWidths",
-    contextColWidthDefaults,
-    contextColumnWidths
-  );
 };
 
 /**
