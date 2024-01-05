@@ -4,6 +4,7 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { isMac } from "@rilldata/web-local/lib/util/os-detection";
+  import { isClipboardApiSupported } from "../../../lib/actions/shift-click-action";
 
   export let sourceName;
   export let connector;
@@ -29,15 +30,17 @@
     ">⌘</span
       >{:else}ctrl{/if} + Click</Shortcut
   >
-  <div>
-    <StackingWord key="shift">Copy</StackingWord> name to clipboard
-  </div>
-  <Shortcut>
-    <span
-      style="
+  {#if isClipboardApiSupported()}
+    <div>
+      <StackingWord key="shift">Copy</StackingWord> name to clipboard
+    </div>
+    <Shortcut>
+      <span
+        style="
       font-family: var(--system); 
       font-size: 11.5px;
     ">⇧</span
-    > + Click</Shortcut
-  >
+      > + Click</Shortcut
+    >
+  {/if}
 </TooltipShortcutContainer>
