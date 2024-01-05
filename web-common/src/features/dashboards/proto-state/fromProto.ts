@@ -63,14 +63,14 @@ export function getDashboardStateFromProto(
     },
   };
 
-  if (dashboard.filters) {
-    entity.whereFilter = convertFilterToExpression(dashboard.filters);
-  } else if (dashboard.where) {
-    entity.whereFilter = fromExpressionProto(dashboard.where);
-  }
-  if (dashboard.having) {
-    entity.havingFilter = fromExpressionProto(dashboard.having);
-  }
+  // if (dashboard.filters) {
+  //   entity.whereFilter = convertFilterToExpression(dashboard.filters);
+  // } else if (dashboard.where) {
+  //   entity.whereFilter = fromExpressionProto(dashboard.where);
+  // }
+  // if (dashboard.having) {
+  //   entity.havingFilter = fromExpressionProto(dashboard.having);
+  // }
   if (dashboard.compareTimeRange) {
     entity.selectedComparisonTimeRange = fromTimeRangeProto(
       dashboard.compareTimeRange

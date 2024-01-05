@@ -53,12 +53,12 @@ export function getProtoFromDashboardState(
   if (!metrics) return "";
 
   const state: PartialMessage<DashboardState> = {};
-  if (metrics.whereFilter) {
-    state.where = toExpressionProto(metrics.whereFilter);
-  }
-  if (metrics.havingFilter) {
-    state.having = toExpressionProto(metrics.havingFilter);
-  }
+  // if (metrics.whereFilter) {
+  //   state.where = toExpressionProto(metrics.whereFilter);
+  // }
+  // if (metrics.havingFilter) {
+  //   state.having = toExpressionProto(metrics.havingFilter);
+  // }
   if (metrics.selectedTimeRange) {
     state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
     if (metrics.selectedTimeRange.interval) {

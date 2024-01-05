@@ -1,8 +1,6 @@
-import { forEachExpression } from "@rilldata/web-common/features/dashboards/stores/filter-generators";
 import type {
   QueryServiceMetricsViewComparisonBody,
   MetricsViewDimension,
-  V1MetricsViewFilter,
   MetricsViewSpecMeasureV2,
   V1MetricsViewAggregationMeasure,
   V1Expression,
@@ -37,8 +35,7 @@ export function prepareSortedQueryBody(
   sortMeasureName: string | null,
   sortType: SortType,
   sortAscending: boolean,
-  filterForDimension: V1Expression,
-  havingFilter: V1Expression
+  filterForDimension: V1Expression
 ): QueryServiceMetricsViewComparisonBody {
   let comparisonTimeRange = {
     start: timeControls.comparisonTimeStart,
@@ -57,16 +54,6 @@ export function prepareSortedQueryBody(
   }
 
   const querySortType = getQuerySortType(sortType);
-
-  // We need to select measures for filters on them to work
-  // TODO: fix this in the backend with an improved filter clause builder in future.
-  //       It should switch to raw expression if dimension/measure is not in select clause.
-  const selectedMeasures = new Set(measureNames);
-  forEachExpression(havingFilter, (e) => {
-    if (!e.ident || selectedMeasures.has(e.ident)) return;
-    selectedMeasures.add(e.ident);
-    measureNames.push(e.ident);
-  });
 
   return {
     dimension: {
@@ -91,7 +78,6 @@ export function prepareSortedQueryBody(
       },
     ],
     where: filterForDimension,
-    having: havingFilter,
     limit: "250",
     offset: "0",
   };
