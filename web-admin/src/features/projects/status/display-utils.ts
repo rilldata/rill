@@ -20,11 +20,11 @@ export function getResourceKindTagColor(kind: string) {
     case "rill.runtime.v1.Model":
       return "green";
     case "rill.runtime.v1.Report":
-      return "purple";
-    case "rill.runtime.v1.Source":
       return "orange";
+    case "rill.runtime.v1.Source":
+      return "purple";
     case "rill.runtime.v1.Theme":
-      return "yellow";
+      return "magenta";
     default:
       return "gray";
   }
