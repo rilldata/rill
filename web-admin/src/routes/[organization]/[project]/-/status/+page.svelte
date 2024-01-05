@@ -6,29 +6,9 @@
   import ProjectParseErrors from "@rilldata/web-admin/features/projects/status/ProjectParseErrors.svelte";
   import ProjectResources from "@rilldata/web-admin/features/projects/status/ProjectResources.svelte";
   import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
-  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
-
-  // fetch resource status
-  const resources = createRuntimeServiceListResources(
-    $runtime.instanceId,
-    // all kinds
-    undefined,
-    {
-      query: {
-        select: (data) => {
-          // filter out the "ProjectParser" resource
-          return data.resources.filter(
-            (resource) =>
-              resource.meta.name.kind !== "rill.runtime.v1.ProjectParser",
-          );
-        },
-      },
-    },
-  );
 </script>
 
 <VerticalScrollContainer>
@@ -38,10 +18,7 @@
         <ProjectGithubConnection {organization} {project} />
         <ProjectDeploymentStatus {organization} {project} />
       </div>
-      <!-- Project resources -->
-      {#if $resources.data}
-        <ProjectResources resources={$resources.data} />
-      {/if}
+      <ProjectResources />
       <ProjectParseErrors />
     </div>
   </ContentContainer>
