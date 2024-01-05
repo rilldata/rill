@@ -15,11 +15,9 @@ import type {
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, Readable } from "svelte/store";
+import { derived, get } from "svelte/store";
 
-export function getDimensionTableExportArgs(
-  ctx: StateManagers
-): Readable<V1MetricsViewComparisonRequest | undefined> {
+export function getDimensionTableExportArgs(ctx: StateManagers) {
   return derived(
     [
       ctx.metricsViewName,
@@ -39,7 +37,7 @@ export function getDimensionTableExportArgs(
         timeRange
       );
 
-      return {
+      return <V1MetricsViewComparisonRequest>{
         instanceId: get(runtime).instanceId,
         metricsViewName: metricViewName,
         dimension: {
@@ -54,10 +52,11 @@ export function getDimensionTableExportArgs(
           {
             name: dashboardState.leaderboardMeasureName,
             desc: dashboardState.sortDirection === SortDirection.DESCENDING,
-            type: getQuerySortType(dashboardState.dashboardSortType),
+            sortType: getQuerySortType(dashboardState.dashboardSortType),
           },
         ],
-        filter: dashboardState.filters,
+        where: dashboardState.whereFilter,
+        having: dashboardState.havingFilter,
         offset: "0",
       };
     }

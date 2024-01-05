@@ -1,3 +1,4 @@
+import { measureFilterSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import { sortingSelectors } from "./sorting";
 import { derived, type Readable } from "svelte/store";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
@@ -97,6 +98,14 @@ export const createStateManagerReadables = (
      */
     dimensionFilters: createReadablesFromSelectors(
       dimensionFilterSelectors,
+      dashboardDataReadables
+    ),
+
+    /**
+     * Readables related to threshold filters applied on measures
+     */
+    measureFilters: createReadablesFromSelectors(
+      measureFilterSelectors,
       dashboardDataReadables
     ),
 

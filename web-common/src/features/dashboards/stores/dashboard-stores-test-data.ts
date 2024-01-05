@@ -2,6 +2,7 @@ import type { DashboardFetchMocks } from "@rilldata/web-common/features/dashboar
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-generators";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
@@ -206,6 +207,8 @@ export function createDashboardState(
     allMeasuresVisible: true,
 
     filters,
+    whereFilter: createAndExpression([]),
+    havingFilter: createAndExpression([]),
     dimensionFilterExcludeMode: new Map(),
 
     leaderboardMeasureName: metrics.measures[0]?.name,

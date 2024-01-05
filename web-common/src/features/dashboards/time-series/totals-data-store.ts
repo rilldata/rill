@@ -26,7 +26,7 @@ export function createTotalsForMeasure(
         metricsViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),
-          filter: noFilter ? { include: [], exclude: [] } : dashboard?.filters,
+          where: noFilter ? undefined : dashboard.whereFilter,
           timeStart: isComparison
             ? timeControls?.comparisonTimeStart
             : timeControls.timeStart,

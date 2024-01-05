@@ -1,50 +1,48 @@
-import { compareLeaderboardValues } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
-import { removeIfExists } from "@rilldata/web-common/lib/arrayUtils";
+import {
+  createInExpression,
+  getValueIndexInExpression,
+  negateExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-generators";
 import type { DashboardMutables } from "./types";
-import { filtersForCurrentExcludeMode } from "../selectors/dimension-filters";
-import { potentialFilterName } from "../../filters/Filters.svelte";
+import { getWhereFilterExpressionIndex } from "../selectors/dimension-filters";
 
 export function toggleDimensionValueSelection(
   { dashboard, cancelQueries }: DashboardMutables,
   dimensionName: string,
-  dimensionValue: string,
-  keepPillVisible?: boolean
+  dimensionValue: string
 ) {
-  const filters = filtersForCurrentExcludeMode({ dashboard })(dimensionName);
-  // if there are no filters at this point we cannot update anything.
-  if (filters === undefined) {
-    return;
-  }
-
   // if we are able to update the filters, we must cancel any queries
   // that are currently running.
   cancelQueries();
 
-  const dimensionEntryIndex =
-    filters.findIndex((filter) => filter.name === dimensionName) ?? -1;
+  const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
+  if (exprIdx === undefined || exprIdx === -1) {
+    dashboard.whereFilter.cond?.exprs?.push(
+      createInExpression(dimensionName, [dimensionValue], !isInclude)
+    );
+    return;
+  }
 
-  if (dimensionEntryIndex >= 0) {
-    const filtersIn = filters[dimensionEntryIndex].in;
-    if (filtersIn === undefined) return;
-    if (
-      removeIfExists(filtersIn, (value) =>
-        compareLeaderboardValues(value as string, dimensionValue)
-      )
-    ) {
-      if (filtersIn.length === 0) {
-        filters.splice(dimensionEntryIndex, 1);
-        if (keepPillVisible) potentialFilterName.set(dimensionName);
-      }
-      return;
-    }
-    filtersIn.push(dimensionValue);
+  const expr = dashboard.whereFilter.cond?.exprs?.[exprIdx];
+  if (!expr?.cond?.exprs) {
+    // should never happen since getWhereFilterExpressionIndex runs a find
+    return;
+  }
+
+  const inIdx = getValueIndexInExpression(expr, dimensionValue) as number;
+  if (inIdx === -1) {
+    expr.cond.exprs.push({ val: dimensionValue });
   } else {
-    potentialFilterName.set(null);
-
-    filters.push({
-      name: dimensionName,
-      in: [dimensionValue],
-    });
+    expr.cond.exprs.splice(inIdx, 1);
+    // Only decrement pinIndex if the removed value was before the pinned value
+    if (dashboard.pinIndex >= inIdx) {
+      dashboard.pinIndex--;
+    }
+    // remove the dimension entry if all values are removed
+    if (expr.cond.exprs.length === 1) {
+      dashboard.whereFilter.cond?.exprs?.splice(exprIdx, 1);
+    }
   }
 }
 
@@ -52,9 +50,32 @@ export function toggleDimensionNameSelection(
   { dashboard, cancelQueries }: DashboardMutables,
   dimensionName: string
 ) {
-  const filters = filtersForCurrentExcludeMode({ dashboard })(dimensionName);
-  // if there are no filters at this point we cannot update anything.
-  if (filters === undefined) {
+  // if we are able to update the filters, we must cancel any queries
+  // that are currently running.
+  cancelQueries();
+
+  const isExclude =
+    dashboard.dimensionFilterExcludeMode.get(dimensionName) ?? false;
+  const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
+  if (exprIdx === undefined || exprIdx === -1) {
+    // if filter for dimension exist add it
+    dashboard.whereFilter.cond?.exprs?.push(
+      createInExpression(dimensionName, [], isExclude)
+    );
+  } else {
+    // else remove it
+    dashboard.whereFilter?.cond?.exprs?.splice(exprIdx, 1);
+  }
+}
+
+export function toggleDimensionFilterMode(
+  { dashboard, cancelQueries }: DashboardMutables,
+  dimensionName: string
+) {
+  const exclude = dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  dashboard.dimensionFilterExcludeMode.set(dimensionName, !exclude);
+
+  if (!dashboard.whereFilter?.cond?.exprs) {
     return;
   }
 
@@ -62,18 +83,15 @@ export function toggleDimensionNameSelection(
   // that are currently running.
   cancelQueries();
 
-  const filterIndex = filters.findIndex(
-    (filter) => filter.name === dimensionName
+  const exprIdx = dashboard.whereFilter.cond.exprs.findIndex(
+    (e) => e.cond?.exprs?.[0].ident === dimensionName
   );
-
-  if (filterIndex === -1) {
-    filters.push({
-      name: dimensionName,
-      in: [],
-    });
-  } else {
-    filters.splice(filterIndex, 1);
+  if (exprIdx === -1) {
+    return;
   }
+  dashboard.whereFilter.cond.exprs[exprIdx] = negateExpression(
+    dashboard.whereFilter.cond.exprs[exprIdx]
+  );
 }
 
 export const dimensionFilterActions = {
@@ -87,4 +105,5 @@ export const dimensionFilterActions = {
    */
   toggleDimensionValueSelection,
   toggleDimensionNameSelection,
+  toggleDimensionFilterMode,
 };

@@ -3,6 +3,7 @@ import {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-generators";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
@@ -123,6 +124,8 @@ export function getDefaultMetricsExplorerEntity(
       include: [],
       exclude: [],
     },
+    whereFilter: createAndExpression([]),
+    havingFilter: createAndExpression([]),
     dimensionFilterExcludeMode: new Map(),
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
     dashboardSortType: SortType.VALUE,

@@ -50,7 +50,7 @@ function createMetricsViewTimeSeries(
         metricViewName,
         {
           measureNames: measures,
-          filter: dashboardStore?.filters,
+          where: dashboardStore?.whereFilter,
           timeStart: isComparison
             ? timeControls.comparisonAdjustedStart
             : timeControls.adjustedStart,

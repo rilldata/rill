@@ -1,3 +1,4 @@
+import { removeExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-generators";
 import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
@@ -8,6 +9,7 @@ import {
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewTimeRange,
+  V1Expression,
   V1MetricsViewFilter,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
@@ -111,28 +113,14 @@ export const useMetaDimension = (
  * the filters for the specified dimension name.
  */
 export const getFiltersForOtherDimensions = (
-  filters: V1MetricsViewFilter,
-  dimensionName?: string
+  filters: V1Expression,
+  dimensionName: string
 ) => {
-  if (!filters) return { include: [], exclude: [] };
-
-  const filter: V1MetricsViewFilter = {
-    include:
-      filters.include
-        ?.filter((dimensionValues) => dimensionName !== dimensionValues.name)
-        .map((dimensionValues) => ({
-          name: dimensionValues.name,
-          in: dimensionValues.in,
-        })) ?? [],
-    exclude:
-      filters.exclude
-        ?.filter((dimensionValues) => dimensionName !== dimensionValues.name)
-        .map((dimensionValues) => ({
-          name: dimensionValues.name,
-          in: dimensionValues.in,
-        })) ?? [],
-  };
-  return filter;
+  if (!filters) return undefined;
+  return removeExpressions(
+    filters,
+    (e) => e.cond?.exprs?.[0].ident === dimensionName
+  );
 };
 
 export const useGetDashboardsForModel = (
