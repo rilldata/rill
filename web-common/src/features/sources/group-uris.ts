@@ -72,12 +72,12 @@ export function groupURIs(uris: ViableSourceCatalogEntry[]): GroupedURIObject {
       }
     }
     const identifier =
-      domainURIs[0].path.split(/(gs:\/\/|s3:\/\/|https:\/\/)/)[1] ?? "";
+      domainURIs[0].path?.split(/(gs:\/\/|s3:\/\/|https:\/\/)/)[1] ?? "";
     groupedURIObjects[domain] = {
       endingIndex,
       domain,
       connector: identifier.replace("://", ""),
-      leftPart: domainURIs[0].path
+      leftPart: domainURIs[0].path?
         .slice(0, endingIndex - 1)
         .replace(identifier, ""),
       /** return */
