@@ -3,15 +3,14 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import ProjectResourcesTable from "./ProjectResourcesTable.svelte";
 
-  // fetch resource status
   const resources = createRuntimeServiceListResources(
     $runtime.instanceId,
-    // all kinds
+    // All resource "kinds"
     undefined,
     {
       query: {
         select: (data) => {
-          // filter out the "ProjectParser" resource
+          // Filter out the "ProjectParser" resource
           return data.resources.filter(
             (resource) =>
               resource.meta.name.kind !== "rill.runtime.v1.ProjectParser",
