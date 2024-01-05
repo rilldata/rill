@@ -1,8 +1,10 @@
 <script lang="ts">
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import {
     ResourceKind,
     SingletonProjectParserName,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createRuntimeServiceGetResource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
@@ -23,7 +25,13 @@
 <section class="flex flex-col gap-y-4">
   <h2 class="text-lg font-medium">Parse errors</h2>
 
-  {#if $parserErrors.isSuccess}
+  {#if $parserErrors.isLoading}
+    <Spinner status={EntityStatus.Running} size={"16px"} />
+  {:else if $parserErrors.error}
+    <div class="text-red-500">
+      Error loading parse errors: {$parserErrors.error?.message}
+    </div>
+  {:else if $parserErrors.isSuccess}
     {#if !$parserErrors.data || $parserErrors.data.length === 0}
       <div class="text-gray-600">None!</div>
     {:else}
