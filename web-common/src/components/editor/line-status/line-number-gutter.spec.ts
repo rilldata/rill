@@ -23,7 +23,7 @@ function newEditorView(content: string, parent: HTMLElement) {
 
 function getLineNumberElements(container: HTMLElement) {
   return container.querySelectorAll(
-    `.${LINE_NUMBER_GUTTER_CLASS} > .cm-gutterElement`
+    `.${LINE_NUMBER_GUTTER_CLASS} > .cm-gutterElement`,
   ) as NodeListOf<HTMLElement>;
 }
 

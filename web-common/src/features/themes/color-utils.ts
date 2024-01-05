@@ -5,7 +5,7 @@ export type RGBColor = [number, number, number];
 
 export function convertColor(color: V1Color): RGBColor {
   return [color.red ?? 0, color.green ?? 0, color.blue ?? 0].map(
-    (c) => c * 256
+    (c) => c * 256,
   ) as RGBColor;
 }
 

@@ -46,7 +46,7 @@ export interface CreateDashboardFromModelRequest {
 
 export const useCreateDashboardFromModel = <
   TError = RpcStatus,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<Promise<void>>,
@@ -68,28 +68,28 @@ export const useCreateDashboardFromModel = <
     const dashboardYAML = generateDashboardYAMLForModel(
       data.modelName,
       data.schema,
-      data.newDashboardName
+      data.newDashboardName,
     );
 
     await runtimeServicePutFile(
       data.instanceId,
       getFileAPIPathFromNameAndType(
         data.newDashboardName,
-        EntityType.MetricsDefinition
+        EntityType.MetricsDefinition,
       ),
       {
         blob: dashboardYAML,
         create: true,
         createOnly: true,
-      }
+      },
     );
     await waitForResource(
       queryClient,
       data.instanceId,
       getFilePathFromNameAndType(
         data.newDashboardName,
-        EntityType.MetricsDefinition
-      )
+        EntityType.MetricsDefinition,
+      ),
     );
   };
 
@@ -104,7 +104,7 @@ export const useCreateDashboardFromModel = <
 export function useModelSchemaIsReady(
   queryClient: QueryClient,
   instanceId: string,
-  modelName: string
+  modelName: string,
 ) {
   return derived(
     [
@@ -113,13 +113,13 @@ export function useModelSchemaIsReady(
         modelName,
         ResourceKind.Model,
         undefined,
-        queryClient
+        queryClient,
       ),
       createSchemaForTable(
         instanceId,
         modelName,
         ResourceKind.Model,
-        queryClient
+        queryClient,
       ),
     ],
     ([model, schema]) => {
@@ -131,7 +131,7 @@ export function useModelSchemaIsReady(
         !schema.isFetching &&
         !!schema.data
       );
-    }
+    },
   );
 }
 
@@ -143,7 +143,7 @@ export function useCreateDashboardFromModelUIAction(
   modelName: string,
   queryClient: QueryClient,
   behaviourEventMedium: BehaviourEventMedium,
-  metricsEventSpace: MetricsEventSpace
+  metricsEventSpace: MetricsEventSpace,
 ) {
   const createDashboardFromModelMutation = useCreateDashboardFromModel();
   const dashboardNames = useDashboardFileNames(instanceId);
@@ -151,7 +151,7 @@ export function useCreateDashboardFromModelUIAction(
     instanceId,
     modelName,
     ResourceKind.Model,
-    queryClient
+    queryClient,
   );
 
   return async () => {
@@ -160,7 +160,7 @@ export function useCreateDashboardFromModelUIAction(
     });
     const newDashboardName = getName(
       `${modelName}_dashboard`,
-      get(dashboardNames).data
+      get(dashboardNames).data,
     );
 
     try {
@@ -178,7 +178,7 @@ export function useCreateDashboardFromModelUIAction(
         behaviourEventMedium,
         metricsEventSpace,
         get(appScreen)?.type,
-        MetricsEventScreenName.Dashboard
+        MetricsEventScreenName.Dashboard,
       );
     } catch (err) {
       notifications.send({

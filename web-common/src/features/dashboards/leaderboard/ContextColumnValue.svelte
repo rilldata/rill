@@ -40,7 +40,7 @@
         if (!element) return;
         observeContextColumnWidth(
           $contextColumn,
-          element.getBoundingClientRect().width
+          element.getBoundingClientRect().width,
         );
       }, 17);
     }

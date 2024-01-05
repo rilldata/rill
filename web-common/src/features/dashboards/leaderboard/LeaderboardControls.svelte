@@ -48,7 +48,7 @@
   }
 
   function formatForSelector(
-    measure: MetricsViewSpecMeasureV2
+    measure: MetricsViewSpecMeasureV2,
   ): (MetricsViewSpecMeasureV2 & { key: string; main: string }) | undefined {
     if (!measure) return undefined;
     return {
@@ -68,7 +68,7 @@
   $: unformattedMeasure =
     measures?.length && metricsExplorer?.leaderboardMeasureName
       ? measures.find(
-          (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
+          (measure) => measure.name === metricsExplorer?.leaderboardMeasureName,
         )
       : undefined;
 
@@ -103,7 +103,7 @@
 
   $: showHideDimensions = createShowHideDimensionsStore(
     metricViewName,
-    metaQuery
+    metaQuery,
   );
 
   const toggleDimensionVisibility = (e) => {

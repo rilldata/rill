@@ -77,7 +77,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
           tbl[column.name] = undefined;
           return tbl;
         }),
-        { duration: 200 }
+        { duration: 200 },
       );
     }
 
@@ -171,8 +171,8 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
                     /** use effective header width, unless its a timestamp, in which case just use largest string length */
                     TIMESTAMPS.has(column.type) ? 0 : effectiveHeaderWidth,
                     /** All columns must be minColumnWidth regardless of user settings. */
-                    config.minColumnWidth
-                  )
+                    config.minColumnWidth,
+                  ),
             )
           : /** if there isn't a longet string length for some reason, let's go with a
              * default column width. We should not be in this state.

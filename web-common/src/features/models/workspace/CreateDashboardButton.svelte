@@ -23,7 +23,7 @@
   $: modelSchemaIsReady = useModelSchemaIsReady(
     queryClient,
     $runtime.instanceId,
-    modelName
+    modelName,
   );
 
   $: createDashboardFromModel = useCreateDashboardFromModelUIAction(
@@ -31,7 +31,7 @@
     modelName,
     queryClient,
     BehaviourEventMedium.Button,
-    MetricsEventSpace.RightPanel
+    MetricsEventSpace.RightPanel,
   );
 </script>
 

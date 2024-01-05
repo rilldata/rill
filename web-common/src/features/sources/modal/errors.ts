@@ -2,14 +2,14 @@ import { SourceErrorCodes } from "../../../metrics/service/SourceEventTypes";
 
 export function hasDuckDBUnicodeError(message: string) {
   return message.match(
-    /Invalid unicode \(byte sequence mismatch\) detected in CSV file./
+    /Invalid unicode \(byte sequence mismatch\) detected in CSV file./,
   );
 }
 
 export function humanReadableErrorMessage(
   connectorName: string | undefined,
   code: number | undefined,
-  message: string | undefined
+  message: string | undefined,
 ) {
   const unknownErrorStr =
     "An unknown error occurred. If the error persists, please reach out for help on <a href=https://bit.ly/3unvA05 target=_blank>Discord</a>.";

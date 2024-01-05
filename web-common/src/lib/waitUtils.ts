@@ -5,7 +5,7 @@ export function asyncWait(time: number): Promise<void> {
 export async function waitUntil(
   checkFunc: () => boolean,
   timeout = 30000,
-  interval = 250
+  interval = 250,
 ): Promise<boolean> {
   const startTime = Date.now();
 
@@ -19,7 +19,7 @@ export async function waitUntil(
 export async function asyncWaitUntil(
   checkFunc: () => Promise<boolean>,
   timeout = 30000,
-  interval = 250
+  interval = 250,
 ): Promise<boolean> {
   const startTime = Date.now();
 

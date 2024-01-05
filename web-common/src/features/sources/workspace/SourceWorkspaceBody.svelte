@@ -33,17 +33,17 @@
   $: allErrors = getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
-    filePath
+    filePath,
   );
 
   $: sourceQuery = useSource($runtime.instanceId, sourceName);
 
   // Layout state
   const outputPosition = getContext(
-    "rill:app:output-height-tween"
+    "rill:app:output-height-tween",
   ) as Writable<number>;
   const outputVisibilityTween = getContext(
-    "rill:app:output-visibility-tween"
+    "rill:app:output-visibility-tween",
   ) as Writable<number>;
   // track innerHeight to calculate the size of the editor element.
   let innerHeight: number;
@@ -51,7 +51,7 @@
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
     sourceName,
-    $sourceStore.clientYAML
+    $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 </script>

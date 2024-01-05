@@ -33,7 +33,7 @@
   const queryClient = useQueryClient();
 
   const queryHighlight: Writable<QueryHighlightState> = getContext(
-    "rill:app:query-highlight"
+    "rill:app:query-highlight",
   );
 
   $: runtimeInstanceId = $runtime.instanceId;
@@ -62,7 +62,7 @@
   $: allErrors = getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
-    modelPath
+    modelPath,
   );
   $: modelError = $allErrors?.[0]?.message;
 
@@ -71,19 +71,19 @@
     $modelQuery.data?.model?.state?.table ?? "",
     {
       limit,
-    }
+    },
   );
 
   $: runtimeError = $tableQuery.error?.response.data;
 
   const outputLayout = getContext(
-    "rill:app:output-layout"
+    "rill:app:output-layout",
   ) as Writable<LayoutElement>;
   const outputPosition = getContext(
-    "rill:app:output-height-tween"
+    "rill:app:output-height-tween",
   ) as Writable<number>;
   const outputVisibilityTween = getContext(
-    "rill:app:output-visibility-tween"
+    "rill:app:output-visibility-tween",
   ) as Writable<number>;
 
   async function updateModelContent(content: string) {

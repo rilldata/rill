@@ -1,0 +1,7 @@
+{
+  "plugins": ["prettier-plugin-svelte"],
+  "overrides": [
+    { "files": "*.ts", "options": { "parser": "typescript" } },
+    { "files": "*.svelte", "options": { "parser": "svelte" } }
+  ]
+}

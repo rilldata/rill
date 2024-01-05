@@ -49,7 +49,7 @@ export async function assertAdBidsDashboard(page: Page) {
           "news.google.com",
         ],
       },
-    ])
+    ]),
   );
   // TODO: how do we assert timeseries?
 }

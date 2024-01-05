@@ -1,6 +1,6 @@
 export declare function getOffset(
   element: HTMLElement,
-  parent: HTMLElement
+  parent: HTMLElement,
 ): {
   top: number;
   left: number;

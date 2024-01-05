@@ -17,7 +17,7 @@ export function dragTableCell(node) {
           detail: {
             size: e.pageX - left,
           },
-        })
+        }),
       );
     }
   }

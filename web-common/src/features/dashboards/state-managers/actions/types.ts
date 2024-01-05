@@ -12,7 +12,7 @@ import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity
  * that are relevant to the mutation.
  */
 export type DashboardMutatorCallback = (
-  metricsExplorer: MetricsExplorerEntity
+  metricsExplorer: MetricsExplorerEntity,
 ) => void;
 
 /**
@@ -23,7 +23,7 @@ export type DashboardMutatorCallback = (
  * on a DashboardMutatorCallback will actually update the dashboard.
  */
 export type DashboardCallbackExecutor = (
-  callback: DashboardMutatorCallback
+  callback: DashboardMutatorCallback,
 ) => void;
 
 /**

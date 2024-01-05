@@ -51,7 +51,7 @@
 
   // CAST SAFETY: the selection will always be one of the options
   $: selection = options.find(
-    (option) => option.key === $contextColumn
+    (option) => option.key === $contextColumn,
   ) as SelectMenuItem;
 </script>
 

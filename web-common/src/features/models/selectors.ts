@@ -39,7 +39,7 @@ export function useModel(instanceId: string, name: string) {
 
 export function useAllModelColumns(
   queryClient: QueryClient,
-  instanceId: string
+  instanceId: string,
 ): Readable<Array<TableColumnsWithName>> {
   return derived([useModels(instanceId)], ([allModels], set) => {
     if (!allModels.data?.length) {
@@ -49,17 +49,17 @@ export function useAllModelColumns(
 
     derived(
       allModels.data.map((r) =>
-        createTableColumnsWithName(queryClient, instanceId, r.meta.name.name)
+        createTableColumnsWithName(queryClient, instanceId, r.meta.name.name),
       ),
       (modelColumnResponses) =>
-        modelColumnResponses.filter((res) => !!res.data).map((res) => res.data)
+        modelColumnResponses.filter((res) => !!res.data).map((res) => res.data),
     ).subscribe(set);
   });
 }
 
 export async function getModelNames(
   queryClient: QueryClient,
-  instanceId: string
+  instanceId: string,
 ) {
   const files = await queryClient.fetchQuery<V1ListFilesResponse>({
     queryKey: getRuntimeServiceListFilesQueryKey(instanceId, {
@@ -91,7 +91,7 @@ export function useModelFileIsEmpty(instanceId, modelName) {
 
 export function useModelTimestampColumns(
   instanceId: string,
-  modelName: string
+  modelName: string,
 ) {
   return createQueryServiceTableColumns(
     instanceId,
@@ -104,6 +104,6 @@ export function useModelTimestampColumns(
             ?.filter((c) => TIMESTAMPS.has(c.type))
             .map((c) => c.name) ?? [],
       },
-    }
+    },
   );
 }

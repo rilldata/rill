@@ -13,7 +13,7 @@ import type {
 export class ErrorEventHandler {
   public constructor(
     private readonly metricsService: MetricsService,
-    private readonly commonUserMetrics: CommonUserFields
+    private readonly commonUserMetrics: CommonUserFields,
   ) {
     this.commonUserMetrics = commonUserMetrics;
   }
@@ -24,7 +24,7 @@ export class ErrorEventHandler {
     error_code: SourceErrorCodes,
     connection_type: SourceConnectionType,
     file_type: SourceFileType,
-    glob: boolean
+    glob: boolean,
   ) {
     return this.metricsService.dispatch("sourceErrorEvent", [
       this.commonUserMetrics,
@@ -41,7 +41,7 @@ export class ErrorEventHandler {
     api: string,
     status: string,
     message: string,
-    screenName: MetricsEventScreenName
+    screenName: MetricsEventScreenName,
   ) {
     return this.metricsService.dispatch("httpErrorEvent", [
       this.commonUserMetrics,
@@ -55,7 +55,7 @@ export class ErrorEventHandler {
   public fireJavascriptErrorBoundaryEvent(
     stack: string,
     message: string,
-    screenName: MetricsEventScreenName
+    screenName: MetricsEventScreenName,
   ) {
     return this.metricsService.dispatch("javascriptErrorEvent", [
       this.commonUserMetrics,

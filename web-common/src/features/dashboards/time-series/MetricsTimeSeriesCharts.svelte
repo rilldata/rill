@@ -63,7 +63,7 @@
     LeaderboardContextColumn.PERCENT;
   $: includedValuesForDimension =
     $dashboardStore?.filters?.include?.find(
-      (filter) => filter.name === comparisonDimension
+      (filter) => filter.name === comparisonDimension,
     )?.in || [];
 
   // List of measures which will be shown on the dashboard
@@ -71,11 +71,11 @@
   $: {
     if (expandedMeasureName) {
       renderedMeasures = $metaQuery.data?.measures.filter(
-        (measure) => measure.name === expandedMeasureName
+        (measure) => measure.name === expandedMeasureName,
       );
     } else {
       renderedMeasures = $metaQuery.data?.measures.filter(
-        (_, i) => $showHideMeasures.selectedItems[i]
+        (_, i) => $showHideMeasures.selectedItems[i],
       );
     }
   }
@@ -117,11 +117,11 @@
     // adjust scrub values for Javascript's timezone changes
     scrubStart = adjustOffsetForZone(
       $dashboardStore?.selectedScrubRange?.start,
-      $dashboardStore?.selectedTimezone
+      $dashboardStore?.selectedTimezone,
     );
     scrubEnd = adjustOffsetForZone(
       $dashboardStore?.selectedScrubRange?.end,
-      $dashboardStore?.selectedTimezone
+      $dashboardStore?.selectedTimezone,
     );
 
     const slicedData =
@@ -136,7 +136,7 @@
         "center",
         "ts_position",
         slicedData,
-        true
+        true,
       );
       const endPos = bisectData(end, "center", "ts_position", slicedData, true);
 
@@ -153,7 +153,7 @@
       $dashboardStore?.selectedTimezone,
       interval,
       $timeControlsStore.selectedTimeRange?.name,
-      $metaQuery.data.defaultTimeRange
+      $metaQuery.data.defaultTimeRange,
     );
 
     startValue = adjustedChartValue?.start;
@@ -179,7 +179,7 @@
         $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME
           ? formattedData?.slice(1)
           : formattedData?.slice(1, -1),
-        true
+        true,
       );
 
       if ($chartInteractionColumn?.hover !== columnNum)
@@ -266,7 +266,7 @@
         on:expand-measure={() => {
           metricsExplorerStore.setExpandedMeasureName(
             metricViewName,
-            measure.name
+            measure.name,
           );
         }}
       />
@@ -299,7 +299,7 @@
               /** format the date according to the time grain */
               return new Date(value).toLocaleDateString(
                 undefined,
-                TIME_GRAIN[interval].formatDate
+                TIME_GRAIN[interval].formatDate,
               );
             }}
           />

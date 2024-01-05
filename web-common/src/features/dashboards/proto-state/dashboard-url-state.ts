@@ -50,7 +50,7 @@ export function useDashboardUrlState(ctx: StateManagers): DashboardUrlStore {
         urlName: getNameFromFile(page.url.pathname),
         urlProto,
       };
-    }
+    },
   );
 }
 
@@ -104,7 +104,7 @@ export function useDashboardUrlSync(ctx: StateManagers) {
       metricsExplorerStore.syncFromUrl(
         metricViewName,
         state.urlProto,
-        get(metaQuery).data
+        get(metaQuery).data,
       );
       lastKnownProto = state.urlProto;
     }
@@ -149,12 +149,12 @@ export function useDashboardDefaultProto(ctx: StateManagers) {
       const metricsExplorer = getDefaultMetricsExplorerEntity(
         get(ctx.metricsViewName),
         metricsView.data,
-        timeRangeSummary.data
+        timeRangeSummary.data,
       );
       return {
         isFetching: false,
         proto: getProtoFromDashboardState(metricsExplorer),
       };
-    }
+    },
   );
 }

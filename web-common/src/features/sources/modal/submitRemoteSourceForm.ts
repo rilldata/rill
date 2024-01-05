@@ -31,7 +31,7 @@ export interface RemoteSourceFormValues {
 export async function submitRemoteSourceForm(
   queryClient: QueryClient,
   connectorName: string,
-  values: RemoteSourceFormValues
+  values: RemoteSourceFormValues,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
 
@@ -40,13 +40,13 @@ export async function submitRemoteSourceForm(
     BehaviourEventAction.SourceAdd,
     BehaviourEventMedium.Button,
     get(appScreen),
-    MetricsEventSpace.Modal
+    MetricsEventSpace.Modal,
   );
 
   // If project is uninitialized, initialize an empty project
   const isProjectInitialized = await isProjectInitializedV2(
     queryClient,
-    instanceId
+    instanceId,
   );
   if (!isProjectInitialized) {
     await runtimeServiceUnpackEmpty(instanceId, {
@@ -68,7 +68,7 @@ export async function submitRemoteSourceForm(
         default:
           return [fromYupFriendlyKey(key), value];
       }
-    })
+    }),
   );
   const yaml = compileCreateSourceYAML(formValues, connectorName);
 
@@ -80,12 +80,12 @@ export async function submitRemoteSourceForm(
       blob: yaml,
       create: true,
       createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
-    }
+    },
   );
   checkSourceImported(
     queryClient,
     values.sourceName,
-    getFilePathFromNameAndType(values.sourceName, EntityType.Table)
+    getFilePathFromNameAndType(values.sourceName, EntityType.Table),
   );
 
   // TODO: telemetry

@@ -38,7 +38,7 @@
    */
   function hackedLocalKeyFly(
     node: Element,
-    { delay = 0, easing = cubicOut, x = 0, y = 0, opacity = 0 }
+    { delay = 0, easing = cubicOut, x = 0, y = 0, opacity = 0 },
   ) {
     if (!mounted) return {};
     setDuration();
@@ -55,8 +55,8 @@
       css: (t, u) => {
         return `
 			transform: ${transform} translate(${
-          (1 - t) * x * (duration === 0 ? 0 : 1)
-        }px, ${(1 - t) * y * (duration === 0 ? 0 : 1)}px);
+        (1 - t) * x * (duration === 0 ? 0 : 1)
+      }px, ${(1 - t) * y * (duration === 0 ? 0 : 1)}px);
 			opacity: ${duration === 0 ? 1 : target_opacity - od * u}`;
       },
     };

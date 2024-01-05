@@ -8,7 +8,7 @@ export function toggleDimensionValueSelection(
   { dashboard, cancelQueries }: DashboardMutables,
   dimensionName: string,
   dimensionValue: string,
-  keepPillVisible?: boolean
+  keepPillVisible?: boolean,
 ) {
   const filters = filtersForCurrentExcludeMode({ dashboard })(dimensionName);
   // if there are no filters at this point we cannot update anything.
@@ -28,7 +28,7 @@ export function toggleDimensionValueSelection(
     if (filtersIn === undefined) return;
     if (
       removeIfExists(filtersIn, (value) =>
-        compareLeaderboardValues(value as string, dimensionValue)
+        compareLeaderboardValues(value as string, dimensionValue),
       )
     ) {
       if (filtersIn.length === 0) {
@@ -50,7 +50,7 @@ export function toggleDimensionValueSelection(
 
 export function toggleDimensionNameSelection(
   { dashboard, cancelQueries }: DashboardMutables,
-  dimensionName: string
+  dimensionName: string,
 ) {
   const filters = filtersForCurrentExcludeMode({ dashboard })(dimensionName);
   // if there are no filters at this point we cannot update anything.
@@ -63,7 +63,7 @@ export function toggleDimensionNameSelection(
   cancelQueries();
 
   const filterIndex = filters.findIndex(
-    (filter) => filter.name === dimensionName
+    (filter) => filter.name === dimensionName,
   );
 
   if (filterIndex === -1) {
