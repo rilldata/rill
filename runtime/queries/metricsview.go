@@ -386,6 +386,9 @@ func buildAndOrExpressions(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condit
 		if err != nil {
 			return "", nil, err
 		}
+		if strings.TrimSpace(clause) == "" {
+			continue
+		}
 		args = append(args, subArgs...)
 		clauses = append(clauses, fmt.Sprintf("(%s)", clause))
 	}
