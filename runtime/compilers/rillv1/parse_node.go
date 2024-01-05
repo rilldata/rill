@@ -42,6 +42,8 @@ func (p *Parser) parseNode(ctx context.Context, node *Node) error {
 		return p.parseMigration(ctx, node)
 	case ResourceKindReport:
 		return p.parseReport(ctx, node)
+	case ResourceKindAlert:
+		return p.parseAlert(ctx, node)
 	case ResourceKindTheme:
 		return p.parseTheme(ctx, node)
 	default:
@@ -56,7 +58,7 @@ type commonYAML struct {
 	// Name is usually inferred from the filename, but can be specified manually.
 	Name string `yaml:"name"`
 	// Refs are a list of other resources that this resource depends on. They are usually inferred from other fields, but can also be specified manually.
-	Refs []*yaml.Node `yaml:"refs"`
+	Refs []yaml.Node `yaml:"refs"`
 	// ParserConfig enables setting file-level parser config.
 	ParserConfig struct {
 		Templating *bool `yaml:"templating"`
@@ -240,9 +242,11 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 
 // parseYAMLRefs parses a list of YAML nodes into a list of ResourceNames.
 // It's used to parse the "refs" field in baseConfig.
-func parseYAMLRefs(refs []*yaml.Node) ([]ResourceName, error) {
+func parseYAMLRefs(refs []yaml.Node) ([]ResourceName, error) {
 	var res []ResourceName
-	for _, ref := range refs {
+	for i := range refs {
+		ref := refs[i]
+
 		// We support string refs of the form "my-resource" and "Kind/my-resource"
 		if ref.Kind == yaml.ScalarNode {
 			var identifier string

@@ -104,7 +104,7 @@ func local_request_ConnectorService_S3ListBuckets_0(ctx context.Context, marshal
 }
 
 var (
-	filter_ConnectorService_S3ListObjects_0 = &utilities.DoubleArray{Encoding: map[string]int{"bucket": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_ConnectorService_S3ListObjects_0 = &utilities.DoubleArray{Encoding: map[string]int{"bucket": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_ConnectorService_S3ListObjects_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -174,7 +174,7 @@ func local_request_ConnectorService_S3ListObjects_0(ctx context.Context, marshal
 }
 
 var (
-	filter_ConnectorService_S3GetBucketMetadata_0 = &utilities.DoubleArray{Encoding: map[string]int{"bucket": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_ConnectorService_S3GetBucketMetadata_0 = &utilities.DoubleArray{Encoding: map[string]int{"bucket": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_ConnectorService_S3GetBucketMetadata_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -316,7 +316,7 @@ func local_request_ConnectorService_GCSListBuckets_0(ctx context.Context, marsha
 }
 
 var (
-	filter_ConnectorService_GCSListObjects_0 = &utilities.DoubleArray{Encoding: map[string]int{"bucket": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_ConnectorService_GCSListObjects_0 = &utilities.DoubleArray{Encoding: map[string]int{"bucket": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_ConnectorService_GCSListObjects_0(ctx context.Context, marshaler runtime.Marshaler, client ConnectorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {

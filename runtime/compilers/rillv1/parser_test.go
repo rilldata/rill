@@ -965,6 +965,75 @@ annotations:
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestAlert(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// model m1
+		`models/m1.sql`: `SELECT 1`,
+		`alerts/a1.yaml`: `
+kind: alert
+title: My Alert
+
+refs:
+  - model/m1
+
+refresh:
+  every: 24h
+
+query:
+  name: MetricsViewToplist
+  args:
+    metrics_view: mv1
+  for:
+    user_email: benjamin@example.com
+
+email:
+  on_pass: true
+  skip_unchanged: true
+  recipients:
+    - benjamin@example.com
+
+annotations:
+  foo: bar
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				Sql: `SELECT 1`,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+			Paths: []string{"/alerts/a1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+			AlertSpec: &runtimev1.AlertSpec{
+				Title: "My Alert",
+				RefreshSchedule: &runtimev1.Schedule{
+					TickerSeconds: 86400,
+				},
+				QueryName:          "MetricsViewToplist",
+				QueryArgsJson:      `{"metrics_view":"mv1"}`,
+				QueryFor:           &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
+				EmailRecipients:    []string{"jane@example.com"},
+				EmailOnPass:        true,
+				EmailOnFail:        true,
+				EmailOnError:       false,
+				EmailSkipUnchanged: true,
+				Annotations:        map[string]string{"foo": "bar"},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{

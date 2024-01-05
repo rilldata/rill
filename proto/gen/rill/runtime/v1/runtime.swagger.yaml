@@ -2620,6 +2620,102 @@ definitions:
         $ref: '#/definitions/v1MapType'
         title: If code is CODE_MAP, map_type specifies the map's key and value types
     title: Type represents a data type in a schema
+  v1Alert:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1AlertSpec'
+      state:
+        $ref: '#/definitions/v1AlertState'
+  v1AlertExecution:
+    type: object
+    properties:
+      adhoc:
+        type: boolean
+      result:
+        $ref: '#/definitions/v1AssertionResult'
+      alertTime:
+        type: string
+        format: date-time
+      startedOn:
+        type: string
+        format: date-time
+      finishedOn:
+        type: string
+        format: date-time
+  v1AlertSpec:
+    type: object
+    properties:
+      trigger:
+        type: boolean
+      title:
+        type: string
+      refreshSchedule:
+        $ref: '#/definitions/v1Schedule'
+      timeoutSeconds:
+        type: integer
+        format: int64
+      queryName:
+        type: string
+      queryArgsJson:
+        type: string
+      queryForUserId:
+        type: string
+      queryForUserEmail:
+        type: string
+      queryForAttributes:
+        type: object
+      emailRecipients:
+        type: array
+        items:
+          type: string
+      emailOnPass:
+        type: boolean
+      emailOnFail:
+        type: boolean
+      emailOnError:
+        type: boolean
+      emailSkipUnchanged:
+        type: boolean
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+  v1AlertState:
+    type: object
+    properties:
+      specHash:
+        type: string
+      nextRunOn:
+        type: string
+        format: date-time
+      currentExecution:
+        $ref: '#/definitions/v1AlertExecution'
+      executionHistory:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1AlertExecution'
+      executionCount:
+        type: integer
+        format: int64
+  v1AssertionResult:
+    type: object
+    properties:
+      status:
+        $ref: '#/definitions/v1AssertionStatus'
+      failRow:
+        type: object
+      errorMessage:
+        type: string
+  v1AssertionStatus:
+    type: string
+    enum:
+      - ASSERTION_STATUS_UNSPECIFIED
+      - ASSERTION_STATUS_PASS
+      - ASSERTION_STATUS_FAIL
+      - ASSERTION_STATUS_ERROR
+    default: ASSERTION_STATUS_UNSPECIFIED
   v1BigQueryListDatasetsResponse:
     type: object
     properties:
@@ -4577,6 +4673,8 @@ definitions:
         $ref: '#/definitions/v1Migration'
       report:
         $ref: '#/definitions/v1Report'
+      alert:
+        $ref: '#/definitions/v1Alert'
       pullTrigger:
         $ref: '#/definitions/v1PullTrigger'
       refreshTrigger:

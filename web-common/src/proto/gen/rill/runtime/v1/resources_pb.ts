@@ -42,6 +42,38 @@ proto3.util.setEnumType(ReconcileStatus, "rill.runtime.v1.ReconcileStatus", [
 ]);
 
 /**
+ * @generated from enum rill.runtime.v1.AssertionStatus
+ */
+export enum AssertionStatus {
+  /**
+   * @generated from enum value: ASSERTION_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: ASSERTION_STATUS_PASS = 1;
+   */
+  PASS = 1,
+
+  /**
+   * @generated from enum value: ASSERTION_STATUS_FAIL = 2;
+   */
+  FAIL = 2,
+
+  /**
+   * @generated from enum value: ASSERTION_STATUS_ERROR = 3;
+   */
+  ERROR = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(AssertionStatus)
+proto3.util.setEnumType(AssertionStatus, "rill.runtime.v1.AssertionStatus", [
+  { no: 0, name: "ASSERTION_STATUS_UNSPECIFIED" },
+  { no: 1, name: "ASSERTION_STATUS_PASS" },
+  { no: 2, name: "ASSERTION_STATUS_FAIL" },
+  { no: 3, name: "ASSERTION_STATUS_ERROR" },
+]);
+
+/**
  * @generated from message rill.runtime.v1.Resource
  */
 export class Resource extends Message<Resource> {
@@ -93,6 +125,12 @@ export class Resource extends Message<Resource> {
     case: "report";
   } | {
     /**
+     * @generated from field: rill.runtime.v1.Alert alert = 12;
+     */
+    value: Alert;
+    case: "alert";
+  } | {
+    /**
      * @generated from field: rill.runtime.v1.PullTrigger pull_trigger = 6;
      */
     value: PullTrigger;
@@ -132,6 +170,7 @@ export class Resource extends Message<Resource> {
     { no: 5, name: "metrics_view", kind: "message", T: MetricsViewV2, oneof: "resource" },
     { no: 9, name: "migration", kind: "message", T: Migration, oneof: "resource" },
     { no: 10, name: "report", kind: "message", T: Report, oneof: "resource" },
+    { no: 12, name: "alert", kind: "message", T: Alert, oneof: "resource" },
     { no: 6, name: "pull_trigger", kind: "message", T: PullTrigger, oneof: "resource" },
     { no: 7, name: "refresh_trigger", kind: "message", T: RefreshTrigger, oneof: "resource" },
     { no: 8, name: "bucket_planner", kind: "message", T: BucketPlanner, oneof: "resource" },
@@ -1809,6 +1848,349 @@ export class ReportExecution extends Message<ReportExecution> {
 
   static equals(a: ReportExecution | PlainMessage<ReportExecution> | undefined, b: ReportExecution | PlainMessage<ReportExecution> | undefined): boolean {
     return proto3.util.equals(ReportExecution, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.Alert
+ */
+export class Alert extends Message<Alert> {
+  /**
+   * @generated from field: rill.runtime.v1.AlertSpec spec = 1;
+   */
+  spec?: AlertSpec;
+
+  /**
+   * @generated from field: rill.runtime.v1.AlertState state = 2;
+   */
+  state?: AlertState;
+
+  constructor(data?: PartialMessage<Alert>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.Alert";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spec", kind: "message", T: AlertSpec },
+    { no: 2, name: "state", kind: "message", T: AlertState },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Alert {
+    return new Alert().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Alert {
+    return new Alert().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Alert {
+    return new Alert().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: Alert | PlainMessage<Alert> | undefined, b: Alert | PlainMessage<Alert> | undefined): boolean {
+    return proto3.util.equals(Alert, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AlertSpec
+ */
+export class AlertSpec extends Message<AlertSpec> {
+  /**
+   * @generated from field: bool trigger = 1;
+   */
+  trigger = false;
+
+  /**
+   * @generated from field: string title = 2;
+   */
+  title = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.Schedule refresh_schedule = 3;
+   */
+  refreshSchedule?: Schedule;
+
+  /**
+   * @generated from field: uint32 timeout_seconds = 4;
+   */
+  timeoutSeconds = 0;
+
+  /**
+   * @generated from field: string query_name = 5;
+   */
+  queryName = "";
+
+  /**
+   * @generated from field: string query_args_json = 6;
+   */
+  queryArgsJson = "";
+
+  /**
+   * @generated from oneof rill.runtime.v1.AlertSpec.query_for
+   */
+  queryFor: {
+    /**
+     * @generated from field: string query_for_user_id = 7;
+     */
+    value: string;
+    case: "queryForUserId";
+  } | {
+    /**
+     * @generated from field: string query_for_user_email = 8;
+     */
+    value: string;
+    case: "queryForUserEmail";
+  } | {
+    /**
+     * @generated from field: google.protobuf.Struct query_for_attributes = 9;
+     */
+    value: Struct;
+    case: "queryForAttributes";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  /**
+   * @generated from field: repeated string email_recipients = 10;
+   */
+  emailRecipients: string[] = [];
+
+  /**
+   * @generated from field: bool email_on_pass = 11;
+   */
+  emailOnPass = false;
+
+  /**
+   * @generated from field: bool email_on_fail = 12;
+   */
+  emailOnFail = false;
+
+  /**
+   * @generated from field: bool email_on_error = 13;
+   */
+  emailOnError = false;
+
+  /**
+   * @generated from field: bool email_skip_unchanged = 14;
+   */
+  emailSkipUnchanged = false;
+
+  /**
+   * @generated from field: map<string, string> annotations = 15;
+   */
+  annotations: { [key: string]: string } = {};
+
+  constructor(data?: PartialMessage<AlertSpec>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AlertSpec";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "refresh_schedule", kind: "message", T: Schedule },
+    { no: 4, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 8, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 9, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
+    { no: 10, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "email_on_pass", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "email_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 13, name: "email_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "email_skip_unchanged", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 15, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertSpec {
+    return new AlertSpec().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AlertSpec {
+    return new AlertSpec().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AlertSpec {
+    return new AlertSpec().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AlertSpec | PlainMessage<AlertSpec> | undefined, b: AlertSpec | PlainMessage<AlertSpec> | undefined): boolean {
+    return proto3.util.equals(AlertSpec, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AlertState
+ */
+export class AlertState extends Message<AlertState> {
+  /**
+   * @generated from field: string spec_hash = 1;
+   */
+  specHash = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp next_run_on = 2;
+   */
+  nextRunOn?: Timestamp;
+
+  /**
+   * @generated from field: rill.runtime.v1.AlertExecution current_execution = 3;
+   */
+  currentExecution?: AlertExecution;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.AlertExecution execution_history = 4;
+   */
+  executionHistory: AlertExecution[] = [];
+
+  /**
+   * @generated from field: uint32 execution_count = 5;
+   */
+  executionCount = 0;
+
+  constructor(data?: PartialMessage<AlertState>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AlertState";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "next_run_on", kind: "message", T: Timestamp },
+    { no: 3, name: "current_execution", kind: "message", T: AlertExecution },
+    { no: 4, name: "execution_history", kind: "message", T: AlertExecution, repeated: true },
+    { no: 5, name: "execution_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertState {
+    return new AlertState().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AlertState {
+    return new AlertState().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AlertState {
+    return new AlertState().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AlertState | PlainMessage<AlertState> | undefined, b: AlertState | PlainMessage<AlertState> | undefined): boolean {
+    return proto3.util.equals(AlertState, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AlertExecution
+ */
+export class AlertExecution extends Message<AlertExecution> {
+  /**
+   * @generated from field: bool adhoc = 1;
+   */
+  adhoc = false;
+
+  /**
+   * @generated from field: rill.runtime.v1.AssertionResult result = 2;
+   */
+  result?: AssertionResult;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp alert_time = 3;
+   */
+  alertTime?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp started_on = 4;
+   */
+  startedOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp finished_on = 5;
+   */
+  finishedOn?: Timestamp;
+
+  constructor(data?: PartialMessage<AlertExecution>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AlertExecution";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "adhoc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "result", kind: "message", T: AssertionResult },
+    { no: 3, name: "alert_time", kind: "message", T: Timestamp },
+    { no: 4, name: "started_on", kind: "message", T: Timestamp },
+    { no: 5, name: "finished_on", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertExecution {
+    return new AlertExecution().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AlertExecution {
+    return new AlertExecution().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AlertExecution {
+    return new AlertExecution().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AlertExecution | PlainMessage<AlertExecution> | undefined, b: AlertExecution | PlainMessage<AlertExecution> | undefined): boolean {
+    return proto3.util.equals(AlertExecution, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.AssertionResult
+ */
+export class AssertionResult extends Message<AssertionResult> {
+  /**
+   * @generated from field: rill.runtime.v1.AssertionStatus status = 1;
+   */
+  status = AssertionStatus.UNSPECIFIED;
+
+  /**
+   * @generated from field: google.protobuf.Struct fail_row = 2;
+   */
+  failRow?: Struct;
+
+  /**
+   * @generated from field: string error_message = 3;
+   */
+  errorMessage = "";
+
+  constructor(data?: PartialMessage<AssertionResult>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.AssertionResult";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "status", kind: "enum", T: proto3.getEnumType(AssertionStatus) },
+    { no: 2, name: "fail_row", kind: "message", T: Struct },
+    { no: 3, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AssertionResult {
+    return new AssertionResult().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AssertionResult {
+    return new AssertionResult().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AssertionResult {
+    return new AssertionResult().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: AssertionResult | PlainMessage<AssertionResult> | undefined, b: AssertionResult | PlainMessage<AssertionResult> | undefined): boolean {
+    return proto3.util.equals(AssertionResult, a, b);
   }
 }
 

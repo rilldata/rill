@@ -24,6 +24,7 @@ message Resource {
     MetricsViewV2 metrics_view = 5;
     Migration migration = 9;
     Report report = 10;
+    Alert alert = 12;
     PullTrigger pull_trigger = 6;
     RefreshTrigger refresh_trigger = 7;
     BucketPlanner bucket_planner = 8;
@@ -259,6 +260,60 @@ message ReportExecution {
   google.protobuf.Timestamp report_time = 3;
   google.protobuf.Timestamp started_on = 4;
   google.protobuf.Timestamp finished_on = 5;
+}
+
+message Alert {
+  AlertSpec spec = 1;
+  AlertState state = 2;
+}
+
+message AlertSpec {
+  bool trigger = 1;
+  string title = 2;
+  Schedule refresh_schedule = 3;
+  uint32 timeout_seconds = 4;
+  string query_name = 5;
+  string query_args_json = 6;
+  oneof query_for {
+    string query_for_user_id = 7;
+    string query_for_user_email = 8;
+    google.protobuf.Struct query_for_attributes = 9;
+  }
+  repeated string email_recipients = 10;
+  bool email_on_pass = 11;
+  bool email_on_fail = 12;
+  bool email_on_error = 13;
+  bool email_skip_unchanged = 14;
+  map<string, string> annotations = 15;
+}
+
+message AlertState {
+  string spec_hash = 1;
+  google.protobuf.Timestamp next_run_on = 2;
+  AlertExecution current_execution = 3;
+  repeated AlertExecution execution_history = 4;
+  uint32 execution_count = 5;
+}
+
+message AlertExecution {
+  bool adhoc = 1;
+  AssertionResult result = 2;
+  google.protobuf.Timestamp alert_time = 3;
+  google.protobuf.Timestamp started_on = 4;
+  google.protobuf.Timestamp finished_on = 5;
+}
+
+message AssertionResult {
+  AssertionStatus status = 1;
+  google.protobuf.Struct fail_row = 2;
+  string error_message = 3;
+}
+
+enum AssertionStatus {
+  ASSERTION_STATUS_UNSPECIFIED = 0;
+  ASSERTION_STATUS_PASS = 1;
+  ASSERTION_STATUS_FAIL = 2;
+  ASSERTION_STATUS_ERROR = 3;
 }
 
 message PullTrigger {

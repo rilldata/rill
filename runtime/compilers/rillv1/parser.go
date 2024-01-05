@@ -35,6 +35,7 @@ type Resource struct {
 	MetricsViewSpec *runtimev1.MetricsViewSpec
 	MigrationSpec   *runtimev1.MigrationSpec
 	ReportSpec      *runtimev1.ReportSpec
+	AlertSpec       *runtimev1.AlertSpec
 	ThemeSpec       *runtimev1.ThemeSpec
 }
 
@@ -65,6 +66,7 @@ const (
 	ResourceKindMetricsView
 	ResourceKindMigration
 	ResourceKindReport
+	ResourceKindAlert
 	ResourceKindTheme
 )
 
@@ -84,6 +86,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindMigration, nil
 	case "report":
 		return ResourceKindReport, nil
+	case "alert":
+		return ResourceKindAlert, nil
 	case "theme":
 		return ResourceKindTheme, nil
 	default:
@@ -105,6 +109,8 @@ func (k ResourceKind) String() string {
 		return "Migration"
 	case ResourceKindReport:
 		return "Report"
+	case ResourceKindAlert:
+		return "Alert"
 	case ResourceKindTheme:
 		return "Theme"
 	default:
@@ -702,6 +708,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.MigrationSpec = &runtimev1.MigrationSpec{}
 	case ResourceKindReport:
 		r.ReportSpec = &runtimev1.ReportSpec{}
+	case ResourceKindAlert:
+		r.AlertSpec = &runtimev1.AlertSpec{}
 	case ResourceKindTheme:
 		r.ThemeSpec = &runtimev1.ThemeSpec{}
 	default:

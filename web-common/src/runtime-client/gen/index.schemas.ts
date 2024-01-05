@@ -608,12 +608,23 @@ export interface V1SourceState {
   table?: string;
 }
 
+export type V1SourceSpecProperties = { [key: string]: any };
+
+export interface V1SourceSpec {
+  properties?: V1SourceSpecProperties;
+  refreshSchedule?: V1Schedule;
+  sinkConnector?: string;
+  sourceConnector?: string;
+  stageChanges?: boolean;
+  streamIngestion?: boolean;
+  timeoutSeconds?: number;
+  trigger?: boolean;
+}
+
 export interface V1SourceV2 {
   spec?: V1SourceSpec;
   state?: V1SourceState;
 }
-
-export type V1SourceSpecProperties = { [key: string]: any };
 
 export type V1SourceProperties = { [key: string]: any };
 
@@ -629,17 +640,6 @@ export interface V1Schedule {
   cron?: string;
   tickerSeconds?: number;
   timeZone?: string;
-}
-
-export interface V1SourceSpec {
-  properties?: V1SourceSpecProperties;
-  refreshSchedule?: V1Schedule;
-  sinkConnector?: string;
-  sourceConnector?: string;
-  stageChanges?: boolean;
-  streamIngestion?: boolean;
-  timeoutSeconds?: number;
-  trigger?: boolean;
 }
 
 export interface V1ScannedConnector {
@@ -712,19 +712,19 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export type V1ReportSpecAnnotations = { [key: string]: string };
-
-export interface V1ReportSpec {
-  annotations?: V1ReportSpecAnnotations;
-  emailRecipients?: string[];
-  exportFormat?: V1ExportFormat;
-  exportLimit?: string;
-  queryArgsJson?: string;
-  queryName?: string;
-  refreshSchedule?: V1Schedule;
-  timeoutSeconds?: number;
-  title?: string;
-  trigger?: boolean;
+export interface V1Resource {
+  alert?: V1Alert;
+  bucketPlanner?: V1BucketPlanner;
+  meta?: V1ResourceMeta;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  model?: V1ModelV2;
+  projectParser?: V1ProjectParser;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  report?: V1Report;
+  source?: V1SourceV2;
+  theme?: V1Theme;
 }
 
 export interface V1ReportExecution {
@@ -742,23 +742,24 @@ export interface V1ReportState {
   nextRunOn?: string;
 }
 
+export type V1ReportSpecAnnotations = { [key: string]: string };
+
+export interface V1ReportSpec {
+  annotations?: V1ReportSpecAnnotations;
+  emailRecipients?: string[];
+  exportFormat?: V1ExportFormat;
+  exportLimit?: string;
+  queryArgsJson?: string;
+  queryName?: string;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  title?: string;
+  trigger?: boolean;
+}
+
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
-}
-
-export interface V1Resource {
-  bucketPlanner?: V1BucketPlanner;
-  meta?: V1ResourceMeta;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  model?: V1ModelV2;
-  projectParser?: V1ProjectParser;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  report?: V1Report;
-  source?: V1SourceV2;
-  theme?: V1Theme;
 }
 
 export interface V1RenameFileResponse {
@@ -826,6 +827,16 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
 
+export interface V1ReconcileResponse {
+  /** affected_paths lists all the file artifact paths that were considered while
+executing the reconciliation. If changed_paths was empty, this will include all
+code artifacts in the repo. */
+  affectedPaths?: string[];
+  /** Errors encountered during reconciliation. If strict = false, any path in
+affected_paths without an error can be assumed to have been reconciled succesfully. */
+  errors?: V1ReconcileError[];
+}
+
 /**
  * - CODE_UNSPECIFIED: Unspecified error
  - CODE_SYNTAX: Code artifact failed to parse
@@ -868,16 +879,6 @@ It only applies to structured code artifacts (i.e. YAML).
 Only applicable if file_path is set. */
   propertyPath?: string[];
   startLocation?: V1ReconcileErrorCharLocation;
-}
-
-export interface V1ReconcileResponse {
-  /** affected_paths lists all the file artifact paths that were considered while
-executing the reconciliation. If changed_paths was empty, this will include all
-code artifacts in the repo. */
-  affectedPaths?: string[];
-  /** Errors encountered during reconciliation. If strict = false, any path in
-affected_paths without an error can be assumed to have been reconciled succesfully. */
-  errors?: V1ReconcileError[];
 }
 
 export interface V1QueryResult {
@@ -1277,13 +1278,6 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
-export interface V1MetricsViewComparisonSort {
-  desc?: boolean;
-  name?: string;
-  sortType?: V1MetricsViewComparisonMeasureType;
-  type?: V1MetricsViewComparisonSortType;
-}
-
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1310,10 +1304,35 @@ export const V1MetricsViewComparisonMeasureType = {
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
 
+export interface V1MetricsViewComparisonSort {
+  desc?: boolean;
+  name?: string;
+  sortType?: V1MetricsViewComparisonMeasureType;
+  type?: V1MetricsViewComparisonSortType;
+}
+
 export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
   name?: string;
   type?: V1MetricsViewComparisonMeasureType;
+}
+
+export interface V1MetricsViewComparisonRequest {
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  comparisonTimeRange?: V1TimeRange;
+  dimension?: V1MetricsViewAggregationDimension;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
+  having?: V1Expression;
+  instanceId?: string;
+  limit?: string;
+  measures?: V1MetricsViewAggregationMeasure[];
+  metricsViewName?: string;
+  offset?: string;
+  priority?: number;
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  where?: V1Expression;
 }
 
 export interface V1MetricsViewColumn {
@@ -1543,24 +1562,6 @@ export interface V1Expression {
   val?: unknown;
 }
 
-export interface V1MetricsViewComparisonRequest {
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  comparisonTimeRange?: V1TimeRange;
-  dimension?: V1MetricsViewAggregationDimension;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
-  having?: V1Expression;
-  instanceId?: string;
-  limit?: string;
-  measures?: V1MetricsViewAggregationMeasure[];
-  metricsViewName?: string;
-  offset?: string;
-  priority?: number;
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  where?: V1Expression;
-}
-
 export interface V1ExportResponse {
   downloadUrlPath?: string;
 }
@@ -1628,25 +1629,6 @@ export type V1CreateInstanceRequestVariables = { [key: string]: string };
 export type V1CreateInstanceRequestAnnotations = { [key: string]: string };
 
 /**
- * Request message for RuntimeService.CreateInstance.
-See message Instance for field descriptions.
- */
-export interface V1CreateInstanceRequest {
-  adminConnector?: string;
-  annotations?: V1CreateInstanceRequestAnnotations;
-  connectors?: V1Connector[];
-  embedCatalog?: boolean;
-  instanceId?: string;
-  modelDefaultMaterialize?: boolean;
-  modelMaterializeDelaySeconds?: number;
-  olapConnector?: string;
-  repoConnector?: string;
-  stageChanges?: boolean;
-  variables?: V1CreateInstanceRequestVariables;
-  watchRepo?: boolean;
-}
-
-/**
  * ConnectorSpec represents a connector available in the runtime.
 It should not be confused with a source.
  */
@@ -1664,6 +1646,25 @@ export interface V1Connector {
   name?: string;
   /** Type of the connector. One of the infra driver supported. */
   type?: string;
+}
+
+/**
+ * Request message for RuntimeService.CreateInstance.
+See message Instance for field descriptions.
+ */
+export interface V1CreateInstanceRequest {
+  adminConnector?: string;
+  annotations?: V1CreateInstanceRequestAnnotations;
+  connectors?: V1Connector[];
+  embedCatalog?: boolean;
+  instanceId?: string;
+  modelDefaultMaterialize?: boolean;
+  modelMaterializeDelaySeconds?: number;
+  olapConnector?: string;
+  repoConnector?: string;
+  stageChanges?: boolean;
+  variables?: V1CreateInstanceRequestVariables;
+  watchRepo?: boolean;
 }
 
 export interface V1Condition {
@@ -1833,20 +1834,13 @@ export interface V1BucketPlannerState {
   region?: string;
 }
 
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
+}
+
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
-}
-
-export interface V1BucketExtractPolicy {
-  filesLimit?: string;
-  filesStrategy?: BucketExtractPolicyStrategy;
-  rowsLimitBytes?: string;
-  rowsStrategy?: BucketExtractPolicyStrategy;
-}
-
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
 }
 
 export interface V1BigQueryListTablesResponse {
@@ -1857,6 +1851,68 @@ export interface V1BigQueryListTablesResponse {
 export interface V1BigQueryListDatasetsResponse {
   names?: string[];
   nextPageToken?: string;
+}
+
+export type V1AssertionStatus =
+  (typeof V1AssertionStatus)[keyof typeof V1AssertionStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1AssertionStatus = {
+  ASSERTION_STATUS_UNSPECIFIED: "ASSERTION_STATUS_UNSPECIFIED",
+  ASSERTION_STATUS_PASS: "ASSERTION_STATUS_PASS",
+  ASSERTION_STATUS_FAIL: "ASSERTION_STATUS_FAIL",
+  ASSERTION_STATUS_ERROR: "ASSERTION_STATUS_ERROR",
+} as const;
+
+export type V1AssertionResultFailRow = { [key: string]: any };
+
+export interface V1AssertionResult {
+  errorMessage?: string;
+  failRow?: V1AssertionResultFailRow;
+  status?: V1AssertionStatus;
+}
+
+export interface V1AlertState {
+  currentExecution?: V1AlertExecution;
+  executionCount?: number;
+  executionHistory?: V1AlertExecution[];
+  nextRunOn?: string;
+  specHash?: string;
+}
+
+export type V1AlertSpecQueryForAttributes = { [key: string]: any };
+
+export type V1AlertSpecAnnotations = { [key: string]: string };
+
+export interface V1AlertSpec {
+  annotations?: V1AlertSpecAnnotations;
+  emailOnError?: boolean;
+  emailOnFail?: boolean;
+  emailOnPass?: boolean;
+  emailRecipients?: string[];
+  emailSkipUnchanged?: boolean;
+  queryArgsJson?: string;
+  queryForAttributes?: V1AlertSpecQueryForAttributes;
+  queryForUserEmail?: string;
+  queryForUserId?: string;
+  queryName?: string;
+  refreshSchedule?: V1Schedule;
+  timeoutSeconds?: number;
+  title?: string;
+  trigger?: boolean;
+}
+
+export interface V1AlertExecution {
+  adhoc?: boolean;
+  alertTime?: string;
+  finishedOn?: string;
+  result?: V1AssertionResult;
+  startedOn?: string;
+}
+
+export interface V1Alert {
+  spec?: V1AlertSpec;
+  state?: V1AlertState;
 }
 
 export interface Runtimev1Type {
@@ -2064,3 +2120,10 @@ export const BucketExtractPolicyStrategy = {
   STRATEGY_HEAD: "STRATEGY_HEAD",
   STRATEGY_TAIL: "STRATEGY_TAIL",
 } as const;
+
+export interface V1BucketExtractPolicy {
+  filesLimit?: string;
+  filesStrategy?: BucketExtractPolicyStrategy;
+  rowsLimitBytes?: string;
+  rowsStrategy?: BucketExtractPolicyStrategy;
+}
