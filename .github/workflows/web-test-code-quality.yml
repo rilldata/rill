@@ -64,3 +64,17 @@ jobs:
           npx eslint web-auth --quiet
           npx svelte-check --workspace web-auth --no-tsconfig
 
+      - name: tsc check repo for typescript errors (with temporary whitelist)
+        run: |-
+          # Run TypeScript compiler and filter out some errors 
+          output=$(npx tsc --noEmit | grep "error TS" | grep -v -E 'TS18048|TS2345|TS2322')
+
+          # Check if 'error' is in the output
+          if echo "$output" | grep -q "error"; then
+              echo "TypeScript errors found:"
+              echo "$output"
+              exit 1  # Exit with error code
+          else
+              echo "No TypeScript errors detected."
+              exit 0  # Exit without error
+          fi
