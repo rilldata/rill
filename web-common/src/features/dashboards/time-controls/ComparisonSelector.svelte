@@ -63,14 +63,14 @@ This component needs to do the following:
   $: label = selectedDimension
     ? getLabelForDimension(selectedDimension)
     : showTimeComparison
-    ? TIME
-    : NO_COMPARISON_LABEL;
+      ? TIME
+      : NO_COMPARISON_LABEL;
 
   $: intermediateSelection = selectedDimension
     ? selectedDimension
     : showTimeComparison
-    ? TIME
-    : NO_COMPARISON_LABEL;
+      ? TIME
+      : NO_COMPARISON_LABEL;
 
   function enableComparison(type: string, name = "") {
     if (type === "time") {

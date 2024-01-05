@@ -34,7 +34,7 @@
 
   // Filter out user time zone and UTC
   $: availableTimeZones = availableTimeZones.filter(
-    (tz) => tz !== userLocalIANA && tz !== UTCIana
+    (tz) => tz !== userLocalIANA && tz !== UTCIana,
   );
 
   // Add local and utc time zone to the top of the list

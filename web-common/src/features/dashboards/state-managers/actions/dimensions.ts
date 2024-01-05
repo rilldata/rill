@@ -3,7 +3,7 @@ import type { DashboardMutables } from "./types";
 export const setPrimaryDimension = (
   { dashboard }: DashboardMutables,
 
-  dimensionName: string | undefined
+  dimensionName: string | undefined,
 ) => {
   dashboard.selectedDimensionName = dimensionName;
 };

@@ -21,6 +21,6 @@ export function emitNavigationTelemetry(href) {
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
     previousActiveEntity,
-    screenName
+    screenName,
   );
 }

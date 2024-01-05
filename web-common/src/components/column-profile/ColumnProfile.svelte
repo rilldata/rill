@@ -32,7 +32,7 @@
     $runtime?.instanceId,
     objectName,
     {},
-    { query: { keepPreviousData: true } }
+    { query: { keepPreviousData: true } },
   );
 
   /** get single example */
@@ -41,13 +41,13 @@
     objectName,
     {
       limit: 1,
-    }
+    },
   );
 
   $: nestedColumnProfileQuery = getSummaries(
     objectName,
     $runtime?.instanceId,
-    $profileColumns
+    $profileColumns,
   );
 
   $: profile = $nestedColumnProfileQuery;

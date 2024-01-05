@@ -100,7 +100,7 @@ export function getAllowedTimeGrains(start: Date, end: Date): TimeGrain[] {
 
 export function isGrainBigger(
   possiblyBiggerGrain: V1TimeGrain,
-  possiblySmallerGrain: V1TimeGrain
+  possiblySmallerGrain: V1TimeGrain,
 ): boolean {
   const biggerGrainConfig = TIME_GRAIN[possiblyBiggerGrain];
   const smallerGrainConfig = TIME_GRAIN[possiblySmallerGrain];
@@ -113,7 +113,7 @@ export function isGrainBigger(
 export function checkValidTimeGrain(
   timeGrain: V1TimeGrain,
   timeGrainOptions: TimeGrain[],
-  minTimeGrain: V1TimeGrain
+  minTimeGrain: V1TimeGrain,
 ): boolean {
   if (!timeGrainOptions.find((t) => t.grain === timeGrain)) return false;
 
@@ -127,10 +127,10 @@ export function checkValidTimeGrain(
 export function findValidTimeGrain(
   timeGrain: V1TimeGrain,
   timeGrainOptions: TimeGrain[],
-  minTimeGrain: V1TimeGrain
+  minTimeGrain: V1TimeGrain,
 ): V1TimeGrain {
   const timeGrains = Object.values(TIME_GRAIN).map(
-    (timeGrain) => timeGrain.grain
+    (timeGrain) => timeGrain.grain,
   );
 
   const defaultIndex = timeGrains.indexOf(timeGrain);

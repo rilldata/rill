@@ -88,7 +88,7 @@ const testCases: [
     padWithInsignificantZeros?: boolean;
     numberKind?: NumberKind;
   },
-  string
+  string,
 ][] = [
   [0, {}, "0"],
   [0, { numberKind: NumberKind.DOLLAR }, "$0"],

@@ -15,12 +15,12 @@ import { SortType } from "../proto-state/derived-types";
  */
 export function getLabeledComparisonFromComparisonRow(
   row: V1MetricsViewComparisonRow,
-  measureName: string | number
+  measureName: string | number,
 ): ComparisonValueWithLabel {
   const measure = row.measureValues?.find((v) => v.measureName === measureName);
   if (!measure) {
     throw new Error(
-      `Could not find measure ${measureName} in row ${JSON.stringify(row)}`
+      `Could not find measure ${measureName} in row ${JSON.stringify(row)}`,
     );
   }
   return {
@@ -80,13 +80,13 @@ export type LeaderboardItemData = {
 function cleanUpComparisonValue(
   v: ComparisonValueWithLabel,
   total: number | null,
-  selectedIndex: number
+  selectedIndex: number,
 ): LeaderboardItemData {
   if (!(Number.isFinite(v.baseValue) || v.baseValue === null)) {
     throw new Error(
       `Leaderboards only implemented for numeric baseValues or missing data (null). Got: ${JSON.stringify(
-        v
-      )}`
+        v,
+      )}`,
     );
   }
   const value = v.baseValue === null ? null : (v.baseValue as number);
@@ -124,7 +124,7 @@ export function prepareLeaderboardItemData(
   values: ComparisonValueWithLabel[],
   numberAboveTheFold: number,
   selectedValues: string[],
-  total: number | null
+  total: number | null,
 ): {
   aboveTheFold: LeaderboardItemData[];
   selectedBelowTheFold: LeaderboardItemData[];
@@ -146,7 +146,7 @@ export function prepareLeaderboardItemData(
 
   values.forEach((v, i) => {
     const selectedIndex = selectedValues.findIndex((value) =>
-      compareLeaderboardValues(value, v.dimensionValue)
+      compareLeaderboardValues(value, v.dimensionValue),
     );
     // if we have found this selected value in the API results,
     // remove it from the selectedButNotInAPIResults array
@@ -212,7 +212,7 @@ export function prepareLeaderboardItemData(
 export function getComparisonDefaultSelection(
   values: ComparisonValueWithLabel[],
   selectedValues: (string | number)[],
-  excludeMode: boolean
+  excludeMode: boolean,
 ): (string | number)[] {
   if (!excludeMode) {
     if (selectedValues.length > 0) {

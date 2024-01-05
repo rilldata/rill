@@ -72,7 +72,7 @@ export const base = () => [
         key: "Tab",
         run: acceptCompletion,
       },
-    ])
+    ]),
   ),
   keymap.of([indentWithTab]),
 ];

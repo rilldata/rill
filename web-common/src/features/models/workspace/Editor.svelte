@@ -118,7 +118,7 @@
 
   function getTableNameFromFromClause(
     sql: string,
-    schema: { [table: string]: string[] }
+    schema: { [table: string]: string[] },
   ): string | undefined {
     if (!sql || !schema) return undefined;
 
@@ -137,7 +137,7 @@
 
   function makeAutocompleteConfig(
     schema: { [table: string]: string[] },
-    defaultTable?: string
+    defaultTable?: string,
   ) {
     return autocompletion({
       override: [
@@ -194,7 +194,7 @@
           bracketMatching(),
           closeBrackets(),
           autocompleteCompartment.of(
-            makeAutocompleteConfig(schema, defaultTable)
+            makeAutocompleteConfig(schema, defaultTable),
           ), // a compartment makes the config dynamic
           rectangularSelection(),
           highlightActiveLine(),
@@ -214,7 +214,7 @@
                 key: "Enter",
                 run: insertNewline,
               },
-            ])
+            ]),
           ),
           Prec.highest(
             keymap.of([
@@ -222,7 +222,7 @@
                 key: "Tab",
                 run: acceptCompletion,
               },
-            ])
+            ]),
           ),
           sql({ dialect: DuckDBSQL }),
           keymap.of([indentWithTab]),
@@ -239,7 +239,7 @@
                     content: latestContent,
                   });
                 },
-                QUERY_UPDATE_DEBOUNCE_TIMEOUT
+                QUERY_UPDATE_DEBOUNCE_TIMEOUT,
               );
             }
           }),
@@ -270,12 +270,12 @@
 
   function updateAutocompleteSources(
     schema: { [table: string]: string[] },
-    defaultTable?: string
+    defaultTable?: string,
   ) {
     if (editor) {
       editor.dispatch({
         effects: autocompleteCompartment.reconfigure(
-          makeAutocompleteConfig(schema, defaultTable)
+          makeAutocompleteConfig(schema, defaultTable),
         ),
       });
     }
@@ -285,7 +285,7 @@
   function underlineSelection(selections: any) {
     if (editor) {
       const effects = selections.map(({ from, to }) =>
-        addUnderline.of({ from, to })
+        addUnderline.of({ from, to }),
       );
 
       if (!editor.state.field(underlineField, false))

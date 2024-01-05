@@ -17,6 +17,6 @@ export function retainFeaturesFlags(navigation: BeforeNavigate) {
 
   navigation.to.url.searchParams.set(
     "features",
-    navigation.from.url.searchParams.get("features")
+    navigation.from.url.searchParams.get("features"),
   );
 }

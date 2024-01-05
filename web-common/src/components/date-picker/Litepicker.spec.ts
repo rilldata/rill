@@ -7,7 +7,7 @@ import Litepicker from "./Litepicker.svelte";
 // Utility to get the day element from the Litepicker UI
 function getDayElement(container, dateString) {
   return container.querySelector(
-    `[data-time="${new Date(dateString).valueOf()}"]`
+    `[data-time="${new Date(dateString).valueOf()}"]`,
   );
 }
 
@@ -174,7 +174,7 @@ describe("Litepicker", () => {
     });
 
     const startDate = container.querySelector(
-      `[data-time="${new Date("1/1/2023").valueOf()}"]`
+      `[data-time="${new Date("1/1/2023").valueOf()}"]`,
     );
     expect(startDate).toBeDefined();
 

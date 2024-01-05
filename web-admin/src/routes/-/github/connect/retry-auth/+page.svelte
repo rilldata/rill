@@ -27,7 +27,7 @@
 
   function handleGoToGithub() {
     window.location.href = encodeURI(
-      ADMIN_URL + "/github/auth/login?remote=" + remote
+      ADMIN_URL + "/github/auth/login?remote=" + remote,
     );
   }
 </script>

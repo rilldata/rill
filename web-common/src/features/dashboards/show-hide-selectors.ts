@@ -38,7 +38,7 @@ function createShowHideStore<Item>(
     MetricsExplorerEntity,
     "allMeasuresVisible" | "allDimensionsVisible"
   >,
-  labelSelector: (i: Item) => string
+  labelSelector: (i: Item) => string,
 ) {
   const derivedStore = derived(
     [metaQuery, useDashboardStore(metricsViewName)],
@@ -61,7 +61,7 @@ function createShowHideStore<Item>(
         (i) => ({
           name: i.name,
           label: labelSelector(i),
-        })
+        }),
       );
       const availableKeys = items.map((i) => i.name);
       const visibleKeysSet = metricsExplorer[visibleFieldInStore];
@@ -71,13 +71,13 @@ function createShowHideStore<Item>(
         selectedItems: availableKeys.map((k) => visibleKeysSet.has(k)),
         availableKeys,
       };
-    }
+    },
   ) as ShowHideSelectorStore;
 
   derivedStore.setAllToVisible = () => {
     updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
       metricsExplorer[visibleFieldInStore] = new Set(
-        get(derivedStore).availableKeys
+        get(derivedStore).availableKeys,
       );
       metricsExplorer[allVisibleFieldInStore] = true;
     });
@@ -114,7 +114,7 @@ function createShowHideStore<Item>(
            * non-visible ones from the available keys
            */
           const firstVisible = get(derivedStore).availableKeys.find((key) =>
-            metricsExplorer[visibleFieldInStore].has(key)
+            metricsExplorer[visibleFieldInStore].has(key),
           );
 
           metricsExplorer.leaderboardMeasureName = firstVisible;
@@ -133,7 +133,7 @@ function createShowHideStore<Item>(
 
 export function createShowHideMeasuresStore(
   metricsViewName: string,
-  metaQuery: CreateQueryResult<V1MetricsView, RpcStatus>
+  metaQuery: CreateQueryResult<V1MetricsView, RpcStatus>,
 ) {
   return createShowHideStore<MetricsViewSpecMeasureV2>(
     metricsViewName,
@@ -146,13 +146,13 @@ export function createShowHideMeasuresStore(
      * using the "label" if available but falling back to the expression
      * if needed.
      */
-    (m) => m.label || m.expression
+    (m) => m.label || m.expression,
   );
 }
 
 export function createShowHideDimensionsStore(
   metricsViewName: string,
-  metaQuery: CreateQueryResult<V1MetricsView, RpcStatus>
+  metaQuery: CreateQueryResult<V1MetricsView, RpcStatus>,
 ) {
   return createShowHideStore<MetricsViewDimension>(
     metricsViewName,
@@ -165,6 +165,6 @@ export function createShowHideDimensionsStore(
      * using the "label" if available but falling back to the name of
      * the categorical column (which must be present) if needed
      */
-    (d) => d.label || d.name
+    (d) => d.label || d.name,
   );
 }

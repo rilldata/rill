@@ -16,7 +16,7 @@
       query: {
         select: (data) => data.resource.projectParser.state.parseErrors,
       },
-    }
+    },
   );
 </script>
 

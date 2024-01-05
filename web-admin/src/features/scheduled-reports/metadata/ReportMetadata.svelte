@@ -30,7 +30,7 @@
   $: reportQuery = useReport($runtime.instanceId, report);
   $: isReportCreatedByCode = useIsReportCreatedByCode(
     $runtime.instanceId,
-    report
+    report,
   );
 
   // Get dashboard
@@ -45,7 +45,7 @@
       $reportQuery.data.resource.report.spec.refreshSchedule.cron,
       {
         verbose: true,
-      }
+      },
     );
 
   // Actions
@@ -64,7 +64,7 @@
       name: $reportQuery.data.resource.meta.name.name,
     });
     queryClient.invalidateQueries(
-      getRuntimeServiceListResourcesQueryKey($runtime.instanceId)
+      getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
     );
     goto(`/${organization}/${project}/-/reports`);
   }
@@ -92,7 +92,7 @@
         <!-- Format -->
         <span>
           {exportFormatToPrettyString(
-            $reportQuery.data.resource.report.spec.exportFormat
+            $reportQuery.data.resource.report.spec.exportFormat,
           )} •
         </span>
         <!-- Limit -->
@@ -154,7 +154,7 @@
         <MetadataValue>
           {formatNextRunOn(
             $reportQuery.data.resource.report.state.nextRunOn,
-            $reportQuery.data.resource.report.spec.refreshSchedule.timeZone
+            $reportQuery.data.resource.report.spec.refreshSchedule.timeZone,
           )}
         </MetadataValue>
       </div>

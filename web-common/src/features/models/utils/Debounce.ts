@@ -5,7 +5,7 @@ export class Debounce {
   public debounce(
     id: string,
     callback: () => void | Promise<void>,
-    time: number
+    time: number,
   ) {
     this.callbackMap.set(id, callback);
     if (this.debounceMap.has(id)) return;
@@ -15,7 +15,7 @@ export class Debounce {
       setTimeout(() => {
         this.debounceMap.delete(id);
         this.callbackMap.get(id)();
-      }, time)
+      }, time),
     );
   }
 

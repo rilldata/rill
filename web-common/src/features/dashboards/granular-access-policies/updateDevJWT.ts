@@ -11,7 +11,7 @@ import { get } from "svelte/store";
 
 export async function updateDevJWT(
   queryClient: QueryClient,
-  mockUser: MockUser | null
+  mockUser: MockUser | null,
 ) {
   selectedMockUserStore.set(mockUser);
   let jwt: string = null;

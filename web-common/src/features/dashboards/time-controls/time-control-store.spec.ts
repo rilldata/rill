@@ -65,7 +65,7 @@ describe("time-control-store", () => {
       {
         min: "2022-01-01",
         max: "2022-03-31",
-      }
+      },
     );
     await queryClient.refetchQueries({
       type: "active",
@@ -77,7 +77,7 @@ describe("time-control-store", () => {
       "2022-01-01T00:00:00.000Z",
       "2022-03-31T00:00:00.001Z",
       "2021-12-31T00:00:00.000Z",
-      "2022-04-01T00:00:00.000Z"
+      "2022-04-01T00:00:00.000Z",
     );
 
     dashboardFetchMocks.mockTimeRangeSummary(
@@ -86,7 +86,7 @@ describe("time-control-store", () => {
       {
         min: "2023-01-01",
         max: "2023-03-31",
-      }
+      },
     );
     await queryClient.refetchQueries({
       type: "active",
@@ -99,7 +99,7 @@ describe("time-control-store", () => {
       "2023-01-01T00:00:00.000Z",
       "2023-03-31T00:00:00.001Z",
       "2022-12-31T00:00:00.000Z",
-      "2023-04-01T00:00:00.000Z"
+      "2023-04-01T00:00:00.000Z",
     );
 
     unmount();
@@ -112,10 +112,10 @@ describe("time-control-store", () => {
       {
         min: "2022-01-01",
         max: "2022-03-31",
-      }
+      },
     );
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
-      AD_BIDS_INIT_WITH_TIME
+      AD_BIDS_INIT_WITH_TIME,
     );
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
 
@@ -130,7 +130,7 @@ describe("time-control-store", () => {
       "2022-03-30T01:00:00.000Z",
       "2022-03-31T01:00:00.000Z",
       "2022-03-30T00:00:00.000Z",
-      "2022-03-31T02:00:00.000Z"
+      "2022-03-31T02:00:00.000Z",
     );
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
@@ -145,11 +145,11 @@ describe("time-control-store", () => {
       "2022-03-20T01:00:00.000Z",
       "2022-03-22T01:00:00.000Z",
       "2022-03-20T00:00:00.000Z",
-      "2022-03-22T02:00:00.000Z"
+      "2022-03-22T02:00:00.000Z",
     );
     // invalid time grain of month is reset to hour
     expect(state.selectedTimeRange.interval).toEqual(
-      V1TimeGrain.TIME_GRAIN_HOUR
+      V1TimeGrain.TIME_GRAIN_HOUR,
     );
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
@@ -165,11 +165,11 @@ describe("time-control-store", () => {
       "2022-03-25T00:00:00.000Z",
       "2022-04-01T00:00:00.000Z",
       "2022-03-24T23:00:00.000Z",
-      "2022-04-01T01:00:00.000Z"
+      "2022-04-01T01:00:00.000Z",
     );
     // valid time grain of hour is retained
     expect(state.selectedTimeRange.interval).toEqual(
-      V1TimeGrain.TIME_GRAIN_HOUR
+      V1TimeGrain.TIME_GRAIN_HOUR,
     );
 
     unmount();
@@ -182,10 +182,10 @@ describe("time-control-store", () => {
       {
         min: "2022-01-01",
         max: "2022-03-31",
-      }
+      },
     );
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
-      AD_BIDS_INIT_WITH_TIME
+      AD_BIDS_INIT_WITH_TIME,
     );
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
 
@@ -204,7 +204,7 @@ describe("time-control-store", () => {
       "2022-03-29T01:00:00.000Z",
       "2022-03-30T01:00:00.000Z",
       "2022-03-29T00:00:00.000Z",
-      "2022-03-30T02:00:00.000Z"
+      "2022-03-30T02:00:00.000Z",
     );
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
@@ -230,7 +230,7 @@ describe("time-control-store", () => {
       "2022-03-18T00:00:00.000Z",
       "2022-03-25T00:00:00.000Z",
       "2022-03-17T00:00:00.000Z",
-      "2022-03-26T00:00:00.000Z"
+      "2022-03-26T00:00:00.000Z",
     );
 
     unmount();
@@ -243,10 +243,10 @@ describe("time-control-store", () => {
       {
         min: "2022-01-01",
         max: "2022-03-31",
-      }
+      },
     );
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
-      AD_BIDS_INIT_WITH_TIME
+      AD_BIDS_INIT_WITH_TIME,
     );
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
 
@@ -256,7 +256,7 @@ describe("time-control-store", () => {
       "2022-01-01T00:00:00.000Z",
       "2022-03-31T00:00:00.001Z",
       "2021-12-30T18:30:00.000Z",
-      "2022-03-31T18:30:00.000Z"
+      "2022-03-31T18:30:00.000Z",
     );
 
     metricsExplorerStore.displayTimeComparison(AD_BIDS_NAME, true);
@@ -272,7 +272,7 @@ describe("time-control-store", () => {
       "2022-03-30T00:30:00.000Z",
       "2022-03-31T00:30:00.000Z",
       "2022-03-29T23:30:00.000Z",
-      "2022-03-31T01:30:00.000Z"
+      "2022-03-31T01:30:00.000Z",
     );
     assertComparisonStartAndEnd(
       get(timeControlsStore),
@@ -281,7 +281,7 @@ describe("time-control-store", () => {
       "2022-03-29T00:30:00.000Z",
       "2022-03-30T00:30:00.000Z",
       "2022-03-28T23:30:00.000Z",
-      "2022-03-30T01:30:00.000Z"
+      "2022-03-30T01:30:00.000Z",
     );
 
     unmount();
@@ -294,10 +294,10 @@ describe("time-control-store", () => {
       {
         min: "2022-01-01",
         max: "2022-03-31",
-      }
+      },
     );
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
-      AD_BIDS_INIT_WITH_TIME
+      AD_BIDS_INIT_WITH_TIME,
     );
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
     metricsExplorerStore.displayTimeComparison(AD_BIDS_NAME, true);
@@ -316,7 +316,7 @@ describe("time-control-store", () => {
       "2022-01-01T00:00:00.000Z",
       "2022-03-31T00:00:00.001Z",
       "2021-12-31T00:00:00.000Z",
-      "2022-04-01T00:00:00.000Z"
+      "2022-04-01T00:00:00.000Z",
     );
     assertComparisonStartAndEnd(
       get(timeControlsStore),
@@ -325,7 +325,7 @@ describe("time-control-store", () => {
       "2021-12-01T00:00:00.000Z",
       "2022-02-28T00:00:00.001Z",
       "2021-11-30T00:00:00.000Z",
-      "2022-03-01T00:00:00.000Z"
+      "2022-03-01T00:00:00.000Z",
     );
 
     metricsExplorerStore.setSelectedScrubRange(AD_BIDS_NAME, {
@@ -339,7 +339,7 @@ describe("time-control-store", () => {
       "2022-02-01T00:00:00.000Z",
       "2022-02-10T00:00:00.000Z",
       "2021-12-31T00:00:00.000Z",
-      "2022-04-01T00:00:00.000Z"
+      "2022-04-01T00:00:00.000Z",
     );
     assertComparisonStartAndEnd(
       get(timeControlsStore),
@@ -348,7 +348,7 @@ describe("time-control-store", () => {
       "2022-01-01T00:00:00.000Z",
       "2022-01-10T00:00:00.000Z",
       "2021-11-30T00:00:00.000Z",
-      "2022-03-01T00:00:00.000Z"
+      "2022-03-01T00:00:00.000Z",
     );
 
     unmount();
@@ -361,7 +361,7 @@ describe("time-control-store", () => {
       {
         min: "2022-01-01",
         max: "2022-03-31",
-      }
+      },
     );
     const { unmount, timeControlsStore, queryClient } =
       initTimeControlStoreTest(AD_BIDS_INIT_WITH_TIME);
@@ -371,7 +371,7 @@ describe("time-control-store", () => {
       "2022-01-01T00:00:00.000Z",
       "2022-03-31T00:00:00.001Z",
       "2021-12-31T00:00:00.000Z",
-      "2022-04-01T00:00:00.000Z"
+      "2022-04-01T00:00:00.000Z",
     );
 
     dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, {
@@ -408,7 +408,7 @@ describe("time-control-store", () => {
   function initTimeControlStoreTest(resp: V1MetricsView) {
     const { stateManagers, queryClient } = initStateManagers(
       dashboardFetchMocks,
-      resp
+      resp,
     );
     const timeControlsStore = createTimeControlStore(stateManagers);
 
@@ -425,7 +425,7 @@ function assertStartAndEnd(
   start: string,
   end: string,
   adjustedStart: string,
-  adjustedEnd: string
+  adjustedEnd: string,
 ) {
   expect(timeControlsSate.timeStart).toEqual(start);
   expect(timeControlsSate.timeEnd).toEqual(end);
@@ -439,7 +439,7 @@ function assertComparisonStartAndEnd(
   start: string,
   end: string,
   adjustedStart: string,
-  adjustedEnd: string
+  adjustedEnd: string,
 ) {
   expect(timeControlsSate.selectedComparisonTimeRange?.name).toBe(name);
   expect(timeControlsSate.comparisonTimeStart).toBe(start);
@@ -450,25 +450,25 @@ function assertComparisonStartAndEnd(
 
 async function waitForUpdate(
   timeControlsStore: TimeControlStore,
-  startTime: string
+  startTime: string,
 ) {
   await waitUntil(
     () => get(timeControlsStore).timeStart === startTime,
     1000,
-    20
+    20,
   );
   expect(get(timeControlsStore).timeStart).toBe(startTime);
 }
 
 async function waitForDefaultUpdate(
   timeControlsStore: TimeControlStore,
-  startTime: string
+  startTime: string,
 ) {
   return waitUntil(
     () =>
       get(timeControlsStore).defaultTimeRange?.start?.toISOString() ===
       startTime,
     1000,
-    20
+    20,
   );
 }

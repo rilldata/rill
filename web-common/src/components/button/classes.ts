@@ -38,8 +38,8 @@ export function buttonClasses({
     type === "highlighted"
       ? "min-h-[32px]"
       : compact
-      ? "h-auto"
-      : "min-h-[28px]"
+        ? "h-auto"
+        : "min-h-[28px]"
   }
   `;
 }

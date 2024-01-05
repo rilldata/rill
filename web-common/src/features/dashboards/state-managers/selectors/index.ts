@@ -34,7 +34,7 @@ export type StateManagerReadables = ReturnType<
 >;
 
 export const createStateManagerReadables = (
-  dashboardDataReadables: DashboardDataReadables
+  dashboardDataReadables: DashboardDataReadables,
 ) => {
   return {
     /**
@@ -42,7 +42,7 @@ export const createStateManagerReadables = (
      */
     sorting: createReadablesFromSelectors(
       sortingSelectors,
-      dashboardDataReadables
+      dashboardDataReadables,
     ),
 
     /**
@@ -50,7 +50,7 @@ export const createStateManagerReadables = (
      */
     numberFormat: createReadablesFromSelectors(
       formattingSelectors,
-      dashboardDataReadables
+      dashboardDataReadables,
     ),
 
     /**
@@ -58,7 +58,7 @@ export const createStateManagerReadables = (
      */
     contextColumn: createReadablesFromSelectors(
       contextColSelectors,
-      dashboardDataReadables
+      dashboardDataReadables,
     ),
 
     /**
@@ -67,7 +67,7 @@ export const createStateManagerReadables = (
      */
     activeMeasure: createReadablesFromSelectors(
       activeMeasureSelectors,
-      dashboardDataReadables
+      dashboardDataReadables,
     ),
 
     /**
@@ -76,7 +76,7 @@ export const createStateManagerReadables = (
      */
     dimensions: createReadablesFromSelectors(
       dimensionSelectors,
-      dashboardDataReadables
+      dashboardDataReadables,
     ),
 
     /**
@@ -87,7 +87,7 @@ export const createStateManagerReadables = (
      */
     dimensionTable: createReadablesFromSelectors(
       dimensionTableSelectors,
-      dashboardDataReadables
+      dashboardDataReadables,
     ),
 
     /**
@@ -97,7 +97,7 @@ export const createStateManagerReadables = (
      */
     dimensionFilters: createReadablesFromSelectors(
       dimensionFilterSelectors,
-      dashboardDataReadables
+      dashboardDataReadables,
     ),
 
     /**
@@ -106,7 +106,7 @@ export const createStateManagerReadables = (
      */
     timeRangeSelectors: createReadablesFromSelectors(
       timeRangeSelectors,
-      dashboardDataReadables
+      dashboardDataReadables,
     ),
 
     /**
@@ -114,7 +114,7 @@ export const createStateManagerReadables = (
      */
     comparison: createReadablesFromSelectors(
       comparisonSelectors,
-      dashboardDataReadables
+      dashboardDataReadables,
     ),
 
     /**
@@ -122,7 +122,7 @@ export const createStateManagerReadables = (
      */
     dashboardQueries: createReadablesFromSelectors(
       leaderboardQuerySelectors,
-      dashboardDataReadables
+      dashboardDataReadables,
     ),
 
     /**
@@ -130,14 +130,14 @@ export const createStateManagerReadables = (
      */
     measures: createReadablesFromSelectors(
       measureSelectors,
-      dashboardDataReadables
+      dashboardDataReadables,
     ),
   };
 };
 
 function createReadablesFromSelectors<T extends SelectorFnsObj>(
   selectors: T,
-  readables: DashboardDataReadables
+  readables: DashboardDataReadables,
 ): ReadablesObj<T> {
   return Object.fromEntries(
     Object.entries(selectors).map(([key, selectorFn]) => [
@@ -157,8 +157,8 @@ function createReadablesFromSelectors<T extends SelectorFnsObj>(
             dashboard,
             metricsSpecQueryResult,
             timeRangeSummary,
-          })
+          }),
       ),
-    ])
+    ]),
   ) as ReadablesObj<T>;
 }
