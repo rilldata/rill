@@ -1,12 +1,14 @@
 <script lang="ts">
   type Color =
-    | "red"
-    | "blue"
+    | "gray"
+    | "magenta"
     | "green"
-    | "purple"
+    | "red"
+    | "dark orange"
     | "orange"
-    | "yellow"
-    | "gray";
+    | "amber"
+    | "blue"
+    | "purple";
 
   export let color: Color = "gray";
 
