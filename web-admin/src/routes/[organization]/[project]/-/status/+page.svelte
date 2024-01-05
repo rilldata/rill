@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import ContentContainer from "@rilldata/web-admin/components/layout/ContentContainer.svelte";
-  import ProjectDeploymentStatus from "@rilldata/web-admin/features/projects/ProjectDeploymentStatus.svelte";
+  import ProjectDeploymentStatus from "@rilldata/web-admin/features/projects/status/ProjectDeploymentStatus.svelte";
   import ProjectGithubConnection from "@rilldata/web-admin/features/projects/status/ProjectGithubConnection.svelte";
   import ProjectParseErrors from "@rilldata/web-admin/features/projects/status/ProjectParseErrors.svelte";
   import ProjectResources from "@rilldata/web-admin/features/projects/status/ProjectResources.svelte";
