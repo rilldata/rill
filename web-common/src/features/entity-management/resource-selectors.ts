@@ -19,6 +19,11 @@ export enum ResourceKind {
 }
 export const SingletonProjectParserName = "parser";
 
+// In the UI, we shouldn't show the `rill.runtime.v1` prefix
+export function prettyResourceKind(kind: string) {
+  return kind.replace(/^rill\.runtime\.v1\./, "");
+}
+
 export function useResource<T = V1Resource>(
   instanceId: string,
   name: string,

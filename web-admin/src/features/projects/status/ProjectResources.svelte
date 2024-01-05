@@ -1,10 +1,8 @@
 <script lang="ts">
   import * as Table from "@rilldata/web-admin/components/table-shadcn";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
-  import type {
-    V1ReconcileStatus,
-    V1Resource,
-  } from "@rilldata/web-common/runtime-client";
+  import { prettyResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import {
     Render,
     Subscribe,
@@ -13,6 +11,10 @@
   } from "svelte-headless-table";
   import { readable } from "svelte/store";
   import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
+  import {
+    getResourceKindTagColor,
+    prettyReconcileStatus,
+  } from "./display-utils";
 
   export let resources: V1Resource[];
 
@@ -76,40 +78,6 @@
 
   const { headerRows, pageRows, tableAttrs, tableBodyAttrs } =
     table.createViewModel(columns);
-
-  function prettyResourceKind(kind: string) {
-    return kind.replace(/^rill\.runtime\.v1\./, "");
-  }
-
-  function prettyReconcileStatus(status: V1ReconcileStatus) {
-    switch (status) {
-      case "RECONCILE_STATUS_IDLE":
-        return "Idle";
-      case "RECONCILE_STATUS_PENDING":
-        return "Pending";
-      case "RECONCILE_STATUS_RUNNING":
-        return "Running";
-      case "RECONCILE_STATUS_UNSPECIFIED":
-        return "Unspecified";
-    }
-  }
-
-  function getResourceKindTagColor(kind: string) {
-    switch (kind) {
-      case "rill.runtime.v1.MetricsView":
-        return "blue";
-      case "rill.runtime.v1.Model":
-        return "green";
-      case "rill.runtime.v1.Report":
-        return "purple";
-      case "rill.runtime.v1.Source":
-        return "orange";
-      case "rill.runtime.v1.Theme":
-        return "yellow";
-      default:
-        return "gray";
-    }
-  }
 </script>
 
 <section class="flex flex-col gap-y-4">
