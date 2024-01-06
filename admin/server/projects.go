@@ -175,8 +175,8 @@ func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProj
 		return nil, err
 	}
 	pageSize := validPageSize(req.PageSize)
-	var projectNames []string
 
+	var projectNames []string
 	if req.Tags != nil && len(req.Tags) > 0 {
 		projectNames, err = s.admin.DB.FindProjectPathsByPatternAndTags(ctx, req.NamePattern, token.Val, req.Tags, pageSize)
 	} else {

@@ -2,6 +2,7 @@ package tags
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -30,10 +31,9 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			tags := res.Project.Tags
 			fmt.Printf("Project: %s\n", res.Project.Name)
 			fmt.Printf("Organization: %s\n", res.Project.OrgName)
-			fmt.Printf("Tags: %v\n", tags)
+			fmt.Printf("Tags: %s\n", strings.Join(res.Project.Tags, ","))
 
 			return nil
 		},
