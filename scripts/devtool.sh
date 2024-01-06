@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-go run scripts/devtool/main.go "$@"
+go run ./cli devtool start cloud "$@"

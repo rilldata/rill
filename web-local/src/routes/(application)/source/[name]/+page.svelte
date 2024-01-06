@@ -32,7 +32,7 @@
           }
         },
       },
-    }
+    },
   );
 
   // Initialize the source store

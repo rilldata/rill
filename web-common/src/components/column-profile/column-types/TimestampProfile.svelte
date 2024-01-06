@@ -36,7 +36,7 @@
     $runtime?.instanceId,
     objectName,
     columnName,
-    enableProfiling
+    enableProfiling,
   );
 
   $: timeSeries = getTimeSeriesAndSpark(
@@ -44,7 +44,7 @@
     objectName,
     columnName,
     enableProfiling,
-    active
+    active,
   );
 
   function toggleColumnProfile() {

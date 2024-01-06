@@ -308,9 +308,15 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		if err != nil {
 			return "", nil, err
 		}
-		baseWhereClause += " AND " + clause
+		if strings.TrimSpace(clause) != "" {
+			baseWhereClause += " AND " + clause
+		}
 
 		args = append(args, clauseArgs...)
+	}
+
+	if policy != nil && policy.RowFilter != "" {
+		baseWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
 	}
 
 	havingClause := ""
@@ -320,7 +326,9 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		if err != nil {
 			return "", nil, err
 		}
-		havingClause = "HAVING " + havingClause
+		if strings.TrimSpace(havingClause) != "" {
+			havingClause = "HAVING " + havingClause
+		}
 		args = append(args, havingClauseArgs...)
 	}
 
@@ -504,20 +512,20 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 	td := safeName(mv.TimeDimension)
 
+	whereClause, whereClauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
+	if err != nil {
+		return "", nil, err
+	}
+
 	trc, err := timeRangeClause(q.TimeRange, mv, dialect, td, &args)
 	if err != nil {
 		return "", nil, err
 	}
 	baseWhereClause += trc
 
-	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
-		if err != nil {
-			return "", nil, err
-		}
-		baseWhereClause += " AND " + clause
-
-		args = append(args, clauseArgs...)
+	if whereClause != "" {
+		baseWhereClause += " AND " + whereClause
+		args = append(args, whereClauseArgs...)
 	}
 
 	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, dialect, td, &args)
@@ -526,14 +534,14 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 	comparisonWhereClause += trc
 
-	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
-		if err != nil {
-			return "", nil, err
-		}
-		comparisonWhereClause += " AND " + clause
+	if whereClause != "" {
+		comparisonWhereClause += " AND " + whereClause
+		args = append(args, whereClauseArgs...)
+	}
 
-		args = append(args, clauseArgs...)
+	if policy != nil && policy.RowFilter != "" {
+		baseWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+		comparisonWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
 	}
 
 	havingClause := "1=1"

@@ -189,7 +189,7 @@ export class HttpRequestQueue {
 
   private clearEntryForColumn(
     nameEntry: RequestQueueNameEntry,
-    entry: RequestQueueEntry
+    entry: RequestQueueEntry,
   ) {
     const entriesForColumn = nameEntry.columnMap.get(entry.columnName);
     const index = entriesForColumn.indexOf(entry);

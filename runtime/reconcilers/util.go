@@ -12,7 +12,6 @@ import (
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/robfig/cron/v3"
-	"golang.org/x/exp/slog"
 )
 
 // checkRefs checks that all refs exist, are idle, and have no errors.
@@ -155,35 +154,6 @@ func safeSQLName(name string) string {
 		return name
 	}
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
-}
-
-func logTableNameAndType(ctx context.Context, c *runtime.Controller, connector, name string) {
-	olap, release, err := c.AcquireOLAP(ctx, connector)
-	if err != nil {
-		c.Logger.Error("LogTableNameAndType: failed to acquire OLAP", slog.Any("err", err))
-		return
-	}
-	defer release()
-
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT column_name, data_type FROM information_schema.columns WHERE table_name=? ORDER BY column_name ASC", Args: []any{name}})
-	if err != nil {
-		c.Logger.Error("LogTableNameAndType: failed information_schema.columns", slog.Any("err", err))
-		return
-	}
-	defer res.Close()
-
-	colTyp := make([]string, 0)
-	var col, typ string
-	for res.Next() {
-		err = res.Scan(&col, &typ)
-		if err != nil {
-			c.Logger.Error("LogTableNameAndType: failed scan", slog.Any("err", err))
-			return
-		}
-		colTyp = append(colTyp, fmt.Sprintf("%s:%s", col, typ))
-	}
-
-	c.Logger.Info("LogTableNameAndType: ", slog.String("name", name), slog.String("schema", strings.Join(colTyp, ", ")))
 }
 
 func resolveTemplatedProps(ctx context.Context, c *runtime.Controller, self compilerv1.TemplateResource, props map[string]any) (map[string]any, error) {

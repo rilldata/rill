@@ -126,7 +126,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	// whether table goes in main db or in separate table specific db
 	tmpTable := fmt.Sprintf("__%s_tmp_postgres", table)
 	// generate create table query
-	qry, err := createTableQuery(schema, tmpTable)
+	qry, err := CreateTableQuery(schema, tmpTable)
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	return s.to.CreateTableAsSelect(ctx, table, false, fmt.Sprintf("SELECT * FROM %s", tmpTable))
 }
 
-func createTableQuery(schema *runtimev1.StructType, name string) (string, error) {
+func CreateTableQuery(schema *runtimev1.StructType, name string) (string, error) {
 	query := fmt.Sprintf("CREATE OR REPLACE TABLE %s(", safeName(name))
 	for i, s := range schema.Fields {
 		i++

@@ -215,7 +215,7 @@ Otherwise, the page will jump around as the data is fetched.
                   class="fill-gray-500"
                   opacity={0.8}
                   >({justEnoughPrecision(point?.low)}, {justEnoughPrecision(
-                    point?.high
+                    point?.high,
                   )}{point?.high === data.at(-1)?.high ? ")" : "]"}</text
                 >
                 <text

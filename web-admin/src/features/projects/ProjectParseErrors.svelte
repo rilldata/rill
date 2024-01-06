@@ -18,7 +18,7 @@
   $: if ($proj.data?.prodDeployment?.runtimeInstanceId && hasReadAccess)
     errors = getProjectErrors(
       queryClient,
-      $proj.data?.prodDeployment?.runtimeInstanceId
+      $proj.data?.prodDeployment?.runtimeInstanceId,
     );
 </script>
 

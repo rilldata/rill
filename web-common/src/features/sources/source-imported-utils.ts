@@ -9,11 +9,11 @@ import { get } from "svelte/store";
 export function checkSourceImported(
   queryClient: QueryClient,
   sourceName: string,
-  filePath: string
+  filePath: string,
 ) {
   const lastUpdatedOn = getLastStateUpdatedOnByKindAndName(
     ResourceKind.Source,
-    sourceName
+    sourceName,
   );
   if (lastUpdatedOn) return; // For now only show for fresh sources
   waitForResourceUpdate(
@@ -21,7 +21,7 @@ export function checkSourceImported(
     get(runtime).instanceId,
     filePath,
     ResourceKind.Source,
-    sourceName
+    sourceName,
   ).then((success) => {
     if (!success) return;
     sourceImportedName.set(sourceName);

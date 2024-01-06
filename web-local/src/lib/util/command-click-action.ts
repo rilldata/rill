@@ -6,7 +6,7 @@ interface CreateCommandClick {
 }
 
 export function createCommandClickAction(
-  params: CreateCommandClick = { stopImmediatePropagation: true }
+  params: CreateCommandClick = { stopImmediatePropagation: true },
 ) {
   const _stopImmediatePropagation = params?.stopImmediatePropagation || false;
   // set a context for children to consume transient state.

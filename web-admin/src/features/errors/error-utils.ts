@@ -24,7 +24,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
         query.queryKey[0] as string,
         "",
         "unknown error",
-        screenName
+        screenName,
       );
       return;
     } else {
@@ -32,14 +32,14 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
         query.queryKey[0] as string,
         error.response?.status + "" ?? error.status,
         (error.response?.data as RpcStatus)?.message ?? error.message,
-        screenName
+        screenName,
       );
     }
 
     // If unauthorized to the admin server, redirect to login page
     if (isAdminServerQuery(query) && error.response?.status === 401) {
       goto(
-        `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`
+        `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
       );
       return;
     }
@@ -88,7 +88,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
 }
 
 function createErrorStoreStateFromAxiosError(
-  error: AxiosError
+  error: AxiosError,
 ): ErrorStoreState {
   // Handle network errors
   if (error.message === "Network Error") {
@@ -137,7 +137,7 @@ function createErrorStoreStateFromAxiosError(
 }
 
 export function createErrorPagePropsFromRoutingError(
-  statusCode: number
+  statusCode: number,
 ): ErrorStoreState {
   if (statusCode === 404) {
     return {
@@ -160,7 +160,7 @@ export function addJavascriptErrorListeners() {
     errorEvent?.fireJavascriptErrorBoundaryEvent(
       errorEvt.error?.stack ?? "",
       errorEvt.message,
-      getScreenNameFromPage(get(page))
+      getScreenNameFromPage(get(page)),
     );
   };
   const unhandledRejectionHandler = (rejectionEvent: PromiseRejectionEvent) => {
@@ -177,7 +177,7 @@ export function addJavascriptErrorListeners() {
     errorEvent?.fireJavascriptErrorBoundaryEvent(
       stack,
       message,
-      getScreenNameFromPage(get(page))
+      getScreenNameFromPage(get(page)),
     );
   };
 

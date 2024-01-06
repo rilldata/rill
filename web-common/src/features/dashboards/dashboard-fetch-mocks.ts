@@ -45,13 +45,13 @@ export class DashboardFetchMocks {
   public mockTimeRangeSummary(
     tableName: string,
     columnName: string,
-    resp: V1TimeRangeSummary
+    resp: V1TimeRangeSummary,
   ) {
     this.responses.set(
       `queries__time-range-summary__${tableName}__${columnName}`,
       {
         timeRangeSummary: resp,
-      }
+      },
     );
   }
 

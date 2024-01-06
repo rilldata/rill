@@ -155,7 +155,7 @@ func (r *MetricsViewReconciler) validate(ctx context.Context, mv *runtimev1.Metr
 
 func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2, fields map[string]*runtimev1.StructType_Field) error {
 	if d.Column != "" {
-		if _, isColumn := fields[d.Column]; !isColumn {
+		if _, isColumn := fields[strings.ToLower(d.Column)]; !isColumn {
 			return fmt.Errorf("failed to validate dimension %q: column %q not found in table", d.Name, d.Column)
 		}
 		return nil

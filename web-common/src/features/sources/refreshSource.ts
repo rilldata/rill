@@ -13,7 +13,7 @@ import {
 export async function refreshSource(
   connector: string,
   sourceName: string,
-  instanceId: string
+  instanceId: string,
 ) {
   if (connector !== "local_file") {
     return runtimeServiceTriggerRefresh(instanceId, sourceName);
@@ -33,24 +33,24 @@ export async function refreshSource(
       sourceName,
       path: filePath,
     },
-    "local_file"
+    "local_file",
   );
   return runtimeServicePutFile(
     instanceId,
     getFileAPIPathFromNameAndType(sourceName, EntityType.Table),
     {
       blob: yaml,
-    }
+    },
   );
 }
 
 export async function replaceSourceWithUploadedFile(
   instanceId: string,
-  sourceName: string
+  sourceName: string,
 ) {
   const artifactPath = getFileAPIPathFromNameAndType(
     sourceName,
-    EntityType.Table
+    EntityType.Table,
   );
 
   const files = await openFileUploadDialog(false);
@@ -66,7 +66,7 @@ export async function replaceSourceWithUploadedFile(
       sourceName,
       path: filePath,
     },
-    "local_file"
+    "local_file",
   );
 
   // Create source

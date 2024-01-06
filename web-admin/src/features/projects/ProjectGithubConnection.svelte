@@ -20,7 +20,7 @@
   $: githubLastSynced = useDashboardsLastUpdated(
     $runtime.instanceId,
     organization,
-    project
+    project,
   );
 </script>
 

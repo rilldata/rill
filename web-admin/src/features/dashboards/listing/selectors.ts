@@ -33,7 +33,7 @@ export interface DashboardListItem {
 
 // TODO: use the creator pattern to get rid of the raw call to http endpoint
 export async function getDashboardsForProject(
-  projectData: V1GetProjectResponse
+  projectData: V1GetProjectResponse,
 ): Promise<V1Resource[]> {
   // There may not be a prodDeployment if the project was hibernated
   if (!projectData.prodDeployment) {
@@ -43,7 +43,7 @@ export async function getDashboardsForProject(
   // Hack: in development, the runtime host is actually on port 8081
   const runtimeHost = projectData.prodDeployment.runtimeHost.replace(
     "localhost:9091",
-    "localhost:8081"
+    "localhost:8081",
   );
 
   const axios = Axios.create({
@@ -55,7 +55,7 @@ export async function getDashboardsForProject(
 
   // TODO: use resource API
   const catalogEntriesResponse = await axios.get(
-    `/v1/instances/${projectData.prodDeployment.runtimeInstanceId}/resources?kind=${ResourceKind.MetricsView}`
+    `/v1/instances/${projectData.prodDeployment.runtimeInstanceId}/resources?kind=${ResourceKind.MetricsView}`,
   );
 
   const catalogEntries = catalogEntriesResponse.data?.resources as V1Resource[];
@@ -65,14 +65,14 @@ export async function getDashboardsForProject(
 
 export function useDashboards(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
-    data.resources.filter((res) => !!res.metricsView?.state?.validSpec)
+    data.resources.filter((res) => !!res.metricsView?.state?.validSpec),
   );
 }
 
 export function useDashboardsLastUpdated(
   instanceId: string,
   organization: string,
-  project: string
+  project: string,
 ) {
   return derived(
     [
@@ -89,11 +89,11 @@ export function useDashboardsLastUpdated(
 
       const max = Math.max(
         ...dashboardsResp.data.map((res) =>
-          new Date(res.meta.stateUpdatedOn).getTime()
-        )
+          new Date(res.meta.stateUpdatedOn).getTime(),
+        ),
       );
       return new Date(max);
-    }
+    },
   );
 }
 
@@ -147,17 +147,17 @@ export function useDashboardsStatus(instanceId: string) {
           }
         },
       },
-    }
+    },
   );
 }
 
 export function listenAndInvalidateDashboards(
   queryClient: QueryClient,
-  instanceId: string
+  instanceId: string,
 ) {
   const store = derived(
     [useDashboardsStatus(instanceId), useDashboards(instanceId)],
-    (state) => state
+    (state) => state,
   );
 
   const dashboards = new Map<string, Date>();
@@ -184,12 +184,12 @@ export function listenAndInvalidateDashboards(
       if (dashboards.has(dashboardResource.meta.name.name)) {
         // if the dashboard existed then check if it was updated since last seen
         const prevStateUpdatedOn = dashboards.get(
-          dashboardResource.meta.name.name
+          dashboardResource.meta.name.name,
         );
         if (prevStateUpdatedOn.getTime() < stateUpdatedOn.getTime()) {
           // invalidate if it was updated
           refreshResource(queryClient, instanceId, dashboardResource).then(() =>
-            invalidateMetricsViewData(queryClient, instanceId, false)
+            invalidateMetricsViewData(queryClient, instanceId, false),
           );
           dashboardChanged = true;
         }
@@ -211,7 +211,7 @@ export function listenAndInvalidateDashboards(
     if (dashboardChanged) {
       // Temporary to refresh useDashboardsV2 from below
       queryClient.resetQueries(
-        getRuntimeServiceListResourcesQueryKey(instanceId)
+        getRuntimeServiceListResourcesQueryKey(instanceId),
       );
     }
   });
@@ -231,11 +231,11 @@ export interface DashboardResource {
 
 function getDashboardRefreshedOn(
   dashboard: V1Resource,
-  allResources: V1Resource[]
+  allResources: V1Resource[],
 ): string | undefined {
   const refName = dashboard.meta.refs[0];
   const refTable = allResources.find(
-    (r) => r.meta?.name?.name === refName?.name
+    (r) => r.meta?.name?.name === refName?.name,
   );
   return (
     refTable?.model?.state.refreshedOn || refTable?.source?.state.refreshedOn
@@ -244,7 +244,7 @@ function getDashboardRefreshedOn(
 
 // This iteration of `useDashboards` returns the above `DashboardResource` type, which includes `refreshedOn`
 export function useDashboardsV2(
-  instanceId: string
+  instanceId: string,
 ): CreateQueryResult<DashboardResource[]> {
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
@@ -262,14 +262,14 @@ export function useDashboardsV2(
 // This iteration of `useDashboard` returns the above `DashboardResource` type, which includes `refreshedOn`
 export function useDashboardV2(
   instanceId: string,
-  name: string
+  name: string,
 ): CreateQueryResult<DashboardResource> {
   return createRuntimeServiceListResources(instanceId, undefined, {
     query: {
       enabled: !!instanceId && !!name,
       select: (data) => {
         const dashboard = data.resources.find(
-          (res) => res.meta.name.name === name
+          (res) => res.meta.name.name === name,
         );
         const refreshedOn = getDashboardRefreshedOn(dashboard, data.resources);
         return { resource: dashboard, refreshedOn };

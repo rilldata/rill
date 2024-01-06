@@ -59,7 +59,7 @@ func UnassumeCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			// Select org again for original user
-			err = auth.SelectOrgFlow(ctx, ch)
+			err = auth.SelectOrgFlow(ctx, ch, true)
 			if err != nil {
 				return err
 			}

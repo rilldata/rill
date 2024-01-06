@@ -27,7 +27,7 @@
   // Poll specifically for the project's deployment status
   $: projectDeploymentStatus = useProjectDeploymentStatus(
     organization,
-    project
+    project,
   );
   let deploymentStatus: V1DeploymentStatus;
 
@@ -54,7 +54,7 @@
       queryClient.invalidateQueries(
         getRuntimeServiceListResourcesQueryKey(instanceId, {
           kind: ResourceKind.MetricsView,
-        })
+        }),
       );
     }
   }
@@ -62,7 +62,7 @@
   async function getDashboardsAndInvalidate() {
     const dashboardListItems = await getDashboardsForProject($proj.data);
     const dashboardNames = dashboardListItems.map(
-      (listing) => listing.meta.name.name
+      (listing) => listing.meta.name.name,
     );
     return invalidateDashboardsQueries(queryClient, dashboardNames);
   }

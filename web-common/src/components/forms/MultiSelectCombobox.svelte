@@ -19,7 +19,7 @@
   let inputValue = "";
 
   $: filteredOptions = options.filter((option) =>
-    option.toLowerCase().includes(inputValue.toLowerCase())
+    option.toLowerCase().includes(inputValue.toLowerCase()),
   );
 
   function toggleOption(option: string) {

@@ -55,7 +55,7 @@ const DEFAULT_EVENTS = [
 export function forwardEvents(
   component: SvelteComponent,
   additionalEvents = [],
-  overridingEvents = []
+  overridingEvents = [],
 ) {
   const eventSet = [
     ...(overridingEvents.length ? overridingEvents : DEFAULT_EVENTS),
@@ -64,7 +64,7 @@ export function forwardEvents(
 
   return (node: HTMLElement | SVGElement) => {
     const destructors = eventSet.map((event) =>
-      listen(node, event, (e) => bubble(component, e))
+      listen(node, event, (e) => bubble(component, e)),
     );
 
     return {

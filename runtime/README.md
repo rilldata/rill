@@ -1,6 +1,6 @@
 # `runtime`
 
-The runtime a data infrastructure proxy and orchestrator – our data plane. It connects to data infrastructure and is or will be responsible for transpiling queries, parsing code artifacts, reconciling infra state, implementing connectors, enforcing (row-based) access policies, scheduling tasks, triggering alerts, and much more.
+The runtime a data infrastructure proxy and orchestrator – our data plane. It connects to data infrastructure and is responsible for dashboard queries, parsing code files, reconciling infra state, implementing connectors, enforcing (row-based) access policies, scheduling tasks, triggering reports, and much more.
 
 It's designed as a modular component that can be embedded in local applications (as it is into Rill Developer) or deployed stand-alone in a cloud environment.
 
@@ -15,61 +15,41 @@ The base directory contains a `Runtime` type that represents the lifecycle of th
 - `pkg` contains utility libraries.
 - `queries` contains pre-defined analytical queries that the runtime can serve (used for profiling and dashboards).
 - `server` contains a server that implements the runtime's APIs.
-- `services` contains logic for building and reconciling Rill projects.
 - `testruntime` contains helper functions for initializing a test runtime with test data.
 
-## How to test and run
+## Development
 
-You can start a stand-alone runtime server using the CLI:
+### Developing the local application
+
+Run `rill devtool local`. You need to stop and restart it using ctrl+C when you make code changes.
+
+### Developing for cloud
+
+In one terminal, start a full cloud development environment except the runtime:
+```bash
+rill devtool start cloud --except runtime
+```
+
+In a separate terminal, start a runtime server:
 ```bash
 go run ./cli runtime start
 ```
 
-Ping the server to verify it's running:
+Optionally, deploy a seed project:
 ```bash
-go run ./cli runtime ping --base-url http://localhost:9090
+rill devtool seed cloud
 ```
+
+### Running tests
 
 You can run all tests using:
 ```bash
 go test ./runtime/...
 ```
 
-See details in `web-local/README.md` for info on how to run in development together with the local frontend.
-
 ## Configuration
 
-The runtime server is configured using environment variables parsed in `cli/cmd/runtime/start.go`. All environment variables have reasonable defaults suitable for local development. The current defaults are:
-
-```bash
-RILL_RUNTIME_HTTP_PORT="8080"
-RILL_RUNTIME_GRPC_PORT="9090"
-RILL_RUNTIME_LOG_LEVEL="info"
-RILL_RUNTIME_METRICS_EXPORTER="prometheus"
-RILL_RUNTIME_TRACES_EXPORTER=""
-RILL_RUNTIME_ALLOWED_ORIGINS="*"
-RILL_RUNTIME_METASTORE_DRIVER="sqlite"
-RILL_RUNTIME_METASTORE_URL=":memory:"
-# Hex-encoded comma-separated list of key pairs. To generate, run "go run ./scripts/generate_keypairs/main.go"
-# For details: https://pkg.go.dev/github.com/gorilla/sessions#NewCookieStore
-RILL_RUNTIME_SESSION_KEY_PAIRS=7938b8c95ac90b3731c353076daeae8a,90c22a5a6c6b442afdb46855f95eb7d6
-RILL_RUNTIME_AUTH_ENABLE="false"
-RILL_RUNTIME_AUTH_ISSUER_URL=""
-RILL_RUNTIME_AUTH_AUDIENCE_URL=""
-RILL_RUNTIME_EMAIL_SMTP_HOST=""
-RILL_RUNTIME_EMAIL_SMTP_PORT=""
-RILL_RUNTIME_EMAIL_SMTP_USERNAME=""
-RILL_RUNTIME_EMAIL_SMTP_PASSWORD=""
-RILL_RUNTIME_EMAIL_SENDER_EMAIL=""
-RILL_RUNTIME_EMAIL_SENDER_NAME=""
-RILL_RUNTIME_EMAIL_BCC=""
-RILL_RUNTIME_CONNECTION_CACHE_SIZE="100"
-RILL_RUNTIME_QUERY_CACHE_SIZE="10000"
-RILL_RUNTIME_ALLOW_HOST_ACCESS="false"
-RILL_RUNTIME_SAFE_SOURCE_REFRESH="true"
-RILL_RUNTIME_GITHUB_APP_ID=""
-RILL_RUNTIME_GITHUB_APP_PRIVATE_KEY=""
-```
+The runtime server is configured using environment variables parsed in `cli/cmd/runtime/start.go`.
 
 ## Adding a new endpoint
 
@@ -85,61 +65,6 @@ To add a new endpoint:
 
 1. Add a new endpoint for the query by following the steps in the section above ("Adding a new endpoint")
 2. Implement the query in `runtime/queries` by following the instructions in `runtime/queries/README.md`
-
-## Example: Creating an instance and rehydrating from code artifacts
-
-```bash
-# Start runtime
-go run ./runtime/cmd/main.go
-
-# Create instance
-curl --request POST --url http://localhost:8080/v1/instances --header 'Content-Type: application/json' \
-  --data '{
-    "instance_id": "default",
-    "olap_driver": "duckdb",
-    "olap_dsn": "test.db",
-    "repo_driver": "file",
-    "repo_dsn": "./examples/ad_bids",
-    "embed_catalog": true
-}'
-
-# Apply code artifacts
-curl --request POST --url http://localhost:8080/v1/instances/default/reconcile --header 'Content-Type: application/json'
-
-# Query data
-curl --request POST --url http://localhost:8080/v1/instances/default/query --header 'Content-Type: application/json' \
-  --data '{ "sql": "select * from ad_bids limit 10" }'
-
-# Query explore API
-curl --request POST --url http://localhost:8080/v1/instances/default/queries/metrics-views/ad_bids_metrics/toplist/domain --header 'Content-Type: application/json' \
-  --data '{
-    "measure_names": ["measure_0"],
-    "limit": 10,
-    "sort": [{ "name": "measure_0", "ascending": false }]
-}'
-
-# Query profiling API
-curl --request GET --url http://localhost:8080/v1/instances/default/null-count/ad_bids/publisher
-
-# Get catalog info
-curl --request GET --url http://localhost:8080/v1/instances/default/catalog
-
-# Refresh source named "ad_bids_source"
-curl --request POST --url http://localhost:8080/v1/instances/default/catalog/ad_bids_source/refresh
-
-# Get available connectors
-curl --request GET   --url http://localhost:8080/v1/connectors/meta
-
-# List files in project
-curl --request GET --url http://localhost:8080/v1/instances/default/files
-
-# Fetch file in project
-curl --request GET --url http://localhost:8080/v1/instances/default/files/-/models/ad_bids.sql
-
-# Update file in project
-curl --request POST --url http://localhost:8080/v1/instances/default/files/-/models/ad_bids.sql --header 'Content-Type: application/json' \
-  --data '{ "blob": "select id, timestamp, publisher, domain, bid_price from ad_bids_source" }'
-```
 
 ## Using a DuckDB nightly build
 

@@ -5,7 +5,7 @@ import { EntityType } from "../../entity-management/types";
 
 export function useDashboardPolicyCheck(
   instanceId: string,
-  dashboardName: string
+  dashboardName: string,
 ) {
   return createRuntimeServiceGetFile(
     instanceId,
@@ -18,6 +18,6 @@ export function useDashboardPolicyCheck(
           return !!securityPolicy;
         },
       },
-    }
+    },
   );
 }

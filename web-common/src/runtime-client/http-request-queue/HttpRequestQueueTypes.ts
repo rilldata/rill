@@ -29,7 +29,7 @@ export type RequestQueueHeapItem = RequestQueueNameEntry | RequestQueueEntry;
 export function getHeapByName(): Heap<RequestQueueNameEntry> {
   return new Heap<RequestQueueNameEntry>(
     (a, b) => a.weight - b.weight,
-    (a) => a.name
+    (a) => a.name,
   );
 }
 
@@ -43,6 +43,6 @@ export function getHeapByQuery(): Heap<RequestQueueEntry> {
       }
       return a.weight - b.weight;
     },
-    (a) => a.key
+    (a) => a.key,
   );
 }

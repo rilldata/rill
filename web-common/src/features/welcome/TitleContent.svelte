@@ -17,7 +17,7 @@
     behaviourEvent?.fireSplashEvent(
       BehaviourEventAction.SourceModal,
       BehaviourEventMedium.Button,
-      MetricsEventSpace.Workspace
+      MetricsEventSpace.Workspace,
     );
   };
 </script>

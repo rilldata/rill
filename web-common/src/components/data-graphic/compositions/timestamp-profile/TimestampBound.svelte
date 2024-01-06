@@ -12,7 +12,10 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import {
+    createShiftClickAction,
+    isClipboardApiSupported,
+  } from "@rilldata/web-common/lib/actions/shift-click-action";
   import {
     datePortion,
     timePortion,
@@ -29,7 +32,11 @@
     valueWithoutOffset = removeLocalTimezoneOffset(value);
 </script>
 
-<Tooltip alignment={align == "left" ? "start" : "end"} distance={8}>
+<Tooltip
+  alignment={align == "left" ? "start" : "end"}
+  distance={8}
+  suppress={!isClipboardApiSupported()}
+>
   <button
     class="text-{align} text-gray-500"
     style:line-height={1.1}

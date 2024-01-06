@@ -13,6 +13,7 @@ see more button
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import { isClipboardApiSupported } from "../../../lib/actions/shift-click-action";
 
   export let label: string | number;
   export let excluded: boolean;
@@ -42,13 +43,15 @@ see more button
     {/if}
     <Shortcut>Click</Shortcut>
   </TooltipShortcutContainer>
-  <TooltipShortcutContainer>
-    <div>
-      <StackingWord key="shift">Copy</StackingWord>
-      this dimension value to clipboard
-    </div>
-    <Shortcut>
-      <span style="font-family: var(--system);">⇧</span> + Click
-    </Shortcut>
-  </TooltipShortcutContainer>
+  {#if isClipboardApiSupported()}
+    <TooltipShortcutContainer>
+      <div>
+        <StackingWord key="shift">Copy</StackingWord>
+        this dimension value to clipboard
+      </div>
+      <Shortcut>
+        <span style="font-family: var(--system);">⇧</span> + Click
+      </Shortcut>
+    </TooltipShortcutContainer>
+  {/if}
 </TooltipContent>

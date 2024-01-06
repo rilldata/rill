@@ -10,7 +10,7 @@ export type DimensionFilter = {
 
 export function formatFilters(
   filters: MetricsViewFilterCond[] | undefined,
-  dimensionIdMap: Map<string | number, MetricsViewSpecDimensionV2>
+  dimensionIdMap: Map<string | number, MetricsViewSpecDimensionV2>,
 ): DimensionFilter[] {
   if (!filters) return [];
 

@@ -827,6 +827,11 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
   timeEnd?: Timestamp;
 
   /**
+   * @generated from field: repeated string pivot_on = 15;
+   */
+  pivotOn: string[] = [];
+
+  /**
    * @generated from field: rill.runtime.v1.Expression where = 8;
    */
   where?: Expression;
@@ -874,6 +879,7 @@ export class MetricsViewAggregationRequest extends Message<MetricsViewAggregatio
     { no: 12, name: "time_range", kind: "message", T: TimeRange },
     { no: 6, name: "time_start", kind: "message", T: Timestamp },
     { no: 7, name: "time_end", kind: "message", T: Timestamp },
+    { no: 15, name: "pivot_on", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 8, name: "where", kind: "message", T: Expression },
     { no: 13, name: "having", kind: "message", T: Expression },
     { no: 9, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },

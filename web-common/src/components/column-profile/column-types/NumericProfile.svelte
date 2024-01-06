@@ -45,7 +45,7 @@
     $runtime?.instanceId,
     objectName,
     columnName,
-    enableProfiling
+    enableProfiling,
   );
 
   $: diagnosticHistogram = getNumericHistogram(
@@ -54,7 +54,7 @@
     columnName,
     QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
     enableProfiling,
-    active
+    active,
   );
   let fdHistogram;
   $: if (isFloat(type)) {
@@ -64,7 +64,7 @@
       columnName,
       QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
       enableProfiling,
-      active
+      active,
     );
   }
 
@@ -77,7 +77,7 @@
   $: histogramData = isFloat(type)
     ? chooseBetweenDiagnosticAndStatistical(
         $diagnosticHistogram?.data ?? [],
-        $fdHistogram?.data
+        $fdHistogram?.data,
       )
     : $diagnosticHistogram?.data;
 
@@ -92,13 +92,13 @@
         },
         enabled: enableProfiling,
       },
-    }
+    },
   );
   $: topK = getTopK(
     $runtime?.instanceId,
     objectName,
     columnName,
-    enableProfiling
+    enableProfiling,
   );
 
   $: summary = derived(
@@ -113,11 +113,11 @@
         query: {
           enabled: enableProfiling,
         },
-      }
+      },
     ),
     ($query) => {
       return $query?.data?.numericSummary?.numericStatistics;
-    }
+    },
   );
 
   function toggleColumnProfile() {

@@ -72,14 +72,14 @@
           data.connectors
             .filter(
               // Only show connectors in TAB_ORDER
-              (a) => a.name && TAB_ORDER.indexOf(a.name) >= 0
+              (a) => a.name && TAB_ORDER.indexOf(a.name) >= 0,
             )
             .sort(
               // CAST SAFETY: we have filtered out any connectors that
               // don't have a `name` in the previous filter
               (a, b) =>
                 TAB_ORDER.indexOf(a.name as string) -
-                TAB_ORDER.indexOf(b.name as string)
+                TAB_ORDER.indexOf(b.name as string),
             );
         return data;
       },
@@ -112,7 +112,7 @@
       BehaviourEventAction.SourceCancel,
       BehaviourEventMedium.Button,
       $appScreen,
-      MetricsEventSpace.Modal
+      MetricsEventSpace.Modal,
     );
     resetModal();
     dispatch("close");

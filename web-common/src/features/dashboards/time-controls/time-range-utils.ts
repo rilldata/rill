@@ -36,7 +36,7 @@ export const supportedTimeGrainEnums = () => {
 // let's plan to deprecate it later.
 export function getRelativeTimeRangeOptions(
   allTimeRange: TimeRange,
-  minTimeGrain: V1TimeGrain
+  minTimeGrain: V1TimeGrain,
 ): TimeRange[] {
   const allTimeRangeDurationMs = +allTimeRange.end - +allTimeRange.start;
   const timeRanges: TimeRange[] = [];
@@ -76,10 +76,10 @@ export function getRelativeTimeRangeOptions(
 // Moved to time range and renamed to isTimeRangeValidForMinTimeGrain
 export function isTimeRangeValidForTimeGrain(
   minTimeGrain: V1TimeGrain,
-  timeRange: TimeRangeName_DEPRECATE
+  timeRange: TimeRangeName_DEPRECATE,
 ): boolean {
   const timeGrainEnums = Object.values(TIME_GRAIN).map(
-    (timeGrain) => timeGrain.grain
+    (timeGrain) => timeGrain.grain,
   );
   if (!timeGrainEnums.includes(minTimeGrain)) {
     return true;
@@ -100,7 +100,7 @@ export function isTimeRangeValidForTimeGrain(
 // changed the runtime definition for default_time_range to be a preset string.
 // see https://github.com/rilldata/rill/issues/1961
 export const timeRangeToISODuration = (
-  timeRangeName: TimeRangeName_DEPRECATE
+  timeRangeName: TimeRangeName_DEPRECATE,
 ): string => {
   switch (timeRangeName) {
     case TimeRangeName_DEPRECATE.LAST_SIX_HOURS:
@@ -123,7 +123,7 @@ export const timeRangeToISODuration = (
 // see https://github.com/rilldata/rill/issues/1961
 export const ISODurationToTimeRange = (
   isoDuration: string,
-  defaultToAllTime = true
+  defaultToAllTime = true,
 ): TimeRangeName_DEPRECATE => {
   switch (isoDuration) {
     case "PT6H":
@@ -144,7 +144,7 @@ export const ISODurationToTimeRange = (
 // Moved to time-grain and renamed
 export function isGrainBigger(
   grain1: V1TimeGrain,
-  grain2: V1TimeGrain
+  grain2: V1TimeGrain,
 ): boolean {
   if (grain1 === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) return false;
   return getTimeGrainDurationMs(grain1) > getTimeGrainDurationMs(grain2);
@@ -314,11 +314,11 @@ const getTimeGrainDurationMs = (timeGrain: V1TimeGrain): number => {
 // might not need it
 export function makeRelativeTimeRange(
   timeRangeName: TimeRangeName_DEPRECATE,
-  allTimeRange: TimeRange
+  allTimeRange: TimeRange,
 ): TimeRange {
   if (timeRangeName === TimeRangeName_DEPRECATE.ALL_TIME) return allTimeRange;
   const startTime = new Date(
-    allTimeRange.end.getTime() - getLastXTimeRangeDurationMs(timeRangeName)
+    allTimeRange.end.getTime() - getLastXTimeRangeDurationMs(timeRangeName),
   );
   return {
     name: timeRangeName,

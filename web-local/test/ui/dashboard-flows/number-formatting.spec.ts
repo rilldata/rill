@@ -108,7 +108,7 @@ dimensions:
     ]) {
       // check bignum with correct format exists/is visible
       await expect(
-        page.getByRole("button", { name: `${name} ${bignum}` })
+        page.getByRole("button", { name: `${name} ${bignum}` }),
       ).toBeVisible();
       // hover over btn_name
       await page.getByRole("button", { name: `${name} ${bignum}` }).hover();
@@ -138,14 +138,14 @@ dimensions:
     await page.getByRole("menuitem", { name: "Percent of total" }).click();
 
     await expect(
-      page.getByRole("button", { name: "null $98.8k 32%" })
+      page.getByRole("button", { name: "null $98.8k 32%" }),
     ).toBeVisible();
 
     await page.getByRole("button", { name: "USD", exact: true }).click();
     await page.getByRole("menuitem", { name: "percentage" }).click();
 
     await expect(
-      page.getByRole("button", { name: "null 9.9M% 32%" })
+      page.getByRole("button", { name: "null 9.9M% 32%" }),
     ).toBeVisible();
 
     // try interval_ms...
@@ -156,7 +156,7 @@ dimensions:
     await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
 
     await expect(
-      page.getByRole("button", { name: "null 27 s 33%" })
+      page.getByRole("button", { name: "null 27 s 33%" }),
     ).toBeVisible();
 
     // try No Format...
@@ -170,7 +170,7 @@ dimensions:
 
     // await page.pause();
     await expect(
-      page.getByRole("button", { name: "null 26642.549999999974 -14%" })
+      page.getByRole("button", { name: "null 26642.549999999974 -14%" }),
     ).toBeVisible();
 
     /******************
@@ -186,7 +186,7 @@ dimensions:
       page
         .locator("div")
         .filter({ hasText: /^8\.9k$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 
     // USD
@@ -194,7 +194,7 @@ dimensions:
       page
         .locator("div")
         .filter({ hasText: /^\$26\.6k$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 
     // humanized chosen
@@ -202,7 +202,7 @@ dimensions:
       page
         .locator("div")
         .filter({ hasText: /^26\.6k$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 
     // No Format
@@ -210,7 +210,7 @@ dimensions:
       page
         .locator("div")
         .filter({ hasText: /^26642\.549999999974$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 
     // No Format - context column, delta
@@ -218,7 +218,7 @@ dimensions:
       page
         .locator("div")
         .filter({ hasText: /^-4348\.7299999999705$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 
     // No Format - context column, delta pct
@@ -227,7 +227,7 @@ dimensions:
         .getByRole("table", { name: "Dimension table" })
         .locator("div")
         .filter({ hasText: /^-14%$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 
     // No Format - context column, pct of total
@@ -235,7 +235,7 @@ dimensions:
       page
         .locator("div")
         .filter({ hasText: /^33%$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 
     // percentage
@@ -243,7 +243,7 @@ dimensions:
       page
         .locator("div")
         .filter({ hasText: /^383\.4k%$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 
     // interval_ms
@@ -251,7 +251,7 @@ dimensions:
       page
         .locator("div")
         .filter({ hasText: /^3\.8 s$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
 
     // d3 fixed
@@ -259,7 +259,7 @@ dimensions:
       page
         .locator("div")
         .filter({ hasText: /^26642\.550$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     ).toBeVisible();
   });
 });

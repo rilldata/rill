@@ -18,7 +18,7 @@ export function initLocalUserPreferenceStore(metricViewName: string) {
     `${metricViewName}-userPreference`,
     {
       timeZone: getLocalIANA(),
-    }
+    },
   );
 
   return localUserPreferences;

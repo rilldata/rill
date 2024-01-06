@@ -54,7 +54,7 @@
 
   $: cardinalityQuery = createQueryServiceTableCardinality(
     $runtime.instanceId,
-    sourceName
+    sourceName,
   );
   $: cardinality = $cardinalityQuery?.data?.cardinality
     ? Number($cardinalityQuery?.data?.cardinality)
@@ -64,7 +64,7 @@
     $runtime?.instanceId,
     sourceName,
     {},
-    { query: { keepPreviousData: true } }
+    { query: { keepPreviousData: true } },
   );
   $: profileColumnsCount = $profileColumns?.data?.profileColumns?.length ?? 0;
 
@@ -92,7 +92,7 @@
   $: if (summaries) {
     totalNulls = $summaries.reduce(
       (total, column) => total + (column?.nullCount ?? 0),
-      0
+      0,
     );
   }
   $: {
@@ -108,7 +108,7 @@
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
     sourceName,
-    $sourceStore.clientYAML
+    $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 </script>
