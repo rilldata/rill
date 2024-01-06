@@ -1,5 +1,5 @@
 <script lang="ts">
-  import * as Table from "@rilldata/web-admin/components/table-shadcn";
+  import * as Table from "@rilldata/web-common/components/table-shadcn";
   import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
   import { prettyResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
