@@ -136,7 +136,9 @@ export function getDefaultMetricsExplorerEntity(
       active: false,
       rows: [],
       columns: [],
+      rowJoinType: "nest",
       expanded: {},
+      sort: {},
     },
   };
   // set time range related stuff

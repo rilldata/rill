@@ -4,8 +4,7 @@
   import PivotHeader from "./PivotHeader.svelte";
   import PivotToolbar from "./PivotToolbar.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { usePivotDataStore } from "./pivot-data-store";
-  import type { TableOptions } from "@tanstack/svelte-table";
+  import { getAxisForDimensions, usePivotDataStore } from "./pivot-data-store";
   import PivotEmpty from "@rilldata/web-common/features/dashboards/pivot/PivotEmpty.svelte";
 
   const stateManagers = getStateManagers();

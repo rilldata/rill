@@ -5,6 +5,8 @@ export interface PivotState {
   rows: string[];
   columns: string[];
   expanded: ExpandedState;
+  rowJoinType: "flat" | "nest";
+  sort: any; // TBD
 }
 
 export type PivotMeasure = {

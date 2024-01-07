@@ -6,6 +6,7 @@
 </script>
 
 <div class="flex gap-x-1" style:padding-left={`${row.depth * 2}rem`}>
+  <!-- TODO: Change LOADING_CELL to undefined -->
   {#if value === "LOADING_CELL"}
     <span>🔄</span>
   {:else if row.getCanExpand()}
