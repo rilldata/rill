@@ -2,11 +2,15 @@
 # Each merge to main branch is build with github sha tag and published to Rill Cloud.
 name: Deploy to Rill Cloud
 on:
+  create:
+    branches:
+      - "release**"
   push:
     tags:
       - "**"
     branches:
       - main
+      - "release**"
   workflow_dispatch:
 
 env:
