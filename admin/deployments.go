@@ -23,7 +23,7 @@ type createDeploymentOptions struct {
 	ProjectID      string
 	Region         string
 	ProdBranch     string
-	ProdVariables  database.Variables
+	ProdVariables  map[string]string
 	ProdOLAPDriver string
 	ProdOLAPDSN    string
 	ProdSlots      int
