@@ -6,7 +6,7 @@ import {
 export function createLikeExpression(
   ident: string,
   like: string,
-  negate = false
+  negate = false,
 ) {
   return {
     cond: {
@@ -19,7 +19,7 @@ export function createLikeExpression(
 export function createInExpression(
   ident: string,
   vals: Array<any>,
-  negate = false
+  negate = false,
 ) {
   return {
     cond: {
@@ -50,7 +50,7 @@ export function createOrExpression(exprs: Array<V1Expression>) {
 export function createBinaryExpression(
   ident: string,
   op: V1Operation,
-  val: number
+  val: number,
 ) {
   return {
     cond: {
@@ -64,7 +64,7 @@ export function createBetweenExpression(
   ident: string,
   val1: number,
   val2: number,
-  negate: boolean
+  negate: boolean,
 ) {
   const exprs = [
     {
@@ -116,7 +116,7 @@ export function negateExpression(expr: V1Expression): V1Expression {
 export function forEachExpression(
   expr: V1Expression,
   cb: (e: V1Expression, depth?: number) => void,
-  depth = 0
+  depth = 0,
 ) {
   if (!expr.cond?.exprs) {
     cb(expr, depth);
@@ -134,7 +134,7 @@ export function forEachExpression(
  */
 export function removeExpressions(
   expr: V1Expression,
-  checker: (e: V1Expression) => boolean
+  checker: (e: V1Expression) => boolean,
 ): V1Expression | undefined {
   if (!expr.cond?.exprs) {
     return {

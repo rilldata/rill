@@ -11,7 +11,7 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 
 export function convertFilterToExpression(
-  filter: V1MetricsViewFilter
+  filter: V1MetricsViewFilter,
 ): V1Expression {
   const exprs = new Array<V1Expression>();
 
@@ -42,7 +42,7 @@ export function convertFilterToExpression(
 
 function convertConditionToExpression(
   cond: MetricsViewFilterCond,
-  exclude: boolean
+  exclude: boolean,
 ) {
   let inExpr: V1Expression | undefined;
   if (cond.in?.length) {
@@ -65,7 +65,7 @@ function convertConditionToExpression(
 
 function convertLikeToExpression(
   cond: MetricsViewFilterCond,
-  exclude: boolean
+  exclude: boolean,
 ) {
   if (!cond.like?.length) return undefined;
 
@@ -73,7 +73,7 @@ function convertLikeToExpression(
     return createLikeExpression(cond.name as string, cond.like[0], exclude);
   } else {
     const likeExprs = cond.like.map((v) =>
-      createLikeExpression(cond.name as string, v, exclude)
+      createLikeExpression(cond.name as string, v, exclude),
     );
     return exclude
       ? createAndExpression(likeExprs)

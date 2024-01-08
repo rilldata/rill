@@ -25,7 +25,7 @@ export function clearAllFilters({
 
 export function setTemporaryFilterName(
   { dashboard }: DashboardMutables,
-  name: string
+  name: string,
 ) {
   dashboard.temporaryFilterName = name;
 }
