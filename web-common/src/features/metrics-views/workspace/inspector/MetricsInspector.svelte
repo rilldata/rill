@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
@@ -62,7 +63,7 @@
             tooltipText="model summary"
             bind:active={showModelInformation}
           >
-            Model summary
+            {$_('model-summary')}
           </CollapsibleSectionTitle>
         </div>
         {#if showModelInformation}
@@ -83,7 +84,7 @@
             tooltipText="selected columns"
             bind:active={showColumns}
           >
-            Model columns
+            {$_('model-columns')}
           </CollapsibleSectionTitle>
         </div>
 
@@ -104,7 +105,7 @@
       style:max-inline-size="50ch"
     >
       {#if !yaml?.length}
-        <p>Let's get started.</p>
+        <p>{$_('lets-get-started')}</p>
       {:else if modelName !== undefined}
         <div>
           <p>Model not defined.</p>

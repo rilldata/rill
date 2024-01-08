@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {_} from "svelte-i18n";
   import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
   import { IconSpaceFixer } from "../../components/button";
   import Button from "../../components/button/Button.svelte";
@@ -14,27 +15,27 @@
   const steps: OnboardingStep[] = [
     {
       id: "source",
-      heading: "Import your data source",
+      heading: $_('import-your-data-source'),
       description:
-        "Click 'Add data' or drag a file (Parquet, NDJSON, or CSV) into this window.",
+        $_('click-add-data-or-drag-a-file-parquet-ndjson-or-csv-into-this-window'),
     },
     {
       id: "model",
-      heading: "Model your sources into one big table",
+      heading: $_('model-your-sources-into-one-big-table'),
       description:
-        "Build intuition about your sources and use SQL to model them into an analytics-ready resource.",
+        $_('build-intuition-about-your-sources-and-use-sql-to-model-them-into-an-analytics-ready-resource'),
     },
     {
       id: "metrics",
-      heading: "Define your metrics and dimensions",
+      heading: $_('define-your-metrics-and-dimensions'),
       description:
-        "Define aggregate metrics and break out dimensions for your modeled data.",
+        $_('define-aggregate-metrics-and-break-out-dimensions-for-your-modeled-data'),
     },
     {
       id: "dashboard",
-      heading: "Explore your metrics dashboard",
+      heading: $_('explore-your-metrics-dashboard'),
       description:
-        "Interactively explore line charts and leaderboards to uncover insights.",
+        $_('interactively-explore-line-charts-and-leaderboards-to-uncover-insights'),
     },
   ];
 
@@ -47,8 +48,8 @@
 <WorkspaceContainer top="0px" assetID="onboarding" inspector={false}>
   <div class="pt-20 px-8 flex flex-col gap-y-6 items-center" slot="body">
     <div class="text-center">
-      <div class="font-bold">Getting started</div>
-      <p>Building data intuition at every step of analysis</p>
+      <div class="font-bold">{$_('getting-started')}</div>
+      <p>{$_('building-data-intuition-at-every-step-of-analysis')}</p>
     </div>
     <ol
       class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-gray-50 rounded-lg border border-gray-200"
@@ -64,7 +65,7 @@
             {#if step.id === "source"}
               <Button type="secondary" on:click={openAddSourceModal}>
                 <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
-                <span>Add data</span>
+                <span>{$_('add-data')}</span>
               </Button>
             {/if}
           </div>

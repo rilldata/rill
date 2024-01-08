@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import { goto } from "$app/navigation";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
@@ -59,22 +60,22 @@
         on:click={() => viewMetrics(metricViewName)}
         type="secondary"
       >
-        Edit Metrics <MetricsIcon size="16px" />
+        {$_('edit-metrics')} <MetricsIcon size="16px" />
       </Button>
       <TooltipContent slot="tooltip-content">
         {#if !dashboardIsIdle}
-          Dependencies are being ingested
+          {$_('dependencies-are-being-ingested')}
         {:else}
-          Edit this dashboard's metrics & settings
+          {$_('edit-this-dashboards-metrics-and-settings')}
         {/if}
       </TooltipContent>
     </Tooltip>
     <Tooltip distance={8}>
       <Button on:click={() => (showDeployDashboardModal = true)} type="primary">
-        Deploy
+        {$_('deploy')}
       </Button>
       <TooltipContent slot="tooltip-content">
-        Deploy this dashboard to Rill Cloud
+        {$_('deploy-this-dashboard-to-rill-cloud')}
       </TooltipContent>
     </Tooltip>
   {/if}
