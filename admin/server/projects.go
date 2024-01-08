@@ -162,6 +162,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProjectNamesRequest) (*adminv1.SearchProjectNamesResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.pattern", req.NamePattern),
+		attribute.StringSlice("args.tags", req.Tags),
 	)
 
 	claims := auth.GetClaims(ctx)
@@ -175,7 +176,12 @@ func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProj
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	projectNames, err := s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
+	var projectNames []string
+	if req.Tags != nil && len(req.Tags) > 0 {
+		projectNames, err = s.admin.DB.FindProjectPathsByPatternAndTags(ctx, req.NamePattern, token.Val, req.Tags, pageSize)
+	} else {
+		projectNames, err = s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
+	}
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -390,6 +396,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
 		Region:               valOrDefault(req.Region, proj.Region),
+		Tags:                 proj.Tags,
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
@@ -448,6 +455,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		Region:               proj.Region,
+		Tags:                 proj.Tags,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
@@ -779,6 +787,53 @@ func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, githubURL,
 	return installationID, nil
 }
 
+// SudoUpdateTags updates the tags for a project in organization for superusers
+func (s *Server) SudoUpdateTags(ctx context.Context, req *adminv1.SudoUpdateTagsRequest) (*adminv1.SudoUpdateTagsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.StringSlice("args.tags", req.Tags),
+	)
+
+	// if tags is nil, set it to empty slice
+	if req.Tags == nil {
+		req.Tags = []string{}
+	}
+
+	// Check the request is made by a superuser
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to update Tags")
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	proj, err = s.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:                 proj.Name,
+		Description:          proj.Description,
+		Public:               proj.Public,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdDeploymentID:     proj.ProdDeploymentID,
+		ProdSlots:            proj.ProdSlots,
+		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		Region:               proj.Region,
+		Tags:                 req.Tags,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.SudoUpdateTagsResponse{
+		Project: s.projToDTO(proj, req.Organization),
+	}, nil
+}
+
 func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {
 	frontendURL, _ := url.JoinPath(s.opts.FrontendURL, orgName, p.Name)
 
@@ -799,6 +854,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
 		FrontendUrl:      frontendURL,
+		Tags:             p.Tags,
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),
 	}
