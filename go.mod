@@ -50,14 +50,14 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/golang-lru v0.6.0
 	github.com/jackc/pgconn v1.14.0
+	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
-	github.com/lib/pq v1.10.9
-	github.com/marcboeker/go-duckdb v1.5.4
+	github.com/marcboeker/go-duckdb v1.5.6
 	github.com/mazznoer/csscolorparser v0.1.3
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.17.0
@@ -194,7 +194,6 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.2 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgtype v1.12.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
@@ -287,7 +286,7 @@ require (
 
 // using a patch with changes to support decimal256
 // revert to original SDK on next duckDB release
-replace github.com/marcboeker/go-duckdb v1.5.4 => github.com/rilldata/go-duckdb v0.0.0-20231208152512-5e40f2025fc4
+replace github.com/marcboeker/go-duckdb v1.5.6 => github.com/rilldata/go-duckdb v0.0.0-20240108132007-425eb7d327ed
 
 // snowflake uses arrow v12 but we need arrow v14 so we need to use a fork of snowflake upgraded to v14
 // revert to original SDK once this PR is merged : https://github.com/snowflakedb/gosnowflake/pull/977
