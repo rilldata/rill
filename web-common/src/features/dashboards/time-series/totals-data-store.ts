@@ -1,4 +1,5 @@
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   createQueryServiceMetricsViewAggregation,
@@ -26,7 +27,9 @@ export function createTotalsForMeasure(
         metricsViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),
-          where: noFilter ? undefined : dashboard.whereFilter,
+          where: noFilter
+            ? undefined
+            : sanitiseExpression(dashboard.whereFilter),
           timeStart: isComparison
             ? timeControls?.comparisonTimeStart
             : timeControls.timeStart,

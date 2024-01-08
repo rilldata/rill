@@ -1,3 +1,4 @@
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   QueryServiceMetricsViewComparisonBody,
   QueryServiceMetricsViewTotalsBody,
@@ -95,7 +96,9 @@ export function leaderboardDimensionTotalQueryBody(
 ): (dimensionName: string) => QueryServiceMetricsViewTotalsBody {
   return (dimensionName: string) => ({
     measureNames: [activeMeasureName(dashData)],
-    where: getFiltersForOtherDimensions(dashData)(dimensionName),
+    where: sanitiseExpression(
+      getFiltersForOtherDimensions(dashData)(dimensionName),
+    ),
     timeStart: timeControlsState(dashData).timeStart,
     timeEnd: timeControlsState(dashData).timeEnd,
   });

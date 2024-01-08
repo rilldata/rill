@@ -179,3 +179,8 @@ export function getValuesInExpression(expr?: V1Expression) {
 export const matchExpressionByName = (e: V1Expression, name: string) => {
   return e.cond?.exprs?.[0].ident === name;
 };
+
+export const sanitiseExpression = (e: V1Expression | undefined) => {
+  if (!e?.cond?.exprs?.length) return undefined;
+  return e;
+};

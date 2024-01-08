@@ -1,4 +1,5 @@
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -50,7 +51,7 @@ function createMetricsViewTimeSeries(
         metricViewName,
         {
           measureNames: measures,
-          where: dashboardStore?.whereFilter,
+          where: sanitiseExpression(dashboardStore?.whereFilter),
           timeStart: isComparison
             ? timeControls.comparisonAdjustedStart
             : timeControls.adjustedStart,

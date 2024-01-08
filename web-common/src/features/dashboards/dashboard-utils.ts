@@ -1,3 +1,4 @@
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   QueryServiceMetricsViewComparisonBody,
   MetricsViewDimension,
@@ -77,7 +78,7 @@ export function prepareSortedQueryBody(
         sortType: querySortType,
       },
     ],
-    where: filterForDimension,
+    where: sanitiseExpression(filterForDimension),
     limit: "250",
     offset: "0",
   };

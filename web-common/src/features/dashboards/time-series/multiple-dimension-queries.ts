@@ -2,6 +2,7 @@ import { selectedDimensionValues } from "@rilldata/web-common/features/dashboard
 import {
   createInExpression,
   filterExpressions,
+  sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { Readable, derived, writable } from "svelte/store";
 
@@ -109,10 +110,12 @@ export function getDimensionValuesForComparison(
             {
               measures: measures.map((measure) => ({ name: measure })),
               dimensions: [{ name: dimensionName }],
-              where: getDimensionFilterWithSearch(
-                dashboardStore?.whereFilter,
-                dashboardStore?.dimensionSearchText ?? "",
-                dimensionName,
+              where: sanitiseExpression(
+                getDimensionFilterWithSearch(
+                  dashboardStore?.whereFilter,
+                  dashboardStore?.dimensionSearchText ?? "",
+                  dimensionName,
+                ),
               ),
               timeStart: timeControls.timeStart,
               timeEnd: timeControls.timeEnd,
@@ -223,7 +226,7 @@ export function getDimensionValueTimeSeries(
                 metricViewName,
                 {
                   measureNames: measures,
-                  where: updatedFilter,
+                  where: sanitiseExpression(updatedFilter),
                   timeStart: start,
                   timeEnd: end,
                   timeGranularity: interval,
