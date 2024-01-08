@@ -48,7 +48,7 @@ func newWatcher(root string) (*watcher, error) {
 		buffer:      make(map[string]drivers.WatchEvent),
 	}
 
-	err = w.addDir(root, false)
+	err = w.addDir(root, false, true)
 	if err != nil {
 		w.watcher.Close()
 		return nil, err
@@ -173,7 +173,7 @@ func (w *watcher) runInner() error {
 
 			// Calling addDir after appending to w.buffer, to sequence events correctly
 			if we.Dir && e.Has(fsnotify.Create) {
-				err = w.addDir(e.Name, true)
+				err = w.addDir(e.Name, true, false)
 				if err != nil {
 					return err
 				}
@@ -191,10 +191,14 @@ func (w *watcher) runInner() error {
 	}
 }
 
-func (w *watcher) addDir(path string, replay bool) error {
+func (w *watcher) addDir(path string, replay, errIfNotExist bool) error {
 	err := w.watcher.Add(path)
 	if err != nil {
+		// Need to check unix.ENOENT (and probably others) since fsnotify doesn't always use cross-platform syscalls.
 		if os.IsNotExist(err) || errors.Is(err, unix.ENOENT) {
+			if errIfNotExist {
+				return os.ErrNotExist
+			}
 			return nil
 		}
 		return err
@@ -203,6 +207,9 @@ func (w *watcher) addDir(path string, replay bool) error {
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		if os.IsNotExist(err) {
+			if errIfNotExist {
+				return err
+			}
 			return nil
 		}
 		return err
@@ -226,7 +233,7 @@ func (w *watcher) addDir(path string, replay bool) error {
 		}
 
 		if e.IsDir() {
-			err := w.addDir(fullPath, replay)
+			err := w.addDir(fullPath, replay, errIfNotExist)
 			if err != nil {
 				return err
 			}
