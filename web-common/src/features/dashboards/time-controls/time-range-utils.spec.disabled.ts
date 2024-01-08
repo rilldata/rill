@@ -1,5 +1,6 @@
 import { V1TimeGrain } from "../../../runtime-client";
 import { getDefaultTimeGrain } from "./time-range-utils";
+import { describe, it, expect } from "vitest";
 
 describe("getDefaultTimeGrain", () => {
   it("should return the default time grain (for a 5 day time range)", () => {
