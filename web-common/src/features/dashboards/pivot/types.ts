@@ -1,3 +1,8 @@
+import type {
+  MetricsViewSpecDimensionV2,
+  MetricsViewSpecMeasureV2,
+  V1MetricsViewFilter,
+} from "@rilldata/web-common/runtime-client";
 import type { ExpandedState } from "@tanstack/svelte-table";
 
 export interface PivotState {
@@ -7,6 +12,19 @@ export interface PivotState {
   expanded: ExpandedState;
   rowJoinType: "flat" | "nest";
   sort: any; // TBD
+}
+
+/**
+ * This is the config that is passed to the pivot data store methods
+ */
+export interface PivotDataStoreConfig {
+  measureNames: string[];
+  rowDimensionNames: string[];
+  colDimensionNames: string[];
+  allMeasures: MetricsViewSpecMeasureV2[];
+  allDimensions: MetricsViewSpecDimensionV2[];
+  filters: V1MetricsViewFilter;
+  pivot: PivotState;
 }
 
 export type PivotMeasure = {

@@ -1,13 +1,23 @@
-/**
- * Handles transformations for expanded rows in a nested pivot table
- */
-
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { createPivotAggregationRowQuery } from "./pivot-data-store";
 import type { ExpandedState } from "@tanstack/svelte-table";
 import { derived, writable } from "svelte/store";
+import type { PivotDataStoreConfig } from "@rilldata/web-common/features/dashboards/pivot/types";
+import { getFilterForPivotTable } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 
+/**
+ * Extracts and organizes dimension names from a nested array structure
+ * based on a specified anchor dimension and an expanded state.
+ *
+ * This function iterates over each key in the `expanded` object, which
+ * indicates whether a particular path in the nested array is expanded.
+ * For each expanded path, it navigates through the table data
+ * following the path defined by the key (split into indices) and extracts
+ * the dimension values at each level.
+ *
+ */
 function getExpandedValuesFromNestedArray(
-  dataArray,
+  tableData,
   anchorDimension: string,
   expanded: ExpandedState
 ): Record<string, string[]> {
@@ -19,7 +29,7 @@ function getExpandedValuesFromNestedArray(
       const indices = key.split(".").map((index) => parseInt(index, 10));
 
       // Retrieve the value from the nested array
-      let currentValue = dataArray;
+      let currentValue = tableData;
       const dimensionNames: string[] = [];
       for (const index of indices) {
         if (!currentValue?.[index]) break;
@@ -35,39 +45,81 @@ function getExpandedValuesFromNestedArray(
   return values;
 }
 
-export function queryExpandedRowMeasureValues(
-  ctx,
-  data,
-  measures: string[],
-  allDimensions: string[],
-  expanded: ExpandedState
+/**
+ * Returns a query for cell data for a sub table
+ */
+export function createSubTableCellQuery(
+  ctx: StateManagers,
+  config: PivotDataStoreConfig,
+  anchorDimension: string,
+  columnDimensionAxesData,
+  rowNestFilters
 ) {
-  if (!data || Object.keys(expanded).length == 0) return writable(null);
+  const allDimensions = config.colDimensionNames.concat([anchorDimension]);
+
+  const filterForSubTable = getFilterForPivotTable(
+    config,
+    columnDimensionAxesData
+  );
+
+  const includeFilters = filterForSubTable.include.concat(rowNestFilters);
+  const filters = {
+    include: includeFilters,
+    exclude: [],
+  };
+
+  const sortBy = [
+    {
+      desc: false,
+      name: anchorDimension,
+    },
+  ];
+  return createPivotAggregationRowQuery(
+    ctx,
+    config.measureNames,
+    allDimensions,
+    filters,
+    sortBy,
+    "10000"
+  );
+}
+
+export function queryExpandedRowMeasureValues(
+  ctx: StateManagers,
+  config: PivotDataStoreConfig,
+  tableData,
+  columnDimensionAxesData
+) {
+  const { rowDimensionNames } = config;
+  const expanded = config.pivot.expanded;
+  if (!tableData || Object.keys(expanded).length == 0) return writable(null);
   const values = getExpandedValuesFromNestedArray(
-    data,
-    allDimensions[0],
+    tableData,
+    rowDimensionNames[0],
     expanded
   );
 
   return derived(
     Object.keys(values)?.map((expandIndex) => {
-      const dimensions = [allDimensions[values[expandIndex].length]];
+      const anchorDimension = rowDimensionNames[values[expandIndex].length];
       // TODO: handle for already existing filters
-      const includeFilters = values[expandIndex].map((value, index) => {
+      const rowNestFilters = values[expandIndex].map((value, index) => {
         return {
-          name: allDimensions[index],
+          name: rowDimensionNames[index],
           in: [value],
         };
       });
 
-      const filters = {
-        include: includeFilters,
-        exclude: [],
-      };
       return derived(
         [
           writable(expandIndex),
-          createPivotAggregationRowQuery(ctx, measures, dimensions, filters),
+          createSubTableCellQuery(
+            ctx,
+            config,
+            anchorDimension,
+            columnDimensionAxesData,
+            rowNestFilters
+          ),
         ],
         ([expandIndex, query]) => {
           return {

@@ -1,3 +1,4 @@
+import type { PivotDataStoreConfig } from "./types";
 import { createIndexMap, getColumnDefForPivot } from "./pivot-utils";
 
 /**
@@ -5,7 +6,7 @@ import { createIndexMap, getColumnDefForPivot } from "./pivot-utils";
  * This is used to render the table skeleton before cell data is fetched.
  */
 export function createTableWithAxes(
-  config,
+  config: PivotDataStoreConfig,
   columnDimensionAxes,
   rowDimensionAxes
 ) {
@@ -32,6 +33,21 @@ export function createTableWithAxes(
 }
 
 /**
+ * During the phase when queries are still being resolved, we don't have enough
+ * information about the values present in an expanded group
+ * For now fill it with empty values if there are more than one row dimensions
+ */
+export function prepareNestedPivotData(data, dimensions: string[], i = 1) {
+  if (dimensions.slice(i).length > 0) {
+    data.forEach((row) => {
+      row.subRows = [{ [dimensions[0]]: "LOADING_CELL" }];
+
+      prepareNestedPivotData(row.subRows, dimensions, i + 1);
+    });
+  }
+}
+
+/**
  * Create a nested accessor for a cell in the table.
  * This is used to map the cell data to the table data.
  *
@@ -45,6 +61,7 @@ export function getAccessorForCell(
   numMeasures,
   cell
 ) {
+  // TODO: Check for undefineds
   const nestedColumnValueAccessor = colDimensionNames
     .map((colName, i) => {
       let accessor = `c${i}`;
@@ -80,9 +97,8 @@ export function getAccessorForCell(
  * | }                             |
  * +-------------------------------+
  */
-
 export function reduceTableCellDataIntoRows(
-  config,
+  config: PivotDataStoreConfig,
   columnDimensionAxes,
   rowDimensionAxes,
   tableData,

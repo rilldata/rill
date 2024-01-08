@@ -10,23 +10,27 @@ import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
-import { queryExpandedRowMeasureValues } from "./pivot-expansion";
+import {
+  addExpandedDataToPivot,
+  queryExpandedRowMeasureValues,
+} from "./pivot-expansion";
 import {
   getDimensionsInPivotColumns,
   getDimensionsInPivotRow,
   getFilterForPivotTable,
   getMeasuresInPivotColumns,
-  prepareExpandedPivotData,
 } from "./pivot-utils";
 import {
   createTableWithAxes,
   reduceTableCellDataIntoRows,
-} from "@rilldata/web-common/features/dashboards/pivot/pivot-table-transformations";
+  prepareNestedPivotData,
+} from "./pivot-table-transformations";
+import type { PivotDataStoreConfig } from "./types";
 
 /**
  * Extract out config relevant to pivot from dashboard and meta store
  */
-function getPivotConfig(ctx: StateManagers) {
+function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
   return derived(
     [useMetaQuery(ctx), ctx.dashboardStore],
     ([metricsView, dashboardStore]) => {
@@ -127,6 +131,41 @@ export function createPivotAggregationRowQuery(
   );
 }
 
+/**
+ * Returns a query for cell data for the initial table
+ */
+export function createTableCellQuery(
+  ctx: StateManagers,
+  config: PivotDataStoreConfig,
+  anchorDimension: string,
+  columnDimensionAxesData,
+  rowDimensionAxesData
+) {
+  const allDimensions = config.colDimensionNames.concat([anchorDimension]);
+
+  const filterForInitialTable = getFilterForPivotTable(
+    config,
+    columnDimensionAxesData,
+    rowDimensionAxesData,
+    true
+  );
+
+  const sortBy = [
+    {
+      desc: false,
+      name: anchorDimension,
+    },
+  ];
+  return createPivotAggregationRowQuery(
+    ctx,
+    config.measureNames,
+    allDimensions,
+    filterForInitialTable,
+    sortBy,
+    "10000"
+  );
+}
+
 /***
  * Get a list of axis values for a given list of dimension values and filters
  */
@@ -215,44 +254,25 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         const columnDef = skeletonTable.columnDef;
         let tableData = skeletonTable.data;
 
-        const rowDimensionName = rowDimensionNames.slice(0, 1);
-        const allDimensions = colDimensionNames.concat(rowDimensionName);
-        const filterForInitialTable = getFilterForPivotTable(
+        const initialTableCellQuery = createTableCellQuery(
+          ctx,
           config,
+          rowDimensionNames[0],
           columnDimensionAxes?.data,
           rowDimensionAxes?.data
         );
 
-        const sortBy = [
-          {
-            desc: false,
-            name: rowDimensionName[0],
-          },
-        ];
-        const initialTableCellQuery = createPivotAggregationRowQuery(
-          ctx,
-          measureNames,
-          allDimensions,
-          filterForInitialTable,
-          sortBy,
-          "10000"
-        );
-
         /**
-         * Derive a using initial table view
+         * Derive a store from initial table cell data query
          */
         return derived(
           [initialTableCellQuery],
           ([initialTableCellData], set2) => {
             // Wait for data
-            if (initialTableCellData.isFetching)
+            if (initialTableCellData.isFetching || initialTableCellData.error)
               return { isFetching: false, data: tableData, columnDef };
-            if (initialTableCellData.error)
-              return { isFetching: false, data: [] };
 
             let cellData = initialTableCellData.data?.data;
-
-            console.log("initialTableCellDataQueryResult", cellData);
 
             tableData = reduceTableCellDataIntoRows(
               config,
@@ -262,25 +282,19 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               cellData
             );
 
-            console.log("tableData2", tableData);
-
+            const expandedSubTableCellQuery = queryExpandedRowMeasureValues(
+              ctx,
+              config,
+              tableData,
+              columnDimensionAxes?.data
+            );
             /**
              * Derive a store based on expanded rows
              */
             return derived(
-              queryExpandedRowMeasureValues(
-                ctx,
-                cellData,
-                measureNames,
-                rowDimensionNames,
-                pivot.expanded
-              ),
+              expandedSubTableCellQuery,
               (expandedRowMeasureValues) => {
-                prepareExpandedPivotData(
-                  cellData,
-                  rowDimensionNames,
-                  pivot.expanded
-                );
+                prepareNestedPivotData(tableData, rowDimensionNames);
 
                 if (expandedRowMeasureValues?.length) {
                   cellData = addExpandedDataToPivot(
@@ -288,6 +302,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     rowDimensionNames,
                     expandedRowMeasureValues
                   );
+                  console.log("expandedCellData", cellData);
                 }
                 return { isFetching: false, data: tableData, columnDef };
               }

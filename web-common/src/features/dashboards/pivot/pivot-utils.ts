@@ -43,25 +43,6 @@ export function getDimensionsInPivotColumns(
 }
 
 /**
- * At the start we don't have enough information about the values present in an expanded group
- * For now fill it with empty values if there are more than one row dimensions
- */
-export function prepareExpandedPivotData(
-  data,
-  dimensions: string[],
-  expanded,
-  i = 1
-) {
-  if (dimensions.slice(i).length > 0) {
-    data.forEach((row) => {
-      row.subRows = [{ [dimensions[0]]: "LOADING_CELL" }];
-
-      prepareExpandedPivotData(row.subRows, dimensions, expanded, i + 1);
-    });
-  }
-}
-
-/**
  * Alternative to flexRender for performant rendering of cells
  */
 export const cellComponent = (
@@ -89,7 +70,8 @@ export function createIndexMap(arr) {
 export function getFilterForPivotTable(
   config,
   colDimensionAxes,
-  rowDimensionAxes,
+  rowDimensionAxes = {},
+  isInitialTable = false,
   yLimit = 100,
   xLimit = 20
 ) {
@@ -98,7 +80,7 @@ export function getFilterForPivotTable(
   const { colDimensionNames, rowDimensionNames } = config;
 
   let rowFilters: MetricsViewFilterCond[] = [];
-  if (rowDimensionNames.length) {
+  if (isInitialTable && rowDimensionNames.length) {
     rowFilters = [
       {
         name: rowDimensionNames[0],
