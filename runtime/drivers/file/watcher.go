@@ -195,10 +195,7 @@ func (w *watcher) addDir(path string, replay, errIfNotExist bool) error {
 	err := w.watcher.Add(path)
 	if err != nil {
 		// Need to check unix.ENOENT (and probably others) since fsnotify doesn't always use cross-platform syscalls.
-		if os.IsNotExist(err) || errors.Is(err, unix.ENOENT) {
-			if errIfNotExist {
-				return os.ErrNotExist
-			}
+		if !errIfNotExist && (os.IsNotExist(err) || errors.Is(err, unix.ENOENT)) {
 			return nil
 		}
 		return err
@@ -206,10 +203,7 @@ func (w *watcher) addDir(path string, replay, errIfNotExist bool) error {
 
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			if errIfNotExist {
-				return err
-			}
+		if !errIfNotExist && os.IsNotExist(err) {
 			return nil
 		}
 		return err
