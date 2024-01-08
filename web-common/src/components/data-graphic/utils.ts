@@ -32,17 +32,6 @@ const curves = {
   curveStepExtended,
 };
 
-export function pathIsDefined(yAccessor: string) {
-  return (d: object) => {
-    const val = d[yAccessor];
-    return !(
-      val === undefined ||
-      (typeof val === "number" && isNaN(val)) ||
-      val === null
-    );
-  };
-}
-
 export function pathDoesNotDropToZero(yAccessor: string) {
   return (d, i: number, arr) => {
     return (

@@ -21,7 +21,6 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   import {
     areaFactory,
     lineFactory,
-    pathIsDefined,
   } from "@rilldata/web-common/components/data-graphic/utils";
   import {
     AreaSubRangeColor,
@@ -86,7 +85,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     }
   }
 
-  $: segments = computeSegments(data, pathIsDefined(yAccessor));
+  $: segments = computeSegments(data, yAccessor);
   /** plot these as points */
   $: singletons = segments.filter((segment) => segment.length === 1);
 
