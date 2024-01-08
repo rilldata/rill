@@ -1,4 +1,4 @@
-import { removeExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { filterExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
@@ -118,7 +118,7 @@ export const getFiltersForOtherDimensions = (
   dimensionName: string,
 ) => {
   if (!filters) return undefined;
-  return removeExpressions(
+  return filterExpressions(
     filters,
     (e) => e.cond?.exprs?.[0].ident === dimensionName,
   );

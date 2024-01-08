@@ -5,22 +5,20 @@ export function clearAllFilters({
   dashboard,
   cancelQueries,
 }: DashboardMutables) {
-  return () => {
-    const hasFilters =
-      dashboard.whereFilter.cond?.exprs?.length ||
-      dashboard.havingFilter.cond?.exprs?.length;
-    if (!hasFilters) {
-      return;
-    }
+  const hasFilters =
+    dashboard.whereFilter.cond?.exprs?.length ||
+    dashboard.havingFilter.cond?.exprs?.length;
+  if (!hasFilters) {
+    return;
+  }
 
-    cancelQueries();
+  cancelQueries();
 
-    dashboard.whereFilter = createAndExpression([]);
-    dashboard.havingFilter = createAndExpression([]);
-    dashboard.temporaryFilterName = null;
-    dashboard.dimensionFilterExcludeMode.clear();
-    dashboard.pinIndex = -1;
-  };
+  dashboard.whereFilter = createAndExpression([]);
+  dashboard.havingFilter = createAndExpression([]);
+  dashboard.temporaryFilterName = null;
+  dashboard.dimensionFilterExcludeMode.clear();
+  dashboard.pinIndex = -1;
 }
 
 export function setTemporaryFilterName(

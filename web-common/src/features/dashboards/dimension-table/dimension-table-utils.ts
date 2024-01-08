@@ -5,7 +5,7 @@ import {
   createLikeExpression,
   createOrExpression,
   matchExpressionByName,
-  removeExpressions,
+  filterExpressions,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { V1Operation } from "../../../runtime-client";
 import PercentOfTotal from "./PercentOfTotal.svelte";
@@ -41,32 +41,33 @@ export function updateFilterOnSearch(
   dimensionName: string,
 ): V1Expression | undefined {
   if (!filterForDimension) return undefined;
-  const filterSet = JSON.parse(JSON.stringify(filterForDimension));
+  const filterSet = JSON.parse(
+    JSON.stringify(filterForDimension),
+  ) as V1Expression;
   const addNull = "null".includes(searchText);
   if (searchText !== "") {
-    const filterIdx = filterForDimension.cond?.exprs?.findIndex((e) =>
+    let cond: V1Expression;
+    if (addNull) {
+      cond = createOrExpression([
+        // TODO: do we need a `IS NULL` expression?
+        createInExpression(dimensionName, [null]),
+        createLikeExpression(dimensionName, `%${searchText}%`),
+      ]);
+    } else {
+      cond = createLikeExpression(dimensionName, `%${searchText}%`);
+    }
+
+    const filterIdx = filterSet.cond?.exprs?.findIndex((e) =>
       matchExpressionByName(e, dimensionName),
     );
     if (filterIdx === undefined || filterIdx === -1) {
-      if (addNull) {
-        filterForDimension.cond?.exprs?.push(
-          createOrExpression([
-            // TODO: do we need a `IS NULL` expression?
-            createInExpression(dimensionName, [null]),
-            createLikeExpression(dimensionName, `%${searchText}%`),
-          ]),
-        );
-      } else {
-        filterForDimension.cond?.exprs?.push(
-          createLikeExpression(dimensionName, `%${searchText}%`),
-        );
-      }
+      filterSet.cond?.exprs?.push(cond);
     } else {
-      // TODO: this should never happen. but need to handle it
+      filterSet.cond?.exprs?.splice(filterIdx, 0, cond);
     }
   } else {
-    removeExpressions(
-      filterForDimension,
+    filterExpressions(
+      filterSet,
       (e) =>
         e.cond?.op === V1Operation.OPERATION_LIKE ||
         e.cond?.op === V1Operation.OPERATION_NLIKE,

@@ -27,6 +27,10 @@ import {
   TestTimeConstants,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
 import DashboardTestComponent from "@rilldata/web-common/features/dashboards/stores/DashboardTestComponent.svelte";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
@@ -76,15 +80,17 @@ describe("useDashboardUrlSync", () => {
   });
 
   it("Changes to dashboard through interactions", async () => {
-    const { teardown, defaultProtoStore } = await initDashboardUrlState();
+    const { teardown, defaultProtoStore, stateManagers } =
+      await initDashboardUrlState();
+    const {
+      actions: {
+        dimensionsFilter: { toggleDimensionValueSelection },
+      },
+    } = stateManagers;
 
     expect(pageMock.gotoSpy).toBeCalledTimes(0);
 
-    metricsExplorerStore.toggleFilter(
-      AD_BIDS_NAME,
-      AD_BIDS_PUBLISHER_DIMENSION,
-      "Google",
-    );
+    toggleDimensionValueSelection(AD_BIDS_PUBLISHER_DIMENSION, "Google");
     await wait();
     assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
     const protoWithFilter =
@@ -95,24 +101,21 @@ describe("useDashboardUrlSync", () => {
     expect(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto).toEqual(
       get(defaultProtoStore).proto,
     );
-    expect(get(metricsExplorerStore).entities[AD_BIDS_NAME].filters).toEqual({
-      include: [],
-      exclude: [],
-    });
+    expect(
+      get(metricsExplorerStore).entities[AD_BIDS_NAME].whereFilter,
+    ).toEqual(createAndExpression([]));
     expect(pageMock.gotoSpy).toBeCalledTimes(2);
 
     pageMock.updateState(protoWithFilter);
     await wait();
     assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
-    expect(get(metricsExplorerStore).entities[AD_BIDS_NAME].filters).toEqual({
-      include: [
-        {
-          name: AD_BIDS_PUBLISHER_DIMENSION,
-          in: ["Google"],
-        },
-      ],
-      exclude: [],
-    });
+    expect(
+      get(metricsExplorerStore).entities[AD_BIDS_NAME].whereFilter,
+    ).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      ]),
+    );
     expect(pageMock.gotoSpy).toBeCalledTimes(2);
 
     teardown();

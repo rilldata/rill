@@ -17,12 +17,17 @@ import {
   createAdBidsMirrorInStore,
   createMetricsMetaQueryMock,
   CUSTOM_TEST_CONTROLS,
+  initStateManagers,
   LAST_6_HOURS_TEST_CONTROLS,
   LAST_6_HOURS_TEST_PARSED_CONTROLS,
   resetDashboardStore,
   TestTimeConstants,
   TestTimeOffsetConstants,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   MetricsViewSpecComparisonMode,
@@ -43,23 +48,22 @@ describe("dashboard-stores", () => {
   it("Toggle filters", () => {
     const mock = createMetricsMetaQueryMock();
     assertMetricsView(AD_BIDS_NAME);
+    const { stateManagers } = initStateManagers();
+    const {
+      actions: {
+        filters: { clearAllFilters },
+        dimensionsFilter: {
+          toggleDimensionValueSelection,
+          toggleDimensionFilterMode,
+          removeDimensionFilter,
+        },
+      },
+    } = stateManagers;
 
     // add filters
-    metricsExplorerStore.toggleFilter(
-      AD_BIDS_NAME,
-      AD_BIDS_PUBLISHER_DIMENSION,
-      "Google",
-    );
-    metricsExplorerStore.toggleFilter(
-      AD_BIDS_NAME,
-      AD_BIDS_PUBLISHER_DIMENSION,
-      "Facebook",
-    );
-    metricsExplorerStore.toggleFilter(
-      AD_BIDS_NAME,
-      AD_BIDS_DOMAIN_DIMENSION,
-      "google.com",
-    );
+    toggleDimensionValueSelection(AD_BIDS_PUBLISHER_DIMENSION, "Google");
+    toggleDimensionValueSelection(AD_BIDS_PUBLISHER_DIMENSION, "Facebook");
+    toggleDimensionValueSelection(AD_BIDS_DOMAIN_DIMENSION, "google.com");
     assertMetricsView(AD_BIDS_NAME, AD_BIDS_BASE_FILTER);
 
     // create a mirror using the proto and assert that the filters are persisted
@@ -71,10 +75,7 @@ describe("dashboard-stores", () => {
     );
 
     // toggle to exclude
-    metricsExplorerStore.toggleFilterMode(
-      AD_BIDS_NAME,
-      AD_BIDS_PUBLISHER_DIMENSION,
-    );
+    toggleDimensionFilterMode(AD_BIDS_PUBLISHER_DIMENSION);
     assertMetricsView(AD_BIDS_NAME, AD_BIDS_EXCLUDE_FILTER);
 
     // create a mirror using the proto and assert that the filters are persisted
@@ -86,11 +87,7 @@ describe("dashboard-stores", () => {
     );
 
     // clear for Domain
-    metricsExplorerStore.clearFilterForDimension(
-      AD_BIDS_NAME,
-      AD_BIDS_DOMAIN_DIMENSION,
-      true,
-    );
+    removeDimensionFilter(AD_BIDS_DOMAIN_DIMENSION);
     assertMetricsView(AD_BIDS_NAME, AD_BIDS_CLEARED_FILTER);
 
     // create a mirror using the proto and assert that the filters are persisted
@@ -102,7 +99,7 @@ describe("dashboard-stores", () => {
     );
 
     // clear
-    metricsExplorerStore.clearFilters(AD_BIDS_NAME);
+    clearAllFilters();
     assertMetricsView(AD_BIDS_NAME);
 
     // create a mirror using the proto and assert that the filters are persisted
@@ -175,7 +172,13 @@ describe("dashboard-stores", () => {
 
   it("Should work when time range is not available", () => {
     const AD_BIDS_NO_TIMESTAMP_NAME = "AdBids_no_timestamp";
-    // const mock = createMetricsMetaQueryMock();
+    const { stateManagers } = initStateManagers();
+    const {
+      actions: {
+        dimensionsFilter: { toggleDimensionValueSelection },
+      },
+    } = stateManagers;
+    stateManagers.setMetricsViewName(AD_BIDS_NO_TIMESTAMP_NAME);
     metricsExplorerStore.init(
       AD_BIDS_NO_TIMESTAMP_NAME,
       AD_BIDS_INIT,
@@ -183,27 +186,15 @@ describe("dashboard-stores", () => {
     );
     assertMetricsViewRaw(
       AD_BIDS_NO_TIMESTAMP_NAME,
-      { include: [], exclude: [] },
+      createAndExpression([]),
       undefined,
       AD_BIDS_IMPRESSIONS_MEASURE,
     );
 
     // add filters
-    metricsExplorerStore.toggleFilter(
-      AD_BIDS_NO_TIMESTAMP_NAME,
-      AD_BIDS_PUBLISHER_DIMENSION,
-      "Google",
-    );
-    metricsExplorerStore.toggleFilter(
-      AD_BIDS_NO_TIMESTAMP_NAME,
-      AD_BIDS_PUBLISHER_DIMENSION,
-      "Facebook",
-    );
-    metricsExplorerStore.toggleFilter(
-      AD_BIDS_NO_TIMESTAMP_NAME,
-      AD_BIDS_DOMAIN_DIMENSION,
-      "google.com",
-    );
+    toggleDimensionValueSelection(AD_BIDS_PUBLISHER_DIMENSION, "Google");
+    toggleDimensionValueSelection(AD_BIDS_PUBLISHER_DIMENSION, "Facebook");
+    toggleDimensionValueSelection(AD_BIDS_DOMAIN_DIMENSION, "google.com");
     assertMetricsViewRaw(
       AD_BIDS_NO_TIMESTAMP_NAME,
       AD_BIDS_BASE_FILTER,
@@ -292,16 +283,14 @@ describe("dashboard-stores", () => {
   describe("Restore invalid state", () => {
     it("Restore invalid filter", () => {
       const mock = createMetricsMetaQueryMock();
-      metricsExplorerStore.toggleFilter(
-        AD_BIDS_NAME,
-        AD_BIDS_PUBLISHER_DIMENSION,
-        "Facebook",
-      );
-      metricsExplorerStore.toggleFilter(
-        AD_BIDS_NAME,
-        AD_BIDS_DOMAIN_DIMENSION,
-        "google.com",
-      );
+      const { stateManagers } = initStateManagers();
+      const {
+        actions: {
+          dimensionsFilter: { toggleDimensionValueSelection },
+        },
+      } = stateManagers;
+      toggleDimensionValueSelection(AD_BIDS_PUBLISHER_DIMENSION, "Facebook");
+      toggleDimensionValueSelection(AD_BIDS_DOMAIN_DIMENSION, "google.com");
 
       // create a mirror from state
       createAdBidsMirrorInStore(get(mock).data);
@@ -313,15 +302,9 @@ describe("dashboard-stores", () => {
       // assert that the filter for removed dimension is not present anymore
       assertMetricsView(
         AD_BIDS_MIRROR_NAME,
-        {
-          include: [
-            {
-              name: AD_BIDS_PUBLISHER_DIMENSION,
-              in: ["Facebook"],
-            },
-          ],
-          exclude: [],
-        },
+        createAndExpression([
+          createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Facebook"]),
+        ]),
         ALL_TIME_PARSED_TEST_CONTROLS,
       );
     });

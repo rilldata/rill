@@ -1,7 +1,7 @@
 import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
   createInExpression,
-  removeExpressions,
+  filterExpressions,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { Readable, derived, writable } from "svelte/store";
 
@@ -206,7 +206,7 @@ export function getDimensionValueTimeSeries(
       return derived(
         dimensionValues?.values?.map((value, i) => {
           // create a copy
-          const updatedFilter = removeExpressions(
+          const updatedFilter = filterExpressions(
             dimensionValues?.filter,
             () => true,
           );

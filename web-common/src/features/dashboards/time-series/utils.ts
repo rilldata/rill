@@ -1,7 +1,7 @@
 import {
   createAndExpression,
   matchExpressionByName,
-  removeExpressions,
+  filterExpressions,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
@@ -109,8 +109,9 @@ export function getFilterForComparedDimension(
 ) {
   const includedValues = topListValues?.slice(0, 250);
 
-  let updatedFilter = removeExpressions(filters, (e) =>
-    matchExpressionByName(e, dimensionName),
+  let updatedFilter = filterExpressions(
+    filters,
+    (e) => !matchExpressionByName(e, dimensionName),
   );
   if (!updatedFilter) {
     updatedFilter = createAndExpression([]);

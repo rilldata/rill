@@ -130,9 +130,9 @@ export function forEachExpression(
 }
 
 /**
- * Creates a copy of the expression with sub expressions removed based on {@link checker}
+ * Creates a copy of the expression with sub expressions filtered based on {@link checker}
  */
-export function removeExpressions(
+export function filterExpressions(
   expr: V1Expression,
   checker: (e: V1Expression) => boolean,
 ): V1Expression | undefined {
@@ -146,7 +146,7 @@ export function removeExpressions(
     cond: {
       op: expr.cond.op,
       exprs: expr.cond.exprs
-        .map((e) => removeExpressions(e, checker))
+        .map((e) => filterExpressions(e, checker))
         .filter((e) => e !== undefined && checker(e)) as Array<V1Expression>,
     },
   };
@@ -160,7 +160,7 @@ export function removeExpressions(
 
     // other types will have identifier as 1st expression
     default:
-      if (!newExpr.cond?.exprs?.length || newExpr.cond.exprs.length > 1)
+      if (!newExpr.cond?.exprs?.length || !("ident" in newExpr.cond.exprs[0]))
         return undefined;
       break;
   }

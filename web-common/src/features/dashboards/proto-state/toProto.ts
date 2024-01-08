@@ -117,7 +117,6 @@ export function getProtoFromDashboardState(
     state.leaderboardSortType = metrics.dashboardSortType;
   }
 
-  console.log(state);
   const message = new DashboardState(state);
   return protoToBase64(message.toBinary());
 }
