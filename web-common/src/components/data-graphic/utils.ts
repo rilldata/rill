@@ -33,11 +33,12 @@ const curves = {
 };
 
 export function pathIsDefined(yAccessor: string) {
-  return (d) => {
+  return (d: object) => {
+    const val = d[yAccessor];
     return !(
-      d[yAccessor] === undefined ||
-      isNaN(d[yAccessor]) ||
-      d[yAccessor] === null
+      val === undefined ||
+      (typeof val === "number" && isNaN(val)) ||
+      val === null
     );
   };
 }
