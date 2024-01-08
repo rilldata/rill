@@ -13,7 +13,6 @@ The main feature-set component for dashboard filters
   } from "@rilldata/web-common/components/chip/chip-types";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
-  import { writable } from "svelte/store";
   import { useMetaQuery, getFilterSearchList } from "../selectors/index";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
@@ -173,9 +172,7 @@ The main feature-set component for dashboard filters
           textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
           bgActiveClass="bg-gray-200 dark:bg-gray-600"
           outlineClass="outline-gray-400"
-          on:click={() => {
-            clearAllFilters();
-          }}
+          on:click={clearAllFilters}
         >
           <span slot="icon" class="ui-copy-disabled-faint">
             <FilterRemove size="16px" />

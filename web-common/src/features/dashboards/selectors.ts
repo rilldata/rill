@@ -10,7 +10,6 @@ import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewTimeRange,
   V1Expression,
-  V1MetricsViewFilter,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions } from "@tanstack/svelte-query";

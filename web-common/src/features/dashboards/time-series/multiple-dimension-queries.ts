@@ -6,7 +6,6 @@ import {
 import { Readable, derived, writable } from "svelte/store";
 
 import {
-  V1MetricsViewFilter,
   V1TimeSeriesValue,
   createQueryServiceMetricsViewAggregation,
   createQueryServiceMetricsViewTimeSeries,
