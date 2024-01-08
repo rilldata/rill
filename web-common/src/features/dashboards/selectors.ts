@@ -120,7 +120,7 @@ export const getFiltersForOtherDimensions = (
   if (!filters) return undefined;
   return filterExpressions(
     filters,
-    (e) => e.cond?.exprs?.[0].ident === dimensionName,
+    (e) => e.cond?.exprs?.[0].ident !== dimensionName,
   );
 };
 

@@ -6,6 +6,7 @@ import {
   createOrExpression,
   matchExpressionByName,
   filterExpressions,
+  createAndExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { V1Operation } from "../../../runtime-client";
 import PercentOfTotal from "./PercentOfTotal.svelte";
@@ -81,10 +82,10 @@ export function getDimensionFilterWithSearch(
   searchText: string,
   dimensionName: string,
 ) {
-  const filterForDimension = getFiltersForOtherDimensions(
-    filters,
-    dimensionName,
-  );
+  let filterForDimension = getFiltersForOtherDimensions(filters, dimensionName);
+  if (filters && !filterForDimension) {
+    filterForDimension = createAndExpression([]); // create an empty query for consistency
+  }
 
   return updateFilterOnSearch(filterForDimension, searchText, dimensionName);
 }
