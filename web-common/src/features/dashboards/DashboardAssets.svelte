@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {_} from "svelte-i18n";
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
@@ -183,7 +184,7 @@
 </script>
 
 <NavigationHeader bind:show={showMetricsDefs} toggleText="dashboards"
-  >Dashboards</NavigationHeader
+  >{$_('dashboards')}</NavigationHeader
 >
 
 {#if showMetricsDefs && $dashboardNames.data}
@@ -231,7 +232,7 @@
             on:select={() => editMetrics(dashboardName)}
           >
             <MetricsIcon slot="icon" />
-            Edit metrics
+            {$_('edit-metrics')}
           </MenuItem>
           <Divider />
           <MenuItem
@@ -239,11 +240,11 @@
             on:select={() => openRenameMetricsDefModal(dashboardName)}
           >
             <EditIcon slot="icon" />
-            Rename...</MenuItem
+            {$_('rename')}</MenuItem
           >
           <MenuItem icon on:select={() => deleteMetricsDef(dashboardName)}>
             <Cancel slot="icon" />
-            Delete</MenuItem
+            {$_('delete')}</MenuItem
           >
         </svelte:fragment>
       </NavigationEntry>
@@ -251,7 +252,7 @@
     {#if canAddDashboard}
       <AddAssetButton
         id="add-dashboard"
-        label="Add dashboard"
+        label={$_('add-dashboard')}
         bold={hasSourceAndModelButNoDashboards ?? false}
         on:click={() => dispatchAddEmptyMetricsDef()}
       />

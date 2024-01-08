@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {_} from "svelte-i18n";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
@@ -75,9 +76,9 @@
   Autogenerate dashboard
   <svelte:fragment slot="description">
     {#if $modelHasError}
-      Model has errors
+      {$_('model-has-errors')}
     {:else if !$modelSchemaIsReady}
-      Dependencies are being reconciled.
+      {$_('dependencies-are-being-reconciled')}
     {/if}
   </svelte:fragment>
 </MenuItem>
@@ -89,7 +90,7 @@
   }}
 >
   <EditIcon slot="icon" />
-  Rename...
+  {$_("rename")}
 </MenuItem>
 <MenuItem
   icon
@@ -97,5 +98,5 @@
   propogateSelect={false}
 >
   <Cancel slot="icon" />
-  Delete
+  {$_("delete")}
 </MenuItem>

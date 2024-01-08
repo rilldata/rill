@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import Discord from "@rilldata/web-common/components/icons/Discord.svelte";
   import Docs from "@rilldata/web-common/components/icons/Docs.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
@@ -19,21 +20,21 @@
   const lineItems = [
     {
       icon: Docs,
-      label: "Documentation",
+      label: $_('documentation'),
       href: "https://docs.rilldata.com",
       className: "fill-gray-600",
       shrinkIcon: false,
     },
     {
       icon: Discord,
-      label: "Ask a question",
+      label: $_('ask-a-question'),
       href: "http://bit.ly/3jg4IsF",
       className: "fill-gray-500",
       shrinkIcon: true,
     },
     {
       icon: Github,
-      label: "Report an issue",
+      label: $_('report-an-issue'),
       href: "https://github.com/rilldata/rill/issues/new?assignees=&labels=bug&template=bug_report.md&title=",
       className: "fill-gray-500",
       shrinkIcon: true,
@@ -88,16 +89,16 @@
               <svelte:fragment slot="name">Rill Developer</svelte:fragment>
             </TooltipTitle>
             <TooltipShortcutContainer>
-              <div>View documentation</div>
+              <div>{$_('view-documentation')}</div>
               <Shortcut>Click</Shortcut>
             </TooltipShortcutContainer>
           </TooltipContent>
         </div>
       </Tooltip>
     </span>
-    version {$appBuildMetaStore.version
+    {$_('version')} {$appBuildMetaStore.version
       ? $appBuildMetaStore.version
-      : "unknown (built from source)"}{$appBuildMetaStore.commitHash
+      : `${$_('unknown-built-from-source')}`}{$appBuildMetaStore.commitHash
       ? ` – ${$appBuildMetaStore.commitHash}`
       : ""}
   </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
   import {
@@ -123,7 +124,7 @@
 <Dialog {open} on:close={onCancelDialog} widthOverride="w-[560px]">
   <div slot="title">
     {#if step === 1}
-      Add a source
+      {$_('add-a-source')}
     {:else if step === 2}
       <h2 class="flex gap-x-1 items-center">
         <span>
@@ -132,7 +133,7 @@
           {/if}
 
           {#if requestConnector}
-            Request a connector
+            {$_('request-a-connector')}
           {/if}
         </span>
       </h2>
@@ -156,10 +157,10 @@
         </div>
       {/if}
       <div class="text-slate-500">
-        Don't see what you're looking for? <button
+        {$_('dont-see-what-youre-looking-for')} <button
           on:click={goToRequestConnector}
           class="text-blue-500 hover:text-blue-600 font-medium"
-          >Request a new connector</button
+          >{$_('request-a-new-connector')}</button
         >
       </div>
     {:else if step === 2}
