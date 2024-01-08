@@ -25,7 +25,7 @@ export function startRuntimeForEachTest() {
     // Add `rill.yaml` file to the project repo
     writeFileSync(
       `${TEST_PROJECT_DIRECTORY}/rill.yaml`,
-      'compiler: rill-beta\ntitle: "Test Project"'
+      'compiler: rill-beta\ntitle: "Test Project"',
     );
 
     const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} --db ${TEST_PROJECT_DIRECTORY}/stage.db?rill_pool_size=4 ${TEST_PROJECT_DIRECTORY}`;
@@ -36,12 +36,24 @@ export function startRuntimeForEachTest() {
     });
     childProcess.on("error", console.log);
     childProcess.on("exit", console.log);
+    childProcess.stdout?.on("data", (chunk) => {
+      console.log("***stdout chunk***", chunk);
+    });
+    childProcess.stderr?.on("data", (chunk) => {
+      console.log("***stderr chunk***", chunk);
+    });
+    process.stdout?.on("data", (chunk) => {
+      console.log("***main stdout chunk***", chunk);
+    });
+    process.stderr?.on("data", (chunk) => {
+      console.log("***main stderr chunk***", chunk);
+    });
 
     // Ping runtime until it's ready
     await asyncWaitUntil(async () => {
       try {
         const response = await axios.get(
-          `http://localhost:${TEST_PORT}/v1/ping`
+          `http://localhost:${TEST_PORT}/v1/ping`,
         );
         return response.status === 200;
       } catch (err) {
