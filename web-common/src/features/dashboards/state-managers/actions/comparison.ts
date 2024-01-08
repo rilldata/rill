@@ -3,7 +3,7 @@ import type { DashboardMutables } from "./types";
 
 export const setComparisonDimension = (
   { dashboard }: DashboardMutables,
-  dimensionName: string | undefined
+  dimensionName: string | undefined,
 ) => {
   if (dimensionName === undefined) {
     setDisplayComparison(dashboard, true);

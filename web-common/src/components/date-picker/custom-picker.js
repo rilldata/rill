@@ -163,7 +163,7 @@ export default class Custompicker extends Litepicker {
       }
 
       this.datePicked = this.getNextProposedRange(
-        new DateTime(target.dataset.time)
+        new DateTime(target.dataset.time),
       );
 
       const nextIndex = this.editingDate === 0 ? 1 : 0;
@@ -191,7 +191,7 @@ export default class Custompicker extends Litepicker {
       }
 
       this.calendars[idx].setMonth(
-        this.calendars[idx].getMonth() - numberOfMonths
+        this.calendars[idx].getMonth() - numberOfMonths,
       );
       this.gotoDate(this.calendars[idx], idx);
 
@@ -214,7 +214,7 @@ export default class Custompicker extends Litepicker {
       }
 
       this.calendars[idx].setMonth(
-        this.calendars[idx].getMonth() + numberOfMonths
+        this.calendars[idx].getMonth() + numberOfMonths,
       );
       this.gotoDate(this.calendars[idx], idx);
 
@@ -262,7 +262,7 @@ export default class Custompicker extends Litepicker {
       let [date1, date2] = this.datePicked;
 
       const allDayItems = Array.prototype.slice.call(
-        this.ui.querySelectorAll(`.${style.dayItem}`)
+        this.ui.querySelectorAll(`.${style.dayItem}`),
       );
 
       allDayItems.forEach((d) => {
@@ -352,7 +352,7 @@ export default class Custompicker extends Litepicker {
     const clickHandler = this.onClick.bind(this);
     document.addEventListener("click", clickHandler, true);
     this.teardownFns.push(() =>
-      document.removeEventListener("click", clickHandler, true)
+      document.removeEventListener("click", clickHandler, true),
     );
 
     this.ui = document.createElement("div");
@@ -363,10 +363,10 @@ export default class Custompicker extends Litepicker {
     this.ui.addEventListener("mouseenter", handleMouseEnter, true);
     this.ui.addEventListener("mouseleave", handleMouseLeave, false);
     this.teardownFns.push(() =>
-      this.ui.removeEventListener("mouseenter", handleMouseEnter, true)
+      this.ui.removeEventListener("mouseenter", handleMouseEnter, true),
     );
     this.teardownFns.push(() =>
-      this.ui.removeEventListener("mouseleave", handleMouseLeave, true)
+      this.ui.removeEventListener("mouseleave", handleMouseLeave, true),
     );
 
     if (this.options.autoRefresh) {
@@ -374,14 +374,14 @@ export default class Custompicker extends Litepicker {
         this.options.element.addEventListener(
           "keyup",
           this.onInput.bind(this),
-          true
+          true,
         );
       }
       if (this.options.elementEnd instanceof HTMLElement) {
         this.options.elementEnd.addEventListener(
           "keyup",
           this.onInput.bind(this),
-          true
+          true,
         );
       }
     } else {
@@ -389,14 +389,14 @@ export default class Custompicker extends Litepicker {
         this.options.element.addEventListener(
           "change",
           this.onInput.bind(this),
-          true
+          true,
         );
       }
       if (this.options.elementEnd instanceof HTMLElement) {
         this.options.elementEnd.addEventListener(
           "change",
           this.onInput.bind(this),
-          true
+          true,
         );
       }
     }

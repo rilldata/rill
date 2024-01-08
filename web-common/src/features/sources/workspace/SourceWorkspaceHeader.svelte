@@ -102,7 +102,7 @@
         runtimeInstanceId,
         sourceName,
         toName,
-        entityType
+        entityType,
       );
       goto(getRouteFromName(toName, entityType), {
         replaceState: true,
@@ -136,7 +136,7 @@
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(
     $runtime.instanceId,
-    sourceName
+    sourceName,
   );
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
@@ -160,7 +160,7 @@
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
     sourceName,
-    $sourceStore.clientYAML
+    $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
@@ -172,7 +172,7 @@
       BehaviourEventMedium.Button,
       MetricsEventSpace.RightPanel,
       MetricsEventScreenName.Source,
-      MetricsEventScreenName.Model
+      MetricsEventScreenName.Model,
     );
   };
 
@@ -229,8 +229,8 @@
               isSourceUnsaved
                 ? onSaveAndRefreshClick(sourceName)
                 : isLocalFileConnector
-                ? toggleFloatingElement()
-                : onRefreshClick(sourceName)}
+                  ? toggleFloatingElement()
+                  : onRefreshClick(sourceName)}
             type={isSourceUnsaved ? "primary" : "secondary"}
           >
             <IconSpaceFixer

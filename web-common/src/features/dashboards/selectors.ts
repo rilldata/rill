@@ -33,7 +33,7 @@ export function useDashboard(instanceId: string, metricViewName: string) {
 export const useMetaQuery = <T = V1MetricsViewSpec>(
   instanceId: string,
   metricViewName: string,
-  selector?: (meta: V1MetricsViewSpec) => T
+  selector?: (meta: V1MetricsViewSpec) => T,
 ) => {
   return useResource<T>(
     instanceId,
@@ -42,14 +42,14 @@ export const useMetaQuery = <T = V1MetricsViewSpec>(
     (data) =>
       selector
         ? selector(data.metricsView?.state?.validSpec)
-        : (data.metricsView?.state?.validSpec as T)
+        : (data.metricsView?.state?.validSpec as T),
   );
 };
 
 // TODO: cleanup usage of useModelHasTimeSeries and useModelAllTimeRange
 export const useModelHasTimeSeries = (
   instanceId: string,
-  metricViewName: string
+  metricViewName: string,
 ) => useMetaQuery(instanceId, metricViewName, (meta) => !!meta?.timeDimension);
 
 export function useModelAllTimeRange(
@@ -57,7 +57,7 @@ export function useModelAllTimeRange(
   metricsViewName: string,
   options?: {
     query?: CreateQueryOptions;
-  }
+  },
 ) {
   const { query: queryOptions } = options ?? {};
 
@@ -78,27 +78,29 @@ export function useModelAllTimeRange(
         },
         ...queryOptions,
       },
-    }
+    },
   );
 }
 
 export const useMetaMeasure = (
   instanceId: string,
   metricViewName: string,
-  measureName: string
+  measureName: string,
 ) =>
-  useMetaQuery(instanceId, metricViewName, (meta) =>
-    meta?.measures?.find((measure) => measure.name === measureName)
+  useMetaQuery(
+    instanceId,
+    metricViewName,
+    (meta) => meta?.measures?.find((measure) => measure.name === measureName),
   );
 
 export const useMetaDimension = (
   instanceId: string,
   metricViewName: string,
-  dimensionName: string
+  dimensionName: string,
 ) =>
   useMetaQuery(instanceId, metricViewName, (meta) => {
     const dim = meta?.dimensions?.find(
-      (dimension) => dimension.name === dimensionName
+      (dimension) => dimension.name === dimensionName,
     );
     return {
       ...dim,
@@ -113,20 +115,20 @@ export const useMetaDimension = (
  */
 export const getFiltersForOtherDimensions = (
   filters: V1Expression,
-  dimensionName: string
+  dimensionName: string,
 ) => {
   if (!filters) return undefined;
   return removeExpressions(
     filters,
-    (e) => e.cond?.exprs?.[0].ident === dimensionName
+    (e) => e.cond?.exprs?.[0].ident === dimensionName,
   );
 };
 
 export const useGetDashboardsForModel = (
   instanceId: string,
-  modelName: string
+  modelName: string,
 ) => {
   return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
-    data.resources.filter((res) => res.metricsView?.spec?.table === modelName)
+    data.resources.filter((res) => res.metricsView?.spec?.table === modelName),
   );
 };

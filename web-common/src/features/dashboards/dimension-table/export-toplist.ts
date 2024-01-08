@@ -42,7 +42,7 @@ export default async function exportToplist({
             (name) =>
               <V1MetricsViewAggregationMeasure>{
                 name: name,
-              }
+              },
           ),
           timeRange: {
             start: timeControlState.timeStart,

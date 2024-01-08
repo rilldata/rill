@@ -17,7 +17,7 @@ export interface SearchableFilterSelectableItem {
 export function getMenuGroups(
   groups: SearchableFilterSelectableGroup[],
   selected: boolean[][],
-  searchText: string
+  searchText: string,
 ) {
   return groups.map(
     (g, i) =>
@@ -25,14 +25,14 @@ export function getMenuGroups(
         name: g.name,
         showDivider: i > 0,
         items: getMenuItems(g.items, selected[i] ?? [], searchText),
-      }
+      },
   );
 }
 
 function getMenuItems(
   items: SearchableFilterSelectableItem[],
   selected: boolean[],
-  searchText: string
+  searchText: string,
 ) {
   const menuItems = items.map(
     (item, i) =>
@@ -41,7 +41,7 @@ function getMenuItems(
         label: item.label,
         selected: selected[i],
         index: i,
-      }
+      },
   );
   if (!searchText) return menuItems;
   return matchSorter(menuItems, searchText, { keys: ["label"] });

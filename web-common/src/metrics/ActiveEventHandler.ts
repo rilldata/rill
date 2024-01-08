@@ -11,7 +11,7 @@ export class ActiveEventHandler {
 
   public constructor(
     private readonly metricsService: MetricsService,
-    private readonly commonUserMetrics: CommonUserFields
+    private readonly commonUserMetrics: CommonUserFields,
   ) {
     window.addEventListener("blur", () => {
       this.isInFocus = false;
@@ -27,11 +27,14 @@ export class ActiveEventHandler {
     });
 
     // this is to ensure the event is triggered at the top of the minute
-    setTimeout(() => {
-      setInterval(() => {
-        this.fireEvent();
-      }, ActiveEventInterval * 1000);
-    }, (60 - new Date().getSeconds()) * 1000);
+    setTimeout(
+      () => {
+        setInterval(() => {
+          this.fireEvent();
+        }, ActiveEventInterval * 1000);
+      },
+      (60 - new Date().getSeconds()) * 1000,
+    );
   }
 
   private fireEvent() {

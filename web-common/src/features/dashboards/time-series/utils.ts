@@ -14,7 +14,7 @@ import type { V1Expression } from "@rilldata/web-common/runtime-client";
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
   [smallest, largest]: [number, number],
-  inflator: number
+  inflator: number,
 ) {
   if (smallest === 0 && largest === 0) {
     return [0, 1];
@@ -36,7 +36,7 @@ export function toComparisonKeys(d, offsetDuration: string, zone: string) {
       acc["comparison.ts_position"] = getOffset(
         acc["comparison.ts"],
         offsetDuration,
-        TimeOffsetType.ADD
+        TimeOffsetType.ADD,
       );
     } else {
       acc[`comparison.${key}`] = d[key];
@@ -49,7 +49,7 @@ export function prepareTimeSeries(
   original,
   comparison,
   timeGrainDuration: string,
-  zone: string
+  zone: string,
 ) {
   return original?.map((originalPt, i) => {
     const comparisonPt = comparison?.[i];
@@ -72,11 +72,11 @@ export function getBisectedTimeFromCordinates(
   scaleStore,
   accessor,
   data,
-  grainLabel
+  grainLabel,
 ) {
   const roundedValue = roundToNearestTimeUnit(
     scaleStore.invert(value),
-    grainLabel
+    grainLabel,
   );
   return bisectData(roundedValue, "center", accessor, data)[accessor];
 }
@@ -105,12 +105,12 @@ export function getOrderedStartEnd(start: Date, stop: Date) {
 export function getFilterForComparedDimension(
   dimensionName: string,
   filters: V1Expression,
-  topListValues: string[]
+  topListValues: string[],
 ) {
   const includedValues = topListValues?.slice(0, 250);
 
   let updatedFilter = removeExpressions(filters, (e) =>
-    matchExpressionByName(e, dimensionName)
+    matchExpressionByName(e, dimensionName),
   );
   if (!updatedFilter) {
     updatedFilter = createAndExpression([]);

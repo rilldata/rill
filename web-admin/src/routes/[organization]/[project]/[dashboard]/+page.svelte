@@ -56,7 +56,7 @@
         getRuntimeServiceGetResourceQueryKey(instanceId, {
           "name.name": dashboardName,
           "name.kind": ResourceKind.MetricsView,
-        })
+        }),
       );
     }
   }
@@ -64,7 +64,7 @@
   async function getDashboardsAndInvalidate() {
     const dashboardListings = await getDashboardsForProject($project.data);
     const dashboardNames = dashboardListings.map(
-      (listing) => listing.meta.name.name
+      (listing) => listing.meta.name.name,
     );
     return invalidateDashboardsQueries(queryClient, dashboardNames);
   }

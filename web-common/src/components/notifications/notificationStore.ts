@@ -78,7 +78,7 @@ function createNotificationStore(): NotificationStore {
       ) {
         timeout = setTimeout(clear, NOTIFICATION_TIMEOUT);
       }
-    }
+    },
   );
   const { subscribe } = notifications;
 

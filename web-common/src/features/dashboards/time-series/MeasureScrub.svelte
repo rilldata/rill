@@ -50,10 +50,10 @@
   $: cursorClass = isMovingScrub
     ? "cursor-grabbing"
     : isInsideScrub
-    ? "cursor-grab"
-    : isScrubbing || isOverStart || isOverEnd
-    ? "cursor-ew-resize"
-    : "";
+      ? "cursor-grab"
+      : isScrubbing || isOverStart || isOverEnd
+        ? "cursor-ew-resize"
+        : "";
 
   export let preventScrubReset;
   $: preventScrubReset = justCreatedScrub || isScrubbing || isResizing;
@@ -88,7 +88,7 @@
       $xScale,
       labelAccessor,
       data,
-      timeGrainLabel
+      timeGrainLabel,
     );
 
     let stopX = event.detail?.stop?.x;
@@ -97,7 +97,7 @@
       $xScale,
       labelAccessor,
       data,
-      timeGrainLabel
+      timeGrainLabel,
     );
 
     if (hasSubrangeSelected && (isResizing || isMovingScrub)) {
@@ -132,7 +132,7 @@
           $xScale,
           labelAccessor,
           data,
-          timeGrainLabel
+          timeGrainLabel,
         );
 
         const newEnd = getBisectedTimeFromCordinates(
@@ -140,7 +140,7 @@
           $xScale,
           labelAccessor,
           data,
-          timeGrainLabel
+          timeGrainLabel,
         );
 
         const insideBounds = $xScale(newStart) >= 0 && $xScale(newEnd) >= 0;

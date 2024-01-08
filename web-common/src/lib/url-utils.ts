@@ -15,7 +15,7 @@ export function getUrlForPath(path: string, retainParams = ["features"]): URL {
 
 export function getFullUrlForPath(
   path: string,
-  retainParams = ["features"]
+  retainParams = ["features"],
 ): string {
   const newUrl = getUrlForPath(path, retainParams);
 

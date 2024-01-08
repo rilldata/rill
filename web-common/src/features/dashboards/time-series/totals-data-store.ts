@@ -11,7 +11,7 @@ export function createTotalsForMeasure(
   ctx: StateManagers,
   measures,
   isComparison = false,
-  noFilter = false
+  noFilter = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse> {
   return derived(
     [
@@ -39,7 +39,7 @@ export function createTotalsForMeasure(
             enabled: !!timeControls.ready && !!ctx.dashboardStore,
             queryClient: ctx.queryClient,
           },
-        }
-      ).subscribe(set)
+        },
+      ).subscribe(set),
   );
 }

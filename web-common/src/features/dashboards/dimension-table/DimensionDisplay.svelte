@@ -60,7 +60,7 @@
   $: filterSet = getDimensionFilterWithSearch(
     $dashboardStore?.whereFilter,
     searchText,
-    dimensionName
+    dimensionName,
   );
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
@@ -71,7 +71,7 @@
       query: {
         enabled: $timeControlsStore.ready,
       },
-    }
+    },
   );
 
   $: unfilteredTotal = $totalsQuery?.data?.data?.[$activeMeasureName] ?? 0;
@@ -86,13 +86,13 @@
       query: {
         enabled: $timeControlsStore.ready && !!filterSet,
       },
-    }
+    },
   );
 
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
-    $selectedDimensionValueNames.includes(row[dimensionColumnName] as string)
+    $selectedDimensionValueNames.includes(row[dimensionColumnName] as string),
   );
 
   function onSelectItem(event) {
@@ -103,7 +103,7 @@
   function toggleComparisonDimension(dimensionName, isBeingCompared) {
     metricsExplorerStore.setComparisonDimension(
       $metricsViewName,
-      isBeingCompared ? undefined : dimensionName
+      isBeingCompared ? undefined : dimensionName,
     );
   }
 
@@ -115,7 +115,7 @@
       metricsExplorerStore.deselectItemsInFilter(
         $metricsViewName,
         dimensionName,
-        labels
+        labels,
       );
 
       notifications.send({
@@ -126,7 +126,7 @@
       const newValuesSelected = metricsExplorerStore.selectItemsInFilter(
         $metricsViewName,
         dimensionName,
-        labels
+        labels,
       );
       notifications.send({
         message: `Added ${newValuesSelected} items to filter`,

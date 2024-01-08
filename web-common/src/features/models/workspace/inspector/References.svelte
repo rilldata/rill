@@ -28,12 +28,12 @@
   let modelHasError = false;
 
   const queryHighlight: Writable<QueryHighlightState | undefined> = getContext(
-    "rill:app:query-highlight"
+    "rill:app:query-highlight",
   );
 
   $: getModelFile = createRuntimeServiceGetFile(
     $runtime?.instanceId,
-    getFilePathFromNameAndType(modelName, EntityType.Model)
+    getFilePathFromNameAndType(modelName, EntityType.Model),
   );
   $: references = getTableReferences($getModelFile?.data?.blob ?? "");
 
@@ -56,17 +56,17 @@
           writable(ref),
           createQueryServiceTableCardinality(
             $runtime?.instanceId,
-            resource?.meta?.name?.name ?? ""
+            resource?.meta?.name?.name ?? "",
           ),
         ],
         ([resource, ref, cardinality]) => ({
           resource,
           reference: ref,
           totalRows: +(cardinality?.data?.cardinality ?? 0),
-        })
+        }),
       );
     }),
-    (referencedThings) => referencedThings
+    (referencedThings) => referencedThings,
   );
 
   function focus(reference) {

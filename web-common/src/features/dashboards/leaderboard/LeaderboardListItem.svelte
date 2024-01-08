@@ -68,8 +68,8 @@
   $: color = excluded
     ? "ui-measure-bar-excluded"
     : selected
-    ? "ui-measure-bar-included-selected"
-    : "ui-measure-bar-included";
+      ? "ui-measure-bar-included-selected"
+      : "ui-measure-bar-included";
 
   const { shiftClickAction } = createShiftClickAction();
   async function shiftClickHandler(label) {

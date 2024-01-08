@@ -10,7 +10,7 @@ export function toggleDimensionValueSelection(
   { dashboard, cancelQueries }: DashboardMutables,
   dimensionName: string,
   dimensionValue: string,
-  keepPillVisible?: boolean
+  keepPillVisible?: boolean,
 ) {
   // if we are able to update the filters, we must cancel any queries
   // that are currently running.
@@ -24,7 +24,7 @@ export function toggleDimensionValueSelection(
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {
     dashboard.whereFilter.cond?.exprs?.push(
-      createInExpression(dimensionName, [dimensionValue], !isInclude)
+      createInExpression(dimensionName, [dimensionValue], !isInclude),
     );
     return;
   }
@@ -56,7 +56,7 @@ export function toggleDimensionValueSelection(
 
 export function toggleDimensionFilterMode(
   { dashboard, cancelQueries }: DashboardMutables,
-  dimensionName: string
+  dimensionName: string,
 ) {
   const exclude = dashboard.dimensionFilterExcludeMode.get(dimensionName);
   dashboard.dimensionFilterExcludeMode.set(dimensionName, !exclude);
@@ -70,19 +70,19 @@ export function toggleDimensionFilterMode(
   cancelQueries();
 
   const exprIdx = dashboard.whereFilter.cond.exprs.findIndex(
-    (e) => e.cond?.exprs?.[0].ident === dimensionName
+    (e) => e.cond?.exprs?.[0].ident === dimensionName,
   );
   if (exprIdx === -1) {
     return;
   }
   dashboard.whereFilter.cond.exprs[exprIdx] = negateExpression(
-    dashboard.whereFilter.cond.exprs[exprIdx]
+    dashboard.whereFilter.cond.exprs[exprIdx],
   );
 }
 
 export function removeDimensionFilter(
   { dashboard, cancelQueries }: DashboardMutables,
-  dimensionName: string
+  dimensionName: string,
 ) {
   // if we are able to update the filters, we must cancel any queries
   // that are currently running.

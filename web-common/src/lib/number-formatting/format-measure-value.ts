@@ -22,7 +22,7 @@ export function defaultHumanizer(value: number): string {
 function humanizeDataType(value: number, type: FormatPreset): string {
   if (typeof value !== "number") {
     console.warn(
-      `humanizeDataType only accepts numbers, got ${value} for FormatPreset "${type}"`
+      `humanizeDataType only accepts numbers, got ${value} for FormatPreset "${type}"`,
     );
 
     return JSON.stringify(value);
@@ -56,7 +56,7 @@ function humanizeDataType(value: number, type: FormatPreset): string {
 function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
   if (typeof value !== "number") {
     console.warn(
-      `humanizeDataTypeUnabridged only accepts numbers, got ${value} for FormatPreset "${type}"`
+      `humanizeDataTypeUnabridged only accepts numbers, got ${value} for FormatPreset "${type}"`,
     );
     return JSON.stringify(value);
   }
@@ -82,7 +82,7 @@ function humanizeDataTypeUnabridged(value: number, type: FormatPreset): string {
  */
 export function createMeasureValueFormatter<T extends null | undefined = never>(
   measureSpec: MetricsViewSpecMeasureV2,
-  useUnabridged = false
+  useUnabridged = false,
 ): (value: number | T) => string | T {
   const humanizer = useUnabridged
     ? humanizeDataTypeUnabridged

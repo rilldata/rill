@@ -45,7 +45,7 @@
   // Get labels for table headers
   $: measureLabel =
     $metaQuery?.data?.measures?.find(
-      (m) => m.name === $dashboardStore?.expandedMeasureName
+      (m) => m.name === $dashboardStore?.expandedMeasureName,
     )?.label ?? "";
 
   let dimensionLabel = "";
@@ -78,14 +78,14 @@
     formattedData?.rowHeaderData?.slice(1)?.map((row) => row[0]?.value) ?? [];
 
   $: areAllTableRowsSelected = rowHeaderLabels?.every((val) =>
-    formattedData?.selectedValues?.includes(val)
+    formattedData?.selectedValues?.includes(val),
   );
 
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
 
   // Create a time formatter for the column headers
   $: timeFormatter = timeFormat(
-    timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M"
+    timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
   ) as (d: Date) => string;
 
   function highlightCell(e) {
@@ -113,7 +113,7 @@
       metricsExplorerStore.deselectItemsInFilter(
         metricViewName,
         dimensionName,
-        rowHeaderLabels
+        rowHeaderLabels,
       );
       notifications.send({
         message: `Removed ${rowHeaderLabels.length} items from filter`,
@@ -123,7 +123,7 @@
       const newValuesSelected = metricsExplorerStore.selectItemsInFilter(
         metricViewName,
         dimensionName,
-        rowHeaderLabels
+        rowHeaderLabels,
       );
 
       notifications.send({
@@ -197,7 +197,7 @@
       cancelDashboardQueries(queryClient, metricViewName);
       metricsExplorerStore.toggleSort(
         metricViewName,
-        e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE
+        e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE,
       );
     }}
     on:highlight={highlightCell}

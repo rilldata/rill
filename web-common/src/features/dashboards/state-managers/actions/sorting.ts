@@ -4,7 +4,7 @@ import type { DashboardMutables } from "./types";
 
 export const toggleSort = (
   { dashboard }: DashboardMutables,
-  sortType: SortType
+  sortType: SortType,
 ) => {
   // if sortType is not provided,  or if it is provided
   // and is the same as the current sort type,

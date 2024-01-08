@@ -86,7 +86,7 @@ path: ${TestDataPath}/AdImpressions.tsv`;
     // Check that the source data is updated
     // (The column "user_id" exists in AdImpressions, but not in AdBids)
     await expect(
-      page.getByRole("button").filter({ hasText: "user_id" }).first()
+      page.getByRole("button").filter({ hasText: "user_id" }).first(),
     ).toBeVisible();
   });
 });

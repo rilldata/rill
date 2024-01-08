@@ -17,7 +17,7 @@ import { categorizeSourceError } from "./modal/errors";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
-  connectorName: string
+  connectorName: string,
 ) {
   const topLineComment = `# Visit https://docs.rilldata.com/reference/project-files/sources to learn more about Rill source files.`;
 
@@ -75,7 +75,7 @@ function buildDuckDbQuery(path: string): string {
  */
 function extensionContainsParts(
   fileExtension: string,
-  extensionParts: Array<string>
+  extensionParts: Array<string>,
 ) {
   for (const extension of extensionParts) {
     if (fileExtension.includes(extension)) return true;
@@ -133,7 +133,7 @@ export function emitSourceErrorTelemetry(
   screenName: MetricsEventScreenName,
   errorMessage: string,
   connectionType: SourceConnectionType,
-  fileName: string
+  fileName: string,
 ) {
   const categorizedError = categorizeSourceError(errorMessage);
   const fileType = getFileTypeFromPath(fileName);
@@ -145,7 +145,7 @@ export function emitSourceErrorTelemetry(
     categorizedError,
     connectionType,
     fileType,
-    isGlob
+    isGlob,
   );
 }
 
@@ -154,7 +154,7 @@ export function emitSourceSuccessTelemetry(
   screenName: MetricsEventScreenName,
   medium: BehaviourEventMedium,
   connectionType: SourceConnectionType,
-  fileName: string
+  fileName: string,
 ) {
   const fileType = getFileTypeFromPath(fileName);
   const isGlob = fileName.includes("*");
@@ -165,6 +165,6 @@ export function emitSourceSuccessTelemetry(
     space,
     connectionType,
     fileType,
-    isGlob
+    isGlob,
   );
 }

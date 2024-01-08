@@ -24,21 +24,21 @@ export async function clickMenuButton(page: Page, text: string) {
 export async function waitForProfiling(
   page: Page,
   name: string,
-  columns: Array<string>
+  columns: Array<string>,
 ) {
   return Promise.all(
     [
       page.waitForResponse(
-        new RegExp(`/queries/columns-profile/tables/${name}`)
+        new RegExp(`/queries/columns-profile/tables/${name}`),
       ),
       columns.map((column) =>
         page.waitForResponse(
           new RegExp(
-            `/queries/null-count/tables/${name}\\?columnName=${column}`
-          )
-        )
+            `/queries/null-count/tables/${name}\\?columnName=${column}`,
+          ),
+        ),
       ),
-    ].flat()
+    ].flat(),
   );
 }
 
@@ -53,7 +53,7 @@ export function getEntityLink(page: Page, name: string) {
 export async function wrapRetryAssertion(
   assertion: () => Promise<void>,
   timeout = 1000,
-  interval = 100
+  interval = 100,
 ) {
   let lastError: Error;
   await asyncWaitUntil(
@@ -68,7 +68,7 @@ export async function wrapRetryAssertion(
       }
     },
     timeout,
-    interval
+    interval,
   );
   if (lastError) throw lastError;
 }

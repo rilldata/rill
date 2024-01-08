@@ -25,12 +25,12 @@ const invalidRangeOptions2: FormatterFactoryOptions = {
 describe("range formatter constructor, throws if given an invalid range", () => {
   it(`should throw`, () => {
     expect(
-      () => new PerRangeFormatter([100.12], invalidRangeOptions1)
+      () => new PerRangeFormatter([100.12], invalidRangeOptions1),
     ).toThrow();
   });
   it(`should throw`, () => {
     expect(
-      () => new PerRangeFormatter([100.12], invalidRangeOptions2)
+      () => new PerRangeFormatter([100.12], invalidRangeOptions2),
     ).toThrow();
   });
 });
@@ -60,12 +60,12 @@ const overlappingRangeOptions2: FormatterFactoryOptions = {
 describe("range formatter constructor, throws if given overlapping ranges", () => {
   it(`should throw`, () => {
     expect(
-      () => new PerRangeFormatter([100.12], overlappingRangeOptions1)
+      () => new PerRangeFormatter([100.12], overlappingRangeOptions1),
     ).toThrow();
   });
   it(`should throw`, () => {
     expect(
-      () => new PerRangeFormatter([100.12], overlappingRangeOptions2)
+      () => new PerRangeFormatter([100.12], overlappingRangeOptions2),
     ).toThrow();
   });
 });
@@ -83,7 +83,7 @@ const gappedRangeOptions1: FormatterFactoryOptions = {
 describe("range formatter constructor, throws if given gap in range coverage", () => {
   it(`should throw`, () => {
     expect(
-      () => new PerRangeFormatter([100.12], gappedRangeOptions1)
+      () => new PerRangeFormatter([100.12], gappedRangeOptions1),
     ).toThrow();
   });
 });
@@ -246,7 +246,7 @@ describe("range formatter, using options for 2022-03-02 proposal and NO padding 
     it(`returns the correct string in case: ${input}`, () => {
       const formatter = new PerRangeFormatter(
         [input],
-        mar2ProposalNoZeroPadOptions
+        mar2ProposalNoZeroPadOptions,
       );
       expect(formatter.stringFormat(input)).toEqual(output);
     });

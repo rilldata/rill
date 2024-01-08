@@ -15,7 +15,7 @@ import type { AtLeast } from "../types";
 import type { DashboardDataSources } from "./types";
 
 export const getFiltersForOtherDimensions = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
 ): ((dimName: string) => V1Expression) => {
   return (dimName: string) => {
     const exprIdx = getWhereFilterExpressionIndex(dashData)(dimName);
@@ -24,14 +24,14 @@ export const getFiltersForOtherDimensions = (
 
     return createAndExpression(
       dashData.dashboard.whereFilter.cond?.exprs?.filter(
-        (e) => !matchExpressionByName(e, dimName)
-      ) ?? []
+        (e) => !matchExpressionByName(e, dimName),
+      ) ?? [],
     );
   };
 };
 
 export const selectedDimensionValues = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
 ): ((dimName: string) => string[]) => {
   return (dimName: string) => {
     // FIXME: it is possible for this way of accessing the filters
@@ -43,29 +43,29 @@ export const selectedDimensionValues = (
     return [
       ...new Set(
         getValuesInExpression(
-          getWhereFilterExpression(dashData)(dimName)
-        ) as string[]
+          getWhereFilterExpression(dashData)(dimName),
+        ) as string[],
       ),
     ];
   };
 };
 
 export const atLeastOneSelection = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
 ): ((dimName: string) => boolean) => {
   return (dimName: string) =>
     selectedDimensionValues(dashData)(dimName).length > 0;
 };
 
 export const isFilterExcludeMode = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
 ): ((dimName: string) => boolean) => {
   return (dimName: string) =>
     dashData.dashboard.dimensionFilterExcludeMode.get(dimName) ?? false;
 };
 
 export const dimensionHasFilter = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) => {
   return (dimName: string) => {
     return getWhereFilterExpression(dashData)(dimName) !== undefined;
@@ -73,20 +73,20 @@ export const dimensionHasFilter = (
 };
 
 export const getWhereFilterExpression = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
 ): ((name: string) => V1Expression | undefined) => {
   return (name: string) =>
     dashData.dashboard.whereFilter.cond?.exprs?.find((e) =>
-      matchExpressionByName(e, name)
+      matchExpressionByName(e, name),
     );
 };
 
 export const getWhereFilterExpressionIndex = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
 ): ((name: string) => number | undefined) => {
   return (name: string) =>
     dashData.dashboard.whereFilter?.cond?.exprs?.findIndex((e) =>
-      matchExpressionByName(e, name)
+      matchExpressionByName(e, name),
     );
 };
 
@@ -96,7 +96,7 @@ export type DimensionFilterItem = {
   selectedValues: string[];
 };
 export function getDimensionFilterItems(
-  dashData: AtLeast<DashboardDataSources, "dashboard">
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) {
   return (dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>) => {
     if (!dashData.dashboard.whereFilter) return [];
@@ -136,11 +136,11 @@ export function getDimensionFilterItems(
 }
 
 export const getAllDimensionFilterItems = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) => {
   return (
     dimensionFilterItem: Array<DimensionFilterItem>,
-    dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>
+    dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
   ) => {
     const allDimensionFilterItem = [...dimensionFilterItem];
 
@@ -152,7 +152,7 @@ export const getAllDimensionFilterItems = (
       allDimensionFilterItem.push({
         name: dashData.dashboard.temporaryFilterName,
         label: getDisplayName(
-          dimensionIdMap.get(dashData.dashboard.temporaryFilterName)
+          dimensionIdMap.get(dashData.dashboard.temporaryFilterName),
         ),
         selectedValues: [],
       });

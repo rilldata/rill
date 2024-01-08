@@ -34,7 +34,7 @@ export function getDimensionTableExportArgs(ctx: StateManagers) {
       const comparisonTimeRange = getComparisonTimeRange(
         dashboardState,
         timeControlState,
-        timeRange
+        timeRange,
       );
 
       return <V1MetricsViewComparisonRequest>{
@@ -59,7 +59,7 @@ export function getDimensionTableExportArgs(ctx: StateManagers) {
         having: dashboardState.havingFilter,
         offset: "0",
       };
-    }
+    },
   );
 }
 
@@ -69,7 +69,7 @@ export function getDimensionTableExportArgs(ctx: StateManagers) {
  */
 function getTimeRange(
   timeControlState: TimeControlState,
-  metricsView: V1MetricsViewSpec
+  metricsView: V1MetricsViewSpec,
 ) {
   if (!timeControlState.selectedTimeRange?.name) return undefined;
 
@@ -99,7 +99,7 @@ function getTimeRange(
 function getComparisonTimeRange(
   dashboardState: MetricsExplorerEntity,
   timeControlState: TimeControlState,
-  timeRange: V1TimeRange | undefined
+  timeRange: V1TimeRange | undefined,
 ) {
   if (
     !timeRange ||

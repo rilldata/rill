@@ -35,7 +35,7 @@ export function prepareSortedQueryBody(
   sortMeasureName: string | null,
   sortType: SortType,
   sortAscending: boolean,
-  filterForDimension: V1Expression
+  filterForDimension: V1Expression,
 ): QueryServiceMetricsViewComparisonBody {
   let comparisonTimeRange = {
     start: timeControls.comparisonTimeStart,
@@ -63,7 +63,7 @@ export function prepareSortedQueryBody(
       (n) =>
         <V1MetricsViewAggregationMeasure>{
           name: n,
-        }
+        },
     ),
     timeRange: {
       start: timeControls.timeStart,

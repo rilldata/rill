@@ -58,7 +58,7 @@
       ({
         name: m.name ?? "",
         label: m.label ?? "",
-      })
+      }),
     );
 
   $: selectedItems = allMeasures?.map((m) => m.name === expandedMeasureName);

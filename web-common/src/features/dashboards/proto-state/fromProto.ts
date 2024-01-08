@@ -43,17 +43,17 @@ const LeaderboardContextColumnReverseMap: Record<
 
 export function getDashboardStateFromUrl(
   urlState: string,
-  metricsView: V1MetricsView
+  metricsView: V1MetricsView,
 ): Partial<MetricsExplorerEntity> {
   return getDashboardStateFromProto(
     base64ToProto(decodeURIComponent(urlState)),
-    metricsView
+    metricsView,
   );
 }
 
 export function getDashboardStateFromProto(
   binary: Uint8Array,
-  metricsView: V1MetricsView
+  metricsView: V1MetricsView,
 ): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
   const entity: Partial<MetricsExplorerEntity> = {
@@ -73,7 +73,7 @@ export function getDashboardStateFromProto(
   }
   if (dashboard.compareTimeRange) {
     entity.selectedComparisonTimeRange = fromTimeRangeProto(
-      dashboard.compareTimeRange
+      dashboard.compareTimeRange,
     );
     // backwards compatibility
     correctComparisonTimeRange(entity.selectedComparisonTimeRange);
@@ -89,10 +89,10 @@ export function getDashboardStateFromProto(
 
   if (dashboard.scrubRange) {
     entity.selectedScrubRange = fromTimeRangeProto(
-      dashboard.scrubRange
+      dashboard.scrubRange,
     ) as ScrubRange;
     entity.lastDefinedScrubRange = fromTimeRangeProto(
-      dashboard.scrubRange
+      dashboard.scrubRange,
     ) as ScrubRange;
   }
 
@@ -124,7 +124,7 @@ export function getDashboardStateFromProto(
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
     entity.visibleMeasureKeys = new Set(
-      metricsView.measures?.map((measure) => measure.name) ?? []
+      metricsView.measures?.map((measure) => measure.name) ?? [],
     ) as Set<string>;
   } else if (dashboard.visibleMeasures) {
     entity.allMeasuresVisible = false;
@@ -134,7 +134,7 @@ export function getDashboardStateFromProto(
   if (dashboard.allDimensionsVisible) {
     entity.allDimensionsVisible = true;
     entity.visibleDimensionKeys = new Set(
-      metricsView.dimensions?.map((measure) => measure.name) ?? []
+      metricsView.dimensions?.map((measure) => measure.name) ?? [],
     ) as Set<string>;
   } else if (dashboard.visibleDimensions) {
     entity.allDimensionsVisible = false;
@@ -180,7 +180,7 @@ function fromExpressionProto(expression: Expression) {
         cond: {
           op: FromProtoOperationMap[expression.expression.value.op],
           exprs: expression.expression.value.exprs.map((e) =>
-            fromExpressionProto(e)
+            fromExpressionProto(e),
           ),
         },
       } as V1Expression;
@@ -207,7 +207,7 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
 }
 
 function correctComparisonTimeRange(
-  comparisonTimeRange: DashboardTimeControls
+  comparisonTimeRange: DashboardTimeControls,
 ) {
   switch (comparisonTimeRange.name as string) {
     case "CONTIGUOUS":

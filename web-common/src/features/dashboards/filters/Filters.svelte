@@ -71,7 +71,7 @@ The main feature-set component for dashboard filters
 
   $: dimensionIdMap = getMapFromArray(
     dimensions,
-    (dimension) => dimension.name as string
+    (dimension) => dimension.name as string,
   );
 
   $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
@@ -80,7 +80,7 @@ The main feature-set component for dashboard filters
 
   $: allDimensionFilters = $getAllDimensionFilterItems(
     currentDimensionFilters,
-    dimensionIdMap
+    dimensionIdMap,
   );
 
   function setActiveDimension(name: string, value = "") {

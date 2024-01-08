@@ -15,13 +15,13 @@
   let timestampColumns: Array<string>;
   const timestampColumnsQuery = useModelTimestampColumns(
     $runtime.instanceId,
-    modelName
+    modelName,
   );
 
   // CAST SAFETY: must be string[], since we filter out undefined values
   $: timestampColumns =
     ($timestampColumnsQuery?.data?.filter(
-      (x) => x !== undefined
+      (x) => x !== undefined,
     ) as string[]) ?? [];
 
   $: isReadOnlyDashboard = $featureFlags.readOnly === true;

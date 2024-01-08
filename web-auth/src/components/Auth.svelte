@@ -33,7 +33,7 @@
 
   function initConfig() {
     const config = JSON.parse(
-      decodeURIComponent(escape(window.atob(configParams)))
+      decodeURIComponent(escape(window.atob(configParams))),
     );
 
     if (config?.extraParams?.screen_hint === "signup") {
@@ -55,7 +55,7 @@
         redirectUri: config.callbackURL,
         responseType: "code",
       },
-      config.internalOptions
+      config.internalOptions,
     );
 
     webAuth = new auth0.WebAuth(params);
@@ -104,7 +104,7 @@
           (err) => {
             if (err) displayError({ message: err?.description });
             isEmailDisabled = false;
-          }
+          },
         );
       } else {
         webAuth.redirect.signupAndLogin(
@@ -120,14 +120,14 @@
               typeof err?.description === "string"
                 ? err.description
                 : typeof err?.policy === "string"
-                ? err.policy
-                : typeof err?.error_description === "string"
-                ? err.error_description
-                : err?.message;
+                  ? err.policy
+                  : typeof err?.error_description === "string"
+                    ? err.error_description
+                    : err?.message;
 
             if (err) displayError({ message: errorText });
             isEmailDisabled = false;
-          }
+          },
         );
       }
     } catch (err) {
@@ -142,7 +142,7 @@
 
     if (
       disableForgotPassDomainsArr.some((domain) =>
-        email.toLowerCase().endsWith(domain.toLowerCase())
+        email.toLowerCase().endsWith(domain.toLowerCase()),
       )
     ) {
       return displayError({
@@ -158,7 +158,7 @@
       (err, resp) => {
         if (err) displayError({ message: err?.description });
         else alert(resp);
-      }
+      },
     );
   }
 

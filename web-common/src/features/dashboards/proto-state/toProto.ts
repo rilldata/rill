@@ -48,7 +48,7 @@ const LeaderboardContextColumnMap: Record<
 };
 
 export function getProtoFromDashboardState(
-  metrics: MetricsExplorerEntity
+  metrics: MetricsExplorerEntity,
 ): string {
   if (!metrics) return "";
 
@@ -67,7 +67,7 @@ export function getProtoFromDashboardState(
   }
   if (metrics.selectedComparisonTimeRange) {
     state.compareTimeRange = toTimeRangeProto(
-      metrics.selectedComparisonTimeRange
+      metrics.selectedComparisonTimeRange,
     );
   }
   if (metrics.lastDefinedScrubRange) {

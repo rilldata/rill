@@ -12,7 +12,7 @@
     unsubscribe?.();
     unsubscribe = listenAndInvalidateDashboards(
       queryClient,
-      $runtime?.instanceId
+      $runtime?.instanceId,
     );
   }
 

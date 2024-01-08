@@ -3,7 +3,7 @@ import type { DashboardDataSources } from "./types";
 import { isSummableMeasure } from "../../dashboard-utils";
 
 export const activeMeasure = (
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): MetricsViewSpecMeasureV2 | undefined => {
   const measures = dashData.metricsSpecQueryResult.data?.measures;
   if (!measures) {
@@ -11,7 +11,7 @@ export const activeMeasure = (
   }
 
   const activeMeasure = measures.find(
-    (measure) => measure.name === activeMeasureName(dashData)
+    (measure) => measure.name === activeMeasureName(dashData),
   );
   return activeMeasure;
 };
@@ -21,19 +21,19 @@ export const activeMeasureName = (dashData: DashboardDataSources): string => {
 };
 
 export const selectedMeasureNames = (
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): string[] => {
   return [...dashData.dashboard.visibleMeasureKeys];
 };
 
 export const isAnyMeasureSelected = (
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): boolean => {
   return selectedMeasureNames(dashData).length > 0;
 };
 
 export const isValidPercentOfTotal = (
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): boolean => {
   return activeMeasure(dashData)?.validPercentOfTotal ?? false;
 };

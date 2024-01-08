@@ -13,6 +13,6 @@ export function useDevJWT(mockUser: MockUser | null) {
       query: {
         enabled: mockUser !== null,
       },
-    }
+    },
   );
 }

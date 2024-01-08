@@ -58,7 +58,7 @@ export const indentGuide = () =>
               Decoration.widget({
                 widget: new IndentGuideWidget(),
                 side: -1,
-              }).range(guidePos)
+              }).range(guidePos),
             );
 
             // If we have two spaces, skip the next space character
@@ -88,5 +88,5 @@ export const indentGuide = () =>
     },
     {
       decorations: (v) => v.decorations,
-    }
+    },
   );

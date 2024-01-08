@@ -46,7 +46,7 @@ export class MetricsService
 
   public constructor(
     private readonly telemetryClient: TelemetryClient,
-    metricsEventFactories: Array<MetricsEventFactory>
+    metricsEventFactories: Array<MetricsEventFactory>,
   ) {
     metricsEventFactories.forEach((actions) => {
       getActionMethods(actions).forEach((action) => {
@@ -86,7 +86,7 @@ export class MetricsService
 
   public async dispatch<Action extends keyof MetricsActionDefinition>(
     action: Action,
-    args: MetricsActionDefinition[Action]
+    args: MetricsActionDefinition[Action],
   ): Promise<void> {
     if (!this.commonFields?.analytics_enabled) return;
     const actionsInstance = this.actionsMap[action];
@@ -97,7 +97,7 @@ export class MetricsService
     const event: MetricsEvent = await actionsInstance[action].call(
       actionsInstance,
       { ...this.commonFields },
-      ...args
+      ...args,
     );
     await this.telemetryClient.fireEvent(event);
   }

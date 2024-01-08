@@ -24,7 +24,7 @@ export function useResource<T = V1Resource>(
   name: string,
   kind: ResourceKind,
   selector?: (data: V1Resource) => T,
-  queryClient?: QueryClient
+  queryClient?: QueryClient,
 ) {
   return createRuntimeServiceGetResource(
     instanceId,
@@ -39,7 +39,7 @@ export function useResource<T = V1Resource>(
         enabled: !!instanceId && !!name && !!kind,
         queryClient,
       },
-    }
+    },
   );
 }
 
@@ -49,14 +49,15 @@ export function useProjectParser(queryClient: QueryClient, instanceId: string) {
     SingletonProjectParserName,
     ResourceKind.ProjectParser,
     undefined,
-    queryClient
+    queryClient,
   );
 }
 
 export function useFilteredResources<T = Array<V1Resource>>(
   instanceId: string,
   kind: ResourceKind,
-  selector: (data: V1ListResourcesResponse) => T = (data) => data.resources as T
+  selector: (data: V1ListResourcesResponse) => T = (data) =>
+    data.resources as T,
 ) {
   return createRuntimeServiceListResources(
     instanceId,
@@ -67,16 +68,16 @@ export function useFilteredResources<T = Array<V1Resource>>(
       query: {
         select: selector,
       },
-    }
+    },
   );
 }
 
 export function useFilteredResourceNames(
   instanceId: string,
-  kind: ResourceKind
+  kind: ResourceKind,
 ) {
   return useFilteredResources<Array<string>>(instanceId, kind, (data) =>
-    data.resources.map((res) => res.meta.name.name)
+    data.resources.map((res) => res.meta.name.name),
   );
 }
 
@@ -95,7 +96,7 @@ export function useAllNames(instanceId: string) {
       query: {
         select,
       },
-    }
+    },
   );
 }
 
@@ -103,7 +104,7 @@ export function createSchemaForTable(
   instanceId: string,
   resourceName: string,
   resourceKind: ResourceKind,
-  queryClient?: QueryClient
+  queryClient?: QueryClient,
 ) {
   return derived(
     useResource(instanceId, resourceName, resourceKind, undefined, queryClient),
@@ -120,9 +121,9 @@ export function createSchemaForTable(
             enabled: !!tableSpec?.state?.table && !!tableSpec?.state?.connector,
             queryClient,
           },
-        }
+        },
       ).subscribe(set);
-    }
+    },
   ) as ReturnType<typeof createConnectorServiceOLAPGetTable>;
 }
 

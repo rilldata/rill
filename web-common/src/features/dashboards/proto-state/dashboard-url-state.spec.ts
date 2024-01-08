@@ -44,7 +44,7 @@ import {
   vi,
 } from "vitest";
 
-const pageMock: PageMock = vi.hoisted(() => ({} as any));
+const pageMock: PageMock = vi.hoisted(() => ({}) as any);
 
 vi.mock("$app/navigation", () => {
   return {
@@ -83,7 +83,7 @@ describe("useDashboardUrlSync", () => {
     metricsExplorerStore.toggleFilter(
       AD_BIDS_NAME,
       AD_BIDS_PUBLISHER_DIMENSION,
-      "Google"
+      "Google",
     );
     await wait();
     assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
@@ -93,7 +93,7 @@ describe("useDashboardUrlSync", () => {
 
     pageMock.goto("/dashboard/AdBids");
     expect(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto).toEqual(
-      get(defaultProtoStore).proto
+      get(defaultProtoStore).proto,
     );
     expect(get(metricsExplorerStore).entities[AD_BIDS_NAME].filters).toEqual({
       include: [],
@@ -144,7 +144,7 @@ describe("useDashboardUrlSync", () => {
 
   it("Init load from url", async () => {
     gotoDashboardState(
-      createDashboardState(AD_BIDS_NAME, AD_BIDS_INIT, AD_BIDS_EXCLUDE_FILTER)
+      createDashboardState(AD_BIDS_NAME, AD_BIDS_INIT, AD_BIDS_EXCLUDE_FILTER),
     );
     const { teardown } = await initDashboardUrlState();
 
@@ -152,7 +152,7 @@ describe("useDashboardUrlSync", () => {
     assertMetricsView(
       AD_BIDS_NAME,
       AD_BIDS_EXCLUDE_FILTER,
-      AD_BIDS_DEFAULT_URL_TIME_RANGE
+      AD_BIDS_DEFAULT_URL_TIME_RANGE,
     );
 
     teardown();
@@ -164,13 +164,13 @@ describe("useDashboardUrlSync", () => {
     const { teardown, stateManagers } = await initDashboardUrlState();
     dashboardFetchMocks.mockMetricsView(
       AD_BIDS_MIRROR_NAME,
-      AD_BIDS_INIT_WITH_TIME
+      AD_BIDS_INIT_WITH_TIME,
     );
 
     metricsExplorerStore.toggleFilter(
       AD_BIDS_NAME,
       AD_BIDS_PUBLISHER_DIMENSION,
-      "Google"
+      "Google",
     );
     await wait();
     assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
@@ -185,7 +185,7 @@ describe("useDashboardUrlSync", () => {
         ],
         exclude: [],
       },
-      AD_BIDS_DEFAULT_TIME_RANGE
+      AD_BIDS_DEFAULT_TIME_RANGE,
     );
 
     // Go to AdBids_mirror
@@ -195,11 +195,11 @@ describe("useDashboardUrlSync", () => {
     metricsExplorerStore.toggleFilter(
       AD_BIDS_MIRROR_NAME,
       AD_BIDS_DOMAIN_DIMENSION,
-      "www.google.com"
+      "www.google.com",
     );
     await wait();
     assertUrlState(
-      get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME].proto
+      get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME].proto,
     );
     assertMetricsView(
       AD_BIDS_MIRROR_NAME,
@@ -212,7 +212,7 @@ describe("useDashboardUrlSync", () => {
         ],
         exclude: [],
       },
-      AD_BIDS_DEFAULT_TIME_RANGE
+      AD_BIDS_DEFAULT_TIME_RANGE,
     );
 
     // Going back to AdBids should retain the selected filters
@@ -230,7 +230,7 @@ describe("useDashboardUrlSync", () => {
         ],
         exclude: [],
       },
-      AD_BIDS_DEFAULT_TIME_RANGE
+      AD_BIDS_DEFAULT_TIME_RANGE,
     );
 
     // Going back to AdBids_mirror should retain the selected filters
@@ -248,7 +248,7 @@ describe("useDashboardUrlSync", () => {
         ],
         exclude: [],
       },
-      AD_BIDS_DEFAULT_TIME_RANGE
+      AD_BIDS_DEFAULT_TIME_RANGE,
     );
 
     teardown();
@@ -257,7 +257,7 @@ describe("useDashboardUrlSync", () => {
   async function initDashboardUrlState() {
     const { queryClient, stateManagers } = initStateManagers(
       dashboardFetchMocks,
-      AD_BIDS_INIT_WITH_TIME
+      AD_BIDS_INIT_WITH_TIME,
     );
     dashboardFetchMocks.mockTimeRangeSummary(
       AD_BIDS_SOURCE_NAME,
@@ -265,7 +265,7 @@ describe("useDashboardUrlSync", () => {
       {
         min: TestTimeConstants.LAST_DAY.toISOString(),
         max: TestTimeConstants.NOW.toISOString(),
-      }
+      },
     );
 
     const { unmount } = render(DashboardTestComponent, {
@@ -305,7 +305,9 @@ function createPageMock() {
     update((page) => {
       if (state) {
         page.url = new URL(
-          `http://localhost/dashboard/AdBids?state=${encodeURIComponent(state)}`
+          `http://localhost/dashboard/AdBids?state=${encodeURIComponent(
+            state,
+          )}`,
         );
       } else {
         page.url = new URL("http://localhost/dashboard/AdBids");
@@ -324,7 +326,7 @@ function createPageMock() {
 
 function assertUrlState(expected: string) {
   const actual = decodeURIComponent(
-    get(pageMock).url.searchParams.get("state")
+    get(pageMock).url.searchParams.get("state"),
   );
   expect(actual).toEqual(expected);
 }
@@ -336,7 +338,7 @@ function wait() {
 function gotoDashboardState(state: MetricsExplorerEntity) {
   pageMock.goto(
     `/dashboard/${state.name}?state=${encodeURIComponent(
-      getProtoFromDashboardState(state)
-    )}`
+      getProtoFromDashboardState(state),
+    )}`,
   );
 }

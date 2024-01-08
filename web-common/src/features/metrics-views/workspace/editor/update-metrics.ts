@@ -9,7 +9,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
 export function createUpdateMetricsCallback(
-  metricsDefName: string
+  metricsDefName: string,
 ): (event: CustomEvent) => void {
   const debounce = createDebouncer();
 
@@ -19,7 +19,7 @@ export function createUpdateMetricsCallback(
     const instanceId = get(runtime).instanceId;
     const filePath = getFileAPIPathFromNameAndType(
       metricsDefName,
-      EntityType.MetricsDefinition
+      EntityType.MetricsDefinition,
     );
     await get(fileSaver).mutateAsync({
       instanceId,
@@ -43,12 +43,12 @@ export function createUpdateMetricsCallback(
     // added to it.
     const debounceTransaction = viewUpdate.transactions.find(
       (transaction) =>
-        transaction.annotation(skipDebounceAnnotation) !== undefined
+        transaction.annotation(skipDebounceAnnotation) !== undefined,
     );
 
     // get the annotation.
     const debounceAnnotation = debounceTransaction?.annotation(
-      skipDebounceAnnotation
+      skipDebounceAnnotation,
     );
     // We will skip the debounce if the user deletes all the content or there is a skipDebounceAnnotation.
     // See Placeholder.svelte for usage of this annotation.

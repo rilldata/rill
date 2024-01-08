@@ -37,7 +37,7 @@ const UsedResourceKinds: {
 
 export function invalidateResourceResponse(
   queryClient: QueryClient,
-  res: V1WatchResourcesResponse
+  res: V1WatchResourcesResponse,
 ) {
   // only process for the `ResourceKind` present in `UsedResourceKinds`
   if (!UsedResourceKinds[res.name.kind]) return;
@@ -71,14 +71,14 @@ export function invalidateResourceResponse(
     // we only use individual kind's queries
     getRuntimeServiceListResourcesQueryKey(instanceId, {
       kind: res.name.kind,
-    })
+    }),
   );
 }
 
 async function invalidateResource(
   queryClient: QueryClient,
   instanceId: string,
-  resource: V1Resource
+  resource: V1Resource,
 ) {
   refreshResource(queryClient, instanceId, resource);
 
@@ -109,7 +109,7 @@ async function invalidateResource(
         return invalidateProfilingQueries(
           queryClient,
           resource.meta.name.name,
-          failed
+          failed,
         );
       break;
 
@@ -119,7 +119,7 @@ async function invalidateResource(
         return invalidateProfilingQueries(
           queryClient,
           resource.meta.name.name,
-          failed
+          failed,
         );
       break;
 
@@ -127,7 +127,7 @@ async function invalidateResource(
       return invalidateMetricsViewData(
         queryClient,
         resource.meta.name.name,
-        failed
+        failed,
       );
   }
 }
@@ -135,13 +135,13 @@ async function invalidateResource(
 async function invalidateRemovedResource(
   queryClient: QueryClient,
   instanceId: string,
-  resource: V1Resource
+  resource: V1Resource,
 ) {
   queryClient.removeQueries(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.name": resource.meta.name.name,
       "name.kind": resource.meta.name.kind,
-    })
+    }),
   );
   resourcesStore.deleteResource(resource);
   // cancel queries to make sure any pending requests are cancelled.
@@ -167,7 +167,7 @@ async function invalidateRemovedResource(
 function shouldSkipResource(
   queryClient: QueryClient,
   instanceId: string,
-  res: V1Resource
+  res: V1Resource,
 ) {
   switch (res.meta.reconcileStatus) {
     case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
@@ -189,13 +189,13 @@ function shouldSkipResource(
 export function refreshResource(
   queryClient: QueryClient,
   instanceId: string,
-  res: V1Resource
+  res: V1Resource,
 ) {
   return queryClient.resetQueries(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.name": res.meta.name.name,
       "name.kind": res.meta.name.kind,
-    })
+    }),
   );
 }
 
