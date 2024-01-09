@@ -114,13 +114,12 @@ func (k ResourceKind) String() string {
 
 // Diff shows changes to Parser.Resources following an incremental reparse.
 type Diff struct {
-	Reloaded         bool
-	Skipped          bool
-	ParsedPathsCount int
-	Added            []ResourceName
-	Modified         []ResourceName
-	ModifiedDotEnv   bool
-	Deleted          []ResourceName
+	Reloaded       bool
+	Skipped        bool
+	Added          []ResourceName
+	Modified       []ResourceName
+	ModifiedDotEnv bool
+	Deleted        []ResourceName
 }
 
 // Parser parses a Rill project directory into a set of resources.
@@ -215,6 +214,12 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	return p.reparseExceptRillYAML(ctx, paths)
 }
 
+// IsIgnored returns true if the path will be ignored by Reparse.
+// It's useful for callers to avoid triggering a reparse when they know the path is not relevant.
+func (p *Parser) IsIgnored(path string) bool {
+	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsRillYAML(path) && !pathIsDotEnv(path)
+}
+
 // reload resets the parser's state and then parses the entire project.
 func (p *Parser) reload(ctx context.Context) error {
 	// Reset state
@@ -229,7 +234,7 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.deletedResources = nil
 
 	// Load entire repo
-	paths, err := p.Repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
+	paths, err := p.Repo.ListRecursive(ctx, "**/*.{env,sql,yaml,yml}")
 	if err != nil {
 		return fmt.Errorf("could not list project files: %w", err)
 	}
@@ -291,8 +296,8 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		seenPaths[path] = true
 
 		// Skip files that aren't SQL or YAML or .env file
-		isSQL := strings.HasSuffix(path, ".sql")
-		isYAML := strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
+		isSQL := pathIsSQL(path)
+		isYAML := pathIsYAML(path)
 		isDotEnv := pathIsDotEnv(path)
 		if !isSQL && !isYAML && !isDotEnv {
 			continue
@@ -396,8 +401,7 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 
 	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and p.deletedResources
 	diff := &Diff{
-		ParsedPathsCount: len(parsePaths),
-		ModifiedDotEnv:   modifiedDotEnv,
+		ModifiedDotEnv: modifiedDotEnv,
 	}
 	for _, resource := range p.insertedResources {
 		addedBack := false
@@ -822,6 +826,16 @@ func (p *Parser) addParseError(path string, err error, external bool) {
 		StartLocation: loc,
 		External:      external,
 	})
+}
+
+// pathIsSQL returns true if the path is a SQL file
+func pathIsSQL(path string) bool {
+	return strings.HasSuffix(path, ".sql")
+}
+
+// pathIsYAML returns true if the path is a YAML file
+func pathIsYAML(path string) bool {
+	return strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
 }
 
 // pathIsRillYAML returns true if the path is rill.yaml
