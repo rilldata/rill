@@ -1,9 +1,16 @@
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { createPivotAggregationRowQuery } from "./pivot-data-store";
+import {
+  createPivotAggregationRowQuery,
+  getAxisForDimensions,
+} from "./pivot-data-store";
 import type { ExpandedState } from "@tanstack/svelte-table";
 import { derived, writable } from "svelte/store";
-import type { PivotDataStoreConfig } from "@rilldata/web-common/features/dashboards/pivot/types";
-import { getFilterForPivotTable } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
+import type { PivotDataStoreConfig } from "./types";
+import { getFilterForPivotTable } from "./pivot-utils";
+import {
+  createTableWithAxes,
+  reduceTableCellDataIntoRows,
+} from "./pivot-table-transformations";
 
 /**
  * Extracts and organizes dimension names from a nested array structure
@@ -46,7 +53,9 @@ function getExpandedValuesFromNestedArray(
 }
 
 /**
- * Returns a query for cell data for a sub table
+ * Returns a query for cell data for a sub table. The values are
+ * sorted by anchor dimension so that then can be reduced into
+ * rows optimally.
  */
 export function createSubTableCellQuery(
   ctx: StateManagers,
@@ -84,6 +93,11 @@ export function createSubTableCellQuery(
   );
 }
 
+/**
+ * For each expanded row, create a query for the sub table
+ * and return the query result along with the expanded row index
+ * and the row dimension values
+ */
 export function queryExpandedRowMeasureValues(
   ctx: StateManagers,
   config: PivotDataStoreConfig,
@@ -110,9 +124,19 @@ export function queryExpandedRowMeasureValues(
         };
       });
 
+      const filterForRowDimensionAxes = {
+        include: rowNestFilters,
+        exclude: [],
+      };
+
       return derived(
         [
           writable(expandIndex),
+          getAxisForDimensions(
+            ctx,
+            [anchorDimension],
+            filterForRowDimensionAxes
+          ),
           createSubTableCellQuery(
             ctx,
             config,
@@ -121,11 +145,12 @@ export function queryExpandedRowMeasureValues(
             rowNestFilters
           ),
         ],
-        ([expandIndex, query]) => {
+        ([expandIndex, subRowDimensionValues, subTableData]) => {
           return {
-            isFetching: query?.isFetching,
+            isFetching: subTableData?.isFetching,
             expandIndex,
-            data: query?.data?.data,
+            rowDimensionValues: subRowDimensionValues?.data?.[anchorDimension],
+            data: subTableData?.data?.data,
           };
         }
       );
@@ -136,13 +161,23 @@ export function queryExpandedRowMeasureValues(
   );
 }
 
+/***
+ * For each expanded row, add the sub table data to the pivot table
+ * data at the correct position.
+ *
+ * Note: Since the nested dimension values are present in the outermost
+ * dimension's column, their accessor is the same as the anchor dimension.
+ * Therefore, we change the key of the nested dimension to the anchor.
+ */
 export function addExpandedDataToPivot(
-  data,
-  dimensions,
+  config,
+  tableData,
+  rowDimensions,
+  columnDimensionAxes,
   expandedRowMeasureValues
 ) {
-  const pivotData = data;
-  const levels = dimensions.length;
+  const pivotData = tableData;
+  const levels = rowDimensions.length;
 
   expandedRowMeasureValues.forEach((expandedRowData) => {
     const indices = expandedRowData.expandIndex
@@ -150,7 +185,7 @@ export function addExpandedDataToPivot(
       .map((index) => parseInt(index, 10));
 
     let parent = pivotData; // Keep a reference to the parent array
-    let lastIdx = 0; // Keep track of the last index
+    let lastIdx = 0;
 
     // Traverse the data array to the right position
     for (let i = 0; i < indices.length; i++) {
@@ -163,21 +198,39 @@ export function addExpandedDataToPivot(
 
     // Update the specific array at the position
     if (parent[lastIdx] && parent[lastIdx].subRows) {
-      if (!expandedRowData?.data?.length) {
-        parent[lastIdx].subRows = [{ [dimensions[0]]: "LOADING_CELL" }];
-      } else {
-        parent[lastIdx].subRows = expandedRowData?.data.map((row) => {
-          const newRow = {
-            ...row,
-            [dimensions[0]]: row[dimensions[indices.length]],
-          };
+      const anchorDimension = rowDimensions[indices.length];
+      const rowValues = expandedRowData.rowDimensionValues;
 
-          if (indices.length < levels - 1) {
-            newRow.subRows = [{ [dimensions[0]]: "LOADING_CELL" }];
-          }
-          return newRow;
-        });
+      let skeletonSubTable: Array<{ [key: string]: unknown }> = [
+        { [anchorDimension]: "LOADING_CELL" },
+      ];
+      if (expandedRowData?.rowDimensionValues?.length) {
+        skeletonSubTable = createTableWithAxes(anchorDimension, rowValues);
       }
+
+      let subTableData = skeletonSubTable;
+      if (expandedRowData?.data?.length) {
+        subTableData = reduceTableCellDataIntoRows(
+          config,
+          anchorDimension,
+          expandedRowData?.rowDimensionValues,
+          columnDimensionAxes?.data,
+          skeletonSubTable,
+          expandedRowData?.data
+        );
+      }
+
+      parent[lastIdx].subRows = subTableData?.map((row) => {
+        const newRow = {
+          ...row,
+          [rowDimensions[0]]: row[anchorDimension],
+        };
+
+        // if (indices.length < levels - 1) {
+        //   newRow.subRows = [{ [rowDimensions[0]]: "LOADING_CELL" }];
+        // }
+        return newRow;
+      });
     }
   });
   return pivotData;

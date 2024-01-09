@@ -1,35 +1,25 @@
 import type { PivotDataStoreConfig } from "./types";
-import { createIndexMap, getColumnDefForPivot } from "./pivot-utils";
+import { createIndexMap } from "./pivot-utils";
 
 /**
- * Create a barebone table with row and column headers.
+ * Create a barebone table with row  headers.
  * This is used to render the table skeleton before cell data is fetched.
  */
 export function createTableWithAxes(
-  config: PivotDataStoreConfig,
-  columnDimensionAxes,
-  rowDimensionAxes
+  anchorDimensionName: string,
+  rowDimensionValues: string[] | undefined
 ) {
-  const columnDef = getColumnDefForPivot(config, columnDimensionAxes);
+  let data: Array<{ [key: string]: unknown }> = [];
 
-  let data = [];
-
-  if (
-    config.rowDimensionNames.length &&
-    Object.keys(rowDimensionAxes)?.length
-  ) {
-    const anchorDimensionName = config.rowDimensionNames[0];
-    data = rowDimensionAxes?.[anchorDimensionName]?.map((value) => {
+  if (anchorDimensionName && rowDimensionValues && rowDimensionValues?.length) {
+    data = rowDimensionValues?.map((value) => {
       return {
         [anchorDimensionName]: value,
       };
     });
   }
 
-  return {
-    data,
-    columnDef,
-  };
+  return data;
 }
 
 /**
@@ -99,16 +89,16 @@ export function getAccessorForCell(
  */
 export function reduceTableCellDataIntoRows(
   config: PivotDataStoreConfig,
+  anchorDimensionName,
+  anchorDimensionRowValues,
   columnDimensionAxes,
-  rowDimensionAxes,
   tableData,
   cellData
 ) {
-  const rowDimensionName = config.rowDimensionNames[0];
   const colDimensionNames = config.colDimensionNames;
 
   // For simple tables, return the cell data as is
-  if (!rowDimensionName || !colDimensionNames.length) {
+  if (!anchorDimensionName || !colDimensionNames.length) {
     return cellData;
   }
 
@@ -118,16 +108,14 @@ export function reduceTableCellDataIntoRows(
    * data using the dimension values. For O(n) pass on the cells (n = number of cells),
    * we can reduce them optimally into row objects.
    */
-  const rowDimensionIndexMap = createIndexMap(
-    rowDimensionAxes[rowDimensionName]
-  );
+  const rowDimensionIndexMap = createIndexMap(anchorDimensionRowValues);
 
   const colValuesIndexMaps = colDimensionNames.map((colDimensionName) =>
     createIndexMap(columnDimensionAxes[colDimensionName])
   );
 
   cellData.forEach((cell) => {
-    const rowDimensionValue = cell[rowDimensionName];
+    const rowDimensionValue = cell[anchorDimensionName];
     const rowIndex = rowDimensionIndexMap.get(rowDimensionValue);
     const row = tableData[rowIndex];
 

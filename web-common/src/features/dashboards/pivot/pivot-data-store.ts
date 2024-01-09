@@ -15,6 +15,7 @@ import {
   queryExpandedRowMeasureValues,
 } from "./pivot-expansion";
 import {
+  getColumnDefForPivot,
   getDimensionsInPivotColumns,
   getDimensionsInPivotRow,
   getFilterForPivotTable,
@@ -141,7 +142,10 @@ export function createTableCellQuery(
   columnDimensionAxesData,
   rowDimensionAxesData
 ) {
-  const allDimensions = config.colDimensionNames.concat([anchorDimension]);
+  let allDimensions = config.colDimensionNames;
+  if (anchorDimension) {
+    allDimensions = config.colDimensionNames.concat([anchorDimension]);
+  }
 
   const filterForInitialTable = getFilterForPivotTable(
     config,
@@ -153,7 +157,7 @@ export function createTableCellQuery(
   const sortBy = [
     {
       desc: false,
-      name: anchorDimension,
+      name: anchorDimension || config.measureNames[0],
     },
   ];
   return createPivotAggregationRowQuery(
@@ -187,7 +191,12 @@ export function getAxisForDimensions(ctx, dimensions, filters) {
         );
       });
 
-      return { isFetching: false, data: axesMap };
+      if (Object.values(axesMap).some((d) => !d)) return { isFetching: true };
+
+      return {
+        isFetching: false,
+        data: axesMap,
+      };
     }
   );
 }
@@ -220,8 +229,11 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
    * Derive a store using pivot config
    */
   return derived(getPivotConfig(ctx), (config, set) => {
-    const { measureNames, rowDimensionNames, colDimensionNames, pivot } =
-      config;
+    const { rowDimensionNames, colDimensionNames, measureNames } = config;
+
+    if (!rowDimensionNames.length && !measureNames.length) {
+      return writable({ isFetching: false, data: [] });
+    }
 
     const columnDimensionAxesQuery = getAxisForDimensions(
       ctx,
@@ -245,14 +257,16 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           return { isFetching: true };
         }
 
-        const skeletonTable = createTableWithAxes(
-          config,
-          columnDimensionAxes?.data,
-          rowDimensionAxes?.data
+        const anchorDimension = rowDimensionNames[0];
+        let tableData = createTableWithAxes(
+          anchorDimension,
+          rowDimensionAxes?.data?.[anchorDimension]
         );
 
-        const columnDef = skeletonTable.columnDef;
-        let tableData = skeletonTable.data;
+        const columnDef = getColumnDefForPivot(
+          config,
+          columnDimensionAxes?.data
+        );
 
         const initialTableCellQuery = createTableCellQuery(
           ctx,
@@ -272,12 +286,13 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             if (initialTableCellData.isFetching || initialTableCellData.error)
               return { isFetching: false, data: tableData, columnDef };
 
-            let cellData = initialTableCellData.data?.data;
+            const cellData = initialTableCellData.data?.data;
 
             tableData = reduceTableCellDataIntoRows(
               config,
+              anchorDimension,
+              rowDimensionAxes?.data?.[anchorDimension],
               columnDimensionAxes?.data,
-              rowDimensionAxes?.data,
               tableData,
               cellData
             );
@@ -297,12 +312,14 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 prepareNestedPivotData(tableData, rowDimensionNames);
 
                 if (expandedRowMeasureValues?.length) {
-                  cellData = addExpandedDataToPivot(
-                    cellData,
+                  tableData = addExpandedDataToPivot(
+                    config,
+                    tableData,
                     rowDimensionNames,
+                    columnDimensionAxes,
                     expandedRowMeasureValues
                   );
-                  console.log("expandedCellData", cellData);
+                  // console.log("tableData", tableData);
                 }
                 return { isFetching: false, data: tableData, columnDef };
               }

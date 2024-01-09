@@ -112,9 +112,10 @@ function createColumnDefinitionForDimensions(
   headers,
   leafData
 ) {
-  if (!dimensionNames.length || !headers) return leafData;
+  if (!dimensionNames.length || !headers || !Object.keys(headers).length)
+    return leafData;
 
-  const colValuesIndexMaps = dimensionNames.map((colDimension) =>
+  const colValuesIndexMaps = dimensionNames?.map((colDimension) =>
     createIndexMap(headers[colDimension])
   );
 
@@ -154,7 +155,7 @@ function createColumnDefinitionForDimensions(
 
 export function getColumnDefForPivot(
   config,
-  columnDimensionAxes: string[] = []
+  columnDimensionAxes: Record<string, string[]> | undefined
 ) {
   const IsNested = true;
 
