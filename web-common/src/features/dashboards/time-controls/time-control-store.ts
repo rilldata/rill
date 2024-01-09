@@ -1,4 +1,7 @@
-import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+import {
+  createTimeRangeSummary,
+  useMetaQuery,
+} from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
@@ -30,14 +33,10 @@ import {
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
-  createQueryServiceMetricsViewTimeRange,
 } from "@rilldata/web-common/runtime-client";
-import type {
-  CreateQueryResult,
-  QueryObserverResult,
-} from "@tanstack/svelte-query";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
-import { derived, get } from "svelte/store";
+import { derived } from "svelte/store";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 
 export type TimeRangeState = {
@@ -70,28 +69,6 @@ export type TimeControlState = {
 } & TimeRangeState &
   ComparisonTimeRangeState;
 export type TimeControlStore = Readable<TimeControlState>;
-
-function createTimeRangeSummary(
-  ctx: StateManagers,
-): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
-  return derived(
-    [ctx.runtime, useMetaQuery(ctx)],
-    ([runtime, metricsView], set) =>
-      createQueryServiceMetricsViewTimeRange(
-        runtime.instanceId,
-        get(ctx.metricsViewName),
-        {
-          priority: undefined,
-        },
-        {
-          query: {
-            enabled: !!metricsView.data?.timeDimension,
-            queryClient: ctx.queryClient,
-          },
-        },
-      ).subscribe(set),
-  );
-}
 
 export const timeControlStateSelector = ([
   metricsView,
