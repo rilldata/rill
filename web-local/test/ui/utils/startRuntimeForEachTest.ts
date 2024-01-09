@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
 import treeKill from "tree-kill";
 import { isPortOpen } from "@rilldata/web-local/lib/util/isPortOpen";
-import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
+import { asyncWaitUntil, waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import axios from "axios";
 
 const TEST_PROJECT_DIRECTORY = "temp/test-project";
@@ -13,6 +13,7 @@ const TEST_PORT_GRPC = 9083;
 
 export function startRuntimeForEachTest() {
   let childProcess: ChildProcess;
+  let rillShutdown = false;
 
   test.beforeEach(async () => {
     rmSync(TEST_PROJECT_DIRECTORY, {
@@ -31,22 +32,21 @@ export function startRuntimeForEachTest() {
     const cmd = `start --no-open --port ${TEST_PORT} --port-grpc ${TEST_PORT_GRPC} --db ${TEST_PROJECT_DIRECTORY}/stage.db?rill_pool_size=4 ${TEST_PROJECT_DIRECTORY}`;
 
     childProcess = spawn("../rill", cmd.split(" "), {
-      stdio: "inherit",
+      stdio: "pipe",
       shell: true,
     });
     childProcess.on("error", console.log);
-    childProcess.on("exit", console.log);
-    childProcess.stdout?.on("data", (chunk) => {
-      console.log("***stdout chunk***", chunk);
+    // Runtime sometimes ends the process but still hasnt released closed the duckdb connection.
+    // So we need to manually check for "Rill shutdown gracefully" message that is sent after duckdb connection is terminated.
+    childProcess.stdout?.on("data", (chunk: Buffer) => {
+      process.stdout?.write(chunk);
+      const chunkStr = chunk.toString();
+      if (chunkStr.includes("Rill shutdown gracefully")) {
+        rillShutdown = true;
+      }
     });
-    childProcess.stderr?.on("data", (chunk) => {
-      console.log("***stderr chunk***", chunk);
-    });
-    process.stdout?.on("data", (chunk) => {
-      console.log("***main stdout chunk***", chunk);
-    });
-    process.stderr?.on("data", (chunk) => {
-      console.log("***main stderr chunk***", chunk);
+    childProcess.stderr?.on("data", (chunk: Buffer) => {
+      process.stdout?.write(chunk);
     });
 
     // Ping runtime until it's ready
@@ -66,16 +66,16 @@ export function startRuntimeForEachTest() {
     const processExit = new Promise<void>((resolve) => {
       if (childProcess.pid)
         treeKill(childProcess.pid, () => {
-          console.log("Killed child processes");
           resolve();
         });
       else {
-        console.log("No child processes");
         resolve();
       }
     });
     await asyncWaitUntil(async () => !(await isPortOpen(TEST_PORT)));
     await processExit;
+
+    await waitUntil(() => rillShutdown, 5000);
 
     rmSync(TEST_PROJECT_DIRECTORY, {
       force: true,
