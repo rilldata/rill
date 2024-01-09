@@ -27,13 +27,13 @@ const formatWithRangeSpec = (x: number, spec: RangeFormatSpec): NumberParts => {
     baseMag,
     spec.maxDigitsRight,
     padWithInsignificantZeros,
-    useTrailingDot
+    useTrailingDot,
   );
 };
 
 const numberPartsValidForRangeSpec = (
   parts: NumberParts,
-  spec: RangeFormatSpec
+  spec: RangeFormatSpec,
 ): boolean => {
   const maxDigitsLeft = spec.maxDigitsLeft ?? 3;
   return (
@@ -54,20 +54,20 @@ export class PerRangeFormatter implements Formatter {
 
   constructor(
     sample: number[],
-    options: FormatterRangeSpecsStrategy & FormatterOptionsCommon
+    options: FormatterRangeSpecsStrategy & FormatterOptionsCommon,
   ) {
     this.options = options;
 
     // sort ranges from small to large by lower bound
     this.options.rangeSpecs = this.options.rangeSpecs.sort(
-      (a, b) => a.minMag - b.minMag
+      (a, b) => a.minMag - b.minMag,
     );
 
     // Throw an error if any of the ranges do not have min<sup
     this.options.rangeSpecs.forEach((r) => {
       if (r.minMag >= r.supMag) {
         throw new Error(
-          `invalid range: min ${r.minMag} is not strictly less than sup ${r.supMag}`
+          `invalid range: min ${r.minMag} is not strictly less than sup ${r.supMag}`,
         );
       }
     });
@@ -78,7 +78,7 @@ export class PerRangeFormatter implements Formatter {
       const range2 = this.options.rangeSpecs[i + 1];
       if (range1.supMag > range2.minMag) {
         throw new Error(
-          `Ranges must not overlap. range 1 sup = ${range1.supMag} is greater than range 2 min = ${range2.minMag}`
+          `Ranges must not overlap. range 1 sup = ${range1.supMag} is greater than range 2 min = ${range2.minMag}`,
         );
       }
     }
@@ -89,7 +89,7 @@ export class PerRangeFormatter implements Formatter {
       const range2 = this.options.rangeSpecs[i + 1];
       if (range1.supMag !== range2.minMag) {
         throw new Error(
-          `Gaps are not allowed between formatter ranges: range 1 sup = ${range1.supMag} is not equal to range 2 min = ${range2.minMag}`
+          `Gaps are not allowed between formatter ranges: range 1 sup = ${range1.supMag} is not equal to range 2 min = ${range2.minMag}`,
         );
       }
     }
@@ -107,7 +107,7 @@ export class PerRangeFormatter implements Formatter {
 
     if (isPercent) x = 100 * x;
 
-    let numParts: NumberParts | undefined;
+    let numParts: NumberParts | undefined = undefined;
 
     if (x === 0) {
       numParts = { int: "0", dot: "", frac: "", suffix: "" };
@@ -150,7 +150,7 @@ export class PerRangeFormatter implements Formatter {
           x,
           magE + 3,
           defaultMaxDigitsRight,
-          true
+          true,
         );
       }
     }

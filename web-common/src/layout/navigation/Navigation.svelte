@@ -70,7 +70,6 @@
           use:drag={{
             minSize: DEFAULT_NAV_WIDTH,
             maxSize: 440,
-            side: "assetsWidth",
             store: navigationLayout,
           }}
         />
@@ -112,6 +111,10 @@
     <SurfaceViewIcon size="16px" mode={"hamburger"} />
   {/if}
   <svelte:fragment slot="tooltip-content">
-    {#if $navVisibilityTween === 0} Close {:else} Show {/if} sidebar
+    {#if $navVisibilityTween === 0}
+      Close
+    {:else}
+      Show
+    {/if} sidebar
   </svelte:fragment>
 </SurfaceControlButton>

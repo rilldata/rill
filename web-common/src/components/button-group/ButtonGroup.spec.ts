@@ -92,7 +92,7 @@ describe("ButtonGroup - adding buttons", () => {
         values: [1, 2, 3],
         selected: [1, 2, 3],
         disabled: [],
-      }
+      },
     );
     component = component_before;
     unmount = unmount_before;
@@ -169,7 +169,7 @@ describe("ButtonGroup - removing buttons", () => {
         values: [1, 2, 3, 4, 5],
         selected: [1, 2],
         disabled: [4],
-      }
+      },
     );
     component = component_before;
     unmount = unmount_before;

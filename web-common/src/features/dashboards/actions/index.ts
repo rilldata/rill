@@ -6,7 +6,7 @@ import { removeIfExists } from "@rilldata/web-common/lib/arrayUtils";
 export function clearFilterForDimension(
   ctx: StateManagers,
   dimensionId: string,
-  include: boolean
+  include: boolean,
 ) {
   const metricViewName = get(ctx.metricsViewName);
   cancelDashboardQueries(ctx.queryClient, metricViewName);
@@ -14,12 +14,12 @@ export function clearFilterForDimension(
     if (include) {
       removeIfExists(
         dashboard.filters.include,
-        (dimensionValues) => dimensionValues.name === dimensionId
+        (dimensionValues) => dimensionValues.name === dimensionId,
       );
     } else {
       removeIfExists(
         dashboard.filters.exclude,
-        (dimensionValues) => dimensionValues.name === dimensionId
+        (dimensionValues) => dimensionValues.name === dimensionId,
       );
     }
     dashboard.pinIndex = -1;
@@ -45,20 +45,20 @@ export function clearAllFilters(ctx: StateManagers) {
 export function toggleDimensionValue(
   ctx: StateManagers,
   dimensionName: string,
-  dimensionValue: string
+  dimensionValue: string,
 ) {
   const metricViewName = get(ctx.metricsViewName);
   cancelDashboardQueries(ctx.queryClient, metricViewName);
 
   ctx.updateDashboard((dashboard) => {
     const relevantFilterKey = dashboard.dimensionFilterExcludeMode.get(
-      dimensionName
+      dimensionName,
     )
       ? "exclude"
       : "include";
 
     const dimensionEntryIndex = dashboard.filters[relevantFilterKey].findIndex(
-      (filter) => filter.name === dimensionName
+      (filter) => filter.name === dimensionName,
     );
 
     if (dimensionEntryIndex >= 0) {
@@ -69,7 +69,7 @@ export function toggleDimensionValue(
       if (index >= 0) {
         dashboard.filters[relevantFilterKey][dimensionEntryIndex].in?.splice(
           index,
-          1
+          1,
         );
 
         // Only decrement pinIndex if the removed value was before the pinned value
@@ -81,7 +81,7 @@ export function toggleDimensionValue(
       }
 
       dashboard.filters[relevantFilterKey][dimensionEntryIndex].in.push(
-        dimensionValue
+        dimensionValue,
       );
     } else {
       dashboard.filters[relevantFilterKey].push({
@@ -110,7 +110,7 @@ export function toggleFilterMode(ctx: StateManagers, dimensionName: string) {
 
     // push relevant filters to other filter
     dashboard.filters[otherFilterKey].push(
-      dashboard.filters[relevantFilterKey][otherFilterEntryIndex]
+      dashboard.filters[relevantFilterKey][otherFilterEntryIndex],
     );
     // remove entry from relevant filter
     dashboard.filters[relevantFilterKey].splice(otherFilterEntryIndex, 1);

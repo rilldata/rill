@@ -62,7 +62,7 @@
 
   function onSelectRelativeTimeRange(
     timeRange: TimeRange,
-    closeMenu: () => void
+    closeMenu: () => void,
   ) {
     closeMenu();
     dispatch("select-time-range", {
@@ -75,7 +75,7 @@
   function onSelectCustomTimeRange(
     startDate: string,
     endDate: string,
-    closeMenu: () => void
+    closeMenu: () => void,
   ) {
     setIntermediateSelection(TimeRangePreset.CUSTOM)();
     closeMenu();
@@ -89,7 +89,7 @@
   function zoomScrub(toggleFloatingElement) {
     const { start, end } = getOrderedStartEnd(
       $dashboardStore?.selectedScrubRange?.start,
-      $dashboardStore?.selectedScrubRange?.end
+      $dashboardStore?.selectedScrubRange?.end,
     );
     onSelectRelativeTimeRange(
       {
@@ -97,7 +97,7 @@
         start,
         end,
       },
-      toggleFloatingElement
+      toggleFloatingElement,
     );
     dispatch("remove-scrub");
   }
@@ -177,7 +177,7 @@
             $timeControlsStore?.selectedTimeRange?.start,
             $timeControlsStore?.selectedTimeRange?.end,
             $timeControlsStore?.selectedTimeRange?.name,
-            $dashboardStore?.selectedTimezone
+            $dashboardStore?.selectedTimezone,
           )}
         </span>
       </div>
@@ -224,12 +224,12 @@
     {#if $timeRangeSelectorState.showDefaultItem}
       <DefaultTimeRangeMenuItem
         on:before-select={setIntermediateSelection(
-          $metaQuery.data?.defaultTimeRange
+          $metaQuery.data?.defaultTimeRange,
         )}
         on:select={() =>
           onSelectRelativeTimeRange(
             $timeControlsStore.defaultTimeRange,
-            toggleFloatingElement
+            toggleFloatingElement,
           )}
         selected={intermediateSelection === $metaQuery.data?.defaultTimeRange}
         isoDuration={$metaQuery.data?.defaultTimeRange}
@@ -283,7 +283,7 @@
             onSelectCustomTimeRange(
               e.detail.startDate,
               e.detail.endDate,
-              toggleFloatingElement
+              toggleFloatingElement,
             )}
           on:close-calendar={onCalendarClose}
         />

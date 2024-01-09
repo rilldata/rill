@@ -88,7 +88,7 @@ describe("range formatter, using default options for generic nums, `.stringForma
     it(`returns the correct string in case: ${input}`, () => {
       const formatter = new PerRangeFormatter(
         [input],
-        defaultGenericNumOptions
+        defaultGenericNumOptions,
       );
       expect(formatter.stringFormat(input)).toEqual(output);
     });

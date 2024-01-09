@@ -54,7 +54,7 @@ export const createStatusLineGutter = () =>
       if (!lineStatuses?.length || isEmpty) return builder.finish();
 
       const activeLine = view.state.doc.lineAt(
-        view.state.selection.main.head
+        view.state.selection.main.head,
       ).number;
       // Iterate through each remaining line status
       for (const { line, level, message } of lineStatuses) {
@@ -64,7 +64,7 @@ export const createStatusLineGutter = () =>
           line,
           level,
           message,
-          line === activeLine
+          line === activeLine,
         );
         builder.add(from, from, marker);
       }
@@ -78,13 +78,13 @@ export const createStatusLineGutter = () =>
       new StatusGutterMarker(
         view.state.doc.lines,
         "error",
-        "no message needed."
+        "no message needed.",
       ),
 
     lineMarkerChange(update) {
       return update.transactions.some((tr) => {
         const effectPresent = tr.effects.some((effect) =>
-          effect.is(updateLineStatuses)
+          effect.is(updateLineStatuses),
         );
 
         return effectPresent;

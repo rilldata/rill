@@ -2,11 +2,13 @@
 # Each merge to main branch is build with github sha tag and published to Rill Cloud.
 name: Deploy to Rill Cloud
 on:
+  create:
   push:
     tags:
       - "**"
     branches:
-      - main
+      - "main"
+      - "release**"
   workflow_dispatch:
 
 env:
@@ -14,6 +16,8 @@ env:
 
 jobs:
   release:
+    # https://github.com/orgs/community/discussions/54860
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || ( github.event_name == 'create' && startsWith(github.ref_name, 'release') )
     name: Deploy to Rill Cloud
     runs-on: ubuntu-latest
     steps:

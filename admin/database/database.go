@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -66,6 +65,7 @@ type DB interface {
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
 	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
+	FindProjectPathsByPatternAndTags(ctx context.Context, namePattern, afterName string, tags []string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
@@ -255,29 +255,19 @@ type Project struct {
 	Description          string
 	Public               bool
 	Region               string
-	GithubURL            *string   `db:"github_url"`
-	GithubInstallationID *int64    `db:"github_installation_id"`
-	Subpath              string    `db:"subpath"`
-	ProdBranch           string    `db:"prod_branch"`
-	ProdVariables        Variables `db:"prod_variables"`
-	ProdOLAPDriver       string    `db:"prod_olap_driver"`
-	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
-	ProdSlots            int       `db:"prod_slots"`
-	ProdTTLSeconds       *int64    `db:"prod_ttl_seconds"`
-	ProdDeploymentID     *string   `db:"prod_deployment_id"`
-	CreatedOn            time.Time `db:"created_on"`
-	UpdatedOn            time.Time `db:"updated_on"`
-}
-
-// Variables implements JSON SQL encoding of variables in Project.
-type Variables map[string]string
-
-func (e *Variables) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return errors.New("failed type assertion to []byte")
-	}
-	return json.Unmarshal(b, &e)
+	GithubURL            *string           `db:"github_url"`
+	GithubInstallationID *int64            `db:"github_installation_id"`
+	Subpath              string            `db:"subpath"`
+	ProdBranch           string            `db:"prod_branch"`
+	ProdVariables        map[string]string `db:"prod_variables"`
+	ProdOLAPDriver       string            `db:"prod_olap_driver"`
+	ProdOLAPDSN          string            `db:"prod_olap_dsn"`
+	ProdSlots            int               `db:"prod_slots"`
+	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
+	ProdDeploymentID     *string           `db:"prod_deployment_id"`
+	Tags                 []string          `db:"tags"`
+	CreatedOn            time.Time         `db:"created_on"`
+	UpdatedOn            time.Time         `db:"updated_on"`
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
@@ -311,6 +301,7 @@ type UpdateProjectOptions struct {
 	ProdSlots            int
 	ProdTTLSeconds       *int64
 	Region               string
+	Tags                 []string
 }
 
 // DeploymentStatus is an enum representing the state of a deployment

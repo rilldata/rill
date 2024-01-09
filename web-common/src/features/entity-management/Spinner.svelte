@@ -22,7 +22,8 @@
 <style>
   div {
     border-radius: 0px;
-    transition: border-radius var(--status-transition),
+    transition:
+      border-radius var(--status-transition),
       border-color var(--status-transition);
     border: 0.125rem solid rgba(0, 0, 0, 0);
     animation: spin calc(var(--status-transition) * 2) infinite;
@@ -36,8 +37,10 @@
     height: 100%;
     opacity: 0;
     border-radius: 0px;
-    transition: opacity var(--status-transition),
-      border-radius var(--status-transition), transform var(--status-transition);
+    transition:
+      opacity var(--status-transition),
+      border-radius var(--status-transition),
+      transform var(--status-transition);
     background: var(--background);
     /* transform: rotate(0deg); */
   }
@@ -53,8 +56,10 @@
     height: 100%;
     opacity: 1;
     border-radius: 0px;
-    transition: opacity var(--status-transition),
-      border-radius var(--status-transition), transform var(--status-transition);
+    transition:
+      opacity var(--status-transition),
+      border-radius var(--status-transition),
+      transform var(--status-transition);
   }
 
   .idle {
@@ -70,8 +75,10 @@
     opacity: 0;
     border-radius: 10rem;
     transform: rotate(-180deg);
-    transition: opacity var(--status-transition),
-      border-radius var(--status-transition), transform var(--status-transition);
+    transition:
+      opacity var(--status-transition),
+      border-radius var(--status-transition),
+      transform var(--status-transition);
   }
 
   @keyframes spin {

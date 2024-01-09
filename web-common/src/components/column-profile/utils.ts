@@ -80,7 +80,7 @@ export function defaultSort(a, b) {
  */
 export function chooseBetweenDiagnosticAndStatistical(
   diagnostic: NumericHistogramBinsBin[],
-  statistical: NumericHistogramBinsBin[]
+  statistical: NumericHistogramBinsBin[],
 ) {
   if (diagnostic?.length > 10) {
     return diagnostic;

@@ -13,8 +13,16 @@
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { useMetaQuery } from "../selectors";
   import LeaderboardContextColumnMenu from "./LeaderboardContextColumnMenu.svelte";
+  import { getStateManagers } from "../state-managers/state-managers";
 
   export let metricViewName;
+
+  const {
+    actions: {
+      contextCol: { setContextColumn },
+      setLeaderboardMeasureName,
+    },
+  } = getStateManagers();
 
   $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
 
@@ -24,10 +32,7 @@
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   function handleMeasureUpdate(event: CustomEvent) {
-    metricsExplorerStore.setLeaderboardMeasureName(
-      metricViewName,
-      event.detail.key
-    );
+    setLeaderboardMeasureName(event.detail.key);
   }
 
   function measureKeyAndMain(measure: MetricsViewSpecMeasureV2) {
@@ -43,7 +48,7 @@
   }
 
   function formatForSelector(
-    measure: MetricsViewSpecMeasureV2
+    measure: MetricsViewSpecMeasureV2,
   ): (MetricsViewSpecMeasureV2 & { key: string; main: string }) | undefined {
     if (!measure) return undefined;
     return {
@@ -63,7 +68,7 @@
   $: unformattedMeasure =
     measures?.length && metricsExplorer?.leaderboardMeasureName
       ? measures.find(
-          (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
+          (measure) => measure.name === metricsExplorer?.leaderboardMeasureName,
         )
       : undefined;
 
@@ -93,15 +98,12 @@
     metricsExplorer?.leaderboardContextColumn ===
       LeaderboardContextColumn.PERCENT
   ) {
-    metricsExplorerStore.setContextColumn(
-      metricViewName,
-      LeaderboardContextColumn.HIDDEN
-    );
+    setContextColumn(LeaderboardContextColumn.HIDDEN);
   }
 
   $: showHideDimensions = createShowHideDimensionsStore(
     metricViewName,
-    metaQuery
+    metaQuery,
   );
 
   const toggleDimensionVisibility = (e) => {
@@ -145,7 +147,7 @@
         on:select={handleMeasureUpdate}
       />
 
-      <LeaderboardContextColumnMenu {metricViewName} {validPercentOfTotal} />
+      <LeaderboardContextColumnMenu {validPercentOfTotal} />
     </div>
   {:else}
     <div

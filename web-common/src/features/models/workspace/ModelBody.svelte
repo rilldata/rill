@@ -33,7 +33,7 @@
   const queryClient = useQueryClient();
 
   const queryHighlight: Writable<QueryHighlightState> = getContext(
-    "rill:app:query-highlight"
+    "rill:app:query-highlight",
   );
 
   $: runtimeInstanceId = $runtime.instanceId;
@@ -51,7 +51,7 @@
 
   $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
 
-  $: modelSql = $modelSqlQuery?.data?.blob;
+  $: modelSql = $modelSqlQuery?.data?.blob ?? "";
   $: hasModelSql = typeof modelSql === "string";
 
   $: modelQuery = useModel(runtimeInstanceId, modelName);
@@ -62,28 +62,28 @@
   $: allErrors = getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
-    modelPath
+    modelPath,
   );
   $: modelError = $allErrors?.[0]?.message;
 
   $: tableQuery = createQueryServiceTableRows(
     runtimeInstanceId,
-    $modelQuery.data?.model?.state?.table,
+    $modelQuery.data?.model?.state?.table ?? "",
     {
       limit,
-    }
+    },
   );
 
-  $: runtimeError = ($tableQuery.error as any)?.response.data;
+  $: runtimeError = $tableQuery.error?.response.data;
 
   const outputLayout = getContext(
-    "rill:app:output-layout"
+    "rill:app:output-layout",
   ) as Writable<LayoutElement>;
   const outputPosition = getContext(
-    "rill:app:output-height-tween"
+    "rill:app:output-height-tween",
   ) as Writable<number>;
   const outputVisibilityTween = getContext(
-    "rill:app:output-visibility-tween"
+    "rill:app:output-visibility-tween",
   ) as Writable<number>;
 
   async function updateModelContent(content: string) {
@@ -117,7 +117,7 @@
     to: selection?.referenceIndex + selection?.reference?.length,
   })) as SelectionRange[];
 
-  let errors = [];
+  let errors: string[] = [];
   $: {
     errors = [];
     // only add error if sql is present

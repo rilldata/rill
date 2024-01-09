@@ -15,8 +15,9 @@ const (
 	lingerMs         = 200
 	compressionCodec = "lz4"
 	// Retry props
-	retryN    = 3
-	retryWait = lingerMs * time.Millisecond
+	retryN          = 3
+	retryWait       = lingerMs * time.Millisecond
+	metadataTimeout = 5 * time.Second
 )
 
 // KafkaSink sinks events to a Kafka cluster.
@@ -43,6 +44,14 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error)
 	}
 
 	go forwardKafkaLogEventToLogger(logChan, logger)
+
+	// Check connectivity and fail fast if Kafka cluster is unreachable
+	// If the topic doesn't exist, the request doesn't fail but returns no metadata
+	// The topic might be auto-created on a first message
+	_, err = producer.GetMetadata(&topic, false, int(metadataTimeout.Milliseconds()))
+	if err != nil {
+		return nil, err
+	}
 
 	return &KafkaSink{
 		producer: producer,

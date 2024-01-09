@@ -30,7 +30,7 @@ export type ColumnSummary = V1ProfileColumn & {
 export function getSummaries(
   objectName: string,
   instanceId: string,
-  profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>
+  profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>,
 ): Readable<Array<ColumnSummary>> {
   return derived(
     profileColumnResponse?.data?.profileColumns?.map((column) => {
@@ -46,7 +46,7 @@ export function getSummaries(
                 keepPreviousData: true,
                 enabled: !profileColumnResponse.isFetching,
               },
-            }
+            },
           ),
           createQueryServiceColumnCardinality(
             instanceId,
@@ -57,7 +57,7 @@ export function getSummaries(
                 keepPreviousData: true,
                 enabled: !profileColumnResponse.isFetching,
               },
-            }
+            },
           ),
         ],
         ([col, nullValues, cardinality]) => {
@@ -70,13 +70,13 @@ export function getSummaries(
               nullValues?.isFetching ||
               cardinality?.isFetching,
           };
-        }
+        },
       );
     }) ?? [],
 
     (combos) => {
       return combos;
-    }
+    },
   );
 }
 
@@ -84,7 +84,7 @@ export function getNullPercentage(
   instanceId: string,
   objectName: string,
   columnName: string,
-  enabled = true
+  enabled = true,
 ) {
   const nullQuery = createQueryServiceColumnNullCount(
     instanceId,
@@ -96,7 +96,7 @@ export function getNullPercentage(
       query: {
         enabled,
       },
-    }
+    },
   );
   const totalRowsQuery = createQueryServiceTableCardinality(
     instanceId,
@@ -106,7 +106,7 @@ export function getNullPercentage(
       query: {
         enabled,
       },
-    }
+    },
   );
   return derived([nullQuery, totalRowsQuery], ([nulls, totalRows]) => {
     return {
@@ -125,7 +125,7 @@ export function getCountDistinct(
   instanceId: string,
   objectName: string,
   columnName: string,
-  enabled = true
+  enabled = true,
 ) {
   const cardinalityQuery = createQueryServiceColumnCardinality(
     instanceId,
@@ -133,7 +133,7 @@ export function getCountDistinct(
     { columnName },
     {
       query: { enabled },
-    }
+    },
   );
 
   const totalRowsQuery = createQueryServiceTableCardinality(
@@ -142,7 +142,7 @@ export function getCountDistinct(
     {},
     {
       query: { enabled },
-    }
+    },
   );
 
   return derived(
@@ -157,7 +157,7 @@ export function getCountDistinct(
         totalRows: +(totalRows?.data?.cardinality as string),
         isFetching: cardinality?.isFetching || totalRows?.isFetching,
       };
-    }
+    },
   );
 }
 
@@ -166,7 +166,7 @@ export function getTopK(
   objectName: string,
   columnName: string,
   enabled = true,
-  active = false
+  active = false,
 ) {
   const topKQuery = createQueryServiceColumnTopK(
     instanceId,
@@ -181,7 +181,7 @@ export function getTopK(
       query: {
         enabled,
       },
-    }
+    },
   );
   return derived(topKQuery, ($topKQuery) => {
     return $topKQuery?.data?.categoricalSummary?.topK?.entries;
@@ -193,7 +193,7 @@ export function getTimeSeriesAndSpark(
   objectName: string,
   columnName: string,
   enabled = true,
-  active = false
+  active = false,
 ) {
   const query = createQueryServiceColumnTimeSeries(
     instanceId,
@@ -211,7 +211,7 @@ export function getTimeSeriesAndSpark(
     },
     {
       query: { enabled },
-    }
+    },
   );
   const estimatedInterval = createQueryServiceColumnRollupInterval(
     instanceId,
@@ -219,7 +219,7 @@ export function getTimeSeriesAndSpark(
     { columnName, priority: getPriorityForColumn("rollup-interval", active) },
     {
       query: { enabled },
-    }
+    },
   );
 
   const smallestTimeGrain = createQueryServiceColumnTimeGrain(
@@ -231,7 +231,7 @@ export function getTimeSeriesAndSpark(
     },
     {
       query: { enabled },
-    }
+    },
   );
 
   return derived(
@@ -248,7 +248,7 @@ export function getTimeSeriesAndSpark(
               next.count = 0;
             }
             return next;
-          }) || []
+          }) || [],
         ),
         spark: convertTimestampPreview(
           $query?.data?.rollup?.spark?.map((di) => {
@@ -257,10 +257,10 @@ export function getTimeSeriesAndSpark(
               next.count = 0;
             }
             return next;
-          }) || []
+          }) || [],
         ),
       };
-    }
+    },
   );
 }
 
@@ -270,7 +270,7 @@ export function getNumericHistogram(
   columnName: string,
   histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod,
   enabled = true,
-  active = false
+  active = false,
 ) {
   return createQueryServiceColumnNumericHistogram(
     instanceId,
@@ -287,6 +287,6 @@ export function getNumericHistogram(
         },
         enabled,
       },
-    }
+    },
   );
 }

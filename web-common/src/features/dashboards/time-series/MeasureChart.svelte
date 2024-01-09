@@ -97,7 +97,7 @@
     isOverEnd = Math.abs(mouseOverCords - scrubEndCords) <= 5;
 
     isInsideScrub = Boolean(
-      mouseOverCords > min + 5 && mouseOverCords < max - 5
+      mouseOverCords > min + 5 && mouseOverCords < max - 5,
     );
   }
 
@@ -125,20 +125,20 @@
   // Move to utils
   $: if (isComparingDimension) {
     let dimExtents = dimensionData.map((d) =>
-      extent(d?.data || [], (datum) => datum[yAccessor])
+      extent(d?.data || [], (datum) => datum[yAccessor]),
     );
 
     yExtentMin = dimExtents
       .map((e) => e[0])
       .reduce(
         (min, curr) => Math.min(min, isNaN(curr) ? Infinity : curr),
-        Infinity
+        Infinity,
       );
     yExtentMax = dimExtents
       .map((e) => e[1])
       .reduce(
         (max, curr) => Math.max(max, isNaN(curr) ? -Infinity : curr),
-        -Infinity
+        -Infinity,
       );
 
     isFetchingDimensions = dimensionData.some((d) => d?.isFetching);
@@ -149,7 +149,7 @@
       yMin !== undefined ? yMin : yExtentMin,
       yMax !== undefined ? yMax : yExtentMax,
     ],
-    6 / 5
+    6 / 5,
   );
 
   $: internalXMin = xMin || xExtentMin;

@@ -203,27 +203,30 @@ func dimensionSelect(mv *runtimev1.MetricsViewSpec, dim *runtimev1.MetricsViewSp
 }
 
 func buildExpression(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
-	var emptyArg []any
+	if expr == nil {
+		return "", nil, nil
+	}
+
 	switch e := expr.Expression.(type) {
 	case *runtimev1.Expression_Val:
 		arg, err := pbutil.FromValue(e.Val)
 		if err != nil {
-			return "", emptyArg, err
+			return "", nil, err
 		}
 		return "?", []any{arg}, nil
 
 	case *runtimev1.Expression_Ident:
 		expr, isIdent := columnIdentifierExpression(mv, aliases, e.Ident, dialect)
 		if !isIdent {
-			return "", emptyArg, fmt.Errorf("unknown column filter: %s", e.Ident)
+			return "", nil, fmt.Errorf("unknown column filter: %s", e.Ident)
 		}
-		return expr, emptyArg, nil
+		return expr, nil, nil
 
 	case *runtimev1.Expression_Cond:
 		return buildConditionExpression(mv, e.Cond, aliases, dialect)
 	}
 
-	return "", emptyArg, nil
+	return "", nil, nil
 }
 
 func buildConditionExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
@@ -376,6 +379,10 @@ func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition,
 }
 
 func buildAndOrExpressions(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect, joiner string) (string, []any, error) {
+	if len(cond.Exprs) == 0 {
+		return "", nil, fmt.Errorf("or/and expression should have atleast 1 sub expressions")
+	}
+
 	clauses := make([]string, 0)
 	var args []any
 	for _, expr := range cond.Exprs {

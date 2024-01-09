@@ -1,18 +1,19 @@
 <script lang="ts">
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useMetaQuery } from "../selectors";
   import {
     createQueryServiceMetricsViewRows,
     createQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { writable } from "svelte/store";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
+  import { PreviewTable } from "../../../components/preview-table";
+  import { useMetaQuery } from "../selectors";
 
   export let metricViewName = "";
+  export let height: number;
 
   const SAMPLE_SIZE = 10000;
   const FALLBACK_SAMPLE_SIZE = 1000;
@@ -23,7 +24,7 @@
   $: modelName = useMetaQuery<string>(
     $runtime.instanceId,
     metricViewName,
-    (data) => data.table ?? ""
+    (data) => data.table ?? "",
   );
 
   $: name = $modelName?.data ?? "";
@@ -43,7 +44,7 @@
       query: {
         enabled: $timeControlsStore.ready && !!$dashboardStore?.filters,
       },
-    }
+    },
   );
 
   // If too much date is requested, limit the query to 1000 rows
@@ -68,7 +69,7 @@
   $: profileColumnsQuery = createQueryServiceTableColumns(
     $runtime?.instanceId,
     name,
-    {}
+    {},
   );
   $: profileColumns = $profileColumnsQuery?.data
     ?.profileColumns as VirtualizedTableColumns[];
@@ -82,7 +83,10 @@
   };
 </script>
 
-<div class="h-72 overflow-y-auto bg-gray-100 border-t border-gray-200">
+<div
+  class="overflow-y-auto bg-gray-100 border-t border-gray-200"
+  style="height: {height}px"
+>
   {#if rows}
     <PreviewTable
       {rows}

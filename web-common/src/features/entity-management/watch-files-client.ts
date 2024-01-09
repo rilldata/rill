@@ -14,13 +14,13 @@ export function startWatchFilesClient(queryClient: QueryClient) {
     (runtime) =>
       `${runtime.host}/v1/instances/${runtime.instanceId}/files/watch`,
     (res) => handleWatchFileResponse(queryClient, res),
-    () => invalidateAllFiles(queryClient)
+    () => invalidateAllFiles(queryClient),
   ).start();
 }
 
 function handleWatchFileResponse(
   queryClient: QueryClient,
-  res: V1WatchFilesResponse
+  res: V1WatchFilesResponse,
 ) {
   if (res.path.includes(".db")) return;
   // Watch file returns events for all files under the project. Ignore everything except .sql, .yaml & .yml
@@ -37,13 +37,13 @@ function handleWatchFileResponse(
   switch (res.event) {
     case "FILE_EVENT_WRITE":
       queryClient.refetchQueries(
-        getRuntimeServiceGetFileQueryKey(instanceId, res.path)
+        getRuntimeServiceGetFileQueryKey(instanceId, res.path),
       );
       break;
 
     case "FILE_EVENT_DELETE":
       queryClient.removeQueries(
-        getRuntimeServiceGetFileQueryKey(instanceId, res.path)
+        getRuntimeServiceGetFileQueryKey(instanceId, res.path),
       );
       resourcesStore.deleteFile(res.path);
       break;

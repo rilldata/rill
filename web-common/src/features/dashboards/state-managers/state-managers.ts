@@ -67,7 +67,7 @@ export function createStateManagers({
     ([name], set) => {
       const store = useDashboardStore(name);
       return store.subscribe(set);
-    }
+    },
   );
 
   // Note: this is equivalent to `useMetaQuery`
@@ -79,7 +79,7 @@ export function createStateManagers({
       metricViewName,
       ResourceKind.MetricsView,
       (data) => data.metricsView?.state?.validSpec,
-      queryClient
+      queryClient,
     ).subscribe(set);
   });
 
@@ -97,12 +97,12 @@ export function createStateManagers({
           enabled: !!metricsView.data?.timeDimension,
           queryClient: queryClient,
         },
-      }
-    ).subscribe(set)
+      },
+    ).subscribe(set),
   );
 
   const updateDashboard = (
-    callback: (metricsExplorer: MetricsExplorerEntity) => void
+    callback: (metricsExplorer: MetricsExplorerEntity) => void,
   ) => {
     const name = get(dashboardStore).name;
     // TODO: Remove dependency on MetricsExplorerStore singleton and its exports

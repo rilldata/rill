@@ -14,7 +14,7 @@ export class NonFormatter implements Formatter {
 
   constructor(
     sample: number[],
-    options: FormatterOptionsCommon & FormatterOptionsNoneStrategy
+    options: FormatterOptionsCommon & FormatterOptionsNoneStrategy,
   ) {
     this.options = options;
     this.initialSample = sample;

@@ -20,12 +20,12 @@ export function useIsProjectInitialized(instanceId: string) {
         },
         refetchOnWindowFocus: true,
       },
-    }
+    },
   );
 }
 
 export async function isProjectInitialized(
-  instanceId: string
+  instanceId: string,
 ): Promise<boolean> {
   const data = await runtimeServiceListFiles(instanceId, {
     glob: "rill.yaml",
@@ -38,7 +38,7 @@ export async function isProjectInitialized(
 // V2 is an improvement because it uses the queryClient to cache the result
 export async function isProjectInitializedV2(
   queryClient: QueryClient,
-  instanceId: string
+  instanceId: string,
 ) {
   const rillYAMLFiles = await queryClient.fetchQuery<V1ListFilesResponse>({
     queryKey: getRuntimeServiceListFilesQueryKey(instanceId, {

@@ -6,7 +6,7 @@ import { getFileAPIPathFromNameAndType } from "../entity-management/entity-mappe
 export async function createModel(
   instanceId: string,
   newModelName: string,
-  sql = ""
+  sql = "",
 ) {
   await runtimeServicePutFile(
     instanceId,
@@ -14,7 +14,7 @@ export async function createModel(
     {
       blob: sql,
       createOnly: true,
-    }
+    },
   );
   goto(`/model/${newModelName}?focus`);
 }

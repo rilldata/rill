@@ -178,9 +178,9 @@ export class HttpRequestQueue {
   private async fireForEntry(entry: RequestQueueEntry) {
     try {
       const resp = await fetchWrapper(entry.requestOptions);
-      entry.resolve(resp);
+      if (entry?.resolve) entry.resolve(resp);
     } catch (err) {
-      entry.reject(err);
+      if (entry?.reject) entry.reject(err);
     }
     this.activeCount--;
     appQueryStatusStore.set(this.activeCount > 0);
@@ -189,7 +189,7 @@ export class HttpRequestQueue {
 
   private clearEntryForColumn(
     nameEntry: RequestQueueNameEntry,
-    entry: RequestQueueEntry
+    entry: RequestQueueEntry,
   ) {
     const entriesForColumn = nameEntry.columnMap.get(entry.columnName);
     const index = entriesForColumn.indexOf(entry);

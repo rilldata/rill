@@ -141,8 +141,14 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsViewSpec,
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += " AND " + clause
+		if strings.TrimSpace(clause) != "" {
+			whereClause += " AND " + clause
+		}
 		args = append(args, clauseArgs...)
+	}
+
+	if policy != nil && policy.RowFilter != "" {
+		whereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
 	}
 
 	sql := fmt.Sprintf(

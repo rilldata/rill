@@ -56,14 +56,14 @@
       recipients: yup.array().of(
         yup.object().shape({
           email: yup.string().email("Invalid email"),
-        })
+        }),
       ),
     }),
     onSubmit: async (values) => {
       const refreshCron = convertFormValuesToCronExpression(
         values.frequency,
         values.dayOfWeek,
-        values.timeOfDay
+        values.timeOfDay,
       );
       try {
         await $createReport.mutateAsync({
@@ -84,7 +84,7 @@
           },
         });
         queryClient.invalidateQueries(
-          getRuntimeServiceListResourcesQueryKey($runtime.instanceId)
+          getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
         );
         dispatch("close");
         notifications.send({
