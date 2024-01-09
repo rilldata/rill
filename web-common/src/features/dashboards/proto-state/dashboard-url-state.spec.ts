@@ -17,7 +17,6 @@ import {
   AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
-  AD_BIDS_SOURCE_NAME,
   AD_BIDS_TIMESTAMP_DIMENSION,
   AD_BIDS_WITH_DELETED_MEASURE,
   assertMetricsView,
@@ -259,14 +258,10 @@ describe("useDashboardUrlSync", () => {
       dashboardFetchMocks,
       AD_BIDS_INIT_WITH_TIME,
     );
-    dashboardFetchMocks.mockTimeRangeSummary(
-      AD_BIDS_SOURCE_NAME,
-      AD_BIDS_TIMESTAMP_DIMENSION,
-      {
-        min: TestTimeConstants.LAST_DAY.toISOString(),
-        max: TestTimeConstants.NOW.toISOString(),
-      },
-    );
+    dashboardFetchMocks.mockTimeRangeSummary(AD_BIDS_NAME, {
+      min: TestTimeConstants.LAST_DAY.toISOString(),
+      max: TestTimeConstants.NOW.toISOString(),
+    });
 
     const { unmount } = render(DashboardTestComponent, {
       ctx: stateManagers,
