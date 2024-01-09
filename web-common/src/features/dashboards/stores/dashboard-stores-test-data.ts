@@ -174,7 +174,6 @@ export function initAdBidsMirrorInStore() {
   metricsExplorerStore.init(
     AD_BIDS_MIRROR_NAME,
     {
-      name: AD_BIDS_MIRROR_NAME,
       measures: AD_BIDS_INIT_MEASURES,
       dimensions: AD_BIDS_INIT_DIMENSIONS,
     },

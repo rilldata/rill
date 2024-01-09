@@ -39,6 +39,7 @@
     (sel, g) => sel + g.items.length,
     0,
   );
+
   $: searchResultCount = menuGroups.reduce(
     (sel, mg) => sel + mg.items.length,
     0,

@@ -148,7 +148,11 @@ export function getDurationMultiple(duration: string, multiple: number) {
     .toISO();
 }
 
-export function subtractFromPeriod(duration: Duration, period: Period) {
-  if (!PeriodToUnitsMap[period]) return duration;
-  return duration.minus({ [PeriodToUnitsMap[period]]: 1 });
+export function subtractFromPeriod(
+  duration: Duration,
+  period: Period,
+): Duration {
+  const period_duration = PeriodToUnitsMap[period];
+  if (!period_duration) return duration;
+  return duration.minus({ [period_duration]: 1 });
 }

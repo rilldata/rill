@@ -55,7 +55,7 @@ export async function wrapRetryAssertion(
   timeout = 1000,
   interval = 100,
 ) {
-  let lastError: Error;
+  let lastError: Error | undefined | string = undefined;
   await asyncWaitUntil(
     async () => {
       try {
@@ -63,7 +63,8 @@ export async function wrapRetryAssertion(
         lastError = undefined;
         return true;
       } catch (err) {
-        lastError = err;
+        if (err instanceof Error) lastError = err;
+        else lastError = JSON.stringify(err);
         return false;
       }
     },

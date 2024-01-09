@@ -74,6 +74,7 @@ export function createPlaceholderElement(metricsName: string) {
     target: DOMElement,
     props: {
       metricsName,
+      view: undefined,
     },
   });
   return {
