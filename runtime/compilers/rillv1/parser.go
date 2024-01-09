@@ -114,12 +114,13 @@ func (k ResourceKind) String() string {
 
 // Diff shows changes to Parser.Resources following an incremental reparse.
 type Diff struct {
-	Reloaded       bool
-	Skipped        bool
-	Added          []ResourceName
-	Modified       []ResourceName
-	ModifiedDotEnv bool
-	Deleted        []ResourceName
+	Reloaded         bool
+	Skipped          bool
+	ParsedPathsCount int
+	Added            []ResourceName
+	Modified         []ResourceName
+	ModifiedDotEnv   bool
+	Deleted          []ResourceName
 }
 
 // Parser parses a Rill project directory into a set of resources.
@@ -347,6 +348,11 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		}
 	}
 
+	// If we did not identify any paths to (re)parse, exit early.
+	if len(parsePaths) == 0 {
+		return &Diff{}, nil
+	}
+
 	// Phase 2: Parse (or reparse) the related paths, adding back resources
 	err := p.parsePaths(ctx, parsePaths)
 	if err != nil {
@@ -390,7 +396,8 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 
 	// Phase 3: Build the diff using p.insertedResources, p.updatedResources and p.deletedResources
 	diff := &Diff{
-		ModifiedDotEnv: modifiedDotEnv,
+		ParsedPathsCount: len(parsePaths),
+		ModifiedDotEnv:   modifiedDotEnv,
 	}
 	for _, resource := range p.insertedResources {
 		addedBack := false
