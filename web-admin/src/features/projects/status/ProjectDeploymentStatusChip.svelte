@@ -8,7 +8,6 @@
     useDashboardsStatus,
   } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
-  import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import InfoCircleFilled from "@rilldata/web-common/components/icons/InfoCircleFilled.svelte";
@@ -18,6 +17,7 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { getRuntimeServiceListResourcesQueryKey } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { useProjectDeploymentStatus } from "./selectors";
 
   export let organization: string;
   export let project: string;
