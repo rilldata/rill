@@ -7,14 +7,11 @@ import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashbo
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
-  AD_BIDS_DEFAULT_TIME_RANGE,
   AD_BIDS_DEFAULT_URL_TIME_RANGE,
-  AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXCLUDE_FILTER,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_INIT,
   AD_BIDS_INIT_WITH_TIME,
-  AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_SOURCE_NAME,
