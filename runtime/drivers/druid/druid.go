@@ -35,7 +35,8 @@ func (d driver) Open(config map[string]any, shared bool, client activity.Client,
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(40)
+	// very roughly approximating num queries required for a typical page load
+	db.SetMaxOpenConns(20)
 
 	err = db.Ping()
 	if err != nil {
