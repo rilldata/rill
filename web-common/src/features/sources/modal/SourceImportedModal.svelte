@@ -13,7 +13,7 @@
     $sourceImportedName !== null
       ? useCreateDashboardFromSourceUIAction(
           $runtime.instanceId,
-          $sourceImportedName
+          $sourceImportedName,
         )
       : null;
 

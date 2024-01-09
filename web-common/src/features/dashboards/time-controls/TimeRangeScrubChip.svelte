@@ -46,7 +46,7 @@
         orderedStart,
         orderedEnd,
         TimeRangePreset.CUSTOM,
-        zone
+        zone,
       )}
     </div>
     <div class="flex items-center">

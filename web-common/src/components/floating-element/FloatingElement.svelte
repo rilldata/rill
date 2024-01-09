@@ -44,7 +44,7 @@ display:contents. This is useful when nesting a floating element within a toolti
     scrollYvalue,
     windowWidth,
     windowHeight,
-    overflowFlipY: boolean
+    overflowFlipY: boolean,
   ) {
     if (!(parentBoundingClientRect && elementBoundingClientRect)) return;
     const [leftPos, topPos] = placeElement({
@@ -88,7 +88,7 @@ display:contents. This is useful when nesting a floating element within a toolti
         scrollY,
         innerWidth,
         innerHeight,
-        overflowFlipY
+        overflowFlipY,
       );
   } else if (relationship === "direct") {
     setLocation(
@@ -98,7 +98,7 @@ display:contents. This is useful when nesting a floating element within a toolti
       scrollY,
       innerWidth,
       innerHeight,
-      overflowFlipY
+      overflowFlipY,
     );
   } else {
     setLocation(
@@ -108,7 +108,7 @@ display:contents. This is useful when nesting a floating element within a toolti
       scrollY,
       innerWidth,
       innerHeight,
-      overflowFlipY
+      overflowFlipY,
     );
   }
   $: getFirstValidChildElement(target);
@@ -127,7 +127,7 @@ display:contents. This is useful when nesting a floating element within a toolti
           scrollY,
           innerWidth,
           innerHeight,
-          overflowFlipY
+          overflowFlipY,
         );
       });
       if (firstParentElement) {

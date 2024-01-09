@@ -33,7 +33,7 @@ test.describe("dashboard", () => {
       page,
       TestEntityType.Dashboard,
       "AdBids_dashboard",
-      true
+      true,
     );
     await assertAdBidsDashboard(page);
   });
@@ -47,7 +47,7 @@ test.describe("dashboard", () => {
         page,
         TestEntityType.Dashboard,
         "AdBids_model_dashboard",
-        true
+        true,
       ),
       waitForTimeSeries(page, "AdBids_model_dashboard"),
       waitForComparisonTopLists(page, "AdBids_model_dashboard", ["domain"]),
@@ -60,7 +60,7 @@ test.describe("dashboard", () => {
       metricsViewRequestFilterMatcher(
         response,
         [{ label: "publisher", values: ["Facebook"] }],
-        []
+        [],
       );
     await Promise.all([
       waitForTimeSeries(page, "AdBids_model_dashboard", domainFilterMatcher),
@@ -68,7 +68,7 @@ test.describe("dashboard", () => {
         page,
         "AdBids_model_dashboard",
         ["domain"],
-        domainFilterMatcher
+        domainFilterMatcher,
       ),
       // click on publisher=Facebook leaderboard value
       clickOnFilter(page, "Publisher", "Facebook"),
@@ -83,7 +83,7 @@ test.describe("dashboard", () => {
           label: "Domain",
           values: ["facebook.com", "instagram.com"],
         },
-      ])
+      ]),
     );
   });
 
@@ -134,7 +134,7 @@ test.describe("dashboard", () => {
       .click();
     // Wait for menu to close
     await expect(
-      page.getByRole("menuitem", { name: "UTC GMT +00:00 Etc/UTC" })
+      page.getByRole("menuitem", { name: "UTC GMT +00:00 Etc/UTC" }),
     ).not.toBeVisible();
 
     // Check that the total records are 272 and have comparisons
@@ -239,7 +239,7 @@ test.describe("dashboard", () => {
 
     // Check number
     await expect(
-      page.getByText("Total records 100.0k", { exact: true })
+      page.getByText("Total records 100.0k", { exact: true }),
     ).toBeVisible();
 
     // Filter to Facebook via leaderboard
@@ -254,7 +254,7 @@ test.describe("dashboard", () => {
 
     // Check number
     await expect(
-      page.getByText("Total records 80.7k", { exact: true })
+      page.getByText("Total records 80.7k", { exact: true }),
     ).toBeVisible();
 
     // Clear the filter from filter bar
@@ -265,7 +265,7 @@ test.describe("dashboard", () => {
 
     // Check number
     await expect(
-      page.getByText("Total records 15.1k", { exact: true })
+      page.getByText("Total records 15.1k", { exact: true }),
     ).toBeVisible();
 
     // Clear all filters button
@@ -273,12 +273,12 @@ test.describe("dashboard", () => {
 
     // Check number
     await expect(
-      page.getByText("Total records 100.0k", { exact: true })
+      page.getByText("Total records 100.0k", { exact: true }),
     ).toBeVisible();
 
     // Check no filters label
     await expect(
-      page.getByText("No filters selected", { exact: true })
+      page.getByText("No filters selected", { exact: true }),
     ).toBeVisible();
 
     // TODO
@@ -365,7 +365,7 @@ test.describe("dashboard", () => {
 
     // Assert that time dimension is now week
     await expect(
-      page.getByRole("button", { name: "Metric trends by week" })
+      page.getByRole("button", { name: "Metric trends by week" }),
     ).toBeVisible();
 
     // Open Edit Metrics
@@ -393,11 +393,11 @@ test.describe("dashboard", () => {
     await updateCodeEditor(page, deleteOnlyMeasureDoc);
     // Check warning message appears, Go to Dashboard is disabled
     await expect(
-      page.getByText("must define at least one measure")
+      page.getByText("must define at least one measure"),
     ).toBeVisible();
 
     await expect(
-      page.getByRole("button", { name: "Go to dashboard" })
+      page.getByRole("button", { name: "Go to dashboard" }),
     ).toBeDisabled();
 
     // Add back the total rows measure for
@@ -424,7 +424,7 @@ test.describe("dashboard", () => {
 
     await updateCodeEditor(page, docWithIncompleteMeasure);
     await expect(
-      page.getByRole("button", { name: "Go to dashboard" })
+      page.getByRole("button", { name: "Go to dashboard" }),
     ).toBeDisabled();
 
     const docWithCompleteMeasure = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
@@ -456,7 +456,7 @@ dimensions:
 
     await updateCodeEditor(page, docWithCompleteMeasure);
     await expect(
-      page.getByRole("button", { name: "Go to dashboard" })
+      page.getByRole("button", { name: "Go to dashboard" }),
     ).toBeEnabled();
 
     // Go to dashboard
@@ -481,14 +481,14 @@ dimensions:
 
     // Check that table is shown
     await expect(
-      page.getByRole("table", { name: "Dimension table" })
+      page.getByRole("table", { name: "Dimension table" }),
     ).toBeVisible();
 
     // Check for a table value
     // Can do better table checking in the future when table is refactored to use proper row setup
     // For now, just check the dimensions
     await expect(
-      page.locator("button").filter({ hasText: /^Microsoft$/ })
+      page.locator("button").filter({ hasText: /^Microsoft$/ }),
     ).toBeVisible();
 
     // TODO when table is better formatted
@@ -504,7 +504,7 @@ dimensions:
 
     // Check that filter was applied
     await expect(
-      page.getByLabel("View filter").getByText("Publisher Microsoft")
+      page.getByLabel("View filter").getByText("Publisher Microsoft"),
     ).toBeVisible();
 
     // go back to the leaderboards.
@@ -516,7 +516,7 @@ dimensions:
     await page.getByText("Total rows 100.0k").click();
 
     await expect(
-      page.getByText("No comparison dimension selected")
+      page.getByText("No comparison dimension selected"),
     ).toBeVisible();
 
     await page.getByRole("button", { name: "No comparison" }).nth(1).click();
@@ -622,11 +622,11 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   await page.getByLabel("Select a context column").click();
   // Check "percent change" menuitem disabled since there is no time comparison
   await expect(
-    page.getByRole("menuitem", { name: "Percent change" })
+    page.getByRole("menuitem", { name: "Percent change" }),
   ).toBeDisabled();
   // Check "percent of total" item is disabled since `valid_percent_of_total` is not set for the measure "total rows"
   await expect(
-    page.getByRole("menuitem", { name: "Percent of total" })
+    page.getByRole("menuitem", { name: "Percent of total" }),
   ).toBeDisabled();
   // click to close the context column menu
   await page.getByLabel("Select a context column").click();
@@ -643,7 +643,7 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
 
   // check that the "select a context column" button now reads "with Percent change"
   await expect(
-    page.getByLabel("Select a context column")
+    page.getByLabel("Select a context column"),
     // getByRole("button", { name: "with Percent change" })
   ).toContainText("Percent change");
 
@@ -662,11 +662,11 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   await page.getByLabel("Select a context column").click();
   // Check that the "percent change" menuitem is enabled
   await expect(
-    page.getByRole("menuitem", { name: "Percent change" })
+    page.getByRole("menuitem", { name: "Percent change" }),
   ).toBeEnabled();
   // check that the "percent of total" menuitem is still disabled
   await expect(
-    page.getByRole("menuitem", { name: "Percent of total" })
+    page.getByRole("menuitem", { name: "Percent of total" }),
   ).toBeDisabled();
   // click to close the context column menu
   await page.getByLabel("Select a context column").click();
@@ -708,7 +708,7 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   // Check that the "percent change" menuitem is disabled
   await page.getByLabel("Select a context column").click();
   await expect(
-    page.getByRole("menuitem", { name: "Percent change" })
+    page.getByRole("menuitem", { name: "Percent change" }),
   ).toBeDisabled();
 
   /**
@@ -726,11 +726,11 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   await page.getByLabel("Select a context column").click();
   // Check that the "0ercent of total" menuitem is enabled
   await expect(
-    page.getByRole("menuitem", { name: "Percent of total" })
+    page.getByRole("menuitem", { name: "Percent of total" }),
   ).toBeDisabled();
   // Check that the "percent change" menuitem is disabled
   await expect(
-    page.getByRole("menuitem", { name: "Percent change" })
+    page.getByRole("menuitem", { name: "Percent change" }),
   ).toBeDisabled();
   // close the context column menu
   await page.getByLabel("Select a context column").click();
@@ -768,7 +768,7 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   });
   // Wait for menu to close
   await expect(
-    page.getByRole("menuitem", { name: "Last 6 Hours" })
+    page.getByRole("menuitem", { name: "Last 6 Hours" }),
   ).not.toBeVisible();
   // check that the percent of total remains visible,
   // with updated value for the time comparison
@@ -816,7 +816,7 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   await page.getByLabel("Select a context column").click();
   // check that the "percent of total" menuitem is disabled
   await expect(
-    page.getByRole("menuitem", { name: "Percent of total" })
+    page.getByRole("menuitem", { name: "Percent of total" }),
   ).toBeDisabled();
 
   // Go back to metrics editor
@@ -840,7 +840,7 @@ async function runThroughEmptyMetricsFlows(page: Page) {
 
   // the  button should be disabled.
   await expect(
-    await page.getByRole("button", { name: "Go to dashboard" })
+    await page.getByRole("button", { name: "Go to dashboard" }),
   ).toBeDisabled();
 
   // the inspector should be empty.
@@ -851,7 +851,7 @@ async function runThroughEmptyMetricsFlows(page: Page) {
 
   await wrapRetryAssertion(async () => {
     await expect(
-      await page.getByText("metrics configuration from an existing model")
+      await page.getByText("metrics configuration from an existing model"),
     ).toBeVisible();
   });
 
@@ -860,7 +860,7 @@ async function runThroughEmptyMetricsFlows(page: Page) {
   await page.getByRole("menuitem").getByText("AdBids_model").click();
   // Wait for menu to close
   await expect(
-    page.getByRole("menuitem", { name: "Last 6 Hours" })
+    page.getByRole("menuitem", { name: "Last 6 Hours" }),
   ).not.toBeVisible();
 
   // let's check the inspector.
@@ -876,7 +876,7 @@ async function runThroughEmptyMetricsFlows(page: Page) {
 
   // double-check that leaderboards make sense.
   await expect(
-    await page.getByRole("button", { name: "google.com 15.1k" })
+    await page.getByRole("button", { name: "google.com 15.1k" }),
   ).toBeVisible();
 
   // go back to the metrics page.

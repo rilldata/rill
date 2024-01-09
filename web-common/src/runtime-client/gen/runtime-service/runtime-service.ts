@@ -73,6 +73,10 @@ import type {
 import { httpClient } from "../../http-client";
 import type { ErrorType } from "../../http-client";
 
+type AwaitedInput<T> = PromiseLike<T> | T;
+
+type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+
 /**
  * @summary ListConnectors returns a description of all the connectors implemented in the runtime,
 including their schema and validation rules
@@ -91,7 +95,7 @@ export const getRuntimeServiceListConnectorsQueryKey = () => {
 
 export const getRuntimeServiceListConnectorsQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
@@ -126,7 +130,7 @@ including their schema and validation rules
  */
 export const createRuntimeServiceListConnectors = <
   TData = Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof runtimeServiceListConnectors>>,
@@ -150,7 +154,7 @@ export const createRuntimeServiceListConnectors = <
  * @summary DeleteFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
  */
 export const runtimeServiceDeleteFileAndReconcile = (
-  v1DeleteFileAndReconcileRequest: V1DeleteFileAndReconcileRequest
+  v1DeleteFileAndReconcileRequest: V1DeleteFileAndReconcileRequest,
 ) => {
   return httpClient<V1DeleteFileAndReconcileResponse>({
     url: `/v1/delete-and-reconcile`,
@@ -162,7 +166,7 @@ export const runtimeServiceDeleteFileAndReconcile = (
 
 export const getRuntimeServiceDeleteFileAndReconcileMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceDeleteFileAndReconcile>>,
@@ -203,7 +207,7 @@ export type RuntimeServiceDeleteFileAndReconcileMutationError =
  */
 export const createRuntimeServiceDeleteFileAndReconcile = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceDeleteFileAndReconcile>>,
@@ -219,7 +223,7 @@ export const createRuntimeServiceDeleteFileAndReconcile = <
 };
 export const runtimeServiceIssueDevJWT = (
   params?: RuntimeServiceIssueDevJWTParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1IssueDevJWTResponse>({
     url: `/v1/dev-jwt`,
@@ -230,14 +234,14 @@ export const runtimeServiceIssueDevJWT = (
 };
 
 export const getRuntimeServiceIssueDevJWTQueryKey = (
-  params?: RuntimeServiceIssueDevJWTParams
+  params?: RuntimeServiceIssueDevJWTParams,
 ) => {
   return [`/v1/dev-jwt`, ...(params ? [params] : [])] as const;
 };
 
 export const getRuntimeServiceIssueDevJWTQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceIssueDevJWT>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: RuntimeServiceIssueDevJWTParams,
   options?: {
@@ -246,7 +250,7 @@ export const getRuntimeServiceIssueDevJWTQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -271,7 +275,7 @@ export type RuntimeServiceIssueDevJWTQueryError = ErrorType<RpcStatus>;
 
 export const createRuntimeServiceIssueDevJWT = <
   TData = Awaited<ReturnType<typeof runtimeServiceIssueDevJWT>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: RuntimeServiceIssueDevJWTParams,
   options?: {
@@ -280,11 +284,11 @@ export const createRuntimeServiceIssueDevJWT = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getRuntimeServiceIssueDevJWTQueryOptions(
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -314,7 +318,7 @@ export const getRuntimeServiceListExamplesQueryKey = () => {
 
 export const getRuntimeServiceListExamplesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListExamples>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof runtimeServiceListExamples>>,
@@ -348,7 +352,7 @@ export type RuntimeServiceListExamplesQueryError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceListExamples = <
   TData = Awaited<ReturnType<typeof runtimeServiceListExamples>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof runtimeServiceListExamples>>,
@@ -373,7 +377,7 @@ export const createRuntimeServiceListExamples = <
  */
 export const runtimeServiceListInstances = (
   params?: RuntimeServiceListInstancesParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ListInstancesResponse>({
     url: `/v1/instances`,
@@ -384,14 +388,14 @@ export const runtimeServiceListInstances = (
 };
 
 export const getRuntimeServiceListInstancesQueryKey = (
-  params?: RuntimeServiceListInstancesParams
+  params?: RuntimeServiceListInstancesParams,
 ) => {
   return [`/v1/instances`, ...(params ? [params] : [])] as const;
 };
 
 export const getRuntimeServiceListInstancesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListInstances>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: RuntimeServiceListInstancesParams,
   options?: {
@@ -400,7 +404,7 @@ export const getRuntimeServiceListInstancesQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -428,7 +432,7 @@ export type RuntimeServiceListInstancesQueryError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceListInstances = <
   TData = Awaited<ReturnType<typeof runtimeServiceListInstances>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: RuntimeServiceListInstancesParams,
   options?: {
@@ -437,11 +441,11 @@ export const createRuntimeServiceListInstances = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getRuntimeServiceListInstancesQueryOptions(
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -458,7 +462,7 @@ export const createRuntimeServiceListInstances = <
  * @summary CreateInstance creates a new instance
  */
 export const runtimeServiceCreateInstance = (
-  v1CreateInstanceRequest: V1CreateInstanceRequest
+  v1CreateInstanceRequest: V1CreateInstanceRequest,
 ) => {
   return httpClient<V1CreateInstanceResponse>({
     url: `/v1/instances`,
@@ -470,7 +474,7 @@ export const runtimeServiceCreateInstance = (
 
 export const getRuntimeServiceCreateInstanceMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceCreateInstance>>,
@@ -509,7 +513,7 @@ export type RuntimeServiceCreateInstanceMutationError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceCreateInstance = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceCreateInstance>>,
@@ -528,7 +532,7 @@ export const createRuntimeServiceCreateInstance = <
  */
 export const runtimeServiceGetInstance = (
   instanceId: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1GetInstanceResponse>({
     url: `/v1/instances/${instanceId}`,
@@ -543,7 +547,7 @@ export const getRuntimeServiceGetInstanceQueryKey = (instanceId: string) => {
 
 export const getRuntimeServiceGetInstanceQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetInstance>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   options?: {
@@ -552,7 +556,7 @@ export const getRuntimeServiceGetInstanceQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -585,7 +589,7 @@ export type RuntimeServiceGetInstanceQueryError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceGetInstance = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetInstance>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   options?: {
@@ -594,11 +598,11 @@ export const createRuntimeServiceGetInstance = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getRuntimeServiceGetInstanceQueryOptions(
     instanceId,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -616,7 +620,7 @@ export const createRuntimeServiceGetInstance = <
  */
 export const runtimeServiceDeleteInstance = (
   instanceId: string,
-  runtimeServiceDeleteInstanceBody: RuntimeServiceDeleteInstanceBody
+  runtimeServiceDeleteInstanceBody: RuntimeServiceDeleteInstanceBody,
 ) => {
   return httpClient<V1DeleteInstanceResponse>({
     url: `/v1/instances/${instanceId}`,
@@ -628,7 +632,7 @@ export const runtimeServiceDeleteInstance = (
 
 export const getRuntimeServiceDeleteInstanceMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>,
@@ -668,7 +672,7 @@ export type RuntimeServiceDeleteInstanceMutationError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceDeleteInstance = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>,
@@ -687,7 +691,7 @@ export const createRuntimeServiceDeleteInstance = <
  */
 export const runtimeServiceEditInstance = (
   instanceId: string,
-  runtimeServiceEditInstanceBody: RuntimeServiceEditInstanceBody
+  runtimeServiceEditInstanceBody: RuntimeServiceEditInstanceBody,
 ) => {
   return httpClient<V1EditInstanceResponse>({
     url: `/v1/instances/${instanceId}`,
@@ -699,7 +703,7 @@ export const runtimeServiceEditInstance = (
 
 export const getRuntimeServiceEditInstanceMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceEditInstance>>,
@@ -739,7 +743,7 @@ export type RuntimeServiceEditInstanceMutationError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceEditInstance = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceEditInstance>>,
@@ -758,7 +762,7 @@ export const createRuntimeServiceEditInstance = <
 export const runtimeServiceListCatalogEntries = (
   instanceId: string,
   params?: RuntimeServiceListCatalogEntriesParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ListCatalogEntriesResponse>({
     url: `/v1/instances/${instanceId}/catalog`,
@@ -770,7 +774,7 @@ export const runtimeServiceListCatalogEntries = (
 
 export const getRuntimeServiceListCatalogEntriesQueryKey = (
   instanceId: string,
-  params?: RuntimeServiceListCatalogEntriesParams
+  params?: RuntimeServiceListCatalogEntriesParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/catalog`,
@@ -780,7 +784,7 @@ export const getRuntimeServiceListCatalogEntriesQueryKey = (
 
 export const getRuntimeServiceListCatalogEntriesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListCatalogEntries>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceListCatalogEntriesParams,
@@ -790,7 +794,7 @@ export const getRuntimeServiceListCatalogEntriesQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -825,7 +829,7 @@ export type RuntimeServiceListCatalogEntriesQueryError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceListCatalogEntries = <
   TData = Awaited<ReturnType<typeof runtimeServiceListCatalogEntries>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceListCatalogEntriesParams,
@@ -835,12 +839,12 @@ export const createRuntimeServiceListCatalogEntries = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getRuntimeServiceListCatalogEntriesQueryOptions(
     instanceId,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -859,7 +863,7 @@ export const createRuntimeServiceListCatalogEntries = <
 export const runtimeServiceGetCatalogEntry = (
   instanceId: string,
   name: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1GetCatalogEntryResponse>({
     url: `/v1/instances/${instanceId}/catalog/${name}`,
@@ -870,14 +874,14 @@ export const runtimeServiceGetCatalogEntry = (
 
 export const getRuntimeServiceGetCatalogEntryQueryKey = (
   instanceId: string,
-  name: string
+  name: string,
 ) => {
   return [`/v1/instances/${instanceId}/catalog/${name}`] as const;
 };
 
 export const getRuntimeServiceGetCatalogEntryQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetCatalogEntry>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   name: string,
@@ -887,7 +891,7 @@ export const getRuntimeServiceGetCatalogEntryQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -921,7 +925,7 @@ export type RuntimeServiceGetCatalogEntryQueryError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceGetCatalogEntry = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetCatalogEntry>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   name: string,
@@ -931,12 +935,12 @@ export const createRuntimeServiceGetCatalogEntry = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getRuntimeServiceGetCatalogEntryQueryOptions(
     instanceId,
     name,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -956,7 +960,7 @@ It does not respond until the refresh has completed (will move to async jobs whe
  */
 export const runtimeServiceTriggerRefresh = (
   instanceId: string,
-  name: string
+  name: string,
 ) => {
   return httpClient<V1TriggerRefreshResponse>({
     url: `/v1/instances/${instanceId}/catalog/${name}/refresh`,
@@ -966,7 +970,7 @@ export const runtimeServiceTriggerRefresh = (
 
 export const getRuntimeServiceTriggerRefreshMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceTriggerRefresh>>,
@@ -1007,7 +1011,7 @@ It does not respond until the refresh has completed (will move to async jobs whe
  */
 export const createRuntimeServiceTriggerRefresh = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceTriggerRefresh>>,
@@ -1028,7 +1032,7 @@ The files are sorted by their full path.
 export const runtimeServiceListFiles = (
   instanceId: string,
   params?: RuntimeServiceListFilesParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ListFilesResponse>({
     url: `/v1/instances/${instanceId}/files`,
@@ -1040,7 +1044,7 @@ export const runtimeServiceListFiles = (
 
 export const getRuntimeServiceListFilesQueryKey = (
   instanceId: string,
-  params?: RuntimeServiceListFilesParams
+  params?: RuntimeServiceListFilesParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/files`,
@@ -1050,7 +1054,7 @@ export const getRuntimeServiceListFilesQueryKey = (
 
 export const getRuntimeServiceListFilesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListFiles>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceListFilesParams,
@@ -1060,7 +1064,7 @@ export const getRuntimeServiceListFilesQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1095,7 +1099,7 @@ The files are sorted by their full path.
  */
 export const createRuntimeServiceListFiles = <
   TData = Awaited<ReturnType<typeof runtimeServiceListFiles>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceListFilesParams,
@@ -1105,12 +1109,12 @@ export const createRuntimeServiceListFiles = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getRuntimeServiceListFilesQueryOptions(
     instanceId,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1129,7 +1133,7 @@ export const createRuntimeServiceListFiles = <
 export const runtimeServiceGetFile = (
   instanceId: string,
   path: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1GetFileResponse>({
     url: `/v1/instances/${instanceId}/files/-/${path}`,
@@ -1140,14 +1144,14 @@ export const runtimeServiceGetFile = (
 
 export const getRuntimeServiceGetFileQueryKey = (
   instanceId: string,
-  path: string
+  path: string,
 ) => {
   return [`/v1/instances/${instanceId}/files/-/${path}`] as const;
 };
 
 export const getRuntimeServiceGetFileQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetFile>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   path: string,
@@ -1157,7 +1161,7 @@ export const getRuntimeServiceGetFileQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1191,7 +1195,7 @@ export type RuntimeServiceGetFileQueryError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceGetFile = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetFile>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   path: string,
@@ -1201,12 +1205,12 @@ export const createRuntimeServiceGetFile = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getRuntimeServiceGetFileQueryOptions(
     instanceId,
     path,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1231,7 +1235,7 @@ export const runtimeServiceDeleteFile = (instanceId: string, path: string) => {
 
 export const getRuntimeServiceDeleteFileMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
@@ -1270,7 +1274,7 @@ export type RuntimeServiceDeleteFileMutationError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceDeleteFile = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
@@ -1289,7 +1293,7 @@ export const createRuntimeServiceDeleteFile = <
 export const runtimeServicePutFile = (
   instanceId: string,
   path: string,
-  runtimeServicePutFileBody: RuntimeServicePutFileBody
+  runtimeServicePutFileBody: RuntimeServicePutFileBody,
 ) => {
   return httpClient<V1PutFileResponse>({
     url: `/v1/instances/${instanceId}/files/-/${path}`,
@@ -1301,7 +1305,7 @@ export const runtimeServicePutFile = (
 
 export const getRuntimeServicePutFileMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServicePutFile>>,
@@ -1340,7 +1344,7 @@ export type RuntimeServicePutFileMutationError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServicePutFile = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServicePutFile>>,
@@ -1358,7 +1362,7 @@ export const createRuntimeServicePutFile = <
  */
 export const runtimeServiceRenameFile = (
   instanceId: string,
-  runtimeServiceRenameFileBody: RuntimeServiceRenameFileBody
+  runtimeServiceRenameFileBody: RuntimeServiceRenameFileBody,
 ) => {
   return httpClient<V1RenameFileResponse>({
     url: `/v1/instances/${instanceId}/files/rename`,
@@ -1370,7 +1374,7 @@ export const runtimeServiceRenameFile = (
 
 export const getRuntimeServiceRenameFileMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
@@ -1409,7 +1413,7 @@ export type RuntimeServiceRenameFileMutationError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceRenameFile = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
@@ -1427,7 +1431,7 @@ export const createRuntimeServiceRenameFile = <
  */
 export const runtimeServiceUnpackEmpty = (
   instanceId: string,
-  runtimeServiceUnpackEmptyBody: RuntimeServiceUnpackEmptyBody
+  runtimeServiceUnpackEmptyBody: RuntimeServiceUnpackEmptyBody,
 ) => {
   return httpClient<V1UnpackEmptyResponse>({
     url: `/v1/instances/${instanceId}/files/unpack-empty`,
@@ -1439,7 +1443,7 @@ export const runtimeServiceUnpackEmpty = (
 
 export const getRuntimeServiceUnpackEmptyMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceUnpackEmpty>>,
@@ -1479,7 +1483,7 @@ export type RuntimeServiceUnpackEmptyMutationError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceUnpackEmpty = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceUnpackEmpty>>,
@@ -1497,7 +1501,7 @@ export const createRuntimeServiceUnpackEmpty = <
  */
 export const runtimeServiceUnpackExample = (
   instanceId: string,
-  runtimeServiceUnpackExampleBody: RuntimeServiceUnpackExampleBody
+  runtimeServiceUnpackExampleBody: RuntimeServiceUnpackExampleBody,
 ) => {
   return httpClient<V1UnpackExampleResponse>({
     url: `/v1/instances/${instanceId}/files/unpack-example`,
@@ -1509,7 +1513,7 @@ export const runtimeServiceUnpackExample = (
 
 export const getRuntimeServiceUnpackExampleMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
@@ -1549,7 +1553,7 @@ export type RuntimeServiceUnpackExampleMutationError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceUnpackExample = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
@@ -1569,7 +1573,7 @@ export const createRuntimeServiceUnpackExample = <
 export const runtimeServiceWatchFiles = (
   instanceId: string,
   params?: RuntimeServiceWatchFilesParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<RuntimeServiceWatchFiles200>({
     url: `/v1/instances/${instanceId}/files/watch`,
@@ -1581,7 +1585,7 @@ export const runtimeServiceWatchFiles = (
 
 export const getRuntimeServiceWatchFilesQueryKey = (
   instanceId: string,
-  params?: RuntimeServiceWatchFilesParams
+  params?: RuntimeServiceWatchFilesParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/files/watch`,
@@ -1591,7 +1595,7 @@ export const getRuntimeServiceWatchFilesQueryKey = (
 
 export const getRuntimeServiceWatchFilesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceWatchFiles>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceWatchFilesParams,
@@ -1601,7 +1605,7 @@ export const getRuntimeServiceWatchFilesQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1635,7 +1639,7 @@ export type RuntimeServiceWatchFilesQueryError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceWatchFiles = <
   TData = Awaited<ReturnType<typeof runtimeServiceWatchFiles>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceWatchFilesParams,
@@ -1645,12 +1649,12 @@ export const createRuntimeServiceWatchFiles = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getRuntimeServiceWatchFilesQueryOptions(
     instanceId,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1669,7 +1673,7 @@ export const createRuntimeServiceWatchFiles = <
 export const runtimeServiceGetLogs = (
   instanceId: string,
   params?: RuntimeServiceGetLogsParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1GetLogsResponse>({
     url: `/v1/instances/${instanceId}/logs`,
@@ -1681,7 +1685,7 @@ export const runtimeServiceGetLogs = (
 
 export const getRuntimeServiceGetLogsQueryKey = (
   instanceId: string,
-  params?: RuntimeServiceGetLogsParams
+  params?: RuntimeServiceGetLogsParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/logs`,
@@ -1691,7 +1695,7 @@ export const getRuntimeServiceGetLogsQueryKey = (
 
 export const getRuntimeServiceGetLogsQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetLogs>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceGetLogsParams,
@@ -1701,7 +1705,7 @@ export const getRuntimeServiceGetLogsQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1735,7 +1739,7 @@ export type RuntimeServiceGetLogsQueryError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceGetLogs = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetLogs>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceGetLogsParams,
@@ -1745,12 +1749,12 @@ export const createRuntimeServiceGetLogs = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getRuntimeServiceGetLogsQueryOptions(
     instanceId,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1769,7 +1773,7 @@ export const createRuntimeServiceGetLogs = <
 export const runtimeServiceWatchLogs = (
   instanceId: string,
   params?: RuntimeServiceWatchLogsParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<RuntimeServiceWatchLogs200>({
     url: `/v1/instances/${instanceId}/logs/watch`,
@@ -1781,7 +1785,7 @@ export const runtimeServiceWatchLogs = (
 
 export const getRuntimeServiceWatchLogsQueryKey = (
   instanceId: string,
-  params?: RuntimeServiceWatchLogsParams
+  params?: RuntimeServiceWatchLogsParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/logs/watch`,
@@ -1791,7 +1795,7 @@ export const getRuntimeServiceWatchLogsQueryKey = (
 
 export const getRuntimeServiceWatchLogsQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceWatchLogs>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceWatchLogsParams,
@@ -1801,7 +1805,7 @@ export const getRuntimeServiceWatchLogsQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1835,7 +1839,7 @@ export type RuntimeServiceWatchLogsQueryError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceWatchLogs = <
   TData = Awaited<ReturnType<typeof runtimeServiceWatchLogs>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceWatchLogsParams,
@@ -1845,12 +1849,12 @@ export const createRuntimeServiceWatchLogs = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getRuntimeServiceWatchLogsQueryOptions(
     instanceId,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1871,7 +1875,7 @@ artifacts will be deleted.
  */
 export const runtimeServiceReconcile = (
   instanceId: string,
-  runtimeServiceReconcileBody: RuntimeServiceReconcileBody
+  runtimeServiceReconcileBody: RuntimeServiceReconcileBody,
 ) => {
   return httpClient<V1ReconcileResponse>({
     url: `/v1/instances/${instanceId}/reconcile`,
@@ -1883,7 +1887,7 @@ export const runtimeServiceReconcile = (
 
 export const getRuntimeServiceReconcileMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceReconcile>>,
@@ -1925,7 +1929,7 @@ artifacts will be deleted.
  */
 export const createRuntimeServiceReconcile = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceReconcile>>,
@@ -1944,7 +1948,7 @@ export const createRuntimeServiceReconcile = <
 export const runtimeServiceGetResource = (
   instanceId: string,
   params?: RuntimeServiceGetResourceParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1GetResourceResponse>({
     url: `/v1/instances/${instanceId}/resource`,
@@ -1956,7 +1960,7 @@ export const runtimeServiceGetResource = (
 
 export const getRuntimeServiceGetResourceQueryKey = (
   instanceId: string,
-  params?: RuntimeServiceGetResourceParams
+  params?: RuntimeServiceGetResourceParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/resource`,
@@ -1966,7 +1970,7 @@ export const getRuntimeServiceGetResourceQueryKey = (
 
 export const getRuntimeServiceGetResourceQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetResource>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceGetResourceParams,
@@ -1976,7 +1980,7 @@ export const getRuntimeServiceGetResourceQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -2010,7 +2014,7 @@ export type RuntimeServiceGetResourceQueryError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceGetResource = <
   TData = Awaited<ReturnType<typeof runtimeServiceGetResource>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceGetResourceParams,
@@ -2020,12 +2024,12 @@ export const createRuntimeServiceGetResource = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getRuntimeServiceGetResourceQueryOptions(
     instanceId,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -2044,7 +2048,7 @@ export const createRuntimeServiceGetResource = <
 export const runtimeServiceListResources = (
   instanceId: string,
   params?: RuntimeServiceListResourcesParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ListResourcesResponse>({
     url: `/v1/instances/${instanceId}/resources`,
@@ -2056,7 +2060,7 @@ export const runtimeServiceListResources = (
 
 export const getRuntimeServiceListResourcesQueryKey = (
   instanceId: string,
-  params?: RuntimeServiceListResourcesParams
+  params?: RuntimeServiceListResourcesParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/resources`,
@@ -2066,7 +2070,7 @@ export const getRuntimeServiceListResourcesQueryKey = (
 
 export const getRuntimeServiceListResourcesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceListResources>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceListResourcesParams,
@@ -2076,7 +2080,7 @@ export const getRuntimeServiceListResourcesQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -2110,7 +2114,7 @@ export type RuntimeServiceListResourcesQueryError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceListResources = <
   TData = Awaited<ReturnType<typeof runtimeServiceListResources>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceListResourcesParams,
@@ -2120,12 +2124,12 @@ export const createRuntimeServiceListResources = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getRuntimeServiceListResourcesQueryOptions(
     instanceId,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -2144,7 +2148,7 @@ export const createRuntimeServiceListResources = <
 export const runtimeServiceWatchResources = (
   instanceId: string,
   params?: RuntimeServiceWatchResourcesParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<RuntimeServiceWatchResources200>({
     url: `/v1/instances/${instanceId}/resources/-/watch`,
@@ -2156,7 +2160,7 @@ export const runtimeServiceWatchResources = (
 
 export const getRuntimeServiceWatchResourcesQueryKey = (
   instanceId: string,
-  params?: RuntimeServiceWatchResourcesParams
+  params?: RuntimeServiceWatchResourcesParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/resources/-/watch`,
@@ -2166,7 +2170,7 @@ export const getRuntimeServiceWatchResourcesQueryKey = (
 
 export const getRuntimeServiceWatchResourcesQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServiceWatchResources>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceWatchResourcesParams,
@@ -2176,7 +2180,7 @@ export const getRuntimeServiceWatchResourcesQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -2210,7 +2214,7 @@ export type RuntimeServiceWatchResourcesQueryError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServiceWatchResources = <
   TData = Awaited<ReturnType<typeof runtimeServiceWatchResources>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   params?: RuntimeServiceWatchResourcesParams,
@@ -2220,12 +2224,12 @@ export const createRuntimeServiceWatchResources = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getRuntimeServiceWatchResourcesQueryOptions(
     instanceId,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -2244,7 +2248,7 @@ Triggers are ephemeral resources that will be cleaned up by the controller.
  */
 export const runtimeServiceCreateTrigger = (
   instanceId: string,
-  runtimeServiceCreateTriggerBody: RuntimeServiceCreateTriggerBody
+  runtimeServiceCreateTriggerBody: RuntimeServiceCreateTriggerBody,
 ) => {
   return httpClient<V1CreateTriggerResponse>({
     url: `/v1/instances/${instanceId}/trigger`,
@@ -2256,7 +2260,7 @@ export const runtimeServiceCreateTrigger = (
 
 export const getRuntimeServiceCreateTriggerMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceCreateTrigger>>,
@@ -2297,7 +2301,7 @@ Triggers are ephemeral resources that will be cleaned up by the controller.
  */
 export const createRuntimeServiceCreateTrigger = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceCreateTrigger>>,
@@ -2324,7 +2328,7 @@ export const getRuntimeServicePingQueryKey = () => {
 
 export const getRuntimeServicePingQueryOptions = <
   TData = Awaited<ReturnType<typeof runtimeServicePing>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof runtimeServicePing>>,
@@ -2357,7 +2361,7 @@ export type RuntimeServicePingQueryError = ErrorType<RpcStatus>;
  */
 export const createRuntimeServicePing = <
   TData = Awaited<ReturnType<typeof runtimeServicePing>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof runtimeServicePing>>,
@@ -2382,7 +2386,7 @@ export const createRuntimeServicePing = <
 It is equivalent to calling the two RPCs sequentially.
  */
 export const runtimeServicePutFileAndReconcile = (
-  v1PutFileAndReconcileRequest: V1PutFileAndReconcileRequest
+  v1PutFileAndReconcileRequest: V1PutFileAndReconcileRequest,
 ) => {
   return httpClient<V1PutFileAndReconcileResponse>({
     url: `/v1/put-and-reconcile`,
@@ -2394,7 +2398,7 @@ export const runtimeServicePutFileAndReconcile = (
 
 export const getRuntimeServicePutFileAndReconcileMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServicePutFileAndReconcile>>,
@@ -2436,7 +2440,7 @@ It is equivalent to calling the two RPCs sequentially.
  */
 export const createRuntimeServicePutFileAndReconcile = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServicePutFileAndReconcile>>,
@@ -2451,7 +2455,7 @@ export const createRuntimeServicePutFileAndReconcile = <
   return createMutation(mutationOptions);
 };
 export const runtimeServiceRefreshAndReconcile = (
-  v1RefreshAndReconcileRequest: V1RefreshAndReconcileRequest
+  v1RefreshAndReconcileRequest: V1RefreshAndReconcileRequest,
 ) => {
   return httpClient<V1RefreshAndReconcileResponse>({
     url: `/v1/refresh-and-reconcile`,
@@ -2463,7 +2467,7 @@ export const runtimeServiceRefreshAndReconcile = (
 
 export const getRuntimeServiceRefreshAndReconcileMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>,
@@ -2501,7 +2505,7 @@ export type RuntimeServiceRefreshAndReconcileMutationError =
 
 export const createRuntimeServiceRefreshAndReconcile = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceRefreshAndReconcile>>,
@@ -2519,7 +2523,7 @@ export const createRuntimeServiceRefreshAndReconcile = <
  * @summary RenameFileAndReconcile combines RenameFile and Reconcile in a single endpoint to reduce latency.
  */
 export const runtimeServiceRenameFileAndReconcile = (
-  v1RenameFileAndReconcileRequest: V1RenameFileAndReconcileRequest
+  v1RenameFileAndReconcileRequest: V1RenameFileAndReconcileRequest,
 ) => {
   return httpClient<V1RenameFileAndReconcileResponse>({
     url: `/v1/rename-and-reconcile`,
@@ -2531,7 +2535,7 @@ export const runtimeServiceRenameFileAndReconcile = (
 
 export const getRuntimeServiceRenameFileAndReconcileMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceRenameFileAndReconcile>>,
@@ -2572,7 +2576,7 @@ export type RuntimeServiceRenameFileAndReconcileMutationError =
  */
 export const createRuntimeServiceRenameFileAndReconcile = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceRenameFileAndReconcile>>,

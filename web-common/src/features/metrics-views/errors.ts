@@ -39,7 +39,7 @@ export function runtimeErrorToLine(message: string, yaml: string): LineStatus {
   }
   if (message.startsWith(ConfigErrors.InvalidTimeGrainForSmallest)) {
     const line = lines.findIndex((line) =>
-      line.startsWith("smallest_time_grain:")
+      line.startsWith("smallest_time_grain:"),
     );
     return { line: line + 1, message, level: "error" };
   }
@@ -65,7 +65,7 @@ export function runtimeErrorToLine(message: string, yaml: string): LineStatus {
 // TODO: double check error
 export function mapParseErrorsToLines(
   errors: Array<V1ParseError>,
-  yaml: string
+  yaml: string,
 ): LineStatus[] {
   if (!errors) return [];
   return errors

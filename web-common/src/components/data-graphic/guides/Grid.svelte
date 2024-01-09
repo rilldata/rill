@@ -32,14 +32,14 @@
       "x",
       $xScale,
       $config.graphicWidth,
-      $config[`xType`] === "date"
+      $config[`xType`] === "date",
     );
 
     yTicks = getTicks(
       "y",
       $yScale,
       $config.graphicHeight,
-      $config[`yType`] === "date"
+      $config[`yType`] === "date",
     );
   }
 </script>

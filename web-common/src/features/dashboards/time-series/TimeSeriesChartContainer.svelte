@@ -30,9 +30,9 @@ A container GraphicContext for the time series in a metrics dashboard.
       enableFullWidth
         ? workspaceWidth - paddingForFullWidth
         : workspaceWidth >= MEASURE_CONFIG.breakpoint
-        ? MEASURE_CONFIG.container.width.full
-        : MEASURE_CONFIG.container.width.breakpoint,
-      400
+          ? MEASURE_CONFIG.container.width.full
+          : MEASURE_CONFIG.container.width.breakpoint,
+      400,
     ) - MEASURE_CONFIG.bigNumber.widthWithChart}
     xMax={end}
     xMaxTweenProps={{ duration: 400 }}

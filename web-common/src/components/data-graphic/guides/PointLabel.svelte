@@ -40,7 +40,7 @@
       easing = cubicOut,
       start = 0,
       opacity = 0,
-    } = {}
+    } = {},
   ) {
     const style = getComputedStyle(node);
     const target_opacity = +style.opacity;
@@ -73,8 +73,8 @@
   {@const y = !isNull
     ? yScale(point[yAccessor])
     : lastAvailablePoint
-    ? yScale(lastAvailablePoint[yAccessor])
-    : (config.plotBottom - config.plotTop) / 2}
+      ? yScale(lastAvailablePoint[yAccessor])
+      : (config.plotBottom - config.plotTop) / 2}
   <!-- these elements aren't used unless we are comparing-->
   {@const comparisonY = yScale(point?.[`comparison.${yAccessor}`] || 0)}
   <WithTween
@@ -90,14 +90,14 @@
     {@const text = isNull
       ? "no data"
       : format
-      ? format(point[yAccessor])
-      : point[yAccessor]}
+        ? format(point[yAccessor])
+        : point[yAccessor]}
     {@const comparisonText =
       isNull || yComparisonAccessor === undefined
         ? "no data"
         : format
-        ? format(point[yAccessor] - point[yComparisonAccessor])
-        : point[yAccessor] - point[yComparisonAccessor]}
+          ? format(point[yAccessor] - point[yComparisonAccessor])
+          : point[yAccessor] - point[yComparisonAccessor]}
     {@const percentageDifference =
       (isNull && comparisonIsNull) || yComparisonAccessor === undefined
         ? undefined

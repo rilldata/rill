@@ -43,5 +43,6 @@
     "**/*.d.ts",
     "**/*.ts",
     "**/*.svelte",
+    "**/rollup.config.js",
   ]
 }

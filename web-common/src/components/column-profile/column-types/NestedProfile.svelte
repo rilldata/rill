@@ -38,21 +38,21 @@
     $runtime?.instanceId,
     objectName,
     columnName,
-    enableProfiling
+    enableProfiling,
   );
 
   $: columnCardinality = getCountDistinct(
     $runtime?.instanceId,
     objectName,
     columnName,
-    enableProfiling
+    enableProfiling,
   );
 
   $: topK = getTopK(
     $runtime?.instanceId,
     objectName,
     columnName,
-    enableProfiling
+    enableProfiling,
   );
 
   function toggleColumnProfile() {

@@ -69,7 +69,7 @@ available_time_zones:
 export function generateDashboardYAMLForModel(
   modelName: string,
   schema: V1StructType,
-  dashboardTitle = ""
+  dashboardTitle = "",
 ) {
   const doc = new Document();
 

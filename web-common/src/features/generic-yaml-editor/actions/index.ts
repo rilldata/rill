@@ -10,7 +10,7 @@ import { runtime } from "../../../runtime-client/runtime-store";
 export async function saveFile(
   queryClient: QueryClient,
   path: string,
-  blob: string
+  blob: string,
 ) {
   const instanceId = get(runtime).instanceId;
 
@@ -20,7 +20,7 @@ export async function saveFile(
 
   // Invalidate `GetFile` query
   queryClient.invalidateQueries(
-    getRuntimeServiceGetFileQueryKey(instanceId, path)
+    getRuntimeServiceGetFileQueryKey(instanceId, path),
   );
 
   // If it's a rill.yaml file, invalidate the dev JWT queries

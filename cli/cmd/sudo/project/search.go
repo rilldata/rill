@@ -9,10 +9,11 @@ import (
 func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pageSize uint32
 	var pageToken string
+	var tags []string
 
 	searchCmd := &cobra.Command{
-		Use:   "search",
-		Args:  cobra.ExactArgs(1),
+		Use:   "search [<pattern>]",
+		Args:  cobra.MaximumNArgs(1),
 		Short: "Search projects by pattern",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -24,8 +25,15 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			defer client.Close()
 
+			pattern := "%"
+			// If args is not empty, use the first element as the pattern
+			if len(args) > 0 {
+				pattern = args[0]
+			}
+
 			res, err := client.SearchProjectNames(ctx, &adminv1.SearchProjectNamesRequest{
-				NamePattern: args[0],
+				NamePattern: pattern,
+				Tags:        tags,
 				PageSize:    pageSize,
 				PageToken:   pageToken,
 			})
@@ -50,6 +58,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
+	searchCmd.Flags().StringSliceVar(&tags, "tag", []string{}, "Tags to filter projects by")
 	searchCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of projects to return per page")
 	searchCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 

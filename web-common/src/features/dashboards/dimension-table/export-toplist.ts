@@ -38,11 +38,11 @@ export default async function exportToplist({
           dimension: {
             name: dashboard.selectedDimensionName,
           },
-          measures: dashboard.selectedMeasureNames.map(
+          measures: [...dashboard.visibleMeasureKeys].map(
             (name) =>
               <V1MetricsViewAggregationMeasure>{
                 name: name,
-              }
+              },
           ),
           timeRange: {
             start: timeControlState.timeStart,

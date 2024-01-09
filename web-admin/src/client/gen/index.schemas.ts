@@ -28,6 +28,7 @@ export type AdminServiceSudoGetResourceParams = {
 
 export type AdminServiceSearchProjectNamesParams = {
   namePattern?: string;
+  tags?: string[];
   pageSize?: number;
   pageToken?: string;
 };
@@ -306,6 +307,16 @@ export interface V1SudoUpdateUserQuotasRequest {
   singleuserOrgs?: number;
 }
 
+export interface V1SudoUpdateTagsResponse {
+  project?: V1Project;
+}
+
+export interface V1SudoUpdateTagsRequest {
+  organization?: string;
+  project?: string;
+  tags?: string[];
+}
+
 export interface V1SudoUpdateOrganizationQuotasResponse {
   organization?: V1Organization;
 }
@@ -448,6 +459,7 @@ export interface V1Project {
   public?: boolean;
   region?: string;
   subpath?: string;
+  tags?: string[];
   updatedOn?: string;
 }
 

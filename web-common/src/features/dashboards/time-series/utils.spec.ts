@@ -30,7 +30,7 @@ describe("getFilterForComparedDimension", () => {
     const result = getFilterForComparedDimension(
       dimensionName,
       filters,
-      topListValues
+      topListValues,
     );
 
     expect(result.includedValues).toHaveLength(250);
@@ -49,7 +49,7 @@ describe("getFilterForComparedDimension", () => {
     const result = getFilterForComparedDimension(
       dimensionName,
       filters,
-      topListValues
+      topListValues,
     );
 
     expect(result.updatedFilter).toEqual({

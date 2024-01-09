@@ -26,7 +26,7 @@
   });
   function handleGoToGithub() {
     window.location.href = encodeURI(
-      ADMIN_URL + "/github/connect?remote=" + remote
+      ADMIN_URL + "/github/connect?remote=" + remote,
     );
   }
 </script>

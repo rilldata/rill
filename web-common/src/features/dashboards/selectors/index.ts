@@ -20,7 +20,7 @@ import type { StateManagers } from "../state-managers/state-managers";
 
 export const useMetaQuery = <T = V1MetricsViewSpec>(
   ctx: StateManagers,
-  selector?: (meta: V1MetricsViewSpec) => T
+  selector?: (meta: V1MetricsViewSpec) => T,
 ): Readable<QueryObserverResult<T | V1MetricsViewSpec, RpcStatus>> => {
   return derived(
     [ctx.runtime, ctx.metricsViewName],
@@ -33,16 +33,16 @@ export const useMetaQuery = <T = V1MetricsViewSpec>(
           selector
             ? selector(data.metricsView?.state?.validSpec)
             : data.metricsView?.state?.validSpec,
-        ctx.queryClient
+        ctx.queryClient,
       ).subscribe(set);
-    }
+    },
   );
 };
 
 export const useModelHasTimeSeries = (ctx: StateManagers) =>
   useMetaQuery(
     ctx,
-    (meta) => !!meta?.timeDimension
+    (meta) => !!meta?.timeDimension,
   ) as CreateQueryResult<boolean>;
 
 export const getFilterSearchList = (
@@ -55,7 +55,7 @@ export const getFilterSearchList = (
     dimension: string;
     addNull: boolean;
     searchText: string;
-  }
+  },
 ): Readable<QueryObserverResult<V1MetricsViewToplistResponse, RpcStatus>> => {
   return derived(
     [
@@ -92,14 +92,14 @@ export const getFilterSearchList = (
             queryClient: ctx.queryClient,
             enabled: timeControls.ready,
           },
-        }
+        },
       ).subscribe(set);
-    }
+    },
   );
 };
 
 export function createTimeRangeSummary(
-  ctx: StateManagers
+  ctx: StateManagers,
 ): CreateQueryResult<V1ColumnTimeRangeResponse> {
   return derived(
     [ctx.runtime, useMetaQuery(ctx)],
@@ -115,8 +115,8 @@ export function createTimeRangeSummary(
             enabled: !!metricsView.data?.timeDimension,
             queryClient: ctx.queryClient,
           },
-        }
+        },
       ).subscribe(set);
-    }
+    },
   );
 }

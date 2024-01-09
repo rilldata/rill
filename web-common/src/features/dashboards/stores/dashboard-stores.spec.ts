@@ -48,17 +48,17 @@ describe("dashboard-stores", () => {
     metricsExplorerStore.toggleFilter(
       AD_BIDS_NAME,
       AD_BIDS_PUBLISHER_DIMENSION,
-      "Google"
+      "Google",
     );
     metricsExplorerStore.toggleFilter(
       AD_BIDS_NAME,
       AD_BIDS_PUBLISHER_DIMENSION,
-      "Facebook"
+      "Facebook",
     );
     metricsExplorerStore.toggleFilter(
       AD_BIDS_NAME,
       AD_BIDS_DOMAIN_DIMENSION,
-      "google.com"
+      "google.com",
     );
     assertMetricsView(AD_BIDS_NAME, AD_BIDS_BASE_FILTER);
 
@@ -67,13 +67,13 @@ describe("dashboard-stores", () => {
     assertMetricsView(
       AD_BIDS_MIRROR_NAME,
       AD_BIDS_BASE_FILTER,
-      ALL_TIME_PARSED_TEST_CONTROLS
+      ALL_TIME_PARSED_TEST_CONTROLS,
     );
 
     // toggle to exclude
     metricsExplorerStore.toggleFilterMode(
       AD_BIDS_NAME,
-      AD_BIDS_PUBLISHER_DIMENSION
+      AD_BIDS_PUBLISHER_DIMENSION,
     );
     assertMetricsView(AD_BIDS_NAME, AD_BIDS_EXCLUDE_FILTER);
 
@@ -82,14 +82,14 @@ describe("dashboard-stores", () => {
     assertMetricsView(
       AD_BIDS_MIRROR_NAME,
       AD_BIDS_EXCLUDE_FILTER,
-      ALL_TIME_PARSED_TEST_CONTROLS
+      ALL_TIME_PARSED_TEST_CONTROLS,
     );
 
     // clear for Domain
     metricsExplorerStore.clearFilterForDimension(
       AD_BIDS_NAME,
       AD_BIDS_DOMAIN_DIMENSION,
-      true
+      true,
     );
     assertMetricsView(AD_BIDS_NAME, AD_BIDS_CLEARED_FILTER);
 
@@ -98,7 +98,7 @@ describe("dashboard-stores", () => {
     assertMetricsView(
       AD_BIDS_MIRROR_NAME,
       AD_BIDS_CLEARED_FILTER,
-      ALL_TIME_PARSED_TEST_CONTROLS
+      ALL_TIME_PARSED_TEST_CONTROLS,
     );
 
     // clear
@@ -110,7 +110,7 @@ describe("dashboard-stores", () => {
     assertMetricsView(
       AD_BIDS_MIRROR_NAME,
       undefined,
-      ALL_TIME_PARSED_TEST_CONTROLS
+      ALL_TIME_PARSED_TEST_CONTROLS,
     );
   });
 
@@ -121,7 +121,7 @@ describe("dashboard-stores", () => {
     // select a different time
     metricsExplorerStore.setSelectedTimeRange(
       AD_BIDS_NAME,
-      LAST_6_HOURS_TEST_CONTROLS
+      LAST_6_HOURS_TEST_CONTROLS,
     );
     assertMetricsView(AD_BIDS_NAME, undefined, LAST_6_HOURS_TEST_CONTROLS);
 
@@ -131,13 +131,13 @@ describe("dashboard-stores", () => {
     assertMetricsView(
       AD_BIDS_MIRROR_NAME,
       undefined,
-      LAST_6_HOURS_TEST_PARSED_CONTROLS
+      LAST_6_HOURS_TEST_PARSED_CONTROLS,
     );
 
     // select custom time
     metricsExplorerStore.setSelectedTimeRange(
       AD_BIDS_NAME,
-      CUSTOM_TEST_CONTROLS
+      CUSTOM_TEST_CONTROLS,
     );
     assertMetricsView(AD_BIDS_NAME, undefined, CUSTOM_TEST_CONTROLS);
 
@@ -154,13 +154,13 @@ describe("dashboard-stores", () => {
     // select a different leaderboard measure
     metricsExplorerStore.setLeaderboardMeasureName(
       AD_BIDS_NAME,
-      AD_BIDS_BID_PRICE_MEASURE
+      AD_BIDS_BID_PRICE_MEASURE,
     );
     assertMetricsView(
       AD_BIDS_NAME,
       undefined,
       undefined,
-      AD_BIDS_BID_PRICE_MEASURE
+      AD_BIDS_BID_PRICE_MEASURE,
     );
 
     // create a mirror using the proto and assert that the leaderboard measure is persisted
@@ -169,7 +169,7 @@ describe("dashboard-stores", () => {
       AD_BIDS_MIRROR_NAME,
       undefined,
       ALL_TIME_PARSED_TEST_CONTROLS,
-      AD_BIDS_BID_PRICE_MEASURE
+      AD_BIDS_BID_PRICE_MEASURE,
     );
   });
 
@@ -179,36 +179,36 @@ describe("dashboard-stores", () => {
     metricsExplorerStore.init(
       AD_BIDS_NO_TIMESTAMP_NAME,
       AD_BIDS_INIT,
-      undefined
+      undefined,
     );
     assertMetricsViewRaw(
       AD_BIDS_NO_TIMESTAMP_NAME,
       { include: [], exclude: [] },
       undefined,
-      AD_BIDS_IMPRESSIONS_MEASURE
+      AD_BIDS_IMPRESSIONS_MEASURE,
     );
 
     // add filters
     metricsExplorerStore.toggleFilter(
       AD_BIDS_NO_TIMESTAMP_NAME,
       AD_BIDS_PUBLISHER_DIMENSION,
-      "Google"
+      "Google",
     );
     metricsExplorerStore.toggleFilter(
       AD_BIDS_NO_TIMESTAMP_NAME,
       AD_BIDS_PUBLISHER_DIMENSION,
-      "Facebook"
+      "Facebook",
     );
     metricsExplorerStore.toggleFilter(
       AD_BIDS_NO_TIMESTAMP_NAME,
       AD_BIDS_DOMAIN_DIMENSION,
-      "google.com"
+      "google.com",
     );
     assertMetricsViewRaw(
       AD_BIDS_NO_TIMESTAMP_NAME,
       AD_BIDS_BASE_FILTER,
       undefined,
-      AD_BIDS_IMPRESSIONS_MEASURE
+      AD_BIDS_IMPRESSIONS_MEASURE,
     );
   });
 
@@ -228,7 +228,7 @@ describe("dashboard-stores", () => {
           max: TestTimeConstants.NOW.toISOString(),
           interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
         },
-      }
+      },
     );
 
     let metrics = get(metricsExplorerStore).entities[AD_BIDS_NAME];
@@ -236,10 +236,10 @@ describe("dashboard-stores", () => {
     expect(metrics.showTimeComparison).toBeTruthy();
     expect(metrics.selectedComparisonTimeRange?.name).toBe("rill-PP");
     expect(metrics.selectedComparisonTimeRange.start).toEqual(
-      TestTimeOffsetConstants.LAST_12_HOURS
+      TestTimeOffsetConstants.LAST_12_HOURS,
     );
     expect(metrics.selectedComparisonTimeRange.end).toEqual(
-      TestTimeOffsetConstants.LAST_6_HOURS
+      TestTimeOffsetConstants.LAST_6_HOURS,
     );
     expect(metrics.selectedComparisonDimension).toBeUndefined();
 
@@ -258,13 +258,13 @@ describe("dashboard-stores", () => {
           max: TestTimeConstants.NOW.toISOString(),
           interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
         },
-      }
+      },
     );
     metrics = get(metricsExplorerStore).entities[AD_BIDS_NAME];
     expect(metrics.showTimeComparison).toBeFalsy();
     // defaults to 1st dimension
     expect(metrics.selectedComparisonDimension).toBe(
-      AD_BIDS_PUBLISHER_DIMENSION
+      AD_BIDS_PUBLISHER_DIMENSION,
     );
 
     metricsExplorerStore.remove(AD_BIDS_NAME);
@@ -283,7 +283,7 @@ describe("dashboard-stores", () => {
           max: TestTimeConstants.NOW.toISOString(),
           interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
         },
-      }
+      },
     );
     metrics = get(metricsExplorerStore).entities[AD_BIDS_NAME];
     expect(metrics.selectedComparisonDimension).toBe(AD_BIDS_DOMAIN_DIMENSION);
@@ -295,12 +295,12 @@ describe("dashboard-stores", () => {
       metricsExplorerStore.toggleFilter(
         AD_BIDS_NAME,
         AD_BIDS_PUBLISHER_DIMENSION,
-        "Facebook"
+        "Facebook",
       );
       metricsExplorerStore.toggleFilter(
         AD_BIDS_NAME,
         AD_BIDS_DOMAIN_DIMENSION,
-        "google.com"
+        "google.com",
       );
 
       // create a mirror from state
@@ -308,7 +308,7 @@ describe("dashboard-stores", () => {
       // update the mirrored dashboard mimicking meta query update
       metricsExplorerStore.sync(
         AD_BIDS_MIRROR_NAME,
-        AD_BIDS_WITH_DELETED_DIMENSION
+        AD_BIDS_WITH_DELETED_DIMENSION,
       );
       // assert that the filter for removed dimension is not present anymore
       assertMetricsView(
@@ -322,7 +322,7 @@ describe("dashboard-stores", () => {
           ],
           exclude: [],
         },
-        ALL_TIME_PARSED_TEST_CONTROLS
+        ALL_TIME_PARSED_TEST_CONTROLS,
       );
     });
 
@@ -330,7 +330,7 @@ describe("dashboard-stores", () => {
       const mock = createMetricsMetaQueryMock();
       metricsExplorerStore.setLeaderboardMeasureName(
         AD_BIDS_NAME,
-        AD_BIDS_BID_PRICE_MEASURE
+        AD_BIDS_BID_PRICE_MEASURE,
       );
 
       // create a mirror from state
@@ -353,7 +353,7 @@ describe("dashboard-stores", () => {
       // assert that the selected measure is reset to the 1st available one
       expect(
         get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME]
-          .leaderboardMeasureName
+          .leaderboardMeasureName,
       ).toBe(AD_BIDS_IMPRESSIONS_MEASURE);
     });
 
@@ -361,7 +361,7 @@ describe("dashboard-stores", () => {
       const mock = createMetricsMetaQueryMock();
       metricsExplorerStore.setMetricDimensionName(
         AD_BIDS_NAME,
-        AD_BIDS_DOMAIN_DIMENSION
+        AD_BIDS_DOMAIN_DIMENSION,
       );
 
       // create a mirror from state
@@ -369,12 +369,12 @@ describe("dashboard-stores", () => {
       // update the mirrored dashboard mimicking meta query update
       metricsExplorerStore.sync(
         AD_BIDS_MIRROR_NAME,
-        AD_BIDS_WITH_DELETED_DIMENSION
+        AD_BIDS_WITH_DELETED_DIMENSION,
       );
       // assert that the selected dimension is cleared
       expect(
         get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME]
-          .selectedDimensionName
+          .selectedDimensionName,
       ).toBeUndefined();
     });
   });

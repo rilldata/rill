@@ -152,7 +152,7 @@ for any of its children.
         config.top -
         config.bottom -
         2 * (config.bodyBuffer || 0),
-    }
+    },
   );
 
   $: config.reconcileProps(parameters);

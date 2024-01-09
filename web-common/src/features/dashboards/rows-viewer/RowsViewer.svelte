@@ -24,7 +24,7 @@
   $: modelName = useMetaQuery<string>(
     $runtime.instanceId,
     metricViewName,
-    (data) => data.table ?? ""
+    (data) => data.table ?? "",
   );
 
   $: name = $modelName?.data ?? "";
@@ -44,7 +44,7 @@
       query: {
         enabled: $timeControlsStore.ready && !!$dashboardStore?.filters,
       },
-    }
+    },
   );
 
   // If too much date is requested, limit the query to 1000 rows
@@ -69,7 +69,7 @@
   $: profileColumnsQuery = createQueryServiceTableColumns(
     $runtime?.instanceId,
     name,
-    {}
+    {},
   );
   $: profileColumns = $profileColumnsQuery?.data
     ?.profileColumns as VirtualizedTableColumns[];

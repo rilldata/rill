@@ -11,7 +11,7 @@ interface OutlineAction {
 
 export function outline(
   node: SVGElement,
-  args = { color: "white" }
+  args = { color: "white" },
 ): OutlineAction {
   const enclosingSVG = node.ownerSVGElement;
 
@@ -26,14 +26,14 @@ export function outline(
   if (outlineFilter === null) {
     outlineFilter = document.createElementNS(
       "http://www.w3.org/2000/svg",
-      "filter"
+      "filter",
     );
 
     outlineFilter.id = "outline-filter";
 
     const morph = document.createElementNS(
       "http://www.w3.org/2000/svg",
-      "feMorphology"
+      "feMorphology",
     );
     morph.setAttribute("operator", "dilate");
     morph.setAttribute("radius", "2");
@@ -42,7 +42,7 @@ export function outline(
 
     const composite = document.createElementNS(
       "http://www.w3.org/2000/svg",
-      "feComposite"
+      "feComposite",
     );
     composite.setAttribute("operator", "out");
     composite.setAttribute("in", "THICKNESS");
@@ -65,7 +65,7 @@ export function outline(
     if (node.getAttribute("text-anchor")) {
       clonedElement.setAttribute(
         "text-anchor",
-        node.getAttribute("text-anchor")
+        node.getAttribute("text-anchor"),
       );
     }
 

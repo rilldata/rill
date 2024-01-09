@@ -12,7 +12,7 @@
   // Parse Source YAML client-side
   $: sourceFromYaml = useSourceFromYaml(
     $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table)
+    getFilePathFromNameAndType(sourceName, EntityType.Table),
   );
 
   // Try to extract the connector type

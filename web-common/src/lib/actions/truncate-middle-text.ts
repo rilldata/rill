@@ -15,10 +15,10 @@ export function truncateMiddleText(node: Element) {
    */
   function truncate() {
     const leftPad = convertToPixelNumber(
-      getComputedStyle(parent).getPropertyValue("padding-left")
+      getComputedStyle(parent).getPropertyValue("padding-left"),
     );
     const rightPad = convertToPixelNumber(
-      getComputedStyle(parent).getPropertyValue("padding-right")
+      getComputedStyle(parent).getPropertyValue("padding-right"),
     );
     const parentWidth = parent.offsetWidth - leftPad - rightPad;
 

@@ -30,7 +30,7 @@
         .string()
         .matches(
           /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-          "Name must start with a letter or underscore and contain only letters, numbers, and underscores"
+          "Name must start with a letter or underscore and contain only letters, numbers, and underscores",
         )
         .required("Enter a name!")
         .notOneOf([currentAssetName], `That's the current name!`),
@@ -40,7 +40,7 @@
         isDuplicateName(
           values?.newName,
           currentAssetName,
-          $allNamesQuery?.data ?? []
+          $allNamesQuery?.data ?? [],
         )
       ) {
         error = `Name ${values.newName} is already in use`;
@@ -51,7 +51,7 @@
           runtimeInstanceId,
           currentAssetName,
           values.newName,
-          entityType
+          entityType,
         );
         goto(getRouteFromName(values.newName, entityType), {
           replaceState: true,

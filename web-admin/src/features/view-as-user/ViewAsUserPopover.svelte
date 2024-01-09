@@ -21,7 +21,7 @@
   $: projectUsers = createAdminServiceSearchProjectUsers(
     organization,
     project,
-    { emailQuery: "%", pageSize: 1000, pageToken: undefined }
+    { emailQuery: "%", pageSize: 1000, pageToken: undefined },
   );
 
   const dispatch = createEventDispatcher();

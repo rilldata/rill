@@ -60,7 +60,7 @@
   $: sourceHasError = getFileHasErrors(
     queryClient,
     runtimeInstanceId,
-    filePath
+    filePath,
   );
   $: sourceIsIdle =
     $sourceQuery.data?.meta?.reconcileStatus ===
@@ -80,7 +80,7 @@
       runtimeInstanceId,
       tableName,
       EntityType.Table,
-      $sourceNames.data ?? []
+      $sourceNames.data ?? [],
     );
     toggleMenu();
   };
@@ -92,7 +92,7 @@
         runtimeInstanceId,
         $modelNames.data ?? [],
         sourceName,
-        embedded ? `"${path}"` : sourceName
+        embedded ? `"${path}"` : sourceName,
       );
 
       behaviourEvent.fireNavigationEvent(
@@ -100,7 +100,7 @@
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
         previousActiveEntity,
-        MetricsEventScreenName.Model
+        MetricsEventScreenName.Model,
       );
     } catch (err) {
       console.error(err);
@@ -114,7 +114,7 @@
     const newModelName = getName(`${sourceName}_model`, $modelNames.data ?? []);
     const newDashboardName = getName(
       `${sourceName}_dashboard`,
-      $dashboardNames.data ?? []
+      $dashboardNames.data ?? [],
     );
 
     await waitUntil(() => !!$sourceQuery.data);
@@ -142,14 +142,14 @@
             BehaviourEventMedium.Menu,
             MetricsEventSpace.LeftPanel,
             previousActiveEntity,
-            MetricsEventScreenName.Dashboard
+            MetricsEventScreenName.Dashboard,
           );
         },
         onSettled: () => {
           overlay.set(null);
           toggleMenu(); // unmount component
         },
-      }
+      },
     );
   };
 
@@ -171,7 +171,7 @@
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(
     $runtime.instanceId,
-    sourceName
+    sourceName,
   );
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 

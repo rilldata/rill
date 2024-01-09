@@ -25,7 +25,7 @@
 
   $: fileQuery = createRuntimeServiceGetFile(
     $runtime.instanceId,
-    getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
+    getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition),
   );
   $: yaml = $fileQuery.data?.blob || "";
 
@@ -40,7 +40,7 @@
   let isValidModel = false;
   $: if ($allModels?.data?.entries) {
     isValidModel = $allModels?.data.some(
-      (model) => model?.meta?.name?.name === modelName
+      (model) => model?.meta?.name?.name === modelName,
     );
   }
 

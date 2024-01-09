@@ -49,8 +49,6 @@ type Options struct {
 	StorageLimitInBytes int64
 	// Retain files and only delete during close
 	KeepFilesUntilClose bool
-	// Retainfiles retains files for debugging purposes
-	RetainFiles bool
 	// BatchSizeBytes is the combined size of all files returned in one call to next()
 	BatchSizeBytes int64
 	// General blob format (json, csv, parquet, etc)
@@ -180,7 +178,7 @@ func (it *blobIterator) Close() error {
 	var closeErr error
 
 	// Remove any lingering temporary files
-	if it.tempDir != "" && !it.opts.RetainFiles {
+	if it.tempDir != "" {
 		err := os.RemoveAll(it.tempDir)
 		if err != nil {
 			closeErr = errors.Join(closeErr, err)
@@ -218,7 +216,7 @@ func (it *blobIterator) Size(unit drivers.ProgressUnit) (int64, bool) {
 
 func (it *blobIterator) Next() ([]string, error) {
 	// Delete files from the previous iteration
-	if !it.opts.KeepFilesUntilClose && !it.opts.RetainFiles {
+	if !it.opts.KeepFilesUntilClose {
 		fileutil.ForceRemoveFiles(it.lastBatch)
 	}
 

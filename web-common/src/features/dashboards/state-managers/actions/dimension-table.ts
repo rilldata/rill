@@ -7,7 +7,7 @@ import type { DashboardMutables } from "./types";
 
 export const handleMeasureColumnHeaderClick = (
   generalArgs: DashboardMutables,
-  measureName: string
+  measureName: string,
 ) => {
   const { leaderboardMeasureName: name } = generalArgs.dashboard;
 
@@ -31,7 +31,7 @@ export const handleMeasureColumnHeaderClick = (
 
 export const setDimensionTableSearchString = (
   generalArgs: DashboardMutables,
-  searchString: string | undefined
+  searchString: string | undefined,
 ) => {
   generalArgs.dashboard.dimensionSearchText = searchString;
 };

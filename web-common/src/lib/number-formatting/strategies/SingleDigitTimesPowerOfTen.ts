@@ -19,7 +19,7 @@ import { numberPartsToString } from "../utils/number-parts-utils";
  */
 export const closeToIntTimesPowerOfTen = (x: number) =>
   Math.abs(
-    x / 10 ** orderOfMagnitude(x) - Math.round(x / 10 ** orderOfMagnitude(x))
+    x / 10 ** orderOfMagnitude(x) - Math.round(x / 10 ** orderOfMagnitude(x)),
   ) < 1e-6;
 
 /**
@@ -51,7 +51,8 @@ export class SingleDigitTimesPowerOfTenFormatter implements Formatter {
 
   constructor(
     sample: number[],
-    options: FormatterOptionsCommon & FormatterOptionsIntTimesPowerOfTenStrategy
+    options: FormatterOptionsCommon &
+      FormatterOptionsIntTimesPowerOfTenStrategy,
   ) {
     this.options = options;
     this.initialSample = sample;
@@ -113,7 +114,7 @@ export class SingleDigitTimesPowerOfTenFormatter implements Formatter {
         magE,
         0,
         padWithZeros,
-        useTrailingDot
+        useTrailingDot,
       );
 
       numParts.suffix = shortScaleSuffixIfAvailableForStr(numParts.suffix);

@@ -53,7 +53,7 @@ FIXME: In the future, we should also be listening to focus events from the child
   const childRequestedTooltipSuppression = writable(false);
   setContext(
     "rill:app:childRequestedTooltipSuppression",
-    childRequestedTooltipSuppression
+    childRequestedTooltipSuppression,
   );
 </script>
 

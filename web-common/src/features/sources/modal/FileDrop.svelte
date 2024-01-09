@@ -37,7 +37,7 @@
     const uploadedFiles = uploadTableFiles(
       Array.from(files),
       [$sourceNames?.data ?? [], $modelNames?.data ?? []],
-      $runtime.instanceId
+      $runtime.instanceId,
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
@@ -56,13 +56,13 @@
             sourceName: tableName,
             path: filePath,
           },
-          "local_file"
+          "local_file",
         );
         await createSource(runtimeInstanceId, tableName, yaml);
         checkSourceImported(
           queryClient,
           tableName,
-          getFilePathFromNameAndType(tableName, EntityType.Table)
+          getFilePathFromNameAndType(tableName, EntityType.Table),
         );
         goto(`/source/${tableName}`);
       } catch (err) {
