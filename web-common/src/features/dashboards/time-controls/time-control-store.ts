@@ -1,6 +1,5 @@
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
 import {
@@ -28,17 +27,18 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import {
   RpcStatus,
-  V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
-  createQueryServiceColumnTimeRange,
+  createQueryServiceMetricsViewTimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type {
   CreateQueryResult,
   QueryObserverResult,
 } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
 import type { Readable } from "svelte/store";
+import { derived, get } from "svelte/store";
+import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 
 export type TimeRangeState = {
   // Selected ranges with start and end filled based on time range type
@@ -73,15 +73,15 @@ export type TimeControlStore = Readable<TimeControlState>;
 
 function createTimeRangeSummary(
   ctx: StateManagers,
-): CreateQueryResult<V1ColumnTimeRangeResponse> {
+): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
   return derived(
     [ctx.runtime, useMetaQuery(ctx)],
     ([runtime, metricsView], set) =>
-      createQueryServiceColumnTimeRange(
+      createQueryServiceMetricsViewTimeRange(
         runtime.instanceId,
-        metricsView.data?.table,
+        get(ctx.metricsViewName),
         {
-          columnName: metricsView.data?.timeDimension,
+          priority: undefined,
         },
         {
           query: {
@@ -99,7 +99,7 @@ export const timeControlStateSelector = ([
   metricsExplorer,
 ]: [
   QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
-  QueryObserverResult<V1ColumnTimeRangeResponse, unknown>,
+  QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   MetricsExplorerEntity,
 ]): TimeControlState => {
   const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
@@ -431,7 +431,7 @@ export function selectedTimeRangeSelector([
   explorer,
 ]: [
   QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
-  QueryObserverResult<V1ColumnTimeRangeResponse, unknown>,
+  QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   MetricsExplorerEntity,
 ]) {
   if (!metricsView.data || !timeRangeResponse.data?.timeRangeSummary) {
