@@ -3,9 +3,11 @@ package worker
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -96,4 +98,26 @@ func (w *Worker) runJob(ctx context.Context, name string, fn func(context.Contex
 	}
 	w.logger.Info("job completed", zap.String("name", name), zap.Duration("duration", time.Since(start)), observability.ZapCtx(ctx))
 	return nil
+}
+
+type pingHandler struct{}
+
+func (h *pingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write([]byte("pong"))
+	if err != nil {
+		panic(err)
+	}
+}
+
+// StartPingServer starts a http server that returns 200 OK on /ping
+func StartPingServer(ctx context.Context, port int) error {
+	httpMux := http.NewServeMux()
+	httpMux.Handle("/ping", &pingHandler{})
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: httpMux,
+	}
+
+	return graceful.ServeHTTP(ctx, srv, port)
 }

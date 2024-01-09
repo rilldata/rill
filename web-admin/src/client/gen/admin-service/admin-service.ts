@@ -107,6 +107,8 @@ import type {
   V1SudoGetResourceResponse,
   V1SudoUpdateOrganizationQuotasRequest,
   V1SudoUpdateOrganizationQuotasResponse,
+  V1SudoUpdateTagsRequest,
+  V1SudoUpdateTagsResponse,
   V1SudoUpdateUserQuotasRequest,
   V1SudoUpdateUserQuotasResponse,
   V1TelemetryRequest,
@@ -125,6 +127,10 @@ import type {
   V1UpdateUserPreferencesResponse,
 } from "../index.schemas";
 import { httpClient } from "../../http-client";
+
+type AwaitedInput<T> = PromiseLike<T> | T;
+
+type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 
 /**
  * @summary TriggerReconcile triggers reconcile for the project's prod deployment
@@ -4717,6 +4723,74 @@ export const createAdminServiceSearchProjectNames = <
   return query;
 };
 
+/**
+ * @summary Add a SudoUpdateTags endpoint for superusers to update tags
+ */
+export const adminServiceSudoUpdateTags = (
+  v1SudoUpdateTagsRequest: V1SudoUpdateTagsRequest,
+) => {
+  return httpClient<V1SudoUpdateTagsResponse>({
+    url: `/v1/superuser/projects/tags`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoUpdateTagsRequest,
+  });
+};
+
+export const getAdminServiceSudoUpdateTagsMutationOptions = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>,
+    TError,
+    { data: V1SudoUpdateTagsRequest },
+    TContext
+  >;
+}): CreateMutationOptions<
+  Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>,
+  TError,
+  { data: V1SudoUpdateTagsRequest },
+  TContext
+> => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>,
+    { data: V1SudoUpdateTagsRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoUpdateTags(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminServiceSudoUpdateTagsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>
+>;
+export type AdminServiceSudoUpdateTagsMutationBody = V1SudoUpdateTagsRequest;
+export type AdminServiceSudoUpdateTagsMutationError = RpcStatus;
+
+/**
+ * @summary Add a SudoUpdateTags endpoint for superusers to update tags
+ */
+export const createAdminServiceSudoUpdateTags = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>,
+    TError,
+    { data: V1SudoUpdateTagsRequest },
+    TContext
+  >;
+}) => {
+  const mutationOptions = getAdminServiceSudoUpdateTagsMutationOptions(options);
+
+  return createMutation(mutationOptions);
+};
 /**
  * @summary SudoUpdateOrganizationQuotas update the quotas available for orgs
  */

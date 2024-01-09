@@ -19,6 +19,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -29,7 +30,7 @@ const (
 	minNodeVersion = "18"
 	stateDirCloud  = "dev-cloud-state"
 	stateDirLocal  = "dev-project"
-	rillRepo       = "https://github.com/rilldata/rill.git"
+	rillGithubURL  = "https://github.com/rilldata/rill"
 )
 
 var (
@@ -152,14 +153,13 @@ func checkRillRepo(ctx context.Context) error {
 		return fmt.Errorf("you must run `rill devtool` from the root of the rill repository")
 	}
 
-	out, err := newCmd(ctx, "git", "remote", "get-url", "origin").Output()
+	_, githubURL, err := gitutil.ExtractGitRemote("", "")
 	if err != nil {
-		return fmt.Errorf("error executing the 'git remote get-url origin' command: %w", err)
+		return fmt.Errorf("error extracting git remote: %w", err)
 	}
 
-	repo := strings.TrimSpace(string(out))
-	if repo != rillRepo {
-		return fmt.Errorf("you must run `rill devtool` from the rill repository (expected remote %q, got %q)", rillRepo, repo)
+	if githubURL != rillGithubURL {
+		return fmt.Errorf("you must run `rill devtool` from the rill repository (expected remote %q, got %q)", rillGithubURL, githubURL)
 	}
 
 	return nil
