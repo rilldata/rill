@@ -3,10 +3,12 @@ package druid
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/common"
 )
 
 var _ drivers.OLAPStore = &connection{}
@@ -75,12 +77,25 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
 	}
 
-	rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)
+	var rows *sqlx.Rows
+	var err error
+
+	err = common.Retry(
+		ctx,
+		func() error {
+			rows, err = c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)
+			return err
+		},
+		func(err error) bool {
+			// there is no standard sql error code for capacity exceeded, so we have to check the error message
+			return strings.Contains(err.Error(), "QueryCapacityExceededException")
+		},
+		3) // retry query upto 3 times if capacity is exceeded
+
 	if err != nil {
 		if cancelFunc != nil {
 			cancelFunc()
 		}
-
 		return nil, err
 	}
 
