@@ -217,7 +217,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 // IsIgnored returns true if the path will be ignored by Reparse.
 // It's useful for callers to avoid triggering a reparse when they know the path is not relevant.
 func (p *Parser) IsIgnored(path string) bool {
-	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsRillYAML(path) && !pathIsDotEnv(path)
+	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
 }
 
 // reload resets the parser's state and then parses the entire project.
