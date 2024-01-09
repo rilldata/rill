@@ -6,7 +6,8 @@ on:
     tags:
       - "**"
     branches:
-      - main
+      - "main"
+      - "release**"
   workflow_dispatch:
 
 env:
