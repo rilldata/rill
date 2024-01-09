@@ -122,6 +122,7 @@ type registryCache struct {
 }
 
 type instanceWithController struct {
+	instanceID    string
 	instance      *drivers.Instance
 	controller    *Controller
 	controllerErr error
@@ -261,7 +262,10 @@ func (r *registryCache) add(inst *drivers.Instance) {
 		panic(fmt.Errorf("instance %q already open", inst.ID))
 	}
 
-	iwc := &instanceWithController{instance: inst}
+	iwc := &instanceWithController{
+		instanceID: inst.ID,
+		instance:   inst,
+	}
 	r.instances[inst.ID] = iwc
 	r.restartController(iwc)
 }
@@ -333,20 +337,20 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			// Before starting the controller, sync the repo.
 			// This is necessary for resources (usually sources or models) that reference files in the repo,
 			// and may be triggered before the project parser is triggered and syncs the repo.
-			r.logger.Info("syncing repo", zap.String("instance_id", iwc.instance.ID))
-			err := r.ensureRepoSync(iwc.ctx, iwc.instance.ID)
+			r.logger.Info("syncing repo", zap.String("instance_id", iwc.instanceID))
+			err := r.ensureRepoSync(iwc.ctx, iwc.instanceID)
 			if err != nil {
-				r.logger.Warn("failed to sync repo", zap.String("instance_id", iwc.instance.ID), zap.Error(err))
+				r.logger.Warn("failed to sync repo", zap.String("instance_id", iwc.instanceID), zap.Error(err))
 				// Even if repo sync failed, we'll start the controller
 			} else {
-				r.logger.Info("repo synced", zap.String("instance_id", iwc.instance.ID))
+				r.logger.Info("repo synced", zap.String("instance_id", iwc.instanceID))
 			}
 
 			// Start controller
-			r.logger.Info("controller starting", zap.String("instance_id", iwc.instance.ID))
-			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instance.ID, r.logger, r.activity)
+			r.logger.Info("controller starting", zap.String("instance_id", iwc.instanceID))
+			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instanceID, r.logger, r.activity)
 			if err == nil {
-				r.ensureProjectParser(iwc.ctx, iwc.instance.ID, ctrl)
+				r.ensureProjectParser(iwc.ctx, iwc.instanceID, ctrl)
 
 				r.mu.Lock()
 				iwc.controller = ctrl
@@ -354,7 +358,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 				close(iwc.readyCh)
 				r.mu.Unlock()
 
-				r.logger.Info("controller ready", zap.String("instance_id", iwc.instance.ID))
+				r.logger.Info("controller ready", zap.String("instance_id", iwc.instanceID))
 
 				err = ctrl.Run(iwc.ctx)
 			}
@@ -362,7 +366,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			iwc.cancel() // Always ensure cleanup
 
 			r.mu.Lock()
-			attrs := []zapcore.Field{zap.String("instance_id", iwc.instance.ID), zap.Error(err), zap.Bool("reopen", iwc.reopen), zap.Bool("called_run", iwc.ready)}
+			attrs := []zapcore.Field{zap.String("instance_id", iwc.instanceID), zap.Error(err), zap.Bool("reopen", iwc.reopen), zap.Bool("called_run", iwc.ready)}
 			r.mu.Unlock()
 
 			if errors.Is(err, iwc.ctx.Err()) {
@@ -375,7 +379,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			// So we want to evict all open connections for that instance, but it's unsafe to do so while the controller is running.
 			// So this is the only place where we can do it safely.
 			if r.baseCtx.Err() == nil {
-				r.rt.evictInstanceConnections(iwc.instance.ID)
+				r.rt.evictInstanceConnections(iwc.instanceID)
 			}
 
 			r.mu.Lock()
