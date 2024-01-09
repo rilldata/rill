@@ -18,7 +18,6 @@ import type {
 } from "@rilldata/web-common/lib/time/types";
 import type {
   V1ColumnTimeRangeResponse,
-  V1Expression,
   V1MetricsView,
   V1MetricsViewFilter,
   V1MetricsViewSpec,

@@ -143,6 +143,7 @@ export function getDefaultMetricsExplorerEntity(
 
     showTimeComparison: false,
     dimensionSearchText: "",
+    temporaryFilterName: null,
     pinIndex: -1,
     contextColumnWidths: { ...contextColWidthDefaults },
   };

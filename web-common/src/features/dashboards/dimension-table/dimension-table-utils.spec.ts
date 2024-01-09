@@ -2,7 +2,6 @@ import {
   createAndExpression,
   createInExpression,
   createLikeExpression,
-  createOrExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import {

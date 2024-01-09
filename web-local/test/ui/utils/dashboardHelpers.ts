@@ -15,10 +15,6 @@ export async function createDashboardFromSource(page: Page, source: string) {
 export async function createDashboardFromModel(page: Page, model: string) {
   await openEntityMenu(page, model);
   await clickMenuButton(page, "Autogenerate Dashboard");
-
-  // Change time zone to UTC for local run to be accurate
-  await page.getByLabel("Timezone selector").click();
-  await page.getByRole("menuitem", { name: "UTC GMT +00:00 Etc/UTC" }).click();
 }
 
 export async function assertLeaderboards(

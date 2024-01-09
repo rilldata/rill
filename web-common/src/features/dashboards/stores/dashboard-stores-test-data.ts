@@ -5,7 +5,6 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import {
   createAndExpression,
   createInExpression,
-  createOrExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
@@ -24,7 +23,6 @@ import {
   MetricsViewSpecMeasureV2,
   RpcStatus,
   V1Expression,
-  V1MetricsViewFilter,
   V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
