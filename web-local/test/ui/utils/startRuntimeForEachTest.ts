@@ -37,13 +37,12 @@ export function startRuntimeForEachTest() {
     });
     childProcess.on("error", console.log);
     // Runtime sometimes ends the process but still hasnt released closed the duckdb connection.
-    // So we need to manually check for "Rill shutdown gracefully" message that is sent after duckdb connection is terminated.
+    // So wait for the stdio to close. We also need to set `stdio: pipe` and forward the io
+    childProcess.on("close", () => {
+      rillShutdown = true;
+    });
     childProcess.stdout?.on("data", (chunk: Buffer) => {
       process.stdout?.write(chunk);
-      const chunkStr = chunk.toString();
-      if (chunkStr.includes("Rill shutdown gracefully")) {
-        rillShutdown = true;
-      }
     });
     childProcess.stderr?.on("data", (chunk: Buffer) => {
       process.stdout?.write(chunk);
