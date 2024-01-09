@@ -353,11 +353,6 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		}
 	}
 
-	// If we did not identify any paths to (re)parse, exit early.
-	if len(parsePaths) == 0 {
-		return &Diff{}, nil
-	}
-
 	// Phase 2: Parse (or reparse) the related paths, adding back resources
 	err := p.parsePaths(ctx, parsePaths)
 	if err != nil {
