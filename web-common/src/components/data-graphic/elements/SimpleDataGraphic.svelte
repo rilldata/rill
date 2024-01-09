@@ -39,7 +39,6 @@ A simple composable container for SVG-based data graphics.
   /** this makes a wide variety of normal events, such as on:click, available
    * to the consumer
    */
-  // const forwardAll = forwardEvents(getComponent(), []);
 </script>
 
 <GraphicContext

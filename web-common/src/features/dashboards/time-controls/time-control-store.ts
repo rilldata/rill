@@ -249,8 +249,8 @@ function calculateComparisonTimeRangePartial(
   const showComparison = Boolean(
     metricsExplorer.showTimeComparison && selectedComparisonTimeRange?.start,
   );
-  let comparisonAdjustedStart: string;
-  let comparisonAdjustedEnd: string;
+  let comparisonAdjustedStart: string | undefined = undefined;
+  let comparisonAdjustedEnd: string | undefined = undefined;
   if (showComparison && selectedComparisonTimeRange) {
     const adjustedComparisonTime = getAdjustedFetchTime(
       selectedComparisonTimeRange.start,
@@ -376,7 +376,8 @@ function getComparisonTimeRange(
 ) {
   if (!comparisonTimeRange || !timeRange.name) return undefined;
 
-  let selectedComparisonTimeRange: DashboardTimeControls;
+  let selectedComparisonTimeRange: DashboardTimeControls | undefined =
+    undefined;
   if (!comparisonTimeRange?.name) {
     const comparisonOption = DEFAULT_TIME_RANGES[
       timeRange.name as TimeComparisonOption

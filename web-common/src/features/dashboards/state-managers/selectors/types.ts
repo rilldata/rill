@@ -6,6 +6,7 @@ import type {
   V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import type { Expand } from "../types";
 
 /**
  * DashboardDataSources collects all the information about a dashboard

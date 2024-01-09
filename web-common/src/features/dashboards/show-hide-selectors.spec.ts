@@ -125,11 +125,7 @@ describe("Show/Hide Selectors", () => {
         },
       ]);
       // we have to manually call sync since in the app it is handled by a reactive statement
-      metricsExplorerStore.sync(
-        AD_BIDS_NAME,
-        AD_BIDS_WITH_DELETED_MEASURE,
-        undefined,
-      );
+      metricsExplorerStore.sync(AD_BIDS_NAME, AD_BIDS_WITH_DELETED_MEASURE);
       expect(get(showHideMeasure).availableKeys).toEqual([
         AD_BIDS_IMPRESSIONS_MEASURE,
       ]);
@@ -153,11 +149,7 @@ describe("Show/Hide Selectors", () => {
 
       mock.setMeasures(AD_BIDS_THREE_MEASURES);
       // we have to manually call sync since in the app it is handled by a reactive statement
-      metricsExplorerStore.sync(
-        AD_BIDS_NAME,
-        AD_BIDS_WITH_THREE_MEASURES,
-        undefined,
-      );
+      metricsExplorerStore.sync(AD_BIDS_NAME, AD_BIDS_WITH_THREE_MEASURES);
       expect(get(showHideMeasure).availableKeys).toEqual([
         AD_BIDS_IMPRESSIONS_MEASURE,
         AD_BIDS_BID_PRICE_MEASURE,
@@ -180,11 +172,7 @@ describe("Show/Hide Selectors", () => {
 
       mock.setMeasures(AD_BIDS_THREE_MEASURES);
       // we have to manually call sync since in the app it is handled by a reactive statement
-      metricsExplorerStore.sync(
-        AD_BIDS_NAME,
-        AD_BIDS_WITH_THREE_MEASURES,
-        undefined,
-      );
+      metricsExplorerStore.sync(AD_BIDS_NAME, AD_BIDS_WITH_THREE_MEASURES);
       expect(get(showHideMeasure).availableKeys).toEqual([
         AD_BIDS_IMPRESSIONS_MEASURE,
         AD_BIDS_BID_PRICE_MEASURE,
@@ -291,11 +279,7 @@ describe("Show/Hide Selectors", () => {
         },
       ]);
       // we have to manually call sync since in the app it is handled by a reactive statement
-      metricsExplorerStore.sync(
-        AD_BIDS_NAME,
-        AD_BIDS_WITH_DELETED_DIMENSION,
-        undefined,
-      );
+      metricsExplorerStore.sync(AD_BIDS_NAME, AD_BIDS_WITH_DELETED_DIMENSION);
       expect(get(showHideDimensions).availableKeys).toEqual([
         AD_BIDS_PUBLISHER_DIMENSION,
       ]);
@@ -320,11 +304,7 @@ describe("Show/Hide Selectors", () => {
 
       mock.setDimensions(AD_BIDS_THREE_DIMENSIONS);
       // we have to manually call sync since in the app it is handled by a reactive statement
-      metricsExplorerStore.sync(
-        AD_BIDS_NAME,
-        AD_BIDS_WITH_THREE_DIMENSIONS,
-        undefined,
-      );
+      metricsExplorerStore.sync(AD_BIDS_NAME, AD_BIDS_WITH_THREE_DIMENSIONS);
       expect(get(showHideDimensions).availableKeys).toEqual([
         AD_BIDS_PUBLISHER_DIMENSION,
         AD_BIDS_DOMAIN_DIMENSION,
@@ -352,11 +332,7 @@ describe("Show/Hide Selectors", () => {
 
       mock.setDimensions(AD_BIDS_THREE_DIMENSIONS);
       // we have to manually call sync since in the app it is handled by a reactive statement
-      metricsExplorerStore.sync(
-        AD_BIDS_NAME,
-        AD_BIDS_WITH_THREE_DIMENSIONS,
-        undefined,
-      );
+      metricsExplorerStore.sync(AD_BIDS_NAME, AD_BIDS_WITH_THREE_DIMENSIONS);
       expect(get(showHideDimensions).availableKeys).toEqual([
         AD_BIDS_PUBLISHER_DIMENSION,
         AD_BIDS_DOMAIN_DIMENSION,

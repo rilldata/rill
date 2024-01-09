@@ -125,7 +125,6 @@ export function getDefaultMetricsExplorerEntity(
 
   const metricsExplorer: MetricsExplorerEntity = {
     name,
-    selectedMeasureNames: [...defaultMeasureNames],
     visibleMeasureKeys: new Set(defaultMeasureNames),
     allMeasuresVisible: true,
     visibleDimensionKeys: new Set(defaultDimNames),

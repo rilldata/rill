@@ -9,6 +9,7 @@ import (
 
 	"github.com/XSAM/otelsql"
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
@@ -202,12 +203,12 @@ func (c *connection) DeleteOrganizationWhitelistedDomain(ctx context.Context, id
 }
 
 func (c *connection) FindProjects(ctx context.Context, afterName string, limit int) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(name) > lower($1) ORDER BY lower(p.name) LIMIT $2", afterName, limit)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error) {
@@ -222,8 +223,21 @@ func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern,
 	return res, nil
 }
 
+// FindProjectPathsByPatternAndTags returns project paths that match the pattern and have tags in the given list.
+func (c *connection) FindProjectPathsByPatternAndTags(ctx context.Context, namePattern, afterName string, tags []string, limit int) ([]string, error) {
+	var res []string
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT concat(o.name,'/',p.name) as project_name FROM projects p JOIN orgs o ON p.org_id = o.id 
+	WHERE concat(o.name,'/',p.name) ilike $1 AND concat(o.name,'/',p.name) > $2 AND p.tags @> $3
+	ORDER BY project_name 
+	LIMIT $4`, namePattern, afterName, tags, limit)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT p.* FROM projects p JOIN users_projects_roles upr ON p.id = upr.project_id
 		WHERE upr.user_id = $1
@@ -235,11 +249,11 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT p.* FROM projects p
 		WHERE p.org_id=$1 AND lower(p.name) > lower($2)
@@ -248,11 +262,11 @@ func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, aft
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT p.* FROM projects p
 		WHERE p.org_id = $1 AND lower(p.name) > lower($2) AND (p.public = true OR p.id IN (
@@ -264,11 +278,11 @@ func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userI
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT p.* FROM projects p 
 		WHERE p.org_id = $1 AND p.public = true AND lower(p.name) > lower($2)
@@ -277,43 +291,43 @@ func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) ", githubURL)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.github_installation_id=$1", id)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindProject(ctx context.Context, id string) (*database.Project, error) {
-	res := &database.Project{}
+	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM projects WHERE id=$1", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res, nil
+	return res.AsProject()
 }
 
 func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
-	res := &database.Project{}
+	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT p.* FROM projects p JOIN orgs o ON p.org_id = o.id WHERE lower(p.name)=lower($1) AND lower(o.name)=lower($2)", name, orgName).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res, nil
+	return res.AsProject()
 }
 
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
@@ -321,16 +335,16 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 		return nil, err
 	}
 
-	res := &database.Project{}
+	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO projects (org_id, name, description, public, region, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, github_url, github_installation_id, prod_ttl_seconds)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.Region, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.Region, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res, nil
+	return res.AsProject()
 }
 
 func (c *connection) DeleteProject(ctx context.Context, id string) error {
@@ -342,17 +356,20 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
+	if opts.Tags == nil {
+		opts.Tags = make([]string, 0)
+	}
 
-	res := &database.Project{}
+	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, region=$9, prod_slots=$10, prod_ttl_seconds=$11, updated_on=now()
-		WHERE id=$12 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Region, opts.ProdSlots, opts.ProdTTLSeconds, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, region=$9, prod_slots=$10, prod_ttl_seconds=$11, tags=$12, updated_on=now()
+		WHERE id=$13 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Region, opts.ProdSlots, opts.ProdTTLSeconds, opts.Tags, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res, nil
+	return res.AsProject()
 }
 
 func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
@@ -1309,6 +1326,39 @@ func (c *connection) UpdateVirtualFileDeleted(ctx context.Context, projectID, br
 func (c *connection) DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, `DELETE FROM virtual_files WHERE deleted AND updated_on + $1 < now()`, retention)
 	return parseErr("virtual files", err)
+}
+
+// projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
+type projectDTO struct {
+	*database.Project
+	ProdVariables pgtype.JSON      `db:"prod_variables"`
+	Tags          pgtype.TextArray `db:"tags"`
+}
+
+func (p *projectDTO) AsProject() (*database.Project, error) {
+	err := p.ProdVariables.AssignTo(&p.Project.ProdVariables)
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.Tags.AssignTo(&p.Project.Tags)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.Project, nil
+}
+
+func projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, error) {
+	res := make([]*database.Project, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = dto.AsProject()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {
