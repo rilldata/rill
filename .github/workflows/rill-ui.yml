@@ -1,11 +1,9 @@
 name: Build and Deploy Cloud UI to Netlify
 on:
   create:
-    branches:
-      - "release**"
   push:
     tags:
-      - "*"
+      - "**"
     branches:
       - "main"
       - "release**"
@@ -29,6 +27,8 @@ env:
 
 jobs:
   build:
+    # https://github.com/orgs/community/discussions/54860
+    if: github.event_name == "workflow_dispatch" || github.event_name == "push" || ( github.event_name == "create" && startsWith(github.ref_name, 'release') )
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
