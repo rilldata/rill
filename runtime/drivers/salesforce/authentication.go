@@ -3,7 +3,9 @@ package salesforce
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/url"
+	"os"
 
 	force "github.com/ForceCLI/force/lib"
 )
@@ -68,7 +70,17 @@ func endpoint(options authenticationOptions) (endpoint string, err error) {
 }
 
 func jwtLogin(endpoint string, options authenticationOptions) (*force.Force, error) {
-	assertion, err := force.JwtAssertionForEndpoint(endpoint, options.Username, options.JWT, options.ConnectedApp)
+	tempfile, err := ioutil.TempFile("", "")
+	if err != nil {
+		return nil, fmt.Errorf("creating tempfile to write rsa key failed: %w", err)
+	}
+	defer os.Remove(tempfile.Name())
+
+	if _, err = tempfile.WriteString(options.JWT); err != nil {
+		return nil, fmt.Errorf("writing rsa key to tempfile failed: %w", err)
+	}
+
+	assertion, err := force.JwtAssertionForEndpoint(endpoint, options.Username, tempfile.Name(), options.ConnectedApp)
 	if err != nil {
 		return nil, err
 	}
