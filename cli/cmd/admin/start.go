@@ -38,7 +38,8 @@ type Config struct {
 	DatabaseDriver           string                 `default:"postgres" split_words:"true"`
 	DatabaseURL              string                 `split_words:"true"`
 	RedisURL                 string                 `default:"" split_words:"true"`
-	ProvisionerSpec          string                 `split_words:"true"`
+	ProvisionerSet           string                 `split_words:"true"`
+	DefaultProvisioner       string                 `split_words:"true"`
 	Jobs                     []string               `split_words:"true"`
 	LogLevel                 zapcore.Level          `default:"info" split_words:"true"`
 	MetricsExporter          observability.Exporter `default:"prometheus" split_words:"true"`
@@ -186,10 +187,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			// Init admin service
 			admOpts := &admin.Options{
-				DatabaseDriver:  conf.DatabaseDriver,
-				DatabaseDSN:     conf.DatabaseURL,
-				ProvisionerSpec: conf.ProvisionerSpec,
-				ExternalURL:     conf.ExternalGRPCURL, // NOTE: using gRPC url
+				DatabaseDriver:     conf.DatabaseDriver,
+				DatabaseDSN:        conf.DatabaseURL,
+				ProvisionerSet:     conf.ProvisionerSet,
+				DefaultProvisioner: conf.DefaultProvisioner,
+				ExternalURL:        conf.ExternalGRPCURL, // NOTE: using gRPC url
+				VersionNumber:      cliCfg.Version.Number,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh)
 			if err != nil {

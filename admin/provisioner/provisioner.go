@@ -4,11 +4,24 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 
-	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/admin/database"
 )
+
+type Provisioner interface {
+	Provision(ctx context.Context, opts *ProvisionOptions) (*Allocation, error)
+	Deprovision(ctx context.Context, provisionID string) error
+	AwaitReady(ctx context.Context, provisionID string) error
+	Update(ctx context.Context, provisionID string, newVersion string) error
+}
+
+type ProvisionOptions struct {
+	ProvisionID    string
+	RuntimeVersion string
+	OLAPDriver     string
+	Slots          int
+	Annotations    map[string]string
+}
 
 type Allocation struct {
 	Host         string
@@ -19,78 +32,41 @@ type Allocation struct {
 	StorageBytes int64
 }
 
-type ProvisionOptions struct {
-	OLAPDriver string
-	Slots      int
-	Region     string
+type ProvisionerSpec struct {
+	Type string          `json:"type"`
+	Spec json.RawMessage `json:"spec"`
 }
 
-type StaticSpec struct {
-	Runtimes []*StaticRuntimeSpec `json:"runtimes"`
-}
-
-type StaticRuntimeSpec struct {
-	Host     string `json:"host"`
-	Region   string `json:"region"`
-	Slots    int    `json:"slots"`
-	DataDir  string `json:"data_dir"`
-	Audience string `json:"audience_url"`
-}
-
-type StaticProvisioner struct {
-	Spec *StaticSpec
-	db   database.DB
-}
-
-func NewStatic(spec string, db database.DB) (*StaticProvisioner, error) {
-	sps := &StaticSpec{}
-	err := json.Unmarshal([]byte(spec), sps)
+func NewSet(set string, db database.DB) (map[string]Provisioner, error) {
+	// Parse provisioner set
+	pts := map[string]ProvisionerSpec{}
+	err := json.Unmarshal([]byte(set), &pts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse provisioner spec: %w", err)
+		return nil, fmt.Errorf("failed to parse provisioner set: %w", err)
 	}
 
-	return &StaticProvisioner{
-		Spec: sps,
-		db:   db,
-	}, nil
-}
-
-func (p *StaticProvisioner) Provision(ctx context.Context, opts *ProvisionOptions) (*Allocation, error) {
-	// Get slots currently used
-	stats, err := p.db.ResolveRuntimeSlotsUsed(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	hostToSlotsUsed := make(map[string]int, len(stats))
-	for _, stat := range stats {
-		hostToSlotsUsed[stat.RuntimeHost] = stat.SlotsUsed
-	}
-
-	// Find runtime with available capacity
-	targets := make([]*StaticRuntimeSpec, 0)
-	for _, candidate := range p.Spec.Runtimes {
-		if opts.Region != "" && opts.Region != candidate.Region {
+	// Instantiate provisioners based on their type
+	ps := make(map[string]Provisioner)
+	for k, v := range pts {
+		switch v.Type {
+		case "static":
+			p, err := NewStatic(v.Spec, db)
+			if err != nil {
+				return nil, err
+			}
+			ps[k] = p
 			continue
-		}
-
-		if hostToSlotsUsed[candidate.Host]+opts.Slots <= candidate.Slots {
-			targets = append(targets, candidate)
+		case "kubernetes":
+			p, err := NewKubernetes(v.Spec)
+			if err != nil {
+				return nil, err
+			}
+			ps[k] = p
+			continue
+		default:
+			return nil, fmt.Errorf("invalid provisioner type '%s'", v.Type)
 		}
 	}
 
-	if len(targets) == 0 {
-		return nil, fmt.Errorf("no runtimes found with sufficient available slots")
-	}
-
-	// nolint:gosec // We don't need cryptographically secure random numbers
-	target := targets[rand.Intn(len(targets))]
-	return &Allocation{
-		Host:         target.Host,
-		Audience:     target.Audience,
-		DataDir:      target.DataDir,
-		CPU:          1 * opts.Slots,
-		MemoryGB:     2 * opts.Slots,
-		StorageBytes: int64(opts.Slots) * 40 * int64(datasize.GB),
-	}, nil
+	return ps, nil
 }

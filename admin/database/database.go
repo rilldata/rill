@@ -265,6 +265,7 @@ type Project struct {
 	ProdSlots            int               `db:"prod_slots"`
 	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
 	ProdDeploymentID     *string           `db:"prod_deployment_id"`
+	ProdRuntimeVersion   string            `db:"prod_runtime_version"`
 	Tags                 []string          `db:"tags"`
 	CreatedOn            time.Time         `db:"created_on"`
 	UpdatedOn            time.Time         `db:"updated_on"`
@@ -319,6 +320,8 @@ const (
 type Deployment struct {
 	ID                string           `db:"id"`
 	ProjectID         string           `db:"project_id"`
+	Provisioner       string           `db:"provisioner"`
+	RuntimeVersion    string           `db:"runtime_version"`
 	Slots             int              `db:"slots"`
 	Branch            string           `db:"branch"`
 	RuntimeHost       string           `db:"runtime_host"`
@@ -334,6 +337,8 @@ type Deployment struct {
 // InsertDeploymentOptions defines options for inserting a new Deployment.
 type InsertDeploymentOptions struct {
 	ProjectID         string
+	Provisioner       string
+	RuntimeVersion    string
 	Slots             int
 	Branch            string `validate:"required"`
 	RuntimeHost       string `validate:"required"`
