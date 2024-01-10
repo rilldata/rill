@@ -4,11 +4,17 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/eapache/go-resiliency/retrier"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/common"
+)
+
+const (
+	numRetries = 3
+	retryWait  = 300 * time.Millisecond
 )
 
 var _ drivers.OLAPStore = &connection{}
@@ -80,17 +86,11 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	var rows *sqlx.Rows
 	var err error
 
-	err = common.Retry(
-		ctx,
-		func() error {
-			rows, err = c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)
-			return err
-		},
-		func(err error) bool {
-			// there is no standard sql error code for capacity exceeded, so we have to check the error message
-			return strings.Contains(err.Error(), "QueryCapacityExceededException")
-		},
-		3) // retry query upto 3 times if capacity is exceeded
+	re := retrier.New(retrier.ExponentialBackoff(numRetries, retryWait), retryErrClassifier{})
+	err = re.RunCtx(ctx, func(ctx2 context.Context) error {
+		rows, err = c.db.QueryxContext(ctx2, stmt.Query, stmt.Args...)
+		return err
+	})
 
 	if err != nil {
 		if cancelFunc != nil {
@@ -316,4 +316,19 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	}
 
 	return t, nil
+}
+
+// retryErrClassifier classifies 429 errors as retryable and all other errors as non retryable
+type retryErrClassifier struct{}
+
+func (retryErrClassifier) Classify(err error) retrier.Action {
+	if err == nil {
+		return retrier.Succeed
+	}
+
+	if strings.Contains(err.Error(), "QueryCapacityExceededException") {
+		return retrier.Retry
+	}
+
+	return retrier.Fail
 }
