@@ -33,12 +33,18 @@ import {
   MetricsViewSpecComparisonMode,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 describe("dashboard-stores", () => {
   beforeAll(() => {
     initLocalUserPreferenceStore(AD_BIDS_NAME);
+    runtime.set({
+      instanceId: "",
+      jwt: "",
+      host: "",
+    });
   });
 
   beforeEach(() => {
@@ -146,13 +152,14 @@ describe("dashboard-stores", () => {
 
   it("Select different measure", () => {
     const mock = createMetricsMetaQueryMock();
+    const { stateManagers } = initStateManagers();
+    const {
+      actions: { setLeaderboardMeasureName },
+    } = stateManagers;
     assertMetricsView(AD_BIDS_NAME);
 
     // select a different leaderboard measure
-    metricsExplorerStore.setLeaderboardMeasureName(
-      AD_BIDS_NAME,
-      AD_BIDS_BID_PRICE_MEASURE,
-    );
+    setLeaderboardMeasureName(AD_BIDS_BID_PRICE_MEASURE);
     assertMetricsView(
       AD_BIDS_NAME,
       undefined,
@@ -311,10 +318,11 @@ describe("dashboard-stores", () => {
 
     it("Restore invalid leaderboard measure", () => {
       const mock = createMetricsMetaQueryMock();
-      metricsExplorerStore.setLeaderboardMeasureName(
-        AD_BIDS_NAME,
-        AD_BIDS_BID_PRICE_MEASURE,
-      );
+      const { stateManagers } = initStateManagers();
+      const {
+        actions: { setLeaderboardMeasureName },
+      } = stateManagers;
+      setLeaderboardMeasureName(AD_BIDS_BID_PRICE_MEASURE);
 
       // create a mirror from state
       createAdBidsMirrorInStore(get(mock).data);
