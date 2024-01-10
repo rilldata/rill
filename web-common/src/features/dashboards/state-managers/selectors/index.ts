@@ -1,3 +1,4 @@
+import { measureFilterSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import type {
   RpcStatus,
   V1MetricsViewSpec,
@@ -80,7 +81,7 @@ export const createStateManagerReadables = (
     ),
 
     /**
-     * Readables related to the dimension dimension.
+     * Readables related to the dimension table.
      *
      * These are valid when the dimension table is visible, and
      * should only be used from within dimension table components.
@@ -91,12 +92,20 @@ export const createStateManagerReadables = (
     ),
 
     /**
-     * Readables related to selected (aka "filtered)
+     * Readables related to selected (aka "filtered")
      * dimension values in the leaderboard, including
      * whether or not a dimension is in include or exclude mode.
      */
     dimensionFilters: createReadablesFromSelectors(
       dimensionFilterSelectors,
+      dashboardDataReadables,
+    ),
+
+    /**
+     * Readables related to measure filters applied to a dimension leaderboard.
+     */
+    measureFilters: createReadablesFromSelectors(
+      measureFilterSelectors,
       dashboardDataReadables,
     ),
 

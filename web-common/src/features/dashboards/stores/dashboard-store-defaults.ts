@@ -136,6 +136,7 @@ export function getDefaultMetricsExplorerEntity(
     },
     whereFilter: createAndExpression([]),
     havingFilter: createAndExpression([]),
+    dimensionThresholdFilters: [],
     dimensionFilterExcludeMode: new Map(),
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
     dashboardSortType: SortType.VALUE,

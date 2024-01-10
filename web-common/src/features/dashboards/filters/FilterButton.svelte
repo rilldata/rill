@@ -5,15 +5,19 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import SearchableFilterDropdown from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterDropdown.svelte";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import { getDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+  import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
 </script>
 
 <script lang="ts">
+  import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+
   const {
     selectors: {
       dimensions: { allDimensions },
       dimensionFilters: { dimensionHasFilter },
+      measures: { allMeasures },
+      measureFilters: { measureHasFilter },
     },
     actions: {
       filters: { setTemporaryFilterName },
@@ -22,11 +26,22 @@
 
   $: selectableGroups = [
     <SearchableFilterSelectableGroup>{
+      name: "MEASURES",
+      items:
+        $allMeasures
+          ?.map((m) => ({
+            name: m.name as string,
+            label: getMeasureDisplayName(m),
+          }))
+          .filter((m) => !$measureHasFilter(m.name)) ?? [],
+    },
+    <SearchableFilterSelectableGroup>{
+      name: "DIMENSIONS",
       items:
         $allDimensions
           ?.map((d) => ({
             name: d.name as string,
-            label: getDisplayName(d),
+            label: getDimensionDisplayName(d),
           }))
           .filter((d) => !$dimensionHasFilter(d.name)) ?? [],
     },

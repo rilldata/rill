@@ -209,6 +209,7 @@ export function createDashboardState(
 
     whereFilter,
     havingFilter: createAndExpression([]),
+    dimensionThresholdFilters: [],
     dimensionFilterExcludeMode: new Map(),
 
     leaderboardMeasureName: metrics.measures?.[0]?.name ?? "",
