@@ -18,25 +18,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// Forceable represents an object which can talk to salesforce
-type Forceable interface {
-	CreateBulkJobWithContext(ctx context.Context, jobInfo force.JobInfo, requestOptions ...func(*http.Request)) (force.JobInfo, error)
-	BulkQueryWithContext(ctx context.Context, soql string, jobID string, contentType string, requestOptions ...func(*http.Request)) (force.BatchInfo, error)
-	CloseBulkJobWithContext(context context.Context, jobID string) (force.JobInfo, error)
-	GetJobInfoWithContext(ctx context.Context, jobID string) (force.JobInfo, error)
-	GetBatchesWithContext(ctx context.Context, jobID string) ([]force.BatchInfo, error)
-	GetBatchInfoWithContext(ctx context.Context, jobID string, batchID string) (force.BatchInfo, error)
-	RetrieveBulkQueryWithContext(ctx context.Context, jobID string, batchID string) ([]byte, error)
-	RetrieveBulkJobQueryResultsWithCallbackWithContext(ctx context.Context, job force.JobInfo, batchID string, resultID string, callback force.HttpCallback) error
-}
-
 type batchResult struct {
 	batch    *force.BatchInfo
 	resultID string
 }
 
 type bulkJob struct {
-	session    Forceable
+	session    *force.Force
 	objectName string
 	query      string
 	job        force.JobInfo
@@ -54,7 +42,7 @@ func (j *bulkJob) RecordReader(in io.Reader) record_reader.RecordReader {
 	return record_reader.NewCsv(in, &record_reader.Options{GroupSize: 100})
 }
 
-func makeBulkJob(session Forceable, objectName, query string, queryAll bool, logger *zap.Logger) *bulkJob {
+func makeBulkJob(session *force.Force, objectName, query string, queryAll bool, logger *zap.Logger) *bulkJob {
 	pkChunkSize := 100000
 	contentType := force.JobContentTypeCsv
 	operation := "query"
@@ -260,7 +248,7 @@ func readAndWriteBody(ctx context.Context, j *bulkJob, httpBody io.Reader, w io.
 
 // Get all of the results for a batch.  Most batches have one results, but
 // large batches can be split into multiple result files.
-func getBatchResults(ctx context.Context, session Forceable, job force.JobInfo, batch force.BatchInfo) ([]batchResult, error) {
+func getBatchResults(ctx context.Context, session *force.Force, job force.JobInfo, batch force.BatchInfo) ([]batchResult, error) {
 	var resultIDs []string
 	var results []batchResult
 	jobInfo, err := session.RetrieveBulkQueryWithContext(ctx, job.Id, batch.Id)
