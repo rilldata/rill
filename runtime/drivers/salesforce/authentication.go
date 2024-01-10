@@ -26,7 +26,10 @@ func authenticate(options authenticationOptions) (*force.Force, error) {
 	}
 	force.ClientId = options.ConnectedApp
 
-	isUsernameSelected := len(options.Username) > 0
+	if options.Username == "" {
+		return nil, fmt.Errorf("username missing")
+	}
+
 	isJWTSelected := len(options.JWT) > 0
 	isSOAPSelected := len(options.Password) > 0
 
@@ -40,8 +43,6 @@ func authenticate(options authenticationOptions) (*force.Force, error) {
 		return jwtLogin(endpoint, options)
 	case isSOAPSelected:
 		return soapLoginAtEndpoint(endpoint, options.Username, options.Password)
-	case !isUsernameSelected:
-		return nil, fmt.Errorf("username missing")
 	}
 	return nil, fmt.Errorf("unable to authenticate")
 }
