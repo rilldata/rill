@@ -1,6 +1,5 @@
 import { shortScaleSuffixIfAvailableForStr } from "../utils/short-scale-suffixes";
 import {
-  FormatterOptionsCommon,
   NumberParts,
   Formatter,
   NumberKind,
@@ -9,13 +8,10 @@ import {
 import { numStrToParts } from "../utils/number-parts-utils";
 
 export class NonFormatter implements Formatter {
-  options: FormatterOptionsCommon & FormatterOptionsNoneStrategy;
+  options: FormatterOptionsNoneStrategy;
   initialSample: number[];
 
-  constructor(
-    sample: number[],
-    options: FormatterOptionsCommon & FormatterOptionsNoneStrategy,
-  ) {
+  constructor(sample: number[], options: FormatterOptionsNoneStrategy) {
     this.options = options;
     this.initialSample = sample;
   }

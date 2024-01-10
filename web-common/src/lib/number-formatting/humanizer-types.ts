@@ -119,12 +119,44 @@ export type NumberParts = {
   approxZero?: boolean;
 };
 
+export type FormatterOptionsCommon = {
+  // Options common to all strategies
+
+  // max number of digits to be shown for formatted numbers
+  // maxTotalDigits: number;
+
+  // The kind of number being formatted
+  numberKind: NumberKind;
+
+  // If true, pad numbers with insignificant zeros in order
+  // to have a consistent number of digits to the right of the
+  // decimal point
+  padWithInsignificantZeros?: boolean;
+
+  // method for formatting exact zeros
+  // "none": don't do anything special.
+  // Ex: If the general option padWithInsignificantZeros is used such
+  // that e.g. a 0 is rendered as "0.000", then if
+  // this option is "none", the trailing zeros will be retained
+  // "trailingDot": add a trailing decimal point to exact zeros "0."
+  // "zeroOnly": render exact zeros as "0"
+  // zeroHandling: "none" | "trailingDot" | "zeroOnly";
+
+  // pxWidthLookupFn?: PxWidthLookupFn;
+
+  // not actually used for formatting, but needed to calculate the
+  // px sizes of maxWidthsInSample and maxWidthsPossible
+  // alignDecimal?: boolean;
+
+  // If `true`, use upper case "E" for exponential notation;
+  // If `false` or `undefined`, use lower case
+  upperCaseEForExponent?: boolean;
+};
+
 /**
  * This is a no-op strategy that
  */
-export type FormatterOptionsNoneStrategy = {
-  strategy: "none";
-};
+export type FormatterOptionsNoneStrategy = FormatterOptionsCommon;
 
 /**
  * Strategy for handling numbers that are guaranteed to be an
@@ -140,19 +172,10 @@ export type FormatterOptionsNoneStrategy = {
  * or log a warning if a of a non integer multiple of a power
  * of ten given as an input.
  */
-export type FormatterOptionsIntTimesPowerOfTenStrategy = {
-  strategy: "singleDigitTimesPowerOfTen";
-  onInvalidInput?: "doNothing" | "throw" | "consoleWarn";
-};
-
-/**
- * The "default" strategy actaully delegates to a set of
- * pre-defined FormatterRangeSpecsStrategies, one for
- * each of the three NumberKinds currently supported.
- */
-export type FormatterOptionsDefaultStrategy = {
-  strategy: "default";
-};
+export type FormatterOptionsIntTimesPowerOfTenStrategy =
+  FormatterOptionsCommon & {
+    onInvalidInput?: "doNothing" | "throw" | "consoleWarn";
+  };
 
 /**
  * Specifies a set of formatting options for numbers within
@@ -248,88 +271,13 @@ export type FormatterRangeSpecsStrategy = {
   defaultMaxDigitsRight: number;
 };
 
-// FIXME: These strategies still need production grade implementation.
-// If we decide not to implement these strategis for production,
-// this code can be removed.
-// export type FormatterOptionsLargestMag = {
-//   // options specific to the largestMagnitude strategy
-//   strategy: "largestMagnitude";
-// };
-// export type FormatterOptionsDigitBudget = {
-//   // options specific to the multipleMagnitudes strategy
-//   strategy: "digitBudget";
-//   maxDigitsLeft: number;
-//   maxDigitsRight: number;
-//   minDigitsNonzero: number;
-
-//   // Method for showing that non-integers have a fractional
-//   // part if they would otherwise be rounded such that they
-//   // have no fractional digits.
-//   // "none": don't do anything special.
-//   // Ex: 21379.23 with max 5 digits would be "21379"
-//   // "trailingDot": add a trailing decimal point if a non-integer
-//   // would be truncated to the e0 digit.
-//   // Ex: 21379.23 with max 5 digits would be "21379."
-//   // "reserveDigit": Always reserve one digit from the max digit
-//   // budget to show a digit of precision after the decimal point.
-//   // Ex: 21379.23 with max 5 digits would require an order of mag
-//   // suffix, e.g. "21.379 k"; or with max 6 digits "21379.2"
-//   nonIntHandling: "none" | "trailingDot" | "reserveDigit";
-// };
-
-export type FormatterOptionsCommon = {
-  // Options common to all strategies
-
-  // max number of digits to be shown for formatted numbers
-  // maxTotalDigits: number;
-
-  // The kind of number being formatted
-  numberKind: NumberKind;
-
-  // If true, pad numbers with insignificant zeros in order
-  // to have a consistent number of digits to the right of the
-  // decimal point
-  padWithInsignificantZeros?: boolean;
-
-  // method for formatting exact zeros
-  // "none": don't do anything special.
-  // Ex: If the general option padWithInsignificantZeros is used such
-  // that e.g. a 0 is rendered as "0.000", then if
-  // this option is "none", the trailing zeros will be retained
-  // "trailingDot": add a trailing decimal point to exact zeros "0."
-  // "zeroOnly": render exact zeros as "0"
-  // zeroHandling: "none" | "trailingDot" | "zeroOnly";
-
-  // pxWidthLookupFn?: PxWidthLookupFn;
-
-  // not actually used for formatting, but needed to calculate the
-  // px sizes of maxWidthsInSample and maxWidthsPossible
-  // alignDecimal?: boolean;
-
-  // If `true`, use upper case "E" for exponential notation;
-  // If `false` or `undefined`, use lower case
-  upperCaseEForExponent?: boolean;
-};
-
-export type FormatterFactoryOptions = (
+export type FormatterFactoryOptions =
   | FormatterOptionsNoneStrategy
-  // FIXME: These strategies still need production grade implementation.
-  // If we decide not to implement these strategis for production,
-  // this code can be removed.
-  // | FormatterOptionsDigitBudget
-  // | FormatterOptionsLargestMag
-  | FormatterOptionsIntTimesPowerOfTenStrategy
-  | FormatterRangeSpecsStrategy
-  | FormatterOptionsDefaultStrategy
-) &
-  FormatterOptionsCommon;
+  | FormatterRangeSpecsStrategy;
 
 export type NumPartPxWidthLookupFn = (str: string, isNumStr: boolean) => number;
 
-export type FormatterFactory = (
-  sample: number[],
-  options: FormatterFactoryOptions,
-) => Formatter;
+export type FormatterFactory = (options: FormatterFactoryOptions) => Formatter;
 
 export interface Formatter {
   options: FormatterFactoryOptions;

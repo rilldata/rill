@@ -44,7 +44,7 @@ export const closeToIntTimesPowerOfTen = (x: number) =>
  * of ten given as an input.
  */
 export class SingleDigitTimesPowerOfTenFormatter implements Formatter {
-  options: FormatterOptionsCommon & FormatterOptionsIntTimesPowerOfTenStrategy;
+  options: FormatterOptionsIntTimesPowerOfTenStrategy;
   initialSample: number[];
 
   constructor(

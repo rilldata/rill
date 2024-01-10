@@ -1,68 +1,71 @@
-import { Formatter, FormatterFactory, NumberKind } from "./humanizer-types";
-import { SingleDigitTimesPowerOfTenFormatter } from "./strategies/SingleDigitTimesPowerOfTen";
-import { NonFormatter } from "./strategies/none";
-import { IntervalFormatter } from "./strategies/intervals";
-import { PerRangeFormatter } from "./strategies/per-range";
-import {
-  defaultDollarOptions,
-  defaultGenericNumOptions,
-  defaultPercentOptions,
-} from "./strategies/per-range-default-options";
+// import { Formatter, FormatterFactory, NumberKind } from "./humanizer-types";
+// import { NonFormatter } from "./strategies/none";
+// import { IntervalFormatter } from "./strategies/intervals";
+// import { PerRangeFormatter } from "./strategies/per-range";
+// import {
+//   defaultDollarOptions,
+//   defaultGenericNumOptions,
+//   defaultPercentOptions,
+// } from "./strategies/per-range-default-options";
 
-/**
- * This FormatterFactory is intended to be the user-facing
- * wrapper for formatters. This fumction delegates to a number
- * of different formatters depending upon the options
- * used, but by going through this wrapper those details
- * can be somewhat abstracted away in favor of config
- * options.
- *
- * @param sample
- * @param options
- * @returns Formatter
- */
-export const humanizedFormatterFactory: FormatterFactory = (
-  sample: number[],
-  options,
-): Formatter => {
-  let formatter: Formatter;
+// /**
+//  * This FormatterFactory is intended to be the user-facing
+//  * wrapper for formatters. This fumction delegates to a number
+//  * of different formatters depending upon the options
+//  * used, but by going through this wrapper those details
+//  * can be somewhat abstracted away in favor of config
+//  * options.
+//  *
+//  * @param sample
+//  * @param options
+//  * @returns Formatter
+//  */
+// export const humanizedFormatterFactory: FormatterFactory = (
+//   options,
+// ): Formatter => {
+//   let formatter: Formatter;
 
-  switch (options.strategy) {
-    case "none":
-      formatter = new NonFormatter(sample, options);
-      break;
+//   switch (options.strategy) {
+//     case "none":
+//       formatter = new NonFormatter(sample, options);
+//       break;
 
-    case "default":
-      // default strategy simply
-      // delegates to the range strategy formatter with
-      // appropriate default presets for NumberKind
-      switch (options.numberKind) {
-        case NumberKind.DOLLAR:
-          formatter = new PerRangeFormatter(sample, defaultDollarOptions);
-          break;
-        case NumberKind.PERCENT:
-          formatter = new PerRangeFormatter(sample, defaultPercentOptions);
-          break;
-        case NumberKind.INTERVAL:
-          formatter = new IntervalFormatter();
-          break;
-        default:
-          formatter = new PerRangeFormatter(sample, defaultGenericNumOptions);
-          break;
-      }
-      break;
+//     case "default":
+//       // default strategy simply
+//       // delegates to the range strategy formatter with
+//       // appropriate default presets for NumberKind
+//       switch (options.numberKind) {
+//         case NumberKind.DOLLAR:
+//           formatter = new PerRangeFormatter(sample, defaultDollarOptions);
+//           break;
+//         case NumberKind.EURO:
+//           formatter = new PerRangeFormatter(sample, defaultDollarOptions);
+//           break;
+//         case NumberKind.PERCENT:
+//           formatter = new PerRangeFormatter(sample, defaultPercentOptions);
+//           break;
+//         case NumberKind.INTERVAL:
+//           formatter = new IntervalFormatter();
+//           break;
+//         case NumberKind.ANY:
+//           formatter = new PerRangeFormatter(sample, defaultGenericNumOptions);
+//           break;
+//         default:
+//           console.warn(
+//             "Unknown number kind, using default formatter. All number kinds should be handled.",
+//           );
+//           formatter = new PerRangeFormatter(sample, defaultGenericNumOptions);
+//           break;
+//       }
+//       break;
 
-    case "singleDigitTimesPowerOfTen":
-      formatter = new SingleDigitTimesPowerOfTenFormatter(sample, options);
-      break;
+//     default:
+//       console.warn(
+//         `Number formatter strategy "${options.strategy}" is not implemented, using default strategy`,
+//       );
+//       formatter = new PerRangeFormatter(sample, defaultGenericNumOptions);
+//       break;
+//   }
 
-    default:
-      console.warn(
-        `Number formatter strategy "${options.strategy}" is not implemented, using default strategy`,
-      );
-      formatter = new PerRangeFormatter(sample, defaultGenericNumOptions);
-      break;
-  }
-
-  return formatter;
-};
+//   return formatter;
+// };
