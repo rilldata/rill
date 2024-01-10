@@ -27,7 +27,7 @@ export function toComparisonKeys(d, offsetDuration: string, zone: string) {
         acc[`comparison.${key}`] = value;
       });
     } else if (`comparison.${key}` === "comparison.ts") {
-      acc[`comparison.${key}`] = adjustOffsetForZone(d[key], zone);
+      acc[`comparison.${key}`] = new Date(d[key]);
       acc["comparison.ts_position"] = getOffset(
         acc["comparison.ts"],
         offsetDuration,
@@ -49,7 +49,7 @@ export function prepareTimeSeries(
   return original?.map((originalPt, i) => {
     const comparisonPt = comparison?.[i];
 
-    const ts = adjustOffsetForZone(originalPt.ts, zone);
+    const ts = new Date(originalPt.ts);
     const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
     const ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
     return {

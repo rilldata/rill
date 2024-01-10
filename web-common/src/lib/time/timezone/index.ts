@@ -1,6 +1,10 @@
 import { timeZoneNameToAbbreviationMap } from "@rilldata/web-common/lib/time/timezone/abbreviationMap";
 import { DateTime } from "luxon";
 
+export function toFormat(dt: Date, zone: string, format: string) {
+  return DateTime.fromJSDate(dt).setZone(zone).toFormat(format);
+}
+
 export function removeLocalTimezoneOffset(dt: Date) {
   return new Date(dt.getTime() + dt.getTimezoneOffset() * 60000);
 }

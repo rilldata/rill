@@ -114,15 +114,8 @@
 
   // FIXME: move this logic to a function + write tests.
   $: if ($timeControlsStore.ready) {
-    // adjust scrub values for Javascript's timezone changes
-    scrubStart = adjustOffsetForZone(
-      $dashboardStore?.selectedScrubRange?.start,
-      $dashboardStore?.selectedTimezone,
-    );
-    scrubEnd = adjustOffsetForZone(
-      $dashboardStore?.selectedScrubRange?.end,
-      $dashboardStore?.selectedTimezone,
-    );
+    scrubStart = $dashboardStore?.selectedScrubRange?.start;
+    scrubEnd = $dashboardStore?.selectedScrubRange?.end;
 
     const slicedData =
       $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME

@@ -167,23 +167,18 @@
     if (isScrubbing) return;
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
-    const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
-    const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
     metricsExplorerStore.setSelectedTimeRange(metricViewName, {
       name: TimeRangePreset.CUSTOM,
-      start: adjustedStart,
-      end: adjustedEnd,
+      start: start,
+      end: end,
     });
   }
 
   function updateScrub(start, end, isScrubbing) {
-    const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
-    const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
-
     metricsExplorerStore.setSelectedScrubRange(metricViewName, {
-      start: adjustedStart,
-      end: adjustedEnd,
+      start: start,
+      end: end,
       isScrubbing: isScrubbing,
     });
   }
