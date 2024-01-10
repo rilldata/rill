@@ -32,6 +32,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 	} else {
 		return nil, fmt.Errorf("the property 'username' is required for Salesforce. Provide 'username' in the YAML properties or pass '--env connector.salesforce.username=...' to 'rill start'")
 	}
+
 	if srcProps.Endpoint != "" { // get from src properties
 		endpoint = srcProps.Endpoint
 	} else if e, ok := c.config["endpoint"].(string); ok && e != "" { // get from driver configs
@@ -39,6 +40,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 	} else {
 		return nil, fmt.Errorf("the property 'endpoint' is required for Salesforce. Provide 'endpoint' in the YAML properties or pass '--env connector.salesforce.endpoint=...' to 'rill start'")
 	}
+
 	if srcProps.ClientID != "" { // get from src properties
 		clientID = srcProps.ClientID
 	} else if c, ok := c.config["client_id"].(string); ok && c != "" { // get from driver configs
@@ -46,11 +48,13 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 	} else {
 		clientID = defaultClientID
 	}
+
 	if srcProps.Password != "" { // get from src properties
 		password = srcProps.Password
 	} else if p, ok := c.config["password"].(string); ok && p != "" { // get from driver configs
 		password = p
 	}
+
 	if srcProps.Key != "" { // get from src properties
 		key = srcProps.Key
 	} else if k, ok := c.config["key"].(string); ok && k != "" { // get from driver configs
