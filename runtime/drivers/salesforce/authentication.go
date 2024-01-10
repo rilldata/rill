@@ -3,7 +3,6 @@ package salesforce
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 
@@ -71,7 +70,7 @@ func endpoint(options authenticationOptions) (endpoint string, err error) {
 }
 
 func jwtLogin(endpoint string, options authenticationOptions) (*force.Force, error) {
-	tempfile, err := ioutil.TempFile("", "")
+	tempfile, err := os.CreateTemp("", "")
 	if err != nil {
 		return nil, fmt.Errorf("creating tempfile to write rsa key failed: %w", err)
 	}
