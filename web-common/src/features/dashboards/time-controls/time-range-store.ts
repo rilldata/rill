@@ -23,8 +23,8 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import {
   RpcStatus,
-  V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
@@ -41,7 +41,7 @@ export function timeRangeSelectionsSelector([
   explorer,
 ]: [
   QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
-  QueryObserverResult<V1ColumnTimeRangeResponse, unknown>,
+  QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   MetricsExplorerEntity,
 ]): TimeRangeControlsState {
   if (!metricsView.data || !timeRangeResponse?.data?.timeRangeSummary)
@@ -119,7 +119,7 @@ export function timeComparisonOptionsSelector([
   selectedTimeRange,
 ]: [
   QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
-  QueryObserverResult<V1ColumnTimeRangeResponse, unknown>,
+  QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   MetricsExplorerEntity,
   DashboardTimeControls | undefined,
 ]): Array<{

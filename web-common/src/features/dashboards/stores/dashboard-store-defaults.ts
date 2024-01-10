@@ -16,8 +16,8 @@ import { ISODurationToTimePreset } from "@rilldata/web-common/lib/time/ranges";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import type {
-  V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import { MetricsViewSpecComparisonMode } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
@@ -25,7 +25,7 @@ import { get } from "svelte/store";
 export function setDefaultTimeRange(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined,
+  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   // This function implementation mirrors some code in the metricsExplorer.init() function
   if (!fullTimeRange) return;
@@ -52,7 +52,7 @@ export function setDefaultTimeRange(
 function setDefaultComparison(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined,
+  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   switch (metricsView.defaultComparisonMode) {
     case MetricsViewSpecComparisonMode.COMPARISON_MODE_DIMENSION:
@@ -76,7 +76,7 @@ function setDefaultComparison(
 function setDefaultComparisonTimeRange(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined,
+  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   if (!fullTimeRange) return;
 
@@ -109,7 +109,7 @@ function setDefaultComparisonTimeRange(
 export function getDefaultMetricsExplorerEntity(
   name: string,
   metricsView: V1MetricsViewSpec,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined,
+  fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ): MetricsExplorerEntity {
   // CAST SAFETY: safe b/c (1) measure.name is a string if defined,
   // and (2) we filter out undefined values

@@ -17,13 +17,13 @@ import type {
   TimeRange,
 } from "@rilldata/web-common/lib/time/types";
 import type {
-  V1ColumnTimeRangeResponse,
   V1MetricsView,
   V1MetricsViewFilter,
   V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import { derived, Readable, writable } from "svelte/store";
+import { Readable, derived, writable } from "svelte/store";
 import {
   SortDirection,
   SortType,
@@ -161,7 +161,7 @@ const metricViewReducers = {
   init(
     name: string,
     metricsView: V1MetricsViewSpec,
-    fullTimeRange: V1ColumnTimeRangeResponse | undefined,
+    fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
   ) {
     update((state) => {
       if (state.entities[name]) return state;
@@ -517,9 +517,7 @@ const metricViewReducers = {
         const filtersIn = filters[dimensionEntryIndex].in;
         if (filtersIn === undefined) return;
 
-        const index = filtersIn?.findIndex(
-          (value) => value === dimensionValue,
-        ) as number;
+        const index = filtersIn?.findIndex((value) => value === dimensionValue);
         if (index >= 0) {
           filtersIn?.splice(index, 1);
           if (filtersIn.length === 0) {
