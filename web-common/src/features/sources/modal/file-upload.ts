@@ -33,7 +33,7 @@ export async function* uploadTableFiles(
   if (!files?.length) return;
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
 
-  let lastTableName: string;
+  let lastTableName: string | undefined = undefined;
 
   for (const validFile of validFiles) {
     // check if the file is already present. get the file and

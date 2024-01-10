@@ -289,6 +289,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			rt := newTestRuntime(t)
 			ctx := context.Background()

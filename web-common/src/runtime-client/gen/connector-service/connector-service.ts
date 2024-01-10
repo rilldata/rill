@@ -41,6 +41,10 @@ import type {
 import { httpClient } from "../../http-client";
 import type { ErrorType } from "../../http-client";
 
+type AwaitedInput<T> = PromiseLike<T> | T;
+
+type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+
 /**
  * @summary BigQueryListDatasets list all datasets in a bigquery project
  */

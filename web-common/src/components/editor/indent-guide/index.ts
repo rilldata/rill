@@ -40,7 +40,8 @@ export const indentGuide = () =>
       /** Creates a Monaco-like indent */
       decorationsFromLine(lineNumber) {
         const line = this.view.state.doc.line(lineNumber);
-        const indent = /^\s*/.exec(line.text)[0];
+        // empty string if no whitespace at start of line
+        const indent = /^\s*/.exec(line.text)?.[0] ?? "";
         const indentSize = indent.length;
         const decorations = [];
 

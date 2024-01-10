@@ -39,7 +39,7 @@ interface NotificationOptions {
 
 function createNotificationStore(): NotificationStore {
   const _notification = writable({} as NotificationMessage);
-  let timeout: ReturnType<typeof setTimeout>;
+  let timeout: ReturnType<typeof setTimeout> | undefined = undefined;
 
   function send({
     message,
