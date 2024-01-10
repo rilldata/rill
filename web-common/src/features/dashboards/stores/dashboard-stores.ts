@@ -78,10 +78,6 @@ function syncMeasures(
   } else if (!metricsView.measures.length) {
     metricsExplorer.leaderboardMeasureName = undefined;
   }
-  // TODO: how does this differ from visibleMeasureKeys?
-  metricsExplorer.selectedMeasureNames = metricsView.measures.map(
-    (measure) => measure.name
-  );
 
   if (metricsExplorer.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
@@ -235,7 +231,18 @@ const metricViewReducers = {
     });
   },
 
+  /**
+   * DEPRECATED!!!
+   * use setLeaderboardMeasureName via:
+   * getStateManagers().actions.setLeaderboardMeasureName
+   *
+   * Still used in tests, so we can't remove it yet, but don't use
+   * it in production code.
+   */
   setLeaderboardMeasureName(name: string, measureName: string) {
+    console.warn(
+      "setLeaderboardMeasureName is deprecated. Use setLeaderboardMeasureName via `getStateManagers().actions.setLeaderboardMeasureName`. Still used in tests, so we can't remove it yet, but don't use it in production code."
+    );
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.leaderboardMeasureName = measureName;
     });

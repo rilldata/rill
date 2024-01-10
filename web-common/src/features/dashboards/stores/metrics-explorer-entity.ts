@@ -1,5 +1,5 @@
-import type { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type {
   SortDirection,
   SortType,
@@ -12,10 +12,6 @@ import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
 
 export interface MetricsExplorerEntity {
   name: string;
-  /**
-   * selected measure names to be shown
-   */
-  selectedMeasureNames: Array<string>;
 
   /**
    * This array controls which measures are visible in
@@ -131,6 +127,13 @@ export interface MetricsExplorerEntity {
   leaderboardContextColumn: LeaderboardContextColumn;
 
   /**
+   * Width of each context column. Needs to be reset to default
+   * when changing context column or switching between leaderboard
+   * and dimension detail table
+   */
+  contextColumnWidths: ContextColWidths;
+
+  /**
    * The name of the dimension that is currently shown in the dimension
    * detail table. If this is undefined, then the dimension detail table
    * is not shown.
@@ -141,3 +144,15 @@ export interface MetricsExplorerEntity {
 
   proto?: string;
 }
+
+export type ContextColWidths = {
+  [LeaderboardContextColumn.DELTA_ABSOLUTE]: number;
+  [LeaderboardContextColumn.DELTA_PERCENT]: number;
+  [LeaderboardContextColumn.PERCENT]: number;
+};
+
+export const contextColWidthDefaults: ContextColWidths = {
+  [LeaderboardContextColumn.DELTA_ABSOLUTE]: 56,
+  [LeaderboardContextColumn.DELTA_PERCENT]: 44,
+  [LeaderboardContextColumn.PERCENT]: 44,
+};

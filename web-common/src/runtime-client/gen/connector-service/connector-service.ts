@@ -41,12 +41,16 @@ import type {
 import { httpClient } from "../../http-client";
 import type { ErrorType } from "../../http-client";
 
+type AwaitedInput<T> = PromiseLike<T> | T;
+
+type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+
 /**
  * @summary BigQueryListDatasets list all datasets in a bigquery project
  */
 export const connectorServiceBigQueryListDatasets = (
   params?: ConnectorServiceBigQueryListDatasetsParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1BigQueryListDatasetsResponse>({
     url: `/v1/bigquery/datasets`,
@@ -57,14 +61,14 @@ export const connectorServiceBigQueryListDatasets = (
 };
 
 export const getConnectorServiceBigQueryListDatasetsQueryKey = (
-  params?: ConnectorServiceBigQueryListDatasetsParams
+  params?: ConnectorServiceBigQueryListDatasetsParams,
 ) => {
   return [`/v1/bigquery/datasets`, ...(params ? [params] : [])] as const;
 };
 
 export const getConnectorServiceBigQueryListDatasetsQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceBigQueryListDatasets>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceBigQueryListDatasetsParams,
   options?: {
@@ -73,7 +77,7 @@ export const getConnectorServiceBigQueryListDatasetsQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -103,7 +107,7 @@ export type ConnectorServiceBigQueryListDatasetsQueryError =
  */
 export const createConnectorServiceBigQueryListDatasets = <
   TData = Awaited<ReturnType<typeof connectorServiceBigQueryListDatasets>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceBigQueryListDatasetsParams,
   options?: {
@@ -112,11 +116,11 @@ export const createConnectorServiceBigQueryListDatasets = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceBigQueryListDatasetsQueryOptions(
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -134,7 +138,7 @@ export const createConnectorServiceBigQueryListDatasets = <
  */
 export const connectorServiceBigQueryListTables = (
   params?: ConnectorServiceBigQueryListTablesParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1BigQueryListTablesResponse>({
     url: `/v1/bigquery/tables`,
@@ -145,14 +149,14 @@ export const connectorServiceBigQueryListTables = (
 };
 
 export const getConnectorServiceBigQueryListTablesQueryKey = (
-  params?: ConnectorServiceBigQueryListTablesParams
+  params?: ConnectorServiceBigQueryListTablesParams,
 ) => {
   return [`/v1/bigquery/tables`, ...(params ? [params] : [])] as const;
 };
 
 export const getConnectorServiceBigQueryListTablesQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceBigQueryListTables>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceBigQueryListTablesParams,
   options?: {
@@ -161,7 +165,7 @@ export const getConnectorServiceBigQueryListTablesQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -190,7 +194,7 @@ export type ConnectorServiceBigQueryListTablesQueryError = ErrorType<RpcStatus>;
  */
 export const createConnectorServiceBigQueryListTables = <
   TData = Awaited<ReturnType<typeof connectorServiceBigQueryListTables>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceBigQueryListTablesParams,
   options?: {
@@ -199,11 +203,11 @@ export const createConnectorServiceBigQueryListTables = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceBigQueryListTablesQueryOptions(
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -221,7 +225,7 @@ export const createConnectorServiceBigQueryListTables = <
  */
 export const connectorServiceOLAPGetTable = (
   params?: ConnectorServiceOLAPGetTableParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1OLAPGetTableResponse>({
     url: `/v1/connectors/olap/table`,
@@ -232,14 +236,14 @@ export const connectorServiceOLAPGetTable = (
 };
 
 export const getConnectorServiceOLAPGetTableQueryKey = (
-  params?: ConnectorServiceOLAPGetTableParams
+  params?: ConnectorServiceOLAPGetTableParams,
 ) => {
   return [`/v1/connectors/olap/table`, ...(params ? [params] : [])] as const;
 };
 
 export const getConnectorServiceOLAPGetTableQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceOLAPGetTable>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceOLAPGetTableParams,
   options?: {
@@ -248,7 +252,7 @@ export const getConnectorServiceOLAPGetTableQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -276,7 +280,7 @@ export type ConnectorServiceOLAPGetTableQueryError = ErrorType<RpcStatus>;
  */
 export const createConnectorServiceOLAPGetTable = <
   TData = Awaited<ReturnType<typeof connectorServiceOLAPGetTable>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceOLAPGetTableParams,
   options?: {
@@ -285,11 +289,11 @@ export const createConnectorServiceOLAPGetTable = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceOLAPGetTableQueryOptions(
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -309,7 +313,7 @@ credentials for the connector.
  */
 export const connectorServiceScanConnectors = (
   params?: ConnectorServiceScanConnectorsParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ScanConnectorsResponse>({
     url: `/v1/connectors/scan`,
@@ -320,14 +324,14 @@ export const connectorServiceScanConnectors = (
 };
 
 export const getConnectorServiceScanConnectorsQueryKey = (
-  params?: ConnectorServiceScanConnectorsParams
+  params?: ConnectorServiceScanConnectorsParams,
 ) => {
   return [`/v1/connectors/scan`, ...(params ? [params] : [])] as const;
 };
 
 export const getConnectorServiceScanConnectorsQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceScanConnectors>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceScanConnectorsParams,
   options?: {
@@ -336,7 +340,7 @@ export const getConnectorServiceScanConnectorsQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -366,7 +370,7 @@ credentials for the connector.
  */
 export const createConnectorServiceScanConnectors = <
   TData = Awaited<ReturnType<typeof connectorServiceScanConnectors>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceScanConnectorsParams,
   options?: {
@@ -375,11 +379,11 @@ export const createConnectorServiceScanConnectors = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceScanConnectorsQueryOptions(
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -398,7 +402,7 @@ export const createConnectorServiceScanConnectors = <
 export const connectorServiceGCSListObjects = (
   bucket: string,
   params?: ConnectorServiceGCSListObjectsParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1GCSListObjectsResponse>({
     url: `/v1/gcs/bucket/${bucket}/objects`,
@@ -410,7 +414,7 @@ export const connectorServiceGCSListObjects = (
 
 export const getConnectorServiceGCSListObjectsQueryKey = (
   bucket: string,
-  params?: ConnectorServiceGCSListObjectsParams
+  params?: ConnectorServiceGCSListObjectsParams,
 ) => {
   return [
     `/v1/gcs/bucket/${bucket}/objects`,
@@ -420,7 +424,7 @@ export const getConnectorServiceGCSListObjectsQueryKey = (
 
 export const getConnectorServiceGCSListObjectsQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceGCSListObjects>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   bucket: string,
   params?: ConnectorServiceGCSListObjectsParams,
@@ -430,7 +434,7 @@ export const getConnectorServiceGCSListObjectsQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -464,7 +468,7 @@ export type ConnectorServiceGCSListObjectsQueryError = ErrorType<RpcStatus>;
  */
 export const createConnectorServiceGCSListObjects = <
   TData = Awaited<ReturnType<typeof connectorServiceGCSListObjects>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   bucket: string,
   params?: ConnectorServiceGCSListObjectsParams,
@@ -474,12 +478,12 @@ export const createConnectorServiceGCSListObjects = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceGCSListObjectsQueryOptions(
     bucket,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -497,7 +501,7 @@ export const createConnectorServiceGCSListObjects = <
  */
 export const connectorServiceGCSListBuckets = (
   params?: ConnectorServiceGCSListBucketsParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1GCSListBucketsResponse>({
     url: `/v1/gcs/buckets`,
@@ -508,14 +512,14 @@ export const connectorServiceGCSListBuckets = (
 };
 
 export const getConnectorServiceGCSListBucketsQueryKey = (
-  params?: ConnectorServiceGCSListBucketsParams
+  params?: ConnectorServiceGCSListBucketsParams,
 ) => {
   return [`/v1/gcs/buckets`, ...(params ? [params] : [])] as const;
 };
 
 export const getConnectorServiceGCSListBucketsQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceGCSListBuckets>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceGCSListBucketsParams,
   options?: {
@@ -524,7 +528,7 @@ export const getConnectorServiceGCSListBucketsQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -552,7 +556,7 @@ export type ConnectorServiceGCSListBucketsQueryError = ErrorType<RpcStatus>;
  */
 export const createConnectorServiceGCSListBuckets = <
   TData = Awaited<ReturnType<typeof connectorServiceGCSListBuckets>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceGCSListBucketsParams,
   options?: {
@@ -561,11 +565,11 @@ export const createConnectorServiceGCSListBuckets = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceGCSListBucketsQueryOptions(
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -583,7 +587,7 @@ export const createConnectorServiceGCSListBuckets = <
  */
 export const connectorServiceGCSGetCredentialsInfo = (
   params?: ConnectorServiceGCSGetCredentialsInfoParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1GCSGetCredentialsInfoResponse>({
     url: `/v1/gcs/credentials_info`,
@@ -594,14 +598,14 @@ export const connectorServiceGCSGetCredentialsInfo = (
 };
 
 export const getConnectorServiceGCSGetCredentialsInfoQueryKey = (
-  params?: ConnectorServiceGCSGetCredentialsInfoParams
+  params?: ConnectorServiceGCSGetCredentialsInfoParams,
 ) => {
   return [`/v1/gcs/credentials_info`, ...(params ? [params] : [])] as const;
 };
 
 export const getConnectorServiceGCSGetCredentialsInfoQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceGCSGetCredentialsInfo>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceGCSGetCredentialsInfoParams,
   options?: {
@@ -610,7 +614,7 @@ export const getConnectorServiceGCSGetCredentialsInfoQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -640,7 +644,7 @@ export type ConnectorServiceGCSGetCredentialsInfoQueryError =
  */
 export const createConnectorServiceGCSGetCredentialsInfo = <
   TData = Awaited<ReturnType<typeof connectorServiceGCSGetCredentialsInfo>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceGCSGetCredentialsInfoParams,
   options?: {
@@ -649,11 +653,11 @@ export const createConnectorServiceGCSGetCredentialsInfo = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceGCSGetCredentialsInfoQueryOptions(
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -671,7 +675,7 @@ export const createConnectorServiceGCSGetCredentialsInfo = <
  */
 export const connectorServiceOLAPListTables = (
   params?: ConnectorServiceOLAPListTablesParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1OLAPListTablesResponse>({
     url: `/v1/olap/tables`,
@@ -682,14 +686,14 @@ export const connectorServiceOLAPListTables = (
 };
 
 export const getConnectorServiceOLAPListTablesQueryKey = (
-  params?: ConnectorServiceOLAPListTablesParams
+  params?: ConnectorServiceOLAPListTablesParams,
 ) => {
   return [`/v1/olap/tables`, ...(params ? [params] : [])] as const;
 };
 
 export const getConnectorServiceOLAPListTablesQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceOLAPListTables>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceOLAPListTablesParams,
   options?: {
@@ -698,7 +702,7 @@ export const getConnectorServiceOLAPListTablesQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -726,7 +730,7 @@ export type ConnectorServiceOLAPListTablesQueryError = ErrorType<RpcStatus>;
  */
 export const createConnectorServiceOLAPListTables = <
   TData = Awaited<ReturnType<typeof connectorServiceOLAPListTables>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceOLAPListTablesParams,
   options?: {
@@ -735,11 +739,11 @@ export const createConnectorServiceOLAPListTables = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceOLAPListTablesQueryOptions(
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -758,7 +762,7 @@ export const createConnectorServiceOLAPListTables = <
 export const connectorServiceS3GetBucketMetadata = (
   bucket: string,
   params?: ConnectorServiceS3GetBucketMetadataParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1S3GetBucketMetadataResponse>({
     url: `/v1/s3/bucket/${bucket}/metadata`,
@@ -770,7 +774,7 @@ export const connectorServiceS3GetBucketMetadata = (
 
 export const getConnectorServiceS3GetBucketMetadataQueryKey = (
   bucket: string,
-  params?: ConnectorServiceS3GetBucketMetadataParams
+  params?: ConnectorServiceS3GetBucketMetadataParams,
 ) => {
   return [
     `/v1/s3/bucket/${bucket}/metadata`,
@@ -780,7 +784,7 @@ export const getConnectorServiceS3GetBucketMetadataQueryKey = (
 
 export const getConnectorServiceS3GetBucketMetadataQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceS3GetBucketMetadata>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   bucket: string,
   params?: ConnectorServiceS3GetBucketMetadataParams,
@@ -790,7 +794,7 @@ export const getConnectorServiceS3GetBucketMetadataQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -826,7 +830,7 @@ export type ConnectorServiceS3GetBucketMetadataQueryError =
  */
 export const createConnectorServiceS3GetBucketMetadata = <
   TData = Awaited<ReturnType<typeof connectorServiceS3GetBucketMetadata>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   bucket: string,
   params?: ConnectorServiceS3GetBucketMetadataParams,
@@ -836,12 +840,12 @@ export const createConnectorServiceS3GetBucketMetadata = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceS3GetBucketMetadataQueryOptions(
     bucket,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -860,7 +864,7 @@ export const createConnectorServiceS3GetBucketMetadata = <
 export const connectorServiceS3ListObjects = (
   bucket: string,
   params?: ConnectorServiceS3ListObjectsParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1S3ListObjectsResponse>({
     url: `/v1/s3/bucket/${bucket}/objects`,
@@ -872,7 +876,7 @@ export const connectorServiceS3ListObjects = (
 
 export const getConnectorServiceS3ListObjectsQueryKey = (
   bucket: string,
-  params?: ConnectorServiceS3ListObjectsParams
+  params?: ConnectorServiceS3ListObjectsParams,
 ) => {
   return [
     `/v1/s3/bucket/${bucket}/objects`,
@@ -882,7 +886,7 @@ export const getConnectorServiceS3ListObjectsQueryKey = (
 
 export const getConnectorServiceS3ListObjectsQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceS3ListObjects>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   bucket: string,
   params?: ConnectorServiceS3ListObjectsParams,
@@ -892,7 +896,7 @@ export const getConnectorServiceS3ListObjectsQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -926,7 +930,7 @@ export type ConnectorServiceS3ListObjectsQueryError = ErrorType<RpcStatus>;
  */
 export const createConnectorServiceS3ListObjects = <
   TData = Awaited<ReturnType<typeof connectorServiceS3ListObjects>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   bucket: string,
   params?: ConnectorServiceS3ListObjectsParams,
@@ -936,12 +940,12 @@ export const createConnectorServiceS3ListObjects = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceS3ListObjectsQueryOptions(
     bucket,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -959,7 +963,7 @@ export const createConnectorServiceS3ListObjects = <
  */
 export const connectorServiceS3ListBuckets = (
   params?: ConnectorServiceS3ListBucketsParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1S3ListBucketsResponse>({
     url: `/v1/s3/buckets`,
@@ -970,14 +974,14 @@ export const connectorServiceS3ListBuckets = (
 };
 
 export const getConnectorServiceS3ListBucketsQueryKey = (
-  params?: ConnectorServiceS3ListBucketsParams
+  params?: ConnectorServiceS3ListBucketsParams,
 ) => {
   return [`/v1/s3/buckets`, ...(params ? [params] : [])] as const;
 };
 
 export const getConnectorServiceS3ListBucketsQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceS3ListBuckets>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceS3ListBucketsParams,
   options?: {
@@ -986,7 +990,7 @@ export const getConnectorServiceS3ListBucketsQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1014,7 +1018,7 @@ export type ConnectorServiceS3ListBucketsQueryError = ErrorType<RpcStatus>;
  */
 export const createConnectorServiceS3ListBuckets = <
   TData = Awaited<ReturnType<typeof connectorServiceS3ListBuckets>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceS3ListBucketsParams,
   options?: {
@@ -1023,11 +1027,11 @@ export const createConnectorServiceS3ListBuckets = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceS3ListBucketsQueryOptions(
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1045,7 +1049,7 @@ export const createConnectorServiceS3ListBuckets = <
  */
 export const connectorServiceS3GetCredentialsInfo = (
   params?: ConnectorServiceS3GetCredentialsInfoParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1S3GetCredentialsInfoResponse>({
     url: `/v1/s3/credentials_info`,
@@ -1056,14 +1060,14 @@ export const connectorServiceS3GetCredentialsInfo = (
 };
 
 export const getConnectorServiceS3GetCredentialsInfoQueryKey = (
-  params?: ConnectorServiceS3GetCredentialsInfoParams
+  params?: ConnectorServiceS3GetCredentialsInfoParams,
 ) => {
   return [`/v1/s3/credentials_info`, ...(params ? [params] : [])] as const;
 };
 
 export const getConnectorServiceS3GetCredentialsInfoQueryOptions = <
   TData = Awaited<ReturnType<typeof connectorServiceS3GetCredentialsInfo>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceS3GetCredentialsInfoParams,
   options?: {
@@ -1072,7 +1076,7 @@ export const getConnectorServiceS3GetCredentialsInfoQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1102,7 +1106,7 @@ export type ConnectorServiceS3GetCredentialsInfoQueryError =
  */
 export const createConnectorServiceS3GetCredentialsInfo = <
   TData = Awaited<ReturnType<typeof connectorServiceS3GetCredentialsInfo>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   params?: ConnectorServiceS3GetCredentialsInfoParams,
   options?: {
@@ -1111,11 +1115,11 @@ export const createConnectorServiceS3GetCredentialsInfo = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getConnectorServiceS3GetCredentialsInfoQueryOptions(
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<

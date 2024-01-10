@@ -26,7 +26,7 @@ export function clearViewedAsUserAfterNavigate(queryClient: QueryClient) {
       clearViewedAsUserWithinProject(
         queryClient,
         nav.to.params.organization,
-        nav.to.params.project
+        nav.to.params.project,
       );
     }
 
@@ -40,7 +40,7 @@ export function clearViewedAsUserAfterNavigate(queryClient: QueryClient) {
 export async function clearViewedAsUserWithinProject(
   queryClient: QueryClient,
   organization: string,
-  project: string
+  project: string,
 ) {
   viewAsUserStore.set(null);
 

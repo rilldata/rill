@@ -28,19 +28,19 @@ export async function* uploadTableFiles(
   files: Array<File>,
   [models, sources]: [Array<string>, Array<string>],
   instanceId: string,
-  goToIfSuccessful = true
+  goToIfSuccessful = true,
 ): AsyncGenerator<{ tableName: string; filePath: string }> {
   if (!files?.length) return;
   const { validFiles, invalidFiles } = filterValidFileExtensions(files);
 
-  let lastTableName: string;
+  let lastTableName: string | undefined = undefined;
 
   for (const validFile of validFiles) {
     // check if the file is already present. get the file and
     const resolvedTableName = await checkForDuplicate(
       validFile,
       (name) => duplicateNameChecker(name, models, sources),
-      (name) => incrementedNameGetter(name, models, sources)
+      (name) => incrementedNameGetter(name, models, sources),
     );
     // if there was a duplicate and cancel was clicked then we do not upload
     if (!resolvedTableName) continue;
@@ -93,7 +93,7 @@ function filterValidFileExtensions(files: Array<File>): {
 async function checkForDuplicate(
   file: File,
   duplicateValidator: (name: string) => boolean,
-  incrementedNameGetter: (name: string) => string
+  incrementedNameGetter: (name: string) => string,
 ): Promise<string> {
   const currentTableName = getTableNameFromFile(file.name);
 
@@ -120,7 +120,7 @@ async function checkForDuplicate(
 
 export async function uploadFile(
   instanceId: string,
-  file: File
+  file: File,
 ): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
@@ -151,7 +151,7 @@ function reportFileErrors(invalidFiles: File[]) {
 }
 
 async function getResponseFromModal(
-  currentTableName
+  currentTableName,
 ): Promise<DuplicateActions> {
   duplicateSourceName.set(currentTableName);
 
@@ -189,7 +189,7 @@ export function openFileUploadDialog(multiple = true) {
     window.addEventListener("focus", focusHandler);
     input.multiple = multiple;
     input.accept = [...PossibleFileExtensions, ...PossibleZipExtensions].join(
-      ","
+      ",",
     );
     input.click();
   });

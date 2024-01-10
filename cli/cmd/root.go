@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/deploy"
+	"github.com/rilldata/rill/cli/cmd/devtool"
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/cmd/org"
@@ -145,6 +146,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.AddCommand(versioncmd.VersionCmd())
 	rootCmd.AddCommand(upgrade.UpgradeCmd(ch))
 	rootCmd.AddCommand(whoami.WhoamiCmd(ch))
+	rootCmd.AddCommand(devtool.DevtoolCmd(ch))
 
 	// Add sub-commands for admin
 	// (This allows us to add persistent flags that apply only to the admin-related commands.)

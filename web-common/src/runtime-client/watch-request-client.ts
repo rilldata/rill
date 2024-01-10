@@ -33,7 +33,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
     private readonly getUrl: (runtime: Runtime) => string,
     private readonly onResponse: (res: Res) => void | Promise<void>,
     private readonly onReconnect: () => void | Promise<void>,
-    private readonly tracker = ExponentialBackoffTracker.createBasicTracker()
+    private readonly tracker = ExponentialBackoffTracker.createBasicTracker(),
   ) {}
 
   public start(): Unsubscriber {
@@ -127,7 +127,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
       "GET",
       undefined,
       headers,
-      controller.signal
+      controller.signal,
     );
   }
 }

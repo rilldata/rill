@@ -52,7 +52,7 @@ export class Config<C> {
   public static SubConfig(
     subConfigClass: typeof Config,
     defaultValue?: unknown,
-    key?: string
+    key?: string,
   ) {
     return (target: Config<unknown>, propertyKey: string) => {
       const constructor = this.createConfigTypes(target);

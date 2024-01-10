@@ -64,3 +64,6 @@ jobs:
           npx eslint web-auth --quiet
           npx svelte-check --workspace web-auth --no-tsconfig
 
+      - name: type check non-svelte files (with temporary whitelist)
+        run: |-
+          sh ./scripts/tsc-with-whitelist.sh

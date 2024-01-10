@@ -19,7 +19,7 @@ class PlaceholderWidget extends WidgetType {
     wrap.appendChild(
       typeof this.content == "string"
         ? document.createTextNode(this.content)
-        : this.content
+        : this.content,
     );
     if (typeof this.content == "string")
       wrap.setAttribute("aria-label", "placeholder " + this.content);
@@ -59,7 +59,7 @@ export function createPlaceholder(metricsViewName: string, showOnEmpty = true) {
           : this.placeholder;
       }
     },
-    { decorations: (v) => v.decorations }
+    { decorations: (v) => v.decorations },
   );
   return { component, extension };
 }
@@ -74,6 +74,7 @@ export function createPlaceholderElement(metricsName: string) {
     target: DOMElement,
     props: {
       metricsName,
+      view: undefined,
     },
   });
   return {

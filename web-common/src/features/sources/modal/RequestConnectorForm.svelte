@@ -35,7 +35,7 @@
           console.error(e);
         }
       },
-    }
+    },
   );
 </script>
 

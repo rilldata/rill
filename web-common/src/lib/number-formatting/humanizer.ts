@@ -23,7 +23,7 @@ import {
  */
 export const humanizedFormatterFactory: FormatterFactory = (
   sample: number[],
-  options
+  options,
 ): Formatter => {
   let formatter: Formatter;
 
@@ -58,7 +58,7 @@ export const humanizedFormatterFactory: FormatterFactory = (
 
     default:
       console.warn(
-        `Number formatter strategy "${options.strategy}" is not implemented, using default strategy`
+        `Number formatter strategy "${options.strategy}" is not implemented, using default strategy`,
       );
       formatter = new PerRangeFormatter(sample, defaultGenericNumOptions);
       break;

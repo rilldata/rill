@@ -75,12 +75,12 @@
         blob: dashboardYAML,
         create: true,
         createOnly: true,
-      }
+      },
     );
     await waitForResource(
       queryClient,
       $runtime.instanceId,
-      getFilePathFromNameAndType(metricsName, EntityType.MetricsDefinition)
+      getFilePathFromNameAndType(metricsName, EntityType.MetricsDefinition),
     );
     /**
      * go ahead and optimistically update the editor view.
@@ -109,7 +109,7 @@
         blob: yaml,
         create: true,
         createOnly: true,
-      }
+      },
     );
 
     /** optimistically update the editor. We will dispatch

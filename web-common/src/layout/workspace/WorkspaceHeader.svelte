@@ -27,11 +27,11 @@
     createResizeListenerActionFactory();
 
   const inspectorLayout = getContext(
-    "rill:app:inspector-layout"
+    "rill:app:inspector-layout",
   ) as Writable<LayoutElement>;
 
   const navigationVisibilityTween = getContext(
-    "rill:app:navigation-visibility-tween"
+    "rill:app:navigation-visibility-tween",
   ) as Tweened<number>;
 
   function onKeydown(event) {

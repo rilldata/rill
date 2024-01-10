@@ -89,8 +89,8 @@
     const palette = isScrubbed
       ? "scrubbed"
       : data.y === 0
-      ? "fixed"
-      : "default";
+        ? "fixed"
+        : "default";
 
     classesToAdd.push(
       getClassForCell(
@@ -98,8 +98,8 @@
         rowIdxHover,
         colIdxHover ?? highlightedCol,
         data.y,
-        data.x
-      )
+        data.x,
+      ),
     );
     // Update DOM with consolidated class operations
     data.element.classList.toggle("font-semibold", Boolean(data.y == 0));
@@ -151,7 +151,7 @@
         return {
           icon: SelectedCheckmark(
             "fill-" +
-              (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300")
+              (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300"),
           ),
           muted: false,
         };
@@ -178,7 +178,7 @@
       rowIdxHover,
       colIdxHover ?? highlightedCol,
       y,
-      x - tableData?.fixedColCount
+      x - tableData?.fixedColCount,
     );
     if (x > 0) {
       element.classList.remove("bg-slate-50", "bg-slate-100", "bg-slate-200");

@@ -127,8 +127,8 @@
           {@const yBuffer = !hasValidComparisonPoint
             ? 0
             : !comparisonIsPositive
-            ? -bufferSize
-            : bufferSize}
+              ? -bufferSize
+              : bufferSize}
 
           {@const sign = !comparisonIsPositive ? -1 : 1}
           {@const dist = 3}

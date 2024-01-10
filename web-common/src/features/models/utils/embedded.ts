@@ -8,13 +8,13 @@ import type {
 
 export function filterKnownEmbeddedSources(
   embeddedRefs: Array<Reference>,
-  embeddedSourceCatalogs: Map<string, V1CatalogEntry>
+  embeddedSourceCatalogs: Map<string, V1CatalogEntry>,
 ): Array<string> {
   const unknownEmbeddedSources = new Array<string>();
   for (const embeddedRef of embeddedRefs) {
     const cleanedRef = embeddedRef.reference.slice(
       1,
-      embeddedRef.reference.length - 1
+      embeddedRef.reference.length - 1,
     );
     const ref = cleanedRef.toLowerCase();
     if (embeddedSourceCatalogs.has(ref)) continue;
@@ -25,10 +25,10 @@ export function filterKnownEmbeddedSources(
 
 export function embeddedSourcesError(
   errors: Array<V1ReconcileError>,
-  embeddedSources: Array<Reference>
+  embeddedSources: Array<Reference>,
 ) {
   const embeddedSourcesMap = getMapFromArray(embeddedSources, (entity) =>
-    entity.reference.slice(1, entity.reference.length - 1)
+    entity.reference.slice(1, entity.reference.length - 1),
   );
   const embeddedSourceErrors = new Array<string>();
   for (const reconcileError of errors) {
@@ -39,8 +39,8 @@ export function embeddedSourcesError(
       `${reconcileError.filePath} - ${humanReadableErrorMessage(
         reconcileError.filePath.replace(/(.*?):\/\/.*$/, "$1"),
         3,
-        reconcileError.message
-      )}`
+        reconcileError.message,
+      )}`,
     );
   }
   return embeddedSourceErrors;

@@ -72,7 +72,7 @@ export type TimeControlState = {
 export type TimeControlStore = Readable<TimeControlState>;
 
 function createTimeRangeSummary(
-  ctx: StateManagers
+  ctx: StateManagers,
 ): CreateQueryResult<V1ColumnTimeRangeResponse> {
   return derived(
     [ctx.runtime, useMetaQuery(ctx)],
@@ -88,8 +88,8 @@ function createTimeRangeSummary(
             enabled: !!metricsView.data?.timeDimension,
             queryClient: ctx.queryClient,
           },
-        }
-      ).subscribe(set)
+        },
+      ).subscribe(set),
   );
 }
 
@@ -100,7 +100,7 @@ export const timeControlStateSelector = ([
 ]: [
   QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
   QueryObserverResult<V1ColumnTimeRangeResponse, unknown>,
-  MetricsExplorerEntity
+  MetricsExplorerEntity,
 ]): TimeControlState => {
   const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
   if (
@@ -128,14 +128,14 @@ export const timeControlStateSelector = ([
     metricsView.data.defaultTimeRange,
     allTimeRange.start,
     allTimeRange.end,
-    metricsExplorer.selectedTimezone
+    metricsExplorer.selectedTimezone,
   );
 
   const timeRangeState = calculateTimeRangePartial(
     metricsExplorer,
     allTimeRange,
     defaultTimeRange,
-    minTimeGrain
+    minTimeGrain,
   );
   if (!timeRangeState) {
     return {
@@ -148,7 +148,7 @@ export const timeControlStateSelector = ([
     metricsView,
     metricsExplorer,
     allTimeRange,
-    timeRangeState
+    timeRangeState,
   );
 
   return {
@@ -167,7 +167,7 @@ export const timeControlStateSelector = ([
 export function createTimeControlStore(ctx: StateManagers) {
   return derived(
     [useMetaQuery(ctx), createTimeRangeSummary(ctx), ctx.dashboardStore],
-    timeControlStateSelector
+    timeControlStateSelector,
   );
 }
 
@@ -175,7 +175,7 @@ export function createTimeControlStore(ctx: StateManagers) {
  * Memoized version of the store. Currently, memoized by metrics view name.
  */
 export const useTimeControlStore = memoizeMetricsStore<TimeControlStore>(
-  (ctx: StateManagers) => createTimeControlStore(ctx)
+  (ctx: StateManagers) => createTimeControlStore(ctx),
 );
 
 /**
@@ -186,27 +186,27 @@ function calculateTimeRangePartial(
   metricsExplorer: MetricsExplorerEntity,
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
-  minTimeGrain: V1TimeGrain
+  minTimeGrain: V1TimeGrain,
 ): TimeRangeState | undefined {
   if (!metricsExplorer.selectedTimeRange) return undefined;
 
   const selectedTimeRange = getTimeRange(
     metricsExplorer,
     allTimeRange,
-    defaultTimeRange
+    defaultTimeRange,
   );
   if (!selectedTimeRange) return undefined;
 
   selectedTimeRange.interval = getTimeGrain(
     metricsExplorer,
     selectedTimeRange,
-    minTimeGrain
+    minTimeGrain,
   );
   const { start: adjustedStart, end: adjustedEnd } = getAdjustedFetchTime(
     selectedTimeRange.start,
     selectedTimeRange.end,
     metricsExplorer.selectedTimezone,
-    selectedTimeRange.interval
+    selectedTimeRange.interval,
   );
 
   let timeStart = selectedTimeRange.start;
@@ -214,7 +214,7 @@ function calculateTimeRangePartial(
   if (metricsExplorer.lastDefinedScrubRange) {
     const { start, end } = getOrderedStartEnd(
       metricsExplorer.lastDefinedScrubRange.start,
-      metricsExplorer.lastDefinedScrubRange.end
+      metricsExplorer.lastDefinedScrubRange.end,
     );
     timeStart = start;
     timeEnd = end;
@@ -237,26 +237,26 @@ function calculateComparisonTimeRangePartial(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
   allTimeRange: DashboardTimeControls,
-  timeRangeState: TimeRangeState
+  timeRangeState: TimeRangeState,
 ): ComparisonTimeRangeState {
   const selectedComparisonTimeRange = getComparisonTimeRange(
     metricsView,
     metricsExplorer,
     allTimeRange,
     timeRangeState.selectedTimeRange,
-    metricsExplorer.selectedComparisonTimeRange
+    metricsExplorer.selectedComparisonTimeRange,
   );
   const showComparison = Boolean(
-    metricsExplorer.showTimeComparison && selectedComparisonTimeRange?.start
+    metricsExplorer.showTimeComparison && selectedComparisonTimeRange?.start,
   );
-  let comparisonAdjustedStart: string;
-  let comparisonAdjustedEnd: string;
+  let comparisonAdjustedStart: string | undefined = undefined;
+  let comparisonAdjustedEnd: string | undefined = undefined;
   if (showComparison && selectedComparisonTimeRange) {
     const adjustedComparisonTime = getAdjustedFetchTime(
       selectedComparisonTimeRange.start,
       selectedComparisonTimeRange.end,
       metricsExplorer.selectedTimezone,
-      timeRangeState.selectedTimeRange.interval
+      timeRangeState.selectedTimeRange.interval,
     );
     comparisonAdjustedStart = adjustedComparisonTime.start;
     comparisonAdjustedEnd = adjustedComparisonTime.end;
@@ -267,7 +267,7 @@ function calculateComparisonTimeRangePartial(
   if (selectedComparisonTimeRange && metricsExplorer.lastDefinedScrubRange) {
     const { start, end } = getOrderedStartEnd(
       metricsExplorer.lastDefinedScrubRange.start,
-      metricsExplorer.lastDefinedScrubRange.end
+      metricsExplorer.lastDefinedScrubRange.end,
     );
 
     const comparisonRange = getComparionRangeForScrub(
@@ -276,7 +276,7 @@ function calculateComparisonTimeRangePartial(
       selectedComparisonTimeRange.start,
       selectedComparisonTimeRange.end,
       start,
-      end
+      end,
     );
     comparisonTimeStart = comparisonRange.start;
     comparisonTimeEnd = comparisonRange.end;
@@ -295,7 +295,7 @@ function calculateComparisonTimeRangePartial(
 function getTimeRange(
   metricsExplorer: MetricsExplorerEntity,
   allTimeRange: DashboardTimeControls,
-  defaultTimeRange: DashboardTimeControls
+  defaultTimeRange: DashboardTimeControls,
 ) {
   if (!metricsExplorer.selectedTimeRange) return undefined;
 
@@ -315,14 +315,14 @@ function getTimeRange(
         metricsExplorer.selectedTimeRange?.name ?? TimeRangePreset.ALL_TIME,
         allTimeRange.start,
         allTimeRange.end,
-        metricsExplorer.selectedTimezone
+        metricsExplorer.selectedTimezone,
       );
     } else {
       timeRange = isoDurationToFullTimeRange(
         metricsExplorer.selectedTimeRange?.name,
         allTimeRange.start,
         allTimeRange.end,
-        metricsExplorer.selectedTimezone
+        metricsExplorer.selectedTimezone,
       );
     }
   } else {
@@ -340,13 +340,13 @@ function getTimeRange(
 function getTimeGrain(
   metricsExplorer: MetricsExplorerEntity,
   timeRange: DashboardTimeControls,
-  minTimeGrain: V1TimeGrain
+  minTimeGrain: V1TimeGrain,
 ) {
   const timeGrainOptions = getAllowedTimeGrains(timeRange.start, timeRange.end);
   const isValidTimeGrain = checkValidTimeGrain(
     metricsExplorer.selectedTimeRange.interval,
     timeGrainOptions,
-    minTimeGrain
+    minTimeGrain,
   );
 
   let timeGrain: V1TimeGrain;
@@ -355,12 +355,12 @@ function getTimeGrain(
   } else {
     const defaultTimeGrain = getDefaultTimeGrain(
       timeRange.start,
-      timeRange.end
+      timeRange.end,
     ).grain;
     timeGrain = findValidTimeGrain(
       defaultTimeGrain,
       timeGrainOptions,
-      minTimeGrain
+      minTimeGrain,
     );
   }
 
@@ -372,11 +372,12 @@ function getComparisonTimeRange(
   metricsExplorer: MetricsExplorerEntity,
   allTimeRange: DashboardTimeControls,
   timeRange: DashboardTimeControls,
-  comparisonTimeRange: DashboardTimeControls
+  comparisonTimeRange: DashboardTimeControls,
 ) {
   if (!comparisonTimeRange || !timeRange.name) return undefined;
 
-  let selectedComparisonTimeRange: DashboardTimeControls;
+  let selectedComparisonTimeRange: DashboardTimeControls | undefined =
+    undefined;
   if (!comparisonTimeRange?.name) {
     const comparisonOption = DEFAULT_TIME_RANGES[
       timeRange.name as TimeComparisonOption
@@ -384,12 +385,12 @@ function getComparisonTimeRange(
     const range = getTimeComparisonParametersForComponent(
       comparisonOption ??
         metricsView.availableTimeRanges?.find(
-          (tr) => tr.range === timeRange.name
+          (tr) => tr.range === timeRange.name,
         )?.comparisonOffsets?.[0].offset,
       allTimeRange.start,
       allTimeRange.end,
       timeRange.start,
-      timeRange.end
+      timeRange.end,
     );
 
     if (range.isComparisonRangeAvailable) {
@@ -409,7 +410,7 @@ function getComparisonTimeRange(
     const range = getComparisonRange(
       timeRange.start,
       timeRange.end,
-      comparisonOption
+      comparisonOption,
     );
 
     selectedComparisonTimeRange = {
@@ -431,7 +432,7 @@ export function selectedTimeRangeSelector([
 ]: [
   QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
   QueryObserverResult<V1ColumnTimeRangeResponse, unknown>,
-  MetricsExplorerEntity
+  MetricsExplorerEntity,
 ]) {
   if (!metricsView.data || !timeRangeResponse.data?.timeRangeSummary) {
     return undefined;
@@ -446,7 +447,7 @@ export function selectedTimeRangeSelector([
     metricsView.data.defaultTimeRange,
     allTimeRange.start,
     allTimeRange.end,
-    explorer.selectedTimezone
+    explorer.selectedTimezone,
   );
 
   return getTimeRange(explorer, allTimeRange, defaultTimeRange);

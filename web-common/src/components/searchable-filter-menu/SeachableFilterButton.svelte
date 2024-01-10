@@ -43,7 +43,7 @@ props as needed.
       selectableItems?.length !== selectedItems?.length
     ) {
       throw new Error(
-        "SearchableFilterButton component requires props `selectableItems` and `selectedItems` to be arrays of equal length"
+        "SearchableFilterButton component requires props `selectableItems` and `selectedItems` to be arrays of equal length",
       );
     }
   }
@@ -78,6 +78,7 @@ props as needed.
     </div>
   </Tooltip>
   <SearchableFilterDropdown
+    let:toggleFloatingElement
     on:apply
     on:click-outside={toggleFloatingElement}
     on:deselect-all
@@ -85,9 +86,8 @@ props as needed.
     on:item-clicked
     on:search
     on:select-all
-    {selectableItems}
-    {selectedItems}
+    selectableGroups={[{ name: "", items: selectableItems }]}
+    selectedItems={[selectedItems]}
     slot="floating-element"
-    let:toggleFloatingElement
   />
 </WithTogglableFloatingElement>

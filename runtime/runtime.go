@@ -27,7 +27,6 @@ type Options struct {
 	ControllerLogBufferCapacity  int
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
-	SafeSourceRefresh            bool
 }
 
 type Runtime struct {

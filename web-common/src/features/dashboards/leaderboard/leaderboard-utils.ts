@@ -15,12 +15,12 @@ import { SortType } from "../proto-state/derived-types";
  */
 export function getLabeledComparisonFromComparisonRow(
   row: V1MetricsViewComparisonRow,
-  measureName: string | number
+  measureName: string | number,
 ): ComparisonValueWithLabel {
   const measure = row.measureValues?.find((v) => v.measureName === measureName);
   if (!measure) {
     throw new Error(
-      `Could not find measure ${measureName} in row ${JSON.stringify(row)}`
+      `Could not find measure ${measureName} in row ${JSON.stringify(row)}`,
     );
   }
   return {
@@ -80,13 +80,13 @@ export type LeaderboardItemData = {
 function cleanUpComparisonValue(
   v: ComparisonValueWithLabel,
   total: number | null,
-  selectedIndex: number
+  selectedIndex: number,
 ): LeaderboardItemData {
   if (!(Number.isFinite(v.baseValue) || v.baseValue === null)) {
     throw new Error(
       `Leaderboards only implemented for numeric baseValues or missing data (null). Got: ${JSON.stringify(
-        v
-      )}`
+        v,
+      )}`,
     );
   }
   const value = v.baseValue === null ? null : (v.baseValue as number);
@@ -124,7 +124,7 @@ export function prepareLeaderboardItemData(
   values: ComparisonValueWithLabel[],
   numberAboveTheFold: number,
   selectedValues: string[],
-  total: number | null
+  total: number | null,
 ): {
   aboveTheFold: LeaderboardItemData[];
   selectedBelowTheFold: LeaderboardItemData[];
@@ -141,16 +141,16 @@ export function prepareLeaderboardItemData(
   // selected values that _are_ in the API results.
   //
   // We also need to retain the original selection indices
-  const selectedButNotInAPIResults = new Map<string, number>();
-  selectedValues.map((v, i) => selectedButNotInAPIResults.set(v, i));
+  const selectedButNotInAPIResults = new Set<number>();
+  selectedValues.map((v, i) => selectedButNotInAPIResults.add(i));
 
   values.forEach((v, i) => {
-    const selectedIndex = selectedValues.findIndex(
-      (value) => value === v.dimensionValue
+    const selectedIndex = selectedValues.findIndex((value) =>
+      compareLeaderboardValues(value, v.dimensionValue),
     );
     // if we have found this selected value in the API results,
     // remove it from the selectedButNotInAPIResults array
-    if (selectedIndex > -1) selectedButNotInAPIResults.delete(v.dimensionValue);
+    if (selectedIndex > -1) selectedButNotInAPIResults.delete(selectedIndex);
 
     const cleanValue = cleanUpComparisonValue(v, total, selectedIndex);
 
@@ -169,9 +169,9 @@ export function prepareLeaderboardItemData(
   // that pushes it out of the top N. In that case, we will follow
   // the previous strategy, and just push a dummy value with only
   // the dimension value and nulls for all measure values.
-  for (const [dimensionValue, selectedIndex] of selectedButNotInAPIResults) {
+  for (const selectedIndex of selectedButNotInAPIResults) {
     selectedBelowTheFold.push({
-      dimensionValue,
+      dimensionValue: selectedValues[selectedIndex],
       selectedIndex,
       value: null,
       pctOfTotal: null,
@@ -212,7 +212,7 @@ export function prepareLeaderboardItemData(
 export function getComparisonDefaultSelection(
   values: ComparisonValueWithLabel[],
   selectedValues: (string | number)[],
-  excludeMode: boolean
+  excludeMode: boolean,
 ): (string | number)[] {
   if (!excludeMode) {
     if (selectedValues.length > 0) {
@@ -255,4 +255,24 @@ export function getQuerySortType(sortType: SortType) {
         ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
     }[sortType] || ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
   );
+}
+
+// Backwards compatibility fix for older filters that converted all non-null values to string
+export function compareLeaderboardValues(selected: string, value: any) {
+  if (selected === null || value === null) {
+    return selected === value;
+  }
+  if (typeof selected === typeof value) {
+    return selected === value;
+  }
+  switch (typeof value) {
+    case "boolean":
+      return (selected.toLowerCase() === "true") === value;
+
+    case "number":
+      return Number(selected) === value;
+
+    default:
+      return selected === value;
+  }
 }

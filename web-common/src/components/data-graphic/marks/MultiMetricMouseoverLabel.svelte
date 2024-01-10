@@ -55,12 +55,12 @@ It is probably not the most up to date code; but it works very well in practice.
     plotTop,
     plotBottom,
     elementHeight,
-    yBuffer
+    yBuffer,
   );
 
   $: locations = point.map((p) => {
     const locationValue = nonOverlappingLocations.find(
-      (l) => l.key === p.key
+      (l) => l.key === p.key,
     )?.value;
 
     return {
@@ -109,8 +109,8 @@ It is probably not the most up to date code; but it works very well in practice.
         (flipAtEdge === "body"
           ? plotRight
           : flipAtEdge === "graphic"
-          ? width
-          : false);
+            ? width
+            : false);
   }
   $: if (
     direction === "right" &&
@@ -138,8 +138,8 @@ It is probably not the most up to date code; but it works very well in practice.
       if (container) {
         labelWidth = Math.max(
           ...Array.from(container.querySelectorAll(".widths")).map(
-            (q: SVGElement) => q.getBoundingClientRect().width
-          )
+            (q: SVGElement) => q.getBoundingClientRect().width,
+          ),
         );
 
         if (!Number.isFinite(labelWidth)) {
@@ -296,10 +296,35 @@ It is probably not the most up to date code; but it works very well in practice.
     stroke-width: 3px;
     white-space: pre-wrap;
     /* Make all characters and numbers of equal width for easy scanibility */
-    font-feature-settings: "case" 0, "cpsp" 0, "dlig" 0, "frac" 0, "dnom" 0,
-      "numr" 0, "salt" 0, "subs" 0, "sups" 0, "tnum", "zero" 0, "ss01", "ss02" 0,
-      "ss03" 0, "ss04" 0, "cv01" 0, "cv02" 0, "cv03" 0, "cv04" 0, "cv05" 0,
-      "cv06" 0, "cv07" 0, "cv08" 0, "cv09" 0, "cv10" 0, "cv11" 0, "calt", "ccmp",
+    font-feature-settings:
+      "case" 0,
+      "cpsp" 0,
+      "dlig" 0,
+      "frac" 0,
+      "dnom" 0,
+      "numr" 0,
+      "salt" 0,
+      "subs" 0,
+      "sups" 0,
+      "tnum",
+      "zero" 0,
+      "ss01",
+      "ss02" 0,
+      "ss03" 0,
+      "ss04" 0,
+      "cv01" 0,
+      "cv02" 0,
+      "cv03" 0,
+      "cv04" 0,
+      "cv05" 0,
+      "cv06" 0,
+      "cv07" 0,
+      "cv08" 0,
+      "cv09" 0,
+      "cv10" 0,
+      "cv11" 0,
+      "calt",
+      "ccmp",
       "kern";
   }
 </style>

@@ -1,6 +1,7 @@
 import { GutterMarker, gutter } from "@codemirror/view";
 import LineNumberGutterMarkerComponent from "./LineNumberGutterMarker.svelte";
 import { lineStatusesStateField, updateLineStatuses } from "./state";
+import type { SvelteComponent } from "svelte";
 
 export const LINE_NUMBER_GUTTER_CLASS = "cm-line-number-gutter";
 
@@ -13,7 +14,7 @@ class NumberMarker extends GutterMarker {
   constructor(
     line: number,
     level: "error" | "warning" | "info" | "success" | undefined,
-    active: boolean
+    active: boolean,
   ) {
     super();
 
@@ -62,7 +63,7 @@ export const createLineNumberGutter = () =>
       // FIXME: get the semantics right when there is an empty string.
       if (
         !visibleRanges.some(
-          (range) => range.from <= lineStart && range.to >= lineEnd
+          (range) => range.from <= lineStart && range.to >= lineEnd,
         ) &&
         !(view.state.doc.lines === 1)
       ) {
@@ -70,7 +71,7 @@ export const createLineNumberGutter = () =>
       }
 
       const activeLine = view.state.doc.lineAt(
-        view.state.selection.main.head
+        view.state.selection.main.head,
       ).number;
       // Retrieve the line status for this line
       const lineStatuses = view.state.field(lineStatusesStateField);
@@ -81,13 +82,13 @@ export const createLineNumberGutter = () =>
       return new NumberMarker(
         lineNumber,
         thisStatus?.level,
-        activeLine === lineNumber
+        activeLine === lineNumber,
       );
     },
     lineMarkerChange(update) {
       return update.transactions.some((tr) => {
         const effectPresent = tr.effects.some((effect) =>
-          effect.is(updateLineStatuses)
+          effect.is(updateLineStatuses),
         );
         return effectPresent || update;
       });

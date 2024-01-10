@@ -37,7 +37,7 @@
   $: showPivot = $metricsExplorer?.pivot?.active;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
-    metricViewName
+    metricViewName,
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
@@ -48,7 +48,7 @@
   // to animate the extra padding that needs to be added to the
   // dashboard container when the navigation pane is collapsed
   const navigationVisibilityTween = getContext(
-    "rill:app:navigation-visibility-tween"
+    "rill:app:navigation-visibility-tween",
   ) as Tweened<number>;
 
   const { observedNode, listenToNodeResize } =

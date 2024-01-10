@@ -13,7 +13,7 @@ export function makeTimeSeries(length = 180, smoothingWindow = 7) {
     if (value < 0) value = 1;
     return {
       period: new Date(
-        +new Date("2010-01-01 00:01:04") + i * 1000 * 60 * 60 * 24
+        +new Date("2010-01-01 00:01:04") + i * 1000 * 60 * 60 * 24,
       ),
       value,
     };

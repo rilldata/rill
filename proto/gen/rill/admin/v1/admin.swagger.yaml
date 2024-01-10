@@ -1525,6 +1525,13 @@ paths:
           in: query
           required: false
           type: string
+        - name: tags
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
         - name: pageSize
           in: query
           required: false
@@ -1534,6 +1541,27 @@ paths:
           in: query
           required: false
           type: string
+      tags:
+        - AdminService
+  /v1/superuser/projects/tags:
+    patch:
+      summary: Add a SudoUpdateTags endpoint for superusers to update tags
+      operationId: AdminService_SudoUpdateTags
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateTagsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateTagsRequest'
       tags:
         - AdminService
   /v1/superuser/quotas/organization:
@@ -2349,6 +2377,10 @@ definitions:
       prodTtlSeconds:
         type: string
         format: int64
+      tags:
+        type: array
+        items:
+          type: string
       createdOn:
         type: string
         format: date-time
@@ -2539,6 +2571,22 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
+  v1SudoUpdateTagsRequest:
+    type: object
+    properties:
+      organization:
+        type: string
+      project:
+        type: string
+      tags:
+        type: array
+        items:
+          type: string
+  v1SudoUpdateTagsResponse:
+    type: object
+    properties:
+      project:
+        $ref: '#/definitions/v1Project'
   v1SudoUpdateUserQuotasRequest:
     type: object
     properties:

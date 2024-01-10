@@ -41,7 +41,7 @@ export function getChildTimeRanges(
   end: Date,
   ranges: Record<string, TimeRangeMeta>,
   minTimeGrain: V1TimeGrain,
-  zone: string
+  zone: string,
 ): TimeRangeOption[] {
   const timeRanges: TimeRangeOption[] = [];
 
@@ -65,13 +65,13 @@ export function getChildTimeRanges(
         end,
         timeRange.start,
         timeRange.end,
-        zone
+        zone,
       );
 
       // check if time range is possible with given minTimeGrain
       const thisRangeAllowedGrains = getAllowedTimeGrains(
         timeRangeDates.startDate,
-        timeRangeDates.endDate
+        timeRangeDates.endDate,
       );
 
       const hasSomeGrainMatches = thisRangeAllowedGrains.some((grain) => {
@@ -84,7 +84,7 @@ export function getChildTimeRanges(
 
       const isGrainPossible = !isGrainBigger(
         minTimeGrain,
-        allowedMaxGrain.grain
+        allowedMaxGrain.grain,
       );
       if (isGrainPossible && hasSomeGrainMatches) {
         timeRanges.push({
@@ -104,7 +104,7 @@ export function getChildTimeRanges(
 // for the config's default_time_Range to be an ISO duration.
 export function ISODurationToTimePreset(
   isoDuration: string,
-  defaultToAllTime = true
+  defaultToAllTime = true,
 ): TimeRangePreset | undefined {
   switch (isoDuration) {
     case "PT6H":
@@ -133,7 +133,7 @@ export function convertTimeRangePreset(
   timeRangePreset: TimeRangePreset,
   start: Date,
   end: Date,
-  zone: string
+  zone: string,
 ): TimeRange {
   if (timeRangePreset === TimeRangePreset.ALL_TIME) {
     return {
@@ -147,7 +147,7 @@ export function convertTimeRangePreset(
     end,
     timeRange.start,
     timeRange.end,
-    zone
+    zone,
   );
 
   return {
@@ -166,7 +166,7 @@ export const prettyFormatTimeRange = (
   start: Date,
   end: Date,
   timePreset: TimeRangePreset,
-  timeZone: string
+  timeZone: string,
 ): string => {
   const isAllTime = timePreset === TimeRangePreset.ALL_TIME;
   if (!start && end) {
@@ -255,12 +255,12 @@ export const prettyFormatTimeRange = (
     // beyond this point, we're dealing with time ranges that are full day periods
     // since time range is exclusive at the end, we need to subtract a day
     inclusiveEndDate = new Date(
-      end.getTime() - durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration)
+      end.getTime() - durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration),
     );
 
     const inclusiveEndDateWithTimeZone = getDateMonthYearForTimezone(
       inclusiveEndDate,
-      timeZone
+      timeZone,
     );
 
     endDate = inclusiveEndDateWithTimeZone.day;
@@ -316,7 +316,7 @@ export const prettyFormatTimeRange = (
   };
   return `${start.toLocaleDateString(
     undefined,
-    dateFormatOptions
+    dateFormatOptions,
   )} - ${inclusiveEndDate.toLocaleDateString(undefined, dateFormatOptions)}`;
 };
 
@@ -328,34 +328,34 @@ export function getAdjustedFetchTime(
   startTime: Date,
   endTime: Date,
   zone: string,
-  interval: V1TimeGrain
+  interval: V1TimeGrain,
 ) {
   if (!startTime || !endTime)
     return { start: startTime?.toISOString(), end: endTime?.toISOString() };
   const offsetedStartTime = getOffset(
     startTime,
     TIME_GRAIN[interval].duration,
-    TimeOffsetType.SUBTRACT
+    TimeOffsetType.SUBTRACT,
   );
 
   // the data point previous to the first date inside the chart.
   const fetchStartTime = getStartOfPeriod(
     offsetedStartTime,
     TIME_GRAIN[interval].duration,
-    zone
+    zone,
   );
 
   const offsetedEndTime = getOffset(
     endTime,
     TIME_GRAIN[interval].duration,
-    TimeOffsetType.ADD
+    TimeOffsetType.ADD,
   );
 
   // the data point after the last complete date.
   const fetchEndTime = getStartOfPeriod(
     offsetedEndTime,
     TIME_GRAIN[interval].duration,
-    zone
+    zone,
   );
 
   return {
@@ -374,7 +374,7 @@ export function getAdjustedChartTime(
   zone: string,
   interval: V1TimeGrain,
   timePreset: TimeRangePreset,
-  defaultTimeRange: string
+  defaultTimeRange: string,
 ) {
   if (!start || !end)
     return {
@@ -406,7 +406,7 @@ export function getAdjustedChartTime(
     adjustedEnd = getEndOfPeriod(
       new Date(adjustedEnd.getTime() - 1),
       grainDuration,
-      zone
+      zone,
     );
   }
 

@@ -131,7 +131,7 @@ export function getResourceNameForFile(filePath: string) {
 export function useResourceForFile(
   queryClient: QueryClient,
   instanceId: string,
-  filePath: string
+  filePath: string,
 ): CreateQueryResult<V1Resource> {
   return derived([getResourceNameForFile(filePath)], ([resourceName], set) => {
     return useResource(
@@ -139,7 +139,7 @@ export function useResourceForFile(
       resourceName?.name,
       resourceName?.kind as ResourceKind,
       undefined,
-      queryClient
+      queryClient,
     ).subscribe(set);
   });
 }
@@ -148,7 +148,7 @@ export function useResourceForFile(
 export function getAllErrorsForFile(
   queryClient: QueryClient,
   instanceId: string,
-  filePath: string
+  filePath: string,
 ): Readable<Array<V1ParseError>> {
   return derived(
     [
@@ -166,7 +166,7 @@ export function getAllErrorsForFile(
       }
       return [
         ...(projectParser.data?.projectParser?.state?.parseErrors ?? []).filter(
-          (e) => e.filePath === filePath
+          (e) => e.filePath === filePath,
         ),
         ...(resource.data?.meta?.reconcileError
           ? [
@@ -178,18 +178,18 @@ export function getAllErrorsForFile(
           : []),
       ];
     },
-    []
+    [],
   );
 }
 
 export function getFileHasErrors(
   queryClient: QueryClient,
   instanceId: string,
-  filePath: string
+  filePath: string,
 ): Readable<boolean> {
   return derived(
     [getAllErrorsForFile(queryClient, instanceId, filePath)],
-    ([errors]) => errors.length > 0
+    ([errors]) => errors.length > 0,
   );
 }
 
@@ -209,7 +209,7 @@ export function getLastStateUpdatedOn(resource: V1Resource) {
 
 export function getLastStateUpdatedOnByKindAndName(
   kind: ResourceKind,
-  name: string
+  name: string,
 ) {
   return get(resourcesStore).lastStateUpdatedOn[`${kind}/${name}`];
 }

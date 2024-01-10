@@ -29,7 +29,7 @@ BasicLayout is the backbone of the Rill application.
     {
       duration: SURFACE_SLIDE_DURATION,
       easing: SURFACE_SLIDE_EASING,
-    }
+    },
   );
 
   navigationLayout.subscribe((state) => {

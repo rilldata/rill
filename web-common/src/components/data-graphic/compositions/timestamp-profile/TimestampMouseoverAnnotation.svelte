@@ -13,13 +13,13 @@
   import type { PlotConfig } from "../../utils";
 
   const X: Writable<ScaleLinear<number, number>> = getContext(
-    "rill:data-graphic:X"
+    "rill:data-graphic:X",
   );
   const Y: Writable<ScaleLinear<number, number>> = getContext(
-    "rill:data-graphic:Y"
+    "rill:data-graphic:Y",
   );
   const config: Writable<PlotConfig> = getContext(
-    "rill:data-graphic:plot-config"
+    "rill:data-graphic:plot-config",
   );
 
   export let point;

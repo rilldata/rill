@@ -8,7 +8,10 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import {
+    createShiftClickAction,
+    isClipboardApiSupported,
+  } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher, getContext } from "svelte";
@@ -82,8 +85,8 @@
   $: barColor = excluded
     ? "ui-measure-bar-excluded"
     : rowSelected
-    ? "ui-measure-bar-included-selected"
-    : "ui-measure-bar-included";
+      ? "ui-measure-bar-included-selected"
+      : "ui-measure-bar-included";
 
   $: tooltipValue =
     value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
@@ -93,8 +96,8 @@
   $: formattedDataTypeStyle = excluded
     ? "font-normal ui-copy-disabled-faint"
     : rowSelected
-    ? "font-normal ui-copy-strong"
-    : "font-normal ui-copy";
+      ? "font-normal ui-copy-strong"
+      : "font-normal ui-copy";
 
   const shiftClick = async () => {
     let exportedValue = formatDataTypeAsDuckDbQueryString(value, type);
@@ -106,7 +109,11 @@
   };
 </script>
 
-<Tooltip location="top" distance={16} suppress={suppressTooltip}>
+<Tooltip
+  location="top"
+  distance={16}
+  suppress={suppressTooltip || !isClipboardApiSupported()}
+>
   <div
     role="gridcell"
     tabindex="0"

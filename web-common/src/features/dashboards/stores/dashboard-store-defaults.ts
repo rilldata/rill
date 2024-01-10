@@ -3,7 +3,10 @@ import {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  contextColWidthDefaults,
+  type MetricsExplorerEntity,
+} from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
@@ -106,20 +109,26 @@ export function getDefaultMetricsExplorerEntity(
   name: string,
   metricsView: V1MetricsViewSpec,
   fullTimeRange: V1ColumnTimeRangeResponse | undefined
-) {
+): MetricsExplorerEntity {
+  // CAST SAFETY: safe b/c (1) measure.name is a string if defined,
+  // and (2) we filter out undefined values
+  const defaultMeasureNames = (metricsView?.measures
+    ?.map((measure) => measure?.name)
+    .filter((name) => name !== undefined) ?? []) as string[];
+
+  // CAST SAFETY: safe b/c (1) measure.name is a string if defined,
+  // and (2) we filter out undefined values
+  const defaultDimNames = (metricsView?.dimensions
+    ?.map((dim) => dim.name)
+    .filter((name) => name !== undefined) ?? []) as string[];
+
   const metricsExplorer: MetricsExplorerEntity = {
     name,
-    selectedMeasureNames: metricsView.measures.map((measure) => measure.name),
-
-    visibleMeasureKeys: new Set(
-      metricsView.measures.map((measure) => measure.name)
-    ),
+    visibleMeasureKeys: new Set(defaultMeasureNames),
     allMeasuresVisible: true,
-    visibleDimensionKeys: new Set(
-      metricsView.dimensions.map((dim) => dim.name)
-    ),
+    visibleDimensionKeys: new Set(defaultDimNames),
     allDimensionsVisible: true,
-    leaderboardMeasureName: metricsView.measures[0]?.name,
+    leaderboardMeasureName: defaultMeasureNames[0],
     filters: {
       include: [],
       exclude: [],
@@ -140,6 +149,7 @@ export function getDefaultMetricsExplorerEntity(
       expanded: {},
       sort: {},
     },
+    contextColumnWidths: { ...contextColWidthDefaults },
   };
   // set time range related stuff
   setDefaultTimeRange(metricsView, metricsExplorer, fullTimeRange);

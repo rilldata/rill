@@ -61,7 +61,7 @@
     for (let i = 0; i < column_headers.length; i++) {
       if (!column_headers[i]) {
         column_headers[i] = range(0, columnHeaderDepth, () =>
-          structuredClone(LOADING_CELL)
+          structuredClone(LOADING_CELL),
         );
       }
     }
@@ -71,7 +71,7 @@
     row_headers.forEach((r, i) => {
       if (!r) {
         row_headers[i] = range(0, rowHeaderDepth, () =>
-          structuredClone(LOADING_CELL)
+          structuredClone(LOADING_CELL),
         );
       }
       // Replace null values inside the header with null placeholders
@@ -265,13 +265,13 @@
     }
 
     for (const th of Array.from(
-      table.querySelectorAll("thead th:not(.rt-group-corner)")
+      table.querySelectorAll("thead th:not(.rt-group-corner)"),
     )) {
       style_column_th(th as HTMLTableCellElement);
     }
 
     for (const th of Array.from(
-      table.querySelectorAll("thead th.rt-group-corner")
+      table.querySelectorAll("thead th.rt-group-corner"),
     )) {
       style_row_corner(th as HTMLTableCellElement);
     }
@@ -313,10 +313,35 @@
     table-layout: fixed;
     border-collapse: separate;
     font-family: Inter;
-    font-feature-settings: "case" 0, "cpsp" 0, "dlig" 0, "frac" 0, "dnom" 0,
-      "numr" 0, "salt" 0, "subs" 0, "sups" 0, "tnum", "zero" 0, "ss01", "ss02" 0,
-      "ss03" 0, "ss04" 0, "cv01" 0, "cv02" 0, "cv03" 0, "cv04" 0, "cv05" 0,
-      "cv06" 0, "cv07" 0, "cv08" 0, "cv09" 0, "cv10" 0, "cv11" 0, "calt", "ccmp",
+    font-feature-settings:
+      "case" 0,
+      "cpsp" 0,
+      "dlig" 0,
+      "frac" 0,
+      "dnom" 0,
+      "numr" 0,
+      "salt" 0,
+      "subs" 0,
+      "sups" 0,
+      "tnum",
+      "zero" 0,
+      "ss01",
+      "ss02" 0,
+      "ss03" 0,
+      "ss04" 0,
+      "cv01" 0,
+      "cv02" 0,
+      "cv03" 0,
+      "cv04" 0,
+      "cv05" 0,
+      "cv06" 0,
+      "cv07" 0,
+      "cv08" 0,
+      "cv09" 0,
+      "cv10" 0,
+      "cv11" 0,
+      "calt",
+      "ccmp",
       "kern";
   }
 

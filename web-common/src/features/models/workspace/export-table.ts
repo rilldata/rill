@@ -16,7 +16,7 @@ export type ExportTableRequest = {
 
 export function createExportTableMutation<
   TError = { response: { data: RpcStatus } },
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<Promise<void>>,

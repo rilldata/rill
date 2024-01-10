@@ -78,12 +78,12 @@ The main feature-set component for dashboard filters
 
   $: dimensionIdMap = getMapFromArray(
     dimensions,
-    (dimension) => dimension.name
+    (dimension) => dimension.name as string,
   );
 
   $: currentFormattedFilters = formatFilters(
     Object.values(filters).flat(),
-    dimensionIdMap
+    dimensionIdMap,
   );
 
   $: temporaryFilter = $potentialFilterName
@@ -155,10 +155,7 @@ The main feature-set component for dashboard filters
               }
             }}
             on:apply={(event) => {
-              if ($potentialFilterName) {
-                $potentialFilterName = null;
-              }
-              toggleDimensionValueSelection(name, event.detail);
+              toggleDimensionValueSelection(name, event.detail, true);
             }}
             on:search={(event) => {
               setActiveDimension(name, event.detail);

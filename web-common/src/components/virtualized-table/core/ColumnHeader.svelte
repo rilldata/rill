@@ -9,14 +9,17 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+  import {
+    createShiftClickAction,
+    isClipboardApiSupported,
+  } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { createEventDispatcher, getContext } from "svelte";
   import { fly } from "svelte/transition";
   import TooltipDescription from "../../tooltip/TooltipDescription.svelte";
+  import type { ResizeEvent } from "../drag-table-cell";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
   import StickyHeader from "./StickyHeader.svelte";
-  import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-  import type { ResizeEvent } from "../drag-table-cell";
 
   export let pinned = false;
   export let noPin = false;
@@ -139,19 +142,23 @@
             {description}
           </TooltipDescription>
         {/if}
-        <TooltipShortcutContainer>
-          {#if isDimensionTable}
-            <div>Sort column</div>
-            <Shortcut>Click</Shortcut>
-          {/if}
-          <div>
-            <StackingWord key="shift">Copy</StackingWord>
-            column name to clipboard
-          </div>
-          <Shortcut>
-            <span style="font-family: var(--system);">⇧</span> + Click
-          </Shortcut>
-        </TooltipShortcutContainer>
+        {#if isDimensionTable || isClipboardApiSupported()}
+          <TooltipShortcutContainer>
+            {#if isDimensionTable}
+              <div>Sort column</div>
+              <Shortcut>Click</Shortcut>
+            {/if}
+            {#if isClipboardApiSupported()}
+              <div>
+                <StackingWord key="shift">Copy</StackingWord>
+                column name to clipboard
+              </div>
+              <Shortcut>
+                <span style="font-family: var(--system);">⇧</span> + Click
+              </Shortcut>
+            {/if}
+          </TooltipShortcutContainer>
+        {/if}
       </TooltipContent>
     </Tooltip>
 

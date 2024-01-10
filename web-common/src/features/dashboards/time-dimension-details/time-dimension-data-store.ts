@@ -42,7 +42,7 @@ function getHeaderDataForRow(
   measureName: string,
   formatter: (v: number | undefined | null) => string,
   validPercentOfTotal: boolean,
-  unfilteredTotal: number
+  unfilteredTotal: number,
 ) {
   const rowData = isAllTime ? row?.data?.slice(1) : row?.data?.slice(1, -1);
   const dataRow = [
@@ -76,7 +76,7 @@ function prepareDimensionData(
   measure: MetricsViewSpecMeasureV2 | undefined,
   selectedValues: string[],
   isAllTime: boolean,
-  pinIndex: number
+  pinIndex: number,
 ): TableData {
   if (!data || !totalsData || !measure || data?.length < selectedValues.length)
     return;
@@ -108,11 +108,11 @@ function prepareDimensionData(
     orderedData = orderedData.concat(
       selectedValuesIndex?.map((i) => {
         return data[i];
-      })
+      }),
     );
 
     orderedData = orderedData.concat(
-      data?.filter((_, i) => !selectedValuesIndex.includes(i))
+      data?.filter((_, i) => !selectedValuesIndex.includes(i)),
     );
   } else {
     orderedData = data;
@@ -149,9 +149,9 @@ function prepareDimensionData(
         measureName,
         formatter,
         validPercentOfTotal,
-        unfilteredTotal
+        unfilteredTotal,
       );
-    })
+    }),
   );
 
   let body = [totalsTableData?.map((v) => formatter(v[measureName])) || []];
@@ -161,7 +161,7 @@ function prepareDimensionData(
       if (v?.isFetching) return new Array(columnCount).fill(undefined);
       const dimData = isAllTime ? v?.data?.slice(1) : v?.data?.slice(1, -1);
       return dimData?.map((v) => formatter(v[measureName]));
-    })
+    }),
   );
   /* 
     Important: regular-table expects body data in columnar format,
@@ -194,7 +194,7 @@ function prepareTimeData(
   comparisonLabel: string,
   measure: MetricsViewSpecMeasureV2 | undefined,
   hasTimeComparison,
-  isAllTime: boolean
+  isAllTime: boolean,
 ): TableData {
   if (!data || !measure) return;
 
@@ -233,7 +233,7 @@ function prepareTimeData(
           value: formatter(comparisonTotal),
           spark: createSparkline(
             tableData,
-            (v) => v[`comparison.${measureName}`]
+            (v) => v[`comparison.${measureName}`],
           ),
         },
       ],
@@ -247,7 +247,7 @@ function prepareTimeData(
         if (v[measureName] === null && v[`comparison.${measureName}`] === null)
           return null;
         return formatter(v[measureName] + v[`comparison.${measureName}`]);
-      })
+      }),
     );
 
     // Push current range
@@ -266,9 +266,9 @@ function prepareTimeData(
             : null;
         if (comparisonPercChange === null) return null;
         return numberPartsToString(
-          formatMeasurePercentageDifference(comparisonPercChange)
+          formatMeasurePercentageDifference(comparisonPercChange),
         );
-      })
+      }),
     );
 
     // Push absolute change
@@ -283,7 +283,7 @@ function prepareTimeData(
 
         if (change === null) return null;
         return formatter(change);
-      })
+      }),
     );
   } else {
     body.push(tableData?.map((v) => formatter(v[measureName])));
@@ -304,13 +304,13 @@ function prepareTimeData(
 }
 
 function createDimensionTableData(
-  ctx: StateManagers
+  ctx: StateManagers,
 ): Readable<DimensionDataItem[]> {
   return derived(ctx.dashboardStore, (dashboardStore, set) => {
     const measureName = dashboardStore?.expandedMeasureName;
     return derived(
       getDimensionValueTimeSeries(ctx, [measureName], "table"),
-      (data) => data
+      (data) => data,
     ).subscribe(set);
   });
 }
@@ -357,7 +357,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         timeControls?.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
 
       const measure = metricsView?.data?.measures?.find(
-        (m) => m.name === measureName
+        (m) => m.name === measureName,
       );
 
       let comparing;
@@ -372,10 +372,10 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         const selectedValues =
           ((excludeMode
             ? dashboardStore?.filters.exclude.find(
-                (d) => d.name === dimensionName
+                (d) => d.name === dimensionName,
               )?.in
             : dashboardStore?.filters.include.find(
-                (d) => d.name === dimensionName
+                (d) => d.name === dimensionName,
               )?.in) as string[]) ?? [];
 
         data = prepareDimensionData(
@@ -386,7 +386,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
           measure,
           selectedValues,
           isAllTime,
-          pinIndex
+          pinIndex,
         );
       } else {
         comparing = timeControls.showComparison ? "time" : "none";
@@ -410,12 +410,12 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
           comparisonLabel,
           measure,
           comparing === "time",
-          isAllTime
+          isAllTime,
         );
       }
 
       return { isFetching: false, comparing, data };
-    }
+    },
   ) as TimeSeriesDataStore;
 }
 
@@ -424,7 +424,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
  */
 export const useTimeDimensionDataStore =
   memoizeMetricsStore<TimeSeriesDataStore>((ctx: StateManagers) =>
-    createTimeDimensionDataStore(ctx)
+    createTimeDimensionDataStore(ctx),
   );
 
 /**

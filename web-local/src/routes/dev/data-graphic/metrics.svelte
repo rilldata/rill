@@ -67,7 +67,7 @@
         metric4: $data.reduce((a, b) => a + b.metric4, 0),
       };
     },
-    { metric1: 0, metric2: 0, metric3: 0, metric4: 0 }
+    { metric1: 0, metric2: 0, metric3: 0, metric4: 0 },
   );
 
   let metrics = [

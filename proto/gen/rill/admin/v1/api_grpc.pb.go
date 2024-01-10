@@ -65,6 +65,7 @@ const (
 	AdminService_SudoGetResource_FullMethodName              = "/rill.admin.v1.AdminService/SudoGetResource"
 	AdminService_SudoUpdateUserQuotas_FullMethodName         = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
+	AdminService_SudoUpdateTags_FullMethodName               = "/rill.admin.v1.AdminService/SudoUpdateTags"
 	AdminService_ListServices_FullMethodName                 = "/rill.admin.v1.AdminService/ListServices"
 	AdminService_CreateService_FullMethodName                = "/rill.admin.v1.AdminService/CreateService"
 	AdminService_UpdateService_FullMethodName                = "/rill.admin.v1.AdminService/UpdateService"
@@ -186,6 +187,8 @@ type AdminServiceClient interface {
 	SudoUpdateUserQuotas(ctx context.Context, in *SudoUpdateUserQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateUserQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
+	// Add a SudoUpdateTags endpoint for superusers to update tags
+	SudoUpdateTags(ctx context.Context, in *SudoUpdateTagsRequest, opts ...grpc.CallOption) (*SudoUpdateTagsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
 	// CreateService creates a new service per organization
@@ -653,6 +656,15 @@ func (c *adminServiceClient) SudoUpdateOrganizationQuotas(ctx context.Context, i
 	return out, nil
 }
 
+func (c *adminServiceClient) SudoUpdateTags(ctx context.Context, in *SudoUpdateTagsRequest, opts ...grpc.CallOption) (*SudoUpdateTagsResponse, error) {
+	out := new(SudoUpdateTagsResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoUpdateTags_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error) {
 	out := new(ListServicesResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListServices_FullMethodName, in, out, opts...)
@@ -948,6 +960,8 @@ type AdminServiceServer interface {
 	SudoUpdateUserQuotas(context.Context, *SudoUpdateUserQuotasRequest) (*SudoUpdateUserQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
+	// Add a SudoUpdateTags endpoint for superusers to update tags
+	SudoUpdateTags(context.Context, *SudoUpdateTagsRequest) (*SudoUpdateTagsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
 	// CreateService creates a new service per organization
@@ -1135,6 +1149,9 @@ func (UnimplementedAdminServiceServer) SudoUpdateUserQuotas(context.Context, *Su
 }
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationQuotas not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoUpdateTags(context.Context, *SudoUpdateTagsRequest) (*SudoUpdateTagsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateTags not implemented")
 }
 func (UnimplementedAdminServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListServices not implemented")
@@ -2043,6 +2060,24 @@ func _AdminService_SudoUpdateOrganizationQuotas_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SudoUpdateTags_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoUpdateTagsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoUpdateTags(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoUpdateTags_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoUpdateTags(ctx, req.(*SudoUpdateTagsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_ListServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListServicesRequest)
 	if err := dec(in); err != nil {
@@ -2629,6 +2664,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoUpdateOrganizationQuotas",
 			Handler:    _AdminService_SudoUpdateOrganizationQuotas_Handler,
+		},
+		{
+			MethodName: "SudoUpdateTags",
+			Handler:    _AdminService_SudoUpdateTags_Handler,
 		},
 		{
 			MethodName: "ListServices",
