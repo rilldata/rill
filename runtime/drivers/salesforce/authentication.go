@@ -18,22 +18,11 @@ type authenticationOptions struct {
 	ConnectedApp string
 }
 
-// Authenticable represents the authentation subset of the force api
-type Authenticable interface {
-	JwtAssertionForEndpoint(endpoint string, username string, keyfile string, clientID string) (string, error)
-	JwtLoginAtEndpoint(endpoint string, assertion string) (*force.Force, error)
-	ForceSoapLoginAtEndpoint(endpoint string, userName string, password string) (*force.Force, error)
-}
-
-// a concrete implementation of Authenticable
-type forceProvider struct{}
-
 func authenticate(options authenticationOptions) (*force.Force, error) {
 	if options.ConnectedApp == "" {
 		return nil, fmt.Errorf("connected app client id is required")
 	}
 	force.ClientId = options.ConnectedApp
-	provider := forceProvider{}
 
 	isUsernameSelected := len(options.Username) > 0
 	isJWTSelected := len(options.JWT) > 0
@@ -46,9 +35,9 @@ func authenticate(options authenticationOptions) (*force.Force, error) {
 
 	switch {
 	case isJWTSelected:
-		return jwtLogin(endpoint, options, provider)
+		return jwtLogin(endpoint, options)
 	case isSOAPSelected:
-		return provider.ForceSoapLoginAtEndpoint(endpoint, options.Username, options.Password)
+		return soapLoginAtEndpoint(endpoint, options.Username, options.Password)
 	case !isUsernameSelected:
 		return nil, fmt.Errorf("username missing")
 	}
@@ -62,13 +51,13 @@ func endpoint(options authenticationOptions) (endpoint string, err error) {
 		// URL needs to have scheme lest the force cli lib chokes
 		uri, err := url.Parse(options.Endpoint)
 		if err != nil {
-			return defaultEndpoint, errors.New("Unable to parse endpoint: " + options.Endpoint)
+			return defaultEndpoint, errors.New("unable to parse endpoint: " + options.Endpoint)
 		}
 
 		if uri.Host == "" {
 			uri, err = url.Parse("https://" + options.Endpoint)
 			if err != nil {
-				return defaultEndpoint, errors.New("Could not identify host: " + options.Endpoint)
+				return defaultEndpoint, errors.New("could not identify host: " + options.Endpoint)
 			}
 		}
 
@@ -78,19 +67,11 @@ func endpoint(options authenticationOptions) (endpoint string, err error) {
 	return defaultEndpoint, nil
 }
 
-func jwtLogin(endpoint string, options authenticationOptions, provider Authenticable) (*force.Force, error) {
-	assertion, err := provider.JwtAssertionForEndpoint(endpoint, options.Username, options.JWT, options.ConnectedApp)
+func jwtLogin(endpoint string, options authenticationOptions) (*force.Force, error) {
+	assertion, err := force.JwtAssertionForEndpoint(endpoint, options.Username, options.JWT, options.ConnectedApp)
 	if err != nil {
 		return nil, err
 	}
-	return provider.JwtLoginAtEndpoint(endpoint, assertion)
-}
-
-func (provider forceProvider) JwtAssertionForEndpoint(endpoint, username, keyfile, clientID string) (string, error) {
-	return force.JwtAssertionForEndpoint(endpoint, username, keyfile, clientID)
-}
-
-func (provider forceProvider) JwtLoginAtEndpoint(endpoint, assertion string) (*force.Force, error) {
 	session, err := force.JWTLoginAtEndpoint(endpoint, assertion)
 	if err != nil {
 		return nil, fmt.Errorf("JWT authentication failed: %w", err)
@@ -99,7 +80,7 @@ func (provider forceProvider) JwtLoginAtEndpoint(endpoint, assertion string) (*f
 	return force.NewForce(&session), nil
 }
 
-func (provider forceProvider) ForceSoapLoginAtEndpoint(endpoint, username, password string) (*force.Force, error) {
+func soapLoginAtEndpoint(endpoint, username, password string) (*force.Force, error) {
 	session, err := force.ForceSoapLoginAtEndpoint(endpoint, username, password)
 	if err != nil {
 		return nil, fmt.Errorf("SOAP authentication failed: %w", err)
