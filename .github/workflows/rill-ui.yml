@@ -48,7 +48,8 @@ jobs:
           # if push is to release branch, should be deployed to stage
           # else go to test, workflow_dispatch can choose the environment.
           echo "GITHUB_EVENT_NAME=$GITHUB_EVENT_NAME"
-          echo "GITHUB_REF_NAME=$GITHUB_REF_NAME"
+          echo "GITHUB_REF_NAME=$GITHUB_REF_NAME"'
+          echo $($GITHUB_REF_NAME =~ "release.*")
           if [[ ( $GITHUB_EVENT_NAME == "push" && $RELEASE == "true" ) || ( $GITHUB_EVENT_NAME == "workflow_dispatch" && $ENV == "prod" ) ]]; then
             echo "Deploying to prod..."
             echo "NETLIFY_SITE_ID=afb26917-7a60-47d9-81dc-c0babbb0d9a9" >> $GITHUB_ENV
