@@ -134,18 +134,21 @@ const timeGrainOptions: TimeGrain[] = [
     label: "day",
     duration: Period.DAY,
     formatDate: {},
+    luxonFormat: "LLL dd",
   },
   {
     grain: V1TimeGrain.TIME_GRAIN_WEEK,
     label: "week",
     duration: Period.WEEK,
     formatDate: {},
+    luxonFormat: "LLL dd",
   },
   {
     grain: V1TimeGrain.TIME_GRAIN_MONTH,
     label: "month",
     duration: Period.MONTH,
     formatDate: {},
+    luxonFormat: "LLL 'yy",
   },
 ];
 
