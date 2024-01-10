@@ -1,23 +1,23 @@
-import { sortingSelectors } from "./sorting";
-import { derived, type Readable } from "svelte/store";
-import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
-import type { ReadablesObj, SelectorFnsObj } from "./types";
-import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type {
   RpcStatus,
-  V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
-import { formattingSelectors } from "./data-formatting";
-import { contextColSelectors } from "./context-column";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
+import { derived, type Readable } from "svelte/store";
+import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 import { activeMeasureSelectors } from "./active-measure";
-import { dimensionSelectors } from "./dimensions";
-import { dimensionFilterSelectors } from "./dimension-filters";
-import { timeRangeSelectors } from "./time-range";
-import { leaderboardQuerySelectors } from "./dashboard-queries";
 import { comparisonSelectors } from "./comparisons";
+import { contextColSelectors } from "./context-column";
+import { leaderboardQuerySelectors } from "./dashboard-queries";
+import { formattingSelectors } from "./data-formatting";
+import { dimensionFilterSelectors } from "./dimension-filters";
 import { dimensionTableSelectors } from "./dimension-table";
+import { dimensionSelectors } from "./dimensions";
 import { measureSelectors } from "./measures";
+import { sortingSelectors } from "./sorting";
+import { timeRangeSelectors } from "./time-range";
+import type { ReadablesObj, SelectorFnsObj } from "./types";
 
 export type DashboardDataReadables = {
   dashboardStore: Readable<MetricsExplorerEntity>;
@@ -25,7 +25,7 @@ export type DashboardDataReadables = {
     QueryObserverResult<V1MetricsViewSpec, RpcStatus>
   >;
   timeRangeSummaryStore: Readable<
-    QueryObserverResult<V1ColumnTimeRangeResponse, unknown>
+    QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   >;
 };
 
