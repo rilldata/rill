@@ -57,7 +57,6 @@ export function getDimensionTableExportArgs(ctx: StateManagers) {
           },
         ],
         where: sanitiseExpression(dashboardState.whereFilter),
-        having: dashboardState.havingFilter,
         offset: "0",
       };
     },

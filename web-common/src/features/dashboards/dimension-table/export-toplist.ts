@@ -61,7 +61,6 @@ export default async function exportToplist({
             },
           ],
           where: sanitiseExpression(dashboard.whereFilter),
-          having: sanitiseExpression(dashboard.havingFilter),
           limit: undefined, // the backend handles export limits
           offset: "0",
         },
