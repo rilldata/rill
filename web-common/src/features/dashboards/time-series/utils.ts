@@ -1,4 +1,3 @@
-import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
 import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
@@ -20,7 +19,7 @@ export function niceMeasureExtents(
   ];
 }
 
-export function toComparisonKeys(d, offsetDuration: string, zone: string) {
+export function toComparisonKeys(d, offsetDuration: string) {
   return Object.keys(d).reduce((acc, key) => {
     if (key === "records") {
       Object.entries(d.records).forEach(([key, value]) => {
@@ -57,7 +56,7 @@ export function prepareTimeSeries(
       ts_position,
       bin: originalPt.bin,
       ...originalPt.records,
-      ...toComparisonKeys(comparisonPt || {}, offsetDuration, zone),
+      ...toComparisonKeys(comparisonPt || {}, offsetDuration),
     };
   });
 }

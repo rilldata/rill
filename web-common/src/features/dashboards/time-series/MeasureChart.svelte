@@ -17,7 +17,6 @@
   import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
   import {
     getOrderedStartEnd,
-    localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
   import {
@@ -47,7 +46,6 @@
   export let yMax: number = undefined;
 
   export let timeGrain: V1TimeGrain;
-  export let zone: string;
 
   export let showComparison = false;
   export let data;

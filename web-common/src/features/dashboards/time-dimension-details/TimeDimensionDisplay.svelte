@@ -4,7 +4,6 @@
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { timeFormat } from "d3-time-format";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
@@ -24,7 +23,7 @@
   import type { TDDComparison, TableData } from "./types";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import {toFormat} from "@rilldata/web-common/lib/time/timezone";
+  import { toFormat } from "@rilldata/web-common/lib/time/timezone";
 
   export let metricViewName;
 
@@ -83,10 +82,10 @@
   $: zone = $dashboardStore?.selectedTimezone ?? "UTC";
 
   // Create a time formatter for the column headers
-  $: timeFormatter = function (d:Date) : string {
+  $: timeFormatter = function (d: Date): string {
     let format = timeGrain ? TIME_GRAIN[timeGrain].luxonFormat : "LLL dd";
     return toFormat(d, zone, format);
-  }
+  };
 
   function highlightCell(e) {
     const { x, y } = e.detail;
