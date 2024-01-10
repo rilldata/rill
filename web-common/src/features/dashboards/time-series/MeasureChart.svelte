@@ -15,10 +15,7 @@
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
   import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
-  import {
-    getOrderedStartEnd,
-    niceMeasureExtents,
-  } from "./utils";
+  import { getOrderedStartEnd, niceMeasureExtents } from "./utils";
   import {
     TimeRangePreset,
     TimeRoundingStrategy,
