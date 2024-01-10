@@ -30,7 +30,7 @@ type forceProvider struct{}
 
 func authenticate(options authenticationOptions) (*force.Force, error) {
 	if options.ConnectedApp == "" {
-		options.ConnectedApp = defaultClientID
+		return nil, fmt.Errorf("connected app client id is required")
 	}
 	force.ClientId = options.ConnectedApp
 	provider := forceProvider{}
