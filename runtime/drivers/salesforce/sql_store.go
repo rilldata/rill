@@ -75,7 +75,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 
 	session, err := authenticate(authOptions)
 	if err != nil {
-		return nil, fmt.Errorf("Authentication failed: %w", err)
+		return nil, fmt.Errorf("authentication failed: %w", err)
 	}
 
 	job := makeBulkJob(session, srcProps.SObject, srcProps.SOQL, srcProps.QueryAll, c.logger)
@@ -103,7 +103,7 @@ func (j *bulkJob) Close() error {
 		err := os.Remove(j.tempFilePath)
 		j.tempFilePath = ""
 		if err != nil {
-			return fmt.Errorf("Failed to delete temp file: %w", err)
+			return fmt.Errorf("failed to delete temp file: %w", err)
 		}
 	}
 	return nil
@@ -112,7 +112,7 @@ func (j *bulkJob) Close() error {
 // Next implements drivers.RowIterator.
 func (j *bulkJob) Next() ([]string, error) {
 	if j.jobID == "" {
-		return nil, fmt.Errorf("Invalid job: no job id")
+		return nil, fmt.Errorf("invalid job: no job id")
 	}
 	if j.job.NumberRecordsProcessed == 0 {
 		return nil, io.EOF
@@ -121,7 +121,7 @@ func (j *bulkJob) Next() ([]string, error) {
 		err := os.Remove(j.tempFilePath)
 		j.tempFilePath = ""
 		if err != nil {
-			return nil, fmt.Errorf("Failed to delete temp file: %w", err)
+			return nil, fmt.Errorf("failed to delete temp file: %w", err)
 		}
 	}
 	if j.nextResult == len(j.results) {
@@ -129,7 +129,7 @@ func (j *bulkJob) Next() ([]string, error) {
 	}
 	tempFile, err := j.retrieveJobResult(context.Background(), j.nextResult)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to retrieve batch: %w", err)
+		return nil, fmt.Errorf("failed to retrieve batch: %w", err)
 	}
 	j.tempFilePath = tempFile
 	j.nextResult++
