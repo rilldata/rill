@@ -245,7 +245,6 @@ export function getDimensionValueTimeSeries(
                   timeseries?.data?.data,
                   undefined,
                   TIME_GRAIN[interval]?.duration,
-                  zone,
                 );
               }
 

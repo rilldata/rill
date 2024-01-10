@@ -43,7 +43,6 @@ export function prepareTimeSeries(
   original,
   comparison,
   timeGrainDuration: string,
-  zone: string,
 ) {
   return original?.map((originalPt, i) => {
     const comparisonPt = comparison?.[i];
