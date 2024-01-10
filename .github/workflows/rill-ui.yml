@@ -48,13 +48,16 @@ jobs:
           # if push is to release branch, should be deployed to stage
           # else go to test, workflow_dispatch can choose the environment.
           if [[ ( $GITHUB_EVENT_NAME == "push" && $RELEASE == "true" ) || ( $GITHUB_EVENT_NAME == "workflow_dispatch" && $ENV == "prod" ) ]]; then
+            echo "Deploying to prod..."
             echo "NETLIFY_SITE_ID=afb26917-7a60-47d9-81dc-c0babbb0d9a9" >> $GITHUB_ENV
             echo "DOMAIN=rilldata.com" >> $GITHUB_ENV
           else
             if [[ ( $GITHUB_EVENT_NAME == "push" && $GITHUB_REF_NAME =~ "release.*" ) || ( $GITHUB_EVENT_NAME == "workflow_dispatch" && $ENV == "stage" ) ]]; then
+              echo "Deploying to stage..."
               echo "NETLIFY_SITE_ID=e73ac785-882e-425a-8fc8-5432528bb374" >> $GITHUB_ENV
               echo "DOMAIN=rilldata.io" >> $GITHUB_ENV
             else
+              echo "Deploying to test..."
               echo "NETLIFY_SITE_ID=ad7b8d67-9b24-4b2a-8985-1a80b7b0ab11" >> $GITHUB_ENV
               echo "DOMAIN=rilldata.in" >> $GITHUB_ENV
             fi
