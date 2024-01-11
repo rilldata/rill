@@ -48,7 +48,12 @@
   let isCustomRangeOpen = false;
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: hasSubRangeSelected = $dashboardStore?.selectedScrubRange?.end;
+  $: scrubEnd = $dashboardStore?.selectedScrubRange?.end;
+  $: scrubStart = $dashboardStore?.selectedScrubRange?.start;
+  $: timeZone = $dashboardStore?.selectedTimezone;
+
+  $: selectedStart = $timeControlsStore?.selectedTimeRange?.start;
+  $: selectedEnd = $timeControlsStore?.selectedTimeRange?.end;
 
   $: currentSelection = $dashboardStore?.selectedTimeRange?.name;
   $: intermediateSelection = currentSelection;
@@ -85,11 +90,11 @@
     });
   }
 
-  function zoomScrub(toggleFloatingElement) {
-    const { start, end } = getOrderedStartEnd(
-      $dashboardStore?.selectedScrubRange?.start,
-      $dashboardStore?.selectedScrubRange?.end,
-    );
+  function zoomScrub(toggleFloatingElement: () => void) {
+    if (!scrubStart || !scrubEnd) return;
+
+    const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
+
     onSelectRelativeTimeRange(
       {
         name: TimeRangePreset.CUSTOM,
@@ -98,6 +103,7 @@
       },
       toggleFloatingElement,
     );
+
     dispatch("remove-scrub");
   }
 
@@ -118,14 +124,14 @@
   closeOnItemClick={false}
 >
   <DropdownMenu.Trigger asChild let:builder>
-    {#if hasSubRangeSelected}
+    {#if scrubStart && scrubEnd && timeZone}
       <div class="flex" use:builder.action {...builder}>
         <TimeRangeScrubChip
           on:remove={() => dispatch("remove-scrub")}
           active={open}
-          start={$dashboardStore?.selectedScrubRange?.start}
-          end={$dashboardStore?.selectedScrubRange?.end}
-          zone={$dashboardStore?.selectedTimezone}
+          start={scrubStart}
+          end={scrubEnd}
+          zone={timeZone}
         />
       </div>
     {:else}
@@ -151,15 +157,16 @@
             Select a time range
           {/if}
         </b>
-
-        <p>
-          {prettyFormatTimeRange(
-            $timeControlsStore?.selectedTimeRange?.start,
-            $timeControlsStore?.selectedTimeRange?.end,
-            $timeControlsStore?.selectedTimeRange?.name,
-            $dashboardStore?.selectedTimezone,
-          )}
-        </p>
+        {#if selectedStart && selectedEnd && currentSelection && timeZone}
+          <p>
+            {prettyFormatTimeRange(
+              selectedStart,
+              selectedEnd,
+              currentSelection,
+              timeZone,
+            )}
+          </p>
+        {/if}
 
         <IconSpaceFixer pullRight>
           <div class="transition-transform" class:-rotate-180={open}>
@@ -178,7 +185,7 @@
       end: new Date(boundaryEnd.getTime() + 1), // end is exclusive
     }}
 
-    {#if hasSubRangeSelected}
+    {#if scrubStart && scrubEnd}
       <DropdownMenu.Item
         class="justify-between"
         on:mouseenter={setIntermediateSelection(TimeRangePreset.CUSTOM)}

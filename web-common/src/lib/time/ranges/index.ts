@@ -28,6 +28,7 @@ import {
 } from "../transforms";
 import {
   RangePresetType,
+  TimeComparisonOption,
   TimeOffsetType,
   TimeRange,
   TimeRangeMeta,
@@ -165,7 +166,7 @@ export function convertTimeRangePreset(
 export const prettyFormatTimeRange = (
   start: Date,
   end: Date,
-  timePreset: TimeRangePreset,
+  timePreset: TimeRangePreset | TimeComparisonOption,
   timeZone: string,
 ): string => {
   const isAllTime = timePreset === TimeRangePreset.ALL_TIME;
