@@ -247,12 +247,13 @@ function toPbValue(val: unknown) {
         },
       });
     // TODO: other options are not currently in a filter. but we might need them in future
+    default:
+      // force as string for unknown types. this is the older behaviour
+      return new Value({
+        kind: {
+          case: "stringValue",
+          value: JSON.stringify(val),
+        },
+      });
   }
-  // force as string. this is the older behaviour
-  return new Value({
-    kind: {
-      case: "stringValue",
-      value: val as string,
-    },
-  });
 }

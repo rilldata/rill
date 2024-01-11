@@ -1,7 +1,7 @@
 <!-- @component
 The main feature-set component for dashboard filters
  -->
-<script context="module" lang="ts">
+<script lang="ts">
   import {
     Chip,
     ChipContainer,
@@ -19,9 +19,7 @@ The main feature-set component for dashboard filters
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
   import FilterButton from "./FilterButton.svelte";
-</script>
 
-<script lang="ts">
   const StateManagers = getStateManagers();
   const {
     dashboardStore,

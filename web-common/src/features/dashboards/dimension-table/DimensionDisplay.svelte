@@ -88,7 +88,6 @@
       },
     },
   );
-  $: console.log($dimensionTableSortedQueryBody, filterSet, $sortedQuery);
 
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 

@@ -116,19 +116,19 @@ export async function waitForComparisonTopLists(
   );
 }
 
-export type RequestMatcherFilter = { label: string; values: Array<unknown> };
+export type RequestMatcherFilter = { label: string; values: unknown[] };
 
 /**
  * Helper to add a request matcher to match metrics view queries with certain filter
  */
 export function metricsViewRequestFilterMatcher(
   response: Response,
-  includeFilters: Array<RequestMatcherFilter>,
-  excludeFilters: Array<RequestMatcherFilter>,
+  includeFilters: RequestMatcherFilter[],
+  excludeFilters: RequestMatcherFilter[],
 ) {
   const filterRequest = response.request().postDataJSON().where as V1Expression;
-  const includeFilterRequest = new Map<string, Array<string>>();
-  const excludeFilterRequest = new Map<string, Array<string>>();
+  const includeFilterRequest = new Map<string, string[]>();
+  const excludeFilterRequest = new Map<string, string[]>();
 
   if (filterRequest?.cond?.exprs) {
     for (const expr of filterRequest.cond.exprs) {
