@@ -26,7 +26,7 @@ import {
 function getExpandedValuesFromNestedArray(
   tableData,
   anchorDimension: string,
-  expanded: ExpandedState
+  expanded: ExpandedState,
 ): Record<string, string[]> {
   const values = {};
 
@@ -62,13 +62,13 @@ export function createSubTableCellQuery(
   config: PivotDataStoreConfig,
   anchorDimension: string,
   columnDimensionAxesData,
-  rowNestFilters
+  rowNestFilters,
 ) {
   const allDimensions = config.colDimensionNames.concat([anchorDimension]);
 
   const filterForSubTable = getFilterForPivotTable(
     config,
-    columnDimensionAxesData
+    columnDimensionAxesData,
   );
 
   const includeFilters = filterForSubTable.include.concat(rowNestFilters);
@@ -89,7 +89,7 @@ export function createSubTableCellQuery(
     allDimensions,
     filters,
     sortBy,
-    "10000"
+    "10000",
   );
 }
 
@@ -102,7 +102,7 @@ export function queryExpandedRowMeasureValues(
   ctx: StateManagers,
   config: PivotDataStoreConfig,
   tableData,
-  columnDimensionAxesData
+  columnDimensionAxesData,
 ) {
   const { rowDimensionNames } = config;
   const expanded = config.pivot.expanded;
@@ -110,7 +110,7 @@ export function queryExpandedRowMeasureValues(
   const values = getExpandedValuesFromNestedArray(
     tableData,
     rowDimensionNames[0],
-    expanded
+    expanded,
   );
 
   return derived(
@@ -135,14 +135,14 @@ export function queryExpandedRowMeasureValues(
           getAxisForDimensions(
             ctx,
             [anchorDimension],
-            filterForRowDimensionAxes
+            filterForRowDimensionAxes,
           ),
           createSubTableCellQuery(
             ctx,
             config,
             anchorDimension,
             columnDimensionAxesData,
-            rowNestFilters
+            rowNestFilters,
           ),
         ],
         ([expandIndex, subRowDimensionValues, subTableData]) => {
@@ -152,12 +152,12 @@ export function queryExpandedRowMeasureValues(
             rowDimensionValues: subRowDimensionValues?.data?.[anchorDimension],
             data: subTableData?.data?.data,
           };
-        }
+        },
       );
     }),
     (combos) => {
       return combos;
-    }
+    },
   );
 }
 
@@ -170,14 +170,14 @@ export function queryExpandedRowMeasureValues(
  * Therefore, we change the key of the nested dimension to the anchor.
  */
 export function addExpandedDataToPivot(
-  config,
-  tableData,
-  rowDimensions,
+  config: PivotDataStoreConfig,
+  tableData: Array<{ [key: string]: unknown }>,
+  rowDimensions: string[],
   columnDimensionAxes,
-  expandedRowMeasureValues
-) {
+  expandedRowMeasureValues,
+): Array<{ [key: string]: unknown }> {
   const pivotData = tableData;
-  const levels = rowDimensions.length;
+  const numRowDimensions = rowDimensions.length;
 
   expandedRowMeasureValues.forEach((expandedRowData) => {
     const indices = expandedRowData.expandIndex
@@ -216,7 +216,7 @@ export function addExpandedDataToPivot(
           expandedRowData?.rowDimensionValues,
           columnDimensionAxes?.data,
           skeletonSubTable,
-          expandedRowData?.data
+          expandedRowData?.data,
         );
       }
 
@@ -226,9 +226,14 @@ export function addExpandedDataToPivot(
           [rowDimensions[0]]: row[anchorDimension],
         };
 
-        // if (indices.length < levels - 1) {
-        //   newRow.subRows = [{ [rowDimensions[0]]: "LOADING_CELL" }];
-        // }
+        /**
+         * Add sub rows to the new row if number of row dimensions
+         * is greater than number of nest levels expanded except
+         * for the last level
+         */
+        if (numRowDimensions - 1 > indices.length) {
+          newRow.subRows = [{ [rowDimensions[0]]: "LOADING_CELL" }];
+        }
         return newRow;
       });
     }

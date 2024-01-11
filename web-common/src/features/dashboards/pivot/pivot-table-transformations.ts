@@ -7,7 +7,7 @@ import { createIndexMap } from "./pivot-utils";
  */
 export function createTableWithAxes(
   anchorDimensionName: string,
-  rowDimensionValues: string[] | undefined
+  rowDimensionValues: string[] | undefined,
 ) {
   let data: Array<{ [key: string]: unknown }> = [];
 
@@ -30,7 +30,9 @@ export function createTableWithAxes(
 export function prepareNestedPivotData(data, dimensions: string[], i = 1) {
   if (dimensions.slice(i).length > 0) {
     data.forEach((row) => {
-      row.subRows = [{ [dimensions[0]]: "LOADING_CELL" }];
+      if (!row.subRows) {
+        row.subRows = [{ [dimensions[0]]: "LOADING_CELL" }];
+      }
 
       prepareNestedPivotData(row.subRows, dimensions, i + 1);
     });
@@ -46,10 +48,10 @@ export function prepareNestedPivotData(data, dimensions: string[], i = 1) {
  * Measure names are converted to m0, m1, m2, etc.
  */
 export function getAccessorForCell(
-  colDimensionNames,
+  colDimensionNames: string[],
   colValuesIndexMaps,
-  numMeasures,
-  cell
+  numMeasures: number,
+  cell: { [key: string]: unknown },
 ) {
   // TODO: Check for undefineds
   const nestedColumnValueAccessor = colDimensionNames
@@ -89,11 +91,11 @@ export function getAccessorForCell(
  */
 export function reduceTableCellDataIntoRows(
   config: PivotDataStoreConfig,
-  anchorDimensionName,
-  anchorDimensionRowValues,
-  columnDimensionAxes,
-  tableData,
-  cellData
+  anchorDimensionName: string,
+  anchorDimensionRowValues: string[],
+  columnDimensionAxes: Record<string, string[] | undefined>,
+  tableData: Array<{ [key: string]: unknown }>,
+  cellData: Array<{ [key: string]: unknown }>,
 ) {
   const colDimensionNames = config.colDimensionNames;
 
@@ -111,7 +113,7 @@ export function reduceTableCellDataIntoRows(
   const rowDimensionIndexMap = createIndexMap(anchorDimensionRowValues);
 
   const colValuesIndexMaps = colDimensionNames.map((colDimensionName) =>
-    createIndexMap(columnDimensionAxes[colDimensionName])
+    createIndexMap(columnDimensionAxes[colDimensionName]),
   );
 
   cellData.forEach((cell) => {
@@ -123,7 +125,7 @@ export function reduceTableCellDataIntoRows(
       colDimensionNames,
       colValuesIndexMaps,
       config.measureNames.length,
-      cell
+      cell,
     );
 
     if (row) {
