@@ -3,6 +3,7 @@ import {
   V1MetricsViewFilter,
   type V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
+  V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { derived, Readable, writable } from "svelte/store";
@@ -290,7 +291,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             if (initialTableCellData.isFetching || initialTableCellData.error)
               return { isFetching: false, data: skeletonTableData, columnDef };
 
-            const cellData = initialTableCellData.data?.data;
+            const cellData = initialTableCellData.data
+              ?.data as V1MetricsViewAggregationResponseDataItem[];
 
             const tableDataWithCells = reduceTableCellDataIntoRows(
               config,
