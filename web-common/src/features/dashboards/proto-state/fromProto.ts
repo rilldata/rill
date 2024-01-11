@@ -160,7 +160,7 @@ export function base64ToProto(message: string) {
   return protoBase64.dec(message);
 }
 
-function fromExpressionProto(expression: Expression): V1Expression {
+function fromExpressionProto(expression: Expression): V1Expression | undefined {
   switch (expression.expression.case) {
     case "ident":
       return {
@@ -179,9 +179,9 @@ function fromExpressionProto(expression: Expression): V1Expression {
       return {
         cond: {
           op: FromProtoOperationMap[expression.expression.value.op],
-          exprs: expression.expression.value.exprs.map((e) =>
-            fromExpressionProto(e),
-          ),
+          exprs: expression.expression.value.exprs
+            .map((e) => fromExpressionProto(e))
+            .filter((e) => e !== undefined) as V1Expression[],
         },
       };
   }
