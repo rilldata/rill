@@ -89,7 +89,6 @@
     const { start, end } = getOrderedStartEnd(
       $dashboardStore?.selectedScrubRange?.start,
       $dashboardStore?.selectedScrubRange?.end,
-      $dashboardStore?.selectedScrubRange?.end,
     );
     onSelectRelativeTimeRange(
       {
@@ -97,7 +96,6 @@
         start,
         end,
       },
-      toggleFloatingElement,
       toggleFloatingElement,
     );
     dispatch("remove-scrub");
@@ -160,7 +158,6 @@
             $timeControlsStore?.selectedTimeRange?.end,
             $timeControlsStore?.selectedTimeRange?.name,
             $dashboardStore?.selectedTimezone,
-            $dashboardStore?.selectedTimezone,
           )}
         </p>
 
@@ -208,7 +205,6 @@
     {#if $timeRangeSelectorState.showDefaultItem}
       <DefaultTimeRangeMenuItem
         on:before-select={setIntermediateSelection(
-          $metaQuery.data?.defaultTimeRange,
           $metaQuery.data?.defaultTimeRange,
         )}
         on:select={() =>
