@@ -1,6 +1,50 @@
 import ts from "typescript";
-import tsConfig from "../../../tsconfig.json";
 import orvalConfig from "../../orval.config";
+import * as prettier from "prettier";
+import { writeFile } from "node:fs/promises";
+
+/*
+ * Orval is not generating code for POST requests as expected.
+ * We have a few POST queries that are essentially GET requests with large request in the POST body.
+ * For orval to generate a query we set useQuery and signal. Signal allows for query cancellation.
+ * But orval only honours signal in the function creating the query object but not the function that makes a call to our http client.
+ * This file rewrites the function making the call to http client and adds the signal argument.
+ *
+ * This transformer takes the output from orval and does in-place rewrite.
+ * WARNING: There might be undefined behaviour when used on other files.
+ *
+ * EG: Consider this function for MetricsViewAggregation,
+ *
+ * export const queryServiceMetricsViewAggregation = (
+ *   instanceId: string,
+ *   metricsView: string,
+ *   queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody,
+ * ) => {
+ *   return httpClient<V1MetricsViewAggregationResponse>({
+ *     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsView}/aggregation`,
+ *     method: "POST",
+ *     headers: { "Content-Type": "application/json" },
+ *     data: queryServiceMetricsViewAggregationBody,
+ *   });
+ * };
+ *
+ * After running this transformer we get,
+ *
+ * export const queryServiceMetricsViewAggregation = (
+ *   instanceId: string,
+ *   metricsView: string,
+ *   queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody,
+ *   signal?: AbortSignal,
+ * ) => {
+ *   return httpClient<V1MetricsViewAggregationResponse>({
+ *     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsView}/aggregation`,
+ *     method: "POST",
+ *     headers: { "Content-Type": "application/json" },
+ *     data: queryServiceMetricsViewAggregationBody,
+ *     signal,
+ *   });
+ * };
+ */
 
 const Operations: Record<
   string,
@@ -12,28 +56,32 @@ const Operations: Record<
   }
 > = (orvalConfig as any).api.output.override.operations;
 
-function transformFile(fileName: string) {
+async function transformFile(fileName: string) {
   const program = ts.createProgram([fileName], {
     moduleResolution: ts.ModuleResolutionKind.Node10,
-    baseUrl: ".",
-    paths: tsConfig.compilerOptions.paths,
   });
 
-  const sourceFile = program.getSourceFile(fileName);
+  let sourceFile = program.getSourceFile(fileName);
   if (!sourceFile) return;
+  // Typescript parser doesn't retain blank lines.
+  // So we replace those with a comment and add back the blank line after rewriting
+  sourceFile = replaceBlankLines(sourceFile);
 
   const transformationResult = ts.transform(sourceFile, [addSignalTransformer]);
-
   const transformedSourceFile = transformationResult.transformed[0];
-  const printer = ts.createPrinter();
 
+  const printer = ts.createPrinter();
   const result = printer.printNode(
     ts.EmitHint.Unspecified,
     transformedSourceFile,
     sourceFile,
   );
 
-  console.log(result);
+  // Run prettier
+  const newCode = await prettier.format(result, {
+    parser: "typescript",
+  });
+  await writeFile(fileName, addBackBlankLines(newCode));
 }
 
 function addSignalTransformer(context: ts.TransformationContext) {
@@ -83,7 +131,6 @@ function addSignalTransformer(context: ts.TransformationContext) {
         return node;
       }
 
-      console.log("Replacing", queryName);
       return context.factory.createVariableDeclaration(
         queryName,
         node.exclamationToken,
@@ -139,4 +186,22 @@ function isOverriddenPostQuery(name: string) {
   return Operations[operationName]?.query?.signal;
 }
 
-transformFile(process.argv[2]);
+function replaceBlankLines(source: ts.SourceFile) {
+  const newCode = source.text.replace(
+    /^(\s*)$/gm,
+    (_, spaces: string) => spaces + "//__Dummy__",
+  );
+  return source.update(newCode, {
+    span: {
+      start: 0,
+      length: source.text.length,
+    },
+    newLength: newCode.length,
+  });
+}
+
+function addBackBlankLines(code: string) {
+  return code.replace(/^\s*\/\/__Dummy__$/gm, () => "");
+}
+
+transformFile(process.argv[2]).catch(console.error);
