@@ -48,7 +48,7 @@
   let showDeployDashboardModal = false;
 </script>
 
-<PanelCTA side="right">
+<div class="flex gap-2 flex-shrink-0">
   {#if $dashboardPolicyCheck.data}
     <ViewAsButton />
   {/if}
@@ -78,7 +78,7 @@
       </TooltipContent>
     </Tooltip>
   {/if}
-</PanelCTA>
+</div>
 
 <DeployDashboardCta
   on:close={() => (showDeployDashboardModal = false)}
