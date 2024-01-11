@@ -32,20 +32,20 @@
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
   const outputLayout = getContext(
-    "rill:app:output-layout"
+    "rill:app:output-layout",
   ) as Writable<LayoutElement>;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelHasError = getFileHasErrors(
     queryClient,
     runtimeInstanceId,
-    modelPath
+    modelPath,
   );
 
   let contextMenuOpen = false;
 
   $: availableDashboards = useGetDashboardsForModel(
     runtimeInstanceId,
-    modelName
+    modelName,
   );
 
   function formatModelName(str) {
@@ -78,7 +78,7 @@
         runtimeInstanceId,
         modelName,
         toName,
-        entityType
+        entityType,
       );
       goto(getRouteFromName(toName, entityType), {
         replaceState: true,

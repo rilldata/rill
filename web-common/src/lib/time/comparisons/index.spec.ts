@@ -102,7 +102,7 @@ describe("getComparisonRange", () => {
       const { start: actualStart, end: actualEnd } = getComparisonRange(
         start,
         end,
-        comparison
+        comparison,
       );
       expect(actualStart).toEqual(expectedStart);
       expect(actualEnd).toEqual(expectedEnd);
@@ -138,7 +138,7 @@ describe("isComparisonInsideBounds", () => {
         boundsTestEnd,
         rangeStart,
         rangeEnd,
-        input
+        input,
       );
       expect(actual).toEqual(output);
     });
@@ -244,7 +244,7 @@ describe("getAvailableComparisonsForTimeRange", () => {
         boundEnd,
         start,
         end,
-        [...(Object.values(TimeComparisonOption) as TimeComparisonOption[])]
+        [...(Object.values(TimeComparisonOption) as TimeComparisonOption[])],
       );
       expect(actual).toEqual(test.output);
     });

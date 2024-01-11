@@ -23,8 +23,8 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import {
   RpcStatus,
-  V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
@@ -41,8 +41,8 @@ export function timeRangeSelectionsSelector([
   explorer,
 ]: [
   QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
-  QueryObserverResult<V1ColumnTimeRangeResponse, unknown>,
-  MetricsExplorerEntity
+  QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
+  MetricsExplorerEntity,
 ]): TimeRangeControlsState {
   if (!metricsView.data || !timeRangeResponse?.data?.timeRangeSummary)
     return {
@@ -84,7 +84,7 @@ export function timeRangeSelectionsSelector([
           isoDurationToTimeRangeMeta(
             availableTimeRange.range,
             availableTimeRange.comparisonOffsets?.[0]
-              ?.offset as TimeComparisonOption
+              ?.offset as TimeComparisonOption,
           );
       }
     }
@@ -99,14 +99,14 @@ export function timeRangeSelectionsSelector([
       allTimeRange.end,
       latestWindowTimeRanges,
       minTimeGrain,
-      explorer.selectedTimezone
+      explorer.selectedTimezone,
     ),
     periodToDateRanges: getChildTimeRanges(
       allTimeRange.start,
       allTimeRange.end,
       periodToDateRanges,
       minTimeGrain,
-      explorer.selectedTimezone
+      explorer.selectedTimezone,
     ),
     showDefaultItem: !!metricsView.data.defaultTimeRange && !hasDefaultInRanges,
   };
@@ -119,9 +119,9 @@ export function timeComparisonOptionsSelector([
   selectedTimeRange,
 ]: [
   QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
-  QueryObserverResult<V1ColumnTimeRangeResponse, unknown>,
+  QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   MetricsExplorerEntity,
-  DashboardTimeControls | undefined
+  DashboardTimeControls | undefined,
 ]): Array<{
   name: TimeComparisonOption;
   key: number;
@@ -145,12 +145,12 @@ export function timeComparisonOptionsSelector([
   let allOptions = [...Object.values(TimeComparisonOption)];
   if (metricsView.data.availableTimeRanges?.length) {
     const timeRange = metricsView.data.availableTimeRanges.find(
-      (tr) => tr.range === explorer.selectedTimeRange?.name
+      (tr) => tr.range === explorer.selectedTimeRange?.name,
     );
     if (timeRange?.comparisonOffsets?.length) {
       allOptions =
         timeRange.comparisonOffsets?.map(
-          (co) => co.offset as TimeComparisonOption
+          (co) => co.offset as TimeComparisonOption,
         ) ?? [];
       allOptions.push(TimeComparisonOption.CUSTOM);
     }
@@ -162,14 +162,14 @@ export function timeComparisonOptionsSelector([
     selectedTimeRange.start,
     selectedTimeRange.end,
     allOptions,
-    [explorer.selectedComparisonTimeRange?.name as TimeComparisonOption]
+    [explorer.selectedComparisonTimeRange?.name as TimeComparisonOption],
   );
 
   return timeComparisonOptions.map((co, i) => {
     const comparisonTimeRange = getComparisonRange(
       selectedTimeRange.start,
       selectedTimeRange.end,
-      co
+      co,
     );
     return {
       name: co,
@@ -184,12 +184,12 @@ export function getValidComparisonOption(
   metricsView: V1MetricsViewSpec,
   selectedTimeRange: TimeRange,
   prevComparisonOption: TimeComparisonOption | undefined,
-  allTimeRange: TimeRange
+  allTimeRange: TimeRange,
 ) {
   if (!metricsView.availableTimeRanges?.length) return undefined;
 
   const timeRange = metricsView.availableTimeRanges.find(
-    (tr) => tr.range === selectedTimeRange.name
+    (tr) => tr.range === selectedTimeRange.name,
   );
   if (!timeRange) return undefined;
 
@@ -200,14 +200,14 @@ export function getValidComparisonOption(
   }
 
   const existing = timeRange.comparisonOffsets?.find(
-    (co) => co.offset === prevComparisonOption
+    (co) => co.offset === prevComparisonOption,
   );
   const existingComparison = getTimeComparisonParametersForComponent(
     prevComparisonOption,
     allTimeRange.start,
     allTimeRange.end,
     selectedTimeRange.start,
-    selectedTimeRange.end
+    selectedTimeRange.end,
   );
   // if currently selected comparison option is in allowed list and is valid select it
   if (existing && existingComparison.isComparisonRangeAvailable) {

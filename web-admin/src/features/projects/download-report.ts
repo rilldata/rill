@@ -19,7 +19,7 @@ export type DownloadReportRequest = {
 
 export function createDownloadReportMutation<
   TError = { response: { data: RpcStatus } },
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<Promise<void>>,

@@ -38,8 +38,8 @@
   $: bgStyle = disabled
     ? "bg-white"
     : isSelected
-    ? "bg-gray-100 hover:bg-gray-200 "
-    : "bg-white hover:bg-gray-50 ";
+      ? "bg-gray-100 hover:bg-gray-200 "
+      : "bg-white hover:bg-gray-50 ";
 
   // This is needed to make sure that the left and right most child
   // elements don't break out of the border drawn by the parent element
@@ -52,8 +52,8 @@
   $: tooltipText = disabled
     ? tooltips?.disabled
     : isSelected
-    ? tooltips?.selected
-    : tooltips?.unselected;
+      ? tooltips?.selected
+      : tooltips?.unselected;
 </script>
 
 <!-- Note: this wrapper div is needed for the styles `divide-x divide-gray-400` in the parent container to work correctly-->

@@ -6,6 +6,7 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
 import { MetricsViewFilter } from "../../runtime/v1/queries_pb.js";
+import { Expression } from "../../runtime/v1/expression_pb.js";
 import { TimeGrain } from "../../runtime/v1/time_grain_pb.js";
 
 /**
@@ -27,6 +28,20 @@ export class DashboardState extends Message<DashboardState> {
    * @generated from field: rill.runtime.v1.MetricsViewFilter filters = 2;
    */
   filters?: MetricsViewFilter;
+
+  /**
+   * Expression format for dimension filters
+   *
+   * @generated from field: rill.runtime.v1.Expression where = 20;
+   */
+  where?: Expression;
+
+  /**
+   * Expression format for measure filters
+   *
+   * @generated from field: rill.runtime.v1.Expression having = 21;
+   */
+  having?: Expression;
 
   /**
    * Selected time granularity
@@ -137,6 +152,8 @@ export class DashboardState extends Message<DashboardState> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "time_range", kind: "message", T: DashboardTimeRange },
     { no: 2, name: "filters", kind: "message", T: MetricsViewFilter },
+    { no: 20, name: "where", kind: "message", T: Expression },
+    { no: 21, name: "having", kind: "message", T: Expression },
     { no: 3, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 4, name: "compare_time_range", kind: "message", T: DashboardTimeRange },
     { no: 5, name: "leaderboard_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },

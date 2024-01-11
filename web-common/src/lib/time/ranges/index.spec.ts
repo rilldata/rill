@@ -34,7 +34,7 @@ describe("getAdjustedFetchTime", () => {
         testCase.start,
         testCase.end,
         testCase.zone,
-        testCase.interval
+        testCase.interval,
       );
       expect(defaultTimeGrain).toEqual(testCase.expected);
     });

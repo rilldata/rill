@@ -49,14 +49,18 @@
     }
     50% {
       transform: translateY(2px) translateX(2px);
-      box-shadow: -1px -1px 0px rgba(100, 100, 100, 1),
-        -2px -2px 0px rgba(75, 75, 75, 1), -3px -3px 0px rgba(50, 50, 50, 1);
+      box-shadow:
+        -1px -1px 0px rgba(100, 100, 100, 1),
+        -2px -2px 0px rgba(75, 75, 75, 1),
+        -3px -3px 0px rgba(50, 50, 50, 1);
     }
   }
 
   .stacked {
     transform: translateY(2px) translateX(2px);
-    box-shadow: -1px -1px 0px rgba(100, 100, 100, 1),
-      -2px -2px 0px rgba(75, 75, 75, 1), -3px -3px 0px rgba(50, 50, 50, 1);
+    box-shadow:
+      -1px -1px 0px rgba(100, 100, 100, 1),
+      -2px -2px 0px rgba(75, 75, 75, 1),
+      -3px -3px 0px rgba(50, 50, 50, 1);
   }
 </style>

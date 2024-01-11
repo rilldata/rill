@@ -37,7 +37,7 @@ test.describe("leaderboard and dimension table sorting", () => {
      */
     await assertAAboveB(
       page.getByRole("button", { name: "null 32.9k" }),
-      page.getByRole("button", { name: "Microsoft 10.4k" })
+      page.getByRole("button", { name: "Microsoft 10.4k" }),
     );
 
     // toggle sort by value
@@ -52,7 +52,7 @@ test.describe("leaderboard and dimension table sorting", () => {
 
     await assertAAboveB(
       page.getByRole("button", { name: "Microsoft 10.4k" }),
-      page.getByRole("button", { name: "null 32.9k" })
+      page.getByRole("button", { name: "null 32.9k" }),
     );
 
     // add pct of total context column
@@ -61,7 +61,7 @@ test.describe("leaderboard and dimension table sorting", () => {
 
     await assertAAboveB(
       page.getByRole("button", { name: "Microsoft 10.4k 10%" }),
-      page.getByRole("button", { name: "null 32.9k 32%" })
+      page.getByRole("button", { name: "null 32.9k 32%" }),
     );
 
     //toggle sort by pct of total
@@ -78,7 +78,7 @@ test.describe("leaderboard and dimension table sorting", () => {
 
     await assertAAboveB(
       page.getByRole("button", { name: "facebook.com 15.6k 15%" }),
-      page.getByRole("button", { name: "news.google.com 12.9k 12%" })
+      page.getByRole("button", { name: "news.google.com 12.9k 12%" }),
     );
 
     // add time comparison and select Pct change
@@ -100,7 +100,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     // of the starting value on hover
     await assertAAboveB(
       page.getByRole("button", { name: /^Google/ }),
-      page.getByRole("button", { name: /^Facebook/ })
+      page.getByRole("button", { name: /^Facebook/ }),
     );
 
     // toggle sort by pct change
@@ -116,7 +116,7 @@ test.describe("leaderboard and dimension table sorting", () => {
 
     await assertAAboveB(
       page.getByRole("button", { name: "news.yahoo.com 89 15%" }),
-      page.getByRole("button", { name: "sports.yahoo.com 67 -27%" })
+      page.getByRole("button", { name: "sports.yahoo.com 67 -27%" }),
     );
 
     // select absolute change
@@ -125,7 +125,7 @@ test.describe("leaderboard and dimension table sorting", () => {
 
     await assertAAboveB(
       page.getByRole("button", { name: "Google 116 5" }),
-      page.getByRole("button", { name: "Facebook 283 -14" })
+      page.getByRole("button", { name: "Facebook 283 -14" }),
     );
 
     // toggle sort by absolute change
@@ -138,7 +138,7 @@ test.describe("leaderboard and dimension table sorting", () => {
 
     await assertAAboveB(
       page.getByRole("button", { name: "Facebook 283 -14" }),
-      page.getByRole("button", { name: "Google 116 5" })
+      page.getByRole("button", { name: "Google 116 5" }),
     );
 
     /**
@@ -157,7 +157,7 @@ test.describe("leaderboard and dimension table sorting", () => {
       page
         .locator("div")
         .filter({ hasText: /^Microsoft$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     );
 
     // sort by total records
@@ -174,7 +174,7 @@ test.describe("leaderboard and dimension table sorting", () => {
       page
         .locator("div")
         .filter({ hasText: /^283$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     );
 
     // sort by absolute change once to sort by absolute change descending
@@ -189,7 +189,7 @@ test.describe("leaderboard and dimension table sorting", () => {
         .getByRole("table", { name: "Dimension table" })
         .locator("div")
         .filter({ hasText: /^-14$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     );
     // sort by absolute change TWICE to sort by absolute change ascending
     await page.locator(".w-full > button:nth-child(2)").click();
@@ -203,7 +203,7 @@ test.describe("leaderboard and dimension table sorting", () => {
         .getByRole("table", { name: "Dimension table" })
         .locator("div")
         .filter({ hasText: /^2$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     );
 
     // sort by pct change ONCE to sort by pct change descending
@@ -216,7 +216,7 @@ test.describe("leaderboard and dimension table sorting", () => {
       page
         .locator("div")
         .filter({ hasText: /^3%$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     );
 
     // sort by pct change TWICE to sort by pct change ascending
@@ -229,7 +229,7 @@ test.describe("leaderboard and dimension table sorting", () => {
       page
         .locator("div")
         .filter({ hasText: /^4%$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     );
 
     // sort by pct of total ONCE to sort by pct of total descending
@@ -242,7 +242,7 @@ test.describe("leaderboard and dimension table sorting", () => {
       page
         .locator("div")
         .filter({ hasText: /^25%$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     );
     // sort by pct of total TWICE to sort by pct of total ascending
     await page.locator("button:nth-child(4)").first().click();
@@ -254,7 +254,7 @@ test.describe("leaderboard and dimension table sorting", () => {
       page
         .locator("div")
         .filter({ hasText: /^34%$/ })
-        .getByRole("button", { name: "Filter dimension value" })
+        .getByRole("button", { name: "Filter dimension value" }),
     );
   });
 });

@@ -55,6 +55,6 @@ export function createLineStatusHighlighter() {
         }
       }
     },
-    { decorations: (v) => v.decorations }
+    { decorations: (v) => v.decorations },
   );
 }

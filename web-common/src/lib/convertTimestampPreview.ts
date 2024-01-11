@@ -4,7 +4,7 @@ import {
 } from "@rilldata/web-common/lib/time/timezone";
 export function convertTimestampPreviewFcn(
   ts,
-  removeLocalTimezoneOffset = false
+  removeLocalTimezoneOffset = false,
 ) {
   return removeLocalTimezoneOffset ? remove(new Date(ts)) : new Date(ts);
 }

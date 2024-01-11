@@ -173,7 +173,7 @@ export function createScrubAction({
                 ...get(coordinates),
                 ...mouseEvents(event),
               },
-            })
+            }),
           );
         }
       }
@@ -201,7 +201,7 @@ export function createScrubAction({
                 ...coords,
                 ...mouseEvents(event),
               },
-            })
+            }),
           );
         }
       }
@@ -220,7 +220,7 @@ export function createScrubAction({
                 ...coords,
                 ...mouseEvents(event),
               },
-            })
+            }),
           );
         }
         reset();

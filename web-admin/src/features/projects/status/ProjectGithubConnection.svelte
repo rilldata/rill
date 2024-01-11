@@ -4,9 +4,9 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createAdminServiceGetProject } from "../../client";
-  import { useDashboardsLastUpdated } from "../dashboards/listing/selectors";
-  import { getRepoNameFromGithubUrl } from "./github-utils";
+  import { createAdminServiceGetProject } from "../../../client";
+  import { useDashboardsLastUpdated } from "../../dashboards/listing/selectors";
+  import { getRepoNameFromGithubUrl } from "../github-utils";
 
   export let organization: string;
   export let project: string;
@@ -20,7 +20,7 @@
   $: githubLastSynced = useDashboardsLastUpdated(
     $runtime.instanceId,
     organization,
-    project
+    project,
   );
 </script>
 

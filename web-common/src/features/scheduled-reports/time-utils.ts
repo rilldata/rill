@@ -22,7 +22,7 @@ export function getTimeIn24FormatFromDateTime(dateTime: DateTime): string {
 export function convertFormValuesToCronExpression(
   frequency: string,
   dayOfWeek: string,
-  timeOfDay: string
+  timeOfDay: string,
 ): string {
   const [hour, minute] = timeOfDay.split(":").map(Number);
   let cronExpr = `${minute} ${hour} `;

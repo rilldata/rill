@@ -43,15 +43,14 @@ export class DashboardFetchMocks {
   }
 
   public mockTimeRangeSummary(
-    tableName: string,
-    columnName: string,
-    resp: V1TimeRangeSummary
+    metricsViewName: string,
+    resp: V1TimeRangeSummary,
   ) {
     this.responses.set(
-      `queries__time-range-summary__${tableName}__${columnName}`,
+      `queries__metrics-views__time-range-summary__${metricsViewName}`,
       {
         timeRangeSummary: resp,
-      }
+      },
     );
   }
 
@@ -70,14 +69,7 @@ export class DashboardFetchMocks {
         break;
 
       case "queries":
-        key =
-          type +
-          "__" +
-          parts[0] +
-          "__" +
-          parts[2] +
-          "__" +
-          (u.searchParams.get("columnName") ?? "");
+        key = type + "__" + parts[0] + "__" + parts[2] + "__" + parts[1];
         break;
 
       case "metrics-views":

@@ -17,14 +17,14 @@
   export let data;
 
   const X: Writable<ScaleLinear<number, number>> = getContext(
-    "rill:data-graphic:X"
+    "rill:data-graphic:X",
   );
   const Y: Writable<ScaleLinear<number, number>> = getContext(
-    "rill:data-graphic:Y"
+    "rill:data-graphic:Y",
   );
 
   const plotConfig: Writable<PlotConfig> = getContext(
-    "rill:data-graphic:plot-config"
+    "rill:data-graphic:plot-config",
   );
 
   $: lineFcn = lineFactory({
@@ -43,7 +43,7 @@
 
   // this adaptive smoothing should be a function.
   $: dataWindow = data.filter(
-    (di) => di[xAccessor] >= $X.domain()[0] && di[xAccessor] <= $X.domain()[1]
+    (di) => di[xAccessor] >= $X.domain()[0] && di[xAccessor] <= $X.domain()[1],
   );
   $: windowWithoutZeros = dataWindow.filter((di) => {
     return di[yAccessor] !== 0;
@@ -56,7 +56,7 @@
     const window = Math.max(3, Math.min(Math.trunc(windowSize), i));
     const prev = arr.slice(
       i - Math.trunc(window / 2),
-      i + Math.trunc(window / 2)
+      i + Math.trunc(window / 2),
     );
     dii._smoothed = prev.reduce((a, b) => a + b.count, 0) / prev.length;
     return dii;
@@ -96,8 +96,8 @@
           (($X.range()[1] - $X.range()[0]) * $plotConfig.devicePixelRatio)),
       (($X.range()[1] - $X.range()[0]) * $plotConfig.devicePixelRatio * 0.7) /
         dataWindow.length /
-        1.5
-    )
+        1.5,
+    ),
   );
   /** the line opacity calculation is just a function of the available pixels divided
    * by the window length, capped at 1. This seems to work well in practice.
@@ -107,7 +107,7 @@
     1 +
       (($X.range()[1] - $X.range()[0]) * $plotConfig.devicePixelRatio) /
         dataWindow.length /
-        2
+        2,
   );
   $: smoothedLine = lineFcn("_smoothed")(smoothedData);
 </script>

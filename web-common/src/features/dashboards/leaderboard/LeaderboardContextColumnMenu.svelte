@@ -1,17 +1,21 @@
 <script lang="ts">
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import SelectMenu from "@rilldata/web-common/components/menu/compositions/SelectMenu.svelte";
   import type { SelectMenuItem } from "@rilldata/web-common/components/menu/types";
 
-  export let metricViewName: string;
   export let validPercentOfTotal: boolean;
 
-  let metricsExplorer: MetricsExplorerEntity;
-  $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
+  const {
+    selectors: {
+      contextColumn: { contextColumn },
+    },
+    actions: {
+      contextCol: { setContextColumn },
+    },
+  } = getStateManagers();
+
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   const handleContextValueButtonGroupClick = (evt) => {
@@ -19,7 +23,7 @@
     // CAST SAFETY: the value.key passed up from the evt must
     // be a LeaderboardContextColumn
     const key = value.key as LeaderboardContextColumn;
-    metricsExplorerStore.setContextColumn(metricViewName, key);
+    setContextColumn(key);
   };
 
   let options: SelectMenuItem[];
@@ -47,7 +51,7 @@
 
   // CAST SAFETY: the selection will always be one of the options
   $: selection = options.find(
-    (option) => option.key === metricsExplorer.leaderboardContextColumn
+    (option) => option.key === $contextColumn,
   ) as SelectMenuItem;
 </script>
 

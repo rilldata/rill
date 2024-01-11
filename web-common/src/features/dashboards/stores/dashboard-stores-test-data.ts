@@ -174,7 +174,6 @@ export function initAdBidsMirrorInStore() {
   metricsExplorerStore.init(
     AD_BIDS_MIRROR_NAME,
     {
-      name: AD_BIDS_MIRROR_NAME,
       measures: AD_BIDS_INIT_MEASURES,
       dimensions: AD_BIDS_INIT_DIMENSIONS,
     },
@@ -184,7 +183,7 @@ export function initAdBidsMirrorInStore() {
         max: TestTimeConstants.NOW.toISOString(),
         interval: V1TimeGrain.TIME_GRAIN_MINUTE as any,
       },
-    }
+    },
   );
 }
 
@@ -195,7 +194,7 @@ export function createDashboardState(
     include: [],
     exclude: [],
   },
-  timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE
+  timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
 ): MetricsExplorerEntity {
   return {
     name,
@@ -224,12 +223,12 @@ export function createAdBidsMirrorInStore(metrics: V1MetricsViewSpec) {
   metricsExplorerStore.syncFromUrl(
     AD_BIDS_MIRROR_NAME,
     proto,
-    metrics ?? { measures: [], dimensions: [] }
+    metrics ?? { measures: [], dimensions: [] },
   );
 }
 
 export function createMetricsMetaQueryMock(
-  shouldInit = true
+  shouldInit = true,
 ): CreateQueryResult<V1MetricsViewSpec, RpcStatus> & {
   setMeasures: (measures: Array<MetricsViewSpecMeasureV2>) => void;
   setDimensions: (dimensions: Array<MetricsViewDimension>) => void;
@@ -282,7 +281,7 @@ export function assertMetricsView(
     exclude: [],
   },
   timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
-  selectedMeasure = AD_BIDS_IMPRESSIONS_MEASURE
+  selectedMeasure = AD_BIDS_IMPRESSIONS_MEASURE,
 ) {
   assertMetricsViewRaw(name, filters, timeRange, selectedMeasure);
 }
@@ -293,7 +292,7 @@ export function assertMetricsViewRaw(
   name: string,
   filters: V1MetricsViewFilter,
   timeRange: DashboardTimeControls,
-  selectedMeasure: string
+  selectedMeasure: string,
 ) {
   const metricsView = get(metricsExplorerStore).entities[name];
   expect(metricsView.filters).toEqual(filters);
@@ -304,14 +303,14 @@ export function assertMetricsViewRaw(
 export function assertVisiblePartsOfMetricsView(
   name: string,
   measures: Array<string> | undefined,
-  dimensions: Array<string> | undefined
+  dimensions: Array<string> | undefined,
 ) {
   const metricsView = get(metricsExplorerStore).entities[name];
   if (measures)
     expect([...metricsView.visibleMeasureKeys].sort()).toEqual(measures.sort());
   if (dimensions)
     expect([...metricsView.visibleDimensionKeys].sort()).toEqual(
-      dimensions.sort()
+      dimensions.sort(),
     );
 }
 
@@ -320,13 +319,13 @@ export function getOffsetByHour(time: Date) {
     getStartOfPeriod(time, Period.HOUR, getLocalIANA()),
     Period.HOUR,
     TimeOffsetType.ADD,
-    getLocalIANA()
+    getLocalIANA(),
   );
 }
 
 export function initStateManagers(
   dashboardFetchMocks: DashboardFetchMocks,
-  resp: V1MetricsViewSpec
+  resp: V1MetricsViewSpec,
 ) {
   initAdBidsInStore();
   dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, resp);

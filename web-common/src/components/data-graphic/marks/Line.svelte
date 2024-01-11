@@ -72,11 +72,11 @@
       }
       const max = Math.max(
         $yScale(data[i + 1][yAccessor]),
-        $yScale(data[i][yAccessor])
+        $yScale(data[i][yAccessor]),
       );
       const min = Math.min(
         $yScale(data[i + 1][yAccessor]),
-        $yScale(data[i][yAccessor])
+        $yScale(data[i][yAccessor]),
       );
       return Math.abs(max - min);
     })
@@ -108,8 +108,8 @@
         ($config.devicePixelRatio || 3) *
         0.7) /
         data.length /
-        1.5
-    )
+        1.5,
+    ),
   );
 </script>
 

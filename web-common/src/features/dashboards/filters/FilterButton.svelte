@@ -9,6 +9,8 @@
 </script>
 
 <script lang="ts">
+  import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
+
   const {
     selectors: {
       dimensions: { allDimensions },
@@ -24,23 +26,27 @@
     return selected?.find((f) => f.name === name) !== undefined;
   }
 
-  $: selectableItems =
-    $allDimensions
-      ?.map((d) => ({
-        name: d.name as string,
-        label: d.label as string,
-      }))
-      .filter((d) => {
-        const exclude = $isFilterExcludeMode(d.name);
-        return !filterExists(d.name, exclude);
-      }) ?? [];
+  $: selectableGroups = [
+    <SearchableFilterSelectableGroup>{
+      items:
+        $allDimensions
+          ?.map((d) => ({
+            name: d.name as string,
+            label: d.label as string,
+          }))
+          .filter((d) => {
+            const exclude = $isFilterExcludeMode(d.name);
+            return !filterExists(d.name, exclude);
+          }) ?? [],
+    },
+  ];
 </script>
 
 <WithTogglableFloatingElement
-  distance={8}
   alignment="start"
-  let:toggleFloatingElement
+  distance={8}
   let:active
+  let:toggleFloatingElement
 >
   <Tooltip distance={8} suppress={active}>
     <button class:active on:click={toggleFloatingElement}>
@@ -50,19 +56,19 @@
   </Tooltip>
 
   <SearchableFilterDropdown
-    let:toggleFloatingElement
-    slot="floating-element"
-    selectedItems={[]}
     allowMultiSelect={false}
-    {selectableItems}
-    on:hover
-    on:focus
-    on:escape={toggleFloatingElement}
+    let:toggleFloatingElement
     on:click-outside={toggleFloatingElement}
+    on:escape={toggleFloatingElement}
+    on:focus
+    on:hover
     on:item-clicked={(e) => {
       toggleFloatingElement();
       $potentialFilterName = e.detail.name;
     }}
+    {selectableGroups}
+    selectedItems={[]}
+    slot="floating-element"
   />
 </WithTogglableFloatingElement>
 

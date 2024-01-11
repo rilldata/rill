@@ -85,8 +85,8 @@
   $: barColor = excluded
     ? "ui-measure-bar-excluded"
     : rowSelected
-    ? "ui-measure-bar-included-selected"
-    : "ui-measure-bar-included";
+      ? "ui-measure-bar-included-selected"
+      : "ui-measure-bar-included";
 
   $: tooltipValue =
     value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
@@ -96,8 +96,8 @@
   $: formattedDataTypeStyle = excluded
     ? "font-normal ui-copy-disabled-faint"
     : rowSelected
-    ? "font-normal ui-copy-strong"
-    : "font-normal ui-copy";
+      ? "font-normal ui-copy-strong"
+      : "font-normal ui-copy";
 
   const shiftClick = async () => {
     let exportedValue = formatDataTypeAsDuckDbQueryString(value, type);

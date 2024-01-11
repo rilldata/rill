@@ -269,6 +269,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				wkr := worker.New(logger, adm)
 				if runWorker {
 					group.Go(func() error { return wkr.Run(cctx) })
+					if !runServer {
+						// If we're not running the server, lets start a http server with /ping endpoint for health checks
+						group.Go(func() error { return worker.StartPingServer(cctx, conf.HTTPPort) })
+					}
 				}
 				if runJobs {
 					for _, job := range conf.Jobs {

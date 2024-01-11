@@ -35,7 +35,7 @@
       if (datum[densityAccessor] === 0) return;
       let c = Math.min(
         tiers - 1,
-        Math.floor((datum[densityAccessor] / largestCount) * tiers)
+        Math.floor((datum[densityAccessor] / largestCount) * tiers),
       );
       counts[c] = [...counts[c], datum];
     });

@@ -26,7 +26,7 @@
       metricsExplorerStore.init(
         metricViewName,
         $metaQuery.data,
-        $timeRangeQuery.data
+        $timeRangeQuery.data,
       );
     }
   }

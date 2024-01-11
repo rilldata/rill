@@ -17,12 +17,12 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     medium: BehaviourEventMedium,
     space: MetricsEventSpace,
     source_screen: MetricsEventScreenName,
-    screen_name: MetricsEventScreenName
+    screen_name: MetricsEventScreenName,
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
       commonFields,
-      commonUserFields
+      commonUserFields,
     ) as BehaviourEvent;
     event.action = BehaviourEventAction.Navigate;
     event.entity_id = entity_id;
@@ -41,12 +41,12 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     space: MetricsEventSpace,
     source_screen: MetricsEventScreenName,
     screen_name: MetricsEventScreenName,
-    isStart: boolean
+    isStart: boolean,
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
       commonFields,
-      commonUserFields
+      commonUserFields,
     ) as BehaviourEvent;
     event.action = isStart
       ? BehaviourEventAction.PublishStart
@@ -65,12 +65,12 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     action: BehaviourEventAction,
     medium: BehaviourEventMedium,
     space: MetricsEventSpace,
-    project_id: string
+    project_id: string,
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
       commonFields,
-      commonUserFields
+      commonUserFields,
     ) as BehaviourEvent;
     event.action = action;
     event.entity_id = project_id;
@@ -88,12 +88,12 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     space: MetricsEventSpace,
     connection_type: SourceConnectionType,
     file_type: SourceFileType,
-    glob: boolean
+    glob: boolean,
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
       commonFields,
-      commonUserFields
+      commonUserFields,
     ) as BehaviourEvent;
     event.action = BehaviourEventAction.SourceSuccess;
     event.medium = medium;
@@ -111,12 +111,12 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     action: BehaviourEventAction,
     medium: BehaviourEventMedium,
     screen_name: MetricsEventScreenName,
-    space: MetricsEventSpace
+    space: MetricsEventSpace,
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
       commonFields,
-      commonUserFields
+      commonUserFields,
     ) as BehaviourEvent;
     event.action = action;
     event.medium = medium;

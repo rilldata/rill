@@ -26,7 +26,7 @@ function setPrimaryColor(primary: V1Color) {
   for (let i = 0; i < TailwindColorSpacing.length; i++) {
     root.style.setProperty(
       `${PrimaryCSSVariablePrefix}${TailwindColorSpacing[i]}`,
-      `hsl(${themeColorToHSLString(colors[i])})`
+      `hsl(${themeColorToHSLString(colors[i])})`,
     );
   }
 
@@ -51,11 +51,11 @@ function setSecondaryColor(secondary: V1Color, variance: number) {
 
   root.style.setProperty(
     `${SecondaryCSSVariablePrefix}gradient-max-hue`,
-    ((hue + variance) % 360) + ""
+    ((hue + variance) % 360) + "",
   );
   root.style.setProperty(
     `${SecondaryCSSVariablePrefix}gradient-min-hue`,
-    ((360 + hue - variance) % 360) + ""
+    ((360 + hue - variance) % 360) + "",
   );
 }
 
@@ -77,7 +77,7 @@ function getDefaultPrimaryColors() {
  */
 export function generateColorPalette(
   input: V1Color,
-  defaultColors: Array<HSLColor>
+  defaultColors: Array<HSLColor>,
 ) {
   const [hue] = RGBToHSL(convertColor(input));
   const colors = new Array<HSLColor>(TailwindColorSpacing.length);

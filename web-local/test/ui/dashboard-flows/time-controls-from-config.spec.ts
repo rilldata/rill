@@ -31,7 +31,7 @@ test.describe("time controls settings from dashboard config", () => {
     // Set a time range that is one of the period to date preset
     await updateCodeEditor(
       page,
-      getDashboardYaml(`default_time_range: "rill-WTD"`)
+      getDashboardYaml(`default_time_range: "rill-WTD"`),
     );
     await waitForDashboard(page);
     // Go to dashboard
@@ -49,7 +49,7 @@ test.describe("time controls settings from dashboard config", () => {
     });
     // Wait for menu to close
     await expect(
-      page.getByRole("menuitem", { name: "Last 7 Days" })
+      page.getByRole("menuitem", { name: "Last 7 Days" }),
     ).not.toBeVisible();
     // Data has changed
     await expect(page.getByText("Total rows 7.9k -15 ~0%")).toBeVisible();
@@ -78,7 +78,7 @@ test.describe("time controls settings from dashboard config", () => {
       getDashboardYaml(`default_time_range: "P4W"
 default_comparison:
   mode: time
-`)
+`),
     );
     await waitForDashboard(page);
     // Go to dashboard
@@ -95,7 +95,7 @@ default_comparison:
 default_comparison:
   mode: dimension
   dimension: publisher
-`)
+`),
     );
     await waitForDashboard(page);
     // Go to dashboard
@@ -111,7 +111,7 @@ default_comparison:
       getDashboardYaml(`default_time_range: "P4W"
 default_comparison:
   mode: none
-`)
+`),
     );
     await waitForDashboard(page);
     // Go to dashboard
@@ -133,7 +133,7 @@ available_time_ranges:
       - rill-PW
   - P4W
   - rill-WTD
-  - rill-MTD`)
+  - rill-MTD`),
     );
     await waitForDashboard(page);
     // Go to dashboard
@@ -151,14 +151,14 @@ available_time_ranges:
         "Week To Date",
         "Month To Date",
       ].map((label) =>
-        expect(page.getByRole("menuitem", { name: label })).toBeVisible()
-      )
+        expect(page.getByRole("menuitem", { name: label })).toBeVisible(),
+      ),
     );
     // Select Last 6 hours
     await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
     // Wait for time range menu to close
     await expect(
-      page.getByRole("menu", { name: "Time range selector" })
+      page.getByRole("menu", { name: "Time range selector" }),
     ).not.toBeVisible();
     // Assert data has changed
     await expect(page.getByText("Total rows 272 -23 -7%")).toBeVisible();
@@ -174,14 +174,14 @@ available_time_ranges:
         "Previous week",
         "Previous month",
       ].map((label) =>
-        expect(page.getByRole("menuitem", { name: label })).toBeVisible()
-      )
+        expect(page.getByRole("menuitem", { name: label })).toBeVisible(),
+      ),
     );
     // Select Previous week
     await page.getByRole("menuitem", { name: "Previous week" }).click();
     // Wait for time range menu to close
     await expect(
-      page.getByRole("menu", { name: "Time comparison selector" })
+      page.getByRole("menu", { name: "Time comparison selector" }),
     ).not.toBeVisible();
     // Assert data has changed
     await expect(page.getByText("Total rows 272 -18 -6%")).toBeVisible();
@@ -200,14 +200,14 @@ available_time_ranges:
     // Assert the options available
     await Promise.all(
       ["Previous Period", "Previous week"].map((label) =>
-        expect(page.getByRole("menuitem", { name: label })).toBeVisible()
-      )
+        expect(page.getByRole("menuitem", { name: label })).toBeVisible(),
+      ),
     );
     // Select Last 6 hours
     await page.getByRole("menuitem", { name: "Previous Period" }).click();
     // Wait for time range menu to close
     await expect(
-      page.getByRole("menu", { name: "Time comparison selector" })
+      page.getByRole("menu", { name: "Time comparison selector" }),
     ).not.toBeVisible();
     // Assert data has changed
     await expect(page.getByText("Total rows 5.6k -23 ~0%")).toBeVisible();

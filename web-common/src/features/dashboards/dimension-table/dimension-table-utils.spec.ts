@@ -27,7 +27,7 @@ describe("updateFilterOnSearch", () => {
     const updatedfilter = updateFilterOnSearch(
       filterWithDimension,
       "apple",
-      "fruit"
+      "fruit",
     );
     expect(updatedfilter).toEqual({
       include: [{ name: "fruit", in: ["banana", "grapes"], like: ["%apple%"] }],

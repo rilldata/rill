@@ -43,7 +43,7 @@
       start = 0,
       opacity = 0,
       scaleDown = false,
-    } = {}
+    } = {},
   ) {
     const style = getComputedStyle(node);
     const target_opacity = +style.opacity;

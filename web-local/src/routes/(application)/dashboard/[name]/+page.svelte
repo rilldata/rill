@@ -28,7 +28,7 @@
   $: metricViewName = $page.params.name;
   $: filePath = getFilePathFromNameAndType(
     metricViewName,
-    EntityType.MetricsDefinition
+    EntityType.MetricsDefinition,
   );
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
@@ -47,7 +47,7 @@
     queryClient,
     $runtime.instanceId,
     filePath,
-    (res) => !!res?.metricsView?.state?.validSpec
+    (res) => !!res?.metricsView?.state?.validSpec,
   );
   let showErrorPage = false;
   $: if (metricViewName) {

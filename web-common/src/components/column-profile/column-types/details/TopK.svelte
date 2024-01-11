@@ -37,15 +37,15 @@
   $: smallestPercentage =
     topK && topK.length
       ? Math.min(
-          ...topK.slice(0, 5).map((entry) => (entry?.count ?? 0) / totalRows)
+          ...topK.slice(0, 5).map((entry) => (entry?.count ?? 0) / totalRows),
         )
       : undefined;
   $: formatPercentage =
     smallestPercentage && smallestPercentage < 0.01
       ? format("0.2%")
       : smallestPercentage
-      ? format("0.1%")
-      : () => "";
+        ? format("0.1%")
+        : () => "";
 
   // We need this to get transition working properly.
   // Since the topk query is in a reactive statement with `enable`, `topK` can be undefined.
@@ -101,7 +101,7 @@
                     item.value === null
                       ? "NULL"
                       : getCopyValue(type, item.value)
-                  }" to clipboard`
+                  }" to clipboard`,
                 )}
             >
               {formatDataType(item.value, type)}
@@ -133,7 +133,7 @@
               on:shift-click={() =>
                 copyToClipboard(
                   item.count,
-                  `copied ${item.count} to clipboard`
+                  `copied ${item.count} to clipboard`,
                 )}
             >
               {formatInteger(item.count)}

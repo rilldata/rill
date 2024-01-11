@@ -29,25 +29,25 @@ export function invalidateRuntimeQueries(queryClient: QueryClient) {
 export const invalidateAfterReconcile = async (
   queryClient: QueryClient,
   instanceId: string,
-  reconcileResponse: V1ReconcileResponse
+  reconcileResponse: V1ReconcileResponse,
 ) => {
   const erroredMapByPath = getMapFromArray(
     reconcileResponse.errors,
-    (reconcileError) => reconcileError.filePath
+    (reconcileError) => reconcileError.filePath,
   );
 
   // invalidate lists of catalog entries and files
   await Promise.all([
     queryClient.refetchQueries(getRuntimeServiceListFilesQueryKey(instanceId)),
     queryClient.refetchQueries(
-      getRuntimeServiceListCatalogEntriesQueryKey(instanceId)
+      getRuntimeServiceListCatalogEntriesQueryKey(instanceId),
     ),
     // TODO: There are other list calls with filters for model and metrics view.
     //       We should perhaps have a single call and filter required items in a selector
     queryClient.refetchQueries(
       getRuntimeServiceListCatalogEntriesQueryKey(instanceId, {
         type: "OBJECT_TYPE_SOURCE",
-      })
+      }),
     ),
   ]);
 
@@ -56,31 +56,31 @@ export const invalidateAfterReconcile = async (
     reconcileResponse.affectedPaths
       .map((path) => [
         queryClient.refetchQueries(
-          getRuntimeServiceGetFileQueryKey(instanceId, path)
+          getRuntimeServiceGetFileQueryKey(instanceId, path),
         ),
         queryClient.refetchQueries(
           getRuntimeServiceGetCatalogEntryQueryKey(
             instanceId,
             get(fileArtifactsStore).entities[path]?.name ??
-              getNameFromFile(path)
-          )
+              getNameFromFile(path),
+          ),
         ),
       ])
-      .flat()
+      .flat(),
   );
   // invalidate tablewide profiling queries
   // (applies to sources and models, but not dashboards)
   await Promise.all(
     reconcileResponse.affectedPaths.map((path) =>
-      getInvalidationsForPath(queryClient, path, erroredMapByPath.has(path))
-    )
+      getInvalidationsForPath(queryClient, path, erroredMapByPath.has(path)),
+    ),
   );
 };
 
 const getInvalidationsForPath = (
   queryClient: QueryClient,
   filePath: string,
-  failed: boolean
+  failed: boolean,
 ) => {
   const name = getNameFromFile(filePath);
   if (filePath.startsWith("/dashboards")) {
@@ -92,7 +92,7 @@ const getInvalidationsForPath = (
 
 export function isMetricsViewQuery(queryHash, metricsViewName: string) {
   const r = new RegExp(
-    `/v1/instances/[a-zA-Z0-9-]+/queries/metrics-views/${metricsViewName}/`
+    `/v1/instances/[a-zA-Z0-9-]+/queries/metrics-views/${metricsViewName}/`,
   );
   return r.test(queryHash);
 }
@@ -106,7 +106,7 @@ export function invalidationForMetricsViewData(query, metricsViewName: string) {
 export const invalidateMetricsViewData = (
   queryClient: QueryClient,
   metricsViewName: string,
-  failed: boolean
+  failed: boolean,
 ) => {
   // remove inactive queries, this is needed since these would be re-fetched with incorrect filter
   // invalidateQueries by itself doesnt work as of now.
@@ -128,7 +128,7 @@ export const invalidateMetricsViewData = (
 
 export async function invalidateAllMetricsViews(
   queryClient: QueryClient,
-  instanceId: string
+  instanceId: string,
 ) {
   // First, refetch the resource entries (which returns the available dimensions and measures)
   await queryClient.refetchQueries({
@@ -145,7 +145,7 @@ export async function invalidateAllMetricsViews(
       return (
         typeof query.queryKey[0] === "string" &&
         query.queryKey[0].startsWith(
-          `/v1/instances/${instanceId}/queries/metrics-views`
+          `/v1/instances/${instanceId}/queries/metrics-views`,
         )
       );
     },
@@ -166,7 +166,7 @@ export async function invalidateAllMetricsViews(
 export async function invalidateProfilingQueries(
   queryClient: QueryClient,
   name: string,
-  failed: boolean
+  failed: boolean,
 ) {
   queryClient.removeQueries({
     predicate: (query) => isProfilingQuery(query, name),
@@ -189,16 +189,16 @@ export async function invalidateProfilingQueries(
 export const removeEntityQueries = async (
   queryClient: QueryClient,
   instanceId: string,
-  path: string
+  path: string,
 ) => {
   const name = getNameFromFile(path);
   // remove affected catalog entries and files
   await Promise.all([
     queryClient.removeQueries(
-      getRuntimeServiceGetFileQueryKey(instanceId, path)
+      getRuntimeServiceGetFileQueryKey(instanceId, path),
     ),
     queryClient.removeQueries(
-      getRuntimeServiceGetCatalogEntryQueryKey(instanceId, name)
+      getRuntimeServiceGetCatalogEntryQueryKey(instanceId, name),
     ),
   ]);
 

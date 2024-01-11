@@ -32,16 +32,6 @@ const curves = {
   curveStepExtended,
 };
 
-export function pathIsDefined(yAccessor: string) {
-  return (d) => {
-    return !(
-      d[yAccessor] === undefined ||
-      isNaN(d[yAccessor]) ||
-      d[yAccessor] === null
-    );
-  };
-}
-
 export function pathDoesNotDropToZero(yAccessor: string) {
   return (d, i: number, arr) => {
     return (
@@ -91,7 +81,7 @@ interface LineGeneratorArguments {
   pathDefined?: (
     datum: object,
     i?: number,
-    arr?: ArrayLike<unknown>
+    arr?: ArrayLike<unknown>,
   ) => boolean;
 }
 
@@ -133,7 +123,7 @@ export function getTicks(
   xOrY: string,
   scale: GraphicScale,
   axisLength: number,
-  isDate: boolean
+  isDate: boolean,
 ) {
   const tickCount = Math.trunc(axisLength / (xOrY === "x" ? 100 : 50));
 
@@ -161,7 +151,7 @@ export function barplotPolyline(
   Y,
   separator = 1,
   closeBottom = false,
-  inflator = 1
+  inflator = 1,
 ): string {
   if (!data?.length) return "";
   const path = data.reduce((pointsPathString, datum, i) => {
@@ -176,7 +166,7 @@ export function barplotPolyline(
 
     const computedHeight = Math.min(
       Y(0),
-      Y(0) * inflator - Y(count) * inflator
+      Y(0) * inflator - Y(count) * inflator,
     );
     const height = separator > 0 ? computedHeight : 0;
 
@@ -246,11 +236,11 @@ export function createAdaptiveLineThicknessStore(yAccessor) {
           }
           const max = Math.max(
             $yScale($data[i + 1][yAccessor]),
-            $yScale($data[i][yAccessor])
+            $yScale($data[i][yAccessor]),
           );
           const min = Math.min(
             $yScale($data[i + 1][yAccessor]),
-            $yScale($data[i][yAccessor])
+            $yScale($data[i][yAccessor]),
           );
           if (isNaN(min) || isNaN(max)) return 1 / $data.length;
           return Math.abs(max - min);
@@ -289,12 +279,12 @@ export function createAdaptiveLineThicknessStore(yAccessor) {
           // the y-ish distance travelled
           yIshDistanceTravelled,
           // the time series length / available X pixels
-          xIshDistanceTravellled
-        )
+          xIshDistanceTravellled,
+        ),
       );
 
       return value;
-    }
+    },
   );
 
   return {
@@ -312,7 +302,7 @@ export function bisectData(
   direction: "left" | "right" | "center",
   accessor: string,
   data: ArrayLike<unknown>,
-  returnPos = false
+  returnPos = false,
 ) {
   if (!data?.length) return;
   const bisect = bisector((d) => d[accessor])[direction];
@@ -324,7 +314,7 @@ export function bisectData(
 /** For a scale domain returns a formatter for axis label and super label */
 export function createTimeFormat(
   scaleDomain: [Date, Date],
-  numberOfValues: number
+  numberOfValues: number,
 ): [(d: Date) => string, ((d: Date) => string) | undefined] {
   const diff =
     Math.abs(scaleDomain[1]?.getTime() - scaleDomain[0]?.getTime()) / 1000;

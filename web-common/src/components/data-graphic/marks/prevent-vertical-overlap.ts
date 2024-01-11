@@ -18,7 +18,7 @@ export function preventVerticalOverlap(
   topBoundary,
   bottomBoundary,
   elementHeight,
-  yBuffer
+  yBuffer,
 ): { key: unknown; value: number }[] {
   // this is where the boundary condition lives.
 

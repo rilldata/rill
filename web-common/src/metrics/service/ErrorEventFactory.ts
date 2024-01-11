@@ -51,12 +51,12 @@ export class ErrorEventFactory extends MetricsEventFactory {
     error_code: SourceErrorCodes,
     connection_type: SourceConnectionType,
     file_type: SourceFileType,
-    glob: boolean
+    glob: boolean,
   ): SourceErrorEvent {
     const event = this.getBaseMetricsEvent(
       "error",
       commonFields,
-      commonUserFields
+      commonUserFields,
     ) as SourceErrorEvent;
     event.action = ErrorEventAction.SourceError;
     event.space = space;
@@ -74,12 +74,12 @@ export class ErrorEventFactory extends MetricsEventFactory {
     screen_name: MetricsEventScreenName,
     api: string,
     status: string,
-    message: string
+    message: string,
   ) {
     const event = this.getBaseMetricsEvent(
       "error",
       commonFields,
-      commonUserFields
+      commonUserFields,
     ) as HTTPErrorEvent;
     event.action = ErrorEventAction.ErrorBoundary;
     event.screen_name = screen_name;
@@ -94,12 +94,12 @@ export class ErrorEventFactory extends MetricsEventFactory {
     commonUserFields: CommonUserFields,
     screen_name: MetricsEventScreenName,
     stack: string,
-    message: string
+    message: string,
   ) {
     const event = this.getBaseMetricsEvent(
       "error",
       commonFields,
-      commonUserFields
+      commonUserFields,
     ) as JavascriptErrorEvent;
     event.action = ErrorEventAction.ErrorBoundary;
     event.screen_name = screen_name;

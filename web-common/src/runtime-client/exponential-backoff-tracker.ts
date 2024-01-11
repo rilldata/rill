@@ -13,7 +13,7 @@ export class ExponentialBackoffTracker {
      */
     private readonly trackerTriggerPeriod: number,
     // time
-    private readonly waitPeriod: number
+    private readonly waitPeriod: number,
   ) {
     this.trackerPeriod = trackerTriggerPeriod;
   }
