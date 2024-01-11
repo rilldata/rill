@@ -18,7 +18,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, Readable } from "svelte/store";
 
 export function getDimensionTableExportArgs(
-  ctx: StateManagers
+  ctx: StateManagers,
 ): Readable<V1MetricsViewComparisonRequest | undefined> {
   return derived(
     [
@@ -36,7 +36,7 @@ export function getDimensionTableExportArgs(
       const comparisonTimeRange = getComparisonTimeRange(
         dashboardState,
         timeControlState,
-        timeRange
+        timeRange,
       );
 
       return {
@@ -45,7 +45,7 @@ export function getDimensionTableExportArgs(
         dimension: {
           name: dashboardState.selectedDimensionName,
         },
-        measures: dashboardState.selectedMeasureNames.map((name) => ({
+        measures: [...dashboardState.visibleMeasureKeys].map((name) => ({
           name: name,
         })),
         timeRange,
@@ -54,13 +54,13 @@ export function getDimensionTableExportArgs(
           {
             name: dashboardState.leaderboardMeasureName,
             desc: dashboardState.sortDirection === SortDirection.DESCENDING,
-            type: getQuerySortType(dashboardState.dashboardSortType),
+            sortType: getQuerySortType(dashboardState.dashboardSortType),
           },
         ],
         filter: dashboardState.filters,
         offset: "0",
       };
-    }
+    },
   );
 }
 
@@ -70,7 +70,7 @@ export function getDimensionTableExportArgs(
  */
 function getTimeRange(
   timeControlState: TimeControlState,
-  metricsView: V1MetricsViewSpec
+  metricsView: V1MetricsViewSpec,
 ) {
   if (!timeControlState.selectedTimeRange?.name) return undefined;
 
@@ -100,7 +100,7 @@ function getTimeRange(
 function getComparisonTimeRange(
   dashboardState: MetricsExplorerEntity,
   timeControlState: TimeControlState,
-  timeRange: V1TimeRange | undefined
+  timeRange: V1TimeRange | undefined,
 ) {
   if (
     !timeRange ||

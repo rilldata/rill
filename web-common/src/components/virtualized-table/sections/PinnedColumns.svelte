@@ -18,12 +18,12 @@
 
   function reconcileVirtualColumns(
     virtualColumns,
-    pinnedColumns: VirtualizedTableColumns[]
+    pinnedColumns: VirtualizedTableColumns[],
   ) {
     // for each pinned column, we need to add size + start (based on 0);
     let virtualColumnSet = pinnedColumns.map((columnProfile) => {
       let virtualColumn = virtualColumns.find(
-        (column) => column.key === columnProfile.name
+        (column) => column.key === columnProfile.name,
       );
       return {
         virtualColumn: { ...virtualColumn },
@@ -41,7 +41,7 @@
 
   $: reconciledColumns = reconcileVirtualColumns(
     virtualColumnItems,
-    pinnedColumns
+    pinnedColumns,
   );
 
   $: totalWidth = reconciledColumns.reduce((total, column) => {

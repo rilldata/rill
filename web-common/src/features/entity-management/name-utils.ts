@@ -26,7 +26,7 @@ export function getName(name: string, others: string[]): string {
 
 export function getNextEntityName(
   entityNames: Array<string>,
-  entityName: string
+  entityName: string,
 ): string {
   const idx = entityNames.indexOf(entityName);
   if (idx <= 0) {
@@ -39,8 +39,8 @@ export function getNextEntityName(
 export function isDuplicateName(
   name: string,
   fromName: string,
-  names: Array<string | undefined>
+  names: Array<string>,
 ) {
   if (name.toLowerCase() === fromName.toLowerCase()) return false;
-  return names.findIndex((n) => n.toLowerCase() === name.toLowerCase()) >= 0;
+  return names.findIndex((n) => n?.toLowerCase() === name.toLowerCase()) >= 0;
 }

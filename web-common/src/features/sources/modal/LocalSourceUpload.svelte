@@ -38,9 +38,9 @@
   async function handleUpload(files: Array<File>) {
     const uploadedFiles = uploadTableFiles(
       files,
-      [$sourceNames?.data, $modelNames?.data],
+      [$sourceNames?.data ?? [], $modelNames?.data ?? []],
       $runtime.instanceId,
-      false
+      false,
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
@@ -59,14 +59,14 @@
             sourceName: tableName,
             path: filePath,
           },
-          "local_file"
+          "local_file",
         );
 
         await createSource(runtimeInstanceId, tableName, yaml);
         checkSourceImported(
           queryClient,
           tableName,
-          getFilePathFromNameAndType(tableName, EntityType.Table)
+          getFilePathFromNameAndType(tableName, EntityType.Table),
         );
         goto(`/source/${tableName}`);
       } catch (err) {

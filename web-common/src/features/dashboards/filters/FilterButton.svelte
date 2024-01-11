@@ -5,16 +5,16 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import SearchableFilterDropdown from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterDropdown.svelte";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
+  import { potentialFilterName } from "./Filters.svelte";
 </script>
 
 <script lang="ts">
+  import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
+
   const {
     selectors: {
       dimensions: { allDimensions },
       dimensionFilters: { getAllFilters, isFilterExcludeMode },
-    },
-    actions: {
-      dimensionsFilter: { toggleDimensionNameSelection },
     },
   } = getStateManagers();
 
@@ -26,23 +26,27 @@
     return selected?.find((f) => f.name === name) !== undefined;
   }
 
-  $: selectableItems =
-    $allDimensions
-      ?.map((d) => ({
-        name: d.name as string,
-        label: d.label as string,
-      }))
-      .filter((d) => {
-        const exclude = $isFilterExcludeMode(d.name);
-        return !filterExists(d.name, exclude);
-      }) ?? [];
+  $: selectableGroups = [
+    <SearchableFilterSelectableGroup>{
+      items:
+        $allDimensions
+          ?.map((d) => ({
+            name: d.name as string,
+            label: d.label as string,
+          }))
+          .filter((d) => {
+            const exclude = $isFilterExcludeMode(d.name);
+            return !filterExists(d.name, exclude);
+          }) ?? [],
+    },
+  ];
 </script>
 
 <WithTogglableFloatingElement
-  distance={8}
   alignment="start"
-  let:toggleFloatingElement
+  distance={8}
   let:active
+  let:toggleFloatingElement
 >
   <Tooltip distance={8} suppress={active}>
     <button class:active on:click={toggleFloatingElement}>
@@ -52,24 +56,26 @@
   </Tooltip>
 
   <SearchableFilterDropdown
-    let:toggleFloatingElement
-    slot="floating-element"
-    selectedItems={[]}
     allowMultiSelect={false}
-    {selectableItems}
-    on:escape={toggleFloatingElement}
+    let:toggleFloatingElement
     on:click-outside={toggleFloatingElement}
+    on:escape={toggleFloatingElement}
+    on:focus
+    on:hover
     on:item-clicked={(e) => {
       toggleFloatingElement();
-      toggleDimensionNameSelection(e.detail.name);
+      $potentialFilterName = e.detail.name;
     }}
+    {selectableGroups}
+    selectedItems={[]}
+    slot="floating-element"
   />
 </WithTogglableFloatingElement>
 
 <style lang="postcss">
   button {
     @apply w-[34px] h-[26px] rounded-2xl;
-    @apply px-[8px] py-[4px];
+    @apply flex items-center justify-center;
     @apply border border-dashed border-slate-300;
   }
 

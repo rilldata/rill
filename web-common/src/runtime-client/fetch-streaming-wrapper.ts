@@ -7,7 +7,7 @@ export async function* streamingFetchWrapper<T>(
   method: string,
   body?: Record<string, unknown>,
   headers: HeadersInit = { "Content-Type": "application/json" },
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): AsyncGenerator<T> {
   const response = await fetch(url, {
     method,

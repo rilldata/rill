@@ -4,7 +4,7 @@
   import type { LayoutElement } from "./types";
 
   const outputLayout = getContext(
-    "rill:app:output-layout"
+    "rill:app:output-layout",
   ) as Writable<LayoutElement>;
 
   export let className = "";
@@ -21,7 +21,7 @@
   function onMouseMove(e: MouseEvent) {
     $outputLayout.value = Math.min(
       parentHeight - 200,
-      Math.max(200, parentHeight - e.clientY)
+      Math.max(200, parentHeight - e.clientY),
     );
   }
 

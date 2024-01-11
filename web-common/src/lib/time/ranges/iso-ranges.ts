@@ -25,17 +25,17 @@ import { Duration } from "luxon";
 export function isoDurationToTimeRange(
   isoDuration: string,
   anchor: Date,
-  zone = "Etc/UTC"
+  zone = "Etc/UTC",
 ) {
   const startTime = transformDate(
     anchor,
     getStartTimeTransformations(isoDuration),
-    zone
+    zone,
   );
   const endTime = transformDate(
     anchor,
     getEndTimeTransformations(isoDuration),
-    zone
+    zone,
   );
   return {
     startTime,
@@ -55,7 +55,7 @@ export function isoDurationToFullTimeRange(
   isoDuration: string | undefined,
   start: Date,
   end: Date,
-  zone = "Etc/UTC"
+  zone = "Etc/UTC",
 ): TimeRange {
   if (!isoDuration) {
     return convertTimeRangePreset(TimeRangePreset.ALL_TIME, start, end, zone);
@@ -65,7 +65,7 @@ export function isoDurationToFullTimeRange(
       isoDuration as TimeRangePreset,
       start,
       end,
-      zone
+      zone,
     );
   }
 
@@ -103,7 +103,7 @@ export function getSmallestTimeGrain(isoDuration: string) {
 
 export function isoDurationToTimeRangeMeta(
   isoDuration: string,
-  defaultComparison: TimeComparisonOption
+  defaultComparison: TimeComparisonOption,
 ): TimeRangeMeta {
   return {
     label: `Last ${humaniseISODuration(isoDuration)}`,
@@ -121,7 +121,7 @@ export function isoDurationToTimeRangeMeta(
 }
 
 function getStartTimeTransformations(
-  isoDuration: string
+  isoDuration: string,
 ): Array<RelativeTimeTransformation> {
   const duration = Duration.fromISO(isoDuration);
   const period = getSmallestUnit(duration);
@@ -141,7 +141,7 @@ function getStartTimeTransformations(
 }
 
 function getEndTimeTransformations(
-  isoDuration: string
+  isoDuration: string,
 ): Array<RelativeTimeTransformation> {
   const duration = Duration.fromISO(isoDuration);
   const period = getSmallestUnit(duration);

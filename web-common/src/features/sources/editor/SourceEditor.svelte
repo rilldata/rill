@@ -27,7 +27,7 @@
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
     sourceName,
-    $sourceStore.clientYAML
+    $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
@@ -42,7 +42,7 @@
   $: allErrors = getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
-    filePath
+    filePath,
   );
 
   /**
@@ -51,7 +51,7 @@
   $: {
     const lineBasedReconciliationErrors = mapParseErrorsToLines(
       $allErrors,
-      yaml
+      yaml,
     );
     if (view) setLineStatuses(lineBasedReconciliationErrors, view);
   }

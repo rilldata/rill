@@ -4,5 +4,5 @@ export declare function scrollIntoView(
   element: HTMLElement,
   container: HTMLElement,
   direction?: "horizontal" | "vertical" | "both",
-  behavior?: "smooth" | "auto"
+  behavior?: "smooth" | "auto",
 ): void;

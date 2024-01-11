@@ -85,7 +85,7 @@
 <!-- Position at top right corner of parent -->
 <div bind:this={container} class="w-0 h-0 absolute top-0 left-full" />
 
-<style>
+<style lang="postcss">
   :global(.litepicker) {
     --day-width: 42px;
     --day-height: 37px;

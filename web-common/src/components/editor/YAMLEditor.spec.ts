@@ -5,7 +5,7 @@ import YAMLEditor from "./YAMLEditor.svelte";
 
 function getLines(container: HTMLElement) {
   return Array.from(container.querySelectorAll(".cm-line")).map(
-    (l) => l.textContent
+    (l) => l.textContent,
   );
 }
 

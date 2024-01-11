@@ -9,17 +9,18 @@
   import {
     copyToClipboard,
     createShiftClickAction,
+    isClipboardApiSupported,
   } from "@rilldata/web-common/lib/actions/shift-click-action";
   import {
     BOOLEANS,
     FLOATS,
     INTEGERS,
     INTERVALS,
+    STRING_LIKES,
+    TIMESTAMPS,
     isList,
     isNested,
     isStruct,
-    STRING_LIKES,
-    TIMESTAMPS,
   } from "@rilldata/web-common/lib/duckdb-data-types";
   import ListType from "../icons/ListType.svelte";
   import StructType from "../icons/StructType.svelte";
@@ -60,7 +61,11 @@
   const { shiftClickAction } = createShiftClickAction();
 </script>
 
-<Tooltip location="left" distance={16} suppress={suppressTooltip}>
+<Tooltip
+  location="left"
+  distance={16}
+  suppress={suppressTooltip || !isClipboardApiSupported()}
+>
   <div
     title={type}
     class="
@@ -81,7 +86,9 @@
       </div>
     </TooltipTitle>
     <TooltipShortcutContainer>
-      <div><StackingWord key="shift">Copy</StackingWord> type to clipboard</div>
+      <div>
+        <StackingWord key="shift">Copy</StackingWord> type to clipboard
+      </div>
       <Shortcut>
         <ShiftKey /> + Click
       </Shortcut>

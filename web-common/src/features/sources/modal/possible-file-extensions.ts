@@ -11,8 +11,8 @@ export const AllFileExtensions = [
   ...PossibleFileExtensions,
   ...PossibleFileExtensions.map((extension) =>
     PossibleZipExtensions.map(
-      (zippedExtension) => `${extension}${zippedExtension}`
-    )
+      (zippedExtension) => `${extension}${zippedExtension}`,
+    ),
   ).flat(),
 ];
 

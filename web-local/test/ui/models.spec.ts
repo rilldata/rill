@@ -59,13 +59,13 @@ test.describe("models", () => {
     await renameEntityUsingMenu(
       page,
       "AdBids_rename_delete",
-      "AdBids_rename_delete_new"
+      "AdBids_rename_delete_new",
     );
     await waitForEntity(
       page,
       TestEntityType.Model,
       "AdBids_rename_delete_new",
-      true
+      true,
     );
     await entityNotPresent(page, "AdBids_rename_delete");
 

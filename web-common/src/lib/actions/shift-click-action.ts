@@ -5,6 +5,15 @@ interface CreateShiftClick {
   stopImmediatePropagation: boolean;
 }
 
+/**
+ * The Clipboard API is only available in secure contexts.
+ * So, a self-hosted Rill Developer instance served over HTTP (not HTTPS) will not have access to the Clipboard API.
+ * See: https://developer.mozilla.org/en-US/docs/Web/API/Clipboard
+ */
+export function isClipboardApiSupported(): boolean {
+  return !!navigator.clipboard;
+}
+
 export async function copyToClipboard(value, message = "copied to clipboard") {
   await navigator.clipboard.writeText(value);
   notifications.send({
@@ -13,7 +22,7 @@ export async function copyToClipboard(value, message = "copied to clipboard") {
 }
 
 export function createShiftClickAction(
-  params: CreateShiftClick = { stopImmediatePropagation: true }
+  params: CreateShiftClick = { stopImmediatePropagation: true },
 ) {
   const _stopImmediatePropagation = params?.stopImmediatePropagation || false;
   // set a context for children to consume transient state.
@@ -57,7 +66,7 @@ export function createShiftClickAction(
           node.dispatchEvent(new CustomEvent("shift-click"));
           // fire all callbacks.
           const cbs = get(callbacks);
-          cbs.forEach((cb) => cb());
+          cbs.forEach((cb: () => void) => cb());
 
           // prevent the regular on:click event here.
           if (_stopImmediatePropagation) {

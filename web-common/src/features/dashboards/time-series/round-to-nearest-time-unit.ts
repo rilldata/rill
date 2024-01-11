@@ -1,7 +1,7 @@
 import { DateTime, DateTimeUnit } from "luxon";
 export function roundToNearestTimeUnit(
   date,
-  unit: DateTimeUnit | keyof DateTime
+  unit: DateTimeUnit | keyof DateTime,
 ) {
   const dateTime = DateTime.fromJSDate(date);
   if (!DateTime.isDateTime(dateTime)) {

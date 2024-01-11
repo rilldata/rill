@@ -7,7 +7,7 @@ export async function waitForEntity(
   page: Page,
   type: TestEntityType,
   name: string,
-  navigated: boolean
+  navigated: boolean,
 ) {
   await getEntityLink(page, name).waitFor();
   if (navigated) {

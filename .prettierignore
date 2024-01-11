@@ -18,6 +18,7 @@ proto/
 
 .env
 *.sql
+*.bin
 *.csv
 *.csv.gz
 *.tsv

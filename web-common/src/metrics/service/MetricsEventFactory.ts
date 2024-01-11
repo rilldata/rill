@@ -5,7 +5,7 @@ export class MetricsEventFactory {
   protected getBaseMetricsEvent(
     eventType: string,
     commonFields: CommonFields,
-    commonUserFields: CommonUserFields
+    commonUserFields: CommonUserFields,
   ): MetricsEvent {
     return {
       ...commonUserFields,

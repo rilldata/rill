@@ -234,6 +234,7 @@ export type QueryServiceMetricsViewAggregationBody = {
   limit?: string;
   measures?: V1MetricsViewAggregationMeasure[];
   offset?: string;
+  pivotOn?: string[];
   priority?: number;
   sort?: V1MetricsViewAggregationSort[];
   timeEnd?: string;
@@ -1354,6 +1355,7 @@ export interface V1MetricsViewAggregationRequest {
   measures?: V1MetricsViewAggregationMeasure[];
   metricsView?: string;
   offset?: string;
+  pivotOn?: string[];
   priority?: number;
   sort?: V1MetricsViewAggregationSort[];
   timeEnd?: string;
@@ -1966,6 +1968,7 @@ export interface MetricsViewSpecMeasureV2 {
 export interface MetricsViewSpecDimensionV2 {
   column?: string;
   description?: string;
+  expression?: string;
   label?: string;
   name?: string;
   unnest?: boolean;

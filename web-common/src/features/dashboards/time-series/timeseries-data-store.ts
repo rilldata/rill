@@ -35,7 +35,7 @@ export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
 function createMetricsViewTimeSeries(
   ctx: StateManagers,
   measures,
-  isComparison = false
+  isComparison = false,
 ): CreateQueryResult<V1MetricsViewTimeSeriesResponse> {
   return derived(
     [
@@ -72,8 +72,8 @@ function createMetricsViewTimeSeries(
             queryClient: ctx.queryClient,
             keepPreviousData: true,
           },
-        }
-      ).subscribe(set)
+        },
+      ).subscribe(set),
   );
 }
 
@@ -98,16 +98,18 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
       let measures = allMeasures;
       if (dashboardStore?.expandedMeasureName) {
         measures = allMeasures.filter(
-          (measure) => measure === dashboardStore.expandedMeasureName
+          (measure) => measure === dashboardStore.expandedMeasureName,
         );
       } else {
-        measures = dashboardStore?.selectedMeasureNames;
+        measures = dashboardStore?.visibleMeasureKeys
+          ? [...dashboardStore.visibleMeasureKeys]
+          : [];
       }
 
       const primaryTimeSeries = createMetricsViewTimeSeries(
         ctx,
         measures,
-        false
+        false,
       );
       const primaryTotals = createTotalsForMeasure(ctx, measures, false);
 
@@ -115,7 +117,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         ctx,
         measures,
         false,
-        true
+        true,
       );
 
       let comparisonTimeSeries:
@@ -136,7 +138,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         dimensionTimeSeriesCharts = getDimensionValueTimeSeries(
           ctx,
           measures,
-          "chart"
+          "chart",
         );
       }
 
@@ -164,7 +166,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
               primary?.data?.data,
               comparison?.data?.data,
               TIME_GRAIN[interval]?.duration,
-              dashboardStore.selectedTimezone || "Etc/UTC"
+              dashboardStore.selectedTimezone || "Etc/UTC",
             );
           }
           return {
@@ -176,9 +178,9 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
             comparisonTotal: comparisonTotal?.data?.data?.[0],
             dimensionChartData: (dimensionChart as DimensionDataItem[]) || [],
           };
-        }
+        },
       ).subscribe(set);
-    }
+    },
   ) as TimeSeriesDataStore;
 }
 
@@ -186,5 +188,5 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
  * Memoized version of the store. Currently, memoized by metrics view name.
  */
 export const useTimeSeriesDataStore = memoizeMetricsStore<TimeSeriesDataStore>(
-  (ctx: StateManagers) => createTimeSeriesDataStore(ctx)
+  (ctx: StateManagers) => createTimeSeriesDataStore(ctx),
 );

@@ -152,7 +152,7 @@ for any of its children.
         config.top -
         config.bottom -
         2 * (config.bodyBuffer || 0),
-    }
+    },
   );
 
   $: config.reconcileProps(parameters);
@@ -200,7 +200,7 @@ for any of its children.
   const yMinStore = getContext(contexts.min("y")) as ExtremumResolutionStore;
   const yMaxStore = getContext(contexts.max("y")) as ExtremumResolutionStore;
 
-  $: if (yMaxTweenProps) {
+  $: if (yMaxTweenProps && yMaxStore) {
     yMaxStore.setTweenProps(yMaxTweenProps);
   }
 

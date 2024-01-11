@@ -11,6 +11,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
@@ -176,12 +177,9 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Execute ingestion
 	r.C.Logger.Info("Ingesting source data", slog.String("name", n.Name), slog.String("connector", connector))
-	ingestErr := r.ingestSource(ctx, src.Spec, stagingTableName)
+	ingestErr := r.ingestSource(ctx, self, stagingTableName)
 	if ingestErr != nil {
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)
-	} else if !r.C.Runtime.AllowHostAccess() {
-		// temporarily for debugging
-		logTableNameAndType(ctx, r.C, connector, stagingTableName)
 	}
 
 	if ingestErr == nil && src.Spec.StageChanges {
@@ -312,7 +310,9 @@ func (r *SourceReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 // ingestSource ingests the source into a table with tableName.
 // It does NOT drop the table if ingestion fails after the table has been created.
 // It will return an error if the sink connector is not an OLAP.
-func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.SourceSpec, tableName string) (outErr error) {
+func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Resource, tableName string) (outErr error) {
+	src := self.GetSource().Spec
+
 	// Get connections and transporter
 	srcConn, release1, err := r.C.AcquireConn(ctx, src.SourceConnector)
 	if err != nil {
@@ -333,7 +333,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	}
 
 	// Get source and sink configs
-	srcConfig, err := driversSource(srcConn, src.Properties)
+	srcConfig, err := r.driversSource(ctx, self, src.Properties)
 	if err != nil {
 		return err
 	}
@@ -386,9 +386,14 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	return err
 }
 
-func driversSource(conn drivers.Handle, propsPB *structpb.Struct) (map[string]any, error) {
-	props := propsPB.AsMap()
-	return props, nil
+func (r *SourceReconciler) driversSource(ctx context.Context, self *runtimev1.Resource, propsPB *structpb.Struct) (map[string]any, error) {
+	tself := rillv1.TemplateResource{
+		Meta:  self.Meta,
+		Spec:  self.GetSource().Spec,
+		State: self.GetSource().State,
+	}
+
+	return resolveTemplatedProps(ctx, r.C, tself, propsPB.AsMap())
 }
 
 func driversSink(conn drivers.Handle, tableName string) (map[string]any, error) {

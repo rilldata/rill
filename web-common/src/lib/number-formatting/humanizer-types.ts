@@ -72,7 +72,7 @@ export const formatPresetToNumberKind = (type: FormatPreset) => {
       console.warn(
         `All FormatPreset variants must be explicity handled in formatPresetToNumberKind, got ${
           type === "" ? "empty string" : type
-        }`
+        }`,
       );
       return NumberKind.ANY;
   }
@@ -129,7 +129,7 @@ export type FormatterOptionsNoneStrategy = {
  * of ten given as an input.
  */
 export type FormatterOptionsIntTimesPowerOfTenStrategy = {
-  strategy: "intTimesPowerOfTen";
+  strategy: "singleDigitTimesPowerOfTen";
   onInvalidInput?: "doNothing" | "throw" | "consoleWarn";
 };
 
@@ -299,7 +299,7 @@ export type NumPartPxWidthLookupFn = (str: string, isNumStr: boolean) => number;
 
 export type FormatterFactory = (
   sample: number[],
-  options: FormatterFactoryOptions
+  options: FormatterFactoryOptions,
 ) => Formatter;
 
 export interface Formatter {

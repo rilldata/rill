@@ -1,5 +1,5 @@
 import { Formatter, FormatterFactory, NumberKind } from "./humanizer-types";
-import { IntTimesPowerOfTenFormatter } from "./strategies/IntTimesPowerOfTen";
+import { SingleDigitTimesPowerOfTenFormatter } from "./strategies/SingleDigitTimesPowerOfTen";
 import { NonFormatter } from "./strategies/none";
 import { IntervalFormatter } from "./strategies/intervals";
 import { PerRangeFormatter } from "./strategies/per-range";
@@ -23,7 +23,7 @@ import {
  */
 export const humanizedFormatterFactory: FormatterFactory = (
   sample: number[],
-  options
+  options,
 ): Formatter => {
   let formatter: Formatter;
 
@@ -52,13 +52,13 @@ export const humanizedFormatterFactory: FormatterFactory = (
       }
       break;
 
-    case "intTimesPowerOfTen":
-      formatter = new IntTimesPowerOfTenFormatter(sample, options);
+    case "singleDigitTimesPowerOfTen":
+      formatter = new SingleDigitTimesPowerOfTenFormatter(sample, options);
       break;
 
     default:
       console.warn(
-        `Number formatter strategy "${options.strategy}" is not implemented, using default strategy`
+        `Number formatter strategy "${options.strategy}" is not implemented, using default strategy`,
       );
       formatter = new PerRangeFormatter(sample, defaultGenericNumOptions);
       break;

@@ -77,7 +77,7 @@ TableCells – the cell contents.
    */
   const { columnWidths, largestColumnLength } = estimateColumnCharacterWidths(
     columns,
-    rows
+    rows,
   );
 
   /* check if column header requires extra space for larger column names  */
@@ -96,7 +96,7 @@ TableCells – the cell contents.
 
   $: dimensionColumnName = $dimensionTableColumnName(dimensionName) as string;
   $: dimensionColumn = columns?.find(
-    (c) => c.name == dimensionColumnName
+    (c) => c.name == dimensionColumnName,
   ) as VirtualizedTableColumns;
   $: measureColumns =
     columns?.filter((c) => c.name !== dimensionColumnName) ?? [];
@@ -119,7 +119,7 @@ TableCells – the cell contents.
       columns,
       columnWidths,
       containerWidth,
-      config
+      config,
     );
 
     const measureColumnSizeSum = estimateColumnSize
@@ -131,7 +131,7 @@ TableCells – the cell contents.
     if (manualDimensionColumnWidth === null) {
       estimateColumnSize[0] = Math.max(
         containerWidth - measureColumnSizeSum - FILTER_COLUMN_WIDTH,
-        estimateColumnSize[0]
+        estimateColumnSize[0],
       );
     } else {
       estimateColumnSize[0] = manualDimensionColumnWidth;

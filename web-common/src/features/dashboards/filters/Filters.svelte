@@ -1,7 +1,8 @@
 <!-- @component
 The main feature-set component for dashboard filters
  -->
-<script lang="ts">
+<script context="module" lang="ts">
+  import { writable } from "svelte/store";
   import {
     Chip,
     ChipContainer,
@@ -15,26 +16,28 @@ The main feature-set component for dashboard filters
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
   import { useMetaQuery, getFilterSearchList } from "../selectors/index";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import type {
-    MetricsViewSpecDimensionV2,
-    V1MetricsViewFilter,
-  } from "@rilldata/web-common/runtime-client";
+  import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
-  import { getDisplayName } from "./getDisplayName";
   import { getStateManagers } from "../state-managers/state-managers";
-  import {
-    clearAllFilters,
-    toggleDimensionValue,
-    toggleFilterMode,
-  } from "../actions";
+  import { clearAllFilters, toggleFilterMode } from "../actions";
   import FilterButton from "./FilterButton.svelte";
+  import { formatFilters } from "./formatFilters";
+  import { getDisplayName } from "./getDisplayName";
 
+  export const potentialFilterName = writable<string | null>(null);
+</script>
+
+<script lang="ts">
   const StateManagers = getStateManagers();
+
   const {
     dashboardStore,
     actions: {
-      dimensionsFilter: { toggleDimensionNameSelection },
+      dimensionsFilter: {
+        toggleDimensionNameSelection,
+        toggleDimensionValueSelection,
+      },
     },
   } = StateManagers;
 
@@ -46,20 +49,17 @@ The main feature-set component for dashboard filters
   const metaQuery = useMetaQuery(StateManagers);
   $: dimensions = $metaQuery.data?.dimensions ?? [];
 
-  function isFiltered(filters: V1MetricsViewFilter): boolean {
-    if (!filters || !filters.include || !filters.exclude) return false;
-    return filters.include.length > 0 || filters.exclude.length > 0;
-  }
-
   let searchText = "";
-  let allValues: string[] | null = null;
+  let allValues: Record<string, string[]> = {};
   let activeDimensionName: string;
+  let topListQuery: ReturnType<typeof getFilterSearchList> | undefined;
+
+  $: filters = $dashboardStore.filters;
 
   $: activeColumn =
     dimensions.find((d) => d.name === activeDimensionName)?.column ??
     activeDimensionName;
 
-  let topListQuery: ReturnType<typeof getFilterSearchList> | undefined;
   $: if (activeDimensionName) {
     topListQuery = getFilterSearchList(StateManagers, {
       dimension: activeDimensionName,
@@ -70,70 +70,49 @@ The main feature-set component for dashboard filters
 
   $: if (!$topListQuery?.isFetching) {
     const topListData = $topListQuery?.data?.data ?? [];
-    allValues = topListData.map((datum) => datum[activeColumn]) ?? [];
+    allValues[activeDimensionName] =
+      topListData.map((datum) => datum[activeColumn]) ?? [];
   }
 
   $: hasFilters = isFiltered($dashboardStore.filters);
 
-  /** prune the values and prepare for templating */
-  let currentDimensionFilters: {
-    name: string;
-    label: string;
-    selectedValues: any[];
-    filterType: string;
-  }[] = [];
+  $: dimensionIdMap = getMapFromArray(
+    dimensions,
+    (dimension) => dimension.name as string,
+  );
 
-  $: {
-    const dimensionIdMap = getMapFromArray(
-      dimensions,
-      (dimension) => dimension.name
-    );
+  $: currentFormattedFilters = formatFilters(
+    Object.values(filters).flat(),
+    dimensionIdMap,
+  );
 
-    const currentDimensionIncludeFilters =
-      $dashboardStore?.filters?.include
-        ?.filter((dimensionValues) => dimensionValues.name !== undefined)
-        .map((dimensionValues) => {
-          const name = dimensionValues.name as string;
-          return {
-            name,
-            label: getDisplayName(
-              dimensionIdMap.get(name) as MetricsViewSpecDimensionV2
-            ),
-            selectedValues: dimensionValues.in as any[],
-            filterType: "include",
-          };
-        }) ?? [];
+  $: temporaryFilter = $potentialFilterName
+    ? [
+        {
+          name: $potentialFilterName,
+          label: getDisplayName(dimensionIdMap.get($potentialFilterName)),
+          selectedValues: [],
+        },
+      ]
+    : [];
 
-    const currentDimensionExcludeFilters =
-      $dashboardStore?.filters?.exclude
-        ?.filter((dimensionValues) => dimensionValues.name !== undefined)
-        .map((dimensionValues) => {
-          const name = dimensionValues.name as string;
-          return {
-            name,
-            label: getDisplayName(
-              dimensionIdMap.get(name) as MetricsViewSpecDimensionV2
-            ),
-            selectedValues: dimensionValues.in as any[],
-            filterType: "exclude",
-          };
-        }) ?? [];
+  $: currentDimensionFilters = [
+    ...currentFormattedFilters,
+    ...temporaryFilter,
+  ].sort((a, b) => (a.name > b.name ? 1 : -1));
 
-    currentDimensionFilters = [
-      ...currentDimensionIncludeFilters,
-      ...currentDimensionExcludeFilters,
-    ];
-    // sort based on name to make sure toggling include/exclude is not jarring
-    currentDimensionFilters.sort((a, b) => (a.name > b.name ? 1 : -1));
-  }
-
-  function setActiveDimension(name, value = "") {
+  function setActiveDimension(name: string, value = "") {
     activeDimensionName = name;
     searchText = value;
   }
 
-  function getColorForChip(isInclude) {
+  function getColorForChip(isInclude: boolean) {
     return isInclude ? defaultChipColors : excludeChipColors;
+  }
+
+  function isFiltered(filters: V1MetricsViewFilter): boolean {
+    if (!filters || !filters.include || !filters.exclude) return false;
+    return filters.include.length > 0 || filters.exclude.length > 0;
   }
 </script>
 
@@ -162,14 +141,21 @@ The main feature-set component for dashboard filters
         No filters selected
       </div>
     {:else}
-      {#each currentDimensionFilters as { name, label, selectedValues, filterType } (name)}
-        {@const isInclude = filterType === "include"}
+      {#each currentDimensionFilters as { name, label, selectedValues } (name)}
+        {@const isInclude =
+          !$dashboardStore.dimensionFilterExcludeMode.get(name)}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
             on:toggle={() => toggleFilterMode(StateManagers, name)}
-            on:remove={() => toggleDimensionNameSelection(name)}
+            on:remove={() => {
+              if ($potentialFilterName) {
+                $potentialFilterName = null;
+              } else {
+                toggleDimensionNameSelection(name);
+              }
+            }}
             on:apply={(event) => {
-              toggleDimensionValue(StateManagers, name, event.detail);
+              toggleDimensionValueSelection(name, event.detail, true);
             }}
             on:search={(event) => {
               setActiveDimension(name, event.detail);
@@ -186,7 +172,7 @@ The main feature-set component for dashboard filters
             colors={getColorForChip(isInclude)}
             label="View filter"
             {selectedValues}
-            {allValues}
+            allValues={allValues[activeDimensionName]}
           >
             <svelte:fragment slot="body-tooltip-content">
               Click to edit the the filters in this dimension
@@ -195,7 +181,14 @@ The main feature-set component for dashboard filters
         </div>
       {/each}
     {/if}
-    <FilterButton />
+    <FilterButton
+      on:focus={({ detail: { name } }) => {
+        activeDimensionName = name;
+      }}
+      on:hover={({ detail: { name } }) => {
+        activeDimensionName = name;
+      }}
+    />
     <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
     {#if hasFilters}

@@ -17,7 +17,7 @@ SELECT * from         whatever;
 SELECT * from         whateveR;
 -- another extraneous comment.        
         `,
-      false
+      false,
     );
     expect(output).toBe("SELECT * from whateveR");
   });
@@ -28,7 +28,7 @@ SELECT * from         whateveR;
 SELECT 1, 2,     3 from         whateveR;
 -- another extraneous comment.        
         `,
-      false
+      false,
     );
     expect(output).toBe("SELECT 1,2,3 from whateveR");
   });

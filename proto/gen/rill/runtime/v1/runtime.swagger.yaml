@@ -1051,6 +1051,10 @@ paths:
                 type: string
                 format: date-time
                 title: Deprecated in favor of time_range
+              pivotOn:
+                type: array
+                items:
+                  type: string
               where:
                 $ref: '#/definitions/v1Expression'
               having:
@@ -2424,6 +2428,8 @@ definitions:
         type: string
       column:
         type: string
+      expression:
+        type: string
       label:
         type: string
       description:
@@ -3445,6 +3451,10 @@ definitions:
         type: string
         format: date-time
         title: Deprecated in favor of time_range
+      pivotOn:
+        type: array
+        items:
+          type: string
       where:
         $ref: '#/definitions/v1Expression'
       having:

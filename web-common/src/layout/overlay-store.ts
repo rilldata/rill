@@ -7,4 +7,4 @@ interface Overlay {
   message?: string;
 }
 
-export const overlay = writable<Overlay>(null);
+export const overlay = writable<Overlay | null>(null);

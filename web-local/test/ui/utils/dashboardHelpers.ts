@@ -22,7 +22,7 @@ export async function assertLeaderboards(
   leaderboards: Array<{
     label: string;
     values: Array<string>;
-  }>
+  }>,
 ) {
   for (const { label, values } of leaderboards) {
     const leaderboardBlock = await page.locator("svelte-virtual-list-row", {
@@ -40,7 +40,7 @@ export async function assertLeaderboards(
 export async function clickOnFilter(
   page: Page,
   dimensionLabel: string,
-  value: string
+  value: string,
 ) {
   await page
     .locator("svelte-virtual-list-row", {
@@ -59,15 +59,15 @@ export type RequestMatcher = (response: Response) => boolean;
 export async function waitForTimeSeries(
   page: Page,
   metricsView: string,
-  filterMatcher?: RequestMatcher
+  filterMatcher?: RequestMatcher,
 ) {
   const timeSeriesUrlRegex = new RegExp(
-    `/metrics-views/${metricsView}/timeseries`
+    `/metrics-views/${metricsView}/timeseries`,
   );
   await page.waitForResponse(
     (response) =>
       timeSeriesUrlRegex.test(response.url()) &&
-      (filterMatcher ? filterMatcher(response) : true)
+      (filterMatcher ? filterMatcher(response) : true),
   );
 }
 
@@ -79,7 +79,7 @@ export async function waitForTopLists(
   page: Page,
   metricsView: string,
   dimensions: Array<string>,
-  filterMatcher?: RequestMatcher
+  filterMatcher?: RequestMatcher,
 ) {
   const topListUrlRegex = new RegExp(`/metrics-views/${metricsView}/toplist`);
   await Promise.all(
@@ -88,9 +88,9 @@ export async function waitForTopLists(
         (response) =>
           topListUrlRegex.test(response.url()) &&
           response.request().postDataJSON().dimensionName === dimension &&
-          (filterMatcher ? filterMatcher(response) : true)
-      )
-    )
+          (filterMatcher ? filterMatcher(response) : true),
+      ),
+    ),
   );
 }
 
@@ -102,10 +102,10 @@ export async function waitForComparisonTopLists(
   page: Page,
   metricsView: string,
   dimensions: Array<string>,
-  filterMatcher?: RequestMatcher
+  filterMatcher?: RequestMatcher,
 ) {
   const topListUrlRegex = new RegExp(
-    `/metrics-views/${metricsView}/compare-toplist`
+    `/metrics-views/${metricsView}/compare-toplist`,
   );
   await Promise.all(
     dimensions.map((dimension) =>
@@ -113,9 +113,9 @@ export async function waitForComparisonTopLists(
         (response) =>
           topListUrlRegex.test(response.url()) &&
           response.request().postDataJSON().dimension.name === dimension &&
-          (filterMatcher ? filterMatcher(response) : true)
-      )
-    )
+          (filterMatcher ? filterMatcher(response) : true),
+      ),
+    ),
   );
 }
 
@@ -127,17 +127,17 @@ export type RequestMatcherFilter = { label: string; values: Array<unknown> };
 export function metricsViewRequestFilterMatcher(
   response: Response,
   includeFilters: Array<RequestMatcherFilter>,
-  excludeFilters: Array<RequestMatcherFilter>
+  excludeFilters: Array<RequestMatcherFilter>,
 ) {
   const filterRequest = response.request().postDataJSON()
     .filter as V1MetricsViewFilter;
   const includeFilterRequest = new Map<string, MetricsViewFilterCond>();
   filterRequest.include.forEach((cond) =>
-    includeFilterRequest.set(cond.name, cond)
+    includeFilterRequest.set(cond.name, cond),
   );
   const excludeFilterRequest = new Map<string, MetricsViewFilterCond>();
   filterRequest.exclude.forEach((cond) =>
-    excludeFilterRequest.set(cond.name, cond)
+    excludeFilterRequest.set(cond.name, cond),
   );
 
   return (
@@ -145,13 +145,13 @@ export function metricsViewRequestFilterMatcher(
       ({ label, values }) =>
         includeFilterRequest
           .get(label)
-          ?.in.every((val) => values.indexOf(val) >= 0) ?? false
+          ?.in.every((val) => values.indexOf(val) >= 0) ?? false,
     ) &&
     excludeFilters.every(
       ({ label, values }) =>
         excludeFilterRequest
           .get(label)
-          ?.in.every((val) => values.indexOf(val) >= 0) ?? false
+          ?.in.every((val) => values.indexOf(val) >= 0) ?? false,
     )
   );
 }
@@ -159,7 +159,7 @@ export function metricsViewRequestFilterMatcher(
 // Helper that opens the time range menu, calls your interactions, and then waits until the menu closes
 export async function interactWithTimeRangeMenu(
   page: Page,
-  cb: () => void | Promise<void>
+  cb: () => void | Promise<void>,
 ) {
   // Open the menu
   await page.getByLabel("Select time range").click();
@@ -167,7 +167,7 @@ export async function interactWithTimeRangeMenu(
   await cb();
   // Wait for menu to close
   await expect(
-    page.getByRole("menu", { name: "Time range selector" })
+    page.getByRole("menu", { name: "Time range selector" }),
   ).not.toBeVisible();
 }
 
@@ -175,6 +175,6 @@ export async function waitForDashboard(page: Page) {
   return waitForValidResource(
     page,
     "AdBids_model_dashboard",
-    "rill.runtime.v1.MetricsView"
+    "rill.runtime.v1.MetricsView",
   );
 }

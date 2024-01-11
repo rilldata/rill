@@ -1,4 +1,5 @@
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { Expand } from "../types";
 
 // Note: the types below are helper types to simplify the type inference
 // used in the creation of StateManagerActions, so that we can have nice
@@ -12,7 +13,7 @@ import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity
  * that are relevant to the mutation.
  */
 export type DashboardMutatorCallback = (
-  metricsExplorer: MetricsExplorerEntity
+  metricsExplorer: MetricsExplorerEntity,
 ) => void;
 
 /**
@@ -23,7 +24,7 @@ export type DashboardMutatorCallback = (
  * on a DashboardMutatorCallback will actually update the dashboard.
  */
 export type DashboardCallbackExecutor = (
-  callback: DashboardMutatorCallback
+  callback: DashboardMutatorCallback,
 ) => void;
 
 /**

@@ -17,19 +17,19 @@
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
     sourceName,
-    $sourceStore.clientYAML
+    $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
   $: file = createRuntimeServiceGetFile(
     $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table)
+    getFilePathFromNameAndType(sourceName, EntityType.Table),
   );
 
   // Intercepted navigation follows this example:
   // https://github.com/sveltejs/kit/pull/3293#issuecomment-1011553037
 
-  let interceptedNavigation = null;
+  let interceptedNavigation: { url: string | URL } | null = null;
 
   const handleCancel = () => {
     interceptedNavigation = null;
@@ -40,7 +40,9 @@
     sourceStore.set({ clientYAML: $file.data?.blob || "" });
 
     // Navigate to the new page
-    goto(interceptedNavigation.url);
+    if (interceptedNavigation?.url) {
+      goto(interceptedNavigation.url);
+    }
 
     // Reset the intercepted navigation
     interceptedNavigation = null;
@@ -52,13 +54,13 @@
   }
 
   beforeNavigate((nav) => {
-    const toHref = nav.to.url.href;
+    const toHref = nav?.to?.url.href;
 
-    if (!isSourceUnsaved) {
+    if (!isSourceUnsaved && toHref) {
       navigate(toHref);
       return;
     }
-    if (interceptedNavigation) {
+    if (interceptedNavigation && toHref) {
       navigate(toHref);
       return;
     }
@@ -66,7 +68,7 @@
     // The current source is unsaved AND the confirmation dialog has not yet been shown
     nav.cancel();
 
-    if (nav.to) {
+    if (nav.to && toHref) {
       interceptedNavigation = { url: toHref };
     }
   });

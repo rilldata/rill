@@ -13,7 +13,7 @@ export const visibleMeasures = ({
   dashboard,
 }: DashboardDataSources): MetricsViewSpecMeasureV2[] => {
   const measures = metricsSpecQueryResult.data?.measures?.filter(
-    (d) => d.name && dashboard.visibleMeasureKeys.has(d.name)
+    (d) => d.name && dashboard.visibleMeasureKeys.has(d.name),
   );
   return measures === undefined ? [] : measures;
 };

@@ -13,7 +13,7 @@
   const urlParams = new URLSearchParams(window.location.search);
   const redirectURL = urlParams.get("redirect");
   const remote = new URL(decodeURIComponent(redirectURL)).searchParams.get(
-    "remote"
+    "remote",
   );
   const user = createAdminServiceGetCurrentUser({
     query: {

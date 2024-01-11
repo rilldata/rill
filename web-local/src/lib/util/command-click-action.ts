@@ -6,7 +6,7 @@ interface CreateCommandClick {
 }
 
 export function createCommandClickAction(
-  params: CreateCommandClick = { stopImmediatePropagation: true }
+  params: CreateCommandClick = { stopImmediatePropagation: true },
 ) {
   const _stopImmediatePropagation = params?.stopImmediatePropagation || false;
   // set a context for children to consume transient state.
@@ -50,7 +50,7 @@ export function createCommandClickAction(
           node.dispatchEvent(new CustomEvent("command-click"));
           // fire all callbacks.
           const cbs = get(callbacks);
-          cbs.forEach((cb) => cb());
+          cbs.forEach((cb: () => void) => cb());
 
           // prevent the regular on:click event here.
           if (_stopImmediatePropagation) {

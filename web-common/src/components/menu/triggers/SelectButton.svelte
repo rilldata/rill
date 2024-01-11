@@ -16,12 +16,12 @@
 
   let childRequestedTooltipSuppression;
   let parentHasTooltipSomewhere = hasContext(
-    "rill:app:childRequestedTooltipSuppression"
+    "rill:app:childRequestedTooltipSuppression",
   );
   //
   if (parentHasTooltipSomewhere) {
     childRequestedTooltipSuppression = getContext(
-      "rill:app:childRequestedTooltipSuppression"
+      "rill:app:childRequestedTooltipSuppression",
     ) as Writable<boolean>;
   }
 

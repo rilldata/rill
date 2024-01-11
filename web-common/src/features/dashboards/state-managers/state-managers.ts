@@ -1,31 +1,31 @@
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { writable, Writable, Readable, derived, get } from "svelte/store";
-import { getContext } from "svelte";
-import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
+import {
+  V1MetricsViewTimeRangeResponse,
+  createQueryServiceMetricsViewTimeRange,
+  type RpcStatus,
+  type V1MetricsViewSpec,
+} from "@rilldata/web-common/runtime-client";
 import type { Runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
+import { getContext } from "svelte";
+import { Readable, Writable, derived, get, writable } from "svelte/store";
 import {
   MetricsExplorerStoreType,
   metricsExplorerStore,
   updateMetricsExplorerByName,
   useDashboardStore,
 } from "web-common/src/features/dashboards/stores/dashboard-stores";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import {
-  StateManagerReadables,
-  createStateManagerReadables,
-} from "./selectors";
-import { createStateManagerActions, type StateManagerActions } from "./actions";
-import type { DashboardCallbackExecutor } from "./actions/types";
 import {
   ResourceKind,
   useResource,
 } from "../../entity-management/resource-selectors";
+import { createStateManagerActions, type StateManagerActions } from "./actions";
+import type { DashboardCallbackExecutor } from "./actions/types";
 import {
-  createQueryServiceColumnTimeRange,
-  V1ColumnTimeRangeResponse,
-  type RpcStatus,
-  type V1MetricsViewSpec,
-} from "@rilldata/web-common/runtime-client";
+  StateManagerReadables,
+  createStateManagerReadables,
+} from "./selectors";
 
 export type StateManagers = {
   runtime: Writable<Runtime>;
@@ -33,7 +33,7 @@ export type StateManagers = {
   metricsStore: Readable<MetricsExplorerStoreType>;
   dashboardStore: Readable<MetricsExplorerEntity>;
   timeRangeSummaryStore: Readable<
-    QueryObserverResult<V1ColumnTimeRangeResponse, unknown>
+    QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   >;
   queryClient: QueryClient;
   setMetricsViewName: (s: string) => void;
@@ -67,7 +67,7 @@ export function createStateManagers({
     ([name], set) => {
       const store = useDashboardStore(name);
       return store.subscribe(set);
-    }
+    },
   );
 
   // Note: this is equivalent to `useMetaQuery`
@@ -79,30 +79,25 @@ export function createStateManagers({
       metricViewName,
       ResourceKind.MetricsView,
       (data) => data.metricsView?.state?.validSpec,
-      queryClient
+      queryClient,
     ).subscribe(set);
   });
 
   const timeRangeSummaryStore: Readable<
-    QueryObserverResult<V1ColumnTimeRangeResponse, unknown>
-  > = derived([runtime, metricsSpecStore], ([runtime, metricsView], set) =>
-    createQueryServiceColumnTimeRange(
-      runtime.instanceId,
-      metricsView.data?.table ?? "",
-      {
-        columnName: metricsView.data?.timeDimension,
+    QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
+  > = createQueryServiceMetricsViewTimeRange(
+    get(runtime).instanceId,
+    metricsViewName,
+    {},
+    {
+      query: {
+        queryClient: queryClient,
       },
-      {
-        query: {
-          enabled: !!metricsView.data?.timeDimension,
-          queryClient: queryClient,
-        },
-      }
-    ).subscribe(set)
+    },
   );
 
   const updateDashboard = (
-    callback: (metricsExplorer: MetricsExplorerEntity) => void
+    callback: (metricsExplorer: MetricsExplorerEntity) => void,
   ) => {
     const name = get(dashboardStore).name;
     // TODO: Remove dependency on MetricsExplorerStore singleton and its exports

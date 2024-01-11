@@ -37,18 +37,22 @@ import (
 type Config struct {
 	DatabaseDriver           string                 `default:"postgres" split_words:"true"`
 	DatabaseURL              string                 `split_words:"true"`
+	RedisURL                 string                 `default:"" split_words:"true"`
+	ProvisionerSpec          string                 `split_words:"true"`
 	Jobs                     []string               `split_words:"true"`
-	HTTPPort                 int                    `default:"8080" split_words:"true"`
-	GRPCPort                 int                    `default:"9090" split_words:"true"`
-	DebugPort                int                    `split_words:"true"`
 	LogLevel                 zapcore.Level          `default:"info" split_words:"true"`
 	MetricsExporter          observability.Exporter `default:"prometheus" split_words:"true"`
 	TracesExporter           observability.Exporter `default:"" split_words:"true"`
+	HTTPPort                 int                    `default:"8080" split_words:"true"`
+	GRPCPort                 int                    `default:"9090" split_words:"true"`
+	DebugPort                int                    `split_words:"true"`
 	ExternalURL              string                 `default:"http://localhost:8080" split_words:"true"`
 	ExternalGRPCURL          string                 `envconfig:"external_grpc_url"`
 	FrontendURL              string                 `default:"http://localhost:3000" split_words:"true"`
-	SessionKeyPairs          []string               `split_words:"true"`
 	AllowedOrigins           []string               `default:"*" split_words:"true"`
+	SessionKeyPairs          []string               `split_words:"true"`
+	SigningJWKS              string                 `split_words:"true"`
+	SigningKeyID             string                 `split_words:"true"`
 	AuthDomain               string                 `split_words:"true"`
 	AuthClientID             string                 `split_words:"true"`
 	AuthClientSecret         string                 `split_words:"true"`
@@ -58,9 +62,6 @@ type Config struct {
 	GithubAppWebhookSecret   string                 `split_words:"true"`
 	GithubClientID           string                 `split_words:"true"`
 	GithubClientSecret       string                 `split_words:"true"`
-	ProvisionerSpec          string                 `split_words:"true"`
-	SigningJWKS              string                 `split_words:"true"`
-	SigningKeyID             string                 `split_words:"true"`
 	EmailSMTPHost            string                 `split_words:"true"`
 	EmailSMTPPort            int                    `split_words:"true"`
 	EmailSMTPUsername        string                 `split_words:"true"`
@@ -68,7 +69,6 @@ type Config struct {
 	EmailSenderEmail         string                 `split_words:"true"`
 	EmailSenderName          string                 `split_words:"true"`
 	EmailBCC                 string                 `split_words:"true"`
-	RedisURL                 string                 `default:"" split_words:"true"`
 	ActivitySinkType         string                 `default:"" split_words:"true"`
 	ActivitySinkPeriodMs     int                    `default:"1000" split_words:"true"`
 	ActivityMaxBufferSize    int                    `default:"1000" split_words:"true"`
@@ -243,8 +243,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GRPCPort:               conf.GRPCPort,
 					ExternalURL:            conf.ExternalURL,
 					FrontendURL:            conf.FrontendURL,
-					SessionKeyPairs:        keyPairs,
 					AllowedOrigins:         conf.AllowedOrigins,
+					SessionKeyPairs:        keyPairs,
 					ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,
 					AuthDomain:             conf.AuthDomain,
 					AuthClientID:           conf.AuthClientID,
@@ -269,6 +269,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				wkr := worker.New(logger, adm)
 				if runWorker {
 					group.Go(func() error { return wkr.Run(cctx) })
+					if !runServer {
+						// If we're not running the server, lets start a http server with /ping endpoint for health checks
+						group.Go(func() error { return worker.StartPingServer(cctx, conf.HTTPPort) })
+					}
 				}
 				if runJobs {
 					for _, job := range conf.Jobs {

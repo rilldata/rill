@@ -30,7 +30,7 @@
   export let open: boolean;
 
   let step = 1;
-  let selectedConnector: V1ConnectorSpec;
+  let selectedConnector: undefined | V1ConnectorSpec;
   let requestConnector = false;
 
   const TAB_ORDER = [
@@ -72,10 +72,14 @@
           data.connectors
             .filter(
               // Only show connectors in TAB_ORDER
-              (a) => TAB_ORDER.indexOf(a.name) >= 0
+              (a) => a.name && TAB_ORDER.indexOf(a.name) >= 0,
             )
             .sort(
-              (a, b) => TAB_ORDER.indexOf(a.name) - TAB_ORDER.indexOf(b.name)
+              // CAST SAFETY: we have filtered out any connectors that
+              // don't have a `name` in the previous filter
+              (a, b) =>
+                TAB_ORDER.indexOf(a.name as string) -
+                TAB_ORDER.indexOf(b.name as string),
             );
         return data;
       },
@@ -108,7 +112,7 @@
       BehaviourEventAction.SourceCancel,
       BehaviourEventMedium.Button,
       $appScreen,
-      MetricsEventSpace.Modal
+      MetricsEventSpace.Modal,
     );
     resetModal();
     dispatch("close");
@@ -138,14 +142,16 @@
     {#if step === 1}
       {#if $connectors.data}
         <div class="grid grid-cols-3 gap-4">
-          {#each $connectors.data.connectors as connector}
-            <button
-              id={connector.name}
-              on:click={() => goToConnectorForm(connector)}
-              class="w-40 h-20 rounded border border-gray-300 justify-center items-center gap-2.5 inline-flex hover:bg-gray-100 cursor-pointer"
-            >
-              <svelte:component this={ICONS[connector.name]} />
-            </button>
+          {#each $connectors?.data?.connectors ?? [] as connector}
+            {#if connector.name}
+              <button
+                id={connector.name}
+                on:click={() => goToConnectorForm(connector)}
+                class="w-40 h-20 rounded border border-gray-300 justify-center items-center gap-2.5 inline-flex hover:bg-gray-100 cursor-pointer"
+              >
+                <svelte:component this={ICONS[connector.name]} />
+              </button>
+            {/if}
           {/each}
         </div>
       {/if}

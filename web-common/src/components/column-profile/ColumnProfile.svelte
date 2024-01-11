@@ -28,33 +28,27 @@
     return () => observer.unobserve(container);
   });
 
-  // get all column profiles.
-  let profileColumns;
   $: profileColumns = createQueryServiceTableColumns(
     $runtime?.instanceId,
     objectName,
     {},
-    { query: { keepPreviousData: true } }
+    { query: { keepPreviousData: true } },
   );
 
   /** get single example */
-  let exampleValue;
   $: exampleValue = createQueryServiceTableRows(
     $runtime?.instanceId,
     objectName,
     {
       limit: 1,
-    }
+    },
   );
 
-  let nestedColumnProfileQuery;
-  $: if ($profileColumns?.data?.profileColumns) {
-    nestedColumnProfileQuery = getSummaries(
-      objectName,
-      $runtime?.instanceId,
-      $profileColumns
-    );
-  }
+  $: nestedColumnProfileQuery = getSummaries(
+    objectName,
+    $runtime?.instanceId,
+    $profileColumns,
+  );
 
   $: profile = $nestedColumnProfileQuery;
   let sortedProfile;

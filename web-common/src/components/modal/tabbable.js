@@ -1,3 +1,12 @@
+/**
+ * Note that this file has been vendored from Shoelace
+ * in order to fix a bug with storybook.
+ *
+ * Linting is disabled for this file. If you make changes to this file,
+ * you should merge it with the corresponding d.ts file, and change this
+ * to a .ts file.
+ */
+
 function isTabbable(el) {
   const tag = el.tagName.toLowerCase();
   if (el.getAttribute("tabindex") === "-1") {

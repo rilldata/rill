@@ -184,7 +184,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 			if e.Dir {
 				continue
 			}
-			if strings.HasSuffix(e.Path, ".db") || strings.HasSuffix(e.Path, ".wal") {
+			if parser.IsIgnored(e.Path) {
 				continue
 			}
 			changedPaths = append(changedPaths, e.Path)
@@ -201,8 +201,10 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 			err = r.reconcileParser(ctx, inst, self, parser, diff, changedPaths)
 		}
 		if err != nil && !errors.Is(err, ErrParserHasParseErrors) {
-			reparseErr = err
-			cancel()
+			if reparseErr == nil { // In case a callback is somehow invoked after cancel() is called in a previous callback
+				reparseErr = err
+				cancel()
+			}
 			return
 		}
 	})
@@ -247,7 +249,7 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 			r.C.Logger.Warn("Parser error", slog.String("path", e.FilePath), slog.String("err", e.Message))
 		}
 	} else if diff.Skipped {
-		r.C.Logger.Warn("Not parsing changed paths due to broken rill.yaml")
+		r.C.Logger.Warn("Not parsing changed paths due to missing or broken rill.yaml")
 	} else {
 		for _, e := range parser.Errors {
 			if slices.Contains(changedPaths, e.FilePath) {

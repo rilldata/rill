@@ -18,7 +18,7 @@ import { runtime } from "./runtime-store";
 export const httpRequestQueue = new HttpRequestQueue();
 
 export const httpClient = async <T>(
-  config: FetchWrapperOptions
+  config: FetchWrapperOptions,
 ): Promise<T> => {
   // naive request interceptors
 

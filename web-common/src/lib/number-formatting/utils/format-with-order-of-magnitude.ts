@@ -36,7 +36,7 @@ export const formatNumWithOrderOfMag = (
   trailingDot = false,
 
   // strip commas from output?
-  stripCommas = false
+  stripCommas = false,
 ): NumberParts => {
   if (typeof x !== "number") {
     // FIXME add these warnings back in when the upstream code is robust enough

@@ -10,23 +10,9 @@ It is probably not the most up to date code; but it works very well in practice.
   import { WithTween } from "../functional-components";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
   import { preventVerticalOverlap } from "./prevent-vertical-overlap";
+  import type { Point } from "./types";
 
   const DIMENSION_HOVER_DURATION = 350;
-  interface Point {
-    x: number;
-    y: number;
-    value: string;
-    label: string;
-    key: string;
-    valueColorClass?: string;
-    valueStyleClass?: string;
-    labelColorClass?: string;
-    labelStyleClass?: string;
-    pointColorClass?: string;
-    yOverride?: boolean;
-    yOverrideLabel?: string;
-    yOverrideStyleClass?: string;
-  }
 
   export let point: Point[] = [];
 
@@ -54,8 +40,8 @@ It is probably not the most up to date code; but it works very well in practice.
   export let flipAtEdge: "body" | "graphic" | false = "graphic"; // "body", "graphic", or undefined
   export let attachPointToLabel = false;
 
-  let container;
-  let containerWidths = [];
+  let container: SVGGElement;
+  let containerWidths: number[] = [];
   // let labelWidth = 0;
 
   let fanOutLabels = true;
@@ -69,16 +55,21 @@ It is probably not the most up to date code; but it works very well in practice.
     plotTop,
     plotBottom,
     elementHeight,
-    yBuffer
+    yBuffer,
   );
 
   $: locations = point.map((p) => {
+    const locationValue = nonOverlappingLocations.find(
+      (l) => l.key === p.key,
+    )?.value;
+
     return {
       ...p,
       xRange: $xScale(p.x),
-      yRange: fanOutLabels
-        ? nonOverlappingLocations.find((l) => l.key === p.key).value
-        : $yScale(p.y),
+      yRange:
+        fanOutLabels && locationValue !== undefined
+          ? locationValue
+          : $yScale(p.y),
     };
   });
 
@@ -101,14 +92,15 @@ It is probably not the most up to date code; but it works very well in practice.
 
   $: if (direction === "left") {
     let flip = !!flipAtEdge;
-    fcn = (c) =>
-      flip &&
-      locations[0].xRange - c <=
-        (flipAtEdge === "body"
-          ? plotLeft
-          : flipAtEdge === "graphic"
-          ? 0
-          : false);
+    fcn = (c) => {
+      const rhs_comparator =
+        flipAtEdge === "body" ? plotLeft : flipAtEdge === "graphic" ? 0 : false;
+      return (
+        flip &&
+        typeof rhs_comparator === "number" &&
+        locations[0].xRange - c <= rhs_comparator
+      );
+    };
   } else {
     let flip = !!flipAtEdge;
     fcn = (c) =>
@@ -117,8 +109,8 @@ It is probably not the most up to date code; but it works very well in practice.
         (flipAtEdge === "body"
           ? plotRight
           : flipAtEdge === "graphic"
-          ? width
-          : false);
+            ? width
+            : false);
   }
   $: if (
     direction === "right" &&
@@ -146,8 +138,8 @@ It is probably not the most up to date code; but it works very well in practice.
       if (container) {
         labelWidth = Math.max(
           ...Array.from(container.querySelectorAll(".widths")).map(
-            (q: SVGElement) => q.getBoundingClientRect().width
-          )
+            (q: SVGElement) => q.getBoundingClientRect().width,
+          ),
         );
 
         if (!Number.isFinite(labelWidth)) {
@@ -304,10 +296,35 @@ It is probably not the most up to date code; but it works very well in practice.
     stroke-width: 3px;
     white-space: pre-wrap;
     /* Make all characters and numbers of equal width for easy scanibility */
-    font-feature-settings: "case" 0, "cpsp" 0, "dlig" 0, "frac" 0, "dnom" 0,
-      "numr" 0, "salt" 0, "subs" 0, "sups" 0, "tnum", "zero" 0, "ss01", "ss02" 0,
-      "ss03" 0, "ss04" 0, "cv01" 0, "cv02" 0, "cv03" 0, "cv04" 0, "cv05" 0,
-      "cv06" 0, "cv07" 0, "cv08" 0, "cv09" 0, "cv10" 0, "cv11" 0, "calt", "ccmp",
+    font-feature-settings:
+      "case" 0,
+      "cpsp" 0,
+      "dlig" 0,
+      "frac" 0,
+      "dnom" 0,
+      "numr" 0,
+      "salt" 0,
+      "subs" 0,
+      "sups" 0,
+      "tnum",
+      "zero" 0,
+      "ss01",
+      "ss02" 0,
+      "ss03" 0,
+      "ss04" 0,
+      "cv01" 0,
+      "cv02" 0,
+      "cv03" 0,
+      "cv04" 0,
+      "cv05" 0,
+      "cv06" 0,
+      "cv07" 0,
+      "cv08" 0,
+      "cv09" 0,
+      "cv10" 0,
+      "cv11" 0,
+      "calt",
+      "ccmp",
       "kern";
   }
 </style>

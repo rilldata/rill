@@ -19,7 +19,7 @@ import { selectedDimensionValues } from "./dimension-filters";
 import type { DimensionTableRow } from "../../dimension-table/dimension-table-types";
 
 export const selectedDimensionValueNames = (
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): string[] => {
   const dimension = dashData.dashboard.selectedDimensionName;
   if (!dimension) return [];
@@ -27,23 +27,23 @@ export const selectedDimensionValueNames = (
 };
 
 export const primaryDimension = (
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): MetricsViewSpecDimensionV2 | undefined => {
   const dimName = dashData.dashboard.selectedDimensionName;
   return dashData.metricsSpecQueryResult.data?.dimensions?.find(
-    (dim) => dim.name === dimName
+    (dim) => dim.name === dimName,
   );
 };
 
 export const dimensionTableSearchString = (
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): string | undefined => dashData.dashboard.dimensionSearchText;
 
 export const virtualizedTableColumns =
   (
-    dashData: DashboardDataSources
+    dashData: DashboardDataSources,
   ): ((
-    totalsQuery: QueryObserverResult<V1MetricsViewTotalsResponse, RpcStatus>
+    totalsQuery: QueryObserverResult<V1MetricsViewTotalsResponse, RpcStatus>,
   ) => VirtualizedTableColumns[]) =>
   (totalsQuery) => {
     const dimension = primaryDimension(dashData);
@@ -67,19 +67,19 @@ export const virtualizedTableColumns =
       measureTotals,
       dimension,
       isTimeComparisonActive(dashData),
-      isValidPercentOfTotal(dashData)
+      isValidPercentOfTotal(dashData),
     );
   };
 
 export const prepareDimTableRows =
   (
-    dashData: DashboardDataSources
+    dashData: DashboardDataSources,
   ): ((
     sortedQuery: QueryObserverResult<
       V1MetricsViewComparisonResponse,
       RpcStatus
     >,
-    unfilteredTotal: number
+    unfilteredTotal: number,
   ) => DimensionTableRow[]) =>
   (sortedQuery, unfilteredTotal) => {
     const dimension = primaryDimension(dashData);
@@ -99,7 +99,7 @@ export const prepareDimTableRows =
       dimensionColumn,
       isTimeComparisonActive(dashData),
       isValidPercentOfTotal(dashData),
-      unfilteredTotal
+      unfilteredTotal,
     );
   };
 

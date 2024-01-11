@@ -9,9 +9,9 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/robfig/cron/v3"
-	"golang.org/x/exp/slog"
 )
 
 // checkRefs checks that all refs exist, are idle, and have no errors.
@@ -156,31 +156,74 @@ func safeSQLName(name string) string {
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
 }
 
-func logTableNameAndType(ctx context.Context, c *runtime.Controller, connector, name string) {
-	olap, release, err := c.AcquireOLAP(ctx, connector)
+func resolveTemplatedProps(ctx context.Context, c *runtime.Controller, self compilerv1.TemplateResource, props map[string]any) (map[string]any, error) {
+	inst, err := c.Runtime.Instance(ctx, c.InstanceID)
 	if err != nil {
-		c.Logger.Error("LogTableNameAndType: failed to acquire OLAP", slog.Any("err", err))
-		return
+		return nil, err
 	}
-	defer release()
+	vars := inst.ResolveVariables()
 
-	res, err := olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT column_name, data_type FROM information_schema.columns WHERE table_name=? ORDER BY column_name ASC", Args: []any{name}})
-	if err != nil {
-		c.Logger.Error("LogTableNameAndType: failed information_schema.columns", slog.Any("err", err))
-		return
+	templateData := compilerv1.TemplateData{
+		User:       map[string]interface{}{},
+		Variables:  vars,
+		ExtraProps: map[string]interface{}{},
+		Self:       self,
+		Resolve: func(ref compilerv1.ResourceName) (string, error) {
+			return safeSQLName(ref.Name), nil
+		},
+		Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
+			if name.Kind == compilerv1.ResourceKindUnspecified {
+				return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without kind specified", name.Name)
+			}
+			res, err := c.Get(ctx, resourceNameFromCompiler(name), false)
+			if err != nil {
+				return compilerv1.TemplateResource{}, err
+			}
+			return compilerv1.TemplateResource{
+				Meta:  res.Meta,
+				Spec:  res.Resource.(*runtimev1.Resource_Model).Model.Spec,
+				State: res.Resource.(*runtimev1.Resource_Model).Model.State,
+			}, nil
+		},
 	}
-	defer res.Close()
 
-	colTyp := make([]string, 0)
-	var col, typ string
-	for res.Next() {
-		err = res.Scan(&col, &typ)
+	for key, value := range props {
+		res, err := convert(value, &templateData)
 		if err != nil {
-			c.Logger.Error("LogTableNameAndType: failed scan", slog.Any("err", err))
-			return
+			return nil, fmt.Errorf("failed to convert property %q: %w", key, err)
 		}
-		colTyp = append(colTyp, fmt.Sprintf("%s:%s", col, typ))
+		props[key] = res
 	}
+	return props, nil
+}
 
-	c.Logger.Info("LogTableNameAndType: ", slog.String("name", name), slog.String("schema", strings.Join(colTyp, ", ")))
+func convert(value any, templateData *compilerv1.TemplateData) (res any, err error) {
+	switch v := value.(type) {
+	case string:
+		res, err = compilerv1.ResolveTemplate(v, *templateData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve template: %w", err)
+		}
+	case map[string]any:
+		for key, item := range v {
+			item, err = convert(item, templateData)
+			if err != nil {
+				return nil, err
+			}
+			v[key] = item
+		}
+		res = v
+	case []any:
+		for i, item := range v {
+			item, err = convert(item, templateData)
+			if err != nil {
+				return nil, err
+			}
+			v[i] = item
+		}
+		res = v
+	default:
+		res = v
+	}
+	return
 }

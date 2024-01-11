@@ -26,7 +26,7 @@ export async function uploadFile(
   page: Page,
   file: string,
   isDuplicate = false,
-  keepBoth = false
+  keepBoth = false,
 ) {
   // add table button
   await page.locator("button#add-table").click();
@@ -65,7 +65,7 @@ export async function uploadFile(
 export async function createOrReplaceSource(
   page: Page,
   file: string,
-  name: string
+  name: string,
 ) {
   try {
     await getEntityLink(page, name).waitFor({
@@ -84,7 +84,7 @@ export async function createOrReplaceSource(
 export async function waitForSource(
   page: Page,
   name: string,
-  columns: Array<string>
+  columns: Array<string>,
 ) {
   await Promise.all([
     page.getByText("View this source").click(),

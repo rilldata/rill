@@ -7,7 +7,7 @@ import type { DashboardDataSources } from "./types";
  * If there is no active measure, or if the active measure
  */
 export function isBeingCompared(
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): (dimensionName: string) => boolean {
   return (dimensionName: string) =>
     dashData.dashboard?.selectedComparisonDimension === dimensionName;

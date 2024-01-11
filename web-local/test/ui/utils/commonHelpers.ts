@@ -13,7 +13,7 @@ export async function gotoEntity(page: Page, name: string) {
 export async function renameEntityUsingMenu(
   page: Page,
   name: string,
-  toName: string
+  toName: string,
 ) {
   // open context menu and click rename
   await openEntityMenu(page, name);
@@ -46,7 +46,7 @@ export async function deleteEntity(page: Page, name: string) {
     page.waitForResponse(
       (response) =>
         response.url().includes(name) &&
-        response.request().method() === "DELETE"
+        response.request().method() === "DELETE",
     ),
     clickMenuButton(page, "Delete"),
   ]);
@@ -66,14 +66,14 @@ export async function updateCodeEditor(page: Page, code: string) {
 export async function waitForValidResource(
   page: Page,
   name: string,
-  kind: string
+  kind: string,
 ) {
   await page.waitForResponse(async (response) => {
     if (
       !response
         .url()
         .includes(
-          `/v1/instances/default/resource?name.kind=${kind}&name.name=${name}`
+          `/v1/instances/default/resource?name.kind=${kind}&name.name=${name}`,
         )
     )
       return false;
