@@ -38,6 +38,7 @@
   const ctx = getStateManagers();
   const timeControlsStore = useTimeControlStore(ctx);
   const metaQuery = useMetaQuery(ctx);
+
   const {
     selectors: {
       timeRangeSelectors: { timeRangeSelectorState },
@@ -59,8 +60,12 @@
   $: intermediateSelection = currentSelection;
 
   function setIntermediateSelection(
-    timeRangeName: TimeRangePreset | TimeComparisonOption,
+    timeRangeName: TimeRangePreset | TimeComparisonOption | undefined,
   ) {
+    if (!timeRangeName) {
+      return () => {};
+    }
+
     return () => {
       intermediateSelection = timeRangeName;
     };
@@ -211,11 +216,14 @@
 
     {#if $timeRangeSelectorState.showDefaultItem}
       <DefaultTimeRangeMenuItem
-        on:before-select={setIntermediateSelection(
+        on:mouseenter={setIntermediateSelection(
           $metaQuery.data?.defaultTimeRange,
         )}
-        on:select={() =>
-          onSelectRelativeTimeRange($timeControlsStore.defaultTimeRange)}
+        on:click={() => {
+          if ($timeControlsStore.defaultTimeRange) {
+            onSelectRelativeTimeRange($timeControlsStore.defaultTimeRange);
+          }
+        }}
         selected={intermediateSelection === $metaQuery.data?.defaultTimeRange}
         isoDuration={$metaQuery.data?.defaultTimeRange}
       />
