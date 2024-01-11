@@ -915,32 +915,32 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 	}
 	meta[0] = &runtimev1.MetricsViewColumn{
 		Name: dimName,
-		Type: "CODE_STRING",
+		Type: runtimev1.Type_CODE_STRING.String(),
 	}
 	if comparison {
 		for i, m := range q.Result.Rows[0].MeasureValues {
 			meta[1+i*4] = &runtimev1.MetricsViewColumn{
 				Name: labelMap[m.MeasureName],
-				Type: "CODE_FLOAT64",
+				Type: runtimev1.Type_CODE_FLOAT64.String(),
 			}
 			meta[2+i*4] = &runtimev1.MetricsViewColumn{
 				Name: fmt.Sprintf("%s (prev)", labelMap[m.MeasureName]),
-				Type: "CODE_FLOAT64",
+				Type: runtimev1.Type_CODE_FLOAT64.String(),
 			}
 			meta[3+i*4] = &runtimev1.MetricsViewColumn{
 				Name: fmt.Sprintf("%s (Δ)", labelMap[m.MeasureName]),
-				Type: "CODE_FLOAT64",
+				Type: runtimev1.Type_CODE_FLOAT64.String(),
 			}
 			meta[4+i*4] = &runtimev1.MetricsViewColumn{
 				Name: fmt.Sprintf("%s (Δ%%)", labelMap[m.MeasureName]),
-				Type: "CODE_FLOAT64",
+				Type: runtimev1.Type_CODE_FLOAT64.String(),
 			}
 		}
 	} else {
 		for i, m := range q.Result.Rows[0].MeasureValues {
 			meta[1+i] = &runtimev1.MetricsViewColumn{
 				Name: labelMap[m.MeasureName],
-				Type: "CODE_FLOAT64",
+				Type: runtimev1.Type_CODE_FLOAT64.String(),
 			}
 		}
 	}
