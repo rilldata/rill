@@ -48,13 +48,13 @@
   }
 
   let rows;
+  let tableColumns: VirtualizedTableColumns[];
   $: {
     if ($tableQuery.isSuccess) {
       rows = $tableQuery.data.data;
+      tableColumns = $tableQuery.data.meta as VirtualizedTableColumns[];
     }
   }
-
-  $: tableColumns = $tableQuery.data?.meta as VirtualizedTableColumns[];
 
   let rowOverscanAmount = 0;
   let columnOverscanAmount = 0;
