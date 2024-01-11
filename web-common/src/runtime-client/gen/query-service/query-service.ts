@@ -72,7 +72,7 @@ export const queryServiceColumnCardinality = (
   instanceId: string,
   tableName: string,
   params?: QueryServiceColumnCardinalityParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ColumnCardinalityResponse>({
     url: `/v1/instances/${instanceId}/queries/column-cardinality/tables/${tableName}`,
@@ -85,7 +85,7 @@ export const queryServiceColumnCardinality = (
 export const getQueryServiceColumnCardinalityQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceColumnCardinalityParams
+  params?: QueryServiceColumnCardinalityParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/column-cardinality/tables/${tableName}`,
@@ -95,7 +95,7 @@ export const getQueryServiceColumnCardinalityQueryKey = (
 
 export const getQueryServiceColumnCardinalityQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnCardinality>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -106,7 +106,7 @@ export const getQueryServiceColumnCardinalityQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -141,7 +141,7 @@ export type QueryServiceColumnCardinalityQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceColumnCardinality = <
   TData = Awaited<ReturnType<typeof queryServiceColumnCardinality>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -152,13 +152,13 @@ export const createQueryServiceColumnCardinality = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceColumnCardinalityQueryOptions(
     instanceId,
     tableName,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -177,7 +177,7 @@ export const createQueryServiceColumnCardinality = <
 export const queryServiceTableColumns = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceTableColumnsParams
+  params?: QueryServiceTableColumnsParams,
 ) => {
   return httpClient<V1TableColumnsResponse>({
     url: `/v1/instances/${instanceId}/queries/columns-profile/tables/${tableName}`,
@@ -189,7 +189,7 @@ export const queryServiceTableColumns = (
 export const getQueryServiceTableColumnsQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceTableColumnsParams
+  params?: QueryServiceTableColumnsParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/columns-profile/tables/${tableName}`,
@@ -199,7 +199,7 @@ export const getQueryServiceTableColumnsQueryKey = (
 
 export const getQueryServiceTableColumnsQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceTableColumns>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -210,7 +210,7 @@ export const getQueryServiceTableColumnsQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -244,7 +244,7 @@ export type QueryServiceTableColumnsQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceTableColumns = <
   TData = Awaited<ReturnType<typeof queryServiceTableColumns>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -255,13 +255,13 @@ export const createQueryServiceTableColumns = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceTableColumnsQueryOptions(
     instanceId,
     tableName,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -281,7 +281,7 @@ export const queryServiceColumnDescriptiveStatistics = (
   instanceId: string,
   tableName: string,
   params?: QueryServiceColumnDescriptiveStatisticsParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ColumnDescriptiveStatisticsResponse>({
     url: `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}`,
@@ -294,7 +294,7 @@ export const queryServiceColumnDescriptiveStatistics = (
 export const getQueryServiceColumnDescriptiveStatisticsQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceColumnDescriptiveStatisticsParams
+  params?: QueryServiceColumnDescriptiveStatisticsParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/descriptive-statistics/tables/${tableName}`,
@@ -304,7 +304,7 @@ export const getQueryServiceColumnDescriptiveStatisticsQueryKey = (
 
 export const getQueryServiceColumnDescriptiveStatisticsQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -315,7 +315,7 @@ export const getQueryServiceColumnDescriptiveStatisticsQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -324,7 +324,7 @@ export const getQueryServiceColumnDescriptiveStatisticsQueryOptions = <
     getQueryServiceColumnDescriptiveStatisticsQueryKey(
       instanceId,
       tableName,
-      params
+      params,
     );
 
   const queryFn: QueryFunction<
@@ -334,7 +334,7 @@ export const getQueryServiceColumnDescriptiveStatisticsQueryOptions = <
       instanceId,
       tableName,
       params,
-      signal
+      signal,
     );
 
   return {
@@ -360,7 +360,7 @@ export type QueryServiceColumnDescriptiveStatisticsQueryError =
  */
 export const createQueryServiceColumnDescriptiveStatistics = <
   TData = Awaited<ReturnType<typeof queryServiceColumnDescriptiveStatistics>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -371,13 +371,13 @@ export const createQueryServiceColumnDescriptiveStatistics = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceColumnDescriptiveStatisticsQueryOptions(
     instanceId,
     tableName,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -395,7 +395,7 @@ export const createQueryServiceColumnDescriptiveStatistics = <
  */
 export const queryServiceExport = (
   instanceId: string,
-  queryServiceExportBody: QueryServiceExportBody
+  queryServiceExportBody: QueryServiceExportBody,
 ) => {
   return httpClient<V1ExportResponse>({
     url: `/v1/instances/${instanceId}/queries/export`,
@@ -407,7 +407,7 @@ export const queryServiceExport = (
 
 export const getQueryServiceExportMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof queryServiceExport>>,
@@ -446,7 +446,7 @@ export type QueryServiceExportMutationError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceExport = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof queryServiceExport>>,
@@ -465,7 +465,7 @@ export const createQueryServiceExport = <
 export const queryServiceMetricsViewAggregation = (
   instanceId: string,
   metricsView: string,
-  queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody
+  queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody,
 ) => {
   return httpClient<V1MetricsViewAggregationResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsView}/aggregation`,
@@ -478,7 +478,7 @@ export const queryServiceMetricsViewAggregation = (
 export const getQueryServiceMetricsViewAggregationQueryKey = (
   instanceId: string,
   metricsView: string,
-  queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody
+  queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/metrics-views/${metricsView}/aggregation`,
@@ -488,7 +488,7 @@ export const getQueryServiceMetricsViewAggregationQueryKey = (
 
 export const getQueryServiceMetricsViewAggregationQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsView: string,
@@ -499,7 +499,7 @@ export const getQueryServiceMetricsViewAggregationQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -508,7 +508,7 @@ export const getQueryServiceMetricsViewAggregationQueryOptions = <
     getQueryServiceMetricsViewAggregationQueryKey(
       instanceId,
       metricsView,
-      queryServiceMetricsViewAggregationBody
+      queryServiceMetricsViewAggregationBody,
     );
 
   const queryFn: QueryFunction<
@@ -517,7 +517,7 @@ export const getQueryServiceMetricsViewAggregationQueryOptions = <
     queryServiceMetricsViewAggregation(
       instanceId,
       metricsView,
-      queryServiceMetricsViewAggregationBody
+      queryServiceMetricsViewAggregationBody,
     );
 
   return {
@@ -542,7 +542,7 @@ export type QueryServiceMetricsViewAggregationQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceMetricsViewAggregation = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsView: string,
@@ -553,13 +553,13 @@ export const createQueryServiceMetricsViewAggregation = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceMetricsViewAggregationQueryOptions(
     instanceId,
     metricsView,
     queryServiceMetricsViewAggregationBody,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -575,7 +575,7 @@ export const createQueryServiceMetricsViewAggregation = <
 export const queryServiceMetricsViewComparison = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewComparisonBody: QueryServiceMetricsViewComparisonBody
+  queryServiceMetricsViewComparisonBody: QueryServiceMetricsViewComparisonBody,
 ) => {
   return httpClient<V1MetricsViewComparisonResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/compare-toplist`,
@@ -588,7 +588,7 @@ export const queryServiceMetricsViewComparison = (
 export const getQueryServiceMetricsViewComparisonQueryKey = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewComparisonBody: QueryServiceMetricsViewComparisonBody
+  queryServiceMetricsViewComparisonBody: QueryServiceMetricsViewComparisonBody,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/compare-toplist`,
@@ -598,7 +598,7 @@ export const getQueryServiceMetricsViewComparisonQueryKey = (
 
 export const getQueryServiceMetricsViewComparisonQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsViewName: string,
@@ -609,7 +609,7 @@ export const getQueryServiceMetricsViewComparisonQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -618,7 +618,7 @@ export const getQueryServiceMetricsViewComparisonQueryOptions = <
     getQueryServiceMetricsViewComparisonQueryKey(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewComparisonBody
+      queryServiceMetricsViewComparisonBody,
     );
 
   const queryFn: QueryFunction<
@@ -627,7 +627,7 @@ export const getQueryServiceMetricsViewComparisonQueryOptions = <
     queryServiceMetricsViewComparison(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewComparisonBody
+      queryServiceMetricsViewComparisonBody,
     );
 
   return {
@@ -649,7 +649,7 @@ export type QueryServiceMetricsViewComparisonQueryError = ErrorType<RpcStatus>;
 
 export const createQueryServiceMetricsViewComparison = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsViewName: string,
@@ -660,13 +660,13 @@ export const createQueryServiceMetricsViewComparison = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceMetricsViewComparisonQueryOptions(
     instanceId,
     metricsViewName,
     queryServiceMetricsViewComparisonBody,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -685,7 +685,7 @@ export const createQueryServiceMetricsViewComparison = <
 export const queryServiceMetricsViewRows = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewRowsBody: QueryServiceMetricsViewRowsBody
+  queryServiceMetricsViewRowsBody: QueryServiceMetricsViewRowsBody,
 ) => {
   return httpClient<V1MetricsViewRowsResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/rows`,
@@ -698,7 +698,7 @@ export const queryServiceMetricsViewRows = (
 export const getQueryServiceMetricsViewRowsQueryKey = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewRowsBody: QueryServiceMetricsViewRowsBody
+  queryServiceMetricsViewRowsBody: QueryServiceMetricsViewRowsBody,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/rows`,
@@ -708,7 +708,7 @@ export const getQueryServiceMetricsViewRowsQueryKey = (
 
 export const getQueryServiceMetricsViewRowsQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsViewName: string,
@@ -719,7 +719,7 @@ export const getQueryServiceMetricsViewRowsQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -728,7 +728,7 @@ export const getQueryServiceMetricsViewRowsQueryOptions = <
     getQueryServiceMetricsViewRowsQueryKey(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewRowsBody
+      queryServiceMetricsViewRowsBody,
     );
 
   const queryFn: QueryFunction<
@@ -737,7 +737,7 @@ export const getQueryServiceMetricsViewRowsQueryOptions = <
     queryServiceMetricsViewRows(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewRowsBody
+      queryServiceMetricsViewRowsBody,
     );
 
   return {
@@ -762,7 +762,7 @@ export type QueryServiceMetricsViewRowsQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceMetricsViewRows = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsViewName: string,
@@ -773,13 +773,13 @@ export const createQueryServiceMetricsViewRows = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceMetricsViewRowsQueryOptions(
     instanceId,
     metricsViewName,
     queryServiceMetricsViewRowsBody,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -798,7 +798,7 @@ export const createQueryServiceMetricsViewRows = <
 export const queryServiceMetricsViewTimeRange = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewTimeRangeBody: QueryServiceMetricsViewTimeRangeBody
+  queryServiceMetricsViewTimeRangeBody: QueryServiceMetricsViewTimeRangeBody,
 ) => {
   return httpClient<V1MetricsViewTimeRangeResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-range-summary`,
@@ -811,7 +811,7 @@ export const queryServiceMetricsViewTimeRange = (
 export const getQueryServiceMetricsViewTimeRangeQueryKey = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewTimeRangeBody: QueryServiceMetricsViewTimeRangeBody
+  queryServiceMetricsViewTimeRangeBody: QueryServiceMetricsViewTimeRangeBody,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-range-summary`,
@@ -821,7 +821,7 @@ export const getQueryServiceMetricsViewTimeRangeQueryKey = (
 
 export const getQueryServiceMetricsViewTimeRangeQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsViewName: string,
@@ -832,7 +832,7 @@ export const getQueryServiceMetricsViewTimeRangeQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -841,7 +841,7 @@ export const getQueryServiceMetricsViewTimeRangeQueryOptions = <
     getQueryServiceMetricsViewTimeRangeQueryKey(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewTimeRangeBody
+      queryServiceMetricsViewTimeRangeBody,
     );
 
   const queryFn: QueryFunction<
@@ -850,7 +850,7 @@ export const getQueryServiceMetricsViewTimeRangeQueryOptions = <
     queryServiceMetricsViewTimeRange(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewTimeRangeBody
+      queryServiceMetricsViewTimeRangeBody,
     );
 
   return {
@@ -875,7 +875,7 @@ export type QueryServiceMetricsViewTimeRangeQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceMetricsViewTimeRange = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsViewName: string,
@@ -886,13 +886,13 @@ export const createQueryServiceMetricsViewTimeRange = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceMetricsViewTimeRangeQueryOptions(
     instanceId,
     metricsViewName,
     queryServiceMetricsViewTimeRangeBody,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -912,7 +912,7 @@ It's a convenience API for querying a metrics view.
 export const queryServiceMetricsViewTimeSeries = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewTimeSeriesBody: QueryServiceMetricsViewTimeSeriesBody
+  queryServiceMetricsViewTimeSeriesBody: QueryServiceMetricsViewTimeSeriesBody,
 ) => {
   return httpClient<V1MetricsViewTimeSeriesResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/timeseries`,
@@ -925,7 +925,7 @@ export const queryServiceMetricsViewTimeSeries = (
 export const getQueryServiceMetricsViewTimeSeriesQueryKey = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewTimeSeriesBody: QueryServiceMetricsViewTimeSeriesBody
+  queryServiceMetricsViewTimeSeriesBody: QueryServiceMetricsViewTimeSeriesBody,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/timeseries`,
@@ -935,7 +935,7 @@ export const getQueryServiceMetricsViewTimeSeriesQueryKey = (
 
 export const getQueryServiceMetricsViewTimeSeriesQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsViewName: string,
@@ -946,7 +946,7 @@ export const getQueryServiceMetricsViewTimeSeriesQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -955,7 +955,7 @@ export const getQueryServiceMetricsViewTimeSeriesQueryOptions = <
     getQueryServiceMetricsViewTimeSeriesQueryKey(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewTimeSeriesBody
+      queryServiceMetricsViewTimeSeriesBody,
     );
 
   const queryFn: QueryFunction<
@@ -964,7 +964,7 @@ export const getQueryServiceMetricsViewTimeSeriesQueryOptions = <
     queryServiceMetricsViewTimeSeries(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewTimeSeriesBody
+      queryServiceMetricsViewTimeSeriesBody,
     );
 
   return {
@@ -990,7 +990,7 @@ It's a convenience API for querying a metrics view.
  */
 export const createQueryServiceMetricsViewTimeSeries = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsViewName: string,
@@ -1001,13 +1001,13 @@ export const createQueryServiceMetricsViewTimeSeries = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceMetricsViewTimeSeriesQueryOptions(
     instanceId,
     metricsViewName,
     queryServiceMetricsViewTimeSeriesBody,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1027,7 +1027,7 @@ It's a convenience API for querying a metrics view.
 export const queryServiceMetricsViewToplist = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody
+  queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody,
 ) => {
   return httpClient<V1MetricsViewToplistResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/toplist`,
@@ -1040,7 +1040,7 @@ export const queryServiceMetricsViewToplist = (
 export const getQueryServiceMetricsViewToplistQueryKey = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody
+  queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/toplist`,
@@ -1050,7 +1050,7 @@ export const getQueryServiceMetricsViewToplistQueryKey = (
 
 export const getQueryServiceMetricsViewToplistQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsViewName: string,
@@ -1061,7 +1061,7 @@ export const getQueryServiceMetricsViewToplistQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1070,7 +1070,7 @@ export const getQueryServiceMetricsViewToplistQueryOptions = <
     getQueryServiceMetricsViewToplistQueryKey(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewToplistBody
+      queryServiceMetricsViewToplistBody,
     );
 
   const queryFn: QueryFunction<
@@ -1079,7 +1079,7 @@ export const getQueryServiceMetricsViewToplistQueryOptions = <
     queryServiceMetricsViewToplist(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewToplistBody
+      queryServiceMetricsViewToplistBody,
     );
 
   return {
@@ -1105,7 +1105,7 @@ It's a convenience API for querying a metrics view.
  */
 export const createQueryServiceMetricsViewToplist = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsViewName: string,
@@ -1116,13 +1116,13 @@ export const createQueryServiceMetricsViewToplist = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceMetricsViewToplistQueryOptions(
     instanceId,
     metricsViewName,
     queryServiceMetricsViewToplistBody,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1142,7 +1142,7 @@ It's a convenience API for querying a metrics view.
 export const queryServiceMetricsViewTotals = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewTotalsBody: QueryServiceMetricsViewTotalsBody
+  queryServiceMetricsViewTotalsBody: QueryServiceMetricsViewTotalsBody,
 ) => {
   return httpClient<V1MetricsViewTotalsResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/totals`,
@@ -1155,7 +1155,7 @@ export const queryServiceMetricsViewTotals = (
 export const getQueryServiceMetricsViewTotalsQueryKey = (
   instanceId: string,
   metricsViewName: string,
-  queryServiceMetricsViewTotalsBody: QueryServiceMetricsViewTotalsBody
+  queryServiceMetricsViewTotalsBody: QueryServiceMetricsViewTotalsBody,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/totals`,
@@ -1165,7 +1165,7 @@ export const getQueryServiceMetricsViewTotalsQueryKey = (
 
 export const getQueryServiceMetricsViewTotalsQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTotals>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsViewName: string,
@@ -1176,7 +1176,7 @@ export const getQueryServiceMetricsViewTotalsQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1185,7 +1185,7 @@ export const getQueryServiceMetricsViewTotalsQueryOptions = <
     getQueryServiceMetricsViewTotalsQueryKey(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewTotalsBody
+      queryServiceMetricsViewTotalsBody,
     );
 
   const queryFn: QueryFunction<
@@ -1194,7 +1194,7 @@ export const getQueryServiceMetricsViewTotalsQueryOptions = <
     queryServiceMetricsViewTotals(
       instanceId,
       metricsViewName,
-      queryServiceMetricsViewTotalsBody
+      queryServiceMetricsViewTotalsBody,
     );
 
   return {
@@ -1220,7 +1220,7 @@ It's a convenience API for querying a metrics view.
  */
 export const createQueryServiceMetricsViewTotals = <
   TData = Awaited<ReturnType<typeof queryServiceMetricsViewTotals>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   metricsViewName: string,
@@ -1231,13 +1231,13 @@ export const createQueryServiceMetricsViewTotals = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceMetricsViewTotalsQueryOptions(
     instanceId,
     metricsViewName,
     queryServiceMetricsViewTotalsBody,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1257,7 +1257,7 @@ export const queryServiceColumnNullCount = (
   instanceId: string,
   tableName: string,
   params?: QueryServiceColumnNullCountParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ColumnNullCountResponse>({
     url: `/v1/instances/${instanceId}/queries/null-count/tables/${tableName}`,
@@ -1270,7 +1270,7 @@ export const queryServiceColumnNullCount = (
 export const getQueryServiceColumnNullCountQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceColumnNullCountParams
+  params?: QueryServiceColumnNullCountParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/null-count/tables/${tableName}`,
@@ -1280,7 +1280,7 @@ export const getQueryServiceColumnNullCountQueryKey = (
 
 export const getQueryServiceColumnNullCountQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnNullCount>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1291,7 +1291,7 @@ export const getQueryServiceColumnNullCountQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1326,7 +1326,7 @@ export type QueryServiceColumnNullCountQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceColumnNullCount = <
   TData = Awaited<ReturnType<typeof queryServiceColumnNullCount>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1337,13 +1337,13 @@ export const createQueryServiceColumnNullCount = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceColumnNullCountQueryOptions(
     instanceId,
     tableName,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1363,7 +1363,7 @@ export const queryServiceColumnNumericHistogram = (
   instanceId: string,
   tableName: string,
   params?: QueryServiceColumnNumericHistogramParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ColumnNumericHistogramResponse>({
     url: `/v1/instances/${instanceId}/queries/numeric-histogram/tables/${tableName}`,
@@ -1376,7 +1376,7 @@ export const queryServiceColumnNumericHistogram = (
 export const getQueryServiceColumnNumericHistogramQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceColumnNumericHistogramParams
+  params?: QueryServiceColumnNumericHistogramParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/numeric-histogram/tables/${tableName}`,
@@ -1386,7 +1386,7 @@ export const getQueryServiceColumnNumericHistogramQueryKey = (
 
 export const getQueryServiceColumnNumericHistogramQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1397,7 +1397,7 @@ export const getQueryServiceColumnNumericHistogramQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1406,7 +1406,7 @@ export const getQueryServiceColumnNumericHistogramQueryOptions = <
     getQueryServiceColumnNumericHistogramQueryKey(
       instanceId,
       tableName,
-      params
+      params,
     );
 
   const queryFn: QueryFunction<
@@ -1436,7 +1436,7 @@ export type QueryServiceColumnNumericHistogramQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceColumnNumericHistogram = <
   TData = Awaited<ReturnType<typeof queryServiceColumnNumericHistogram>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1447,13 +1447,13 @@ export const createQueryServiceColumnNumericHistogram = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceColumnNumericHistogramQueryOptions(
     instanceId,
     tableName,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1472,7 +1472,7 @@ export const createQueryServiceColumnNumericHistogram = <
 export const queryServiceColumnRollupInterval = (
   instanceId: string,
   tableName: string,
-  queryServiceColumnRollupIntervalBody: QueryServiceColumnRollupIntervalBody
+  queryServiceColumnRollupIntervalBody: QueryServiceColumnRollupIntervalBody,
 ) => {
   return httpClient<V1ColumnRollupIntervalResponse>({
     url: `/v1/instances/${instanceId}/queries/rollup-interval/tables/${tableName}`,
@@ -1485,7 +1485,7 @@ export const queryServiceColumnRollupInterval = (
 export const getQueryServiceColumnRollupIntervalQueryKey = (
   instanceId: string,
   tableName: string,
-  queryServiceColumnRollupIntervalBody: QueryServiceColumnRollupIntervalBody
+  queryServiceColumnRollupIntervalBody: QueryServiceColumnRollupIntervalBody,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/rollup-interval/tables/${tableName}`,
@@ -1495,7 +1495,7 @@ export const getQueryServiceColumnRollupIntervalQueryKey = (
 
 export const getQueryServiceColumnRollupIntervalQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1506,7 +1506,7 @@ export const getQueryServiceColumnRollupIntervalQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1515,7 +1515,7 @@ export const getQueryServiceColumnRollupIntervalQueryOptions = <
     getQueryServiceColumnRollupIntervalQueryKey(
       instanceId,
       tableName,
-      queryServiceColumnRollupIntervalBody
+      queryServiceColumnRollupIntervalBody,
     );
 
   const queryFn: QueryFunction<
@@ -1524,7 +1524,7 @@ export const getQueryServiceColumnRollupIntervalQueryOptions = <
     queryServiceColumnRollupInterval(
       instanceId,
       tableName,
-      queryServiceColumnRollupIntervalBody
+      queryServiceColumnRollupIntervalBody,
     );
 
   return {
@@ -1549,7 +1549,7 @@ export type QueryServiceColumnRollupIntervalQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceColumnRollupInterval = <
   TData = Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1560,13 +1560,13 @@ export const createQueryServiceColumnRollupInterval = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceColumnRollupIntervalQueryOptions(
     instanceId,
     tableName,
     queryServiceColumnRollupIntervalBody,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1586,7 +1586,7 @@ export const queryServiceTableRows = (
   instanceId: string,
   tableName: string,
   params?: QueryServiceTableRowsParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1TableRowsResponse>({
     url: `/v1/instances/${instanceId}/queries/rows/tables/${tableName}`,
@@ -1599,7 +1599,7 @@ export const queryServiceTableRows = (
 export const getQueryServiceTableRowsQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceTableRowsParams
+  params?: QueryServiceTableRowsParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/rows/tables/${tableName}`,
@@ -1609,7 +1609,7 @@ export const getQueryServiceTableRowsQueryKey = (
 
 export const getQueryServiceTableRowsQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceTableRows>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1620,7 +1620,7 @@ export const getQueryServiceTableRowsQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1655,7 +1655,7 @@ export type QueryServiceTableRowsQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceTableRows = <
   TData = Awaited<ReturnType<typeof queryServiceTableRows>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1666,13 +1666,13 @@ export const createQueryServiceTableRows = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceTableRowsQueryOptions(
     instanceId,
     tableName,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1692,7 +1692,7 @@ export const queryServiceColumnRugHistogram = (
   instanceId: string,
   tableName: string,
   params?: QueryServiceColumnRugHistogramParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ColumnRugHistogramResponse>({
     url: `/v1/instances/${instanceId}/queries/rug-histogram/tables/${tableName}`,
@@ -1705,7 +1705,7 @@ export const queryServiceColumnRugHistogram = (
 export const getQueryServiceColumnRugHistogramQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceColumnRugHistogramParams
+  params?: QueryServiceColumnRugHistogramParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/rug-histogram/tables/${tableName}`,
@@ -1715,7 +1715,7 @@ export const getQueryServiceColumnRugHistogramQueryKey = (
 
 export const getQueryServiceColumnRugHistogramQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1726,7 +1726,7 @@ export const getQueryServiceColumnRugHistogramQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1761,7 +1761,7 @@ export type QueryServiceColumnRugHistogramQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceColumnRugHistogram = <
   TData = Awaited<ReturnType<typeof queryServiceColumnRugHistogram>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1772,13 +1772,13 @@ export const createQueryServiceColumnRugHistogram = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceColumnRugHistogramQueryOptions(
     instanceId,
     tableName,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1798,7 +1798,7 @@ export const queryServiceColumnTimeGrain = (
   instanceId: string,
   tableName: string,
   params?: QueryServiceColumnTimeGrainParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ColumnTimeGrainResponse>({
     url: `/v1/instances/${instanceId}/queries/smallest-time-grain/tables/${tableName}`,
@@ -1811,7 +1811,7 @@ export const queryServiceColumnTimeGrain = (
 export const getQueryServiceColumnTimeGrainQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceColumnTimeGrainParams
+  params?: QueryServiceColumnTimeGrainParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/smallest-time-grain/tables/${tableName}`,
@@ -1821,7 +1821,7 @@ export const getQueryServiceColumnTimeGrainQueryKey = (
 
 export const getQueryServiceColumnTimeGrainQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1832,7 +1832,7 @@ export const getQueryServiceColumnTimeGrainQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1867,7 +1867,7 @@ export type QueryServiceColumnTimeGrainQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceColumnTimeGrain = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTimeGrain>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1878,13 +1878,13 @@ export const createQueryServiceColumnTimeGrain = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceColumnTimeGrainQueryOptions(
     instanceId,
     tableName,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -1904,7 +1904,7 @@ export const queryServiceTableCardinality = (
   instanceId: string,
   tableName: string,
   params?: QueryServiceTableCardinalityParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1TableCardinalityResponse>({
     url: `/v1/instances/${instanceId}/queries/table-cardinality/tables/${tableName}`,
@@ -1917,7 +1917,7 @@ export const queryServiceTableCardinality = (
 export const getQueryServiceTableCardinalityQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceTableCardinalityParams
+  params?: QueryServiceTableCardinalityParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/table-cardinality/tables/${tableName}`,
@@ -1927,7 +1927,7 @@ export const getQueryServiceTableCardinalityQueryKey = (
 
 export const getQueryServiceTableCardinalityQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceTableCardinality>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1938,7 +1938,7 @@ export const getQueryServiceTableCardinalityQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -1973,7 +1973,7 @@ export type QueryServiceTableCardinalityQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceTableCardinality = <
   TData = Awaited<ReturnType<typeof queryServiceTableCardinality>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -1984,13 +1984,13 @@ export const createQueryServiceTableCardinality = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceTableCardinalityQueryOptions(
     instanceId,
     tableName,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -2010,7 +2010,7 @@ export const queryServiceColumnTimeRange = (
   instanceId: string,
   tableName: string,
   params?: QueryServiceColumnTimeRangeParams,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ColumnTimeRangeResponse>({
     url: `/v1/instances/${instanceId}/queries/time-range-summary/tables/${tableName}`,
@@ -2023,7 +2023,7 @@ export const queryServiceColumnTimeRange = (
 export const getQueryServiceColumnTimeRangeQueryKey = (
   instanceId: string,
   tableName: string,
-  params?: QueryServiceColumnTimeRangeParams
+  params?: QueryServiceColumnTimeRangeParams,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/time-range-summary/tables/${tableName}`,
@@ -2033,7 +2033,7 @@ export const getQueryServiceColumnTimeRangeQueryKey = (
 
 export const getQueryServiceColumnTimeRangeQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTimeRange>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -2044,7 +2044,7 @@ export const getQueryServiceColumnTimeRangeQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -2079,7 +2079,7 @@ export type QueryServiceColumnTimeRangeQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceColumnTimeRange = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTimeRange>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -2090,13 +2090,13 @@ export const createQueryServiceColumnTimeRange = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceColumnTimeRangeQueryOptions(
     instanceId,
     tableName,
     params,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -2115,7 +2115,7 @@ export const createQueryServiceColumnTimeRange = <
 export const queryServiceColumnTimeSeries = (
   instanceId: string,
   tableName: string,
-  queryServiceColumnTimeSeriesBody: QueryServiceColumnTimeSeriesBody
+  queryServiceColumnTimeSeriesBody: QueryServiceColumnTimeSeriesBody,
 ) => {
   return httpClient<V1ColumnTimeSeriesResponse>({
     url: `/v1/instances/${instanceId}/queries/timeseries/tables/${tableName}`,
@@ -2128,7 +2128,7 @@ export const queryServiceColumnTimeSeries = (
 export const getQueryServiceColumnTimeSeriesQueryKey = (
   instanceId: string,
   tableName: string,
-  queryServiceColumnTimeSeriesBody: QueryServiceColumnTimeSeriesBody
+  queryServiceColumnTimeSeriesBody: QueryServiceColumnTimeSeriesBody,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/timeseries/tables/${tableName}`,
@@ -2138,7 +2138,7 @@ export const getQueryServiceColumnTimeSeriesQueryKey = (
 
 export const getQueryServiceColumnTimeSeriesQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -2149,7 +2149,7 @@ export const getQueryServiceColumnTimeSeriesQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -2158,7 +2158,7 @@ export const getQueryServiceColumnTimeSeriesQueryOptions = <
     getQueryServiceColumnTimeSeriesQueryKey(
       instanceId,
       tableName,
-      queryServiceColumnTimeSeriesBody
+      queryServiceColumnTimeSeriesBody,
     );
 
   const queryFn: QueryFunction<
@@ -2167,7 +2167,7 @@ export const getQueryServiceColumnTimeSeriesQueryOptions = <
     queryServiceColumnTimeSeries(
       instanceId,
       tableName,
-      queryServiceColumnTimeSeriesBody
+      queryServiceColumnTimeSeriesBody,
     );
 
   return {
@@ -2192,7 +2192,7 @@ export type QueryServiceColumnTimeSeriesQueryError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceColumnTimeSeries = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -2203,13 +2203,13 @@ export const createQueryServiceColumnTimeSeries = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceColumnTimeSeriesQueryOptions(
     instanceId,
     tableName,
     queryServiceColumnTimeSeriesBody,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -2229,7 +2229,7 @@ agg function and k are optional, defaults are count(*) and 50 respectively
 export const queryServiceColumnTopK = (
   instanceId: string,
   tableName: string,
-  queryServiceColumnTopKBody: QueryServiceColumnTopKBody
+  queryServiceColumnTopKBody: QueryServiceColumnTopKBody,
 ) => {
   return httpClient<V1ColumnTopKResponse>({
     url: `/v1/instances/${instanceId}/queries/topk/tables/${tableName}`,
@@ -2242,7 +2242,7 @@ export const queryServiceColumnTopK = (
 export const getQueryServiceColumnTopKQueryKey = (
   instanceId: string,
   tableName: string,
-  queryServiceColumnTopKBody: QueryServiceColumnTopKBody
+  queryServiceColumnTopKBody: QueryServiceColumnTopKBody,
 ) => {
   return [
     `/v1/instances/${instanceId}/queries/topk/tables/${tableName}`,
@@ -2252,7 +2252,7 @@ export const getQueryServiceColumnTopKQueryKey = (
 
 export const getQueryServiceColumnTopKQueryOptions = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTopK>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -2263,7 +2263,7 @@ export const getQueryServiceColumnTopKQueryOptions = <
       TError,
       TData
     >;
-  }
+  },
 ) => {
   const { query: queryOptions } = options ?? {};
 
@@ -2272,7 +2272,7 @@ export const getQueryServiceColumnTopKQueryOptions = <
     getQueryServiceColumnTopKQueryKey(
       instanceId,
       tableName,
-      queryServiceColumnTopKBody
+      queryServiceColumnTopKBody,
     );
 
   const queryFn: QueryFunction<
@@ -2303,7 +2303,7 @@ agg function and k are optional, defaults are count(*) and 50 respectively
  */
 export const createQueryServiceColumnTopK = <
   TData = Awaited<ReturnType<typeof queryServiceColumnTopK>>,
-  TError = ErrorType<RpcStatus>
+  TError = ErrorType<RpcStatus>,
 >(
   instanceId: string,
   tableName: string,
@@ -2314,13 +2314,13 @@ export const createQueryServiceColumnTopK = <
       TError,
       TData
     >;
-  }
+  },
 ): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
   const queryOptions = getQueryServiceColumnTopKQueryOptions(
     instanceId,
     tableName,
     queryServiceColumnTopKBody,
-    options
+    options,
   );
 
   const query = createQuery(queryOptions) as CreateQueryResult<
@@ -2338,7 +2338,7 @@ export const createQueryServiceColumnTopK = <
  */
 export const queryServiceQuery = (
   instanceId: string,
-  queryServiceQueryBody: QueryServiceQueryBody
+  queryServiceQueryBody: QueryServiceQueryBody,
 ) => {
   return httpClient<V1QueryResponse>({
     url: `/v1/instances/${instanceId}/query`,
@@ -2350,7 +2350,7 @@ export const queryServiceQuery = (
 
 export const getQueryServiceQueryMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof queryServiceQuery>>,
@@ -2389,7 +2389,7 @@ export type QueryServiceQueryMutationError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceQuery = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof queryServiceQuery>>,
@@ -2407,7 +2407,7 @@ export const createQueryServiceQuery = <
  */
 export const queryServiceQueryBatch = (
   instanceId: string,
-  queryServiceQueryBatchBody: QueryServiceQueryBatchBody
+  queryServiceQueryBatchBody: QueryServiceQueryBatchBody,
 ) => {
   return httpClient<QueryServiceQueryBatch200>({
     url: `/v1/instances/${instanceId}/query/batch`,
@@ -2419,7 +2419,7 @@ export const queryServiceQueryBatch = (
 
 export const getQueryServiceQueryBatchMutationOptions = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof queryServiceQueryBatch>>,
@@ -2458,7 +2458,7 @@ export type QueryServiceQueryBatchMutationError = ErrorType<RpcStatus>;
  */
 export const createQueryServiceQueryBatch = <
   TError = ErrorType<RpcStatus>,
-  TContext = unknown
+  TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof queryServiceQueryBatch>>,

@@ -1472,35 +1472,6 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/superuser/domains/{domain}/projects/health:
-    get:
-      summary: SudoListProjectsHealthForDomain lists all the projects health for the domain
-      operationId: AdminService_SudoListProjectsHealthForDomain
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1SudoListProjectsHealthForDomainResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: domain
-          in: path
-          required: true
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - AdminService
   /v1/superuser/members:
     get:
       summary: ListSuperusers lists all the superusers
@@ -1534,60 +1505,6 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/v1SetSuperuserRequest'
-      tags:
-        - AdminService
-  /v1/superuser/organizations/{organization}/projects/health:
-    get:
-      summary: SudoListProjectsHealthForOrganization lists all the projects health for the organization
-      operationId: AdminService_SudoListProjectsHealthForOrganization
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1SudoListProjectsHealthForOrganizationResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
-      tags:
-        - AdminService
-  /v1/superuser/projects/health:
-    get:
-      summary: SudoListProjectsHealth lists all the projects health
-      operationId: AdminService_SudoListProjectsHealth
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1SudoListProjectsHealthResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
-          in: query
-          required: false
-          type: string
       tags:
         - AdminService
   /v1/superuser/projects/search:
@@ -1692,35 +1609,6 @@ paths:
           required: false
           type: string
         - name: instanceId
-          in: query
-          required: false
-          type: string
-      tags:
-        - AdminService
-  /v1/superuser/users/{email}/projects/health:
-    get:
-      summary: SudoListProjectsHealthForUser lists all the projects health for the user
-      operationId: AdminService_SudoListProjectsHealthForUser
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1SudoListProjectsHealthForUserResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: email
-          in: path
-          required: true
-          type: string
-        - name: pageSize
-          in: query
-          required: false
-          type: integer
-          format: int64
-        - name: pageToken
           in: query
           required: false
           type: string
@@ -2467,24 +2355,6 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-  v1ProjectHealth:
-    type: object
-    properties:
-      projectId:
-        type: string
-      projectName:
-        type: string
-      orgId:
-        type: string
-      deploymentId:
-        type: string
-      status:
-        $ref: '#/definitions/v1DeploymentStatus'
-      statusMessage:
-        type: string
-      deploymentStatusTimestamp:
-        type: string
-        format: date-time
   v1ProjectPermissions:
     type: object
     properties:
@@ -2644,46 +2514,6 @@ definitions:
         $ref: '#/definitions/v1Deployment'
       instance:
         $ref: '#/definitions/v1Deployment'
-  v1SudoListProjectsHealthForDomainResponse:
-    type: object
-    properties:
-      projects:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ProjectHealth'
-      nextPageToken:
-        type: string
-  v1SudoListProjectsHealthForOrganizationResponse:
-    type: object
-    properties:
-      projects:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ProjectHealth'
-      nextPageToken:
-        type: string
-  v1SudoListProjectsHealthForUserResponse:
-    type: object
-    properties:
-      projects:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ProjectHealth'
-      nextPageToken:
-        type: string
-  v1SudoListProjectsHealthResponse:
-    type: object
-    properties:
-      projects:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ProjectHealth'
-      nextPageToken:
-        type: string
   v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:
