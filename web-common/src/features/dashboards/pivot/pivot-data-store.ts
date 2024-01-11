@@ -26,7 +26,7 @@ import {
   reduceTableCellDataIntoRows,
   prepareNestedPivotData,
 } from "./pivot-table-transformations";
-import type { PivotDataStoreConfig } from "./types";
+import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 
 /**
  * Extract out config relevant to pivot from dashboard and meta store
@@ -174,7 +174,7 @@ export function createTableCellQuery(
  * Get a list of axis values for a given list of dimension values and filters
  */
 export function getAxisForDimensions(
-  ctx,
+  ctx: StateManagers,
   dimensions: string[],
   filters: V1MetricsViewFilter,
 ) {
@@ -184,7 +184,7 @@ export function getAxisForDimensions(
       createPivotAggregationRowQuery(ctx, [], [dimension], filters),
     ),
     (data: Array<any>) => {
-      const axesMap = {};
+      const axesMap: Record<string, string[]> = {};
 
       // Wait for all data to populate
       if (data.some((d) => d?.isFetching)) return { isFetching: true };
@@ -295,8 +295,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             const tableDataWithCells = reduceTableCellDataIntoRows(
               config,
               anchorDimension,
-              rowDimensionAxes?.data?.[anchorDimension],
-              columnDimensionAxes?.data,
+              rowDimensionAxes?.data?.[anchorDimension] || [],
+              columnDimensionAxes?.data as Record<string, string[]>,
               skeletonTableData,
               cellData,
             );
@@ -314,8 +314,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               expandedSubTableCellQuery,
               (expandedRowMeasureValues) => {
                 prepareNestedPivotData(tableDataWithCells, rowDimensionNames);
-                let tableDataExpanded: Array<{ [key: string]: unknown }> =
-                  tableDataWithCells;
+                let tableDataExpanded: PivotDataRow[] = tableDataWithCells;
                 if (expandedRowMeasureValues?.length) {
                   tableDataExpanded = addExpandedDataToPivot(
                     config,
@@ -341,7 +340,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
 
 interface PivotDataState {
   isFetching: boolean;
-  data?: Array<unknown>;
+  data?: PivotDataRow[];
   columnDef?: Array<unknown>;
 }
 

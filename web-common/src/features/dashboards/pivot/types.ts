@@ -14,6 +14,11 @@ export interface PivotState {
   sort: any; // TBD
 }
 
+export interface PivotDataRow {
+  [key: string]: string | number | PivotDataRow[] | undefined;
+  subRows?: PivotDataRow[];
+}
+
 /**
  * This is the config that is passed to the pivot data store methods
  */

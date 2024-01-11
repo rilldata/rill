@@ -1,5 +1,6 @@
-import type { PivotDataStoreConfig } from "./types";
+import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 import { createIndexMap } from "./pivot-utils";
+import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 
 /**
  * Create a barebone table with row  headers.
@@ -9,7 +10,7 @@ export function createTableWithAxes(
   anchorDimensionName: string,
   rowDimensionValues: string[] | undefined,
 ) {
-  let data: Array<{ [key: string]: unknown }> = [];
+  let data: PivotDataRow[] = [];
 
   if (anchorDimensionName && rowDimensionValues && rowDimensionValues?.length) {
     data = rowDimensionValues?.map((value) => {
@@ -27,7 +28,11 @@ export function createTableWithAxes(
  * information about the values present in an expanded group
  * For now fill it with empty values if there are more than one row dimensions
  */
-export function prepareNestedPivotData(data, dimensions: string[], i = 1) {
+export function prepareNestedPivotData(
+  data: PivotDataRow[],
+  dimensions: string[],
+  i = 1,
+) {
   if (dimensions.slice(i).length > 0) {
     data.forEach((row) => {
       if (!row.subRows) {
@@ -51,7 +56,7 @@ export function getAccessorForCell(
   colDimensionNames: string[],
   colValuesIndexMaps,
   numMeasures: number,
-  cell: { [key: string]: unknown },
+  cell: PivotDataRow,
 ) {
   // TODO: Check for undefineds
   const nestedColumnValueAccessor = colDimensionNames
@@ -93,9 +98,9 @@ export function reduceTableCellDataIntoRows(
   config: PivotDataStoreConfig,
   anchorDimensionName: string,
   anchorDimensionRowValues: string[],
-  columnDimensionAxes: Record<string, string[] | undefined>,
-  tableData: Array<{ [key: string]: unknown }>,
-  cellData: Array<{ [key: string]: unknown }>,
+  columnDimensionAxes: Record<string, string[]>,
+  tableData: PivotDataRow[],
+  cellData: V1MetricsViewAggregationResponseDataItem[],
 ) {
   const colDimensionNames = config.colDimensionNames;
 

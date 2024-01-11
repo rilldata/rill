@@ -5,7 +5,7 @@ import {
 } from "./pivot-data-store";
 import type { ExpandedState } from "@tanstack/svelte-table";
 import { derived, writable } from "svelte/store";
-import type { PivotDataStoreConfig } from "./types";
+import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 import { getFilterForPivotTable } from "./pivot-utils";
 import {
   createTableWithAxes,
@@ -24,7 +24,7 @@ import {
  *
  */
 function getExpandedValuesFromNestedArray(
-  tableData,
+  tableData: PivotDataRow[],
   anchorDimension: string,
   expanded: ExpandedState,
 ): Record<string, string[]> {
@@ -36,11 +36,11 @@ function getExpandedValuesFromNestedArray(
       const indices = key.split(".").map((index) => parseInt(index, 10));
 
       // Retrieve the value from the nested array
-      let currentValue = tableData;
+      let currentValue: PivotDataRow[] | undefined = tableData;
       const dimensionNames: string[] = [];
       for (const index of indices) {
         if (!currentValue?.[index]) break;
-        dimensionNames.push(currentValue[index]?.[anchorDimension]);
+        dimensionNames.push(currentValue[index]?.[anchorDimension] as string);
         currentValue = currentValue[index]?.subRows;
       }
 
@@ -101,7 +101,7 @@ export function createSubTableCellQuery(
 export function queryExpandedRowMeasureValues(
   ctx: StateManagers,
   config: PivotDataStoreConfig,
-  tableData,
+  tableData: PivotDataRow[],
   columnDimensionAxesData,
 ) {
   const { rowDimensionNames } = config;
@@ -149,7 +149,8 @@ export function queryExpandedRowMeasureValues(
           return {
             isFetching: subTableData?.isFetching,
             expandIndex,
-            rowDimensionValues: subRowDimensionValues?.data?.[anchorDimension],
+            rowDimensionValues:
+              subRowDimensionValues?.data?.[anchorDimension] || [],
             data: subTableData?.data?.data,
           };
         },
@@ -171,11 +172,11 @@ export function queryExpandedRowMeasureValues(
  */
 export function addExpandedDataToPivot(
   config: PivotDataStoreConfig,
-  tableData: Array<{ [key: string]: unknown }>,
+  tableData: PivotDataRow[],
   rowDimensions: string[],
   columnDimensionAxes,
   expandedRowMeasureValues,
-): Array<{ [key: string]: unknown }> {
+): PivotDataRow[] {
   const pivotData = tableData;
   const numRowDimensions = rowDimensions.length;
 
@@ -201,7 +202,7 @@ export function addExpandedDataToPivot(
       const anchorDimension = rowDimensions[indices.length];
       const rowValues = expandedRowData.rowDimensionValues;
 
-      let skeletonSubTable: Array<{ [key: string]: unknown }> = [
+      let skeletonSubTable: PivotDataRow[] = [
         { [anchorDimension]: "LOADING_CELL" },
       ];
       if (expandedRowData?.rowDimensionValues?.length) {
