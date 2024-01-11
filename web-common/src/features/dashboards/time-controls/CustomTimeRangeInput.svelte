@@ -19,7 +19,7 @@
   export let boundaryStart: Date;
   export let boundaryEnd: Date;
   export let defaultDate: DashboardTimeControls;
-  export let zone: string | undefined;
+  export let zone: string;
 
   const dispatch = createEventDispatcher();
 

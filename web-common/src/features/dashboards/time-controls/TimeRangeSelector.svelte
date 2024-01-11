@@ -284,13 +284,13 @@
       </div>
     </DropdownMenu.Item>
 
-    {#if isCustomRangeOpen}
+    {#if isCustomRangeOpen && timeZone}
       <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
         <CustomTimeRangeInput
           {boundaryStart}
           {boundaryEnd}
           {minTimeGrain}
-          zone={$dashboardStore?.selectedTimezone}
+          zone={timeZone}
           defaultDate={selectedRange}
           on:apply={(e) => {
             toggleFloatingElement();
