@@ -19,7 +19,7 @@ import type {
   V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import type { ExpandedState } from "@tanstack/svelte-table";
+import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 import { derived, Readable, writable } from "svelte/store";
 import {
   SortDirection,
@@ -39,7 +39,7 @@ function updateMetricsExplorerProto(metricsExplorer: MetricsExplorerEntity) {
 
 export const updateMetricsExplorerByName = (
   name: string,
-  callback: (metricsExplorer: MetricsExplorerEntity) => void
+  callback: (metricsExplorer: MetricsExplorerEntity) => void,
 ) => {
   update((state) => {
     if (!state.entities[name]) {
@@ -61,11 +61,11 @@ function includeExcludeModeFromFilters(filters: V1MetricsViewFilter) {
 
 function syncMeasures(
   metricsView: V1MetricsView,
-  metricsExplorer: MetricsExplorerEntity
+  metricsExplorer: MetricsExplorerEntity,
 ) {
   const measuresMap = getMapFromArray(
     metricsView.measures,
-    (measure) => measure.name
+    (measure) => measure.name,
   );
 
   // sync measures with selected leaderboard measure.
@@ -82,7 +82,7 @@ function syncMeasures(
   if (metricsExplorer.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
     metricsExplorer.visibleMeasureKeys = new Set(
-      metricsView.measures.map((measure) => measure.name)
+      metricsView.measures.map((measure) => measure.name),
     );
   } else {
     // remove any keys from visible measure if it doesn't exist anymore
@@ -106,7 +106,7 @@ function syncMeasures(
     if (
       metricsExplorer.visibleMeasureKeys.size &&
       !metricsExplorer.visibleMeasureKeys.has(
-        metricsExplorer.leaderboardMeasureName
+        metricsExplorer.leaderboardMeasureName,
       )
     ) {
       const firstVisibleMeasure = metricsView.measures
@@ -119,18 +119,18 @@ function syncMeasures(
 
 function syncDimensions(
   metricsView: V1MetricsView,
-  metricsExplorer: MetricsExplorerEntity
+  metricsExplorer: MetricsExplorerEntity,
 ) {
   // Having a map here improves the lookup for existing dimension name
   const dimensionsMap = getMapFromArray(
     metricsView.dimensions,
-    (dimension) => dimension.name
+    (dimension) => dimension.name,
   );
   metricsExplorer.filters.include = metricsExplorer.filters.include.filter(
-    (filter) => dimensionsMap.has(filter.name)
+    (filter) => dimensionsMap.has(filter.name),
   );
   metricsExplorer.filters.exclude = metricsExplorer.filters.exclude.filter(
-    (filter) => dimensionsMap.has(filter.name)
+    (filter) => dimensionsMap.has(filter.name),
   );
 
   if (
@@ -143,7 +143,7 @@ function syncDimensions(
   if (metricsExplorer.allDimensionsVisible) {
     // this makes sure that the visible keys is in sync with list of dimensions
     metricsExplorer.visibleDimensionKeys = new Set(
-      metricsView.dimensions.map((dimension) => dimension.name)
+      metricsView.dimensions.map((dimension) => dimension.name),
     );
   } else {
     // remove any keys from visible dimension if it doesn't exist anymore
@@ -159,7 +159,7 @@ const metricViewReducers = {
   init(
     name: string,
     metricsView: V1MetricsViewSpec,
-    fullTimeRange: V1ColumnTimeRangeResponse | undefined
+    fullTimeRange: V1ColumnTimeRangeResponse | undefined,
   ) {
     update((state) => {
       if (state.entities[name]) return state;
@@ -167,7 +167,7 @@ const metricViewReducers = {
       state.entities[name] = getDefaultMetricsExplorerEntity(
         name,
         metricsView,
-        fullTimeRange
+        fullTimeRange,
       );
 
       updateMetricsExplorerProto(state.entities[name]);
@@ -231,6 +231,12 @@ const metricViewReducers = {
     });
   },
 
+  setPivotSort(name: string, sorting: SortingState) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, sorting };
+    });
+  },
+
   /**
    * DEPRECATED!!!
    * use setLeaderboardMeasureName via:
@@ -241,7 +247,7 @@ const metricViewReducers = {
    */
   setLeaderboardMeasureName(name: string, measureName: string) {
     console.warn(
-      "setLeaderboardMeasureName is deprecated. Use setLeaderboardMeasureName via `getStateManagers().actions.setLeaderboardMeasureName`. Still used in tests, so we can't remove it yet, but don't use it in production code."
+      "setLeaderboardMeasureName is deprecated. Use setLeaderboardMeasureName via `getStateManagers().actions.setLeaderboardMeasureName`. Still used in tests, so we can't remove it yet, but don't use it in production code.",
     );
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.leaderboardMeasureName = measureName;
@@ -257,7 +263,7 @@ const metricViewReducers = {
       if (metricsExplorer.selectedComparisonDimension) {
         metricsExplorer.pinIndex = getPinIndexForDimension(
           metricsExplorer,
-          metricsExplorer.selectedComparisonDimension
+          metricsExplorer.selectedComparisonDimension,
         );
       }
     });
@@ -339,7 +345,7 @@ const metricViewReducers = {
       metricsExplorer.selectedComparisonDimension = dimensionName;
       metricsExplorer.pinIndex = getPinIndexForDimension(
         metricsExplorer,
-        dimensionName
+        dimensionName,
       );
     });
   },
@@ -353,7 +359,7 @@ const metricViewReducers = {
 
   setSelectedComparisonRange(
     name: string,
-    comparisonTimeRange: DashboardTimeControls
+    comparisonTimeRange: DashboardTimeControls,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       setDisplayComparison(metricsExplorer, true);
@@ -386,7 +392,7 @@ const metricViewReducers = {
     name: string,
     timeRange: TimeRange,
     timeGrain: V1TimeGrain,
-    comparisonTimeRange: DashboardTimeControls | undefined
+    comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       if (!timeRange.name) return;
@@ -404,7 +410,7 @@ const metricViewReducers = {
       setDisplayComparison(
         metricsExplorer,
         metricsExplorer.selectedComparisonTimeRange !== undefined &&
-          metricsExplorer.selectedComparisonDimension === undefined
+          metricsExplorer.selectedComparisonDimension === undefined,
       );
     });
   },
@@ -412,7 +418,7 @@ const metricViewReducers = {
   setContextColumn(name: string, contextColumn: LeaderboardContextColumn) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       const initialSort = sortTypeForContextColumnType(
-        metricsExplorer.leaderboardContextColumn
+        metricsExplorer.leaderboardContextColumn,
       );
       switch (contextColumn) {
         case LeaderboardContextColumn.DELTA_ABSOLUTE:
@@ -442,12 +448,12 @@ const metricViewReducers = {
   selectItemsInFilter(
     name: string,
     dimensionName: string,
-    values: string[]
+    values: string[],
   ): number {
     let newValuesSelected = 0;
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-        dimensionName
+        dimensionName,
       )
         ? "exclude"
         : "include";
@@ -460,7 +466,7 @@ const metricViewReducers = {
       }
 
       const dimensionEntryIndex = filters?.findIndex(
-        (filter) => filter.name === dimensionName
+        (filter) => filter.name === dimensionName,
       );
 
       if (dimensionEntryIndex >= 0) {
@@ -483,7 +489,7 @@ const metricViewReducers = {
   deselectItemsInFilter(name: string, dimensionName: string, values: string[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-        dimensionName
+        dimensionName,
       )
         ? "exclude"
         : "include";
@@ -496,7 +502,7 @@ const metricViewReducers = {
       }
 
       const dimensionEntryIndex = filters.findIndex(
-        (filter) => filter.name === dimensionName
+        (filter) => filter.name === dimensionName,
       );
 
       if (dimensionEntryIndex >= 0) {
@@ -516,11 +522,11 @@ const metricViewReducers = {
   toggleFilter(
     name: string,
     dimensionName: string | undefined,
-    dimensionValue: string
+    dimensionValue: string,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-        dimensionName ?? ""
+        dimensionName ?? "",
       )
         ? "exclude"
         : "include";
@@ -540,7 +546,7 @@ const metricViewReducers = {
         if (filtersIn === undefined) return;
 
         const index = filtersIn?.findIndex(
-          (value) => value === dimensionValue
+          (value) => value === dimensionValue,
         ) as number;
         if (index >= 0) {
           filtersIn?.splice(index, 1);
@@ -576,18 +582,18 @@ const metricViewReducers = {
   clearFilterForDimension(
     name: string,
     dimensionName: string,
-    include: boolean
+    include: boolean,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       if (include) {
         removeIfExists(
           metricsExplorer.filters.include,
-          (dimensionValues) => dimensionValues.name === dimensionName
+          (dimensionValues) => dimensionValues.name === dimensionName,
         );
       } else {
         removeIfExists(
           metricsExplorer.filters.exclude,
-          (dimensionValues) => dimensionValues.name === dimensionName
+          (dimensionValues) => dimensionValues.name === dimensionName,
         );
       }
     });
@@ -613,12 +619,12 @@ const metricViewReducers = {
 
       // push relevant filters to other filter
       metricsExplorer.filters[otherFilterKey].push(
-        metricsExplorer.filters[relevantFilterKey][otherFilterEntryIndex]
+        metricsExplorer.filters[relevantFilterKey][otherFilterEntryIndex],
       );
       // remove entry from relevant filter
       metricsExplorer.filters[relevantFilterKey].splice(
         otherFilterEntryIndex,
-        1
+        1,
       );
     });
   },
@@ -638,7 +644,7 @@ export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
 };
 
 export function useDashboardStore(
-  name: string
+  name: string,
 ): Readable<MetricsExplorerEntity> {
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
@@ -647,7 +653,7 @@ export function useDashboardStore(
 
 export function setDisplayComparison(
   metricsExplorer: MetricsExplorerEntity,
-  showTimeComparison: boolean
+  showTimeComparison: boolean,
 ) {
   metricsExplorer.showTimeComparison = showTimeComparison;
 
@@ -677,7 +683,7 @@ export function setDisplayComparison(
 }
 
 export function sortTypeForContextColumnType(
-  contextCol: LeaderboardContextColumn
+  contextCol: LeaderboardContextColumn,
 ): SortType {
   const sortType = {
     [LeaderboardContextColumn.DELTA_PERCENT]: SortType.DELTA_PERCENT,
@@ -698,7 +704,7 @@ export function sortTypeForContextColumnType(
 
 function setSelectedScrubRange(
   metricsExplorer: MetricsExplorerEntity,
-  scrubRange: ScrubRange
+  scrubRange: ScrubRange,
 ) {
   if (scrubRange === undefined) {
     metricsExplorer.lastDefinedScrubRange = undefined;
@@ -711,10 +717,10 @@ function setSelectedScrubRange(
 
 function getPinIndexForDimension(
   metricsExplorer: MetricsExplorerEntity,
-  dimensionName: string
+  dimensionName: string,
 ) {
   const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-    dimensionName
+    dimensionName,
   )
     ? "exclude"
     : "include";

@@ -24,7 +24,7 @@ import { get } from "svelte/store";
 export function setDefaultTimeRange(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+  fullTimeRange: V1ColumnTimeRangeResponse | undefined,
 ) {
   // This function implementation mirrors some code in the metricsExplorer.init() function
   if (!fullTimeRange) return;
@@ -35,7 +35,7 @@ export function setDefaultTimeRange(
     metricsView.defaultTimeRange,
     fullTimeStart,
     fullTimeEnd,
-    timeZone
+    timeZone,
   );
   const timeGrain = getDefaultTimeGrain(timeRange.start, timeRange.end);
   metricsExplorer.selectedTimeRange = {
@@ -51,7 +51,7 @@ export function setDefaultTimeRange(
 function setDefaultComparison(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+  fullTimeRange: V1ColumnTimeRangeResponse | undefined,
 ) {
   switch (metricsView.defaultComparisonMode) {
     case MetricsViewSpecComparisonMode.COMPARISON_MODE_DIMENSION:
@@ -66,7 +66,7 @@ function setDefaultComparison(
       setDefaultComparisonTimeRange(
         metricsView,
         metricsExplorer,
-        fullTimeRange
+        fullTimeRange,
       );
       break;
   }
@@ -75,7 +75,7 @@ function setDefaultComparison(
 function setDefaultComparisonTimeRange(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+  fullTimeRange: V1ColumnTimeRangeResponse | undefined,
 ) {
   if (!fullTimeRange) return;
 
@@ -91,7 +91,7 @@ function setDefaultComparisonTimeRange(
     fullTimeStart,
     fullTimeEnd,
     metricsExplorer.selectedTimeRange.start,
-    metricsExplorer.selectedTimeRange.end
+    metricsExplorer.selectedTimeRange.end,
   );
   if (!comparisonRange.isComparisonRangeAvailable) return;
 
@@ -108,7 +108,7 @@ function setDefaultComparisonTimeRange(
 export function getDefaultMetricsExplorerEntity(
   name: string,
   metricsView: V1MetricsViewSpec,
-  fullTimeRange: V1ColumnTimeRangeResponse | undefined
+  fullTimeRange: V1ColumnTimeRangeResponse | undefined,
 ): MetricsExplorerEntity {
   // CAST SAFETY: safe b/c (1) measure.name is a string if defined,
   // and (2) we filter out undefined values
@@ -147,7 +147,7 @@ export function getDefaultMetricsExplorerEntity(
       columns: [],
       rowJoinType: "nest",
       expanded: {},
-      sort: {},
+      sorting: [],
     },
     contextColumnWidths: { ...contextColWidthDefaults },
   };

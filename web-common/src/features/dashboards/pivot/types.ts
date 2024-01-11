@@ -3,15 +3,15 @@ import type {
   MetricsViewSpecMeasureV2,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
-import type { ExpandedState } from "@tanstack/svelte-table";
+import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 
 export interface PivotState {
   active: boolean;
   rows: string[];
   columns: string[];
   expanded: ExpandedState;
+  sorting: SortingState;
   rowJoinType: "flat" | "nest";
-  sort: any; // TBD
 }
 
 export interface PivotDataRow {

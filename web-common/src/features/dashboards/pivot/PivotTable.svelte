@@ -1,77 +1,21 @@
 <script lang="ts">
-  import { writable } from "svelte/store";
+  import { Writable, writable } from "svelte/store";
   import {
+    TableOptions,
     createSvelteTable,
     flexRender,
     getCoreRowModel,
     getExpandedRowModel,
-    TableOptions,
   } from "@tanstack/svelte-table";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import type { PivotDataRow } from "@rilldata/web-common/features/dashboards/pivot/types";
 
   export let data;
   export let columns;
 
   const stateManagers = getStateManagers();
   const { dashboardStore, metricsViewName, runtime } = stateManagers;
-
-  // const defaultColumns: ColumnDef<Person>[] = [
-  //   {
-  //     header: "Row Headers",
-  //     footer: (props) => props.column.id,
-  //     columns: [
-  //       {
-  //         accessorKey: "firstName",
-  //         header: "First Name",
-  //         cell: ({ row, getValue }) =>
-  //           flexRender(PivotExpandableCell, {
-  //             value: getValue(),
-  //             row,
-  //           }),
-  //         footer: (props) => props.column.id,
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     header: "Info",
-  //     footer: (props) => props.column.id,
-  //     columns: [
-  //       {
-  //         accessorKey: "age",
-  //         header: () => "Age",
-  //         footer: (props) => props.column.id,
-  //       },
-  //       {
-  //         accessorFn: (row) => row.lastName,
-  //         id: "lastName",
-  //         cell: (info) => info.getValue(),
-  //         header: "Last Name",
-  //         footer: (props) => props.column.id,
-  //       },
-  //       {
-  //         header: "More Info",
-  //         columns: [
-  //           {
-  //             accessorKey: "visits",
-  //             header: "Visits",
-  //             footer: (props) => props.column.id,
-  //           },
-  //           {
-  //             accessorKey: "status",
-  //             header: "Status",
-  //             footer: (props) => props.column.id,
-  //           },
-  //           {
-  //             accessorKey: "progress",
-  //             header: "Profile Progress",
-  //             footer: (props) => props.column.id,
-  //           },
-  //         ],
-  //       },
-  //     ],
-  //   },
-  // ];
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
 
@@ -87,7 +31,26 @@
     }));
   }
 
-  const options = writable({
+  let sorting = [];
+
+  function handleSorting(updater) {
+    if (updater instanceof Function) {
+      sorting = updater(sorting);
+    } else {
+      sorting = updater;
+    }
+
+    metricsExplorerStore.setPivotSort($metricsViewName, sorting);
+    options.update((old) => ({
+      ...old,
+      state: {
+        ...old.state,
+        sorting,
+      },
+    }));
+  }
+
+  const options: Writable<TableOptions<PivotDataRow>> = writable({
     data: data,
     columns: columns,
     state: {
@@ -95,6 +58,7 @@
     },
     onExpandedChange: handleExpandedChange,
     getSubRows: (row) => row.subRows,
+    onSortingChange: handleSorting,
     getExpandedRowModel: getExpandedRowModel(),
     getCoreRowModel: getCoreRowModel(),
     enableExpanding: true,
@@ -103,13 +67,13 @@
   let table = createSvelteTable(options);
 
   function rerender() {
-    // FIXME: Updating data does not update tanstack table
-    // console.log("rerender called with data", data);
     options.update((options) => ({
       ...options,
       data: data,
     }));
 
+    // FIXME: This is a hack to force the table to rerender, upadting
+    // the options in itself doesn't seem to work
     table = createSvelteTable(options);
   }
 
@@ -125,12 +89,28 @@
           {#each headerGroup.headers as header}
             <th colSpan={header.colSpan}>
               {#if !header.isPlaceholder}
-                <svelte:component
-                  this={flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-                />
+                <!-- TODO: Fix svelte a11y issues -->
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
+                <div
+                  class:cursor-pointer={header.column.getCanSort()}
+                  class:select-none={header.column.getCanSort()}
+                  on:click={header.column.getToggleSortingHandler()}
+                >
+                  <svelte:component
+                    this={flexRender(
+                      header.column.columnDef.header,
+                      header.getContext(),
+                    )}
+                  />
+                  {#if header.column.getIsSorted()}
+                    {#if header.column.getIsSorted().toString() === "asc"}
+                      <span>▼</span>
+                    {:else}
+                      <span>▲</span>
+                    {/if}
+                  {/if}
+                </div>
               {/if}
             </th>
           {/each}
@@ -155,7 +135,7 @@
                 <svelte:component
                   this={flexRender(
                     cell.column.columnDef.cell,
-                    cell.getContext()
+                    cell.getContext(),
                   )}
                 />
               {/if}
@@ -209,6 +189,6 @@
   }
 
   td {
-    text-align: right; /* or left, depending on content */
+    text-align: right;
   }
 </style>

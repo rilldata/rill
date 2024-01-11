@@ -178,11 +178,12 @@ export function getAxisForDimensions(
   ctx: StateManagers,
   dimensions: string[],
   filters: V1MetricsViewFilter,
+  sortBy: V1MetricsViewAggregationSort[] = [],
 ) {
   if (!dimensions.length) return writable(null);
   return derived(
     dimensions.map((dimension) =>
-      createPivotAggregationRowQuery(ctx, [], [dimension], filters),
+      createPivotAggregationRowQuery(ctx, [], [dimension], filters, sortBy),
     ),
     (data: Array<any>) => {
       const axesMap: Record<string, string[]> = {};
@@ -240,6 +241,11 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
       return writable({ isFetching: false, data: [] });
     }
 
+    const sortPivotBy = config.pivot.sorting.map((sort) => ({
+      name: sort.id,
+      desc: sort.desc,
+    }));
+
     const columnDimensionAxesQuery = getAxisForDimensions(
       ctx,
       colDimensionNames,
@@ -250,6 +256,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
       ctx,
       rowDimensionNames,
       config.filters,
+      sortPivotBy,
     );
 
     /**

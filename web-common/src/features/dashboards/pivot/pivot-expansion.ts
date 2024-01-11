@@ -129,6 +129,11 @@ export function queryExpandedRowMeasureValues(
         exclude: [],
       };
 
+      const sortPivotBy = config.pivot.sorting.map((sort) => ({
+        name: sort.id,
+        desc: sort.desc,
+      }));
+
       return derived(
         [
           writable(expandIndex),
@@ -136,6 +141,7 @@ export function queryExpandedRowMeasureValues(
             ctx,
             [anchorDimension],
             filterForRowDimensionAxes,
+            sortPivotBy,
           ),
           createSubTableCellQuery(
             ctx,
