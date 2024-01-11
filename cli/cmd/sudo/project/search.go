@@ -61,8 +61,8 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 				var table []*projectStatusTableRow
 				ch.Printer.Println()
 				for _, name := range res.Names {
-					project := strings.Split(name, "/")[0]
-					org := strings.Split(name, "/")[1]
+					org := strings.Split(name, "/")[0]
+					project := strings.Split(name, "/")[1]
 
 					proj, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
 						OrganizationName: org,
@@ -102,11 +102,6 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 							continue
 						}
 
-						// check if there are any parser errors
-						if parser.State != nil && len(parser.State.ParseErrors) != 0 {
-							ParserErrorCount++
-						}
-
 						switch r.Meta.ReconcileStatus {
 						case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
 							// if it is idle, check if there are any errors
@@ -120,6 +115,11 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 						case runtimev1.ReconcileStatus_RECONCILE_STATUS_RUNNING:
 							RunningCount++
 						}
+					}
+
+					// check if there are any parser errors
+					if parser.State != nil && len(parser.State.ParseErrors) != 0 {
+						ParserErrorCount++
 					}
 
 					table = append(table, &projectStatusTableRow{
@@ -164,5 +164,4 @@ type projectStatusTableRow struct {
 	PendingCount        int32  `header:"pending"`
 	RunningCount        int32  `header:"running"`
 	ParserErrorCount    int32  `header:"parser error"`
-	Error               string `header:"error"`
 }
