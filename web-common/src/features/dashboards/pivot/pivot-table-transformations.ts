@@ -56,7 +56,7 @@ export function getAccessorForCell(
   colDimensionNames: string[],
   colValuesIndexMaps: Map<string, number>[],
   numMeasures: number,
-  cell: PivotDataRow,
+  cell: { [key: string]: string | number },
 ) {
   // TODO: Check for undefineds
   const nestedColumnValueAccessor = colDimensionNames
@@ -105,7 +105,7 @@ export function reduceTableCellDataIntoRows(
   const colDimensionNames = config.colDimensionNames;
 
   // For simple tables, return the cell data as is
-  if (!anchorDimensionName || !colDimensionNames.length) {
+  if (!anchorDimensionName) {
     return cellData;
   }
 

@@ -4,8 +4,9 @@ import type {
   MetricsViewSpecMeasureV2,
 } from "@rilldata/web-common/runtime-client";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
-import type { PivotState } from "./types";
+import type { PivotDataRow, PivotDataStoreConfig, PivotState } from "./types";
 import { getAccessorForCell } from "./pivot-table-transformations";
+import type { ColumnDef } from "@tanstack/svelte-table";
 
 export function getMeasuresInPivotColumns(
   pivot: PivotState,
@@ -68,9 +69,9 @@ export function createIndexMap<T>(arr: T[]): Map<T, number> {
  * Get filter for table cells
  */
 export function getFilterForPivotTable(
-  config,
-  colDimensionAxes,
-  rowDimensionAxes = {},
+  config: PivotDataStoreConfig,
+  colDimensionAxes: Record<string, string[]> = {},
+  rowDimensionAxes: Record<string, string[]> = {},
   isInitialTable = false,
   yLimit = 100,
   xLimit = 20,
@@ -92,7 +93,7 @@ export function getFilterForPivotTable(
   const colFilters = colDimensionNames.map((colDimensionName) => {
     return {
       name: colDimensionName,
-      in: colDimensionAxes[colDimensionName].slice(0, xLimit),
+      in: colDimensionAxes?.[colDimensionName].slice(0, xLimit),
     };
   });
 
@@ -109,19 +110,19 @@ export function getFilterForPivotTable(
  */
 function createColumnDefinitionForDimensions(
   dimensionNames: string[],
-  headers,
-  leafData,
-) {
-  if (!dimensionNames.length || !headers || !Object.keys(headers).length)
-    return leafData;
-
+  headers: Record<string, string[]>,
+  leafData: ColumnDef<PivotDataRow>[],
+): ColumnDef<PivotDataRow>[] {
   const colValuesIndexMaps = dimensionNames?.map((colDimension) =>
     createIndexMap(headers[colDimension]),
   );
 
   const levels = dimensionNames.length;
   // Recursive function to create nested columns
-  function createNestedColumns(level: number, colValuePair) {
+  function createNestedColumns(
+    level: number,
+    colValuePair: { [key: string]: string },
+  ): ColumnDef<PivotDataRow>[] {
     if (level === levels) {
       const accessors = getAccessorForCell(
         dimensionNames,
@@ -154,7 +155,7 @@ function createColumnDefinitionForDimensions(
 }
 
 export function getColumnDefForPivot(
-  config,
+  config: PivotDataStoreConfig,
   columnDimensionAxes: Record<string, string[]> | undefined,
 ) {
   const IsNested = true;
@@ -171,34 +172,35 @@ export function getColumnDefForPivot(
   );
 
   let rowDimensionsForColumnDef = rowDimensions;
-  let nestedLabel;
+  let nestedLabel: string;
   if (IsNested) {
     rowDimensionsForColumnDef = rowDimensions.slice(0, 1);
     nestedLabel = rowDimensions.map((d) => d.label || d.name).join(" > ");
   }
-  const rowDefinitions = rowDimensionsForColumnDef.map((d) => {
-    return {
-      accessorKey: d.name,
-      header: nestedLabel ? nestedLabel : d.label || d.name,
-      cell: ({ row, getValue }) =>
-        cellComponent(PivotExpandableCell, {
-          value: getValue(),
-          row,
-        }),
-    };
-  });
+  const rowDefinitions: ColumnDef<PivotDataRow>[] =
+    rowDimensionsForColumnDef.map((d) => {
+      return {
+        accessorKey: d.name,
+        header: nestedLabel,
+        cell: ({ row, getValue }) =>
+          cellComponent(PivotExpandableCell, {
+            value: getValue(),
+            row,
+          }),
+      };
+    });
 
-  const leafColumns = measures.map((m) => {
+  const leafColumns: ColumnDef<PivotDataRow>[] = measures.map((m) => {
     return {
-      accessorKey: m.name,
+      accessorKey: m.name as string,
       header: m.label || m.name,
       cell: (info) => info.getValue(),
     };
   });
 
   const groupedColDef = createColumnDefinitionForDimensions(
-    colDimensions.map((d) => d.column) as string[],
-    columnDimensionAxes,
+    (colDimensions.map((d) => d.column) as string[]) || [],
+    columnDimensionAxes || {},
     leafColumns,
   );
 
