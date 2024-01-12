@@ -134,7 +134,8 @@ export function createPivotAggregationRowQuery(
 }
 
 /**
- * Returns a query for cell data for the initial table
+ * Returns a query for cell data for the initial table.
+ * TODO: Add description for sorting methodolgy
  */
 export function createTableCellQuery(
   ctx: StateManagers,
@@ -255,7 +256,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
     const { rowDimensionNames, colDimensionNames, measureNames } = config;
 
     if (!rowDimensionNames.length && !measureNames.length) {
-      return writable({ isFetching: false, data: [] });
+      return set({ isFetching: false, data: [] });
     }
 
     const sortPivotBy = config.pivot.sorting.map((sort) => ({
@@ -283,7 +284,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
       [columnDimensionAxesQuery, rowDimensionAxisQuery],
       ([columnDimensionAxes, rowDimensionAxes], axesSet) => {
         if (columnDimensionAxes?.isFetching || rowDimensionAxes?.isFetching) {
-          return { isFetching: true };
+          return axesSet({ isFetching: true });
         }
 
         const anchorDimension = rowDimensionNames[0];
@@ -310,10 +311,14 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
          */
         return derived(
           [initialTableCellQuery],
-          ([initialTableCellData], set2) => {
+          ([initialTableCellData], cellSet) => {
             // Wait for data
             if (initialTableCellData.isFetching || initialTableCellData.error)
-              return { isFetching: false, data: skeletonTableData, columnDef };
+              return cellSet({
+                isFetching: false,
+                data: skeletonTableData,
+                columnDef,
+              });
 
             const cellData = initialTableCellData.data
               ?.data as V1MetricsViewAggregationResponseDataItem[];
@@ -356,7 +361,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   columnDef,
                 };
               },
-            ).subscribe(set2);
+            ).subscribe(cellSet);
           },
         ).subscribe(axesSet);
       },
