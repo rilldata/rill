@@ -97,8 +97,6 @@
       end: new Date(end),
     };
 
-    console.log($dashboardStore?.showTimeComparison)
-
     const defaultTimeGrain = getDefaultTimeGrain(
       baseTimeRange.start,
       baseTimeRange.end,
