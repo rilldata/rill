@@ -157,9 +157,9 @@ export interface TimeGrain {
   label: DateTimeUnit | string;
   /** the ISO8601 duration, e.g. P1D, PT6H */
   duration: Period;
-  /** the d3 time format string that outputs a human-readable
+  /** the Luxon time format string that outputs a human-readable
    * representation. Currently used for TDD column headers */
-  d3format: string;
+  luxonFormat: string;
   /** the DateTimeFormatOptions of the Intl API that outputs
    * a human-readable representation of a timestamp based on
    * the time grain. This preserves locale-based formatting.

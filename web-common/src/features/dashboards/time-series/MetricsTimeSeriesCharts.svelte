@@ -19,7 +19,6 @@
   import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
@@ -114,15 +113,8 @@
 
   // FIXME: move this logic to a function + write tests.
   $: if ($timeControlsStore.ready) {
-    // adjust scrub values for Javascript's timezone changes
-    scrubStart = adjustOffsetForZone(
-      $dashboardStore?.selectedScrubRange?.start,
-      $dashboardStore?.selectedTimezone,
-    );
-    scrubEnd = adjustOffsetForZone(
-      $dashboardStore?.selectedScrubRange?.end,
-      $dashboardStore?.selectedTimezone,
-    );
+    scrubStart = $dashboardStore?.selectedScrubRange?.start;
+    scrubEnd = $dashboardStore?.selectedScrubRange?.end;
 
     const slicedData =
       $timeControlsStore.selectedTimeRange?.name === TimeRangePreset.ALL_TIME

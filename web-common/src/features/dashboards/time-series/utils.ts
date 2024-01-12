@@ -1,4 +1,3 @@
-import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
 import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
@@ -20,14 +19,14 @@ export function niceMeasureExtents(
   ];
 }
 
-export function toComparisonKeys(d, offsetDuration: string, zone: string) {
+export function toComparisonKeys(d, offsetDuration: string) {
   return Object.keys(d).reduce((acc, key) => {
     if (key === "records") {
       Object.entries(d.records).forEach(([key, value]) => {
         acc[`comparison.${key}`] = value;
       });
     } else if (`comparison.${key}` === "comparison.ts") {
-      acc[`comparison.${key}`] = adjustOffsetForZone(d[key], zone);
+      acc[`comparison.${key}`] = new Date(d[key]);
       acc["comparison.ts_position"] = getOffset(
         acc["comparison.ts"],
         offsetDuration,
@@ -44,12 +43,11 @@ export function prepareTimeSeries(
   original,
   comparison,
   timeGrainDuration: string,
-  zone: string,
 ) {
   return original?.map((originalPt, i) => {
     const comparisonPt = comparison?.[i];
 
-    const ts = adjustOffsetForZone(originalPt.ts, zone);
+    const ts = new Date(originalPt.ts);
     const offsetDuration = getDurationMultiple(timeGrainDuration, 0.5);
     const ts_position = getOffset(ts, offsetDuration, TimeOffsetType.ADD);
     return {
@@ -57,7 +55,7 @@ export function prepareTimeSeries(
       ts_position,
       bin: originalPt.bin,
       ...originalPt.records,
-      ...toComparisonKeys(comparisonPt || {}, offsetDuration, zone),
+      ...toComparisonKeys(comparisonPt || {}, offsetDuration),
     };
   });
 }

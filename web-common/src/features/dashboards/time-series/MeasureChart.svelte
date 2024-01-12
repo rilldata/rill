@@ -15,11 +15,7 @@
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
   import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
-  import {
-    getOrderedStartEnd,
-    localToTimeZoneOffset,
-    niceMeasureExtents,
-  } from "./utils";
+  import { getOrderedStartEnd, niceMeasureExtents } from "./utils";
   import {
     TimeRangePreset,
     TimeRoundingStrategy,
@@ -47,7 +43,6 @@
   export let yMax: number = undefined;
 
   export let timeGrain: V1TimeGrain;
-  export let zone: string;
 
   export let showComparison = false;
   export let data;
@@ -167,23 +162,18 @@
     if (isScrubbing) return;
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
-    const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
-    const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
 
     metricsExplorerStore.setSelectedTimeRange(metricViewName, {
       name: TimeRangePreset.CUSTOM,
-      start: adjustedStart,
-      end: adjustedEnd,
+      start: start,
+      end: end,
     });
   }
 
   function updateScrub(start, end, isScrubbing) {
-    const adjustedStart = start ? localToTimeZoneOffset(start, zone) : start;
-    const adjustedEnd = end ? localToTimeZoneOffset(end, zone) : end;
-
     metricsExplorerStore.setSelectedScrubRange(metricViewName, {
-      start: adjustedStart,
-      end: adjustedEnd,
+      start: start,
+      end: end,
       isScrubbing: isScrubbing,
     });
   }
