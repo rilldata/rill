@@ -97,6 +97,8 @@
       end: new Date(end),
     };
 
+    console.log($dashboardStore?.showTimeComparison)
+
     const defaultTimeGrain = getDefaultTimeGrain(
       baseTimeRange.start,
       baseTimeRange.end,
@@ -117,7 +119,7 @@
         ? ({
             name: validComparison,
           } as DashboardTimeControls)
-        : $dashboardStore?.selectedComparisonTimeRange,
+        : undefined,
     );
   }
 
