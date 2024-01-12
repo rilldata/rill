@@ -82,6 +82,9 @@ test.describe("leaderboard and dimension table sorting", () => {
     );
 
     // add time comparison and select Pct change
+    await page.getByRole("button", { name: "No comparison" }).click();
+    await page.getByRole("menuitem", { name: "Time" }).click();
+
     await page.getByRole("button", { name: "Select time range" }).click();
     await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
 
