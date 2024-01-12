@@ -27,7 +27,9 @@ func (d *BufferedZapCore) Write(entry zapcore.Entry, fields []zapcore.Field) err
 
 func (d *BufferedZapCore) With(fields []zapcore.Field) zapcore.Core {
 	clone := *d
-	clone.fields = append(clone.fields, fields...)
+	clone.fields = make([]zapcore.Field, len(d.fields)+len(fields))
+	copy(clone.fields, d.fields)
+	copy(clone.fields[len(d.fields):], fields)
 	return &clone
 }
 
