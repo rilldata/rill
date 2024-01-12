@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -123,11 +122,11 @@ func (s *Server) Ping(ctx context.Context, req *runtimev1.PingRequest) (*runtime
 }
 
 // ServeGRPC Starts the gRPC server.
-func (s *Server) ServeGRPC(ctx context.Context, grpcDefaultLvl zapcore.Level) error {
+func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
-			observability.LoggingStreamServerInterceptor(s.logger, grpcDefaultLvl),
+			observability.LoggingStreamServerInterceptor(s.logger),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
 			middleware.ActivityStreamServerInterceptor(s.activity),
@@ -136,7 +135,7 @@ func (s *Server) ServeGRPC(ctx context.Context, grpcDefaultLvl zapcore.Level) er
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
-			observability.LoggingUnaryServerInterceptor(s.logger, grpcDefaultLvl),
+			observability.LoggingUnaryServerInterceptor(s.logger),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
 			middleware.ActivityUnaryServerInterceptor(s.activity),

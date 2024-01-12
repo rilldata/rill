@@ -34,12 +34,12 @@ func TracingMiddleware(next http.Handler, serviceName string) http.Handler {
 
 // LoggingUnaryServerInterceptor is a gRPC unary interceptor that logs requests.
 // It also recovers from panics and returns them as internal errors.
-func LoggingUnaryServerInterceptor(logger *zap.Logger, defaultLvl zapcore.Level) grpc.UnaryServerInterceptor {
+func LoggingUnaryServerInterceptor(logger *zap.Logger) grpc.UnaryServerInterceptor {
 	logger = logger.WithOptions(zap.AddStacktrace(zapcore.InvalidLevel)) // Disable stacktraces for error logs in this interceptor
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		// Log pings at debug level
 		// TODO: Change when we move to standard gRPC health checks
-		lvl := defaultLvl
+		lvl := zap.InfoLevel
 		if info.FullMethod == "/rill.admin.v1.AdminService/Ping" || info.FullMethod == "/rill.runtime.v1.RuntimeService/Ping" {
 			lvl = zap.DebugLevel
 		}
@@ -67,7 +67,7 @@ func LoggingUnaryServerInterceptor(logger *zap.Logger, defaultLvl zapcore.Level)
 			// Get code and log level
 			code := status.Code(err)
 			if err != nil {
-				lvl = grpcCodeToLevel(code, defaultLvl)
+				lvl = grpcCodeToLevel(code)
 			}
 
 			// Format err for logging. If err is a gRPC error, we want to show only the description.
@@ -97,7 +97,7 @@ func LoggingUnaryServerInterceptor(logger *zap.Logger, defaultLvl zapcore.Level)
 
 // LoggingStreamServerInterceptor is a gRPC streaming interceptor that logs requests.
 // It also recovers from panics and returns them as internal errors.
-func LoggingStreamServerInterceptor(logger *zap.Logger, grpcDefaultLvl zapcore.Level) grpc.StreamServerInterceptor {
+func LoggingStreamServerInterceptor(logger *zap.Logger) grpc.StreamServerInterceptor {
 	logger = logger.WithOptions(zap.AddStacktrace(zapcore.InvalidLevel)) // Disable stacktraces for error logs in this interceptor
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		fields := []zap.Field{
@@ -122,7 +122,7 @@ func LoggingStreamServerInterceptor(logger *zap.Logger, grpcDefaultLvl zapcore.L
 
 			// Get code and log level
 			code := status.Code(err)
-			lvl := grpcCodeToLevel(code, grpcDefaultLvl)
+			lvl := grpcCodeToLevel(code)
 
 			// Format err for logging. If err is a gRPC error, we want to show only the description.
 			logErr := err
@@ -145,18 +145,18 @@ func LoggingStreamServerInterceptor(logger *zap.Logger, grpcDefaultLvl zapcore.L
 		wss := grpc_middleware.WrapServerStream(ss)
 		wss.WrappedContext = contextWithLogFields(ss.Context(), &fields)
 
-		logger.Log(grpcDefaultLvl, "grpc started call", fields...)
+		logger.Info("grpc started call", fields...)
 		return handler(srv, wss)
 	}
 }
 
 // grpcCodeToLevel overrides the log level of various gRPC codes.
 // We're currently not doing very granular error handling, so we get quite a lot of codes.Unknown errors, which we do not want to emit as error logs.
-func grpcCodeToLevel(code codes.Code, defaultLvl zapcore.Level) zapcore.Level {
+func grpcCodeToLevel(code codes.Code) zapcore.Level {
 	switch code {
 	case codes.OK, codes.NotFound, codes.Canceled, codes.AlreadyExists, codes.InvalidArgument, codes.Unauthenticated,
 		codes.Unknown, codes.PermissionDenied, codes.ResourceExhausted, codes.FailedPrecondition, codes.OutOfRange:
-		return defaultLvl
+		return zap.InfoLevel
 	case codes.Unimplemented, codes.DeadlineExceeded, codes.Aborted, codes.Unavailable:
 		return zap.WarnLevel
 	case codes.Internal, codes.DataLoss:

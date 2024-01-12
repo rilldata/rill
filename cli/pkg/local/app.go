@@ -32,7 +32,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"moul.io/zapfilter"
 )
 
 type LogFormat string
@@ -264,6 +263,13 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		Readonly:         readonly,
 	}
 
+	// Create server logger
+	serverLogger := a.BaseLogger
+	// It only logs error messages when !verbose to prevent lots of req/res info messages.
+	if !a.Verbose {
+		serverLogger = a.BaseLogger.WithOptions(zap.IncreaseLevel(zap.ErrorLevel))
+	}
+
 	// Prepare errgroup and context with graceful shutdown
 	gctx := graceful.WithCancelOnTerminate(a.Context)
 	group, ctx := errgroup.WithContext(gctx)
@@ -275,14 +281,14 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		AllowedOrigins:  []string{"*"},
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, a.BaseLogger, ratelimit.NewNoop(), a.activity)
+	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, serverLogger, ratelimit.NewNoop(), a.activity)
 	if err != nil {
 		return err
 	}
 
 	// Start the gRPC server
 	group.Go(func() error {
-		return runtimeServer.ServeGRPC(ctx, zapcore.DebugLevel)
+		return runtimeServer.ServeGRPC(ctx)
 	})
 
 	// Start the local HTTP server
@@ -511,7 +517,7 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 
 	core := zapcore.NewTee(
 		fileCore,
-		zapfilter.NewFilteringCore(zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel), zapfilter.MinimumLevel(zapcore.InfoLevel)),
+		zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel),
 	)
 
 	return zap.New(core, opts...), func() {
