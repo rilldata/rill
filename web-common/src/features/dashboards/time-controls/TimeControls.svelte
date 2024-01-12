@@ -110,9 +110,15 @@
       $timeControlsStore.allTimeRange,
     );
 
-    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, defaultTimeGrain, {
-      name: validComparison,
-    } as DashboardTimeControls);
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      baseTimeRange,
+      defaultTimeGrain,
+      $dashboardStore?.showTimeComparison
+        ? ({
+            name: validComparison,
+          } as DashboardTimeControls)
+        : $dashboardStore?.selectedComparisonTimeRange,
+    );
   }
 
   function onSelectTimeGrain(timeGrain: V1TimeGrain) {
