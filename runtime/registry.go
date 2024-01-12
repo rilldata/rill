@@ -288,12 +288,11 @@ func (r *registryCache) add(inst *drivers.Instance) {
 	}
 	r.instances[inst.ID] = iwc
 
-	iwcLogger := r.logger.With(zap.String("instance_id", iwc.instanceID))
+	iwc.logger = r.logger.With(zap.String("instance_id", iwc.instanceID))
 
 	// Setup the logger to duplicate logs to a) the Zap logger, b) an in-memory buffer that exposes the logs over the API
 	buffer := logbuffer.NewBuffer(r.rt.opts.ControllerLogBufferCapacity, r.rt.opts.ControllerLogBufferSizeBytes)
-	iwcLogger = zap.New(zapcore.NewTee(iwcLogger.Core(), logutil.NewBufferedZapCore(buffer)))
-	iwc.logger = iwcLogger
+	iwc.logger = zap.New(zapcore.NewTee(iwc.logger.Core(), logutil.NewBufferedZapCore(buffer)))
 	iwc.logbuffer = buffer
 
 	r.restartController(iwc)
@@ -376,8 +375,8 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			}
 
 			// Start controller
-			r.logger.Debug("controller starting")
-			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instanceID, r.logger, r.activity)
+			iwc.logger.Debug("controller starting")
+			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instanceID, iwc.logger, r.activity)
 			if err == nil {
 				r.ensureProjectParser(iwc.ctx, iwc.instanceID, ctrl)
 

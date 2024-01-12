@@ -27,7 +27,7 @@ func NewBuffer(maxMessageCount int, maxBufferSize int64) *Buffer {
 	}
 }
 
-func (b *Buffer) AddZapEntry(entry zapcore.Entry, coreFields []zapcore.Field, entryFields []zapcore.Field) error {
+func (b *Buffer) AddZapEntry(entry zapcore.Entry, coreFields, entryFields []zapcore.Field) error {
 	size := 0
 	attrs := make(map[string]any, len(coreFields)+len(entryFields))
 	for _, field := range coreFields {
