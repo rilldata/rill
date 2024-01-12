@@ -418,14 +418,12 @@ func convertFilterToExpression(filter *runtimev1.MetricsViewFilter) *runtimev1.E
 	var exprs []*runtimev1.Expression
 
 	if len(filter.Include) > 0 {
-		var includeExprs []*runtimev1.Expression
 		for _, cond := range filter.Include {
 			domExpr := convertDimensionFilterToExpression(cond, false)
 			if domExpr != nil {
-				includeExprs = append(includeExprs, domExpr)
+				exprs = append(exprs, domExpr)
 			}
 		}
-		exprs = append(exprs, expressionpb.Or(includeExprs))
 	}
 
 	if len(filter.Exclude) > 0 {

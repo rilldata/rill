@@ -40,6 +40,11 @@
   // Add local and utc time zone to the top of the list
   $: availableTimeZones = [userLocalIANA, UTCIana, ...availableTimeZones];
 
+  // If localIANA is same as UTC, remove UTC from the list
+  $: if (userLocalIANA === UTCIana) {
+    availableTimeZones = availableTimeZones.slice(1);
+  }
+
   const onTimeZoneSelect = (timeZone: string) => {
     dispatch("select-time-zone", { timeZone });
   };

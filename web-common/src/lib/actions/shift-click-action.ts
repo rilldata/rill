@@ -66,7 +66,7 @@ export function createShiftClickAction(
           node.dispatchEvent(new CustomEvent("shift-click"));
           // fire all callbacks.
           const cbs = get(callbacks);
-          cbs.forEach((cb) => cb());
+          cbs.forEach((cb: () => void) => cb());
 
           // prevent the regular on:click event here.
           if (_stopImmediatePropagation) {

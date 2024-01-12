@@ -115,7 +115,7 @@ export class PerRangeFormatter implements Formatter {
 
     if (isPercent) x = 100 * x;
 
-    let numParts: NumberParts;
+    let numParts: NumberParts | undefined = undefined;
 
     if (x === 0) {
       numParts = { int: "0", dot: "", frac: "", suffix: "" };

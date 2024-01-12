@@ -3,6 +3,7 @@ import {
   getTableReferences,
 } from "@rilldata/web-common/features/models/utils/get-table-references";
 import { tests } from "@rilldata/web-common/features/models/utils/get-table-references/test-data";
+import { describe, it, expect } from "vitest";
 
 describe("getAllTableReferences", () => {
   it("correctly assesses the table references", () => {

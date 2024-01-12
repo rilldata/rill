@@ -73,6 +73,10 @@ import type {
 import { httpClient } from "../../http-client";
 import type { ErrorType } from "../../http-client";
 
+type AwaitedInput<T> = PromiseLike<T> | T;
+
+type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
+
 /**
  * @summary ListConnectors returns a description of all the connectors implemented in the runtime,
 including their schema and validation rules

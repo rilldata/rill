@@ -267,11 +267,20 @@ func (s *Server) applySecurityPolicyMetricsView(ctx context.Context, instID stri
 
 // applySecurityPolicyIncludesAndExcludes rewrites a metrics view based on the include/exclude conditions of a security policy.
 func (s *Server) applySecurityPolicyMetricsViewIncludesAndExcludes(mv *runtimev1.MetricsViewV2, policy *runtime.ResolvedMetricsViewSecurity) (*runtimev1.MetricsViewV2, bool) {
-	if policy == nil || (len(policy.Include) == 0 && len(policy.Exclude) == 0) {
+	if policy == nil {
 		return mv, false
 	}
-
 	mv = proto.Clone(mv).(*runtimev1.MetricsViewV2)
+
+	if policy.ExcludeAll {
+		mv.Spec.Measures = make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
+		mv.Spec.Dimensions = make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
+		if mv.State.ValidSpec != nil {
+			mv.State.ValidSpec.Measures = make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
+			mv.State.ValidSpec.Dimensions = make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
+		}
+		return mv, true
+	}
 
 	if len(policy.Include) > 0 {
 		allowed := make(map[string]bool)

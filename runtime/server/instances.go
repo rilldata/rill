@@ -201,7 +201,7 @@ func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*r
 		return nil, ErrForbidden
 	}
 
-	logs, err := s.runtime.InstanceLogs(req.InstanceId)
+	logs, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -221,7 +221,7 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 		return ErrForbidden
 	}
 
-	logs, err := s.runtime.InstanceLogs(req.InstanceId)
+	logs, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
