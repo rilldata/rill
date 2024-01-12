@@ -155,6 +155,9 @@ dimensions:
     await page.getByRole("button", { name: "Select time range" }).click();
     await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
 
+    await page.getByRole("button", { name: "No comparison" }).click();
+    await page.getByRole("menuitem", { name: "Time" }).click();
+
     await expect(
       page.getByRole("button", { name: "null 27 s 33%" }),
     ).toBeVisible();
