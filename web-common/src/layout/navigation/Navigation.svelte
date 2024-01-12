@@ -31,8 +31,26 @@
     (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
     tweened(0, { duration: 50 });
 
+  let previousWidth: number;
+
   $: isModelerEnabled = $featureFlags.readOnly === false;
+
+  function handleResize(
+    e: UIEvent & {
+      currentTarget: EventTarget & Window;
+    },
+  ) {
+    const currentWidth = e.currentTarget.innerWidth;
+
+    if (currentWidth < previousWidth && currentWidth < 768) {
+      $navigationLayout.visible = false;
+    }
+
+    previousWidth = currentWidth;
+  }
 </script>
+
+<svelte:window on:resize={handleResize} />
 
 <div
   aria-hidden={!$navigationLayout?.visible}
@@ -118,3 +136,6 @@
     {/if} sidebar
   </svelte:fragment>
 </SurfaceControlButton>
+
+<style>
+</style>

@@ -4,8 +4,6 @@ import {
   AD_BIDS_INIT,
   AD_BIDS_INIT_WITH_TIME,
   AD_BIDS_NAME,
-  AD_BIDS_SOURCE_NAME,
-  AD_BIDS_TIMESTAMP_DIMENSION,
   initStateManagers,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
 import TimeControlsStoreTest from "@rilldata/web-common/features/dashboards/time-controls/TimeControlsStoreTest.svelte";
@@ -59,14 +57,10 @@ describe("time-control-store", () => {
     assertStartAndEnd(state, undefined, undefined, undefined, undefined);
 
     dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, AD_BIDS_INIT_WITH_TIME);
-    dashboardFetchMocks.mockTimeRangeSummary(
-      AD_BIDS_SOURCE_NAME,
-      AD_BIDS_TIMESTAMP_DIMENSION,
-      {
-        min: "2022-01-01",
-        max: "2022-03-31",
-      },
-    );
+    dashboardFetchMocks.mockTimeRangeSummary(AD_BIDS_NAME, {
+      min: "2022-01-01",
+      max: "2022-03-31",
+    });
     await queryClient.refetchQueries({
       type: "active",
     });
@@ -80,14 +74,10 @@ describe("time-control-store", () => {
       "2022-04-01T00:00:00.000Z",
     );
 
-    dashboardFetchMocks.mockTimeRangeSummary(
-      AD_BIDS_SOURCE_NAME,
-      AD_BIDS_TIMESTAMP_DIMENSION,
-      {
-        min: "2023-01-01",
-        max: "2023-03-31",
-      },
-    );
+    dashboardFetchMocks.mockTimeRangeSummary(AD_BIDS_NAME, {
+      min: "2023-01-01",
+      max: "2023-03-31",
+    });
     await queryClient.refetchQueries({
       type: "active",
     });
@@ -106,14 +96,10 @@ describe("time-control-store", () => {
   });
 
   it("Switching selected time range", async () => {
-    dashboardFetchMocks.mockTimeRangeSummary(
-      AD_BIDS_SOURCE_NAME,
-      AD_BIDS_TIMESTAMP_DIMENSION,
-      {
-        min: "2022-01-01",
-        max: "2022-03-31",
-      },
-    );
+    dashboardFetchMocks.mockTimeRangeSummary(AD_BIDS_NAME, {
+      min: "2022-01-01",
+      max: "2022-03-31",
+    });
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
       AD_BIDS_INIT_WITH_TIME,
     );
@@ -176,14 +162,10 @@ describe("time-control-store", () => {
   });
 
   it("Switching selected comparison time range", async () => {
-    dashboardFetchMocks.mockTimeRangeSummary(
-      AD_BIDS_SOURCE_NAME,
-      AD_BIDS_TIMESTAMP_DIMENSION,
-      {
-        min: "2022-01-01",
-        max: "2022-03-31",
-      },
-    );
+    dashboardFetchMocks.mockTimeRangeSummary(AD_BIDS_NAME, {
+      min: "2022-01-01",
+      max: "2022-03-31",
+    });
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
       AD_BIDS_INIT_WITH_TIME,
     );
@@ -237,14 +219,10 @@ describe("time-control-store", () => {
   });
 
   it("Switching time zones", async () => {
-    dashboardFetchMocks.mockTimeRangeSummary(
-      AD_BIDS_SOURCE_NAME,
-      AD_BIDS_TIMESTAMP_DIMENSION,
-      {
-        min: "2022-01-01",
-        max: "2022-03-31",
-      },
-    );
+    dashboardFetchMocks.mockTimeRangeSummary(AD_BIDS_NAME, {
+      min: "2022-01-01",
+      max: "2022-03-31",
+    });
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
       AD_BIDS_INIT_WITH_TIME,
     );
@@ -288,14 +266,10 @@ describe("time-control-store", () => {
   });
 
   it("Scrubbing to zoom", async () => {
-    dashboardFetchMocks.mockTimeRangeSummary(
-      AD_BIDS_SOURCE_NAME,
-      AD_BIDS_TIMESTAMP_DIMENSION,
-      {
-        min: "2022-01-01",
-        max: "2022-03-31",
-      },
-    );
+    dashboardFetchMocks.mockTimeRangeSummary(AD_BIDS_NAME, {
+      min: "2022-01-01",
+      max: "2022-03-31",
+    });
     const { unmount, timeControlsStore } = initTimeControlStoreTest(
       AD_BIDS_INIT_WITH_TIME,
     );
@@ -355,14 +329,10 @@ describe("time-control-store", () => {
   });
 
   it("Default time ranges", async () => {
-    dashboardFetchMocks.mockTimeRangeSummary(
-      AD_BIDS_SOURCE_NAME,
-      AD_BIDS_TIMESTAMP_DIMENSION,
-      {
-        min: "2022-01-01",
-        max: "2022-03-31",
-      },
-    );
+    dashboardFetchMocks.mockTimeRangeSummary(AD_BIDS_NAME, {
+      min: "2022-01-01",
+      max: "2022-03-31",
+    });
     const { unmount, timeControlsStore, queryClient } =
       initTimeControlStoreTest(AD_BIDS_INIT_WITH_TIME);
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");

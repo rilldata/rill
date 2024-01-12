@@ -509,7 +509,7 @@ func TestMetricsViewsComparison_measure_filters_with_compare_aliases(t *testing.
 	require.Equal(t, "instagram.com", q.Result.Rows[2].DimensionValue.GetStringValue())
 }
 
-func TestMetricsViewsCompariso_export_xlsx(t *testing.T) {
+func TestMetricsViewsComparison_export_xlsx(t *testing.T) {
 	t.Parallel()
 	rt, instanceId := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
 

@@ -1,11 +1,11 @@
-import type { Readable } from "svelte/store";
-import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
-import type { QueryObserverResult } from "@tanstack/svelte-query";
 import type {
   RpcStatus,
-  V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
+import type { QueryObserverResult } from "@tanstack/svelte-query";
+import type { Readable } from "svelte/store";
+import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 import type { Expand } from "../types";
 
 /**
@@ -24,7 +24,10 @@ import type { Expand } from "../types";
 export type DashboardDataSources = {
   dashboard: MetricsExplorerEntity;
   metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, RpcStatus>;
-  timeRangeSummary: QueryObserverResult<V1ColumnTimeRangeResponse, unknown>;
+  timeRangeSummary: QueryObserverResult<
+    V1MetricsViewTimeRangeResponse,
+    unknown
+  >;
 };
 
 /**
