@@ -511,8 +511,7 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 
 	core := zapcore.NewTee(
 		fileCore,
-		// send all error logs and logs matching console namespace to stdout
-		zapfilter.NewFilteringCore(zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel), zapfilter.MustParseRules("info+:*")),
+		zapfilter.NewFilteringCore(zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel), zapfilter.MinimumLevel(zapcore.InfoLevel)),
 	)
 
 	return zap.New(core, opts...), func() {

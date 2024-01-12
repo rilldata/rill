@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -186,6 +187,59 @@ func (s *Server) DeleteInstance(ctx context.Context, req *runtimev1.DeleteInstan
 	}
 
 	return &runtimev1.DeleteInstanceResponse{}, nil
+}
+
+// GetLogs implements runtimev1.RuntimeServiceServer
+func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*runtimev1.GetLogsResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.ascending", req.Ascending),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		return nil, ErrForbidden
+	}
+
+	logs, err := s.runtime.InstanceLogs(req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	return &runtimev1.GetLogsResponse{Logs: logs.GetLogs(req.Ascending, int(req.Limit))}, nil
+}
+
+// WatchLogs implements runtimev1.RuntimeServiceServer
+func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.RuntimeService_WatchLogsServer) error {
+	ctx := srv.Context()
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.Bool("args.replay", req.Replay),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		return ErrForbidden
+	}
+
+	logs, err := s.runtime.InstanceLogs(req.InstanceId)
+	if err != nil {
+		return status.Error(codes.InvalidArgument, err.Error())
+	}
+	if req.Replay {
+		for _, l := range logs.GetLogs(true, int(req.ReplayLimit)) {
+			err := srv.Send(&runtimev1.WatchLogsResponse{Log: l})
+			if err != nil {
+				return status.Error(codes.InvalidArgument, err.Error())
+			}
+		}
+	}
+
+	return logs.WatchLogs(srv.Context(), func(item *runtimev1.Log) {
+		err := srv.Send(&runtimev1.WatchLogsResponse{Log: item})
+		if err != nil {
+			s.logger.Info("failed to send log event", zap.Error(err))
+		}
+	})
 }
 
 func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {

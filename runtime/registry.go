@@ -110,6 +110,10 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 	return nil
 }
 
+func (r *Runtime) InstanceLogs(instanceID string) (*logbuffer.Buffer, error) {
+	return r.registryCache.getLogbuffer(instanceID)
+}
+
 // registryCache caches all the runtime's instances and manages the life-cycle of their controllers.
 // It ensures that a controller is started for every instance, and that a controller is completely stopped before getting restarted when edited.
 type registryCache struct {
@@ -128,8 +132,8 @@ type instanceWithController struct {
 	controller    *Controller
 	controllerErr error
 
-	logger *zap.Logger
-	logs   *logbuffer.Buffer
+	logger    *zap.Logger
+	logbuffer *logbuffer.Buffer
 
 	// State for managing controller execution
 	ctx       context.Context
@@ -275,7 +279,7 @@ func (r *registryCache) add(inst *drivers.Instance) {
 	buffer := logbuffer.NewBuffer(r.rt.opts.ControllerLogBufferCapacity, r.rt.opts.ControllerLogBufferSizeBytes)
 	iwcLogger = zap.New(zapcore.NewTee(iwcLogger.Core(), logutil.NewBufferedZapCore(buffer)))
 	iwc.logger = iwcLogger
-	iwc.logs = buffer
+	iwc.logbuffer = buffer
 
 	r.restartController(iwc)
 }
@@ -347,18 +351,18 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			// Before starting the controller, sync the repo.
 			// This is necessary for resources (usually sources or models) that reference files in the repo,
 			// and may be triggered before the project parser is triggered and syncs the repo.
-			iwc.logger.Debug("syncing repo", zap.String("instance_id", iwc.instance.ID))
+			iwc.logger.Debug("syncing repo")
 			err := r.ensureRepoSync(iwc.ctx, iwc.instance.ID)
 			if err != nil {
-				iwc.logger.Warn("failed to sync repo", zap.String("instance_id", iwc.instance.ID), zap.Error(err))
+				iwc.logger.Warn("failed to sync repo", zap.Error(err))
 				// Even if repo sync failed, we'll start the controller
 			} else {
-				iwc.logger.Debug("repo synced", zap.String("instance_id", iwc.instance.ID))
+				iwc.logger.Debug("repo synced")
 			}
 
 			// Start controller
-			iwc.logger.Debug("controller starting", zap.String("instance_id", iwc.instance.ID))
-			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instance.ID, iwc.logger, r.activity, iwc.logs)
+			iwc.logger.Debug("controller starting")
+			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instance.ID, iwc.logger, r.activity)
 			if err == nil {
 				r.ensureProjectParser(iwc.ctx, iwc.instance.ID, ctrl)
 
@@ -368,7 +372,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 				close(iwc.readyCh)
 				r.mu.Unlock()
 
-				r.logger.Debug("controller ready", zap.String("instance_id", iwc.instance.ID))
+				iwc.logger.Debug("controller ready")
 
 				err = ctrl.Run(iwc.ctx)
 			}
@@ -376,13 +380,13 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			iwc.cancel() // Always ensure cleanup
 
 			r.mu.Lock()
-			attrs := []zapcore.Field{zap.String("instance_id", iwc.instance.ID), zap.Error(err), zap.Bool("reopen", iwc.reopen), zap.Bool("called_run", iwc.ready)}
+			attrs := []zapcore.Field{zap.Error(err), zap.Bool("reopen", iwc.reopen), zap.Bool("called_run", iwc.ready)}
 			r.mu.Unlock()
 
 			if errors.Is(err, iwc.ctx.Err()) {
-				r.logger.Debug("controller stopped", attrs...)
+				iwc.logger.Debug("controller stopped", attrs...)
 			} else {
-				r.logger.Error("controller failed", attrs...)
+				iwc.logger.Error("controller failed", attrs...)
 			}
 
 			// When an instance is edited, connector config may have changed.
@@ -447,4 +451,15 @@ func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID stri
 	if err != nil {
 		r.logger.Error("could not create project parser", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
+}
+
+func (r *registryCache) getLogbuffer(instanceID string) (*logbuffer.Buffer, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	iwc := r.instances[instanceID]
+	if iwc == nil {
+		return nil, drivers.ErrNotFound
+	}
+	return iwc.logbuffer, nil
 }

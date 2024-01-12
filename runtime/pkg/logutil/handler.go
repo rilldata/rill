@@ -21,11 +21,11 @@ func (d *BufferedZapCore) Enabled(level zapcore.Level) bool {
 }
 
 func (d *BufferedZapCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
+	fields = append(d.fields, fields...)
 	return d.logs.AddZapEntry(entry, fields)
 }
 
 func (d *BufferedZapCore) With(fields []zapcore.Field) zapcore.Core {
-	// TODO: should ideally create a clone of the core with new log buffer and append the new fields
 	clone := *d
 	clone.fields = append(clone.fields, fields...)
 	return &clone

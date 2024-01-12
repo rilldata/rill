@@ -14,7 +14,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/dag"
-	"github.com/rilldata/rill/runtime/pkg/logbuffer"
 	"github.com/rilldata/rill/runtime/pkg/schedule"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -70,7 +69,6 @@ type Controller struct {
 	InstanceID  string
 	Logger      *zap.Logger
 	Activity    activity.Client
-	Logs        *logbuffer.Buffer
 	mu          sync.RWMutex
 	reconcilers map[string]Reconciler
 	catalog     *catalogCache
@@ -97,13 +95,12 @@ type Controller struct {
 }
 
 // NewController creates a new Controller
-func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *zap.Logger, ac activity.Client, logs *logbuffer.Buffer) (*Controller, error) {
+func NewController(ctx context.Context, rt *Runtime, instanceID string, logger *zap.Logger, ac activity.Client) (*Controller, error) {
 	c := &Controller{
 		Runtime:        rt,
 		InstanceID:     instanceID,
 		Logger:         logger,
 		Activity:       ac,
-		Logs:           logs,
 		closedCh:       make(chan struct{}),
 		reconcilers:    make(map[string]Reconciler),
 		subscribers:    make(map[int]SubscribeCallback),
