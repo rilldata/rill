@@ -181,19 +181,36 @@ export function getAxisForDimensions(
   sortBy: V1MetricsViewAggregationSort[] = [],
 ) {
   if (!dimensions.length) return writable(null);
+
+  // FIXME: If sorting by measure, add that to measure list
+  let measures: string[] = [];
+  if (sortBy.length) {
+    const sortMeasure = sortBy[0].name as string;
+    if (!dimensions.includes(sortMeasure)) {
+      measures = [sortMeasure];
+    }
+  }
+
   return derived(
     dimensions.map((dimension) =>
-      createPivotAggregationRowQuery(ctx, [], [dimension], filters, sortBy),
+      createPivotAggregationRowQuery(
+        ctx,
+        measures,
+        [dimension],
+        filters,
+        sortBy,
+      ),
     ),
-    (data: Array<any>) => {
+    (data) => {
       const axesMap: Record<string, string[]> = {};
 
       // Wait for all data to populate
       if (data.some((d) => d?.isFetching)) return { isFetching: true };
 
       data.forEach((d, i: number) => {
-        axesMap[dimensions[i]] = d?.data?.data?.map(
-          (dimValue) => dimValue[dimensions[i]],
+        const dimensionName = dimensions[i];
+        axesMap[dimensionName] = (d?.data?.data || [])?.map(
+          (dimValue) => dimValue[dimensionName] as string,
         );
       });
 
@@ -305,7 +322,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               config,
               anchorDimension,
               rowDimensionAxes?.data?.[anchorDimension] || [],
-              columnDimensionAxes?.data as Record<string, string[]>,
+              columnDimensionAxes?.data || {},
               skeletonTableData,
               cellData,
             );
@@ -329,7 +346,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     config,
                     tableDataWithCells,
                     rowDimensionNames,
-                    columnDimensionAxes,
+                    columnDimensionAxes?.data || {},
                     expandedRowMeasureValues,
                   );
                 }

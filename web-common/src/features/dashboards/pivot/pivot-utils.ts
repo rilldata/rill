@@ -9,7 +9,7 @@ import { getAccessorForCell } from "./pivot-table-transformations";
 
 export function getMeasuresInPivotColumns(
   pivot: PivotState,
-  measures: MetricsViewSpecMeasureV2[]
+  measures: MetricsViewSpecMeasureV2[],
 ): MetricsViewSpecMeasureV2[] {
   const { columns } = pivot;
 
@@ -20,24 +20,24 @@ export function getMeasuresInPivotColumns(
 
 export function getDimensionsInPivotRow(
   pivot: PivotState,
-  dimensions: MetricsViewSpecDimensionV2[]
+  dimensions: MetricsViewSpecDimensionV2[],
 ): MetricsViewSpecDimensionV2[] {
   const { rows } = pivot;
   return rows
     .filter(
-      (rowName) => dimensions.findIndex((m) => m?.column === rowName) > -1
+      (rowName) => dimensions.findIndex((m) => m?.column === rowName) > -1,
     )
     .map((rowName) => dimensions.find((m) => m?.column === rowName));
 }
 
 export function getDimensionsInPivotColumns(
   pivot: PivotState,
-  dimensions: MetricsViewSpecDimensionV2[]
+  dimensions: MetricsViewSpecDimensionV2[],
 ): MetricsViewSpecDimensionV2[] {
   const { columns } = pivot;
   return columns
     .filter(
-      (colName) => dimensions.findIndex((m) => m?.column === colName) > -1
+      (colName) => dimensions.findIndex((m) => m?.column === colName) > -1,
     )
     .map((colName) => dimensions.find((m) => m?.column === colName));
 }
@@ -47,7 +47,7 @@ export function getDimensionsInPivotColumns(
  */
 export const cellComponent = (
   component: unknown,
-  props: Record<string, unknown>
+  props: Record<string, unknown>,
 ) => ({
   component,
   props,
@@ -56,8 +56,8 @@ export const cellComponent = (
 /**
  * Create a value to index map for a given array
  */
-export function createIndexMap(arr) {
-  const indexMap = new Map();
+export function createIndexMap<T>(arr: T[]): Map<T, number> {
+  const indexMap = new Map<T, number>();
   arr.forEach((element, index) => {
     indexMap.set(element, index);
   });
@@ -73,7 +73,7 @@ export function getFilterForPivotTable(
   rowDimensionAxes = {},
   isInitialTable = false,
   yLimit = 100,
-  xLimit = 20
+  xLimit = 20,
 ) {
   // TODO: handle for already existing global filters
 
@@ -110,13 +110,13 @@ export function getFilterForPivotTable(
 function createColumnDefinitionForDimensions(
   dimensionNames: string[],
   headers,
-  leafData
+  leafData,
 ) {
   if (!dimensionNames.length || !headers || !Object.keys(headers).length)
     return leafData;
 
   const colValuesIndexMaps = dimensionNames?.map((colDimension) =>
-    createIndexMap(headers[colDimension])
+    createIndexMap(headers[colDimension]),
   );
 
   const levels = dimensionNames.length;
@@ -127,7 +127,7 @@ function createColumnDefinitionForDimensions(
         dimensionNames,
         colValuesIndexMaps,
         leafData.length,
-        colValuePair
+        colValuePair,
       );
 
       // Base case: return leaf columns
@@ -155,7 +155,7 @@ function createColumnDefinitionForDimensions(
 
 export function getColumnDefForPivot(
   config,
-  columnDimensionAxes: Record<string, string[]> | undefined
+  columnDimensionAxes: Record<string, string[]> | undefined,
 ) {
   const IsNested = true;
 
@@ -163,11 +163,11 @@ export function getColumnDefForPivot(
   const measures = getMeasuresInPivotColumns(config.pivot, config.allMeasures);
   const rowDimensions = getDimensionsInPivotRow(
     config.pivot,
-    config.allDimensions
+    config.allDimensions,
   );
   const colDimensions = getDimensionsInPivotColumns(
     config.pivot,
-    config.allDimensions
+    config.allDimensions,
   );
 
   let rowDimensionsForColumnDef = rowDimensions;
@@ -199,7 +199,7 @@ export function getColumnDefForPivot(
   const groupedColDef = createColumnDefinitionForDimensions(
     colDimensions.map((d) => d.column) as string[],
     columnDimensionAxes,
-    leafColumns
+    leafColumns,
   );
 
   return [...rowDefinitions, ...groupedColDef];

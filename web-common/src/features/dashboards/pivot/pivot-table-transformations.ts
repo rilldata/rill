@@ -54,7 +54,7 @@ export function prepareNestedPivotData(
  */
 export function getAccessorForCell(
   colDimensionNames: string[],
-  colValuesIndexMaps,
+  colValuesIndexMaps: Map<string, number>[],
   numMeasures: number,
   cell: PivotDataRow,
 ) {
@@ -63,7 +63,7 @@ export function getAccessorForCell(
     .map((colName, i) => {
       let accessor = `c${i}`;
 
-      const colValue = cell[colName];
+      const colValue = cell[colName] as string;
       const colValueIndex = colValuesIndexMaps[i].get(colValue);
       accessor += `v${colValueIndex}`;
 
@@ -122,8 +122,14 @@ export function reduceTableCellDataIntoRows(
   );
 
   cellData.forEach((cell) => {
-    const rowDimensionValue = cell[anchorDimensionName];
+    const rowDimensionValue = cell[anchorDimensionName] as string;
     const rowIndex = rowDimensionIndexMap.get(rowDimensionValue);
+    if (rowIndex === undefined) {
+      console.warn(
+        `Dimension value ${rowDimensionValue} not found in row dimension axes`,
+      );
+      return;
+    }
     const row = tableData[rowIndex];
 
     const accessors = getAccessorForCell(
@@ -135,7 +141,7 @@ export function reduceTableCellDataIntoRows(
 
     if (row) {
       accessors.forEach((accessor, i) => {
-        row[accessor] = cell[config.measureNames[i]];
+        row[accessor] = cell[config.measureNames[i]] as string | number;
       });
     }
   });

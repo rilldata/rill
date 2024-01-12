@@ -4,13 +4,14 @@ import {
   getAxisForDimensions,
 } from "./pivot-data-store";
 import type { ExpandedState } from "@tanstack/svelte-table";
-import { derived, writable } from "svelte/store";
+import { Readable, derived, writable } from "svelte/store";
 import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 import { getFilterForPivotTable } from "./pivot-utils";
 import {
   createTableWithAxes,
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
+import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 
 /**
  * Extracts and organizes dimension names from a nested array structure
@@ -93,6 +94,13 @@ export function createSubTableCellQuery(
   );
 }
 
+interface ExpandedRowMeasureValues {
+  isFetching: boolean;
+  expandIndex: string;
+  rowDimensionValues: string[];
+  data: V1MetricsViewAggregationResponseDataItem[];
+}
+
 /**
  * For each expanded row, create a query for the sub table
  * and return the query result along with the expanded row index
@@ -103,7 +111,7 @@ export function queryExpandedRowMeasureValues(
   config: PivotDataStoreConfig,
   tableData: PivotDataRow[],
   columnDimensionAxesData,
-) {
+): Readable<ExpandedRowMeasureValues[] | null> {
   const { rowDimensionNames } = config;
   const expanded = config.pivot.expanded;
   if (!tableData || Object.keys(expanded).length == 0) return writable(null);
@@ -157,7 +165,7 @@ export function queryExpandedRowMeasureValues(
             expandIndex,
             rowDimensionValues:
               subRowDimensionValues?.data?.[anchorDimension] || [],
-            data: subTableData?.data?.data,
+            data: subTableData?.data?.data || [],
           };
         },
       );
@@ -180,8 +188,8 @@ export function addExpandedDataToPivot(
   config: PivotDataStoreConfig,
   tableData: PivotDataRow[],
   rowDimensions: string[],
-  columnDimensionAxes,
-  expandedRowMeasureValues,
+  columnDimensionAxes: Record<string, string[]>,
+  expandedRowMeasureValues: ExpandedRowMeasureValues[],
 ): PivotDataRow[] {
   const pivotData = tableData;
   const numRowDimensions = rowDimensions.length;
@@ -191,14 +199,16 @@ export function addExpandedDataToPivot(
       .split(".")
       .map((index) => parseInt(index, 10));
 
-    let parent = pivotData; // Keep a reference to the parent array
+    let parent: PivotDataRow[] = pivotData; // Keep a reference to the parent array
     let lastIdx = 0;
 
     // Traverse the data array to the right position
     for (let i = 0; i < indices.length; i++) {
       if (!parent[indices[i]]) break;
       if (i < indices.length - 1) {
-        parent = parent[indices[i]].subRows;
+        const subRows = parent[indices[i]].subRows;
+        if (!subRows) break;
+        parent = subRows;
       }
       lastIdx = indices[i];
     }
@@ -221,7 +231,7 @@ export function addExpandedDataToPivot(
           config,
           anchorDimension,
           expandedRowData?.rowDimensionValues,
-          columnDimensionAxes?.data,
+          columnDimensionAxes,
           skeletonSubTable,
           expandedRowData?.data,
         );
