@@ -5,7 +5,6 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
 import type { PivotDataRow, PivotDataStoreConfig, PivotState } from "./types";
-import { getAccessorForCell } from "./pivot-table-transformations";
 import type { ColumnDef } from "@tanstack/svelte-table";
 
 export function getMeasuresInPivotColumns(
@@ -103,6 +102,38 @@ export function getFilterForPivotTable(
   };
 
   return filters;
+}
+
+/**
+ * Create a nested accessor for a cell in the table.
+ * This is used to map the cell data to the table data.
+ *
+ * Column names are converted to c0, c1, c2, etc.
+ * Column values are converted to v0, v1, v2, etc.
+ * Measure names are converted to m0, m1, m2, etc.
+ */
+export function getAccessorForCell(
+  colDimensionNames: string[],
+  colValuesIndexMaps: Map<string, number>[],
+  numMeasures: number,
+  cell: { [key: string]: string | number },
+) {
+  // TODO: Check for undefineds
+  const nestedColumnValueAccessor = colDimensionNames
+    .map((colName, i) => {
+      let accessor = `c${i}`;
+
+      const colValue = cell[colName] as string;
+      const colValueIndex = colValuesIndexMaps[i].get(colValue);
+      accessor += `v${colValueIndex}`;
+
+      return accessor;
+    })
+    .join("_");
+
+  return Array(numMeasures)
+    .fill(null)
+    .map((_, i) => `${nestedColumnValueAccessor}m${i}`);
 }
 
 /***

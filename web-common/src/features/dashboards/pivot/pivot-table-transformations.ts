@@ -1,5 +1,5 @@
 import type { PivotDataRow, PivotDataStoreConfig } from "./types";
-import { createIndexMap } from "./pivot-utils";
+import { createIndexMap, getAccessorForCell } from "./pivot-utils";
 import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 
 /**
@@ -42,38 +42,6 @@ export function prepareNestedPivotData(
       prepareNestedPivotData(row.subRows, dimensions, i + 1);
     });
   }
-}
-
-/**
- * Create a nested accessor for a cell in the table.
- * This is used to map the cell data to the table data.
- *
- * Column names are converted to c0, c1, c2, etc.
- * Column values are converted to v0, v1, v2, etc.
- * Measure names are converted to m0, m1, m2, etc.
- */
-export function getAccessorForCell(
-  colDimensionNames: string[],
-  colValuesIndexMaps: Map<string, number>[],
-  numMeasures: number,
-  cell: { [key: string]: string | number },
-) {
-  // TODO: Check for undefineds
-  const nestedColumnValueAccessor = colDimensionNames
-    .map((colName, i) => {
-      let accessor = `c${i}`;
-
-      const colValue = cell[colName] as string;
-      const colValueIndex = colValuesIndexMaps[i].get(colValue);
-      accessor += `v${colValueIndex}`;
-
-      return accessor;
-    })
-    .join("_");
-
-  return Array(numMeasures)
-    .fill(null)
-    .map((_, i) => `${nestedColumnValueAccessor}m${i}`);
 }
 
 /***
