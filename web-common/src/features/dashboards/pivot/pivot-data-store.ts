@@ -314,11 +314,19 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           ([initialTableCellData], cellSet) => {
             // Wait for data
             if (initialTableCellData.isFetching || initialTableCellData.error)
-              return cellSet({
+              // return cellSet({
+              //   isFetching: false,
+              //   data: skeletonTableData,
+              //   columnDef,
+              // });
+
+              // FIXME: Table does not render properly if below object
+              // is set using derived stores set method
+              return {
                 isFetching: false,
                 data: skeletonTableData,
                 columnDef,
-              });
+              };
 
             const cellData = initialTableCellData.data
               ?.data as V1MetricsViewAggregationResponseDataItem[];
