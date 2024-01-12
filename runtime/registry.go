@@ -252,6 +252,17 @@ func (r *registryCache) getController(ctx context.Context, instanceID string) (*
 	return iwc.controller, nil
 }
 
+func (r *registryCache) getLogbuffer(instanceID string) (*logbuffer.Buffer, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	iwc := r.instances[instanceID]
+	if iwc == nil {
+		return nil, drivers.ErrNotFound
+	}
+	return iwc.logbuffer, nil
+}
+
 func (r *registryCache) create(ctx context.Context, inst *drivers.Instance) error {
 	err := r.store.CreateInstance(ctx, inst)
 	if err != nil {
@@ -455,15 +466,4 @@ func (r *registryCache) ensureProjectParser(ctx context.Context, instanceID stri
 	if err != nil {
 		r.logger.Error("could not create project parser", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
-}
-
-func (r *registryCache) getLogbuffer(instanceID string) (*logbuffer.Buffer, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	iwc := r.instances[instanceID]
-	if iwc == nil {
-		return nil, drivers.ErrNotFound
-	}
-	return iwc.logbuffer, nil
 }

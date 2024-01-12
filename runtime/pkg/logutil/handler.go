@@ -21,8 +21,7 @@ func (d *BufferedZapCore) Enabled(level zapcore.Level) bool {
 }
 
 func (d *BufferedZapCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
-	fields = append(d.fields, fields...)
-	return d.logs.AddZapEntry(entry, fields)
+	return d.logs.AddZapEntry(entry, d.fields, fields)
 }
 
 func (d *BufferedZapCore) With(fields []zapcore.Field) zapcore.Core {

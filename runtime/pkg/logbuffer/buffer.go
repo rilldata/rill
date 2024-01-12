@@ -27,13 +27,19 @@ func NewBuffer(maxMessageCount int, maxBufferSize int64) *Buffer {
 	}
 }
 
-func (b *Buffer) AddZapEntry(entry zapcore.Entry, fields []zapcore.Field) error {
+func (b *Buffer) AddZapEntry(entry zapcore.Entry, coreFields []zapcore.Field, entryFields []zapcore.Field) error {
 	size := 0
-	attrs := make(map[string]any)
-	for _, field := range fields {
+	attrs := make(map[string]any, len(coreFields)+len(entryFields))
+	for _, field := range coreFields {
 		attrs[field.Key] = field.String
 		size += len(field.Key) + len(field.String) // approx size
 	}
+
+	for _, field := range entryFields {
+		attrs[field.Key] = field.String
+		size += len(field.Key) + len(field.String) // approx size
+	}
+
 	size += len(entry.Message)
 	// add enum size, assuming upper bound for 64 bits system
 	size += 8
