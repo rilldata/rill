@@ -49,24 +49,21 @@ func authenticate(options authenticationOptions) (*force.Force, error) {
 func endpoint(options authenticationOptions) (endpoint string, err error) {
 	isEndpointSelected := len(options.Endpoint) > 0
 
-	if isEndpointSelected {
-		// URL needs to have scheme lest the force cli lib chokes
-		uri, err := url.Parse(options.Endpoint)
-		if err != nil {
-			return defaultEndpoint, errors.New("unable to parse endpoint: " + options.Endpoint)
-		}
-
-		if uri.Host == "" {
-			uri, err = url.Parse("https://" + options.Endpoint)
-			if err != nil {
-				return defaultEndpoint, errors.New("could not identify host: " + options.Endpoint)
-			}
-		}
-
-		return uri.String(), nil
+	if !isEndpointSelected {
+		return defaultEndpoint, nil
 	}
 
-	return defaultEndpoint, nil
+	// URL needs to have scheme lest the force cli lib chokes
+	uri, err := url.Parse(options.Endpoint)
+	if err != nil {
+		return defaultEndpoint, errors.New("unable to parse endpoint: " + options.Endpoint)
+	}
+
+	if uri.Scheme == "" {
+		uri.Scheme = "https"
+	}
+
+	return uri.String(), nil
 }
 
 func jwtLogin(endpoint string, options authenticationOptions) (*force.Force, error) {
