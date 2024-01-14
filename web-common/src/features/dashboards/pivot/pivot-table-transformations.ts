@@ -93,9 +93,7 @@ export function reduceTableCellDataIntoRows(
     const rowDimensionValue = cell[anchorDimensionName] as string;
     const rowIndex = rowDimensionIndexMap.get(rowDimensionValue);
     if (rowIndex === undefined) {
-      console.warn(
-        `Dimension value ${rowDimensionValue} not found in row dimension axes`,
-      );
+      console.warn(`Dimension value not found in row dimension axes`);
       return;
     }
     const row = tableData[rowIndex];

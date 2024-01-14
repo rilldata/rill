@@ -15,9 +15,10 @@
   export let columns;
 
   const stateManagers = getStateManagers();
-  const { dashboardStore, metricsViewName, runtime } = stateManagers;
+  const { dashboardStore, metricsViewName } = stateManagers;
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
+  $: sorting = $dashboardStore?.pivot?.sorting ?? [];
 
   function handleExpandedChange(updater) {
     expanded = updater(expanded);
@@ -30,8 +31,6 @@
       },
     }));
   }
-
-  let sorting = [];
 
   function handleSorting(updater) {
     if (updater instanceof Function) {
@@ -61,6 +60,7 @@
     onSortingChange: handleSorting,
     getExpandedRowModel: getExpandedRowModel(),
     getCoreRowModel: getCoreRowModel(),
+    enableSortingRemoval: false,
     enableExpanding: true,
   });
 

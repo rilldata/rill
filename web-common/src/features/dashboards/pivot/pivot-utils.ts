@@ -2,6 +2,7 @@ import type {
   MetricsViewFilterCond,
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
+  V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
 import type { PivotDataRow, PivotDataStoreConfig, PivotState } from "./types";
@@ -118,7 +119,6 @@ export function getAccessorForCell(
   numMeasures: number,
   cell: { [key: string]: string | number },
 ) {
-  // TODO: Check for undefineds
   const nestedColumnValueAccessor = colDimensionNames
     .map((colName, i) => {
       let accessor = `c${i}`;
@@ -134,6 +134,62 @@ export function getAccessorForCell(
   return Array(numMeasures)
     .fill(null)
     .map((_, i) => `${nestedColumnValueAccessor}m${i}`);
+}
+
+/**
+ * Extract the numbers after c and v in a accessor part string
+ */
+function extractNumbers(str: string) {
+  const indexOfC = str.indexOf("c");
+  const indexOfV = str.indexOf("v");
+
+  const numberAfterC = parseInt(str.substring(indexOfC + 1, indexOfV));
+  const numberAfterV = parseInt(str.substring(indexOfV + 1));
+
+  return { c: numberAfterC, v: numberAfterV };
+}
+
+/**
+ * For a given accessor created by getAccessorForCell, get the filter
+ * that can be applied to the table to get sorted data based on the
+ * accessor.
+ */
+export function getFilterFromAccessorName(
+  accessor: string,
+  measureNames: string[],
+  colDimensionNames: string[],
+  columnDimensionAxes: Record<string, string[]> = {},
+) {
+  // Strip the measure string from the accessor
+  const [accessorWithoutMeasure, measureIndex] = accessor.split("m");
+  const accessorParts = accessorWithoutMeasure.split("_");
+
+  let colDimensionFilters: MetricsViewFilterCond[];
+  if (accessorParts[0] === "") {
+    // There are no column dimensions in the accessor
+    colDimensionFilters = [];
+  } else {
+    colDimensionFilters = accessorParts.map((part) => {
+      const { c, v } = extractNumbers(part);
+      const columnDimensionName = colDimensionNames[c];
+      const value = columnDimensionAxes[columnDimensionName][v];
+
+      return {
+        name: columnDimensionName,
+        in: [value],
+      };
+    });
+  }
+
+  const filterForSort: V1MetricsViewFilter = {
+    include: [...colDimensionFilters],
+    exclude: [],
+  };
+
+  return {
+    filter: filterForSort,
+    name: measureNames[parseInt(measureIndex)],
+  };
 }
 
 /***

@@ -20,6 +20,7 @@ import {
   getDimensionsInPivotColumns,
   getDimensionsInPivotRow,
   getFilterForPivotTable,
+  getFilterFromAccessorName,
   getMeasuresInPivotColumns,
 } from "./pivot-utils";
 import {
@@ -232,9 +233,13 @@ export function getAxisForDimensions(
  *
  * Input pivot config
  *     |
- *     |  (Axes)
+ *     |  (Column headers)
  *     v
- * Create table headers by querying axes values for each dimension
+ * Create table headers by querying axes values for each column dimension and measuers
+ *     |
+ *     |  (Row headers and sort order)
+ *     v
+ * Create skeleton table data by querying axes values for each row dimension
  *     |
  *     |  (Cell Data)
  *     v
@@ -252,128 +257,146 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
   /**
    * Derive a store using pivot config
    */
-  return derived(getPivotConfig(ctx), (config, set) => {
+  return derived(getPivotConfig(ctx), (config, configSet) => {
     const { rowDimensionNames, colDimensionNames, measureNames } = config;
 
     if (!rowDimensionNames.length && !measureNames.length) {
-      return set({ isFetching: false, data: [] });
+      return configSet({ isFetching: false, data: [] });
     }
-
-    const sortPivotBy = config.pivot.sorting.map((sort) => ({
-      name: sort.id,
-      desc: sort.desc,
-    }));
-
     const columnDimensionAxesQuery = getAxisForDimensions(
       ctx,
       colDimensionNames,
       config.filters,
     );
 
-    const rowDimensionAxisQuery = getAxisForDimensions(
-      ctx,
-      rowDimensionNames,
-      config.filters,
-      sortPivotBy,
-    );
-
-    /**
-     * Derive a store from axes queries
-     */
     return derived(
-      [columnDimensionAxesQuery, rowDimensionAxisQuery],
-      ([columnDimensionAxes, rowDimensionAxes], axesSet) => {
-        if (columnDimensionAxes?.isFetching || rowDimensionAxes?.isFetching) {
-          return axesSet({ isFetching: true });
+      columnDimensionAxesQuery,
+      (columnDimensionAxes, columnSet) => {
+        if (columnDimensionAxes?.isFetching) {
+          return columnSet({ isFetching: true });
         }
 
-        const anchorDimension = rowDimensionNames[0];
-        const skeletonTableData = createTableWithAxes(
-          anchorDimension,
-          rowDimensionAxes?.data?.[anchorDimension],
-        );
+        let sortPivotBy: V1MetricsViewAggregationSort[] = [];
+        let rowFilters = config.filters;
+        if (config.pivot.sorting.length > 0) {
+          const { filter, name } = getFilterFromAccessorName(
+            config.pivot.sorting[0].id,
+            config.measureNames,
+            config.colDimensionNames,
+            columnDimensionAxes?.data,
+          );
+          sortPivotBy = [
+            {
+              desc: config.pivot.sorting[0].desc,
+              name,
+            },
+          ];
+          rowFilters = filter;
+        }
 
-        const columnDef = getColumnDefForPivot(
-          config,
-          columnDimensionAxes?.data,
-        );
-
-        const initialTableCellQuery = createTableCellQuery(
+        const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
-          config,
-          rowDimensionNames[0],
-          columnDimensionAxes?.data,
-          rowDimensionAxes?.data,
+          rowDimensionNames,
+          rowFilters,
+          sortPivotBy,
         );
 
         /**
-         * Derive a store from initial table cell data query
+         * Derive a store from axes queries
          */
-        return derived(
-          [initialTableCellQuery],
-          ([initialTableCellData], cellSet) => {
-            // Wait for data
-            if (initialTableCellData.isFetching || initialTableCellData.error)
-              // return cellSet({
-              //   isFetching: false,
-              //   data: skeletonTableData,
-              //   columnDef,
-              // });
+        return derived(rowDimensionAxisQuery, (rowDimensionAxes, axesSet) => {
+          if (rowDimensionAxes?.isFetching) {
+            return axesSet({ isFetching: true });
+          }
 
-              // FIXME: Table does not render properly if below object
-              // is set using derived stores set method
-              return {
-                isFetching: false,
-                data: skeletonTableData,
-                columnDef,
-              };
+          const anchorDimension = rowDimensionNames[0];
+          const skeletonTableData = createTableWithAxes(
+            anchorDimension,
+            rowDimensionAxes?.data?.[anchorDimension],
+          );
 
-            const cellData = initialTableCellData.data
-              ?.data as V1MetricsViewAggregationResponseDataItem[];
+          const columnDef = getColumnDefForPivot(
+            config,
+            columnDimensionAxes?.data,
+          );
 
-            const tableDataWithCells = reduceTableCellDataIntoRows(
-              config,
-              anchorDimension,
-              rowDimensionAxes?.data?.[anchorDimension] || [],
-              columnDimensionAxes?.data || {},
-              skeletonTableData,
-              cellData,
-            );
+          const initialTableCellQuery = createTableCellQuery(
+            ctx,
+            config,
+            rowDimensionNames[0],
+            columnDimensionAxes?.data,
+            rowDimensionAxes?.data,
+          );
 
-            const expandedSubTableCellQuery = queryExpandedRowMeasureValues(
-              ctx,
-              config,
-              tableDataWithCells,
-              columnDimensionAxes?.data,
-            );
-            /**
-             * Derive a store based on expanded rows
-             */
-            return derived(
-              expandedSubTableCellQuery,
-              (expandedRowMeasureValues) => {
-                prepareNestedPivotData(tableDataWithCells, rowDimensionNames);
-                let tableDataExpanded: PivotDataRow[] = tableDataWithCells;
-                if (expandedRowMeasureValues?.length) {
-                  tableDataExpanded = addExpandedDataToPivot(
-                    config,
-                    tableDataWithCells,
-                    rowDimensionNames,
-                    columnDimensionAxes?.data || {},
-                    expandedRowMeasureValues,
-                  );
-                }
+          /**
+           * Derive a store from initial table cell data query
+           */
+          return derived(
+            [initialTableCellQuery],
+            ([initialTableCellData], cellSet) => {
+              // Wait for data
+              if (initialTableCellData.isFetching || initialTableCellData.error)
+                // return cellSet({
+                //   isFetching: false,
+                //   data: skeletonTableData,
+                //   columnDef,
+                // });
+
+                // FIXME: Table does not render properly if below object
+                // is set using derived stores set method
                 return {
                   isFetching: false,
-                  data: tableDataExpanded,
+                  data: skeletonTableData,
                   columnDef,
                 };
-              },
-            ).subscribe(cellSet);
-          },
-        ).subscribe(axesSet);
+
+              const cellData = initialTableCellData.data
+                ?.data as V1MetricsViewAggregationResponseDataItem[];
+
+              const tableDataWithCells = reduceTableCellDataIntoRows(
+                config,
+                anchorDimension,
+                rowDimensionAxes?.data?.[anchorDimension] || [],
+                columnDimensionAxes?.data || {},
+                skeletonTableData,
+                cellData,
+              );
+
+              const expandedSubTableCellQuery = queryExpandedRowMeasureValues(
+                ctx,
+                config,
+                tableDataWithCells,
+                columnDimensionAxes?.data,
+              );
+              /**
+               * Derive a store based on expanded rows
+               */
+              return derived(
+                expandedSubTableCellQuery,
+                (expandedRowMeasureValues) => {
+                  prepareNestedPivotData(tableDataWithCells, rowDimensionNames);
+                  let tableDataExpanded: PivotDataRow[] = tableDataWithCells;
+                  if (expandedRowMeasureValues?.length) {
+                    tableDataExpanded = addExpandedDataToPivot(
+                      config,
+                      tableDataWithCells,
+                      rowDimensionNames,
+                      columnDimensionAxes?.data || {},
+                      expandedRowMeasureValues,
+                    );
+                  }
+                  return {
+                    isFetching: false,
+                    data: tableDataExpanded,
+                    columnDef,
+                  };
+                },
+              ).subscribe(cellSet);
+            },
+          ).subscribe(axesSet);
+        }).subscribe(columnSet);
       },
-    ).subscribe(set);
+    ).subscribe(configSet);
   });
 }
 
