@@ -1,8 +1,4 @@
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import {
-  createPivotAggregationRowQuery,
-  getAxisForDimensions,
-} from "./pivot-data-store";
 import type { ExpandedState } from "@tanstack/svelte-table";
 import { Readable, derived, writable } from "svelte/store";
 import type { PivotDataRow, PivotDataStoreConfig } from "./types";
@@ -11,6 +7,10 @@ import {
   createTableWithAxes,
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
+import {
+  createPivotAggregationRowQuery,
+  getAxisForDimensions,
+} from "./pivot-queries";
 import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 
 /**

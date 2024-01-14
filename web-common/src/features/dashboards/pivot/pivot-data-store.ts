@@ -1,14 +1,10 @@
-import {
-  createQueryServiceMetricsViewAggregation,
-  V1MetricsViewFilter,
-  type V1MetricsViewAggregationResponse,
+import type {
   V1MetricsViewAggregationSort,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { derived, Readable, writable } from "svelte/store";
-import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { derived, Readable } from "svelte/store";
+
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import {
@@ -29,6 +25,10 @@ import {
   prepareNestedPivotData,
 } from "./pivot-table-transformations";
 import type { PivotDataRow, PivotDataStoreConfig } from "./types";
+import {
+  createPivotAggregationRowQuery,
+  getAxisForDimensions,
+} from "./pivot-queries";
 
 /**
  * Extract out config relevant to pivot from dashboard and meta store
@@ -87,54 +87,6 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
 }
 
 /**
- * Wrapper function for Aggregate Query API
- */
-export function createPivotAggregationRowQuery(
-  ctx: StateManagers,
-  measures: string[],
-  dimensions: string[],
-  filters: V1MetricsViewFilter,
-  sort: V1MetricsViewAggregationSort[] = [],
-  limit = "100",
-  offset = "0",
-): CreateQueryResult<V1MetricsViewAggregationResponse> {
-  // Todo: Handle sorting in table
-  if (!sort.length) {
-    sort = [
-      {
-        desc: false,
-        name: measures[0] || dimensions[0],
-      },
-    ];
-  }
-  return derived(
-    [ctx.runtime, ctx.metricsViewName, useTimeControlStore(ctx)],
-    ([runtime, metricViewName, timeControls], set) =>
-      createQueryServiceMetricsViewAggregation(
-        runtime.instanceId,
-        metricViewName,
-        {
-          measures: measures.map((measure) => ({ name: measure })),
-          dimensions: dimensions.map((dimension) => ({ name: dimension })),
-          filter: filters,
-          timeStart: timeControls.timeStart,
-          timeEnd: timeControls.timeEnd,
-          sort,
-          limit,
-          offset,
-        },
-        {
-          query: {
-            enabled: !!timeControls.ready && !!ctx.dashboardStore,
-            queryClient: ctx.queryClient,
-            keepPreviousData: true,
-          },
-        },
-      ).subscribe(set),
-  );
-}
-
-/**
  * Returns a query for cell data for the initial table.
  * TODO: Add description for sorting methodolgy
  */
@@ -170,59 +122,6 @@ export function createTableCellQuery(
     filterForInitialTable,
     sortBy,
     "10000",
-  );
-}
-
-/***
- * Get a list of axis values for a given list of dimension values and filters
- */
-export function getAxisForDimensions(
-  ctx: StateManagers,
-  dimensions: string[],
-  filters: V1MetricsViewFilter,
-  sortBy: V1MetricsViewAggregationSort[] = [],
-) {
-  if (!dimensions.length) return writable(null);
-
-  // FIXME: If sorting by measure, add that to measure list
-  let measures: string[] = [];
-  if (sortBy.length) {
-    const sortMeasure = sortBy[0].name as string;
-    if (!dimensions.includes(sortMeasure)) {
-      measures = [sortMeasure];
-    }
-  }
-
-  return derived(
-    dimensions.map((dimension) =>
-      createPivotAggregationRowQuery(
-        ctx,
-        measures,
-        [dimension],
-        filters,
-        sortBy,
-      ),
-    ),
-    (data) => {
-      const axesMap: Record<string, string[]> = {};
-
-      // Wait for all data to populate
-      if (data.some((d) => d?.isFetching)) return { isFetching: true };
-
-      data.forEach((d, i: number) => {
-        const dimensionName = dimensions[i];
-        axesMap[dimensionName] = (d?.data?.data || [])?.map(
-          (dimValue) => dimValue[dimensionName] as string,
-        );
-      });
-
-      if (Object.values(axesMap).some((d) => !d)) return { isFetching: true };
-
-      return {
-        isFetching: false,
-        data: axesMap,
-      };
-    },
   );
 }
 
