@@ -20,8 +20,8 @@ import {
   getDimensionsInPivotColumns,
   getDimensionsInPivotRow,
   getFilterForPivotTable,
-  getFilterFromAccessorName,
   getMeasuresInPivotColumns,
+  getSortForAccessor,
 } from "./pivot-utils";
 import {
   createTableWithAxes,
@@ -235,7 +235,7 @@ export function getAxisForDimensions(
  *     |
  *     |  (Column headers)
  *     v
- * Create table headers by querying axes values for each column dimension and measuers
+ * Create table headers by querying axes values for each column dimension
  *     |
  *     |  (Row headers and sort order)
  *     v
@@ -279,10 +279,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         let sortPivotBy: V1MetricsViewAggregationSort[] = [];
         let rowFilters = config.filters;
         if (config.pivot.sorting.length > 0) {
-          const { filter, name } = getFilterFromAccessorName(
-            config.pivot.sorting[0].id,
-            config.measureNames,
-            config.colDimensionNames,
+          const { filter, name } = getSortForAccessor(
+            config,
             columnDimensionAxes?.data,
           );
           sortPivotBy = [

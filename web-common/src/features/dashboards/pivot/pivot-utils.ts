@@ -154,12 +154,22 @@ function extractNumbers(str: string) {
  * that can be applied to the table to get sorted data based on the
  * accessor.
  */
-export function getFilterFromAccessorName(
-  accessor: string,
-  measureNames: string[],
-  colDimensionNames: string[],
+export function getSortForAccessor(
+  config: PivotDataStoreConfig,
   columnDimensionAxes: Record<string, string[]> = {},
 ) {
+  const { rowDimensionNames, colDimensionNames, measureNames } = config;
+  const accessor = config.pivot.sorting[0].id;
+
+  if (rowDimensionNames?.[0] === accessor) {
+    return {
+      filter: {
+        include: [],
+        exclude: [],
+      },
+      name: accessor,
+    };
+  }
   // Strip the measure string from the accessor
   const [accessorWithoutMeasure, measureIndex] = accessor.split("m");
   const accessorParts = accessorWithoutMeasure.split("_");
