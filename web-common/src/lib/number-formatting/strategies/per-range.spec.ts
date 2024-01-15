@@ -3,7 +3,6 @@ import { PerRangeFormatter } from "./per-range";
 import { describe, it, expect } from "vitest";
 
 const invalidRangeOptions1: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     { minMag: 3, supMag: 3, maxDigitsRight: 0 },
     { minMag: -3, supMag: 3, maxDigitsRight: 3 },
@@ -13,7 +12,6 @@ const invalidRangeOptions1: FormatterFactoryOptions = {
 };
 
 const invalidRangeOptions2: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     { minMag: 3, supMag: 2, maxDigitsRight: 0 },
     { minMag: -3, supMag: 3, maxDigitsRight: 3 },
@@ -36,7 +34,6 @@ describe("range formatter constructor, throws if given an invalid range", () => 
 });
 
 const overlappingRangeOptions1: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     { minMag: 2, supMag: 6, maxDigitsRight: 0 },
     { minMag: -3, supMag: 3, maxDigitsRight: 3 },
@@ -46,7 +43,6 @@ const overlappingRangeOptions1: FormatterFactoryOptions = {
 };
 
 const overlappingRangeOptions2: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     { minMag: 2, supMag: 6, maxDigitsRight: 0 },
     { minMag: -3, supMag: 3, maxDigitsRight: 3 },
@@ -71,7 +67,6 @@ describe("range formatter constructor, throws if given overlapping ranges", () =
 });
 
 const gappedRangeOptions1: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     { minMag: 6, supMag: 9, maxDigitsRight: 0 },
     { minMag: -3, supMag: 3, maxDigitsRight: 3 },
@@ -89,7 +84,6 @@ describe("range formatter constructor, throws if given gap in range coverage", (
 });
 
 const mar2ProposalOptions: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     {
       minMag: 3,
@@ -188,7 +182,6 @@ describe("range formatter, using options for 2022-03-02 proposal `.stringFormat(
 });
 
 const mar2ProposalNoZeroPadOptions: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     {
       minMag: 3,
@@ -255,7 +248,6 @@ describe("range formatter, using options for 2022-03-02 proposal and NO padding 
 
 describe("range formatter, correct handling of useTrailingDot`.stringFormat()`", () => {
   const options: FormatterFactoryOptions = {
-    strategy: "perRange",
     rangeSpecs: [
       {
         minMag: 3,

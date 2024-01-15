@@ -9,11 +9,9 @@ import { numStrToParts } from "../utils/number-parts-utils";
 
 export class NonFormatter implements Formatter {
   options: FormatterOptionsNoneStrategy;
-  initialSample: number[];
 
-  constructor(sample: number[], options: FormatterOptionsNoneStrategy) {
+  constructor(options: FormatterOptionsNoneStrategy) {
     this.options = options;
-    this.initialSample = sample;
   }
 
   stringFormat(x: number): string {
@@ -21,7 +19,7 @@ export class NonFormatter implements Formatter {
   }
 
   partsFormat(x: number): NumberParts {
-    let numParts;
+    let numParts: NumberParts;
 
     const isPercent = this.options.numberKind === NumberKind.PERCENT;
 

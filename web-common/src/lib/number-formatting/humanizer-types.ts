@@ -17,6 +17,24 @@ export enum FormatPreset {
  * This enum represents the semantic kind of the number being
  * handled (which is not the same thing as how the number is
  * formatted, though it can inform formatting).
+ *
+ * NOTE: (brendan, Jan 2024)
+ * Requirements have changed since this was written,
+ * and it's due for a rethinking. Based on experience and
+ * requirements surfaced over the past year, recommended
+ * approach would be to replace NumberKind with
+ * something that makes the following concepts orthogonal
+ * - units (dollar, euro, percent, etc)
+ * - underlying conceptual number type (integer, real, 2-digit decimal).
+ *   Note that in JS, these are all _stored_ as floats, but retaining
+ *   the conceptual type is important for presentation
+ * - formatting precision -- this can vary based on context,
+ *   and could include options like
+ *     - full number (which might still involve rounding off floating
+ *       point errors for a Decimal)
+ *     - some number of significant digits with letter suffixes
+ *     - single digit time power of ten representation
+ *     - etc...
  */
 export enum NumberKind {
   /**
@@ -265,8 +283,7 @@ export type RangeFormatSpec = {
  * if more than three digits are desired left of the decimal point, an
  * explicit range must be set with maxDigitsLeft.
  */
-export type FormatterRangeSpecsStrategy = {
-  strategy: "perRange";
+export type FormatterRangeSpecsStrategy = FormatterOptionsCommon & {
   rangeSpecs: RangeFormatSpec[];
   defaultMaxDigitsRight: number;
 };
@@ -281,8 +298,6 @@ export type FormatterFactory = (options: FormatterFactoryOptions) => Formatter;
 
 export interface Formatter {
   options: FormatterFactoryOptions;
-
   stringFormat(x: number): string;
-
   partsFormat(x: number): NumberParts;
 }

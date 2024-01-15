@@ -3,18 +3,16 @@ import { format as d3format } from "d3-format";
 import {
   FormatPreset,
   formatPresetToNumberKind,
-  Formatter,
   NumberKind,
   type FormatterFactoryOptions,
 } from "./humanizer-types";
 import {
   formatMsInterval,
   formatMsToDuckDbIntervalString,
-  IntervalFormatter,
 } from "./strategies/intervals";
 import { PerRangeFormatter } from "./strategies/per-range";
 import {
-  defaultDollarOptions,
+  defaultCurrencyOptions,
   defaultGenericNumOptions,
   defaultPercentOptions,
 } from "./strategies/per-range-default-options";
@@ -32,7 +30,6 @@ function humanizeDataType(value: number, preset: FormatPreset): string {
 
     return JSON.stringify(value);
   }
-  // if (type === FormatPreset.INTERVAL) return formatMsInterval(value);
 
   const numberKind = formatPresetToNumberKind(preset);
 
@@ -49,84 +46,39 @@ function humanizeDataType(value: number, preset: FormatPreset): string {
     };
   }
 
-  // return humanizedFormatterFactory([value], options).stringFormat(value);
-
-  const sample = [];
-
   switch (preset) {
     case FormatPreset.NONE:
-      return new NonFormatter(sample, options).stringFormat(value);
+      return new NonFormatter(options).stringFormat(value);
 
     case FormatPreset.CURRENCY_USD:
-      return new PerRangeFormatter(sample, defaultDollarOptions).stringFormat(
-        value,
-      );
+      return new PerRangeFormatter(
+        defaultCurrencyOptions(NumberKind.DOLLAR),
+      ).stringFormat(value);
 
     case FormatPreset.CURRENCY_EUR:
-      return new PerRangeFormatter(sample, defaultDollarOptions).stringFormat(
-        value,
-      );
+      return new PerRangeFormatter(
+        defaultCurrencyOptions(NumberKind.EURO),
+      ).stringFormat(value);
 
     case FormatPreset.PERCENTAGE:
-      return new PerRangeFormatter(sample, defaultPercentOptions).stringFormat(
-        value,
-      );
+      return new PerRangeFormatter(defaultPercentOptions).stringFormat(value);
 
     case FormatPreset.INTERVAL:
       return formatMsInterval(value);
 
     case FormatPreset.HUMANIZE:
-      return new PerRangeFormatter(
-        sample,
-        defaultGenericNumOptions,
-      ).stringFormat(value);
+      return new PerRangeFormatter(defaultGenericNumOptions).stringFormat(
+        value,
+      );
 
     default:
       console.warn(
         "Unknown format preset, using default formatter. All number kinds should be handled.",
       );
-      return new PerRangeFormatter(
-        sample,
-        defaultGenericNumOptions,
-      ).stringFormat(value);
+      return new PerRangeFormatter(defaultGenericNumOptions).stringFormat(
+        value,
+      );
   }
-
-  // switch (options.strategy) {
-  //   case "none":
-  //     formatter = new NonFormatter(sample, options);
-  //     break;
-
-  //   case "default":
-  //     // default strategy simply
-  //     // delegates to the range strategy formatter with
-  //     // appropriate default presets for NumberKind
-  //     switch (options.numberKind) {
-  //       case NumberKind.DOLLAR:
-  //         formatter = new PerRangeFormatter(sample, defaultDollarOptions);
-  //         break;
-  //       case NumberKind.EURO:
-  //         formatter = new PerRangeFormatter(sample, defaultDollarOptions);
-  //         break;
-  //       case NumberKind.PERCENT:
-  //         formatter = new PerRangeFormatter(sample, defaultPercentOptions);
-  //         break;
-  //       case NumberKind.INTERVAL:
-  //         formatter = new IntervalFormatter();
-  //         break;
-  //       case NumberKind.ANY:
-  //         formatter = new PerRangeFormatter(sample, defaultGenericNumOptions);
-  //         break;
-  //       default:
-  //         console.warn(
-  //           "Unknown number kind, using default formatter. All number kinds should be handled.",
-  //         );
-  //         formatter = new PerRangeFormatter(sample, defaultGenericNumOptions);
-  //         break;
-  //     }
-  //     break;
-  // }
-
-  // return formatter.stringFormat(value);
 }
 
 /**

@@ -52,10 +52,7 @@ export class PerRangeFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterRangeSpecsStrategy;
   initialSample: number[];
 
-  constructor(
-    sample: number[],
-    options: FormatterRangeSpecsStrategy & FormatterOptionsCommon,
-  ) {
+  constructor(options: FormatterRangeSpecsStrategy & FormatterOptionsCommon) {
     this.options = options;
 
     // sort ranges from small to large by lower bound
@@ -93,7 +90,6 @@ export class PerRangeFormatter implements Formatter {
         );
       }
     }
-    this.initialSample = sample;
   }
 
   stringFormat(x: number): string {
