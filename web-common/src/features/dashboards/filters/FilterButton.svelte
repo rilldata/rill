@@ -1,4 +1,4 @@
-<script context="module" lang="ts">
+<script lang="ts">
   import { getStateManagers } from "../state-managers/state-managers";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -7,10 +7,7 @@
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
-</script>
-
-<script lang="ts">
-  import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+  import { getMeasureDisplayName } from "./getDisplayName";
 
   const {
     selectors: {

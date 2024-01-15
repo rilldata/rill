@@ -1,5 +1,6 @@
 import type { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
@@ -197,29 +198,10 @@ export function createDashboardState(
   whereFilter: V1Expression = createAndExpression([]),
   timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
 ): MetricsExplorerEntity {
-  return {
-    name,
-
-    visibleDimensionKeys: new Set(
-      metrics.dimensions?.map((d) => d.name as string),
-    ),
-    allDimensionsVisible: true,
-    visibleMeasureKeys: new Set(metrics.measures?.map((m) => m.name as string)),
-    allMeasuresVisible: true,
-
-    whereFilter,
-    havingFilter: createAndExpression([]),
-    dimensionThresholdFilters: [],
-    dimensionFilterExcludeMode: new Map(),
-
-    leaderboardMeasureName: metrics.measures?.[0]?.name ?? "",
-    leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
-
-    selectedTimeRange: timeRange,
-
-    dashboardSortType: undefined,
-    sortDirection: undefined,
-  };
+  const explorer = getDefaultMetricsExplorerEntity(name, metrics, undefined);
+  explorer.whereFilter = whereFilter;
+  explorer.selectedTimeRange = timeRange;
+  return explorer;
 }
 
 export function createAdBidsMirrorInStore(metrics: V1MetricsViewSpec) {
