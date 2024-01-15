@@ -1,4 +1,6 @@
 import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+import { prepareMeasureFilterResolutions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { timeControlsState } from "@rilldata/web-common/features/dashboards/state-managers/selectors/time-range";
 import type { DashboardDataSources } from "@rilldata/web-common/features/dashboards/state-managers/selectors/types";
 import type { AtLeast } from "@rilldata/web-common/features/dashboards/state-managers/types";
 import {
@@ -145,8 +147,19 @@ export const getAllMeasureFilterItems = (
   };
 };
 
+export const getResolvedFilterForMeasureFilters = (
+  dashData: DashboardDataSources,
+) => {
+  return prepareMeasureFilterResolutions(
+    dashData.dashboard,
+    timeControlsState(dashData),
+    dashData.queryClient,
+  );
+};
+
 export const measureFilterSelectors = {
   measureHasFilter,
   getMeasureFilterItems,
   getAllMeasureFilterItems,
+  getResolvedFilterForMeasureFilters,
 };

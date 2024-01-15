@@ -122,6 +122,7 @@ export function createStateManagers({
       dashboardStore,
       metricsSpecQueryResultStore: metricsSpecStore,
       timeRangeSummaryStore,
+      queryClient,
     }),
     /**
      * A collection of functions that update the dashboard data model.

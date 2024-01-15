@@ -129,6 +129,17 @@ export function forEachExpression(
   }
 }
 
+export function getAllIdentifiers(expr: V1Expression | undefined) {
+  if (!expr) return [];
+  const idents = new Set<string>();
+  forEachExpression(expr, (e) => {
+    if (e.ident) {
+      idents.add(e.ident);
+    }
+  });
+  return [...idents];
+}
+
 /**
  * Creates a copy of the expression with sub expressions filtered based on {@link checker}
  */

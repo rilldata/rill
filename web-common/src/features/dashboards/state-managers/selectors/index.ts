@@ -4,7 +4,7 @@ import type {
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryObserverResult } from "@tanstack/svelte-query";
+import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 import { activeMeasureSelectors } from "./active-measure";
@@ -28,6 +28,7 @@ export type DashboardDataReadables = {
   timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   >;
+  queryClient: QueryClient;
 };
 
 export type StateManagerReadables = ReturnType<
@@ -166,6 +167,7 @@ function createReadablesFromSelectors<T extends SelectorFnsObj>(
             dashboard,
             metricsSpecQueryResult,
             timeRangeSummary,
+            queryClient: readables.queryClient,
           }),
       ),
     ]),

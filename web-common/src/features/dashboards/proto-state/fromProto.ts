@@ -184,7 +184,7 @@ function fromExpressionProto(expression: Expression): V1Expression | undefined {
           op: FromProtoOperationMap[expression.expression.value.op],
           exprs: expression.expression.value.exprs
             .map((e) => fromExpressionProto(e))
-            .filter((e) => e !== undefined) as V1Expression[],
+            .filter((e): e is V1Expression => e !== undefined),
         },
       };
   }

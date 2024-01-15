@@ -33,6 +33,7 @@
     selectors: {
       activeMeasure: { activeMeasureName },
       dimensionFilters: { selectedDimensionValues },
+      measureFilters: { getResolvedFilterForMeasureFilters },
       dashboardQueries: {
         leaderboardSortedQueryBody,
         leaderboardSortedQueryOptions,
@@ -47,11 +48,13 @@
     runtime,
   } = getStateManagers();
 
+  $: resolvedFilter = $getResolvedFilterForMeasureFilters;
+
   $: sortedQuery = createQueryServiceMetricsViewComparison(
     $runtime.instanceId,
     $metricsViewName,
-    $leaderboardSortedQueryBody(dimensionName),
-    $leaderboardSortedQueryOptions(dimensionName),
+    $leaderboardSortedQueryBody(dimensionName, $resolvedFilter),
+    $leaderboardSortedQueryOptions(dimensionName, $resolvedFilter),
   );
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(

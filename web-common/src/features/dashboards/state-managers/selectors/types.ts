@@ -3,7 +3,7 @@ import type {
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryObserverResult } from "@tanstack/svelte-query";
+import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import type { Readable } from "svelte/store";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 import type { Expand } from "../types";
@@ -28,6 +28,7 @@ export type DashboardDataSources = {
     V1MetricsViewTimeRangeResponse,
     unknown
   >;
+  queryClient: QueryClient;
 };
 
 /**

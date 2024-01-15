@@ -1,3 +1,4 @@
+import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   additionalMeasures,
   getMeasureFilterForDimension,
@@ -68,8 +69,14 @@ export function dimensionTableTotalQueryBody(
  */
 export function leaderboardSortedQueryBody(
   dashData: DashboardDataSources,
-): (dimensionName: string) => QueryServiceMetricsViewComparisonBody {
-  return (dimensionName: string) =>
+): (
+  dimensionName: string,
+  resolvedMeasureFilter: ResolvedMeasureFilter,
+) => QueryServiceMetricsViewComparisonBody {
+  return (
+    dimensionName: string,
+    resolvedMeasureFilter: ResolvedMeasureFilter,
+  ) =>
     prepareSortedQueryBody(
       dimensionName,
       additionalMeasures(dashData),
@@ -78,20 +85,26 @@ export function leaderboardSortedQueryBody(
       sortingSelectors.sortType(dashData),
       sortingSelectors.sortedAscending(dashData),
       getFiltersForOtherDimensions(dashData)(dimensionName),
-      getMeasureFilterForDimension(dashData)(dimensionName),
+      resolvedMeasureFilter.filter,
     );
 }
 
 export function leaderboardSortedQueryOptions(
   dashData: DashboardDataSources,
-): (dimensionName: string) => { query: { enabled: boolean } } {
-  return (dimensionName: string) => {
+): (
+  dimensionName: string,
+  resolvedMeasureFilter: ResolvedMeasureFilter,
+) => { query: { enabled: boolean } } {
+  return (
+    dimensionName: string,
+    resolvedMeasureFilter: ResolvedMeasureFilter,
+  ) => {
     const sortedQueryEnabled =
       timeControlsState(dashData).ready === true &&
       !!getFiltersForOtherDimensions(dashData)(dimensionName);
     return {
       query: {
-        enabled: sortedQueryEnabled,
+        enabled: sortedQueryEnabled && resolvedMeasureFilter.isReady,
       },
     };
   };
