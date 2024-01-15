@@ -103,7 +103,6 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
-	fmt.Println(sqlString, args)
 
 	if len(q.PivotOn) == 0 {
 		schema, data, err := olapQuery(ctx, olap, priority, sqlString, args)
@@ -416,10 +415,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	groupCols := make([]string, 0, len(q.Dimensions))
 	unnestClauses := make([]string, 0)
 	var args []any
-	var groupArgs []any
 	for _, d := range q.Dimensions {
-		safeColName := safeName(d.Name)
-
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			dim, err := metricsViewDimension(mv, d.Name)
@@ -431,7 +427,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if unnestClause != "" {
 				unnestClauses = append(unnestClauses, unnestClause)
 			}
-			groupCols = append(groupCols, safeColName)
+			groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)))
 			continue
 		}
 
@@ -441,9 +437,8 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			return "", nil, err
 		}
 		selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(d.Name)))
-		groupCols = append(groupCols, expr)
+		groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)))
 		args = append(args, exprArgs...)
-		groupArgs = append(groupArgs, exprArgs...)
 	}
 
 	for _, m := range q.Measures {
@@ -471,6 +466,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 	}
 
+	groupClause := ""
+	if len(groupCols) > 0 {
+		groupClause = "GROUP BY " + strings.Join(groupCols, ", ")
+	}
+
 	whereClause := ""
 	if mv.TimeDimension != "" {
 		timeCol := safeName(mv.TimeDimension)
@@ -495,12 +495,6 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	}
 	if len(whereClause) > 0 {
 		whereClause = "WHERE 1=1" + whereClause
-	}
-
-	groupClause := ""
-	if len(groupCols) > 0 {
-		groupClause = "GROUP BY " + strings.Join(groupCols, ", ")
-		args = append(args, groupArgs...)
 	}
 
 	havingClause := ""
@@ -601,7 +595,6 @@ func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAg
 		if dim.TimeZone == "" || dim.TimeZone == "UTC" {
 			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
 		}
-		//return fmt.Sprintf("timezone('%s', date_trunc('%s', timezone('%s', %s::TIMESTAMPTZ)))", dim.TimeZone, convertToDateTruncSpecifier(dim.TimeGrain), dim.TimeZone, col), nil, nil
 		return fmt.Sprintf("timezone(?, date_trunc('%s', timezone(?, %s::TIMESTAMPTZ)))", convertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
 	case drivers.DialectDruid:
 		if dim.TimeZone == "" || dim.TimeZone == "UTC" {

@@ -20,7 +20,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/pkg/activity"
+	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
@@ -422,7 +422,6 @@ func (c *connection) reopenDB() error {
 		"LOAD 'sqlite'",
 		"SET max_expression_depth TO 250",
 		"SET timezone='UTC'",
-		"SET log_query_path = '~/duckdb-logs/out.log'",
 	)
 
 	// We want to set preserve_insertion_order=false in hosted environments only (where source data is never viewed directly). Setting it reduces batch data ingestion time by ~40%.

@@ -759,35 +759,28 @@ func TestMetricsViewsAggregation_timezone(t *testing.T) {
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
-	for i, row := range q.Result.Data {
-		for _, f := range row.Fields {
-			fmt.Printf("%v ", f.AsInterface())
-		}
-		fmt.Printf(" %d \n", i)
-
-	}
 	rows := q.Result.Data
 
 	i := 0
 	require.Equal(t, "Facebook,2021-12-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 	i++
-	require.Equal(t, "Facebook,2022-02-01", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Facebook,2022-01-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 	i++
-	require.Equal(t, "Facebook,2022-03-01", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Facebook,2022-02-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 	i++
-	require.Equal(t, "Google,2022-01-01", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Facebook,2022-03-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 	i++
-	require.Equal(t, "Google,2022-02-01", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Google,2021-12-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 	i++
-	require.Equal(t, "Google,2022-03-01", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Google,2022-01-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 	i++
-	require.Equal(t, "Microsoft,2022-01-01", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Google,2022-02-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 	i++
-	require.Equal(t, "Microsoft,2022-02-01", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Google,2022-03-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 	i++
-	require.Equal(t, "Microsoft,2022-03-01", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Microsoft,2021-12-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 	i++
-	require.Equal(t, "Yahoo,2022-01-01", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Microsoft,2022-01-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 }
 
 func fieldsToString(row *structpb.Struct, args ...string) string {
