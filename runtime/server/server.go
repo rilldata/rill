@@ -169,7 +169,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Create REST gateway
 	gwMux := gateway.NewServeMux(gateway.WithErrorHandler(HTTPErrorHandler))
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
+	grpcAddress := fmt.Sprintf("localhost:%d", s.opts.GRPCPort)
 	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
