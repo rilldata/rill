@@ -53,7 +53,6 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 				ch.Printer.PrintlnWarn("No projects found")
 				return nil
 			}
-
 			if status {
 				var table []*projectStatusTableRow
 				ch.Printer.Println()
@@ -63,15 +62,11 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 
 					row, err := newProjectStatusTableRow(ctx, client, org, project)
 					if err != nil {
-						if strings.Contains(err.Error(), "project has no prod deployment") {
-							continue
-						}
 						return err
 					}
 					table = append(table, row)
 				}
 
-				ch.Printer.PrintlnSuccess("\nProject status\n")
 				err = ch.Printer.PrintResource(table)
 				if err != nil {
 					return err
@@ -102,6 +97,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 type projectStatusTableRow struct {
 	Name                string `header:"name"`
 	Org                 string `header:"org"`
+	Deployment          string `header:"deployment"`
 	IdleCount           int    `header:"idle"`
 	IdleWithErrorsCount int    `header:"idle with errors"`
 	PendingCount        int    `header:"pending"`
@@ -119,8 +115,20 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 	}
 
 	depl := proj.ProdDeployment
-	if depl == nil {
-		return nil, fmt.Errorf("project has no prod deployment")
+	if depl == nil || depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
+		deplStatus := "hibernated"
+		if depl != nil {
+			deplStatus = depl.StatusMessage
+		}
+
+		return &projectStatusTableRow{
+			Name:         project,
+			Org:          org,
+			Deployment:   deplStatus,
+			IdleCount:    0,
+			PendingCount: 0,
+			RunningCount: 0,
+		}, nil
 	}
 
 	rt, err := runtimeclient.New(depl.RuntimeHost, proj.Jwt)
@@ -168,9 +176,16 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 		parserErrorsCount++
 	}
 
+	// add deployment status
+	deplStatus := depl.Status.String()
+	if depl.StatusMessage != "" {
+		deplStatus = depl.StatusMessage
+	}
+
 	return &projectStatusTableRow{
 		Name:                project,
 		Org:                 org,
+		Deployment:          deplStatus,
 		IdleCount:           idleCount,
 		IdleWithErrorsCount: idleWithErrorsCount,
 		PendingCount:        pendingCount,
