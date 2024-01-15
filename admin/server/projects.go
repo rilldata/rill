@@ -101,8 +101,16 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		permissions.ReadProject = true
 		permissions.ReadProd = true
 	}
+	if claims.Superuser(ctx) {
+		permissions.ReadProject = true
+		permissions.ReadProd = true
+		permissions.ReadProdStatus = true
+		permissions.ReadDev = true
+		permissions.ReadDevStatus = true
+		permissions.ReadProjectMembers = true
+	}
 
-	if !permissions.ReadProject && !claims.Superuser(ctx) {
+	if !permissions.ReadProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 

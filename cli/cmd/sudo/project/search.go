@@ -3,6 +3,7 @@ package project
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/rilldata/rill/admin/client"
@@ -12,13 +13,15 @@ import (
 	"github.com/rilldata/rill/runtime"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc/status"
 )
 
 func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pageSize uint32
 	var pageToken string
 	var tags []string
-	var status bool
+	var statusFlag bool
 
 	searchCmd := &cobra.Command{
 		Use:   "search [<pattern>]",
@@ -49,30 +52,44 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			if len(res.Names) == 0 {
 				ch.Printer.PrintlnWarn("No projects found")
 				return nil
 			}
-			if status {
-				var table []*projectStatusTableRow
-				ch.Printer.Println()
-				for _, name := range res.Names {
-					org := strings.Split(name, "/")[0]
-					project := strings.Split(name, "/")[1]
 
-					row, err := newProjectStatusTableRow(ctx, client, org, project)
-					if err != nil {
-						return err
-					}
-					table = append(table, row)
-				}
-
-				err = ch.Printer.PrintResource(table)
+			if !statusFlag {
+				err = ch.Printer.PrintResource(res.Names)
 				if err != nil {
 					return err
 				}
 			} else {
-				err = ch.Printer.PrintResource(res.Names)
+				// We need to fetch the status of each project by connecting to their individual runtime instances.
+				// Using an errgroup to parallelize the requests.
+				table := make([]*projectStatusTableRow, len(res.Names))
+				grp, ctx := errgroup.WithContext(ctx)
+				for idx, name := range res.Names {
+					org := strings.Split(name, "/")[0]
+					project := strings.Split(name, "/")[1]
+
+					idx := idx
+					grp.Go(func() error {
+						row, err := newProjectStatusTableRow(ctx, client, org, project)
+						if err != nil {
+							return err
+						}
+						row.DeploymentStatus = truncMessage(row.DeploymentStatus, 35)
+						table[idx] = row
+						return nil
+					})
+				}
+
+				err := grp.Wait()
+				if err != nil {
+					return err
+				}
+
+				err = ch.Printer.PrintResource(table)
 				if err != nil {
 					return err
 				}
@@ -86,7 +103,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
-	searchCmd.Flags().BoolVar(&status, "status", false, "Include project status")
+	searchCmd.Flags().BoolVar(&statusFlag, "status", false, "Include project status")
 	searchCmd.Flags().StringSliceVar(&tags, "tag", []string{}, "Tags to filter projects by")
 	searchCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of projects to return per page")
 	searchCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
@@ -95,14 +112,14 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 type projectStatusTableRow struct {
-	Name                string `header:"name"`
-	Org                 string `header:"org"`
-	Deployment          string `header:"deployment"`
-	IdleCount           int    `header:"idle"`
-	IdleWithErrorsCount int    `header:"idle with errors"`
-	PendingCount        int    `header:"pending"`
-	RunningCount        int    `header:"running"`
-	ParserErrorsCount   int    `header:"parser errors"`
+	Org                  string `header:"org"`
+	Project              string `header:"project"`
+	DeploymentStatus     string `header:"deployment"`
+	IdleCount            int    `header:"idle"`
+	PendingCount         int    `header:"pending"`
+	RunningCount         int    `header:"running"`
+	ReconcileErrorsCount int    `header:"reconcile errors"`
+	ParseErrorsCount     int    `header:"parse errors"`
 }
 
 func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, project string) (*projectStatusTableRow, error) {
@@ -114,37 +131,63 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 		return nil, err
 	}
 
+	log.Printf("HERE: %v", proj)
+
 	depl := proj.ProdDeployment
-	if depl == nil || depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
-		deplStatus := "hibernated"
-		if depl != nil {
-			deplStatus = depl.StatusMessage
+
+	if depl == nil {
+		return &projectStatusTableRow{
+			Org:              org,
+			Project:          project,
+			DeploymentStatus: "Hibernated",
+		}, nil
+	}
+
+	if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
+		var deplStatus string
+		switch depl.Status {
+		case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_PENDING:
+			deplStatus = "Pending"
+		case adminv1.DeploymentStatus_DEPLOYMENT_STATUS_ERROR:
+			deplStatus = "Error"
+		default:
+			deplStatus = depl.Status.String()
 		}
 
 		return &projectStatusTableRow{
-			Name:         project,
-			Org:          org,
-			Deployment:   deplStatus,
-			IdleCount:    0,
-			PendingCount: 0,
-			RunningCount: 0,
+			Org:              org,
+			Project:          project,
+			DeploymentStatus: deplStatus,
 		}, nil
 	}
 
 	rt, err := runtimeclient.New(depl.RuntimeHost, proj.Jwt)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to runtime: %w", err)
+		return &projectStatusTableRow{
+			Org:              org,
+			Project:          project,
+			DeploymentStatus: fmt.Sprintf("Connection error: %v", err),
+		}, nil
 	}
 
 	res, err := rt.ListResources(ctx, &runtimev1.ListResourcesRequest{InstanceId: depl.RuntimeInstanceId})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list resources: %w", err)
+		msg := err.Error()
+		if s, ok := status.FromError(err); ok {
+			msg = s.Message()
+		}
+
+		return &projectStatusTableRow{
+			Org:              org,
+			Project:          project,
+			DeploymentStatus: fmt.Sprintf("Runtime error: %v", msg),
+		}, nil
 	}
 
 	var parser *runtimev1.ProjectParser
-	var parserErrorsCount int
+	var parseErrorsCount int
 	var idleCount int
-	var idleWithErrorsCount int
+	var reconcileErrorsCount int
 	var pendingCount int
 	var runningCount int
 
@@ -158,11 +201,9 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 
 		switch r.Meta.ReconcileStatus {
 		case runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE:
-			// if it is idle, check if there are any errors
+			idleCount++
 			if r.Meta.GetReconcileError() != "" {
-				idleWithErrorsCount++
-			} else {
-				idleCount++
+				reconcileErrorsCount++
 			}
 		case runtimev1.ReconcileStatus_RECONCILE_STATUS_PENDING:
 			pendingCount++
@@ -173,23 +214,24 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 
 	// check if there are any parser errors
 	if parser.State != nil && len(parser.State.ParseErrors) != 0 {
-		parserErrorsCount++
-	}
-
-	// add deployment status
-	deplStatus := depl.Status.String()
-	if depl.StatusMessage != "" {
-		deplStatus = depl.StatusMessage
+		parseErrorsCount++
 	}
 
 	return &projectStatusTableRow{
-		Name:                project,
-		Org:                 org,
-		Deployment:          deplStatus,
-		IdleCount:           idleCount,
-		IdleWithErrorsCount: idleWithErrorsCount,
-		PendingCount:        pendingCount,
-		RunningCount:        runningCount,
-		ParserErrorsCount:   parserErrorsCount,
+		Org:                  org,
+		Project:              project,
+		DeploymentStatus:     "OK",
+		IdleCount:            idleCount,
+		PendingCount:         pendingCount,
+		RunningCount:         runningCount,
+		ReconcileErrorsCount: reconcileErrorsCount,
+		ParseErrorsCount:     parseErrorsCount,
 	}, nil
+}
+
+func truncMessage(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:(n-3)] + "..."
 }
