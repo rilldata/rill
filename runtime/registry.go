@@ -288,11 +288,14 @@ func (r *registryCache) add(inst *drivers.Instance) {
 	}
 	r.instances[inst.ID] = iwc
 
-	iwc.logger = r.logger.With(zap.String("instance_id", iwc.instanceID))
-
 	// Setup the logger to duplicate logs to a) the Zap logger, b) an in-memory buffer that exposes the logs over the API
 	buffer := logbuffer.NewBuffer(r.rt.opts.ControllerLogBufferCapacity, r.rt.opts.ControllerLogBufferSizeBytes)
-	iwc.logger = zap.New(zapcore.NewTee(iwc.logger.Core(), logutil.NewBufferedZapCore(buffer)))
+	bufferCore := logutil.NewBufferedZapCore(buffer)
+
+	baseCore := r.logger.Core() // Only add instance_id to the base core
+	baseCore = baseCore.With([]zapcore.Field{zap.String("instance_id", iwc.instanceID)})
+
+	iwc.logger = zap.New(zapcore.NewTee(baseCore, bufferCore))
 	iwc.logbuffer = buffer
 
 	r.restartController(iwc)

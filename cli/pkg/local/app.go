@@ -29,6 +29,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"go.uber.org/zap"
+	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -515,6 +516,14 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 		consoleEncoder = zapcore.NewConsoleEncoder(encCfg)
 	}
 
+	// if it's not verbose, skip instance_id field
+	if !isVerbose {
+		consoleEncoder = skipFieldZapEncoder{
+			Encoder: consoleEncoder,
+			fields:  []string{"instance_id"},
+		}
+	}
+
 	core := zapcore.NewTee(
 		fileCore,
 		zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel),
@@ -523,5 +532,48 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 	return zap.New(core, opts...), func() {
 		_ = logger.Sync()
 		luLogger.Close()
+	}
+}
+
+// skipFieldZapEncoder skips fields with the given keys. only string fields are supported.
+type skipFieldZapEncoder struct {
+	zapcore.Encoder
+	fields []string
+}
+
+func (s skipFieldZapEncoder) EncodeEntry(entry zapcore.Entry, fields []zapcore.Field) (*buffer.Buffer, error) {
+	res := make([]zapcore.Field, 0, len(fields))
+	for _, field := range fields {
+		skip := false
+		for _, skipField := range s.fields {
+			if field.Key == skipField {
+				skip = true
+				break
+			}
+		}
+		if !skip {
+			res = append(res, field)
+		}
+	}
+	return s.Encoder.EncodeEntry(entry, res)
+}
+
+func (s skipFieldZapEncoder) Clone() zapcore.Encoder {
+	return skipFieldZapEncoder{
+		Encoder: s.Encoder.Clone(),
+		fields:  s.fields,
+	}
+}
+
+func (s skipFieldZapEncoder) AddString(key, val string) {
+	skip := false
+	for _, skipField := range s.fields {
+		if key == skipField {
+			skip = true
+			break
+		}
+	}
+	if !skip {
+		s.Encoder.AddString(key, val)
 	}
 }
