@@ -1,10 +1,15 @@
+import {
+  createAndExpression,
+  matchExpressionByName,
+  filterExpressions,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
 import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { removeZoneOffset } from "../../../lib/time/timezone";
 import { TimeOffsetType } from "../../../lib/time/types";
-import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
@@ -99,35 +104,18 @@ export function getOrderedStartEnd(start: Date, stop: Date) {
 
 export function getFilterForComparedDimension(
   dimensionName: string,
-  filters: V1MetricsViewFilter,
+  filters: V1Expression,
   topListValues: string[],
 ) {
   const includedValues = topListValues?.slice(0, 250);
 
-  const includeFilter = [...(filters?.include || [])];
-  // Check if dimension already exists in filter
-  const dimensionEntryIndex = includeFilter.findIndex(
-    (filter) => filter.name === dimensionName,
+  let updatedFilter = filterExpressions(
+    filters,
+    (e) => !matchExpressionByName(e, dimensionName),
   );
-
-  if (dimensionEntryIndex >= 0) {
-    includeFilter[dimensionEntryIndex] = {
-      name: dimensionName,
-      in: [],
-    };
+  if (!updatedFilter) {
+    updatedFilter = createAndExpression([]);
   }
-
-  // Add dimension to filter set
-  const updatedFilter = {
-    ...filters,
-    include: [
-      ...includeFilter,
-      {
-        name: dimensionName,
-        in: [],
-      },
-    ],
-  };
 
   return { includedValues, updatedFilter };
 }

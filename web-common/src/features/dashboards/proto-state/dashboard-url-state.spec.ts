@@ -7,14 +7,11 @@ import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashbo
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import {
   AD_BIDS_BID_PRICE_MEASURE,
-  AD_BIDS_DEFAULT_TIME_RANGE,
   AD_BIDS_DEFAULT_URL_TIME_RANGE,
-  AD_BIDS_DOMAIN_DIMENSION,
   AD_BIDS_EXCLUDE_FILTER,
   AD_BIDS_IMPRESSIONS_MEASURE,
   AD_BIDS_INIT,
   AD_BIDS_INIT_WITH_TIME,
-  AD_BIDS_MIRROR_NAME,
   AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIMESTAMP_DIMENSION,
@@ -26,6 +23,10 @@ import {
   TestTimeConstants,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
 import DashboardTestComponent from "@rilldata/web-common/features/dashboards/stores/DashboardTestComponent.svelte";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
@@ -75,15 +76,17 @@ describe("useDashboardUrlSync", () => {
   });
 
   it("Changes to dashboard through interactions", async () => {
-    const { teardown, defaultProtoStore } = await initDashboardUrlState();
+    const { teardown, defaultProtoStore, stateManagers } =
+      await initDashboardUrlState();
+    const {
+      actions: {
+        dimensionsFilter: { toggleDimensionValueSelection },
+      },
+    } = stateManagers;
 
     expect(pageMock.gotoSpy).toBeCalledTimes(0);
 
-    metricsExplorerStore.toggleFilter(
-      AD_BIDS_NAME,
-      AD_BIDS_PUBLISHER_DIMENSION,
-      "Google",
-    );
+    toggleDimensionValueSelection(AD_BIDS_PUBLISHER_DIMENSION, "Google");
     await wait();
     assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
     const protoWithFilter =
@@ -94,24 +97,21 @@ describe("useDashboardUrlSync", () => {
     expect(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto).toEqual(
       get(defaultProtoStore).proto,
     );
-    expect(get(metricsExplorerStore).entities[AD_BIDS_NAME].filters).toEqual({
-      include: [],
-      exclude: [],
-    });
+    expect(
+      get(metricsExplorerStore).entities[AD_BIDS_NAME].whereFilter,
+    ).toEqual(createAndExpression([]));
     expect(pageMock.gotoSpy).toBeCalledTimes(2);
 
     pageMock.updateState(protoWithFilter);
     await wait();
     assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
-    expect(get(metricsExplorerStore).entities[AD_BIDS_NAME].filters).toEqual({
-      include: [
-        {
-          name: AD_BIDS_PUBLISHER_DIMENSION,
-          in: ["Google"],
-        },
-      ],
-      exclude: [],
-    });
+    expect(
+      get(metricsExplorerStore).entities[AD_BIDS_NAME].whereFilter,
+    ).toEqual(
+      createAndExpression([
+        createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google"]),
+      ]),
+    );
     expect(pageMock.gotoSpy).toBeCalledTimes(2);
 
     teardown();
@@ -152,102 +152,6 @@ describe("useDashboardUrlSync", () => {
       AD_BIDS_NAME,
       AD_BIDS_EXCLUDE_FILTER,
       AD_BIDS_DEFAULT_URL_TIME_RANGE,
-    );
-
-    teardown();
-  });
-
-  // There is little ROI to keep this as a unit test.
-  // TODO: add an E2E instead
-  it.skip("Changing active dashboard", async () => {
-    const { teardown, stateManagers } = await initDashboardUrlState();
-    dashboardFetchMocks.mockMetricsView(
-      AD_BIDS_MIRROR_NAME,
-      AD_BIDS_INIT_WITH_TIME,
-    );
-
-    metricsExplorerStore.toggleFilter(
-      AD_BIDS_NAME,
-      AD_BIDS_PUBLISHER_DIMENSION,
-      "Google",
-    );
-    await wait();
-    assertUrlState(get(metricsExplorerStore).entities[AD_BIDS_NAME].proto);
-    assertMetricsView(
-      AD_BIDS_NAME,
-      {
-        include: [
-          {
-            name: AD_BIDS_PUBLISHER_DIMENSION,
-            in: ["Google"],
-          },
-        ],
-        exclude: [],
-      },
-      AD_BIDS_DEFAULT_TIME_RANGE,
-    );
-
-    // Go to AdBids_mirror
-    pageMock.goto(`/dashboard/${AD_BIDS_MIRROR_NAME}`);
-    stateManagers.setMetricsViewName(AD_BIDS_MIRROR_NAME);
-    await wait();
-    metricsExplorerStore.toggleFilter(
-      AD_BIDS_MIRROR_NAME,
-      AD_BIDS_DOMAIN_DIMENSION,
-      "www.google.com",
-    );
-    await wait();
-    assertUrlState(
-      get(metricsExplorerStore).entities[AD_BIDS_MIRROR_NAME].proto,
-    );
-    assertMetricsView(
-      AD_BIDS_MIRROR_NAME,
-      {
-        include: [
-          {
-            name: AD_BIDS_DOMAIN_DIMENSION,
-            in: ["www.google.com"],
-          },
-        ],
-        exclude: [],
-      },
-      AD_BIDS_DEFAULT_TIME_RANGE,
-    );
-
-    // Going back to AdBids should retain the selected filters
-    pageMock.goto(`/dashboard/${AD_BIDS_NAME}`);
-    stateManagers.setMetricsViewName(AD_BIDS_NAME);
-    await wait();
-    assertMetricsView(
-      AD_BIDS_NAME,
-      {
-        include: [
-          {
-            name: AD_BIDS_PUBLISHER_DIMENSION,
-            in: ["Google"],
-          },
-        ],
-        exclude: [],
-      },
-      AD_BIDS_DEFAULT_TIME_RANGE,
-    );
-
-    // Going back to AdBids_mirror should retain the selected filters
-    pageMock.goto(`/dashboard/${AD_BIDS_MIRROR_NAME}`);
-    stateManagers.setMetricsViewName(AD_BIDS_MIRROR_NAME);
-    await wait();
-    assertMetricsView(
-      AD_BIDS_MIRROR_NAME,
-      {
-        include: [
-          {
-            name: AD_BIDS_DOMAIN_DIMENSION,
-            in: ["www.google.com"],
-          },
-        ],
-        exclude: [],
-      },
-      AD_BIDS_DEFAULT_TIME_RANGE,
     );
 
     teardown();

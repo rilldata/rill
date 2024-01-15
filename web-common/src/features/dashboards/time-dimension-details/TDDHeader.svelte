@@ -40,6 +40,12 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
+  const {
+    actions: {
+      dimensionsFilter: { toggleDimensionFilterMode },
+    },
+  } = getStateManagers();
+
   $: metaQuery = useMetaQuery(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
 
@@ -92,7 +98,7 @@
 
   function toggleFilterMode() {
     cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
+    toggleDimensionFilterMode(dimensionName);
   }
 
   function switchMeasure(event) {
@@ -110,7 +116,7 @@
         <Row size="16px" /> Rows
       </div>
 
-      <ComparisonSelector {metricViewName} chipStyle />
+      <ComparisonSelector chipStyle {metricViewName} />
     </div>
 
     <div class="flex items-center gap-x-2 pl-2">

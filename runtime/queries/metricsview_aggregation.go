@@ -414,7 +414,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	groupCols := make([]string, 0, len(q.Dimensions))
 	unnestClauses := make([]string, 0)
-	args := []any{}
+	var args []any
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -427,7 +427,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if unnestClause != "" {
 				unnestClauses = append(unnestClauses, unnestClause)
 			}
-			groupCols = append(groupCols, safeName(d.Name))
+			groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)))
 			continue
 		}
 
@@ -437,7 +437,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			return "", nil, err
 		}
 		selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(d.Name)))
-		groupCols = append(groupCols, expr)
+		// Using expr was causing issues with query arg expansion in duckdb.
+		// Using column name is not possible either since it will take the original column name instead of the aliased column name
+		// But using numbered group we can exactly target the correct selected column.
+		// Note that the non-timestamp columns also use the numbered group-by for constancy.
+		groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)))
 		args = append(args, exprArgs...)
 	}
 
