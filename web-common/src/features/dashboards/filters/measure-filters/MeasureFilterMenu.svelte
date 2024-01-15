@@ -67,7 +67,7 @@
     validationSchema: yup.object({
       dimension: yup.string().required("Required"),
       operation: yup.string().required("Required"),
-      value1: yup.number().required("Required"),
+      value1: yup.number().required(),
       value2: yup.number(),
     }),
     onSubmit: (values) => {
@@ -146,12 +146,14 @@
           // TODO: focus next input if isBetweenExpression
           handleSubmit(e);
         }}
+        placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
       />
       {#if isBetweenExpression}
         <InputV2
           bind:value={$form["value2"]}
           error={$errors["value2"]}
           id="value2"
+          placeholder="Higher Value"
           on:change={handleSubmit}
           on:enter-pressed={handleSubmit}
         />
