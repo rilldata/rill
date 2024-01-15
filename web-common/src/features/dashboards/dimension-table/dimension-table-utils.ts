@@ -42,9 +42,6 @@ export function updateFilterOnSearch(
   dimensionName: string,
 ): V1Expression | undefined {
   if (!filterForDimension) return undefined;
-  const filterSet = JSON.parse(
-    JSON.stringify(filterForDimension),
-  ) as V1Expression;
   const addNull = "null".includes(searchText);
   if (searchText !== "") {
     let cond: V1Expression;
@@ -58,23 +55,23 @@ export function updateFilterOnSearch(
       cond = createLikeExpression(dimensionName, `%${searchText}%`);
     }
 
-    const filterIdx = filterSet.cond?.exprs?.findIndex((e) =>
+    const filterIdx = filterForDimension.cond?.exprs?.findIndex((e) =>
       matchExpressionByName(e, dimensionName),
     );
     if (filterIdx === undefined || filterIdx === -1) {
-      filterSet.cond?.exprs?.push(cond);
+      filterForDimension.cond?.exprs?.push(cond);
     } else {
-      filterSet.cond?.exprs?.splice(filterIdx, 0, cond);
+      filterForDimension.cond?.exprs?.splice(filterIdx, 0, cond);
     }
   } else {
     filterExpressions(
-      filterSet,
+      filterForDimension,
       (e) =>
         e.cond?.op === V1Operation.OPERATION_LIKE ||
         e.cond?.op === V1Operation.OPERATION_NLIKE,
     );
   }
-  return filterSet;
+  return filterForDimension;
 }
 
 export function getDimensionFilterWithSearch(

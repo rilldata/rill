@@ -7,57 +7,57 @@ export function createLikeExpression(
   ident: string,
   like: string,
   negate = false,
-) {
+): V1Expression {
   return {
     cond: {
       op: negate ? V1Operation.OPERATION_NLIKE : V1Operation.OPERATION_LIKE,
       exprs: [{ ident }, { val: like }],
     },
-  } as V1Expression;
+  };
 }
 
 export function createInExpression(
   ident: string,
-  vals: Array<any>,
+  vals: any[],
   negate = false,
-) {
+): V1Expression {
   return {
     cond: {
       op: negate ? V1Operation.OPERATION_NIN : V1Operation.OPERATION_IN,
       exprs: [{ ident }, ...vals.map((val) => ({ val }))],
     },
-  } as V1Expression;
+  };
 }
 
-export function createAndExpression(exprs: Array<V1Expression>) {
+export function createAndExpression(exprs: V1Expression[]): V1Expression {
   return {
     cond: {
       op: V1Operation.OPERATION_AND,
       exprs,
     },
-  } as V1Expression;
+  };
 }
 
-export function createOrExpression(exprs: Array<V1Expression>) {
+export function createOrExpression(exprs: V1Expression[]): V1Expression {
   return {
     cond: {
       op: V1Operation.OPERATION_OR,
       exprs,
     },
-  } as V1Expression;
+  };
 }
 
 export function createBinaryExpression(
   ident: string,
   op: V1Operation,
   val: number,
-) {
+): V1Expression {
   return {
     cond: {
       op,
       exprs: [{ ident }, { val }],
     },
-  } as V1Expression;
+  };
 }
 
 export function createBetweenExpression(
@@ -65,8 +65,8 @@ export function createBetweenExpression(
   val1: number,
   val2: number,
   negate: boolean,
-) {
-  const exprs = [
+): V1Expression {
+  const exprs: V1Expression[] = [
     {
       cond: {
         op: negate ? V1Operation.OPERATION_LTE : V1Operation.OPERATION_GT,
@@ -79,7 +79,7 @@ export function createBetweenExpression(
         exprs: [{ ident }, { val: val2 }],
       },
     },
-  ] as Array<V1Expression>;
+  ];
   if (negate) {
     return createOrExpression(exprs);
   } else {
@@ -147,7 +147,7 @@ export function filterExpressions(
       op: expr.cond.op,
       exprs: expr.cond.exprs
         .map((e) => filterExpressions(e, checker))
-        .filter((e) => e !== undefined && checker(e)) as Array<V1Expression>,
+        .filter((e) => e !== undefined && checker(e)) as V1Expression[],
     },
   };
 
@@ -168,12 +168,12 @@ export function filterExpressions(
   return newExpr;
 }
 
-export function getValueIndexInExpression(expr: V1Expression, value: any) {
+export function getValueIndexInExpression(expr: V1Expression, value: string) {
   return expr.cond?.exprs?.findIndex((e, i) => i > 0 && e.val === value);
 }
 
-export function getValuesInExpression(expr?: V1Expression) {
-  return expr ? (expr.cond?.exprs?.slice(1).map((e) => e.val) as any[]) : [];
+export function getValuesInExpression(expr?: V1Expression): any[] {
+  return expr ? expr.cond?.exprs?.slice(1).map((e) => e.val) ?? [] : [];
 }
 
 export const matchExpressionByName = (e: V1Expression, name: string) => {

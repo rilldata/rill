@@ -101,7 +101,7 @@ export function getDimensionFilterItems(
   return (dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>) => {
     if (!dashData.dashboard.whereFilter) return [];
 
-    const filteredDimensions = new Array<DimensionFilterItem>();
+    const filteredDimensions: DimensionFilterItem[] = [];
     const addedDimension = new Set<string>();
     forEachExpression(dashData.dashboard.whereFilter, (e) => {
       if (
@@ -139,7 +139,7 @@ export const getAllDimensionFilterItems = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) => {
   return (
-    dimensionFilterItem: Array<DimensionFilterItem>,
+    dimensionFilterItem: DimensionFilterItem[],
     dimensionIdMap: Map<string, MetricsViewSpecDimensionV2>,
   ) => {
     const allDimensionFilterItem = [...dimensionFilterItem];

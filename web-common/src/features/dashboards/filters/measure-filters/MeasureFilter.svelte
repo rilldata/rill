@@ -2,7 +2,6 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import {
     ChipColors,
-    defaultChipColors,
     measureChipColors,
   } from "@rilldata/web-common/components/chip/chip-types";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
