@@ -38,8 +38,7 @@ export default async function exportTDD({
             {
               name: timeDimension,
               timeGrain: dashboard.selectedTimeRange?.interval,
-              // TODO: providing the timeZone triggers a 500 error
-              // timeZone: dashboard.selectedTimezone,
+              timeZone: dashboard.selectedTimezone,
             },
           ],
           filter: dashboard.filters,
