@@ -100,7 +100,11 @@ func (c *connection) startJob(ctx context.Context, j *bulkJob) error {
 			}
 
 			if batchInfo.State == "NotProcessed" {
+				// batches have been created
 				break
+			}
+			if batchInfo.State == "Failed" {
+				return errors.New("bulk query failed: " + batchInfo.StateMessage)
 			}
 			c.logger.Info("Waiting for pk chunking to complete")
 			select {
