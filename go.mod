@@ -286,7 +286,7 @@ require (
 
 // using a patch with changes to support decimal256
 // revert to original SDK on next duckDB release
-replace github.com/marcboeker/go-duckdb v1.5.6 => github.com/rilldata/go-duckdb v0.0.0-20240108132007-425eb7d327ed
+replace github.com/marcboeker/go-duckdb v1.5.6 => github.com/rilldata/go-duckdb v0.0.0-20240115095655-c0471eb20698
 
 // snowflake uses arrow v12 but we need arrow v14 so we need to use a fork of snowflake upgraded to v14
 // revert to original SDK once this PR is merged : https://github.com/snowflakedb/gosnowflake/pull/977
