@@ -86,10 +86,7 @@ const defaultGenericNumTestCases: [number, string][] = [
 describe("range formatter, using default options for generic nums, `.stringFormat()`", () => {
   defaultGenericNumTestCases.forEach(([input, output]) => {
     it(`returns the correct string in case: ${input}`, () => {
-      const formatter = new PerRangeFormatter(
-        [input],
-        defaultGenericNumOptions,
-      );
+      const formatter = new PerRangeFormatter(defaultGenericNumOptions);
       expect(formatter.stringFormat(input)).toEqual(output);
     });
   });
