@@ -104,7 +104,7 @@ export function leaderboardSortedQueryOptions(
       !!getFiltersForOtherDimensions(dashData)(dimensionName);
     return {
       query: {
-        enabled: sortedQueryEnabled && resolvedMeasureFilter.isReady,
+        enabled: sortedQueryEnabled && resolvedMeasureFilter.ready,
       },
     };
   };

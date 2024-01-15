@@ -1,9 +1,11 @@
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createAndExpression,
   createInExpression,
   getAllIdentifiers,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   createQueryServiceMetricsViewToplist,
@@ -14,7 +16,7 @@ import type { QueryClient } from "@tanstack/svelte-query";
 import { derived, get, Readable } from "svelte/store";
 
 export type ResolvedMeasureFilter = {
-  isReady: boolean;
+  ready: boolean;
   filter: V1Expression | undefined;
 };
 
@@ -53,14 +55,14 @@ export function prepareMeasureFilterResolutions(
     (toplists) => {
       if (toplists.some((t) => t.isFetching) || toplists.some((t) => !t.data)) {
         return {
-          isReady: false,
+          ready: false,
           filter: undefined,
         };
       }
 
       if (toplists.length === 0) {
         return {
-          isReady: true,
+          ready: true,
           filter: undefined,
         };
       }
@@ -79,9 +81,24 @@ export function prepareMeasureFilterResolutions(
       );
 
       return {
-        isReady: true,
+        ready: true,
         filter,
       };
+    },
+  );
+}
+
+export function measureFilterResolutionsStore(
+  ctx: StateManagers,
+): Readable<ResolvedMeasureFilter> {
+  return derived(
+    [ctx.dashboardStore, useTimeControlStore(ctx)],
+    ([dashboard, timeControlState], set) => {
+      prepareMeasureFilterResolutions(
+        dashboard,
+        timeControlState,
+        ctx.queryClient,
+      ).subscribe(set);
     },
   );
 }

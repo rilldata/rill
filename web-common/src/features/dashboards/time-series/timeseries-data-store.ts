@@ -1,3 +1,7 @@
+import {
+  measureFilterResolutionsStore,
+  ResolvedMeasureFilter,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
@@ -35,7 +39,8 @@ export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
 
 function createMetricsViewTimeSeries(
   ctx: StateManagers,
-  measures,
+  measures: string[],
+  filterResolution: ResolvedMeasureFilter,
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewTimeSeriesResponse> {
   return derived(
@@ -51,7 +56,10 @@ function createMetricsViewTimeSeries(
         metricViewName,
         {
           measureNames: measures,
-          where: sanitiseExpression(dashboardStore?.whereFilter),
+          where: sanitiseExpression(
+            dashboardStore?.whereFilter,
+            filterResolution.filter,
+          ),
           timeStart: isComparison
             ? timeControls.comparisonAdjustedStart
             : timeControls.adjustedStart,
@@ -80,9 +88,18 @@ function createMetricsViewTimeSeries(
 
 export function createTimeSeriesDataStore(ctx: StateManagers) {
   return derived(
-    [useMetaQuery(ctx), useTimeControlStore(ctx), ctx.dashboardStore],
-    ([metricsView, timeControls, dashboardStore], set) => {
-      if (!timeControls.ready || timeControls.isFetching) {
+    [
+      useMetaQuery(ctx),
+      useTimeControlStore(ctx),
+      ctx.dashboardStore,
+      measureFilterResolutionsStore(ctx),
+    ],
+    ([metricsView, timeControls, dashboardStore, filterResolutions], set) => {
+      if (
+        !timeControls.ready ||
+        timeControls.isFetching ||
+        !filterResolutions.ready
+      ) {
         set({
           isFetching: true,
         });
@@ -110,13 +127,20 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
       const primaryTimeSeries = createMetricsViewTimeSeries(
         ctx,
         measures,
+        filterResolutions,
         false,
       );
-      const primaryTotals = createTotalsForMeasure(ctx, measures, false);
+      const primaryTotals = createTotalsForMeasure(
+        ctx,
+        measures,
+        filterResolutions,
+        false,
+      );
 
       const unfilteredTotals = createTotalsForMeasure(
         ctx,
         measures,
+        filterResolutions,
         false,
         true,
       );
@@ -128,8 +152,18 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         | CreateQueryResult<V1MetricsViewAggregationResponse, unknown>
         | Writable<null> = writable(null);
       if (showComparison) {
-        comparisonTimeSeries = createMetricsViewTimeSeries(ctx, measures, true);
-        comparisonTotals = createTotalsForMeasure(ctx, measures, true);
+        comparisonTimeSeries = createMetricsViewTimeSeries(
+          ctx,
+          measures,
+          filterResolutions,
+          true,
+        );
+        comparisonTotals = createTotalsForMeasure(
+          ctx,
+          measures,
+          filterResolutions,
+          true,
+        );
       }
 
       let dimensionTimeSeriesCharts:

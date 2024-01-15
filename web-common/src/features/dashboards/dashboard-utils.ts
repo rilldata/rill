@@ -1,4 +1,3 @@
-import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   QueryServiceMetricsViewComparisonBody,
@@ -58,15 +57,6 @@ export function prepareSortedQueryBody(
 
   const querySortType = getQuerySortType(sortType);
 
-  let where = sanitiseExpression(whereFilterForDimension);
-  if (havingFilterForDimension) {
-    if (!where) {
-      where = havingFilterForDimension;
-    } else {
-      where.cond?.exprs?.push(...(havingFilterForDimension.cond?.exprs ?? []));
-    }
-  }
-
   return {
     dimension: {
       name: dimensionName,
@@ -89,7 +79,10 @@ export function prepareSortedQueryBody(
         sortType: querySortType,
       },
     ],
-    where,
+    where: sanitiseExpression(
+      whereFilterForDimension,
+      havingFilterForDimension,
+    ),
     limit: "250",
     offset: "0",
   };

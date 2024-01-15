@@ -191,7 +191,18 @@ export const matchExpressionByName = (e: V1Expression, name: string) => {
   return e.cond?.exprs?.[0].ident === name;
 };
 
-export const sanitiseExpression = (e: V1Expression | undefined) => {
-  if (!e?.cond?.exprs?.length) return undefined;
-  return e;
+export const sanitiseExpression = (
+  where: V1Expression | undefined,
+  having: V1Expression | undefined,
+) => {
+  if (!having) {
+    if (!where?.cond?.exprs?.length) return undefined;
+    return where;
+  }
+  if (!where?.cond?.exprs?.length) {
+    where = having;
+  } else {
+    where.cond?.exprs?.push(...(having.cond?.exprs ?? []));
+  }
+  return where;
 };
