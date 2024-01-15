@@ -2,6 +2,7 @@ import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/
 import type { DashboardDataSources } from "@rilldata/web-common/features/dashboards/state-managers/selectors/types";
 import type { AtLeast } from "@rilldata/web-common/features/dashboards/state-managers/types";
 import {
+  createAndExpression,
   forEachExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
@@ -22,10 +23,32 @@ export const getMeasureFilterForDimensionIndex = (
 export const getMeasureFilterForDimension = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) => {
-  return (dimensionName: string) =>
-    dashData.dashboard.dimensionThresholdFilters.find(
-      (dtf) => dtf.name === dimensionName,
-    );
+  return (_: string) => {
+    const andExpr = createAndExpression([]);
+    dashData.dashboard.dimensionThresholdFilters.forEach(({ filter }) => {
+      if (filter.cond?.exprs?.length) {
+        andExpr.cond?.exprs?.push(...filter.cond.exprs);
+      }
+    });
+    return andExpr;
+  };
+
+  // return (dimensionName: string) =>
+  //   dashData.dashboard.dimensionThresholdFilters.find(
+  //     (dtf) => dtf.name === dimensionName,
+  //   );
+};
+
+export const additionalMeasures = (
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
+) => {
+  const measures = new Set<string>([dashData.dashboard.leaderboardMeasureName]);
+  forEachExpression(getMeasureFilterForDimension(dashData)(""), (e) => {
+    if (e.ident) {
+      measures.add(e.ident);
+    }
+  });
+  return [...measures];
 };
 
 const matchHavingExpressionByName = (e: V1Expression, name: string) =>

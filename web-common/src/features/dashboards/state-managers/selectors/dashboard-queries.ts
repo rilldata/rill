@@ -1,4 +1,7 @@
-import { getMeasureFilterForDimension } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
+import {
+  additionalMeasures,
+  getMeasureFilterForDimension,
+} from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   QueryServiceMetricsViewComparisonBody,
@@ -45,7 +48,7 @@ export function dimensionTableSortedQueryBody(
     sortingSelectors.sortType(dashData),
     sortingSelectors.sortedAscending(dashData),
     filters,
-    getMeasureFilterForDimension(dashData)(dimensionName)?.filter,
+    getMeasureFilterForDimension(dashData)(dimensionName),
   );
 }
 
@@ -69,13 +72,13 @@ export function leaderboardSortedQueryBody(
   return (dimensionName: string) =>
     prepareSortedQueryBody(
       dimensionName,
-      [activeMeasureName(dashData)],
+      additionalMeasures(dashData),
       timeControlsState(dashData),
       sortingSelectors.sortMeasure(dashData),
       sortingSelectors.sortType(dashData),
       sortingSelectors.sortedAscending(dashData),
       getFiltersForOtherDimensions(dashData)(dimensionName),
-      getMeasureFilterForDimension(dashData)(dimensionName)?.filter,
+      getMeasureFilterForDimension(dashData)(dimensionName),
     );
 }
 

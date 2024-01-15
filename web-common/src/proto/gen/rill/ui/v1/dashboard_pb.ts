@@ -39,9 +39,9 @@ export class DashboardState extends Message<DashboardState> {
   /**
    * Expression format for measure filters
    *
-   * @generated from field: rill.runtime.v1.Expression having = 21;
+   * @generated from field: repeated rill.ui.v1.DashboardDimensionFilter having = 21;
    */
-  having?: Expression;
+  having: DashboardDimensionFilter[] = [];
 
   /**
    * Selected time granularity
@@ -153,7 +153,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 1, name: "time_range", kind: "message", T: DashboardTimeRange },
     { no: 2, name: "filters", kind: "message", T: MetricsViewFilter },
     { no: 20, name: "where", kind: "message", T: Expression },
-    { no: 21, name: "having", kind: "message", T: Expression },
+    { no: 21, name: "having", kind: "message", T: DashboardDimensionFilter, repeated: true },
     { no: 3, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 4, name: "compare_time_range", kind: "message", T: DashboardTimeRange },
     { no: 5, name: "leaderboard_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -255,7 +255,7 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortDirection, "rill.ui.v1.Das
 ]);
 
 /**
- * *
+ *
  * SortType is used to determine how to sort the leaderboard
  * and dimension detail table, as well as where to place the
  * sort arrow.
@@ -366,6 +366,49 @@ export class DashboardTimeRange extends Message<DashboardTimeRange> {
 
   static equals(a: DashboardTimeRange | PlainMessage<DashboardTimeRange> | undefined, b: DashboardTimeRange | PlainMessage<DashboardTimeRange> | undefined): boolean {
     return proto3.util.equals(DashboardTimeRange, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ui.v1.DashboardDimensionFilter
+ */
+export class DashboardDimensionFilter extends Message<DashboardDimensionFilter> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.Expression filter = 2;
+   */
+  filter?: Expression;
+
+  constructor(data?: PartialMessage<DashboardDimensionFilter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ui.v1.DashboardDimensionFilter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "filter", kind: "message", T: Expression },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardDimensionFilter {
+    return new DashboardDimensionFilter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DashboardDimensionFilter {
+    return new DashboardDimensionFilter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DashboardDimensionFilter {
+    return new DashboardDimensionFilter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DashboardDimensionFilter | PlainMessage<DashboardDimensionFilter> | undefined, b: DashboardDimensionFilter | PlainMessage<DashboardDimensionFilter> | undefined): boolean {
+    return proto3.util.equals(DashboardDimensionFilter, a, b);
   }
 }
 
