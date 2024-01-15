@@ -440,7 +440,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		// Using expr was causing issues with query arg expansion in duckdb.
 		// Using column name is not possible either since it will take the original column name instead of the aliased column name
 		// But using numbered group we can exactly target the correct selected column.
-		// Note that non-timestamp columns also use numbered group by for constancy.
+		// Note that the non-timestamp columns also use the numbered group-by for constancy.
 		groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)))
 		args = append(args, exprArgs...)
 	}
