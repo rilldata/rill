@@ -1,8 +1,7 @@
 <!-- @component
 The main feature-set component for dashboard filters
  -->
-<script context="module" lang="ts">
-  import { writable } from "svelte/store";
+<script lang="ts">
   import {
     Chip,
     ChipContainer,
@@ -16,28 +15,24 @@ The main feature-set component for dashboard filters
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
   import { useMetaQuery, getFilterSearchList } from "../selectors/index";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
-  import { clearAllFilters, toggleFilterMode } from "../actions";
   import FilterButton from "./FilterButton.svelte";
-  import { formatFilters } from "./formatFilters";
-  import { getDisplayName } from "./getDisplayName";
 
-  export const potentialFilterName = writable<string | null>(null);
-</script>
-
-<script lang="ts">
   const StateManagers = getStateManagers();
-
   const {
     dashboardStore,
     actions: {
       dimensionsFilter: {
-        toggleDimensionNameSelection,
         toggleDimensionValueSelection,
+        toggleDimensionFilterMode,
+        removeDimensionFilter,
       },
+      filters: { clearAllFilters },
+    },
+    selectors: {
+      dimensionFilters: { getDimensionFilterItems, getAllDimensionFilterItems },
     },
   } = StateManagers;
 
@@ -53,8 +48,6 @@ The main feature-set component for dashboard filters
   let allValues: Record<string, string[]> = {};
   let activeDimensionName: string;
   let topListQuery: ReturnType<typeof getFilterSearchList> | undefined;
-
-  $: filters = $dashboardStore.filters;
 
   $: activeColumn =
     dimensions.find((d) => d.name === activeDimensionName)?.column ??
@@ -74,32 +67,19 @@ The main feature-set component for dashboard filters
       topListData.map((datum) => datum[activeColumn]) ?? [];
   }
 
-  $: hasFilters = isFiltered($dashboardStore.filters);
-
   $: dimensionIdMap = getMapFromArray(
     dimensions,
     (dimension) => dimension.name as string,
   );
 
-  $: currentFormattedFilters = formatFilters(
-    Object.values(filters).flat(),
+  $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
+  // hasFilter only checks for complete filters and excludes temporary ones
+  $: hasFilters = currentDimensionFilters.length > 0;
+
+  $: allDimensionFilters = $getAllDimensionFilterItems(
+    currentDimensionFilters,
     dimensionIdMap,
   );
-
-  $: temporaryFilter = $potentialFilterName
-    ? [
-        {
-          name: $potentialFilterName,
-          label: getDisplayName(dimensionIdMap.get($potentialFilterName)),
-          selectedValues: [],
-        },
-      ]
-    : [];
-
-  $: currentDimensionFilters = [
-    ...currentFormattedFilters,
-    ...temporaryFilter,
-  ].sort((a, b) => (a.name > b.name ? 1 : -1));
 
   function setActiveDimension(name: string, value = "") {
     activeDimensionName = name;
@@ -108,11 +88,6 @@ The main feature-set component for dashboard filters
 
   function getColorForChip(isInclude: boolean) {
     return isInclude ? defaultChipColors : excludeChipColors;
-  }
-
-  function isFiltered(filters: V1MetricsViewFilter): boolean {
-    if (!filters || !filters.include || !filters.exclude) return false;
-    return filters.include.length > 0 || filters.exclude.length > 0;
   }
 </script>
 
@@ -132,7 +107,7 @@ The main feature-set component for dashboard filters
   </div>
 
   <ChipContainer>
-    {#if !currentDimensionFilters.length}
+    {#if !allDimensionFilters.length}
       <div
         in:fly|local={{ duration: 200, x: 8 }}
         class="ui-copy-disabled grid items-center"
@@ -141,18 +116,14 @@ The main feature-set component for dashboard filters
         No filters selected
       </div>
     {:else}
-      {#each currentDimensionFilters as { name, label, selectedValues } (name)}
+      {#each allDimensionFilters as { name, label, selectedValues } (name)}
         {@const isInclude =
           !$dashboardStore.dimensionFilterExcludeMode.get(name)}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
-            on:toggle={() => toggleFilterMode(StateManagers, name)}
+            on:toggle={() => toggleDimensionFilterMode(name)}
             on:remove={() => {
-              if ($potentialFilterName) {
-                $potentialFilterName = null;
-              } else {
-                toggleDimensionNameSelection(name);
-              }
+              removeDimensionFilter(name);
             }}
             on:apply={(event) => {
               toggleDimensionValueSelection(name, event.detail, true);
@@ -168,7 +139,7 @@ The main feature-set component for dashboard filters
             }}
             typeLabel="dimension"
             name={isInclude ? label : `Exclude ${label}`}
-            excludeMode={isInclude ? false : true}
+            excludeMode={!isInclude}
             colors={getColorForChip(isInclude)}
             label="View filter"
             {selectedValues}
@@ -183,10 +154,10 @@ The main feature-set component for dashboard filters
     {/if}
     <FilterButton
       on:focus={({ detail: { name } }) => {
-        activeDimensionName = name;
+        setActiveDimension(name);
       }}
       on:hover={({ detail: { name } }) => {
-        activeDimensionName = name;
+        setActiveDimension(name);
       }}
     />
     <!-- if filters are present, place a chip at the end of the flex container 
@@ -199,7 +170,7 @@ The main feature-set component for dashboard filters
           textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
           bgActiveClass="bg-gray-200 dark:bg-gray-600"
           outlineClass="outline-gray-400"
-          on:click={() => clearAllFilters(StateManagers)}
+          on:click={clearAllFilters}
         >
           <span slot="icon" class="ui-copy-disabled-faint">
             <FilterRemove size="16px" />

@@ -3,6 +3,7 @@ import {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   contextColWidthDefaults,
   type MetricsExplorerEntity,
@@ -133,6 +134,8 @@ export function getDefaultMetricsExplorerEntity(
       include: [],
       exclude: [],
     },
+    whereFilter: createAndExpression([]),
+    havingFilter: createAndExpression([]),
     dimensionFilterExcludeMode: new Map(),
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
     dashboardSortType: SortType.VALUE,
@@ -140,6 +143,7 @@ export function getDefaultMetricsExplorerEntity(
 
     showTimeComparison: false,
     dimensionSearchText: "",
+    temporaryFilterName: null,
     pinIndex: -1,
     contextColumnWidths: { ...contextColWidthDefaults },
   };
