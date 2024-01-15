@@ -1,3 +1,4 @@
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type {
   V1ExportFormat,
@@ -56,10 +57,10 @@ export default async function exportToplist({
             {
               name: dashboard.leaderboardMeasureName,
               desc: dashboard.sortDirection === SortDirection.DESCENDING,
-              type: getQuerySortType(dashboard.dashboardSortType),
+              sortType: getQuerySortType(dashboard.dashboardSortType),
             },
           ],
-          filter: dashboard.filters,
+          where: sanitiseExpression(dashboard.whereFilter),
           limit: undefined, // the backend handles export limits
           offset: "0",
         },

@@ -14,7 +14,8 @@ export class Debounce {
       id,
       setTimeout(() => {
         this.debounceMap.delete(id);
-        this.callbackMap.get(id)();
+        const callback = this.callbackMap.get(id);
+        if (callback) callback();
       }, time),
     );
   }

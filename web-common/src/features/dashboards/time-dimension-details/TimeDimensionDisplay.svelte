@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { timeFormat } from "d3-time-format";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
@@ -29,11 +26,18 @@
 
   const queryClient = useQueryClient();
 
-  const timeDimensionDataStore = useTimeDimensionDataStore(getStateManagers());
-  const timeControlStore = useTimeControlStore(getStateManagers());
+  const stateManagers = getStateManagers();
+  const {
+    dashboardStore,
+    actions: {
+      dimensionsFilter: { toggleDimensionValueSelection },
+    },
+  } = getStateManagers();
 
-  $: metaQuery = useMetaQuery(getStateManagers());
-  $: dashboardStore = useDashboardStore(metricViewName);
+  const timeDimensionDataStore = useTimeDimensionDataStore(stateManagers);
+  const timeControlStore = useTimeControlStore(stateManagers);
+
+  $: metaQuery = useMetaQuery(stateManagers);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
 
   $: timeGrain = $timeControlStore.selectedTimeRange?.interval;
@@ -100,8 +104,7 @@
   }
 
   function toggleFilter(e) {
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilter(metricViewName, dimensionName, e.detail);
+    toggleDimensionValueSelection(dimensionName, e.detail);
   }
 
   function toggleAllSearchItems() {
@@ -159,12 +162,12 @@
 </script>
 
 <TDDHeader
-  {dimensionName}
-  {metricViewName}
-  isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
-  comparing={$timeDimensionDataStore?.comparing}
   {areAllTableRowsSelected}
+  comparing={$timeDimensionDataStore?.comparing}
+  {dimensionName}
+  isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
   isRowsEmpty={!rowHeaderLabels.length}
+  {metricViewName}
   on:search={(e) => {
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setSearchText(metricViewName, e.detail);

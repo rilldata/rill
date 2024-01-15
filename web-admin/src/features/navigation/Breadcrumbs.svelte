@@ -14,6 +14,7 @@
     createAdminServiceListProjectsForOrganization,
   } from "../../client";
   import { useDashboards } from "../dashboards/listing/selectors";
+  import { LOCAL_STORAGE_ACTIVE_ORG_KEY } from "../organizations/activeOrg";
   import { useReports } from "../scheduled-reports/selectors";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
   import OrganizationAvatar from "./OrganizationAvatar.svelte";
@@ -37,6 +38,10 @@
     },
   });
   $: onOrganizationPage = isOrganizationPage($page);
+  async function onOrgChange(org: string) {
+    localStorage.setItem(LOCAL_STORAGE_ACTIVE_ORG_KEY, org);
+    await goto(`/${org}`);
+  }
 
   // Project breadcrumb
   $: projectName = $page.params.project;
@@ -81,7 +86,7 @@
             main: org.name,
           }))}
         menuKey={orgName}
-        onSelectMenuOption={(organization) => goto(`/${organization}`)}
+        onSelectMenuOption={onOrgChange}
         isCurrentPage={onOrganizationPage}
       >
         <OrganizationAvatar organization={orgName} slot="icon" />

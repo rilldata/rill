@@ -133,18 +133,21 @@ const timeGrainOptions: TimeGrain[] = [
     grain: V1TimeGrain.TIME_GRAIN_DAY,
     label: "day",
     duration: Period.DAY,
+    d3format: "",
     formatDate: {},
   },
   {
     grain: V1TimeGrain.TIME_GRAIN_WEEK,
     label: "week",
     duration: Period.WEEK,
+    d3format: "",
     formatDate: {},
   },
   {
     grain: V1TimeGrain.TIME_GRAIN_MONTH,
     label: "month",
     duration: Period.MONTH,
+    d3format: "",
     formatDate: {},
   },
 ];

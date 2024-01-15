@@ -1,6 +1,7 @@
 import { GutterMarker, gutter } from "@codemirror/view";
 import LineNumberGutterMarkerComponent from "./LineNumberGutterMarker.svelte";
 import { lineStatusesStateField, updateLineStatuses } from "./state";
+import type { SvelteComponent } from "svelte";
 
 export const LINE_NUMBER_GUTTER_CLASS = "cm-line-number-gutter";
 

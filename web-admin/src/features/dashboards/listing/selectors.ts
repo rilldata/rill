@@ -4,10 +4,10 @@ import {
   V1DeploymentStatus,
 } from "@rilldata/web-admin/client";
 import {
-  PollTimeDuringError,
-  PollTimeDuringReconcile,
-  PollTimeWhenProjectReady,
-} from "@rilldata/web-admin/features/projects/selectors";
+  PollTimeWhenProjectDeployed,
+  PollTimeWhenProjectDeploymentError,
+  PollTimeWhenProjectDeploymentPending,
+} from "@rilldata/web-admin/features/projects/status/selectors";
 import { refreshResource } from "@rilldata/web-common/features/entity-management/resource-invalidations";
 import {
   ResourceKind,
@@ -133,17 +133,17 @@ export function useDashboardsStatus(instanceId: string) {
         refetchInterval: (data) => {
           switch (data) {
             case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
-              return PollTimeDuringReconcile;
+              return PollTimeWhenProjectDeploymentPending;
 
             case V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR:
             case V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED:
-              return PollTimeDuringError;
+              return PollTimeWhenProjectDeploymentError;
 
             case V1DeploymentStatus.DEPLOYMENT_STATUS_OK:
-              return PollTimeWhenProjectReady;
+              return PollTimeWhenProjectDeployed;
 
             default:
-              return PollTimeWhenProjectReady;
+              return PollTimeWhenProjectDeployed;
           }
         },
       },

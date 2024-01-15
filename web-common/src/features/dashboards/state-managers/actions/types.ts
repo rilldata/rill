@@ -1,4 +1,5 @@
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
+import type { Expand } from "../types";
 
 // Note: the types below are helper types to simplify the type inference
 // used in the creation of StateManagerActions, so that we can have nice

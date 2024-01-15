@@ -5,7 +5,7 @@
   import Tab from "../../components/tabs/Tab.svelte";
   import TabGroup from "../../components/tabs/TabGroup.svelte";
   import TabList from "../../components/tabs/TabList.svelte";
-  import ProjectDeploymentStatusChip from "./ProjectDeploymentStatusChip.svelte";
+  import ProjectDeploymentStatusChip from "./status/ProjectDeploymentStatusChip.svelte";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;

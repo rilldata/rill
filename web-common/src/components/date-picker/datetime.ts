@@ -517,7 +517,11 @@ export class DateTime {
     return this;
   }
 
-  public diff(date: DateTime, unit = "seconds"): number {
+  // FIXME: I'm pretty sure this is never used anywhere. Even if it is,
+  // it doesn't do anything, because it doesn't return anything,
+  // and it doesn't mutate anything. Also it has a dangling TODO
+  // that was unfinished when Speros left.
+  public diff(date: DateTime, unit = "seconds") {
     const oneDay = 1000 * 60 * 60 * 24;
 
     switch (unit) {
