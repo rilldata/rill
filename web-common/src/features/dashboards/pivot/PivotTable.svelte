@@ -125,7 +125,7 @@
               typeof cell.column.columnDef.cell === "function"
                 ? cell.column.columnDef.cell(cell.getContext())
                 : cell.column.columnDef.cell}
-            <td>
+            <td class="ui-copy-number">
               {#if result?.component && result?.props}
                 <svelte:component this={result.component} {...result.props} />
               {:else if typeof result === "string" || typeof result === "number"}
