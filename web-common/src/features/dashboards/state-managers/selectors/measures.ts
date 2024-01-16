@@ -40,6 +40,11 @@ export const isMeasureValidPercentOfTotal = ({
 
 export const measureSelectors = {
   /**
+   * Get all measures in the dashboard.
+   */
+  allMeasures,
+
+  /**
    * Gets all visible measures in the dashboard.
    */
   visibleMeasures,

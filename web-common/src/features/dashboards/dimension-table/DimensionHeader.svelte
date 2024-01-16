@@ -10,14 +10,11 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import SelectAllButton from "./SelectAllButton.svelte";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
-  import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import Spinner from "../../entity-management/Spinner.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -44,13 +41,12 @@
         clearDimensionTableSearchString,
       },
       dimensions: { setPrimaryDimension },
+      dimensionsFilter: { toggleDimensionFilterMode },
     },
     metricsViewName,
   } = stateManagers;
 
   $: excludeMode = $isFilterExcludeMode(dimensionName);
-
-  const queryClient = useQueryClient();
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
@@ -86,8 +82,7 @@
     setPrimaryDimension(undefined);
   };
   function toggleFilterMode() {
-    cancelDashboardQueries(queryClient, $metricsViewName);
-    metricsExplorerStore.toggleFilterMode($metricsViewName, dimensionName);
+    toggleDimensionFilterMode(dimensionName);
   }
 </script>
 
@@ -155,8 +150,8 @@
     </Tooltip>
 
     <ExportDimensionTableDataButton
-      metricViewName={$metricsViewName}
       includeScheduledReport={$featureFlags.adminServer}
+      metricViewName={$metricsViewName}
     />
   </div>
 </div>

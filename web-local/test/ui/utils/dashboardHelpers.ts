@@ -1,8 +1,5 @@
 import { expect } from "@playwright/test";
-import type {
-  MetricsViewFilterCond,
-  V1MetricsViewFilter,
-} from "@rilldata/web-common/runtime-client";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
 import { waitForValidResource } from "web-local/test/ui/utils/commonHelpers";
 import { clickMenuButton, openEntityMenu } from "./helpers";
@@ -119,39 +116,49 @@ export async function waitForComparisonTopLists(
   );
 }
 
-export type RequestMatcherFilter = { label: string; values: Array<unknown> };
+export type RequestMatcherFilter = { label: string; values: unknown[] };
 
 /**
  * Helper to add a request matcher to match metrics view queries with certain filter
  */
 export function metricsViewRequestFilterMatcher(
   response: Response,
-  includeFilters: Array<RequestMatcherFilter>,
-  excludeFilters: Array<RequestMatcherFilter>,
+  includeFilters: RequestMatcherFilter[],
+  excludeFilters: RequestMatcherFilter[],
 ) {
-  const filterRequest = response.request().postDataJSON()
-    .filter as V1MetricsViewFilter;
-  const includeFilterRequest = new Map<string, MetricsViewFilterCond>();
-  filterRequest.include.forEach((cond) =>
-    includeFilterRequest.set(cond.name, cond),
-  );
-  const excludeFilterRequest = new Map<string, MetricsViewFilterCond>();
-  filterRequest.exclude.forEach((cond) =>
-    excludeFilterRequest.set(cond.name, cond),
-  );
+  const filterRequest = response.request().postDataJSON().where as V1Expression;
+  const includeFilterRequest = new Map<string, string[]>();
+  const excludeFilterRequest = new Map<string, string[]>();
+
+  if (filterRequest?.cond?.exprs) {
+    for (const expr of filterRequest.cond.exprs) {
+      if (!expr.cond?.exprs?.[0]?.ident) continue;
+      if (expr.cond.op === "OPERATION_IN") {
+        includeFilterRequest.set(
+          expr.cond.exprs[0].ident,
+          expr.cond.exprs.slice(1).map((e) => e.val as string),
+        );
+      } else if (expr.cond.op === "OPERATION_NIN") {
+        excludeFilterRequest.set(
+          expr.cond.exprs[0].ident,
+          expr.cond.exprs.slice(1).map((e) => e.val as string),
+        );
+      }
+    }
+  }
 
   return (
     includeFilters.every(
       ({ label, values }) =>
         includeFilterRequest
           .get(label)
-          ?.in.every((val) => values.indexOf(val) >= 0) ?? false,
+          ?.every((val) => values.indexOf(val) >= 0) ?? false,
     ) &&
     excludeFilters.every(
       ({ label, values }) =>
         excludeFilterRequest
           .get(label)
-          ?.in.every((val) => values.indexOf(val) >= 0) ?? false,
+          ?.every((val) => values.indexOf(val) >= 0) ?? false,
     )
   );
 }

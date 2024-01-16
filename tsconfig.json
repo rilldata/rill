@@ -7,21 +7,21 @@
     "lib": ["es2020", "DOM"],
     "target": "es2020",
     /**
-			svelte-preprocess cannot figure out whether you have a value or a type, so tell TypeScript
-			to enforce using \`import type\` instead of \`import\` for Types.
-			*/
+      svelte-preprocess cannot figure out whether you have a value or a type, so tell TypeScript
+      to enforce using \`import type\` instead of \`import\` for Types.
+    */
     "importsNotUsedAsValues": "error",
     /**
-      ignoreDeprecations is recommended by the SvelteKit maintainers until SvelteKit 2.0. 
+      ignoreDeprecations is recommended by the SvelteKit maintainers until SvelteKit 2.0.
       See: https://github.com/sveltejs/kit/issues/8650#issuecomment-1607282327
     */
     "ignoreDeprecations": "5.0",
     "isolatedModules": true,
     "resolveJsonModule": true,
     /**
-			To have warnings/errors of the Svelte compiler at the correct position,
-			enable source maps by default.
-			*/
+      To have warnings/errors of the Svelte compiler at the correct position,
+      enable source maps by default.
+    */
     "sourceMap": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

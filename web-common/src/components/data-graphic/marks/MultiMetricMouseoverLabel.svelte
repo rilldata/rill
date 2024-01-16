@@ -294,7 +294,7 @@ It is probably not the most up to date code; but it works very well in practice.
     paint-order: stroke;
     stroke: white;
     stroke-width: 3px;
-    white-space: pre-wrap;
+
     /* Make all characters and numbers of equal width for easy scanibility */
     font-feature-settings:
       "case" 0,

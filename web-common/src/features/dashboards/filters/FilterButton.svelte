@@ -5,26 +5,20 @@
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import SearchableFilterDropdown from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterDropdown.svelte";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import { potentialFilterName } from "./Filters.svelte";
+  import { getDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+  import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
 </script>
 
 <script lang="ts">
-  import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
-
   const {
     selectors: {
       dimensions: { allDimensions },
-      dimensionFilters: { getAllFilters, isFilterExcludeMode },
+      dimensionFilters: { dimensionHasFilter },
+    },
+    actions: {
+      filters: { setTemporaryFilterName },
     },
   } = getStateManagers();
-
-  function filterExists(name: string, exclude: boolean): boolean {
-    const selected = exclude
-      ? $getAllFilters?.exclude
-      : $getAllFilters?.include;
-
-    return selected?.find((f) => f.name === name) !== undefined;
-  }
 
   $: selectableGroups = [
     <SearchableFilterSelectableGroup>{
@@ -32,12 +26,9 @@
         $allDimensions
           ?.map((d) => ({
             name: d.name as string,
-            label: d.label as string,
+            label: getDisplayName(d),
           }))
-          .filter((d) => {
-            const exclude = $isFilterExcludeMode(d.name);
-            return !filterExists(d.name, exclude);
-          }) ?? [],
+          .filter((d) => !$dimensionHasFilter(d.name)) ?? [],
     },
   ];
 </script>
@@ -64,7 +55,7 @@
     on:hover
     on:item-clicked={(e) => {
       toggleFloatingElement();
-      $potentialFilterName = e.detail.name;
+      setTemporaryFilterName(e.detail.name);
     }}
     {selectableGroups}
     selectedItems={[]}

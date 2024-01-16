@@ -21,59 +21,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// GetLogs implements runtimev1.RuntimeServiceServer
-func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*runtimev1.GetLogsResponse, error) {
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.Bool("args.ascending", req.Ascending),
-	)
-
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
-		return nil, ErrForbidden
-	}
-
-	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	return &runtimev1.GetLogsResponse{Logs: ctrl.Logs.GetLogs(req.Ascending, int(req.Limit))}, nil
-}
-
-// WatchLogs implements runtimev1.RuntimeServiceServer
-func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.RuntimeService_WatchLogsServer) error {
-	ctx := srv.Context()
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.Bool("args.replay", req.Replay),
-	)
-
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
-		return ErrForbidden
-	}
-
-	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
-	if err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
-	}
-	if req.Replay {
-		for _, l := range ctrl.Logs.GetLogs(true, int(req.ReplayLimit)) {
-			err := srv.Send(&runtimev1.WatchLogsResponse{Log: l})
-			if err != nil {
-				return status.Error(codes.InvalidArgument, err.Error())
-			}
-		}
-	}
-
-	return ctrl.Logs.WatchLogs(srv.Context(), func(item *runtimev1.Log) {
-		err := srv.Send(&runtimev1.WatchLogsResponse{Log: item})
-		if err != nil {
-			s.logger.Info("failed to send log event", zap.Error(err))
-		}
-	})
-}
-
 // ListResources implements runtimev1.RuntimeServiceServer
 func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResourcesRequest) (*runtimev1.ListResourcesResponse, error) {
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
