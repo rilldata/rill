@@ -72,11 +72,6 @@ export function reduceTableCellDataIntoRows(
 ) {
   const colDimensionNames = config.colDimensionNames;
 
-  // For simple tables, return the cell data as is
-  if (!anchorDimensionName) {
-    return cellData;
-  }
-
   /**
    * Create a map of row dimension values to their index in the row dimension axes.
    * This way we can apply the sort order on the row dimension axes and sort the cell
@@ -90,13 +85,6 @@ export function reduceTableCellDataIntoRows(
   );
 
   cellData?.forEach((cell) => {
-    const rowDimensionValue = cell[anchorDimensionName] as string;
-    const rowIndex = rowDimensionIndexMap.get(rowDimensionValue);
-    if (rowIndex === undefined) {
-      return;
-    }
-    const row = tableData[rowIndex];
-
     const accessors = getAccessorForCell(
       colDimensionNames,
       colValuesIndexMaps,
@@ -104,10 +92,27 @@ export function reduceTableCellDataIntoRows(
       cell,
     );
 
-    if (row) {
+    if (anchorDimensionName) {
+      const rowDimensionValue = cell[anchorDimensionName] as string;
+      const rowIndex = rowDimensionIndexMap.get(rowDimensionValue);
+      if (rowIndex === undefined) {
+        return;
+      }
+      const row = tableData[rowIndex];
+
+      if (row) {
+        accessors.forEach((accessor, i) => {
+          row[accessor] = cell[config.measureNames[i]] as string | number;
+        });
+      }
+    } else {
+      // If there is no anchor dimension, the cell data is the row data
       accessors.forEach((accessor, i) => {
-        row[accessor] = cell[config.measureNames[i]] as string | number;
+        cell[accessor] = cell[config.measureNames[i]] as string | number;
       });
+
+      tableData[0] = cell;
+      return;
     }
   });
 
