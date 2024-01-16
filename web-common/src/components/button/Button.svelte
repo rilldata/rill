@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
+  import { builderActions, getAttrs, type Builder } from "bits-ui";
 
   type ButtonType =
     | "primary"
@@ -23,6 +24,7 @@
   export let small = false;
   export let noStroke = false;
   export let dashed = false;
+  export let builders: Builder[] = [];
 
   const dispatch = createEventDispatcher();
 
@@ -48,6 +50,8 @@
   type={submitForm ? "submit" : "button"}
   form={submitForm ? form : undefined}
   aria-label={label}
+  {...getAttrs(builders)}
+  use:builderActions={{ builders }}
   on:click={handleClick}
 >
   <slot />
