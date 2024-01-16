@@ -28,7 +28,7 @@ func TestPostgres(t *testing.T) {
 	t.Run("TestOrgsWithPagination", func(t *testing.T) { testOrgsWithPagination(t, db) })
 	t.Run("TestProjects", func(t *testing.T) { testProjects(t, db) })
 	t.Run("TestProjectsWithVariables", func(t *testing.T) { testProjectsWithVariables(t, db) })
-	t.Run("TestProjectsWithTags", func(t *testing.T) { testProjectsWithTags(t, db) })
+	t.Run("TestProjectsWithAnnotations", func(t *testing.T) { testProjectsWithAnnotations(t, db) })
 	t.Run("TestProjectsWithPagination", func(t *testing.T) { testProjectsWithPagination(t, db) })
 	t.Run("TestProjectsForUsersWithPagination", func(t *testing.T) { testProjectsForUserWithPagination(t, db) })
 	t.Run("TestMembersWithPagination", func(t *testing.T) { testOrgsMembersPagination(t, db) })
@@ -217,7 +217,7 @@ func testProjectsWithVariables(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 }
 
-func testProjectsWithTags(t *testing.T, db database.DB) {
+func testProjectsWithAnnotations(t *testing.T, db database.DB) {
 	ctx := context.Background()
 
 	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "foo"})
@@ -230,19 +230,31 @@ func testProjectsWithTags(t *testing.T, db database.DB) {
 	}
 	proj, err := db.InsertProject(ctx, opts)
 	require.NoError(t, err)
-	require.Empty(t, proj.Tags)
+	require.Empty(t, proj.Annotations)
 
-	tags := []string{"foo", "bar,baz"}
+	annotations := map[string]string{"foo": "bar", "bar": "baz"}
 	_, err = db.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-		Name: proj.Name,
-		Tags: tags,
+		Name:        proj.Name,
+		Annotations: annotations,
 	})
 	require.NoError(t, err)
 
 	proj, err = db.FindProjectByName(ctx, org.Name, proj.Name)
 	require.NoError(t, err)
 	require.Equal(t, "bar", proj.Name)
-	require.Equal(t, tags, proj.Tags)
+	require.Equal(t, annotations, proj.Annotations)
+
+	projs, err := db.FindProjectPathsByPatternAndAnnotations(ctx, "%", "", []string{"foo"}, nil, 10)
+	require.NoError(t, err)
+	require.Equal(t, "foo/bar", projs[0])
+
+	projs, err = db.FindProjectPathsByPatternAndAnnotations(ctx, "%", "", nil, map[string]string{"foo": "bar"}, 1)
+	require.NoError(t, err)
+	require.Equal(t, "foo/bar", projs[0])
+
+	projs, err = db.FindProjectPathsByPatternAndAnnotations(ctx, "%", "", nil, map[string]string{"foo": ""}, 1)
+	require.NoError(t, err)
+	require.Len(t, projs, 0)
 
 	err = db.DeleteProject(ctx, proj.ID)
 	require.NoError(t, err)

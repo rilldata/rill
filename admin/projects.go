@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"reflect"
 
 	"github.com/rilldata/rill/admin/database"
@@ -92,7 +93,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Region:               proj.Region,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		ProdDeploymentID:     &depl.ID,
-		Tags:                 proj.Tags,
+		Annotations:          proj.Annotations,
 	})
 	if err != nil {
 		err2 := s.teardownDeployment(ctx, proj, depl)
@@ -133,9 +134,12 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	requiresReset := (proj.Region != opts.Region) || (proj.ProdSlots != opts.ProdSlots)
 
+	log.Printf("HERE: projects=%v AND opts=%v", proj.Annotations, opts.Annotations)
+
 	impactsDeployments := (requiresReset ||
 		(proj.Name != opts.Name) ||
 		(proj.ProdBranch != opts.ProdBranch) ||
+		!reflect.DeepEqual(proj.Annotations, opts.Annotations) ||
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables) ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID))
@@ -270,7 +274,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		Region:               proj.Region,
-		Tags:                 proj.Tags,
+		Annotations:          proj.Annotations,
 	})
 	if err != nil {
 		err2 := s.teardownDeployment(ctx, proj, newDepl)
