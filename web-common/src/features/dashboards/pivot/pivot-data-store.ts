@@ -29,6 +29,7 @@ import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,
 } from "./pivot-queries";
+import type { ColumnDef } from "@tanstack/svelte-table";
 
 /**
  * Extract out config relevant to pivot from dashboard and meta store
@@ -233,14 +234,14 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             ([initialTableCellData], cellSet) => {
               // Wait for data
               if (initialTableCellData.isFetching || initialTableCellData.error)
+                // FIXME: Table does not render properly if below object
+                // is set using derived stores set method
+
                 // return cellSet({
                 //   isFetching: false,
                 //   data: skeletonTableData,
                 //   columnDef,
                 // });
-
-                // FIXME: Table does not render properly if below object
-                // is set using derived stores set method
                 return {
                   isFetching: false,
                   data: skeletonTableData,
@@ -300,7 +301,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
 interface PivotDataState {
   isFetching: boolean;
   data?: PivotDataRow[];
-  columnDef?: Array<unknown>;
+  columnDef?: ColumnDef<PivotDataRow>[];
 }
 
 export type PivotDataStore = Readable<PivotDataState>;
