@@ -1,15 +1,28 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { buttonClasses } from "./classes";
 
-  export let type: "primary" | "secondary" | "highlighted" | "text" | "dashed" =
-    "primary";
+  type ButtonType =
+    | "primary"
+    | "secondary"
+    | "highlighted"
+    | "text"
+    | "link"
+    | "brand";
+
+  export let type: ButtonType = "primary";
   export let status: "info" | "error" = "info";
   export let disabled = false;
   export let compact = false;
   export let submitForm = false;
   export let form = "";
   export let label: string | undefined = undefined;
+  export let square = false;
+  export let circle = false;
+  export let selected = false;
+  export let large = false;
+  export let small = false;
+  export let noStroke = false;
+  export let dashed = false;
 
   const dispatch = createEventDispatcher();
 
@@ -21,12 +34,187 @@
 </script>
 
 <button
+  class="{$$props.class} {type}"
   {disabled}
-  class={buttonClasses({ type, compact, status })}
-  on:click={handleClick}
+  class:square
+  class:circle
+  class:selected
+  class:large
+  class:small
+  class:dashed
+  class:compact
+  class:danger={status === "error"}
+  class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}
   form={submitForm ? form : undefined}
   aria-label={label}
+  on:click={handleClick}
 >
   <slot />
 </button>
+
+<style lang="postcss">
+  button {
+    @apply flex text-center items-center justify-center;
+    @apply text-xs leading-snug font-normal;
+    @apply gap-x-2 min-w-fit;
+    @apply rounded-[2px];
+    @apply px-3 h-7;
+  }
+
+  button:focus {
+    @apply outline-none ring-2 ring-slate-800;
+  }
+
+  button:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* PRIMARY STYLES */
+
+  .primary {
+    @apply bg-slate-800 text-white;
+  }
+
+  .primary:hover,
+  .primary.selected {
+    @apply bg-slate-700;
+  }
+
+  .primary:active {
+    @apply bg-slate-900;
+  }
+
+  /* SECONDARY STYLES */
+
+  .secondary {
+    @apply bg-white text-slate-600;
+    @apply px-3 h-7 border border-slate-300;
+  }
+
+  .secondary:hover,
+  .secondary:disabled,
+  .secondary.selected {
+    @apply bg-slate-100;
+  }
+
+  .secondary:active {
+    @apply bg-slate-200;
+  }
+
+  /* HIGHLGHTED STYLES (REMOVE) */
+
+  .highlighted {
+    @apply bg-white text-slate-700;
+    @apply border border-slate-100;
+    @apply shadow-md;
+  }
+
+  .highlighted:hover,
+  .highlighted.selected {
+    @apply bg-slate-50;
+  }
+
+  .highlighted:active {
+    @apply bg-slate-200;
+  }
+
+  /* LINK STYLES */
+
+  .link {
+    @apply text-blue-500;
+  }
+
+  .link:hover,
+  .link.selected {
+    @apply text-blue-600;
+  }
+
+  .link:active {
+    @apply text-blue-700;
+  }
+
+  .link:disabled {
+    @apply text-slate-400;
+  }
+
+  /* SHAPE STYLES */
+
+  .square,
+  .circle {
+    @apply p-0 aspect-square;
+    @apply text-ellipsis overflow-hidden whitespace-nowrap flex-grow-0 flex-shrink-0;
+  }
+
+  .circle {
+    @apply rounded-full;
+  }
+
+  /* DANGER STYLES */
+
+  .danger {
+    @apply bg-red-500 text-white;
+  }
+
+  .danger:hover,
+  .danger.selected {
+    @apply bg-red-600;
+  }
+
+  .danger:active {
+    @apply bg-red-700;
+  }
+
+  .danger.secondary {
+    @apply bg-white;
+    @apply text-red-500;
+    @apply border-red-500;
+  }
+
+  .danger:disabled {
+    @apply text-slate-400;
+    @apply bg-slate-50;
+    @apply border-slate-300;
+  }
+
+  /* BRAND STYLES */
+
+  .brand {
+    @apply bg-blue-600 text-white;
+  }
+
+  .brand:hover {
+    @apply bg-blue-500;
+  }
+
+  .brand:active {
+    @apply bg-blue-700;
+  }
+
+  /* TWEAKS */
+
+  .small {
+    @apply h-6 text-[11px];
+  }
+
+  .large {
+    @apply h-9 text-sm;
+  }
+
+  .large.square,
+  .large.circle {
+    @apply h-10;
+  }
+
+  .compact {
+    @apply px-2;
+  }
+
+  .no-stroke {
+    @apply border-none;
+  }
+
+  .dashed {
+    @apply border border-dashed;
+  }
+</style>
