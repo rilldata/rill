@@ -11,7 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"golang.org/x/exp/slog"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -119,7 +119,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	hash, err := repo.CommitHash(ctx)
 	if err != nil {
 		// Not worth failing the reconcile for this. On error, it'll just set CurrentCommitSha to "".
-		r.C.Logger.Error("failed to get commit hash", slog.String("err", err.Error()))
+		r.C.Logger.Error("failed to get commit hash", zap.String("err", err.Error()))
 	}
 	if pp.State.CurrentCommitSha != hash {
 		pp.State.CurrentCommitSha = hash
@@ -168,7 +168,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	defer func() {
 		pp.State.Watching = false
 		if err = r.C.UpdateState(ctx, n, self); err != nil {
-			r.C.Logger.Error("failed to update watch state", slog.Any("error", err))
+			r.C.Logger.Error("failed to update watch state", zap.Any("error", err))
 		}
 	}()
 
@@ -220,7 +220,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 
 	// If the watch failed, we return without rescheduling.
 	// TODO: Should we have some kind of retry?
-	r.C.Logger.Error("Stopped watching for file changes", slog.String("err", err.Error()))
+	r.C.Logger.Error("Stopped watching for file changes", zap.String("err", err.Error()))
 	return runtime.ReconcileResult{Err: err}
 }
 
@@ -246,14 +246,14 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 			if skipRillYAMLErr && e.FilePath == "/rill.yaml" {
 				continue
 			}
-			r.C.Logger.Warn("Parser error", slog.String("path", e.FilePath), slog.String("err", e.Message))
+			r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("err", e.Message))
 		}
 	} else if diff.Skipped {
 		r.C.Logger.Warn("Not parsing changed paths due to missing or broken rill.yaml")
 	} else {
 		for _, e := range parser.Errors {
 			if slices.Contains(changedPaths, e.FilePath) {
-				r.C.Logger.Warn("Parser error", slog.String("path", e.FilePath), slog.String("err", e.Message))
+				r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("err", e.Message))
 			}
 		}
 	}

@@ -486,6 +486,7 @@ enum LogLevel {
   LOG_LEVEL_INFO = 8;
   LOG_LEVEL_WARN = 12;
   LOG_LEVEL_ERROR = 16;
+  LOG_LEVEL_FATAL = 20;
 }
 
 enum ResourceEvent {
