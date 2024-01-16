@@ -15,7 +15,7 @@ import type {
   CreateQueryResult,
   QueryObserverResult,
 } from "@tanstack/svelte-query";
-import { Readable, derived, get } from "svelte/store";
+import { Readable, derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
 
 export const useMetaQuery = <T = V1MetricsViewSpec>(
