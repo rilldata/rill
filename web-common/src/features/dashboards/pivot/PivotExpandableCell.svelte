@@ -13,8 +13,6 @@
     <button on:click={row.getToggleExpandedHandler()} class="cursor-pointer">
       {row.getIsExpanded() ? "▼" : "▶"}
     </button>
-  {:else}
-    🔵
   {/if}
   {value === "LOADING_CELL" ? "" : value}
 </div>

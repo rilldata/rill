@@ -89,7 +89,7 @@ export function reduceTableCellDataIntoRows(
     createIndexMap(columnDimensionAxes[colDimensionName]),
   );
 
-  cellData.forEach((cell) => {
+  cellData?.forEach((cell) => {
     const rowDimensionValue = cell[anchorDimensionName] as string;
     const rowIndex = rowDimensionIndexMap.get(rowDimensionValue);
     if (rowIndex === undefined) {
