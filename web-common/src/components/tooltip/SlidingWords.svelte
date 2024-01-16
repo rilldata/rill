@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import { onMount } from "svelte";
   import { cubicOut } from "svelte/easing";
   import { tweened } from "svelte/motion";
@@ -76,7 +77,7 @@
 
 <div class="relative flex gap-x-1">
   <div class="invisible absolute" bind:this={element}>
-    {active ? "Hide" : "Show"}
+    {active ? $_('hide') : $_('show')}
   </div>
   <div class="invisible" style:width="{$thingWidth}px" />
   {#key active}
@@ -86,7 +87,7 @@
       style:top="0px"
       transition:hackedLocalKeyFly|global={hackedLocalKeyFlyArgs}
     >
-      {active ? "Hide" : "Show"}
+    {active ? $_('hide') : $_('show')}
     </div>
   {/key}
   <slot />

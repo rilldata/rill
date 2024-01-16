@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import ContextButton from "@rilldata/web-common/components/column-profile/ContextButton.svelte";
   import ExpanderButton from "@rilldata/web-common/components/column-profile/ExpanderButton.svelte";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
@@ -153,7 +154,7 @@
         >
           <ContextButton
             id="more-actions-{name}"
-            tooltipText="More actions"
+            tooltipText={$_('more-actions')}
             suppressTooltip={contextMenuOpen}
             on:click={(event) => {
               /** prevent the link click from registering */

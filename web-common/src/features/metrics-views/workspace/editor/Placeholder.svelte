@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {_} from "svelte-i18n";
   import type { EditorView } from "@codemirror/view";
   import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
@@ -128,7 +129,7 @@
 </script>
 
 <div class="whitespace-normal">
-  Auto-generate a <WithTogglableFloatingElement
+  { $_('auto-generate-a') }<WithTogglableFloatingElement
     distance={8}
     inline
     let:toggleFloatingElement
@@ -137,7 +138,7 @@
       class={buttonClasses}
       disabled={!$models?.data?.length}
       on:click={toggleFloatingElement}
-      >metrics configuration from an existing model</button
+      > {$_('metrics-configuration-from-an-existing-model')} </button
     >,
     <Menu
       dark
@@ -162,6 +163,6 @@
     class={buttonClasses}
     on:click={async () => {
       onCreateSkeletonMetricsConfig();
-    }}>start with a skeleton</button
-  >, or just start typing.
+    }}>{$_('start-with-a-skeleton')}</button
+  >{$_('or-just-start-typing')}
 </div>

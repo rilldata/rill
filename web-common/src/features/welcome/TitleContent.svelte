@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {_} from "svelte-i18n";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import RillLogoSquareNegative from "@rilldata/web-common/components/icons/RillLogoSquareNegative.svelte";
   import RadixH1 from "@rilldata/web-common/components/typography/RadixH1.svelte";
@@ -33,8 +34,7 @@
   </RadixH1>
   <div class="flex flex-col gap-y-2">
     <Subheading twColor="text-slate-600">
-      You're on your way to building fast, exploratory dashboards your team will
-      actually use.
+      {$_('youre-on-your-way-to-building-fast-exploratory-dashboards-your-team-will-actually-use')}
     </Subheading>
     <Subheading twColor="text-slate-600">Let’s get started.</Subheading>
   </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {_} from "svelte-i18n"
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -44,11 +45,11 @@
         class="font-semibold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-12"
         href="/"
       >
-        {$projectTitle.data || "Untitled Rill Project"}
+        {$projectTitle.data || $_('untitled-rill-project')}
       </a>
       <TooltipContent maxWidth="300px" slot="tooltip-content">
         <div class="font-bold">
-          {$projectTitle.data || "Untitled Rill Project"}
+          {$projectTitle.data || $_('untitled-rill-project')}
         </div>
       </TooltipContent>
     </Tooltip>

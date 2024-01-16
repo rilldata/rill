@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {_} from "svelte-i18n";
   import { goto } from "$app/navigation";
   import {
     Button,
@@ -56,7 +57,7 @@
   $: if (!yaml?.length) {
     buttonDisabled = true;
     buttonStatus = [
-      "Your metrics definition is empty. Get started by trying one of the options in the editor.",
+      $_('your-metrics-definition-is-empty-get-started-by-trying-one-of-the-options-in-the-editor'),
     ];
   }
   // content & errors
@@ -66,7 +67,7 @@
   }
   // preview is available
   else {
-    buttonStatus = ["Explore your metrics dashboard"];
+    buttonStatus = [$_('explore-your-metrics-dashboard-0')];
     buttonDisabled = false;
   }
 </script>
@@ -75,13 +76,13 @@
   <!-- TODO: we need to standardize these buttons. -->
   <Button
     disabled={buttonDisabled}
-    label="Go to dashboard"
+    label={$_('go-to-dashboard')}
     on:click={() => viewDashboard()}
     type="primary"
   >
     <IconSpaceFixer pullLeft>
       <Forward /></IconSpaceFixer
-    > Go to Dashboard
+    > {$_('go-to-dashboard')}
   </Button>
   <TooltipContent slot="tooltip-content">
     {#each buttonStatus as status}

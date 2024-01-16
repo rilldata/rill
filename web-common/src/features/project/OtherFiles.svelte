@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import { page } from "$app/stores";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
@@ -9,7 +10,7 @@
 </script>
 
 <NavigationHeader bind:show={showOtherFiles} toggleText="others">
-  Others
+  {$_('others')}
 </NavigationHeader>
 
 {#if showOtherFiles}

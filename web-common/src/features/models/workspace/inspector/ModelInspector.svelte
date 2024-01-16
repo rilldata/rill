@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { _ } from "svelte-i18n";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
@@ -46,6 +47,6 @@
   {/if}
 {:else}
   <div class="px-4 py-24 italic ui-copy-disabled text-center">
-    Model is empty.
+    {$_('model-is-empty')}.
   </div>
 {/if}

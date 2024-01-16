@@ -1,4 +1,5 @@
 <script lang="ts">
+  import {_} from "svelte-i18n";
   import { page } from "$app/stores";
   import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
@@ -63,7 +64,7 @@
 </script>
 
 <NavigationHeader bind:show={showTables} toggleText="sources"
-  >Sources</NavigationHeader
+  >{$_('sources')}</NavigationHeader
 >
 
 {#if showTables}
@@ -106,7 +107,7 @@
     {/if}
     <AddAssetButton
       id="add-table"
-      label="Add source"
+      label={$_('add-source')}
       bold={hasNoAssets}
       on:click={openShowAddSourceModal}
     />

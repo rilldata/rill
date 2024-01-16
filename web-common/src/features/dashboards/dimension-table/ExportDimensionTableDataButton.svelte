@@ -1,4 +1,5 @@
 <script lang="ts">
+  import  { _ } from "svelte-i18n";
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getDimensionTableExportArgs } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export-utils";
@@ -62,7 +63,7 @@
       toggleFloatingElement();
     }}
   >
-    Export
+    {$_('export')}
     <CaretDownIcon
       className="transition-transform {exportMenuOpen && '-rotate-180'}"
       size="10px"
@@ -81,7 +82,7 @@
         handleExportTopList("EXPORT_FORMAT_CSV");
       }}
     >
-      Export as CSV
+      {$_('export-as-csv')}
     </MenuItem>
     <MenuItem
       on:select={() => {
@@ -89,7 +90,7 @@
         handleExportTopList("EXPORT_FORMAT_PARQUET");
       }}
     >
-      Export as Parquet
+      {$_('export-as-parquet')}
     </MenuItem>
     <MenuItem
       on:select={() => {
@@ -97,7 +98,7 @@
         handleExportTopList("EXPORT_FORMAT_XLSX");
       }}
     >
-      Export as XLSX
+      {$_('export-as-xlsx')}
     </MenuItem>
     {#if includeScheduledReport}
       <MenuItem
@@ -106,13 +107,13 @@
           showScheduledReportDialog = true;
         }}
       >
-        Create scheduled report...
+        {$_('create-scheduled-report')}
       </MenuItem>
     {/if}
   </Menu>
 </WithTogglableFloatingElement>
 
-<!-- Including `showScheduledReportDialog` in the conditional ensures we tear 
+<!-- Including `showScheduledReportDialog` in the conditional ensures we tear
   down the form state when the dialog closes -->
 {#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog}
   <svelte:component
