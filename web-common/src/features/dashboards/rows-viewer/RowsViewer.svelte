@@ -6,11 +6,11 @@
     createQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { writable } from "svelte/store";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { PreviewTable } from "../../../components/preview-table";
   import { useMetaQuery } from "../selectors";
+  import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 
   export let metricViewName = "";
   export let height: number;

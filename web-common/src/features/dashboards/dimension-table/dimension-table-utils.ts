@@ -22,8 +22,10 @@ import type {
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
 
-import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
-import type { VirtualizedTableConfig } from "@rilldata/web-common/components/virtualized-table/types";
+import type {
+  VirtualizedTableColumns,
+  VirtualizedTableConfig,
+} from "@rilldata/web-common/components/virtualized-table/types";
 
 import type { SvelteComponent } from "svelte";
 import { getDimensionColumn } from "../dashboard-utils";

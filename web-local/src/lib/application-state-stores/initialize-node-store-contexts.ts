@@ -1,7 +1,7 @@
 /*global  RILL_RUNTIME_URL */
 import { browser } from "$app/environment";
 import { createQueryHighlightStore } from "@rilldata/web-common/features/models/query-highlight-store";
-import { createApplicationBuildMetadataStore } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
+import { createApplicationBuildMetadataStore } from "@rilldata/web-common/layout/build-metadata";
 import { setContext } from "svelte";
 
 /** determined by Vite's define option. */
