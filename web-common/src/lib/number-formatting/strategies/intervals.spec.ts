@@ -23,8 +23,7 @@ describe("formatMsInterval - non numeric inputs", () => {
     try {
       inputString = JSON.stringify(input);
     } catch (error) {
-      //@ts-ignore
-      inputString = input.toString();
+      inputString = input?.toString();
     }
 
     it(`returns the empty string for non numeric input: ${inputString}`, () => {
@@ -82,7 +81,7 @@ const time_formula_normal_cases = [
 
 describe("formatMsInterval - normal cases", () => {
   time_formula_normal_cases.forEach(([input, output]) => {
-    const ms = eval(input);
+    const ms = eval(input) as number;
     it(`return "${output}" for input: ${ms.toString()}ms (${input})`, () => {
       expect(formatMsInterval(ms)).toEqual(output);
     });
@@ -142,7 +141,7 @@ const time_formula_special_cases = [
 
 describe("formatMsInterval - special cases", () => {
   time_formula_special_cases.forEach(([input, output]) => {
-    const ms = eval(input.toString());
+    const ms = eval(input.toString()) as number;
     it(`return "${output}" for input: ${ms.toString()}ms (${input})`, () => {
       expect(formatMsInterval(ms)).toEqual(output);
     });
