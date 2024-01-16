@@ -499,6 +499,7 @@ message GetLogsRequest {
   string instance_id = 1;
   bool ascending = 2;
   int32 limit = 3 [(validate.rules).int32 = {gte: -1}];
+  string level = 4;
 }
 
 message GetLogsResponse {
@@ -509,6 +510,7 @@ message WatchLogsRequest {
   string instance_id = 1;
   bool replay = 2;
   int32 replay_limit = 3 [(validate.rules).int32 = {gte: -1}];
+  string level = 4;
 }
 
 message WatchLogsResponse {
@@ -528,6 +530,7 @@ message WatchResourcesRequest {
   string instance_id = 1;
   string kind = 2;
   bool replay = 3;
+  string level = 4;
 }
 
 message WatchResourcesResponse {

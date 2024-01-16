@@ -33,7 +33,7 @@ func (d *BufferedZapCore) With(fields []zapcore.Field) zapcore.Core {
 }
 
 func (d *BufferedZapCore) Check(entry zapcore.Entry, checkedEntry *zapcore.CheckedEntry) *zapcore.CheckedEntry {
-	checkedEntry.AddCore(entry, d)
+	checkedEntry = checkedEntry.AddCore(entry, d)
 	return checkedEntry
 }
 

@@ -16,6 +16,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, path string
 	var follow bool
 	var tail int
+	var level string
 
 	logsCmd := &cobra.Command{
 		Use:   "logs [<project-name>]",
@@ -64,7 +65,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if follow {
-				logClient, err := rt.WatchLogs(context.Background(), &runtimev1.WatchLogsRequest{InstanceId: depl.RuntimeInstanceId, Replay: true, ReplayLimit: int32(tail)})
+				logClient, err := rt.WatchLogs(context.Background(), &runtimev1.WatchLogsRequest{InstanceId: depl.RuntimeInstanceId, Replay: true, ReplayLimit: int32(tail), Level: level})
 				if err != nil {
 					return fmt.Errorf("failed to watch logs: %w", err)
 				}
@@ -89,7 +90,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			res, err := rt.GetLogs(context.Background(), &runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail)})
+			res, err := rt.GetLogs(context.Background(), &runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail), Level: level})
 			if err != nil {
 				return fmt.Errorf("failed to get logs: %w", err)
 			}
@@ -106,6 +107,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 	logsCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	logsCmd.Flags().BoolVarP(&follow, "follow", "f", false, "Follow logs")
 	logsCmd.Flags().IntVarP(&tail, "tail", "t", -1, "Number of lines to show from the end of the logs, use -1 for all logs")
+	logsCmd.Flags().StringVar(&level, "level", "INFO", "Minimum log level to show (DEBUG, INFO, WARN, ERROR, FATAL)")
 
 	return logsCmd
 }
@@ -128,6 +130,8 @@ func printLogLevel(logLevel runtimev1.LogLevel) string {
 		return "WARN"
 	case runtimev1.LogLevel_LOG_LEVEL_ERROR:
 		return "ERROR"
+	case runtimev1.LogLevel_LOG_LEVEL_FATAL:
+		return "FATAL"
 	default:
 		return "UNKNOWN"
 	}

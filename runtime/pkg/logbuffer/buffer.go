@@ -72,7 +72,7 @@ func (b *Buffer) AddZapEntry(entry zapcore.Entry, coreFields, entryFields []zapc
 	return nil
 }
 
-func (b *Buffer) WatchLogs(ctx context.Context, fn LogCallback) error {
+func (b *Buffer) WatchLogs(ctx context.Context, fn LogCallback, minLvl runtimev1.LogLevel) error {
 	messageChannel := make(chan *runtimev1.Log)
 	b.addClient(messageChannel)
 	defer b.removeClient(messageChannel)
@@ -83,6 +83,9 @@ func (b *Buffer) WatchLogs(ctx context.Context, fn LogCallback) error {
 			if !open {
 				panic("client closed!")
 			}
+			if message.Level < minLvl {
+				continue
+			}
 			fn(message)
 		case <-ctx.Done():
 			return ctx.Err()
@@ -90,7 +93,7 @@ func (b *Buffer) WatchLogs(ctx context.Context, fn LogCallback) error {
 	}
 }
 
-func (b *Buffer) GetLogs(asc bool, limit int) []*runtimev1.Log {
+func (b *Buffer) GetLogs(asc bool, limit int, minLvl runtimev1.LogLevel) []*runtimev1.Log {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -100,17 +103,32 @@ func (b *Buffer) GetLogs(asc bool, limit int) []*runtimev1.Log {
 	limit = min(limit, b.messages.Count())
 
 	logs := make([]*runtimev1.Log, limit)
-	i := 0
-	if asc {
-		b.messages.Iterate(func(item bufferutil.Item[*runtimev1.Log]) {
-			logs[i] = item.Value
-			i++
-		}, limit)
-	} else {
-		b.messages.ReverseIterate(func(item bufferutil.Item[*runtimev1.Log]) {
-			logs[i] = item.Value
-			i++
-		}, limit)
+
+	// always reverse iterate since we don't know how many logs will be skipped
+	// so keep on going util we have enough logs. If we start from the beginning
+	// we might iterate through entire buffer in worst case.
+	b.messages.ReverseIterateUntil(func(item bufferutil.Item[*runtimev1.Log]) bool {
+		if item.Value.Level < minLvl {
+			// skip items having lower level than minLvl
+			return true
+		}
+		// since default is asc=true fill the logs from the end so that we don't have to reverse it later
+		logs[limit-1] = item.Value
+		limit--
+		return limit > 0
+	})
+
+	// truncate the logs from starting if it's not full in case some logs were skipped
+	if limit > 0 {
+		logs = logs[limit:]
+	}
+
+	if !asc {
+		// this is a rare case, only when the user has specified asc=false
+		// reverse the logs
+		for i, j := 0, len(logs)-1; i < j; i, j = i+1, j-1 {
+			logs[i], logs[j] = logs[j], logs[i]
+		}
 	}
 
 	return logs

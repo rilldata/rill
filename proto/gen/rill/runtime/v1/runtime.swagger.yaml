@@ -831,6 +831,10 @@ paths:
           required: false
           type: integer
           format: int32
+        - name: level
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs/watch:
@@ -866,6 +870,10 @@ paths:
           required: false
           type: integer
           format: int32
+        - name: level
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
@@ -2001,6 +2009,10 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: level
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/trigger:

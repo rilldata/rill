@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -201,11 +202,19 @@ func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*r
 		return nil, ErrForbidden
 	}
 
-	logs, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
+	if req.Level == "" {
+		req.Level = "INFO"
+	}
+	lvl := toRuntimeLogLevel(req.Level)
+	if lvl == runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid log level %s", req.Level)
+	}
+
+	logBuffer, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	return &runtimev1.GetLogsResponse{Logs: logs.GetLogs(req.Ascending, int(req.Limit))}, nil
+	return &runtimev1.GetLogsResponse{Logs: logBuffer.GetLogs(req.Ascending, int(req.Limit), lvl)}, nil
 }
 
 // WatchLogs implements runtimev1.RuntimeServiceServer
@@ -221,12 +230,20 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 		return ErrForbidden
 	}
 
-	logs, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
+	if req.Level == "" {
+		req.Level = "INFO"
+	}
+	lvl := toRuntimeLogLevel(req.Level)
+	if lvl == runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED {
+		return status.Errorf(codes.InvalidArgument, "invalid log level %s", req.Level)
+	}
+
+	logBuffer, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	if req.Replay {
-		for _, l := range logs.GetLogs(true, int(req.ReplayLimit)) {
+		for _, l := range logBuffer.GetLogs(true, int(req.ReplayLimit), lvl) {
 			err := srv.Send(&runtimev1.WatchLogsResponse{Log: l})
 			if err != nil {
 				return status.Error(codes.InvalidArgument, err.Error())
@@ -234,12 +251,12 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 		}
 	}
 
-	return logs.WatchLogs(srv.Context(), func(item *runtimev1.Log) {
+	return logBuffer.WatchLogs(srv.Context(), func(item *runtimev1.Log) {
 		err := srv.Send(&runtimev1.WatchLogsResponse{Log: item})
 		if err != nil {
 			s.logger.Info("failed to send log event", zap.Error(err))
 		}
-	})
+	}, lvl)
 }
 
 func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {
@@ -276,4 +293,21 @@ func toString(connectors []*runtimev1.Connector) []string {
 		res[i] = fmt.Sprintf("%s:%s", c.Name, c.Type)
 	}
 	return res
+}
+
+func toRuntimeLogLevel(lvl string) runtimev1.LogLevel {
+	switch strings.ToUpper(lvl) {
+	case "DEBUG":
+		return runtimev1.LogLevel_LOG_LEVEL_DEBUG
+	case "INFO":
+		return runtimev1.LogLevel_LOG_LEVEL_INFO
+	case "WARN":
+		return runtimev1.LogLevel_LOG_LEVEL_WARN
+	case "ERROR":
+		return runtimev1.LogLevel_LOG_LEVEL_ERROR
+	case "FATAL":
+		return runtimev1.LogLevel_LOG_LEVEL_FATAL
+	default:
+		return runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED
+	}
 }
