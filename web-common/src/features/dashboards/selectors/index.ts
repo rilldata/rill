@@ -101,14 +101,18 @@ export const getFilterSearchList = (
 export function createTimeRangeSummary(
   ctx: StateManagers,
 ): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
-  return createQueryServiceMetricsViewTimeRange(
-    get(ctx.runtime).instanceId,
-    get(ctx.metricsViewName),
-    {},
-    {
-      query: {
-        queryClient: ctx.queryClient,
-      },
-    },
+  return derived(
+    [ctx.runtime, ctx.metricsViewName],
+    ([runtime, metricsViewName], set) =>
+      createQueryServiceMetricsViewTimeRange(
+        runtime.instanceId,
+        metricsViewName,
+        {},
+        {
+          query: {
+            queryClient: ctx.queryClient,
+          },
+        },
+      ).subscribe(set),
   );
 }
