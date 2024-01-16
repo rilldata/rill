@@ -137,42 +137,33 @@ export type NumberParts = {
   approxZero?: boolean;
 };
 
+/**
+ * Options common to all formatting strategies
+ */
 export type FormatterOptionsCommon = {
-  // Options common to all strategies
+  /**
+   * The kind of number being formatted
+   */
 
-  // max number of digits to be shown for formatted numbers
-  // maxTotalDigits: number;
-
-  // The kind of number being formatted
   numberKind: NumberKind;
 
-  // If true, pad numbers with insignificant zeros in order
-  // to have a consistent number of digits to the right of the
-  // decimal point
+  /**
+   * If true, pad numbers with insignificant zeros in order
+   * to have a consistent number of digits to the right of the
+   * decimal point
+   */
   padWithInsignificantZeros?: boolean;
 
-  // method for formatting exact zeros
-  // "none": don't do anything special.
-  // Ex: If the general option padWithInsignificantZeros is used such
-  // that e.g. a 0 is rendered as "0.000", then if
-  // this option is "none", the trailing zeros will be retained
-  // "trailingDot": add a trailing decimal point to exact zeros "0."
-  // "zeroOnly": render exact zeros as "0"
-  // zeroHandling: "none" | "trailingDot" | "zeroOnly";
-
-  // pxWidthLookupFn?: PxWidthLookupFn;
-
-  // not actually used for formatting, but needed to calculate the
-  // px sizes of maxWidthsInSample and maxWidthsPossible
-  // alignDecimal?: boolean;
-
-  // If `true`, use upper case "E" for exponential notation;
-  // If `false` or `undefined`, use lower case
+  /**
+   * If `true`, use upper case "E" for exponential notation.
+   * If `false` or `undefined`, use lower case "e"
+   */
   upperCaseEForExponent?: boolean;
 };
 
 /**
- * This is a no-op strategy that
+ * This strategy does not apply formatting to the _number itself_,
+ * but does add units if needed.
  */
 export type FormatterOptionsNoneStrategy = FormatterOptionsCommon;
 
@@ -260,7 +251,7 @@ export type RangeFormatSpec = {
  *
  * `rangeSpecs` is a series of RangeFormatSpecs. Ranges may not overlap,
  * and there can be no gaps in coverage between the ranges that
- * are defined, though the it is not required the the entire
+ * are defined, though it is not required the the entire
  * number line be covered--defaults will be used outside of the
  * covered range.
  *
