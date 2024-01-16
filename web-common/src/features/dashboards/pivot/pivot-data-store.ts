@@ -127,6 +127,14 @@ export function createTableCellQuery(
 }
 
 /**
+ * Stores the last pivot data and column def to be used when there is no data
+ * to be displayed. This is to avoid the table from flickering when there is no
+ * data to be displayed.
+ */
+let lastPivotData: PivotDataRow[] = [];
+let lastPivotColumnDef: ColumnDef<PivotDataRow>[] = [];
+
+/**
  * Main store for pivot table data
  *
  * At a high-level, we make the following queries in the order below:
@@ -161,7 +169,11 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
     const { rowDimensionNames, colDimensionNames, measureNames } = config;
 
     if (!rowDimensionNames.length && !measureNames.length) {
-      return configSet({ isFetching: false, data: [] });
+      return configSet({
+        isFetching: false,
+        data: lastPivotData,
+        columnDef: lastPivotColumnDef,
+      });
     }
     const columnDimensionAxesQuery = getAxisForDimensions(
       ctx,
@@ -173,29 +185,22 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
       columnDimensionAxesQuery,
       (columnDimensionAxes, columnSet) => {
         if (columnDimensionAxes?.isFetching) {
-          return columnSet({ isFetching: true });
+          return columnSet({
+            isFetching: true,
+            data: lastPivotData,
+            columnDef: lastPivotColumnDef,
+          });
         }
 
-        let sortPivotBy: V1MetricsViewAggregationSort[] = [];
-        let rowFilters = config.filters;
-        if (config.pivot.sorting.length > 0) {
-          const { filter, name } = getSortForAccessor(
-            config,
-            columnDimensionAxes?.data,
-          );
-          sortPivotBy = [
-            {
-              desc: config.pivot.sorting[0].desc,
-              name,
-            },
-          ];
-          rowFilters = filter;
-        }
+        const { filters, sortPivotBy } = getSortForAccessor(
+          config,
+          columnDimensionAxes?.data,
+        );
 
         const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
           rowDimensionNames,
-          rowFilters,
+          filters,
           sortPivotBy,
         );
 
@@ -204,7 +209,11 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
          */
         return derived(rowDimensionAxisQuery, (rowDimensionAxes, axesSet) => {
           if (rowDimensionAxes?.isFetching) {
-            return axesSet({ isFetching: true });
+            return axesSet({
+              isFetching: true,
+              data: lastPivotData,
+              columnDef: lastPivotColumnDef,
+            });
           }
 
           const anchorDimension = rowDimensionNames[0];
@@ -283,6 +292,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                       expandedRowMeasureValues,
                     );
                   }
+                  lastPivotData = tableDataExpanded;
+                  lastPivotColumnDef = columnDef;
                   return {
                     isFetching: false,
                     data: tableDataExpanded,
@@ -300,8 +311,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
 
 interface PivotDataState {
   isFetching: boolean;
-  data?: PivotDataRow[];
-  columnDef?: ColumnDef<PivotDataRow>[];
+  data: PivotDataRow[];
+  columnDef: ColumnDef<PivotDataRow>[];
 }
 
 export type PivotDataStore = Readable<PivotDataState>;

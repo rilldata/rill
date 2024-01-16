@@ -2,6 +2,7 @@ import type {
   MetricsViewFilterCond,
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
+  V1MetricsViewAggregationSort,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
@@ -158,16 +159,30 @@ export function getSortForAccessor(
   config: PivotDataStoreConfig,
   columnDimensionAxes: Record<string, string[]> = {},
 ) {
+  let sortPivotBy: V1MetricsViewAggregationSort[] = [];
+
+  // Return un-changed filter if no sorting is applied
+  if (config.pivot?.sorting?.length === 0) {
+    return {
+      filters: config.filters,
+      sortPivotBy,
+    };
+  }
+
   const { rowDimensionNames, colDimensionNames, measureNames } = config;
   const accessor = config.pivot.sorting[0].id;
 
+  // For the first column, the accessor is the row dimension name
   if (rowDimensionNames?.[0] === accessor) {
-    return {
-      filter: {
-        include: [],
-        exclude: [],
+    sortPivotBy = [
+      {
+        desc: config.pivot.sorting[0].desc,
+        name: accessor,
       },
-      name: accessor,
+    ];
+    return {
+      filters: config.filters,
+      sortPivotBy,
     };
   }
   // Strip the measure string from the accessor
@@ -196,9 +211,16 @@ export function getSortForAccessor(
     exclude: [],
   };
 
+  sortPivotBy = [
+    {
+      desc: config.pivot.sorting[0].desc,
+      name: measureNames[parseInt(measureIndex)],
+    },
+  ];
+
   return {
-    filter: filterForSort,
-    name: measureNames[parseInt(measureIndex)],
+    filters: filterForSort,
+    sortPivotBy,
   };
 }
 

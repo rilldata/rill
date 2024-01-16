@@ -12,14 +12,6 @@
   const stateManagers = getStateManagers();
 
   $: pivotDataStore = usePivotDataStore(stateManagers);
-
-  let pivotDataCopy: PivotDataRow[] = [];
-  let columnCopy: ColumnDef<PivotDataRow>[] = [];
-
-  $: if ($pivotDataStore?.data && $pivotDataStore.columnDef) {
-    pivotDataCopy = $pivotDataStore.data;
-    columnCopy = $pivotDataStore.columnDef;
-  }
 </script>
 
 <div class="layout">
@@ -31,7 +23,10 @@
       {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
         <PivotEmpty />
       {:else}
-        <PivotTable data={$pivotDataStore.data} columns={columnCopy} />
+        <PivotTable
+          data={$pivotDataStore.data}
+          columns={$pivotDataStore.columnDef}
+        />
       {/if}
     </div>
   </div>
