@@ -1,7 +1,4 @@
-import type {
-  V1MetricsViewAggregationSort,
-  V1MetricsViewAggregationResponseDataItem,
-} from "@rilldata/web-common/runtime-client";
+import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { derived, Readable } from "svelte/store";
 
@@ -191,15 +188,17 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             columnDef: lastPivotColumnDef,
           });
         }
+        const anchorDimension = rowDimensionNames[0];
 
         const { filters, sortPivotBy } = getSortForAccessor(
+          anchorDimension,
           config,
           columnDimensionAxes?.data,
         );
 
         const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
-          rowDimensionNames,
+          rowDimensionNames.slice(0, 1),
           filters,
           sortPivotBy,
         );
@@ -216,7 +215,6 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             });
           }
 
-          const anchorDimension = rowDimensionNames[0];
           const skeletonTableData = createTableWithAxes(
             anchorDimension,
             rowDimensionAxes?.data?.[anchorDimension],
@@ -243,19 +241,11 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             ([initialTableCellData], cellSet) => {
               // Wait for data
               if (initialTableCellData.isFetching || initialTableCellData.error)
-                // FIXME: Table does not render properly if below object
-                // is set using derived stores set method
-
-                // return cellSet({
-                //   isFetching: false,
-                //   data: skeletonTableData,
-                //   columnDef,
-                // });
-                return {
+                return axesSet({
                   isFetching: false,
                   data: skeletonTableData,
                   columnDef,
-                };
+                });
 
               const cellData = initialTableCellData.data
                 ?.data as V1MetricsViewAggregationResponseDataItem[];

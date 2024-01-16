@@ -2,7 +2,7 @@ import type { StateManagers } from "@rilldata/web-common/features/dashboards/sta
 import type { ExpandedState } from "@tanstack/svelte-table";
 import { Readable, derived, writable } from "svelte/store";
 import type { PivotDataRow, PivotDataStoreConfig } from "./types";
-import { getFilterForPivotTable } from "./pivot-utils";
+import { getFilterForPivotTable, getSortForAccessor } from "./pivot-utils";
 import {
   createTableWithAxes,
   reduceTableCellDataIntoRows,
@@ -62,7 +62,7 @@ export function createSubTableCellQuery(
   ctx: StateManagers,
   config: PivotDataStoreConfig,
   anchorDimension: string,
-  columnDimensionAxesData,
+  columnDimensionAxesData: Record<string, string[]> | undefined,
   rowNestFilters,
 ) {
   const allDimensions = config.colDimensionNames.concat([anchorDimension]);
@@ -110,7 +110,7 @@ export function queryExpandedRowMeasureValues(
   ctx: StateManagers,
   config: PivotDataStoreConfig,
   tableData: PivotDataRow[],
-  columnDimensionAxesData,
+  columnDimensionAxesData: Record<string, string[]> | undefined,
 ): Readable<ExpandedRowMeasureValues[] | null> {
   const { rowDimensionNames } = config;
   const expanded = config.pivot.expanded;
@@ -137,10 +137,14 @@ export function queryExpandedRowMeasureValues(
         exclude: [],
       };
 
-      const sortPivotBy = config.pivot.sorting.map((sort) => ({
-        name: sort.id,
-        desc: sort.desc,
-      }));
+      const { sortPivotBy } = getSortForAccessor(
+        anchorDimension,
+        config,
+        columnDimensionAxesData,
+      );
+
+      // TODO: Merge filters
+      // mergeFilters(rowNestFilters, sortFilters)
 
       return derived(
         [

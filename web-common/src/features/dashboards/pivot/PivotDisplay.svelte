@@ -1,12 +1,10 @@
 <script lang="ts">
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import type { ColumnDef } from "@tanstack/svelte-table";
   import PivotTable from "./PivotTable.svelte";
   import PivotSidebar from "./PivotSidebar.svelte";
   import PivotHeader from "./PivotHeader.svelte";
   import PivotToolbar from "./PivotToolbar.svelte";
   import { usePivotDataStore } from "./pivot-data-store";
-  import type { PivotDataRow } from "./types";
   import PivotEmpty from "./PivotEmpty.svelte";
 
   const stateManagers = getStateManagers();

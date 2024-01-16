@@ -156,6 +156,7 @@ function extractNumbers(str: string) {
  * accessor.
  */
 export function getSortForAccessor(
+  anchorDimension: string,
   config: PivotDataStoreConfig,
   columnDimensionAxes: Record<string, string[]> = {},
 ) {
@@ -173,11 +174,12 @@ export function getSortForAccessor(
   const accessor = config.pivot.sorting[0].id;
 
   // For the first column, the accessor is the row dimension name
-  if (rowDimensionNames?.[0] === accessor) {
+  const firstDimension = rowDimensionNames?.[0];
+  if (firstDimension === accessor) {
     sortPivotBy = [
       {
         desc: config.pivot.sorting[0].desc,
-        name: accessor,
+        name: anchorDimension,
       },
     ];
     return {
