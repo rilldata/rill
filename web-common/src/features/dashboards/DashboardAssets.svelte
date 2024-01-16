@@ -33,7 +33,6 @@
     createRuntimeServicePutFile,
     runtimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
-  import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
@@ -48,6 +47,16 @@
   $: sourceNames = useSourceFileNames(instanceId);
   $: modelNames = useModelFileNames(instanceId);
   $: dashboardNames = useDashboardFileNames(instanceId);
+
+  import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
+
+  const MetricsSourceSelectionError = (
+    errors: Array<V1ReconcileError> | undefined,
+  ): string => {
+    return (
+      errors?.find((error) => error?.propertyPath?.length === 0)?.message ?? ""
+    );
+  };
 
   const createDashboard = createRuntimeServicePutFile();
 
