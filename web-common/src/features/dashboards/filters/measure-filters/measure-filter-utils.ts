@@ -67,8 +67,9 @@ export function prepareMeasureFilterResolutions(
         };
       }
 
-      const filter = createAndExpression(
-        toplists.map((t, i) =>
+      const inFilters = toplists
+        .filter((t) => t.data?.data?.length)
+        .map((t, i) =>
           // create an in expression for each dimension in the filters
           createInExpression(
             dashboard.dimensionThresholdFilters[i].name,
@@ -77,12 +78,17 @@ export function prepareMeasureFilterResolutions(
               (d) => d[dashboard.dimensionThresholdFilters[i].name],
             ) ?? [],
           ),
-        ),
-      );
+        );
+      if (inFilters.length === 0) {
+        return {
+          ready: true,
+          filter: undefined,
+        };
+      }
 
       return {
         ready: true,
-        filter,
+        filter: createAndExpression(inFilters),
       };
     },
   );

@@ -60,8 +60,8 @@
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
     $metricsViewName,
-    $leaderboardDimensionTotalQueryBody(dimensionName),
-    $leaderboardDimensionTotalQueryOptions(dimensionName),
+    $leaderboardDimensionTotalQueryBody(dimensionName, $resolvedFilter),
+    $leaderboardDimensionTotalQueryOptions(dimensionName, $resolvedFilter),
   );
 
   $: leaderboardTotal = $totalsQuery?.data?.data?.[$activeMeasureName];

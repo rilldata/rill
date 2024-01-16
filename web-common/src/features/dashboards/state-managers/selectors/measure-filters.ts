@@ -34,11 +34,6 @@ export const getMeasureFilterForDimension = (
     });
     return andExpr;
   };
-
-  // return (dimensionName: string) =>
-  //   dashData.dashboard.dimensionThresholdFilters.find(
-  //     (dtf) => dtf.name === dimensionName,
-  //   );
 };
 
 export const additionalMeasures = (
