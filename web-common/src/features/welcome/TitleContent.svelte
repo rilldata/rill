@@ -39,7 +39,7 @@
     <Subheading twColor="text-slate-600">Let’s get started.</Subheading>
   </div>
   <button
-    class="pl-2 pr-4 py-2 rounded-sm bg-gradient-to-b from-[#4680FF] to-[#2563EB] hover:from-blue-500 hover:to-blue-500"
+    class="pl-2 pr-4 py-2 rounded-sm bg-gradient-to-b from-[#4680FF] to-[#2563EB] hover:from-primary-500 hover:to-primary-500"
     on:click={openShowAddSourceModal}
   >
     <div

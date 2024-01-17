@@ -50,6 +50,6 @@
 
 <style lang="postcss">
   .focus:focus {
-    @apply border-blue-400;
+    @apply border-primary-400;
   }
 </style>

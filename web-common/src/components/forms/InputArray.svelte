@@ -53,7 +53,7 @@
             id="{id}.{i}.{accessorKey}"
             autocomplete="off"
             {placeholder}
-            class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {errors[
+            class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-primary-500 w-full text-xs {errors[
               i
             ]?.accessorKey && 'border-red-500'}"
             on:keydown={handleKeyDown}

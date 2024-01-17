@@ -29,7 +29,7 @@
       case "amber":
         return "bg-amber-50 border-amber-300 text-amber-600";
       case "blue":
-        return "bg-blue-50 border-blue-300 text-blue-600";
+        return "bg-primary-50 border-primary-300 text-primary-600";
       case "purple":
         return "bg-purple-50 border-purple-300 text-purple-600";
       default:

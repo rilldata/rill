@@ -1,5 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 
+const primaryColorMap = Object.fromEntries([50,100,200,300,400,500,600,700,800,900,950].map((n) => [`primary-${n}`, `var(--color-primary-${n})`]));
+
 module.exports = {
    // need to add this for storybook
   // https://www.kantega.no/blogg/setting-up-storybook-7-with-vite-and-tailwind-css
@@ -12,19 +14,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        blue: {
-          50: "var(--color-primary-50)",
-          100: "var(--color-primary-100)",
-          200: "var(--color-primary-200)",
-          300: "var(--color-primary-300)",
-          400: "var(--color-primary-400)",
-          500: "var(--color-primary-500)",
-          600: "var(--color-primary-600)",
-          700: "var(--color-primary-700)",
-          800: "var(--color-primary-800)",
-          900: "var(--color-primary-900)",
-          950: "var(--color-primary-950)",
-        },
+				...primaryColorMap,
         border: "hsl(var(--border) / <alpha-value>)",
 				input: "hsl(var(--input) / <alpha-value>)",
 				ring: "hsl(var(--ring) / <alpha-value>)",
@@ -68,7 +58,7 @@ module.exports = {
   },
   plugins: [],
   safelist: [
-    "text-blue-800", // needed for blue text in filter pills
+    "text-primary-800", // needed for blue text in filter pills
     "ui-copy-code", // needed for code in measure expressions
   ],
 };

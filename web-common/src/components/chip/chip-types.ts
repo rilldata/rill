@@ -11,13 +11,13 @@ export type ChipColors = {
  * Use of !important for outlineActive to prevent flicker for hover and active states.
  */
 export const defaultChipColors: ChipColors = {
-  bgBaseClass: "bg-blue-50 dark:bg-blue-600",
-  bgHoverClass: "hover:bg-blue-100 hover:dark:bg-blue-800",
-  textClass: "text-blue-800 dark:text-blue-50",
-  bgActiveClass: "bg-blue-100 dark:bg-blue-700",
+  bgBaseClass: "bg-primary-50 dark:bg-primary-600",
+  bgHoverClass: "hover:bg-primary-100 hover:dark:bg-primary-800",
+  textClass: "text-primary-800 dark:text-primary-50",
+  bgActiveClass: "bg-primary-100 dark:bg-primary-700",
   outlineClass:
-    "outline outline-1 outline-blue-100 dark:outline-blue-500 hover:outline-blue-200",
-  outlineActiveClass: "!outline-blue-500 dark:outline-blue-500",
+    "outline outline-1 outline-primary-100 dark:outline-primary-500 hover:outline-primary-200",
+  outlineActiveClass: "!outline-primary-500 dark:outline-primary-500",
 };
 
 export const excludeChipColors = {
