@@ -119,17 +119,31 @@
     /* Defaults for the theme. This will be overridden based on the selected theme.
        Should match the color palette blue from tailwind */
     /* Primary colors */
-    --color-primary-50: #eff6ff;
-    --color-primary-100: #dbeafe;
-    --color-primary-200: #bfdbfe;
-    --color-primary-300: #93c5fd;
-    --color-primary-400: #60a5fa;
-    --color-primary-500: #3b82f6;
-    --color-primary-600: #2563eb;
-    --color-primary-700: #1d4ed8;
-    --color-primary-800: #1e40af;
-    --color-primary-900: #1e3a8a;
-    --color-primary-950: #172554;
+    /* --color-primary-50: #ecf0ff;
+    --color-primary-100: #dde4ff;
+    --color-primary-200: #c2cdff;
+    --color-primary-300: #9cabff;
+    --color-primary-400: #757eff;
+    --color-primary-500: #5655ff;
+    --color-primary-600: #4735f5;
+    --color-primary-700: #3542c7;
+    --color-primary-800: #3125ae;
+    --color-primary-900: #2c2689;
+    --color-primary-950: #1c1650; */
+
+    /*  backup primary colors for testing (green spectrum) */
+    --color-primary-50: #ecfff1;
+    --color-primary-100: #ddffe3;
+    --color-primary-200: #c2ffc5;
+    --color-primary-300: #9cffa4;
+    --color-primary-400: #75ff75;
+    --color-primary-500: #55ff69;
+    --color-primary-600: #35f535;
+    --color-primary-700: #35c73f;
+    --color-primary-800: #25ae2e;
+    --color-primary-900: #268933;
+    --color-primary-950: #195016;
+
 
     --color-primary-graph-line-hue: 224;
     --color-primary-graph-area-hue: 217;
@@ -142,6 +156,32 @@
     --color-primary-scrub-area-2-hue: 221;
 
     /* Secondary Colors */
+    /* --color-secondary-50: #effaff;
+    --color-secondary-100: #def3ff;
+    --color-secondary-200: #b6e9ff;
+    --color-secondary-300: #75daff;
+    --color-secondary-400: #2cc9ff;
+    --color-secondary-500: #00b8ff;
+    --color-secondary-600: #008fd4;
+    --color-secondary-700: #0071ab;
+    --color-secondary-800: #00608d;
+    --color-secondary-900: #065074;
+    --color-secondary-950: #04324d; */
+
+    /* back up secondary colors for testing (red spectrum) */
+    --color-secondary-50: #ffecec;
+    --color-secondary-100: #ffdcdc;
+    --color-secondary-200: #ffc2c2;
+    --color-secondary-300: #ff9c9c;
+    --color-secondary-400: #ff7575;
+    --color-secondary-500: #ff5555;
+    --color-secondary-600: #f53535;
+    --color-secondary-700: #c73535;
+    --color-secondary-800: #ae2525;
+    --color-secondary-900: #892626;
+    --color-secondary-950: #501616;
+
+
     --color-secondary-gradient-max-hue: 300;
     --color-secondary-gradient-min-hue: 1;
 
@@ -226,5 +266,5 @@ body {
 }
 
 a {
-  @apply text-blue-500 hover:text-blue-600 font-medium;
+  @apply text-primary-500 hover:text-primary-600 font-medium;
 }
