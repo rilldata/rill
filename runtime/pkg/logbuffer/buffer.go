@@ -27,10 +27,10 @@ func NewBuffer(maxMessageCount int, maxBufferSize int64) *Buffer {
 }
 
 func (b *Buffer) AddZapEntry(entry zapcore.Entry, coreFields, entryFields []zapcore.Field, enc zapcore.Encoder) error {
-	// encode fields using zapcore.Encoder, append to entryFields since coreFields will be empty in many cases
-	// until logger is created `With` method.
+	// append to entryFields since coreFields will be empty in many cases
+	// unless logger is created `With` method.
 	entryFields = append(entryFields, coreFields...)
-	// send empty entry as we want to store message separately
+	// encode fields using zapcore.Encoder, send empty entry as we want to store the message separately
 	fieldsBuf, err := enc.EncodeEntry(zapcore.Entry{}, entryFields)
 	if err != nil {
 		return err
