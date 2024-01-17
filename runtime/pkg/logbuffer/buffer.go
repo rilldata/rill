@@ -2,7 +2,6 @@ package logbuffer
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -27,35 +26,30 @@ func NewBuffer(maxMessageCount int, maxBufferSize int64) *Buffer {
 	}
 }
 
-func (b *Buffer) AddZapEntry(entry zapcore.Entry, coreFields, entryFields []zapcore.Field) error {
-	size := 0
-	attrs := make(map[string]any, len(coreFields)+len(entryFields))
-	for _, field := range coreFields {
-		attrs[field.Key] = field.String
-		size += len(field.Key) + len(field.String) // approx size
+func (b *Buffer) AddZapEntry(entry zapcore.Entry, coreFields, entryFields []zapcore.Field, enc zapcore.Encoder) error {
+	// encode fields using zapcore.Encoder, append to entryFields since coreFields will be empty in many cases
+	// until logger is created `With` method.
+	entryFields = append(entryFields, coreFields...)
+	// send empty entry as we want to store message separately
+	fieldsBuf, err := enc.EncodeEntry(zapcore.Entry{}, entryFields)
+	if err != nil {
+		return err
 	}
+	defer fieldsBuf.Free()
+	payload := fieldsBuf.String()
 
-	for _, field := range entryFields {
-		attrs[field.Key] = field.String
-		size += len(field.Key) + len(field.String) // approx size
-	}
-
+	size := fieldsBuf.Len()
 	size += len(entry.Message)
 	// add enum size, assuming upper bound for 64 bits system
 	size += 8
 	// add proto Timestamp size
 	size += 12
 
-	payload, err := json.Marshal(attrs)
-	if err != nil {
-		return err
-	}
-
 	message := &runtimev1.Log{
 		Level:       zapLevelToPBLevel(entry.Level),
 		Time:        timestamppb.New(entry.Time),
 		Message:     entry.Message,
-		JsonPayload: string(payload),
+		JsonPayload: payload,
 	}
 
 	b.mu.Lock()

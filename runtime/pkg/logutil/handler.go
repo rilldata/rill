@@ -2,17 +2,26 @@ package logutil
 
 import (
 	"github.com/rilldata/rill/runtime/pkg/logbuffer"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 type BufferedZapCore struct {
 	fields []zapcore.Field
 	logs   *logbuffer.Buffer
+	enc    zapcore.Encoder
 }
 
 func NewBufferedZapCore(logs *logbuffer.Buffer) *BufferedZapCore {
+	encCfg := zap.NewDevelopmentEncoderConfig()
+	encCfg.NameKey = zapcore.OmitKey
+	encCfg.EncodeLevel = nil
+	encCfg.EncodeTime = nil
+	consoleEncoder := zapcore.NewConsoleEncoder(encCfg)
+
 	return &BufferedZapCore{
 		logs: logs,
+		enc:  consoleEncoder,
 	}
 }
 
@@ -21,7 +30,7 @@ func (d *BufferedZapCore) Enabled(level zapcore.Level) bool {
 }
 
 func (d *BufferedZapCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
-	return d.logs.AddZapEntry(entry, d.fields, fields)
+	return d.logs.AddZapEntry(entry, d.fields, fields, d.enc)
 }
 
 func (d *BufferedZapCore) With(fields []zapcore.Field) zapcore.Core {

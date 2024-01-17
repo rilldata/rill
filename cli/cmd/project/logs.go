@@ -113,7 +113,7 @@ func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 func printLog(log *runtimev1.Log) {
-	fmt.Printf("%s\t%s\t%s\t%s\n", printTime(log.Time), printLogLevel(log.Level), log.Message, log.JsonPayload)
+	fmt.Printf("%s\t%s\t%s\t%s", printTime(log.Time), printLogLevel(log.Level), log.Message, log.JsonPayload)
 }
 
 func printTime(t *timestamppb.Timestamp) string {
