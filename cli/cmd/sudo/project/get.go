@@ -32,6 +32,11 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
+			annotations := make([]string, 0, len(res.Project.Annotations))
+			for k, v := range res.Project.Annotations {
+				annotations = append(annotations, fmt.Sprintf("%s=%s", k, v))
+			}
+
 			project := res.Project
 			fmt.Printf("Name: %s (ID: %s)\n", project.Name, project.Id)
 			fmt.Printf("Org: %s (ID: %s)\n", project.OrgName, project.OrgId)
@@ -44,9 +49,9 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Printf("Prod OLAP driver: %s\n", project.ProdOlapDriver)
 			fmt.Printf("Prod OLAP DSN: %s\n", project.ProdOlapDsn)
 			fmt.Printf("Prod slots: %d\n", project.ProdSlots)
-			fmt.Printf("Prod Tags: %s\n", strings.Join(project.Tags, ","))
 			fmt.Printf("Prod deployment ID: %s\n", project.ProdDeploymentId)
 			fmt.Printf("Prod hibernation TTL: %s\n", time.Duration(project.ProdTtlSeconds)*time.Second)
+			fmt.Printf("Annotations: %s\n", strings.Join(annotations, "; "))
 
 			return nil
 		},
