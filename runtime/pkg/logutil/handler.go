@@ -20,11 +20,11 @@ func NewBufferedZapCore(logs *logbuffer.Buffer) *BufferedZapCore {
 	encCfg.TimeKey = zapcore.OmitKey
 	encCfg.MessageKey = zapcore.OmitKey
 	encCfg.SkipLineEnding = true
-	consoleEncoder := zapcore.NewJSONEncoder(encCfg)
+	fieldsOnlyEncoder := zapcore.NewJSONEncoder(encCfg)
 
 	return &BufferedZapCore{
 		logs: logs,
-		enc:  consoleEncoder,
+		enc:  fieldsOnlyEncoder,
 	}
 }
 
