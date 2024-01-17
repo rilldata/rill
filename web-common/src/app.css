@@ -116,8 +116,7 @@
   :root {
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
 
-    /* Defaults for the theme. This will be overridden based on the selected theme.
-       Should match the color palette blue from tailwind */
+    /* Defaults for the theme. This will be overridden based on the selected theme. */
     /* Primary colors */
     /* --color-primary-50: #ecf0ff;
     --color-primary-100: #dde4ff;
