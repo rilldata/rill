@@ -202,7 +202,11 @@ export const sanitiseExpression = (
   if (!where?.cond?.exprs?.length) {
     where = having;
   } else {
-    where.cond?.exprs?.push(...(having.cond?.exprs ?? []));
+    // make sure to create a copy and not update the original "where" filter
+    where = createAndExpression([
+      ...where.cond.exprs,
+      ...(having.cond?.exprs ?? []),
+    ]);
   }
   return where;
 };
