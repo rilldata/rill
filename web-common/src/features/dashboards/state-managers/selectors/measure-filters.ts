@@ -85,11 +85,12 @@ export const getMeasureFilterItems = (
     const addedMeasure = new Set<string>();
 
     for (const dtf of dashData.dashboard.dimensionThresholdFilters) {
-      forEachExpression(dtf.filter, (e) => {
-        if (!e.cond?.exprs?.length) {
+      forEachExpression(dtf.filter, (e, depth) => {
+        if (depth > 0 || !e.cond?.exprs?.length) {
           return;
         }
-        const ident = e.cond?.exprs?.[0].ident;
+        const ident =
+          e.cond?.exprs?.[0].ident ?? e.cond?.exprs?.[0].cond?.exprs?.[0].ident;
         if (
           ident === undefined ||
           addedMeasure.has(ident) ||

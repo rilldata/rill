@@ -115,7 +115,7 @@ export function negateExpression(expr: V1Expression): V1Expression {
 
 export function forEachExpression(
   expr: V1Expression,
-  cb: (e: V1Expression, depth?: number) => void,
+  cb: (e: V1Expression, depth: number) => void,
   depth = 0,
 ) {
   if (!expr.cond?.exprs) {

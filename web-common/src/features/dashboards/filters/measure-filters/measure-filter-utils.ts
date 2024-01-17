@@ -10,8 +10,10 @@ import type { TimeControlState } from "@rilldata/web-common/features/dashboards/
 import {
   createQueryServiceMetricsViewToplist,
   V1Expression,
+  V1MetricsViewToplistResponse,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import type { QueryObserverResult } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { derived, get, Readable } from "svelte/store";
 
@@ -67,18 +69,27 @@ export function prepareMeasureFilterResolutions(
         };
       }
 
-      const inFilters = toplists
-        .filter((t) => t.data?.data?.length)
-        .map((t, i) =>
-          // create an in expression for each dimension in the filters
-          createInExpression(
-            dashboard.dimensionThresholdFilters[i].name,
-            // add the values from the toplist response within the "in expression"
-            t.data?.data?.map(
-              (d) => d[dashboard.dimensionThresholdFilters[i].name],
-            ) ?? [],
-          ),
-        );
+      if (toplists.some((t) => !t.data?.data?.length)) {
+        // if there is some toplist data not returning any result
+        // then add a `false` in the condition to not match any rows
+        return {
+          ready: true,
+          filter: {
+            val: false,
+          },
+        };
+      }
+
+      const inFilters = toplists.map((t, i) =>
+        // create an in expression for each dimension in the filters
+        createInExpression(
+          dashboard.dimensionThresholdFilters[i].name,
+          // add the values from the toplist response within the "in expression"
+          t.data?.data?.map(
+            (d) => d[dashboard.dimensionThresholdFilters[i].name],
+          ) ?? [],
+        ),
+      );
       if (inFilters.length === 0) {
         return {
           ready: true,
