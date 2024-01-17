@@ -88,11 +88,11 @@
   }
 
   .ui-measure-bar-included {
-    @apply bg-blue-100 dark:bg-blue-700;
+    @apply bg-primary-100 dark:bg-primary-700;
   }
 
   .ui-measure-bar-included-selected {
-    @apply bg-blue-200 dark:bg-blue-600;
+    @apply bg-primary-200 dark:bg-primary-600;
   }
 
   .ui-measure-bar-excluded {

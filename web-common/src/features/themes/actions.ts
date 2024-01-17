@@ -22,13 +22,12 @@ function setPrimaryColor(primary: V1Color) {
   const root = document.querySelector(ThemeBoundarySelector) as HTMLElement;
   if (!root) return;
 
-  const colors = generateColorPalette(primary, getDefaultPrimaryColors());
-  for (let i = 0; i < TailwindColorSpacing.length; i++) {
+  generateColorPalette(primary, getDefaultPrimaryColors()).forEach((c, i) => {
     root.style.setProperty(
       `${PrimaryCSSVariablePrefix}${TailwindColorSpacing[i]}`,
-      `hsl(${themeColorToHSLString(colors[i])})`,
+      `hsl(${themeColorToHSLString(c)})`,
     );
-  }
+  });
 
   const [hue] = RGBToHSL(convertColor(primary));
   const hueVal = Math.round(hue) + "";
@@ -73,7 +72,7 @@ function getDefaultPrimaryColors() {
 }
 
 /**
- * Right now copies over saturation and lightness from the default primary color of blue, keeping the hue from input
+ * Right now copies over saturation and lightness from the default primary color, keeping the hue from input
  */
 export function generateColorPalette(
   input: V1Color,
