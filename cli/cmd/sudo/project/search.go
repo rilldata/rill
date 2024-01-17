@@ -3,7 +3,6 @@ package project
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/rilldata/rill/admin/client"
@@ -130,8 +129,6 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 	if err != nil {
 		return nil, err
 	}
-
-	log.Printf("HERE: %v", proj)
 
 	depl := proj.ProdDeployment
 

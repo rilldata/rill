@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 
 	"github.com/rilldata/rill/admin/database"
@@ -133,8 +132,6 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	requiresReset := (proj.Region != opts.Region) || (proj.ProdSlots != opts.ProdSlots)
-
-	log.Printf("HERE: projects=%v AND opts=%v", proj.Annotations, opts.Annotations)
 
 	impactsDeployments := (requiresReset ||
 		(proj.Name != opts.Name) ||
