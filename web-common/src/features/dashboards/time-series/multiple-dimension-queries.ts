@@ -1,5 +1,6 @@
 import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
+  createAndExpression,
   createInExpression,
   filterExpressions,
   sanitiseExpression,
@@ -209,12 +210,11 @@ export function getDimensionValueTimeSeries(
       return derived(
         dimensionValues?.values?.map((value, i) => {
           // create a copy
-          const updatedFilter = filterExpressions(
-            dimensionValues?.filter,
-            () => true,
-          );
+          const updatedFilter =
+            filterExpressions(dimensionValues?.filter, () => true) ??
+            createAndExpression([]);
           // add the value to "in" expression
-          updatedFilter?.cond?.exprs?.push(
+          updatedFilter.cond?.exprs?.push(
             createInExpression(dimensionName, [value]),
           );
 
@@ -243,6 +243,7 @@ export function getDimensionValueTimeSeries(
             ([value, timeseries]) => {
               let prepData = timeseries?.data?.data;
               if (!timeseries?.isFetching) {
+                console.log(value, timeseries?.data);
                 prepData = prepareTimeSeries(
                   timeseries?.data?.data,
                   undefined,
