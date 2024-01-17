@@ -10,6 +10,10 @@
   export let label: string;
   export let options: { value: string; label?: string }[];
 
+  // temporary till we figure out the menus
+  export let detach = false;
+  export let itemsClass = "";
+
   let displayValue: string;
   $: {
     const foundOption = options.find((option) => option.value === value);
@@ -18,15 +22,15 @@
 </script>
 
 <div class="flex flex-col gap-y-2">
-  <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
-  <Menu>
+  <label class="text-gray-800 text-sm font-medium" for={id}>{label}</label>
+  <Menu {detach}>
     <MenuButton
       className="w-full border px-3 py-1 h-8 flex gap-x-2 justify-between items-center"
     >
       {displayValue}
       <CaretDownIcon />
     </MenuButton>
-    <MenuItems>
+    <MenuItems positioningOverride={itemsClass}>
       {#each options as option}
         <MenuItem on:click={() => (value = option.value)}>
           {option?.label ?? option.value}

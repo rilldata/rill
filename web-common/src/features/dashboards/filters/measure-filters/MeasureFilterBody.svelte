@@ -16,6 +16,7 @@
   export let labelMaxWidth = "160px";
   export let active = false;
 
+  console.log(expr);
   $: shortLabel = MeasureFilterOptions.find(
     (o) => o.value === expr?.cond?.op,
   )?.shortLabel;

@@ -129,13 +129,17 @@
     >
       <Select
         bind:value={$form["dimension"]}
+        detach
         id="operation"
+        itemsClass="absolute left-4.5"
         label="By Dimension"
         options={dimensionOptions}
       />
       <Select
         bind:value={$form["operation"]}
+        detach
         id="operation"
+        itemsClass="absolute left-4.5"
         label="Threshold"
         options={MeasureFilterOptions}
       />
@@ -145,8 +149,11 @@
         id="value1"
         on:change={handleSubmit}
         on:enter-pressed={(e) => {
-          // TODO: focus next input if isBetweenExpression
-          handleSubmit(e);
+          if (isBetweenExpression) {
+            document.getElementById("value2")?.focus();
+          } else {
+            handleSubmit(e);
+          }
         }}
         placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
       />
