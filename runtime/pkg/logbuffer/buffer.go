@@ -3,10 +3,11 @@ package logbuffer
 import (
 	"context"
 	"sync"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/bufferutil"
-	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -26,29 +27,11 @@ func NewBuffer(maxMessageCount int, maxBufferSize int64) *Buffer {
 	}
 }
 
-func (b *Buffer) AddZapEntry(entry zapcore.Entry, coreFields, entryFields []zapcore.Field, enc zapcore.Encoder) error {
-	// append to entryFields since coreFields will be empty in many cases
-	// unless logger is created `With` method.
-	entryFields = append(entryFields, coreFields...)
-	// encode fields using zapcore.Encoder, send empty entry as we want to store the message separately
-	fieldsBuf, err := enc.EncodeEntry(zapcore.Entry{}, entryFields)
-	if err != nil {
-		return err
-	}
-	defer fieldsBuf.Free()
-	payload := fieldsBuf.String()
-
-	size := fieldsBuf.Len()
-	size += len(entry.Message)
-	// add enum size, assuming upper bound for 64 bits system
-	size += 8
-	// add proto Timestamp size
-	size += 12
-
+func (b *Buffer) AddEntry(lvl runtimev1.LogLevel, t time.Time, msg, payload string) error {
 	message := &runtimev1.Log{
-		Level:       zapLevelToPBLevel(entry.Level),
-		Time:        timestamppb.New(entry.Time),
-		Message:     entry.Message,
+		Level:       lvl,
+		Time:        timestamppb.New(t),
+		Message:     msg,
 		JsonPayload: payload,
 	}
 
@@ -57,7 +40,7 @@ func (b *Buffer) AddZapEntry(entry zapcore.Entry, coreFields, entryFields []zapc
 
 	b.messages.Push(bufferutil.Item[*runtimev1.Log]{
 		Value: message,
-		Size:  size,
+		Size:  len(payload) + len(msg) + 8 + 12, // enum size (assuming upper bound for 64 bits system) + proto Timestamp size
 	})
 
 	for client := range b.clients {
@@ -120,29 +103,10 @@ func (b *Buffer) GetLogs(asc bool, limit int, minLvl runtimev1.LogLevel) []*runt
 	if !asc {
 		// this is a rare case, only when the user has specified asc=false
 		// reverse the logs
-		for i, j := 0, len(logs)-1; i < j; i, j = i+1, j-1 {
-			logs[i], logs[j] = logs[j], logs[i]
-		}
+		slices.Reverse(logs)
 	}
 
 	return logs
-}
-
-func zapLevelToPBLevel(level zapcore.Level) runtimev1.LogLevel {
-	switch level {
-	case zapcore.DebugLevel:
-		return runtimev1.LogLevel_LOG_LEVEL_DEBUG
-	case zapcore.InfoLevel:
-		return runtimev1.LogLevel_LOG_LEVEL_INFO
-	case zapcore.WarnLevel:
-		return runtimev1.LogLevel_LOG_LEVEL_WARN
-	case zapcore.ErrorLevel:
-		return runtimev1.LogLevel_LOG_LEVEL_ERROR
-	case zapcore.DPanicLevel, zapcore.PanicLevel, zapcore.FatalLevel:
-		return runtimev1.LogLevel_LOG_LEVEL_FATAL
-	default:
-		return runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED
-	}
 }
 
 func (b *Buffer) addClient(client chan *runtimev1.Log) {

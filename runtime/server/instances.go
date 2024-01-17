@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -196,18 +195,17 @@ func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*r
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.Bool("args.ascending", req.Ascending),
+		attribute.Int("args.limit", int(req.Limit)),
+		attribute.String("args.level", req.Level.String()),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
 		return nil, ErrForbidden
 	}
 
-	if req.Level == "" {
-		req.Level = "INFO"
-	}
-	lvl := toRuntimeLogLevel(req.Level)
+	lvl := req.Level
 	if lvl == runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid log level %s", req.Level)
+		lvl = runtimev1.LogLevel_LOG_LEVEL_INFO // backward compatibility
 	}
 
 	logBuffer, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
@@ -224,18 +222,17 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.Bool("args.replay", req.Replay),
+		attribute.Int("args.replay_limit", int(req.ReplayLimit)),
+		attribute.String("args.level", req.Level.String()),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
 		return ErrForbidden
 	}
 
-	if req.Level == "" {
-		req.Level = "INFO"
-	}
-	lvl := toRuntimeLogLevel(req.Level)
+	lvl := req.Level
 	if lvl == runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED {
-		return status.Errorf(codes.InvalidArgument, "invalid log level %s", req.Level)
+		lvl = runtimev1.LogLevel_LOG_LEVEL_INFO // backward compatibility
 	}
 
 	logBuffer, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
@@ -293,21 +290,4 @@ func toString(connectors []*runtimev1.Connector) []string {
 		res[i] = fmt.Sprintf("%s:%s", c.Name, c.Type)
 	}
 	return res
-}
-
-func toRuntimeLogLevel(lvl string) runtimev1.LogLevel {
-	switch strings.ToUpper(lvl) {
-	case "DEBUG":
-		return runtimev1.LogLevel_LOG_LEVEL_DEBUG
-	case "INFO":
-		return runtimev1.LogLevel_LOG_LEVEL_INFO
-	case "WARN":
-		return runtimev1.LogLevel_LOG_LEVEL_WARN
-	case "ERROR":
-		return runtimev1.LogLevel_LOG_LEVEL_ERROR
-	case "FATAL":
-		return runtimev1.LogLevel_LOG_LEVEL_FATAL
-	default:
-		return runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED
-	}
 }
