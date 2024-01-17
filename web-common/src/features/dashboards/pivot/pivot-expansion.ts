@@ -14,43 +14,34 @@ import {
 import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 
 /**
- * Extracts and organizes dimension names from a nested array structure
- * based on a specified anchor dimension and an expanded state.
+ * Extracts and organizes dimension values from a nested array structure
+ * based on a given dimensions and an expanded key.
  *
- * This function iterates over each key in the `expanded` object, which
+ * This function iterates over a key in the `expanded` object, which
  * indicates whether a particular path in the nested array is expanded.
  * For each expanded path, it navigates through the table data
  * following the path defined by the key (split into indices) and extracts
  * the dimension values at each level.
- *
  */
-function getExpandedValuesFromNestedArray(
+function getValuesForExpandedKey(
   tableData: PivotDataRow[],
-  anchorDimension: string,
-  expanded: ExpandedState,
-): Record<string, string[]> {
-  const values = {};
+  rowDimensions: string[],
+  key: string,
+) {
+  const indices = key.split(".").map((index) => parseInt(index, 10));
 
-  for (const key in expanded as Record<string, boolean>) {
-    if (expanded[key]) {
-      // Split the key into indices
-      const indices = key.split(".").map((index) => parseInt(index, 10));
+  // Retrieve the value from the nested array
+  let currentValue: PivotDataRow[] | undefined = tableData;
+  const dimensionValues: string[] = [];
 
-      // Retrieve the value from the nested array
-      let currentValue: PivotDataRow[] | undefined = tableData;
-      const dimensionNames: string[] = [];
-      for (const index of indices) {
-        if (!currentValue?.[index]) break;
-        dimensionNames.push(currentValue[index]?.[anchorDimension] as string);
-        currentValue = currentValue[index]?.subRows;
-      }
-
-      // Add the value to the result array
-      values[key] = dimensionNames;
+  indices.forEach((index, i) => {
+    if (!currentValue?.[index]) {
+      return;
     }
-  }
-
-  return values;
+    dimensionValues.push(currentValue[index]?.[rowDimensions[i]] as string);
+    currentValue = currentValue[index]?.subRows;
+  });
+  return dimensionValues;
 }
 
 /**
@@ -115,17 +106,19 @@ export function queryExpandedRowMeasureValues(
   const { rowDimensionNames } = config;
   const expanded = config.pivot.expanded;
   if (!tableData || Object.keys(expanded).length == 0) return writable(null);
-  const values = getExpandedValuesFromNestedArray(
-    tableData,
-    rowDimensionNames[0],
-    expanded,
-  );
 
   return derived(
-    Object.keys(values)?.map((expandIndex) => {
-      const anchorDimension = rowDimensionNames[values[expandIndex].length];
+    Object.keys(expanded)?.map((expandIndex) => {
+      const nestLevel = expandIndex?.split(".")?.length;
+      const anchorDimension = rowDimensionNames[nestLevel];
+      const values = getValuesForExpandedKey(
+        tableData,
+        rowDimensionNames,
+        expandIndex,
+      );
+
       // TODO: handle for already existing filters
-      const rowNestFilters = values[expandIndex].map((value, index) => {
+      const rowNestFilters = values.map((value, index) => {
         return {
           name: rowDimensionNames[index],
           in: [value],

@@ -14,6 +14,7 @@ import {
   getDimensionsInPivotRow,
   getFilterForPivotTable,
   getMeasuresInPivotColumns,
+  getPivotConfigKey,
   getSortForAccessor,
 } from "./pivot-utils";
 import {
@@ -130,6 +131,12 @@ export function createTableCellQuery(
  */
 let lastPivotData: PivotDataRow[] = [];
 let lastPivotColumnDef: ColumnDef<PivotDataRow>[] = [];
+
+/**
+ * The expanded table has to iterate over itself to find nested dimension values
+ * which are being expanded.
+ */
+const expandedTableMap: Record<string, PivotDataRow[]> = {};
 
 /**
  * Main store for pivot table data
@@ -259,10 +266,17 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 cellData,
               );
 
+              let pivotData = tableDataWithCells;
+
+              // TODO: Considering optimizing this derived store
+              if (getPivotConfigKey(config) in expandedTableMap) {
+                pivotData = expandedTableMap[getPivotConfigKey(config)];
+              }
+
               const expandedSubTableCellQuery = queryExpandedRowMeasureValues(
                 ctx,
                 config,
-                tableDataWithCells,
+                pivotData,
                 columnDimensionAxes?.data,
               );
               /**
@@ -271,19 +285,23 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               return derived(
                 expandedSubTableCellQuery,
                 (expandedRowMeasureValues) => {
-                  prepareNestedPivotData(tableDataWithCells, rowDimensionNames);
+                  prepareNestedPivotData(pivotData, rowDimensionNames);
                   let tableDataExpanded: PivotDataRow[] = tableDataWithCells;
                   if (expandedRowMeasureValues?.length) {
                     tableDataExpanded = addExpandedDataToPivot(
                       config,
-                      tableDataWithCells,
+                      pivotData,
                       rowDimensionNames,
                       columnDimensionAxes?.data || {},
                       expandedRowMeasureValues,
                     );
+
+                    const key = getPivotConfigKey(config);
+                    expandedTableMap[key] = tableDataExpanded;
                   }
                   lastPivotData = tableDataExpanded;
                   lastPivotColumnDef = columnDef;
+
                   return {
                     isFetching: false,
                     data: tableDataExpanded,

@@ -45,6 +45,24 @@ export function getDimensionsInPivotColumns(
 }
 
 /**
+ * Construct a key for a pivot config to store expanded table data
+ * in the cache
+ */
+export function getPivotConfigKey(config: PivotDataStoreConfig) {
+  const { colDimensionNames, rowDimensionNames, measureNames, filters, pivot } =
+    config;
+
+  const { sorting } = pivot;
+  const sortingKey = JSON.stringify(sorting);
+  const filterKey = JSON.stringify(filters);
+  const dimsAndMeasures = rowDimensionNames
+    .concat(measureNames, colDimensionNames)
+    .join("_");
+
+  return `${dimsAndMeasures}_${sortingKey}_${filterKey}`;
+}
+
+/**
  * Alternative to flexRender for performant rendering of cells
  */
 export const cellComponent = (

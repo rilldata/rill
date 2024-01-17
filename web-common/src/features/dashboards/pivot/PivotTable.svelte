@@ -151,7 +151,6 @@
 
 <style>
   table {
-    width: 100%;
     min-width: 300px;
     border-collapse: collapse;
     color: #333;
