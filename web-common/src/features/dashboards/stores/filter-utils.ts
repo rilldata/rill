@@ -129,7 +129,7 @@ export function forEachExpression(
   }
 }
 
-export function getAllIdentifiers(expr: V1Expression | undefined) {
+export function getAllIdentifiers(expr: V1Expression | undefined): string[] {
   if (!expr) return [];
   const idents = new Set<string>();
   forEachExpression(expr, (e) => {

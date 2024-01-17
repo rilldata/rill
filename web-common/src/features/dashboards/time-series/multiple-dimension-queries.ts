@@ -1,3 +1,4 @@
+import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
   createInExpression,
@@ -63,8 +64,12 @@ export function getDimensionValuesForComparison(
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
+      measureFilterResolutionsStore(ctx),
     ],
-    ([runtime, name, dashboardStore, timeControls], set) => {
+    (
+      [runtime, name, dashboardStore, timeControls, measureFilterResolution],
+      set,
+    ) => {
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
@@ -116,6 +121,7 @@ export function getDimensionValuesForComparison(
                   dashboardStore?.dimensionSearchText ?? "",
                   dimensionName,
                 ),
+                measureFilterResolution.filter,
               ),
               timeStart: timeControls.timeStart,
               timeEnd: timeControls.timeEnd,
@@ -133,7 +139,8 @@ export function getDimensionValuesForComparison(
               query: {
                 enabled:
                   timeControls.ready &&
-                  !!dashboardStore?.selectedComparisonDimension,
+                  !!dashboardStore?.selectedComparisonDimension &&
+                  measureFilterResolution.ready,
                 queryClient: ctx.queryClient,
               },
             },
