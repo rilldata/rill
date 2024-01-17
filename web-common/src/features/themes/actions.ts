@@ -77,12 +77,12 @@ function getDefaultPrimaryColors() {
  */
 export function generateColorPalette(
   input: V1Color,
-  defaultColors: Array<HSLColor>,
-) {
+  defaultColors: HSLColor[],
+): HSLColor[] {
   const [hue] = RGBToHSL(convertColor(input));
-  const colors = new Array<HSLColor>(TailwindColorSpacing.length);
-  for (let i = 0; i < defaultColors.length; i++) {
-    colors[i] = [hue, defaultColors[i][1], defaultColors[i][2]];
-  }
-  return colors;
+  return TailwindColorSpacing.map((c) => [
+    hue,
+    defaultColors[c][1],
+    defaultColors[c][2],
+  ]);
 }
