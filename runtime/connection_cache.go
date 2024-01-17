@@ -93,13 +93,14 @@ func (r *Runtime) evictInstanceConnections(instanceID string) {
 // openAndMigrate opens a connection and migrates it.
 func (r *Runtime) openAndMigrate(ctx context.Context, cfg cachedConnectionConfig) (drivers.Handle, error) {
 	logger := r.logger
-	if cfg.instanceID != "default" {
-		logger = r.logger.With(zap.String("instance_id", cfg.instanceID), zap.String("driver", cfg.driver))
-	}
-
 	activityClient := r.activity
 	if !cfg.shared {
 		inst, err := r.Instance(ctx, cfg.instanceID)
+		if err != nil {
+			return nil, err
+		}
+
+		logger, err = r.InstanceLogger(ctx, cfg.instanceID)
 		if err != nil {
 			return nil, err
 		}
