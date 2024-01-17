@@ -8,7 +8,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
+  import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { fly } from "svelte/transition";

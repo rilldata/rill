@@ -24,7 +24,7 @@ export type AdminServiceSudoGetResourceParams = {
 
 export type AdminServiceSearchProjectNamesParams = {
   namePattern?: string;
-  tags?: string[];
+  annotations?: string;
   pageSize?: number;
   pageToken?: string;
 };
@@ -294,16 +294,6 @@ export interface V1SudoUpdateUserQuotasRequest {
   singleuserOrgs?: number;
 }
 
-export interface V1SudoUpdateTagsResponse {
-  project?: V1Project;
-}
-
-export interface V1SudoUpdateTagsRequest {
-  organization?: string;
-  project?: string;
-  tags?: string[];
-}
-
 export interface V1SudoUpdateOrganizationQuotasResponse {
   organization?: V1Organization;
 }
@@ -315,6 +305,20 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   slotsTotal?: number;
   slotsPerDeployment?: number;
   outstandingInvites?: number;
+}
+
+export interface V1SudoUpdateAnnotationsResponse {
+  project?: V1Project;
+}
+
+export type V1SudoUpdateAnnotationsRequestAnnotations = {
+  [key: string]: string;
+};
+
+export interface V1SudoUpdateAnnotationsRequest {
+  organization?: string;
+  project?: string;
+  annotations?: V1SudoUpdateAnnotationsRequestAnnotations;
 }
 
 export interface V1SudoGetResourceResponse {
@@ -428,6 +432,8 @@ export interface V1ProjectPermissions {
   manageReports?: boolean;
 }
 
+export type V1ProjectAnnotations = { [key: string]: string };
+
 export interface V1Project {
   id?: string;
   name?: string;
@@ -445,7 +451,7 @@ export interface V1Project {
   prodDeploymentId?: string;
   frontendUrl?: string;
   prodTtlSeconds?: string;
-  tags?: string[];
+  annotations?: V1ProjectAnnotations;
   createdOn?: string;
   updatedOn?: string;
 }

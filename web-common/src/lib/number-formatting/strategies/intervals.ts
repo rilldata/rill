@@ -24,10 +24,8 @@ const timeUnits = {
   y: "y",
 };
 
-// TODO: Rewrite this to use the sample and provided options
 export class IntervalFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterRangeSpecsStrategy;
-  initialSample: number[];
 
   stringFormat(x: number): string {
     return formatMsInterval(x);

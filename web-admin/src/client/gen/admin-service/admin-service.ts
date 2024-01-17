@@ -97,10 +97,10 @@ import type {
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
+  V1SudoUpdateAnnotationsResponse,
+  V1SudoUpdateAnnotationsRequest,
   V1SearchProjectNamesResponse,
   AdminServiceSearchProjectNamesParams,
-  V1SudoUpdateTagsResponse,
-  V1SudoUpdateTagsRequest,
   V1SudoUpdateOrganizationQuotasResponse,
   V1SudoUpdateOrganizationQuotasRequest,
   V1SudoUpdateUserQuotasResponse,
@@ -3303,6 +3303,56 @@ export const createAdminServiceSetSuperuser = <
   >(mutationFn, mutationOptions);
 };
 /**
+ * @summary SudoUpdateAnnotations endpoint for superusers to update project annotations
+ */
+export const adminServiceSudoUpdateAnnotations = (
+  v1SudoUpdateAnnotationsRequest: V1SudoUpdateAnnotationsRequest,
+) => {
+  return httpClient<V1SudoUpdateAnnotationsResponse>({
+    url: `/v1/superuser/projects/annotations`,
+    method: "patch",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoUpdateAnnotationsRequest,
+  });
+};
+
+export type AdminServiceSudoUpdateAnnotationsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSudoUpdateAnnotations>>
+>;
+export type AdminServiceSudoUpdateAnnotationsMutationBody =
+  V1SudoUpdateAnnotationsRequest;
+export type AdminServiceSudoUpdateAnnotationsMutationError = RpcStatus;
+
+export const createAdminServiceSudoUpdateAnnotations = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateAnnotations>>,
+    TError,
+    { data: V1SudoUpdateAnnotationsRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateAnnotations>>,
+    { data: V1SudoUpdateAnnotationsRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoUpdateAnnotations(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateAnnotations>>,
+    TError,
+    { data: V1SudoUpdateAnnotationsRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
  * @summary SearchProjectNames returns project names matching the pattern
  */
 export const adminServiceSearchProjectNames = (
@@ -3362,55 +3412,6 @@ export const createAdminServiceSearchProjectNames = <
   return query;
 };
 
-/**
- * @summary Add a SudoUpdateTags endpoint for superusers to update tags
- */
-export const adminServiceSudoUpdateTags = (
-  v1SudoUpdateTagsRequest: V1SudoUpdateTagsRequest,
-) => {
-  return httpClient<V1SudoUpdateTagsResponse>({
-    url: `/v1/superuser/projects/tags`,
-    method: "patch",
-    headers: { "Content-Type": "application/json" },
-    data: v1SudoUpdateTagsRequest,
-  });
-};
-
-export type AdminServiceSudoUpdateTagsMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>
->;
-export type AdminServiceSudoUpdateTagsMutationBody = V1SudoUpdateTagsRequest;
-export type AdminServiceSudoUpdateTagsMutationError = RpcStatus;
-
-export const createAdminServiceSudoUpdateTags = <
-  TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>,
-    TError,
-    { data: V1SudoUpdateTagsRequest },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>,
-    { data: V1SudoUpdateTagsRequest }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return adminServiceSudoUpdateTags(data);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof adminServiceSudoUpdateTags>>,
-    TError,
-    { data: V1SudoUpdateTagsRequest },
-    TContext
-  >(mutationFn, mutationOptions);
-};
 /**
  * @summary SudoUpdateOrganizationQuotas update the quotas available for orgs
  */

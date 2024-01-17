@@ -6,7 +6,6 @@ TableCells – the cell contents.
 <script lang="ts">
   import ColumnHeaders from "@rilldata/web-common/components/virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "@rilldata/web-common/components/virtualized-table/sections/TableCells.svelte";
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { createVirtualizer, VirtualItem } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";
   import type { DimensionTableRow } from "./dimension-table-types";
@@ -19,6 +18,7 @@ TableCells – the cell contents.
   import DimensionValueHeader from "./DimensionValueHeader.svelte";
 
   import { getStateManagers } from "../state-managers/state-managers";
+  import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 
   const dispatch = createEventDispatcher();
 
@@ -93,7 +93,6 @@ TableCells – the cell contents.
   /* Separate out dimension column */
   // SAFETY: cast should be safe because if dimensionName is undefined,
   // we should not be in a dimension table sub-component
-
   $: dimensionColumnName = $dimensionTableColumnName(dimensionName) as string;
   $: dimensionColumn = columns?.find(
     (c) => c.name == dimensionColumnName,

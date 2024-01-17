@@ -11,7 +11,7 @@
   } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
-  import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
+  import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
   import PreparingImport from "../features/sources/modal/PreparingImport.svelte";

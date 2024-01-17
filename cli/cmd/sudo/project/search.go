@@ -3,7 +3,6 @@ package project
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/rilldata/rill/admin/client"
@@ -20,7 +19,7 @@ import (
 func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 	var pageSize uint32
 	var pageToken string
-	var tags []string
+	var annotations map[string]string
 	var statusFlag bool
 
 	searchCmd := &cobra.Command{
@@ -45,7 +44,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			res, err := client.SearchProjectNames(ctx, &adminv1.SearchProjectNamesRequest{
 				NamePattern: pattern,
-				Tags:        tags,
+				Annotations: annotations,
 				PageSize:    pageSize,
 				PageToken:   pageToken,
 			})
@@ -104,7 +103,7 @@ func SearchCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 	searchCmd.Flags().BoolVar(&statusFlag, "status", false, "Include project status")
-	searchCmd.Flags().StringSliceVar(&tags, "tag", []string{}, "Tags to filter projects by")
+	searchCmd.Flags().StringToStringVar(&annotations, "annotation", nil, "Annotations to filter projects by (supports wildcard values)")
 	searchCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of projects to return per page")
 	searchCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
@@ -130,8 +129,6 @@ func newProjectStatusTableRow(ctx context.Context, c *client.Client, org, projec
 	if err != nil {
 		return nil, err
 	}
-
-	log.Printf("HERE: %v", proj)
 
 	depl := proj.ProdDeployment
 
