@@ -286,7 +286,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 expandedSubTableCellQuery,
                 (expandedRowMeasureValues) => {
                   prepareNestedPivotData(pivotData, rowDimensionNames);
-                  let tableDataExpanded: PivotDataRow[] = tableDataWithCells;
+                  let tableDataExpanded: PivotDataRow[] = pivotData;
                   if (expandedRowMeasureValues?.length) {
                     tableDataExpanded = addExpandedDataToPivot(
                       config,
