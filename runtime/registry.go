@@ -31,6 +31,16 @@ func (r *Runtime) Instance(ctx context.Context, instanceID string) (*drivers.Ins
 	return r.registryCache.get(instanceID)
 }
 
+// InstanceLogger returns a logger scoped for the given instance. Logs emitted to the logger will also be available in the instance's log buffer.
+func (r *Runtime) InstanceLogger(ctx context.Context, instanceID string) (*zap.Logger, error) {
+	return r.registryCache.getLogger(instanceID)
+}
+
+// InstanceLogs returns an in-memory buffer of recent logs related to the given instance.
+func (r *Runtime) InstanceLogs(ctx context.Context, instanceID string) (*logbuffer.Buffer, error) {
+	return r.registryCache.getLogbuffer(instanceID)
+}
+
 // Controller returns the controller for the given instance.
 // If the controller is currently initializing, the call will wait until the controller is ready.
 // If the controller has closed with a fatal error, that error will be returned here until it's restarted.
@@ -108,10 +118,6 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string, dropDB 
 	}
 
 	return nil
-}
-
-func (r *Runtime) InstanceLogs(ctx context.Context, instanceID string) (*logbuffer.Buffer, error) {
-	return r.registryCache.getLogbuffer(instanceID)
 }
 
 // registryCache caches all the runtime's instances and manages the life-cycle of their controllers.
@@ -250,6 +256,17 @@ func (r *registryCache) getController(ctx context.Context, instanceID string) (*
 		return nil, iwc.controllerErr
 	}
 	return iwc.controller, nil
+}
+
+func (r *registryCache) getLogger(instanceID string) (*zap.Logger, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	iwc := r.instances[instanceID]
+	if iwc == nil {
+		return nil, drivers.ErrNotFound
+	}
+	return iwc.logger, nil
 }
 
 func (r *registryCache) getLogbuffer(instanceID string) (*logbuffer.Buffer, error) {
