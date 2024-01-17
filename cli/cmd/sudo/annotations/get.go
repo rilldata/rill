@@ -1,8 +1,7 @@
-package tags
+package annotations
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -13,7 +12,7 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get <org> <project>",
 		Args:  cobra.ExactArgs(2),
-		Short: "Get Tags for project in an organization",
+		Short: "Get annotations for project in an organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			cfg := ch.Config
@@ -31,9 +30,14 @@ func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			fmt.Printf("Project: %s\n", res.Project.Name)
-			fmt.Printf("Organization: %s\n", res.Project.OrgName)
-			fmt.Printf("Tags: %s\n", strings.Join(res.Project.Tags, ","))
+			if len(res.Project.Annotations) == 0 {
+				ch.Printer.PrintlnWarn("No annotations found")
+				return nil
+			}
+
+			for k, v := range res.Project.Annotations {
+				fmt.Printf("%s=%s\n", k, v)
+			}
 
 			return nil
 		},

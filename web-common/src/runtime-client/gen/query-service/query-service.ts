@@ -114,7 +114,9 @@ export const createQueryServiceColumnCardinality = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -135,7 +137,9 @@ export const createQueryServiceColumnCardinality = <
     queryFn,
     enabled: !!(instanceId && tableName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -185,7 +189,9 @@ export const createQueryServiceTableColumns = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -205,7 +211,9 @@ export const createQueryServiceTableColumns = <
     queryFn,
     enabled: !!(instanceId && tableName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -258,7 +266,9 @@ export const createQueryServiceColumnDescriptiveStatistics = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -288,7 +298,9 @@ export const createQueryServiceColumnDescriptiveStatistics = <
     queryFn,
     enabled: !!(instanceId && tableName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -323,7 +335,10 @@ export const createQueryServiceExport = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof queryServiceExport>>,
     TError,
-    { instanceId: string; data: QueryServiceExportBody },
+    {
+      instanceId: string;
+      data: QueryServiceExportBody;
+    },
     TContext
   >;
 }) => {
@@ -331,7 +346,10 @@ export const createQueryServiceExport = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof queryServiceExport>>,
-    { instanceId: string; data: QueryServiceExportBody }
+    {
+      instanceId: string;
+      data: QueryServiceExportBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -341,7 +359,10 @@ export const createQueryServiceExport = <
   return createMutation<
     Awaited<ReturnType<typeof queryServiceExport>>,
     TError,
-    { instanceId: string; data: QueryServiceExportBody },
+    {
+      instanceId: string;
+      data: QueryServiceExportBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -352,12 +373,14 @@ export const queryServiceMetricsViewAggregation = (
   instanceId: string,
   metricsView: string,
   queryServiceMetricsViewAggregationBody: QueryServiceMetricsViewAggregationBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1MetricsViewAggregationResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsView}/aggregation`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceMetricsViewAggregationBody,
+    signal,
   });
 };
 
@@ -389,7 +412,9 @@ export const createQueryServiceMetricsViewAggregation = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -402,11 +427,12 @@ export const createQueryServiceMetricsViewAggregation = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewAggregation>>
-  > = () =>
+  > = ({ signal }) =>
     queryServiceMetricsViewAggregation(
       instanceId,
       metricsView,
       queryServiceMetricsViewAggregationBody,
+      signal,
     );
 
   const query = createQuery<
@@ -418,7 +444,9 @@ export const createQueryServiceMetricsViewAggregation = <
     queryFn,
     enabled: !!(instanceId && metricsView),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -429,12 +457,14 @@ export const queryServiceMetricsViewComparison = (
   instanceId: string,
   metricsViewName: string,
   queryServiceMetricsViewComparisonBody: QueryServiceMetricsViewComparisonBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1MetricsViewComparisonResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/compare-toplist`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceMetricsViewComparisonBody,
+    signal,
   });
 };
 
@@ -466,7 +496,9 @@ export const createQueryServiceMetricsViewComparison = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -479,11 +511,12 @@ export const createQueryServiceMetricsViewComparison = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewComparison>>
-  > = () =>
+  > = ({ signal }) =>
     queryServiceMetricsViewComparison(
       instanceId,
       metricsViewName,
       queryServiceMetricsViewComparisonBody,
+      signal,
     );
 
   const query = createQuery<
@@ -495,7 +528,9 @@ export const createQueryServiceMetricsViewComparison = <
     queryFn,
     enabled: !!(instanceId && metricsViewName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -509,12 +544,14 @@ export const queryServiceMetricsViewRows = (
   instanceId: string,
   metricsViewName: string,
   queryServiceMetricsViewRowsBody: QueryServiceMetricsViewRowsBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1MetricsViewRowsResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/rows`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceMetricsViewRowsBody,
+    signal,
   });
 };
 
@@ -546,7 +583,9 @@ export const createQueryServiceMetricsViewRows = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -559,11 +598,12 @@ export const createQueryServiceMetricsViewRows = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewRows>>
-  > = () =>
+  > = ({ signal }) =>
     queryServiceMetricsViewRows(
       instanceId,
       metricsViewName,
       queryServiceMetricsViewRowsBody,
+      signal,
     );
 
   const query = createQuery<
@@ -575,7 +615,9 @@ export const createQueryServiceMetricsViewRows = <
     queryFn,
     enabled: !!(instanceId && metricsViewName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -589,12 +631,14 @@ export const queryServiceMetricsViewTimeRange = (
   instanceId: string,
   metricsViewName: string,
   queryServiceMetricsViewTimeRangeBody: QueryServiceMetricsViewTimeRangeBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1MetricsViewTimeRangeResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/time-range-summary`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceMetricsViewTimeRangeBody,
+    signal,
   });
 };
 
@@ -626,7 +670,9 @@ export const createQueryServiceMetricsViewTimeRange = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -639,11 +685,12 @@ export const createQueryServiceMetricsViewTimeRange = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewTimeRange>>
-  > = () =>
+  > = ({ signal }) =>
     queryServiceMetricsViewTimeRange(
       instanceId,
       metricsViewName,
       queryServiceMetricsViewTimeRangeBody,
+      signal,
     );
 
   const query = createQuery<
@@ -655,7 +702,9 @@ export const createQueryServiceMetricsViewTimeRange = <
     queryFn,
     enabled: !!(instanceId && metricsViewName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -670,12 +719,14 @@ export const queryServiceMetricsViewTimeSeries = (
   instanceId: string,
   metricsViewName: string,
   queryServiceMetricsViewTimeSeriesBody: QueryServiceMetricsViewTimeSeriesBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1MetricsViewTimeSeriesResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/timeseries`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceMetricsViewTimeSeriesBody,
+    signal,
   });
 };
 
@@ -707,7 +758,9 @@ export const createQueryServiceMetricsViewTimeSeries = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -720,11 +773,12 @@ export const createQueryServiceMetricsViewTimeSeries = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewTimeSeries>>
-  > = () =>
+  > = ({ signal }) =>
     queryServiceMetricsViewTimeSeries(
       instanceId,
       metricsViewName,
       queryServiceMetricsViewTimeSeriesBody,
+      signal,
     );
 
   const query = createQuery<
@@ -736,7 +790,9 @@ export const createQueryServiceMetricsViewTimeSeries = <
     queryFn,
     enabled: !!(instanceId && metricsViewName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -751,12 +807,14 @@ export const queryServiceMetricsViewToplist = (
   instanceId: string,
   metricsViewName: string,
   queryServiceMetricsViewToplistBody: QueryServiceMetricsViewToplistBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1MetricsViewToplistResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/toplist`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceMetricsViewToplistBody,
+    signal,
   });
 };
 
@@ -788,7 +846,9 @@ export const createQueryServiceMetricsViewToplist = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -801,11 +861,12 @@ export const createQueryServiceMetricsViewToplist = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewToplist>>
-  > = () =>
+  > = ({ signal }) =>
     queryServiceMetricsViewToplist(
       instanceId,
       metricsViewName,
       queryServiceMetricsViewToplistBody,
+      signal,
     );
 
   const query = createQuery<
@@ -817,7 +878,9 @@ export const createQueryServiceMetricsViewToplist = <
     queryFn,
     enabled: !!(instanceId && metricsViewName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -832,12 +895,14 @@ export const queryServiceMetricsViewTotals = (
   instanceId: string,
   metricsViewName: string,
   queryServiceMetricsViewTotalsBody: QueryServiceMetricsViewTotalsBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1MetricsViewTotalsResponse>({
     url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/totals`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceMetricsViewTotalsBody,
+    signal,
   });
 };
 
@@ -869,7 +934,9 @@ export const createQueryServiceMetricsViewTotals = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -882,11 +949,12 @@ export const createQueryServiceMetricsViewTotals = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceMetricsViewTotals>>
-  > = () =>
+  > = ({ signal }) =>
     queryServiceMetricsViewTotals(
       instanceId,
       metricsViewName,
       queryServiceMetricsViewTotalsBody,
+      signal,
     );
 
   const query = createQuery<
@@ -898,7 +966,9 @@ export const createQueryServiceMetricsViewTotals = <
     queryFn,
     enabled: !!(instanceId && metricsViewName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -950,7 +1020,9 @@ export const createQueryServiceColumnNullCount = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -971,7 +1043,9 @@ export const createQueryServiceColumnNullCount = <
     queryFn,
     enabled: !!(instanceId && tableName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1023,7 +1097,9 @@ export const createQueryServiceColumnNumericHistogram = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1048,7 +1124,9 @@ export const createQueryServiceColumnNumericHistogram = <
     queryFn,
     enabled: !!(instanceId && tableName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1099,7 +1177,9 @@ export const createQueryServiceColumnRollupInterval = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1128,7 +1208,9 @@ export const createQueryServiceColumnRollupInterval = <
     queryFn,
     enabled: !!(instanceId && tableName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1180,7 +1262,9 @@ export const createQueryServiceTableRows = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1201,7 +1285,9 @@ export const createQueryServiceTableRows = <
     queryFn,
     enabled: !!(instanceId && tableName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1253,7 +1339,9 @@ export const createQueryServiceColumnRugHistogram = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1274,7 +1362,9 @@ export const createQueryServiceColumnRugHistogram = <
     queryFn,
     enabled: !!(instanceId && tableName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1326,7 +1416,9 @@ export const createQueryServiceColumnTimeGrain = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1347,7 +1439,9 @@ export const createQueryServiceColumnTimeGrain = <
     queryFn,
     enabled: !!(instanceId && tableName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1399,7 +1493,9 @@ export const createQueryServiceTableCardinality = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1420,7 +1516,9 @@ export const createQueryServiceTableCardinality = <
     queryFn,
     enabled: !!(instanceId && tableName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1472,7 +1570,9 @@ export const createQueryServiceColumnTimeRange = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1493,7 +1593,9 @@ export const createQueryServiceColumnTimeRange = <
     queryFn,
     enabled: !!(instanceId && tableName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1544,7 +1646,9 @@ export const createQueryServiceColumnTimeSeries = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1573,7 +1677,9 @@ export const createQueryServiceColumnTimeSeries = <
     queryFn,
     enabled: !!(instanceId && tableName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1625,7 +1731,9 @@ export const createQueryServiceColumnTopK = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1650,7 +1758,9 @@ export const createQueryServiceColumnTopK = <
     queryFn,
     enabled: !!(instanceId && tableName),
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1685,7 +1795,10 @@ export const createQueryServiceQuery = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof queryServiceQuery>>,
     TError,
-    { instanceId: string; data: QueryServiceQueryBody },
+    {
+      instanceId: string;
+      data: QueryServiceQueryBody;
+    },
     TContext
   >;
 }) => {
@@ -1693,7 +1806,10 @@ export const createQueryServiceQuery = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof queryServiceQuery>>,
-    { instanceId: string; data: QueryServiceQueryBody }
+    {
+      instanceId: string;
+      data: QueryServiceQueryBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -1703,7 +1819,10 @@ export const createQueryServiceQuery = <
   return createMutation<
     Awaited<ReturnType<typeof queryServiceQuery>>,
     TError,
-    { instanceId: string; data: QueryServiceQueryBody },
+    {
+      instanceId: string;
+      data: QueryServiceQueryBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -1735,7 +1854,10 @@ export const createQueryServiceQueryBatch = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof queryServiceQueryBatch>>,
     TError,
-    { instanceId: string; data: QueryServiceQueryBatchBody },
+    {
+      instanceId: string;
+      data: QueryServiceQueryBatchBody;
+    },
     TContext
   >;
 }) => {
@@ -1743,7 +1865,10 @@ export const createQueryServiceQueryBatch = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof queryServiceQueryBatch>>,
-    { instanceId: string; data: QueryServiceQueryBatchBody }
+    {
+      instanceId: string;
+      data: QueryServiceQueryBatchBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -1753,7 +1878,11 @@ export const createQueryServiceQueryBatch = <
   return createMutation<
     Awaited<ReturnType<typeof queryServiceQueryBatch>>,
     TError,
-    { instanceId: string; data: QueryServiceQueryBatchBody },
+    {
+      instanceId: string;
+      data: QueryServiceQueryBatchBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
+

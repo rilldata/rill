@@ -335,7 +335,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 		// r2 returns StatusBadRequest in all cases above
 		// we try again with anonymous credentials in case bucket is public
 		if (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) && creds != credentials.AnonymousCredentials {
-			c.logger.Info("s3 list objects failed, re-trying with anonymous credential", zap.Error(err), observability.ZapCtx(ctx))
+			c.logger.Debug("s3 list objects failed, re-trying with anonymous credential", zap.Error(err), observability.ZapCtx(ctx))
 			creds = credentials.AnonymousCredentials
 			bucketObj, bucketErr := c.openBucket(ctx, conf, conf.url.Host, creds)
 			if bucketErr != nil {
