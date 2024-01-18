@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { generateColorPaletteByCopying } from "@rilldata/web-common/features/themes/actions";
   import {
     applyShiftToPalette,
     getPaletteAndShift,
@@ -11,12 +12,14 @@
 
   let inputPalette: Color[];
   let matchedPalette: Color[];
+  let oldPalette: Color[];
   $: if (input) {
     try {
       const inputColor = chroma(input);
       const [palette, shift] = getPaletteAndShift(inputColor);
       matchedPalette = palette;
       inputPalette = applyShiftToPalette(palette, shift);
+      oldPalette = generateColorPaletteByCopying(inputColor);
     } catch (err) {
       // no-op
     }
@@ -37,9 +40,18 @@
   {/if}
 
   {#if matchedPalette}
-    <div>Matched Palette</div>
+    <div>Matched Palette from Tailwind</div>
     <div class="flex flex-row gap-1">
       {#each matchedPalette as color}
+        <div style="background-color:{color.name()}" class="h-20 w-10"></div>
+      {/each}
+    </div>
+  {/if}
+
+  {#if oldPalette}
+    <div>Old Palette (hue and saturation copied)</div>
+    <div class="flex flex-row gap-1">
+      {#each oldPalette as color}
         <div style="background-color:{color.name()}" class="h-20 w-10"></div>
       {/each}
     </div>

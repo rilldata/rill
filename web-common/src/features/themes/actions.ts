@@ -6,6 +6,7 @@ import {
 } from "@rilldata/web-common/features/themes/color-utils";
 import type { HSLColor } from "@rilldata/web-common/features/themes/color-utils";
 import type { V1Color, V1Theme } from "@rilldata/web-common/runtime-client";
+import chroma, { type Color } from "chroma-js";
 
 const PrimaryCSSVariablePrefix = "--color-primary-";
 const SecondaryCSSVariablePrefix = "--color-secondary-";
@@ -75,14 +76,16 @@ function getDefaultPrimaryColors() {
 /**
  * Right now copies over saturation and lightness from the default primary color of blue, keeping the hue from input
  */
-export function generateColorPalette(
-  input: V1Color,
-  defaultColors: Array<HSLColor>,
-) {
-  const [hue] = RGBToHSL(convertColor(input));
+function generateColorPalette(input: V1Color, defaultColors: Array<HSLColor>) {
+  const [hue, saturation] = RGBToHSL(convertColor(input));
   const colors = new Array<HSLColor>(TailwindColorSpacing.length);
   for (let i = 0; i < defaultColors.length; i++) {
-    colors[i] = [hue, defaultColors[i][1], defaultColors[i][2]];
+    colors[i] = [hue, saturation, defaultColors[i][2]];
   }
   return colors;
+}
+
+export function generateColorPaletteByCopying(input: Color) {
+  const [h, s] = input.hsl();
+  return getDefaultPrimaryColors().map(([, , l]) => chroma.hsl(h, s, l / 100));
 }
