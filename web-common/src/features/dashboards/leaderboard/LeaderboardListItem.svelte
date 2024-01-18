@@ -1,5 +1,6 @@
 <script lang="ts">
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
+  import { createCommandClickAction } from "@rilldata/web-common/lib/actions/command-click-action";
   import { fly, slide } from "svelte/transition";
   import BarAndLabel from "../../../components/BarAndLabel.svelte";
 
@@ -98,7 +99,12 @@
     on:blur={onLeave}
     on:click={(e) => {
       if (e.shiftKey) return;
-      toggleDimensionValueSelection(dimensionName, label);
+      toggleDimensionValueSelection(
+        dimensionName,
+        label,
+        false,
+        e.ctrlKey || e.metaKey,
+      );
     }}
     on:focus={onHover}
     on:keydown
@@ -109,8 +115,8 @@
     use:shiftClickAction
   >
     <LeaderboardItemFilterIcon
-      {isBeingCompared}
       {excluded}
+      {isBeingCompared}
       selectionIndex={itemData?.selectedIndex}
     />
     <BarAndLabel

@@ -11,6 +11,7 @@ export function toggleDimensionValueSelection(
   dimensionName: string,
   dimensionValue: string,
   keepPillVisible?: boolean,
+  uniqueValue?: boolean,
 ) {
   // if we are able to update the filters, we must cancel any queries
   // that are currently running.
@@ -37,7 +38,13 @@ export function toggleDimensionValueSelection(
 
   const inIdx = getValueIndexInExpression(expr, dimensionValue) as number;
   if (inIdx === -1) {
-    expr.cond.exprs.push({ val: dimensionValue });
+    if (uniqueValue) {
+      expr.cond.exprs.splice(1, expr.cond.exprs.length - 1, {
+        val: dimensionValue,
+      });
+    } else {
+      expr.cond.exprs.push({ val: dimensionValue });
+    }
   } else {
     expr.cond.exprs.splice(inIdx, 1);
     // Only decrement pinIndex if the removed value was before the pinned value
