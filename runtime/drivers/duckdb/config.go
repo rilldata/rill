@@ -116,6 +116,10 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	poolSize = max(poolSizeMin, poolSize) // Always enforce min pool size
 	cfg.PoolSize = poolSize
 
+	// useful for motherduck but safe to set at pass at initial connect
+	if !qry.Has("custom_user_agent") {
+		qry.Add("custom_user_agent", "rill")
+	}
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
 	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
 	cfg.DSN = generateDSN(uri.Path, qry.Encode())
