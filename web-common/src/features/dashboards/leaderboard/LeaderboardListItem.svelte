@@ -1,6 +1,5 @@
 <script lang="ts">
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
-  import { createCommandClickAction } from "@rilldata/web-common/lib/actions/command-click-action";
   import { fly, slide } from "svelte/transition";
   import BarAndLabel from "../../../components/BarAndLabel.svelte";
 

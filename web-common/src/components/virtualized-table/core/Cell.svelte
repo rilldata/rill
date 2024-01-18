@@ -8,7 +8,6 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
-  import { createCommandClickAction } from "@rilldata/web-common/lib/actions/command-click-action";
   import {
     createShiftClickAction,
     isClipboardApiSupported,
@@ -150,7 +149,6 @@
           {isDimensionTable ? '' : 'px-4'}
           text-left w-full text-ellipsis overflow-x-hidden whitespace-nowrap
           "
-        on:command-click
         on:shift-click={shiftClick}
         style:height="{row.size}px"
         use:shiftClickAction
