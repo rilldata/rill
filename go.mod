@@ -300,7 +300,7 @@ require (
 // the go-duckdb v1.5.6 has breaking changes with respect to appender API. The rilldata fork adds query cancellation changes on top of v1.5.5
 // details on breaking changes here : https://github.com/marcboeker/go-duckdb/pull/147#issuecomment-1895771714
 // changes done on top of v1.5.5 : https://github.com/rilldata/go-duckdb/compare/branch_v1.5.5...rilldata:go-duckdb:appender_revert
-replace github.com/marcboeker/go-duckdb v1.5.5 => github.com/rilldata/go-duckdb v0.0.0-20240118065948-d5d848053f44
+replace github.com/marcboeker/go-duckdb v1.5.5 => github.com/rilldata/go-duckdb v0.0.0-20240118102625-6f51039deb7b
 
 // snowflake uses arrow v12 but we need arrow v14 so we need to use a fork of snowflake upgraded to v14
 // revert to original SDK once this PR is merged : https://github.com/snowflakedb/gosnowflake/pull/977
