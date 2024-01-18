@@ -115,7 +115,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			model.State.RefreshedOn = nil
 			subErr := r.C.UpdateState(ctx, self.Meta.Name, self)
 			if subErr != nil {
-				r.C.Logger.Error("refs check: failed to update state", zap.Any("err", subErr))
+				r.C.Logger.Error("refs check: failed to update state", zap.Any("error", subErr))
 			}
 		}
 		return runtime.ReconcileResult{Err: err}
