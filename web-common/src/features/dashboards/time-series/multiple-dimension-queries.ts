@@ -243,7 +243,6 @@ export function getDimensionValueTimeSeries(
             ([value, timeseries]) => {
               let prepData = timeseries?.data?.data;
               if (!timeseries?.isFetching) {
-                console.log(value, timeseries?.data);
                 prepData = prepareTimeSeries(
                   timeseries?.data?.data,
                   undefined,
