@@ -116,7 +116,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	poolSize = max(poolSizeMin, poolSize) // Always enforce min pool size
 	cfg.PoolSize = poolSize
 
-	// useful for motherduck but safe to set at pass at initial connect
+	// useful for motherduck but safe to pass at initial connect
 	if !qry.Has("custom_user_agent") {
 		qry.Add("custom_user_agent", "rill")
 	}
