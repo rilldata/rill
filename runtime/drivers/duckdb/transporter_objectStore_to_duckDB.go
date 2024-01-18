@@ -37,7 +37,9 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		return err
 	}
 
-	t.logger.Info("source properties", zap.Any("srcProps", srcProps))
+	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
+
+	t.logger.Debug("source properties", zap.Any("srcProps", srcProps))
 	srcCfg, err := parseFileSourceProperties(srcProps)
 	if err != nil {
 		return err
@@ -93,7 +95,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		}
 
 		st := time.Now()
-		t.logger.Info("ingesting files", zap.Strings("files", files), observability.ZapCtx(ctx))
+		t.logger.Debug("ingesting files", zap.Strings("files", files), observability.ZapCtx(ctx))
 		if appendToTable {
 			if err := a.appendData(ctx, files); err != nil {
 				return err
@@ -111,7 +113,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		}
 
 		size := fileSize(files)
-		t.logger.Info("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
+		t.logger.Debug("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
 		opts.Progress.Observe(size, drivers.ProgressUnitByte)
 		appendToTable = true
 	}
@@ -157,7 +159,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 		}
 
 		st := time.Now()
-		t.logger.Info("ingesting files", zap.Strings("files", files), observability.ZapCtx(ctx))
+		t.logger.Debug("ingesting files", zap.Strings("files", files), observability.ZapCtx(ctx))
 		if appendToTable {
 			if err := a.appendData(ctx, files); err != nil {
 				return err
@@ -175,7 +177,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 		}
 
 		size := fileSize(files)
-		t.logger.Info("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
+		t.logger.Debug("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
 		opts.Progress.Observe(size, drivers.ProgressUnitByte)
 		appendToTable = true
 	}

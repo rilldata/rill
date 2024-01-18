@@ -6,7 +6,6 @@ import {
 
 export const defaultGenericNumOptions: FormatterOptionsCommon &
   FormatterRangeSpecsStrategy = {
-  strategy: "perRange",
   rangeSpecs: [
     {
       minMag: -2,
@@ -22,7 +21,6 @@ export const defaultGenericNumOptions: FormatterOptionsCommon &
 
 export const defaultPercentOptions: FormatterOptionsCommon &
   FormatterRangeSpecsStrategy = {
-  strategy: "perRange",
   rangeSpecs: [
     {
       minMag: -2,
@@ -36,9 +34,9 @@ export const defaultPercentOptions: FormatterOptionsCommon &
   numberKind: NumberKind.PERCENT,
 };
 
-export const defaultDollarOptions: FormatterOptionsCommon &
-  FormatterRangeSpecsStrategy = {
-  strategy: "perRange",
+export const defaultCurrencyOptions = (
+  numberKind: NumberKind,
+): FormatterOptionsCommon & FormatterRangeSpecsStrategy => ({
   rangeSpecs: [
     {
       minMag: -2,
@@ -49,5 +47,5 @@ export const defaultDollarOptions: FormatterOptionsCommon &
     },
   ],
   defaultMaxDigitsRight: 1,
-  numberKind: NumberKind.DOLLAR,
-};
+  numberKind,
+});

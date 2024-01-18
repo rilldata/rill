@@ -65,7 +65,7 @@ type DB interface {
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
 	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
-	FindProjectPathsByPatternAndTags(ctx context.Context, namePattern, afterName string, tags []string, limit int) ([]string, error)
+	FindProjectPathsByPatternAndAnnotations(ctx context.Context, namePattern, afterName string, annotationKeys []string, annotationPairs map[string]string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
@@ -265,7 +265,7 @@ type Project struct {
 	ProdSlots            int               `db:"prod_slots"`
 	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
 	ProdDeploymentID     *string           `db:"prod_deployment_id"`
-	Tags                 []string          `db:"tags"`
+	Annotations          map[string]string `db:"annotations"`
 	CreatedOn            time.Time         `db:"created_on"`
 	UpdatedOn            time.Time         `db:"updated_on"`
 }
@@ -301,7 +301,7 @@ type UpdateProjectOptions struct {
 	ProdSlots            int
 	ProdTTLSeconds       *int64
 	Region               string
-	Tags                 []string
+	Annotations          map[string]string
 }
 
 // DeploymentStatus is an enum representing the state of a deployment

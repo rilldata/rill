@@ -9,6 +9,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/logbuffer"
+	"github.com/rilldata/rill/runtime/pkg/logutil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -27,6 +29,16 @@ func (r *Runtime) Instances(ctx context.Context) ([]*drivers.Instance, error) {
 // Instance looks up an instance by ID. Instances are cached in-memory, so this is a cheap operation.
 func (r *Runtime) Instance(ctx context.Context, instanceID string) (*drivers.Instance, error) {
 	return r.registryCache.get(instanceID)
+}
+
+// InstanceLogger returns a logger scoped for the given instance. Logs emitted to the logger will also be available in the instance's log buffer.
+func (r *Runtime) InstanceLogger(ctx context.Context, instanceID string) (*zap.Logger, error) {
+	return r.registryCache.getLogger(instanceID)
+}
+
+// InstanceLogs returns an in-memory buffer of recent logs related to the given instance.
+func (r *Runtime) InstanceLogs(ctx context.Context, instanceID string) (*logbuffer.Buffer, error) {
+	return r.registryCache.getLogbuffer(instanceID)
 }
 
 // Controller returns the controller for the given instance.
@@ -126,6 +138,9 @@ type instanceWithController struct {
 	instance      *drivers.Instance
 	controller    *Controller
 	controllerErr error
+
+	logger    *zap.Logger
+	logbuffer *logbuffer.Buffer
 
 	// State for managing controller execution
 	ctx       context.Context
@@ -243,6 +258,28 @@ func (r *registryCache) getController(ctx context.Context, instanceID string) (*
 	return iwc.controller, nil
 }
 
+func (r *registryCache) getLogger(instanceID string) (*zap.Logger, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	iwc := r.instances[instanceID]
+	if iwc == nil {
+		return nil, drivers.ErrNotFound
+	}
+	return iwc.logger, nil
+}
+
+func (r *registryCache) getLogbuffer(instanceID string) (*logbuffer.Buffer, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	iwc := r.instances[instanceID]
+	if iwc == nil {
+		return nil, drivers.ErrNotFound
+	}
+	return iwc.logbuffer, nil
+}
+
 func (r *registryCache) create(ctx context.Context, inst *drivers.Instance) error {
 	err := r.store.CreateInstance(ctx, inst)
 	if err != nil {
@@ -267,6 +304,17 @@ func (r *registryCache) add(inst *drivers.Instance) {
 		instance:   inst,
 	}
 	r.instances[inst.ID] = iwc
+
+	// Setup the logger to duplicate logs to a) the Zap logger, b) an in-memory buffer that exposes the logs over the API
+	buffer := logbuffer.NewBuffer(r.rt.opts.ControllerLogBufferCapacity, r.rt.opts.ControllerLogBufferSizeBytes)
+	bufferCore := logutil.NewBufferedZapCore(buffer)
+
+	baseCore := r.logger.Core() // Only add instance_id to the base core
+	baseCore = baseCore.With([]zapcore.Field{zap.String("instance_id", iwc.instanceID)})
+
+	iwc.logger = zap.New(zapcore.NewTee(baseCore, bufferCore))
+	iwc.logbuffer = buffer
+
 	r.restartController(iwc)
 }
 
@@ -337,18 +385,18 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			// Before starting the controller, sync the repo.
 			// This is necessary for resources (usually sources or models) that reference files in the repo,
 			// and may be triggered before the project parser is triggered and syncs the repo.
-			r.logger.Info("syncing repo", zap.String("instance_id", iwc.instanceID))
+			iwc.logger.Debug("syncing repo")
 			err := r.ensureRepoSync(iwc.ctx, iwc.instanceID)
 			if err != nil {
-				r.logger.Warn("failed to sync repo", zap.String("instance_id", iwc.instanceID), zap.Error(err))
+				iwc.logger.Warn("failed to sync repo", zap.Error(err))
 				// Even if repo sync failed, we'll start the controller
 			} else {
-				r.logger.Info("repo synced", zap.String("instance_id", iwc.instanceID))
+				iwc.logger.Debug("repo synced")
 			}
 
 			// Start controller
-			r.logger.Info("controller starting", zap.String("instance_id", iwc.instanceID))
-			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instanceID, r.logger, r.activity)
+			iwc.logger.Debug("controller starting")
+			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instanceID, iwc.logger, r.activity)
 			if err == nil {
 				r.ensureProjectParser(iwc.ctx, iwc.instanceID, ctrl)
 
@@ -358,7 +406,7 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 				close(iwc.readyCh)
 				r.mu.Unlock()
 
-				r.logger.Info("controller ready", zap.String("instance_id", iwc.instanceID))
+				iwc.logger.Debug("controller ready")
 
 				err = ctrl.Run(iwc.ctx)
 			}
@@ -366,13 +414,13 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			iwc.cancel() // Always ensure cleanup
 
 			r.mu.Lock()
-			attrs := []zapcore.Field{zap.String("instance_id", iwc.instanceID), zap.Error(err), zap.Bool("reopen", iwc.reopen), zap.Bool("called_run", iwc.ready)}
+			attrs := []zapcore.Field{zap.Error(err), zap.Bool("reopen", iwc.reopen), zap.Bool("called_run", iwc.ready)}
 			r.mu.Unlock()
 
 			if errors.Is(err, iwc.ctx.Err()) {
-				r.logger.Warn("controller stopped", attrs...)
+				iwc.logger.Debug("controller stopped", attrs...)
 			} else {
-				r.logger.Error("controller failed", attrs...)
+				iwc.logger.Error("controller failed", attrs...)
 			}
 
 			// When an instance is edited, connector config may have changed.

@@ -29,8 +29,7 @@ export function formatProperFractionAsPercent(value: number): NumberParts {
   } else if (value === 0) {
     return { percent: "%", int: "0", dot: "", frac: "", suffix: "" };
   }
-  const factory = new PerRangeFormatter([], {
-    strategy: "perRange",
+  const factory = new PerRangeFormatter({
     rangeSpecs: [
       {
         minMag: -2,
