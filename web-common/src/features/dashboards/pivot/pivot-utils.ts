@@ -45,6 +45,26 @@ export function getDimensionsInPivotColumns(
 }
 
 /**
+ * Returns a sorted data array by appending the missing values in
+ * sorted row axes data
+ */
+export function reconcileMissingDimensionValues(
+  anchorDimension: string,
+  sortedRowAxesData: Record<string, string[]> | undefined,
+  unsortedRowAxesData: Record<string, string[]> | undefined,
+) {
+  const sortedRowAxisValues = new Set(
+    sortedRowAxesData?.[anchorDimension] || [],
+  );
+  const unsortedRowAxisValues = unsortedRowAxesData?.[anchorDimension] || [];
+
+  const missingValues = unsortedRowAxisValues.filter(
+    (value) => !sortedRowAxisValues.has(value),
+  );
+
+  return [...sortedRowAxisValues, ...missingValues];
+}
+/**
  * Construct a key for a pivot config to store expanded table data
  * in the cache
  */
@@ -90,7 +110,7 @@ export function createIndexMap<T>(arr: T[]): Map<T, number> {
 export function getFilterForPivotTable(
   config: PivotDataStoreConfig,
   colDimensionAxes: Record<string, string[]> = {},
-  rowDimensionAxes: Record<string, string[]> = {},
+  rowDimensionValues: string[] = [],
   isInitialTable = false,
   yLimit = 100,
   xLimit = 20,
@@ -104,7 +124,7 @@ export function getFilterForPivotTable(
     rowFilters = [
       {
         name: rowDimensionNames[0],
-        in: rowDimensionAxes[rowDimensionNames[0]].slice(0, yLimit),
+        in: rowDimensionValues.slice(0, yLimit),
       },
     ];
   }
