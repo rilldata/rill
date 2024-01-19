@@ -51,7 +51,7 @@
     {#if shortLabel}
       {shortLabel}
     {/if}
-    <IconSpaceFixer className="pl-1" pullRight>
+    <IconSpaceFixer className="pl-2" pullRight>
       <div class="transition-transform" class:-rotate-180={active}>
         <CaretDownIcon className="inline" size="10px" />
       </div>

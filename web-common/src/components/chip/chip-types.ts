@@ -16,7 +16,7 @@ export const defaultChipColors: ChipColors = {
   textClass: "text-blue-800 dark:text-blue-50",
   bgActiveClass: "bg-blue-100 dark:bg-blue-700",
   outlineClass:
-    "outline outline-1 outline-blue-100 dark:outline-blue-500 hover:outline-blue-200",
+    "outline outline-1 outline-blue-200 dark:outline-blue-500 hover:outline-blue-200",
   outlineActiveClass: "!outline-blue-500 dark:outline-blue-500",
 };
 
@@ -44,7 +44,7 @@ export const measureChipColors = {
   textClass: "text-indigo-800",
   bgActiveClass: "bg-indigo-100 dark:bg-indigo-600",
   outlineClass:
-    "outline outline-1 outline-indigo-100 dark:outline-indigo-500 hover:outline-indigo-200",
+    "outline outline-1 outline-indigo-200 dark:outline-indigo-500 hover:outline-indigo-200",
   outlineActiveClass: "!outline-indigo-500 dark:outline-indigo-500",
 };
 

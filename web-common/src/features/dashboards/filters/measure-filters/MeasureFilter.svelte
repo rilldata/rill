@@ -55,6 +55,7 @@
         dispatch("click");
       }}
       on:remove={() => dispatch("remove")}
+      outline
       removable
     >
       <!-- remove button tooltip -->
