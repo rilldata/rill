@@ -1,19 +1,17 @@
 import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
-  useFilteredResources,
   useFilteredResourceNames,
+  useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
-  createQueryServiceTableColumns,
+  V1ListFilesResponse,
   createRuntimeServiceGetFile,
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
-  V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/query-core";
-import { TIMESTAMPS } from "../../lib/duckdb-data-types";
 import type { Readable } from "svelte/motion";
 import { derived } from "svelte/store";
 import {
@@ -87,23 +85,4 @@ export function useModelFileIsEmpty(instanceId, modelName) {
       },
     },
   });
-}
-
-export function useModelTimestampColumns(
-  instanceId: string,
-  modelName: string,
-) {
-  return createQueryServiceTableColumns(
-    instanceId,
-    modelName,
-    {},
-    {
-      query: {
-        select: (data) =>
-          data.profileColumns
-            ?.filter((c) => TIMESTAMPS.has(c.type))
-            .map((c) => c.name) ?? [],
-      },
-    },
-  );
 }
