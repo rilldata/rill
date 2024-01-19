@@ -1,6 +1,6 @@
 import { test } from "@playwright/test";
-import { createDashboardFromModel } from "web-local/test/ui/utils/dashboardHelpers";
-import { createAdBidsModel } from "web-local/test/ui/utils/dataSpecifcHelpers";
+import { createDashboardFromModel } from "web-local/test/utils/dashboardHelpers";
+import { createAdBidsModel } from "web-local/test/utils/dataSpecifcHelpers";
 
 export function useDashboardFlowTestSetup() {
   test.beforeEach(async ({ page }) => {
