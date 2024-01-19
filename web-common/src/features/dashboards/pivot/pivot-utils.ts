@@ -108,14 +108,19 @@ export function getFilterForPivotTable(
   rowDimensionValues: string[] = [],
   isInitialTable = false,
   yLimit = 100,
-  xLimit = 50,
+  xLimit = 100,
 ) {
   // TODO: handle for already existing global filters
 
-  const { colDimensionNames, rowDimensionNames } = config;
+  const { colDimensionNames, rowDimensionNames, time } = config;
 
   let rowFilters: MetricsViewFilterCond[] = [];
-  if (isInitialTable && rowDimensionNames.length) {
+  const anchorDimension = rowDimensionNames?.[0];
+  if (
+    isInitialTable &&
+    anchorDimension &&
+    anchorDimension !== time.timeDimension
+  ) {
     rowFilters = [
       {
         name: rowDimensionNames[0],

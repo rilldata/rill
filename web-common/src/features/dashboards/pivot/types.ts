@@ -20,6 +20,14 @@ export interface PivotDataRow {
   subRows?: PivotDataRow[];
 }
 
+export interface PivotTimeConfig {
+  timeStart: string | undefined;
+  timeEnd: string | undefined;
+  timeZone: string;
+  timeDimension: string;
+  interval: V1TimeGrain;
+}
+
 /**
  * This is the config that is passed to the pivot data store methods
  */
@@ -31,12 +39,7 @@ export interface PivotDataStoreConfig {
   allDimensions: MetricsViewSpecDimensionV2[];
   filters: V1MetricsViewFilter;
   pivot: PivotState;
-
-  // Might be removed
-  timeDimension: string;
-  columnHasTimeDimension: boolean;
-  rowHasTimeDimension: boolean;
-  interval: V1TimeGrain;
+  time: PivotTimeConfig;
 }
 
 export type PivotMeasure = {

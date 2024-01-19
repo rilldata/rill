@@ -10,7 +10,10 @@ import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,
 } from "./pivot-queries";
-import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
+import type {
+  MetricsViewFilterCond,
+  V1MetricsViewAggregationResponseDataItem,
+} from "@rilldata/web-common/runtime-client";
 
 /**
  * Extracts and organizes dimension values from a nested array structure
@@ -53,15 +56,18 @@ export function createSubTableCellQuery(
   config: PivotDataStoreConfig,
   anchorDimension: string,
   columnDimensionAxesData: Record<string, string[]> | undefined,
-  rowNestFilters,
+  rowNestFilters: MetricsViewFilterCond[],
 ) {
   const allDimensions = config.colDimensionNames.concat([anchorDimension]);
 
+  const { time } = config;
+
   const dimensionBody = allDimensions.map((dimension) => {
-    if (dimension === config.timeDimension) {
+    if (dimension === time.timeDimension) {
       return {
         name: dimension,
-        timeGrain: config.interval,
+        timeGrain: time.interval,
+        timeZone: time.timeZone,
       };
     } else return { name: dimension };
   });

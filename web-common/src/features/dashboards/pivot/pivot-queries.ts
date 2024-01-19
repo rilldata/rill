@@ -80,11 +80,13 @@ export function getAxisForDimensions(
     }
   }
 
+  const { time } = config;
   const dimensionBody = dimensions.map((d) => {
-    if (d === config.timeDimension) {
+    if (d === time.timeDimension) {
       return {
         name: d,
-        timeGrain: config.interval,
+        timeGrain: time.interval,
+        timeZone: time.timeZone,
       };
     } else return { name: d };
   });
