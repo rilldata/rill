@@ -18,7 +18,6 @@ import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   Period,
   TimeOffsetType,
-  TimeRange,
   TimeRangeString,
 } from "@rilldata/web-common/lib/time/types";
 
@@ -180,13 +179,14 @@ export function getFilterForPivotTable(
       },
     ];
   }
-
-  const colFilters = colDimensionNames.map((colDimensionName) => {
-    return {
-      name: colDimensionName,
-      in: colDimensionAxes?.[colDimensionName].slice(0, xLimit),
-    };
-  });
+  const colFilters = colDimensionNames
+    .filter((dimension) => dimension !== config.time.timeDimension)
+    .map((colDimensionName) => {
+      return {
+        name: colDimensionName,
+        in: colDimensionAxes?.[colDimensionName].slice(0, xLimit),
+      };
+    });
 
   const filters = {
     include: [...colFilters, ...rowFilters],
