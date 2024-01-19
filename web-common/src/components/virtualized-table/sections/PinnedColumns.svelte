@@ -1,10 +1,9 @@
 <script lang="ts">
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { createEventDispatcher } from "svelte";
   import Cell from "../core/Cell.svelte";
   import ColumnHeader from "../core/ColumnHeader.svelte";
   import Row from "../core/Row.svelte";
-  import type { PinnedColumnSide } from "../types";
+  import type { PinnedColumnSide, VirtualizedTableColumns } from "../types";
 
   const dispatch = createEventDispatcher();
 

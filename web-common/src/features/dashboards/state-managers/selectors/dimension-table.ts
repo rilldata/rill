@@ -9,7 +9,6 @@ import {
   prepareDimensionTableRows,
   prepareVirtualizedDimTableColumns,
 } from "../../dimension-table/dimension-table-utils";
-import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
 import { allMeasures, visibleMeasures } from "./measures";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
 import { getDimensionColumn, isSummableMeasure } from "../../dashboard-utils";
@@ -17,6 +16,7 @@ import { isTimeComparisonActive } from "./time-range";
 import { activeMeasureName, isValidPercentOfTotal } from "./active-measure";
 import { selectedDimensionValues } from "./dimension-filters";
 import type { DimensionTableRow } from "../../dimension-table/dimension-table-types";
+import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 
 export const selectedDimensionValueNames = (
   dashData: DashboardDataSources,

@@ -235,14 +235,14 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 				zap.Int("http.status", httpStatus),
 				zap.Duration("duration", time.Since(start)),
 			)
-			logger.Info("http request finished", fields...)
+			logger.Debug("http request finished", fields...)
 		}()
 
 		// Add log fields to context
 		r = r.WithContext(contextWithLogFields(r.Context(), &fields))
 
 		// Print start message
-		logger.Info("http request started", fields...)
+		logger.Debug("http request started", fields...)
 
 		next.ServeHTTP(&wrapped, r)
 	})

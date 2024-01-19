@@ -16,6 +16,8 @@
   $: x = point?.[xAccessor];
 
   function truncate(str) {
+    if (!str?.length) return str;
+
     const truncateLength = 34;
 
     if (str.length > truncateLength) {

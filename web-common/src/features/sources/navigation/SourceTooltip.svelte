@@ -3,9 +3,11 @@
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { isMac } from "@rilldata/web-local/lib/util/os-detection";
   import { isClipboardApiSupported } from "../../../lib/actions/shift-click-action";
 
+  function isMac() {
+    return window.navigator.userAgent.includes("Macintosh");
+  }
   export let sourceName;
   export let connector;
 </script>
