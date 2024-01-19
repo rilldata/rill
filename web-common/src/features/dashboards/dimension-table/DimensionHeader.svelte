@@ -150,7 +150,7 @@
     </Tooltip>
 
     <ExportDimensionTableDataButton
-      includeScheduledReport={$featureFlags.adminServer}
+      includeScheduledReport={!!$featureFlags.adminServer}
       metricViewName={$metricsViewName}
     />
 

@@ -2,15 +2,11 @@ import type { BeforeNavigate } from "@sveltejs/kit";
 import { writable } from "svelte/store";
 
 export type FeatureFlags = {
-  adminServer: boolean | undefined;
-  readOnly: boolean | undefined;
-  alerts: boolean | undefined;
+  adminServer?: boolean;
+  readOnly?: boolean;
+  alerts?: boolean;
 };
-export const featureFlags = writable<FeatureFlags>({
-  adminServer: undefined,
-  readOnly: undefined,
-  alerts: undefined,
-});
+export const featureFlags = writable<FeatureFlags>();
 
 export function retainFeaturesFlags(navigation: BeforeNavigate) {
   if (!navigation.from.url.searchParams.has("features")) {
