@@ -14,6 +14,7 @@
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
+  import CreateAlertButton from "../../alerts/CreateAlertButton.svelte";
   import Spinner from "../../entity-management/Spinner.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -154,9 +155,8 @@
       metricViewName={$metricsViewName}
     />
 
-    <!-- alert entrypoint -->
     {#if $featureFlags.adminServer && $featureFlags.alerts}
-      <div>Create Alert</div>
+      <CreateAlertButton />
     {/if}
   </div>
 </div>
