@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { useDashboardFlowTestSetup } from "web-local/test/dashboards/dashboard-flow-test-setup";
+import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
 import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
 
 test.describe("dimension and measure selectors", () => {
