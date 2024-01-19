@@ -2,7 +2,6 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     V1ExportFormat,
     createQueryServiceExport,
@@ -20,16 +19,14 @@
   let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
-  const timeControlStore = useTimeControlStore(ctx);
   const metricsView = useDashboard(get(ctx.runtime).instanceId, metricViewName);
 
   const exportDash = createQueryServiceExport();
   const handleExportTDD = async (format: V1ExportFormat) => {
     await exportTDD({
-      metricViewName,
+      ctx,
       query: exportDash,
       format,
-      timeControlStore,
       timeDimension: $metricsView.data?.metricsView?.spec
         ?.timeDimension as string,
     });
