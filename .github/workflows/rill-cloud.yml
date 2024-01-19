@@ -27,7 +27,7 @@ jobs:
           go-version: 1.21
 
       - name: Authenticate GCloud
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
 

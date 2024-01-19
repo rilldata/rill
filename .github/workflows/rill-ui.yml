@@ -1,6 +1,5 @@
 name: Build and Deploy Cloud UI to Netlify
 on:
-  create:
   push:
     tags:
       - "**"
@@ -22,6 +21,7 @@ on:
         - stage
         - prod
         - test
+  create:
 env:
   NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
