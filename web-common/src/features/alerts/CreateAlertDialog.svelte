@@ -7,6 +7,9 @@
   import { createForm } from "svelte-forms-lib";
   import { Button } from "../../components/button";
   import Dialog from "../../components/dialog-v2/Dialog.svelte";
+  import AlertDialogCriteriaTab from "./AlertDialogCriteriaTab.svelte";
+  import AlertDialogDataTab from "./AlertDialogDataTab.svelte";
+  import AlertDialogDeliveryTab from "./AlertDialogDeliveryTab.svelte";
 
   export let open: boolean;
 
@@ -39,9 +42,15 @@
         {/each}
       </TabList>
       <TabPanels>
-        <TabPanel>Data tab</TabPanel>
-        <TabPanel>Criteria tab</TabPanel>
-        <TabPanel>Delivery tab</TabPanel>
+        <TabPanel>
+          <AlertDialogDataTab />
+        </TabPanel>
+        <TabPanel>
+          <AlertDialogCriteriaTab />
+        </TabPanel>
+        <TabPanel>
+          <AlertDialogDeliveryTab />
+        </TabPanel>
       </TabPanels>
     </TabGroup>
   </svelte:fragment>
