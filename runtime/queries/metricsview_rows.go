@@ -125,6 +125,14 @@ func (q *MetricsViewRows) Export(ctx context.Context, rt *runtime.Runtime, insta
 				return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 			}
 
+			// temporary backwards compatibility
+			if q.Filter != nil {
+				if q.Where != nil {
+					return fmt.Errorf("both filter and where is provided")
+				}
+				q.Where = convertFilterToExpression(q.Filter)
+			}
+
 			timeRollupColumnName, err := q.resolveTimeRollupColumnName(ctx, olap, instanceID, opts.Priority, q.MetricsView)
 			if err != nil {
 				return err
