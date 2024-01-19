@@ -1,9 +1,7 @@
 <script lang="ts">
-  import { buttonClasses } from "@rilldata/web-common/components/button/classes";
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { Menu } from "@rilldata/web-common/components/menu";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import { MeasureFilterOptions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";

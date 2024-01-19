@@ -233,7 +233,7 @@ export function getDimensionValueTimeSeries(
                 metricViewName,
                 {
                   measureNames: measures,
-                  where: sanitiseExpression(updatedFilter),
+                  where: sanitiseExpression(updatedFilter, undefined),
                   timeStart: start,
                   timeEnd: end,
                   timeGranularity: interval,
