@@ -184,6 +184,7 @@
     {excluded}
     {filterExcludeMode}
     {label}
+    {selected}
     slot="tooltip-content"
   />
 </Tooltip>
