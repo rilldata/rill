@@ -6,15 +6,14 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	// Load IANA time zone data
+	_ "time/tzdata"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	// Load IANA time zone data
-	_ "time/tzdata"
 )
 
 type MetricsViewComparison struct {
@@ -845,6 +844,14 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
+			// temporary backwards compatibility
+			if q.Filter != nil {
+				if q.Where != nil {
+					return fmt.Errorf("both filter and where is provided")
+				}
+				q.Where = convertFilterToExpression(q.Filter)
+			}
+
 			var sql string
 			var args []any
 			if !isTimeRangeNil(q.ComparisonTimeRange) {
