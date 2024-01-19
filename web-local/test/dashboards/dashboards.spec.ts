@@ -3,7 +3,7 @@ import {
   TestEntityType,
   updateCodeEditor,
   wrapRetryAssertion,
-} from "./utils/commonHelpers";
+} from "../utils/commonHelpers";
 import {
   assertLeaderboards,
   clickOnFilter,
@@ -15,14 +15,14 @@ import {
   waitForComparisonTopLists,
   waitForDashboard,
   waitForTimeSeries,
-} from "./utils/dashboardHelpers";
+} from "../utils/dashboardHelpers";
 import {
   assertAdBidsDashboard,
   createAdBidsModel,
-} from "./utils/dataSpecifcHelpers";
-import { createOrReplaceSource } from "./utils/sourceHelpers";
-import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
-import { waitForEntity } from "./utils/waitHelpers";
+} from "../utils/dataSpecifcHelpers";
+import { createOrReplaceSource } from "../utils/sourceHelpers";
+import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
+import { waitForEntity } from "../utils/waitHelpers";
 
 test.describe("dashboard", () => {
   startRuntimeForEachTest();
