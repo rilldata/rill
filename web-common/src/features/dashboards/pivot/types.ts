@@ -2,6 +2,7 @@ import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   V1MetricsViewFilter,
+  V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 
@@ -30,6 +31,12 @@ export interface PivotDataStoreConfig {
   allDimensions: MetricsViewSpecDimensionV2[];
   filters: V1MetricsViewFilter;
   pivot: PivotState;
+
+  // Might be removed
+  timeDimension: string;
+  columnHasTimeDimension: boolean;
+  rowHasTimeDimension: boolean;
+  interval: V1TimeGrain;
 }
 
 export type PivotMeasure = {

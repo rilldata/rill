@@ -1,6 +1,5 @@
 import type {
   MetricsViewFilterCond,
-  MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   V1MetricsViewAggregationSort,
   V1MetricsViewFilter,
@@ -12,36 +11,32 @@ import type { ColumnDef } from "@tanstack/svelte-table";
 export function getMeasuresInPivotColumns(
   pivot: PivotState,
   measures: MetricsViewSpecMeasureV2[],
-): MetricsViewSpecMeasureV2[] {
+): string[] {
   const { columns } = pivot;
 
-  return columns
-    .filter((rowName) => measures.findIndex((m) => m?.name === rowName) > -1)
-    .map((rowName) => measures.find((m) => m?.name === rowName));
+  return columns.filter(
+    (rowName) => measures.findIndex((m) => m?.name === rowName) > -1,
+  );
 }
 
 export function getDimensionsInPivotRow(
   pivot: PivotState,
-  dimensions: MetricsViewSpecDimensionV2[],
-): MetricsViewSpecDimensionV2[] {
+  measures: MetricsViewSpecMeasureV2[],
+): string[] {
   const { rows } = pivot;
-  return rows
-    .filter(
-      (rowName) => dimensions.findIndex((m) => m?.column === rowName) > -1,
-    )
-    .map((rowName) => dimensions.find((m) => m?.column === rowName));
+  return rows.filter(
+    (rowName) => measures.findIndex((m) => m?.name === rowName) === -1,
+  );
 }
 
 export function getDimensionsInPivotColumns(
   pivot: PivotState,
-  dimensions: MetricsViewSpecDimensionV2[],
-): MetricsViewSpecDimensionV2[] {
+  measures: MetricsViewSpecMeasureV2[],
+): string[] {
   const { columns } = pivot;
-  return columns
-    .filter(
-      (colName) => dimensions.findIndex((m) => m?.column === colName) > -1,
-    )
-    .map((colName) => dimensions.find((m) => m?.column === colName));
+  return columns.filter(
+    (colName) => measures.findIndex((m) => m?.name === colName) === -1,
+  );
 }
 
 /**
@@ -113,7 +108,7 @@ export function getFilterForPivotTable(
   rowDimensionValues: string[] = [],
   isInitialTable = false,
   yLimit = 100,
-  xLimit = 20,
+  xLimit = 50,
 ) {
   // TODO: handle for already existing global filters
 
@@ -319,16 +314,25 @@ export function getColumnDefForPivot(
 ) {
   const IsNested = true;
 
-  // TODO: Simplify function calls
-  const measures = getMeasuresInPivotColumns(config.pivot, config.allMeasures);
-  const rowDimensions = getDimensionsInPivotRow(
-    config.pivot,
-    config.allDimensions,
-  );
-  const colDimensions = getDimensionsInPivotColumns(
-    config.pivot,
-    config.allDimensions,
-  );
+  const { measureNames, rowDimensionNames, colDimensionNames } = config;
+
+  const measures = measureNames.map((m) => ({
+    label: config.allMeasures.find((measure) => measure.name === m)?.label || m,
+    name: m,
+  }));
+
+  const rowDimensions = rowDimensionNames.map((d) => ({
+    label:
+      config.allDimensions.find((dimension) => dimension.column === d)?.label ||
+      d,
+    name: d,
+  }));
+  const colDimensions = colDimensionNames.map((d) => ({
+    label:
+      config.allDimensions.find((dimension) => dimension.column === d)?.label ||
+      d,
+    name: d,
+  }));
 
   let rowDimensionsForColumnDef = rowDimensions;
   let nestedLabel: string;
@@ -351,14 +355,14 @@ export function getColumnDefForPivot(
 
   const leafColumns: ColumnDef<PivotDataRow>[] = measures.map((m) => {
     return {
-      accessorKey: m.name as string,
+      accessorKey: m.name,
       header: m.label || m.name,
       cell: (info) => info.getValue(),
     };
   });
 
   const groupedColDef = createColumnDefinitionForDimensions(
-    (colDimensions.map((d) => d.column) as string[]) || [],
+    colDimensions.map((d) => d.name) || [],
     columnDimensionAxes || {},
     leafColumns,
   );

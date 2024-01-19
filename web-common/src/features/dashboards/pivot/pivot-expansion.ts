@@ -1,5 +1,4 @@
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import type { ExpandedState } from "@tanstack/svelte-table";
 import { Readable, derived, writable } from "svelte/store";
 import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 import { getFilterForPivotTable, getSortForAccessor } from "./pivot-utils";
@@ -58,6 +57,15 @@ export function createSubTableCellQuery(
 ) {
   const allDimensions = config.colDimensionNames.concat([anchorDimension]);
 
+  const dimensionBody = allDimensions.map((dimension) => {
+    if (dimension === config.timeDimension) {
+      return {
+        name: dimension,
+        timeGrain: config.interval,
+      };
+    } else return { name: dimension };
+  });
+
   const filterForSubTable = getFilterForPivotTable(
     config,
     columnDimensionAxesData,
@@ -78,7 +86,7 @@ export function createSubTableCellQuery(
   return createPivotAggregationRowQuery(
     ctx,
     config.measureNames,
-    allDimensions,
+    dimensionBody,
     filters,
     sortBy,
     "10000",
@@ -144,6 +152,7 @@ export function queryExpandedRowMeasureValues(
           writable(expandIndex),
           getAxisForDimensions(
             ctx,
+            config,
             [anchorDimension],
             filterForRowDimensionAxes,
             sortPivotBy,

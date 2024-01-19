@@ -1,4 +1,7 @@
-import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
+import type {
+  V1MetricsViewAggregationResponseDataItem,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { derived, Readable } from "svelte/store";
 
@@ -29,14 +32,15 @@ import {
   getAxisForDimensions,
 } from "./pivot-queries";
 import type { ColumnDef } from "@tanstack/svelte-table";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 
 /**
  * Extract out config relevant to pivot from dashboard and meta store
  */
 function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
   return derived(
-    [useMetaQuery(ctx), ctx.dashboardStore],
-    ([metricsView, dashboardStore]) => {
+    [useMetaQuery(ctx), ctx.dashboardStore, useTimeControlStore(ctx)],
+    ([metricsView, dashboardStore, timeControls]) => {
       const { rows, columns } = dashboardStore.pivot;
 
       if (
@@ -52,27 +56,37 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
           allDimensions: [],
           filters: dashboardStore.filters,
           pivot: dashboardStore.pivot,
+          timeDimension: "",
+          columnHasTimeDimension: false,
+          rowHasTimeDimension: false,
+          interval: "TIME_GRAIN_HOUR" as V1TimeGrain,
         };
       }
-      const measures = getMeasuresInPivotColumns(
+      const measureNames = getMeasuresInPivotColumns(
         dashboardStore.pivot,
         metricsView.data?.measures,
       );
-      const dimensions = getDimensionsInPivotRow(
+      const rowDimensionNames = getDimensionsInPivotRow(
         dashboardStore.pivot,
-        metricsView.data?.dimensions,
+        metricsView.data?.measures,
       );
 
-      const columnDimensons = getDimensionsInPivotColumns(
+      const colDimensionNames = getDimensionsInPivotColumns(
         dashboardStore.pivot,
-        metricsView.data?.dimensions,
+        metricsView.data?.measures,
       );
 
-      const measureNames = measures.map((m) => m.name) as string[];
-      const rowDimensionNames = dimensions.map((d) => d.column) as string[];
-      const colDimensionNames = columnDimensons.map(
-        (d) => d.column,
-      ) as string[];
+      const columnHasTimeDimension = dashboardStore.pivot.columns.some(
+        (d) => d === metricsView.data?.timeDimension,
+      );
+
+      const rowHasTimeDimension = dashboardStore.pivot.rows.some(
+        (d) => d === metricsView.data?.timeDimension,
+      );
+
+      const interval =
+        timeControls?.selectedTimeRange?.interval || "TIME_GRAIN_HOUR";
+
       return {
         measureNames,
         rowDimensionNames,
@@ -81,6 +95,10 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
         allDimensions: metricsView.data?.dimensions,
         filters: dashboardStore.filters,
         pivot: dashboardStore.pivot,
+        timeDimension: metricsView?.data?.timeDimension || "",
+        columnHasTimeDimension,
+        rowHasTimeDimension,
+        interval,
       };
     },
   );
@@ -102,6 +120,15 @@ export function createTableCellQuery(
     allDimensions = config.colDimensionNames.concat([anchorDimension]);
   }
 
+  const dimensionBody = allDimensions.map((dimension) => {
+    if (dimension === config.timeDimension) {
+      return {
+        name: dimension,
+        timeGrain: config.interval,
+      };
+    } else return { name: dimension };
+  });
+
   const filterForInitialTable = getFilterForPivotTable(
     config,
     columnDimensionAxesData,
@@ -118,7 +145,7 @@ export function createTableCellQuery(
   return createPivotAggregationRowQuery(
     ctx,
     config.measureNames,
-    allDimensions,
+    dimensionBody,
     filterForInitialTable,
     sortBy,
     "10000",
@@ -182,6 +209,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
     }
     const columnDimensionAxesQuery = getAxisForDimensions(
       ctx,
+      config,
       colDimensionNames,
       config.filters,
     );
@@ -206,6 +234,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
 
         const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
+          config,
           rowDimensionNames.slice(0, 1),
           filters,
           sortPivotBy,
@@ -217,6 +246,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
          */
         const rowDimensionUnsortedAxisQuery = getAxisForDimensions(
           ctx,
+          config,
           rowDimensionNames.slice(0, 1),
           config.filters,
         );

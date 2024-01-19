@@ -4,11 +4,13 @@ import {
   type V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationSort,
   V1BuiltinMeasure,
+  V1MetricsViewAggregationDimension,
 } from "@rilldata/web-common/runtime-client";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { derived, writable } from "svelte/store";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import type { PivotDataStoreConfig } from "@rilldata/web-common/features/dashboards/pivot/types";
 
 /**
  * Wrapper function for Aggregate Query API
@@ -16,18 +18,17 @@ import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/ti
 export function createPivotAggregationRowQuery(
   ctx: StateManagers,
   measures: string[],
-  dimensions: string[],
+  dimensions: V1MetricsViewAggregationDimension[],
   filters: V1MetricsViewFilter,
   sort: V1MetricsViewAggregationSort[] = [],
   limit = "100",
   offset = "0",
 ): CreateQueryResult<V1MetricsViewAggregationResponse> {
-  // Todo: Handle sorting in table
   if (!sort.length) {
     sort = [
       {
         desc: false,
-        name: measures[0] || dimensions[0],
+        name: measures[0] || dimensions?.[0]?.name,
       },
     ];
   }
@@ -39,7 +40,7 @@ export function createPivotAggregationRowQuery(
         metricViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),
-          dimensions: dimensions.map((dimension) => ({ name: dimension })),
+          dimensions,
           filter: filters,
           timeStart: timeControls.timeStart,
           timeEnd: timeControls.timeEnd,
@@ -63,6 +64,7 @@ export function createPivotAggregationRowQuery(
  */
 export function getAxisForDimensions(
   ctx: StateManagers,
+  config: PivotDataStoreConfig,
   dimensions: string[],
   filters: V1MetricsViewFilter,
   sortBy: V1MetricsViewAggregationSort[] = [],
@@ -78,8 +80,17 @@ export function getAxisForDimensions(
     }
   }
 
+  const dimensionBody = dimensions.map((d) => {
+    if (d === config.timeDimension) {
+      return {
+        name: d,
+        timeGrain: config.interval,
+      };
+    } else return { name: d };
+  });
+
   return derived(
-    dimensions.map((dimension) =>
+    dimensionBody.map((dimension) =>
       createPivotAggregationRowQuery(
         ctx,
         measures,
