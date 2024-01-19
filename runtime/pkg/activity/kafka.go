@@ -3,6 +3,7 @@ package activity
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -15,9 +16,10 @@ const (
 	lingerMs         = 200
 	compressionCodec = "lz4"
 	// Retry props
-	retryN          = 3
-	retryWait       = lingerMs * time.Millisecond
-	metadataTimeout = 5 * time.Second
+	retryN                  = 3
+	retryWait               = lingerMs * time.Millisecond
+	metadataTimeout         = 5 * time.Second
+	logDeliveryErrorsPeriod = 1 * time.Minute
 )
 
 // KafkaSink sinks events to a Kafka cluster.
@@ -43,6 +45,8 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error)
 		return nil, err
 	}
 
+	go processProducerEvents(producer, logger)
+
 	go forwardKafkaLogEventToLogger(logChan, logger)
 
 	// Check connectivity and fail fast if Kafka cluster is unreachable
@@ -59,6 +63,44 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error)
 		logger:   logger,
 		logChan:  logChan,
 	}, nil
+}
+
+func processProducerEvents(producer *kafka.Producer, logger *zap.Logger) {
+	var deliveryErrorCount int
+	var lastDeliveryError error
+
+	ticker := time.NewTicker(logDeliveryErrorsPeriod)
+	defer ticker.Stop()
+
+	reportDeliveryErrors := func() {
+		if deliveryErrorCount > 0 {
+			logger.Warn(fmt.Sprintf("Kafka sink: delivery errors in the last minute: %d", deliveryErrorCount),
+				zap.Error(lastDeliveryError))
+			deliveryErrorCount = 0
+			lastDeliveryError = nil
+		}
+	}
+
+	for {
+		select {
+		case e := <-producer.Events():
+			switch ev := e.(type) {
+			case *kafka.Message:
+				m := ev
+				if m.TopicPartition.Error != nil {
+					deliveryErrorCount++
+					lastDeliveryError = m.TopicPartition.Error
+				}
+			case kafka.Error:
+				logger.Warn("Kafka sink: producer error", zap.String("error", ev.Error()))
+			default:
+				// Ignore any other events
+			}
+
+		case <-ticker.C:
+			reportDeliveryErrors()
+		}
+	}
 }
 
 // Sink doesn't wait till all events are delivered to Kafka
