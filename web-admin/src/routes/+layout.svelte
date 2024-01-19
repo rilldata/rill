@@ -40,6 +40,8 @@
     adminServer: true,
     // Set read-only mode so that the user can't edit the dashboard
     readOnly: true,
+    // Temporary flag to show/hide the WIP alerts feature
+    alerts: localStorage.getItem("alerts") === "true",
   });
 
   beforeNavigate(retainFeaturesFlags);
