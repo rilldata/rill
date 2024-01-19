@@ -1,15 +1,13 @@
 import { test } from "@playwright/test";
 import {
+  TestEntityType,
   deleteEntity,
   gotoEntity,
   renameEntityUsingMenu,
   updateCodeEditor,
-} from "./utils/commonHelpers";
-import {
-  TestEntityType,
   waitForProfiling,
   wrapRetryAssertion,
-} from "./utils/helpers";
+} from "./utils/commonHelpers";
 import {
   createModel,
   createModelFromSource,

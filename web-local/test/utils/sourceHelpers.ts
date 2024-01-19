@@ -8,7 +8,7 @@ import {
   getEntityLink,
   TestEntityType,
   waitForProfiling,
-} from "./helpers";
+} from "./commonHelpers";
 import { waitForEntity } from "./waitHelpers";
 
 const __filename = fileURLToPath(import.meta.url);
