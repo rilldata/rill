@@ -5,8 +5,22 @@ import type {
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
-import type { PivotDataRow, PivotDataStoreConfig, PivotState } from "./types";
+import type {
+  PivotDataRow,
+  PivotDataStoreConfig,
+  PivotState,
+  PivotTimeConfig,
+  TimeFilters,
+} from "./types";
 import type { ColumnDef } from "@tanstack/svelte-table";
+import { getOffset } from "@rilldata/web-common/lib/time/transforms";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import {
+  Period,
+  TimeOffsetType,
+  TimeRange,
+  TimeRangeString,
+} from "@rilldata/web-common/lib/time/types";
 
 export function getMeasuresInPivotColumns(
   pivot: PivotState,
@@ -75,6 +89,44 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     .join("_");
 
   return `${dimsAndMeasures}_${sortingKey}_${filterKey}`;
+}
+
+/**
+ * Apply the time filters on global start and end time to get the
+ * start and end time for the query
+ */
+export function getTimeForQuery(
+  time: PivotTimeConfig,
+  timeFilters: TimeFilters[],
+): TimeRangeString {
+  let { timeStart, timeEnd } = time;
+  const { timeZone } = time;
+
+  if (!timeStart || !timeEnd) {
+    return { start: timeStart, end: timeEnd };
+  }
+
+  timeFilters.forEach((filter) => {
+    // FIXME: Fix type warnings. Are these false positives?
+    // Using `as` to avoid type warnings
+    const duration: Period = TIME_GRAIN[filter.interval]?.duration as Period;
+
+    const startTimeDt = new Date(filter.timeStart);
+    const endTimeDt = getOffset(
+      startTimeDt,
+      duration,
+      TimeOffsetType.ADD,
+      timeZone,
+    ) as Date;
+    if (startTimeDt > new Date(timeStart as string)) {
+      timeStart = filter.timeStart;
+    }
+    if (endTimeDt < new Date(timeEnd as string)) {
+      timeEnd = endTimeDt.toISOString();
+    }
+  });
+
+  return { start: timeStart, end: timeEnd };
 }
 
 /**

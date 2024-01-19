@@ -20,6 +20,11 @@ export interface PivotDataRow {
   subRows?: PivotDataRow[];
 }
 
+export interface TimeFilters {
+  timeStart: string;
+  interval: V1TimeGrain;
+}
+
 export interface PivotTimeConfig {
   timeStart: string | undefined;
   timeEnd: string | undefined;

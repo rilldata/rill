@@ -11,6 +11,7 @@ import { derived, writable } from "svelte/store";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { PivotDataStoreConfig } from "@rilldata/web-common/features/dashboards/pivot/types";
+import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 
 /**
  * Wrapper function for Aggregate Query API
@@ -23,6 +24,7 @@ export function createPivotAggregationRowQuery(
   sort: V1MetricsViewAggregationSort[] = [],
   limit = "100",
   offset = "0",
+  timeRange: TimeRangeString | undefined = undefined,
 ): CreateQueryResult<V1MetricsViewAggregationResponse> {
   if (!sort.length) {
     sort = [
@@ -42,8 +44,10 @@ export function createPivotAggregationRowQuery(
           measures: measures.map((measure) => ({ name: measure })),
           dimensions,
           filter: filters,
-          timeStart: timeControls.timeStart,
-          timeEnd: timeControls.timeEnd,
+          timeStart: timeRange?.start
+            ? timeRange.start
+            : timeControls.timeStart,
+          timeEnd: timeRange?.end ? timeRange.end : timeControls.timeEnd,
           sort,
           limit,
           offset,
@@ -68,6 +72,7 @@ export function getAxisForDimensions(
   dimensions: string[],
   filters: V1MetricsViewFilter,
   sortBy: V1MetricsViewAggregationSort[] = [],
+  timeRange: TimeRangeString | undefined = undefined,
 ) {
   if (!dimensions.length) return writable(null);
 
@@ -99,6 +104,9 @@ export function getAxisForDimensions(
         [dimension],
         filters,
         sortBy,
+        "100",
+        "0",
+        timeRange,
       ),
     ),
     (data) => {

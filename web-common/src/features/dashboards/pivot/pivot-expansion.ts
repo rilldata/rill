@@ -1,7 +1,11 @@
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { Readable, derived, writable } from "svelte/store";
-import type { PivotDataRow, PivotDataStoreConfig } from "./types";
-import { getFilterForPivotTable, getSortForAccessor } from "./pivot-utils";
+import type { PivotDataRow, PivotDataStoreConfig, TimeFilters } from "./types";
+import {
+  getFilterForPivotTable,
+  getSortForAccessor,
+  getTimeForQuery,
+} from "./pivot-utils";
 import {
   createTableWithAxes,
   reduceTableCellDataIntoRows,
@@ -14,6 +18,7 @@ import type {
   MetricsViewFilterCond,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
+import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 
 /**
  * Extracts and organizes dimension values from a nested array structure
@@ -57,6 +62,7 @@ export function createSubTableCellQuery(
   anchorDimension: string,
   columnDimensionAxesData: Record<string, string[]> | undefined,
   rowNestFilters: MetricsViewFilterCond[],
+  timeRange: TimeRangeString | undefined,
 ) {
   const allDimensions = config.colDimensionNames.concat([anchorDimension]);
 
@@ -96,6 +102,8 @@ export function createSubTableCellQuery(
     filters,
     sortBy,
     "10000",
+    "0",
+    timeRange,
   );
 }
 
@@ -131,13 +139,24 @@ export function queryExpandedRowMeasureValues(
         expandIndex,
       );
 
+      const timeFilters: TimeFilters[] = [];
       // TODO: handle for already existing filters
-      const rowNestFilters = values.map((value, index) => {
-        return {
-          name: rowDimensionNames[index],
-          in: [value],
-        };
-      });
+      const rowNestFilters = values
+        .filter((v, i) => {
+          if (rowDimensionNames[i] === config.time.timeDimension) {
+            timeFilters.push({
+              timeStart: v,
+              interval: config.time.interval,
+            });
+            return false;
+          } else return true;
+        })
+        .map((value, index) => {
+          return {
+            name: rowDimensionNames[index],
+            in: [value],
+          };
+        });
 
       const filterForRowDimensionAxes = {
         include: rowNestFilters,
@@ -148,6 +167,11 @@ export function queryExpandedRowMeasureValues(
         anchorDimension,
         config,
         columnDimensionAxesData,
+      );
+
+      const timeRange: TimeRangeString = getTimeForQuery(
+        config.time,
+        timeFilters,
       );
 
       // TODO: Merge filters
@@ -162,6 +186,7 @@ export function queryExpandedRowMeasureValues(
             [anchorDimension],
             filterForRowDimensionAxes,
             sortPivotBy,
+            timeRange,
           ),
           createSubTableCellQuery(
             ctx,
@@ -169,6 +194,7 @@ export function queryExpandedRowMeasureValues(
             anchorDimension,
             columnDimensionAxesData,
             rowNestFilters,
+            timeRange,
           ),
         ],
         ([expandIndex, subRowDimensionValues, subTableData]) => {
