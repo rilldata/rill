@@ -1,9 +1,9 @@
 <script lang="ts">
+  import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { createQueryServiceMetricsViewRows } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { writable } from "svelte/store";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { PreviewTable } from "../../../components/preview-table";

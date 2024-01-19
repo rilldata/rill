@@ -6,10 +6,8 @@ import {
 import { describe, it, expect } from "vitest";
 
 const baseOptions: FormatterFactoryOptions = {
-  strategy: "singleDigitTimesPowerOfTen",
   padWithInsignificantZeros: true,
   numberKind: NumberKind.ANY,
-  onInvalidInput: "doNothing",
 };
 
 const closeToIntTimesPowerOfTenCases: [number, boolean][] = [

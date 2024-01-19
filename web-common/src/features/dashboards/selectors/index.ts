@@ -4,18 +4,18 @@ import {
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
-  createQueryServiceColumnTimeRange,
-  createQueryServiceMetricsViewToplist,
   RpcStatus,
-  V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
   V1MetricsViewToplistResponse,
+  createQueryServiceMetricsViewTimeRange,
+  createQueryServiceMetricsViewToplist,
 } from "@rilldata/web-common/runtime-client";
 import type {
   CreateQueryResult,
   QueryObserverResult,
 } from "@tanstack/svelte-query";
-import { derived, Readable } from "svelte/store";
+import { Readable, derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
 
 export const useMetaQuery = <T = V1MetricsViewSpec>(
@@ -100,23 +100,19 @@ export const getFilterSearchList = (
 
 export function createTimeRangeSummary(
   ctx: StateManagers,
-): CreateQueryResult<V1ColumnTimeRangeResponse> {
+): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
   return derived(
-    [ctx.runtime, useMetaQuery(ctx)],
-    ([runtime, metricsView], set) => {
-      return createQueryServiceColumnTimeRange(
+    [ctx.runtime, ctx.metricsViewName],
+    ([runtime, metricsViewName], set) =>
+      createQueryServiceMetricsViewTimeRange(
         runtime.instanceId,
-        metricsView.data?.table,
-        {
-          columnName: metricsView.data?.timeDimension,
-        },
+        metricsViewName,
+        {},
         {
           query: {
-            enabled: !!metricsView.data?.timeDimension,
             queryClient: ctx.queryClient,
           },
         },
-      ).subscribe(set);
-    },
+      ).subscribe(set),
   );
 }

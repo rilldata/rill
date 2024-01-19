@@ -1,3 +1,4 @@
+import { filterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/filters";
 import { sortActions } from "./sorting";
 import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
@@ -59,6 +60,11 @@ export const createStateManagerActions = (
      * Actions related to dimensions.
      */
     dimensions: createDashboardUpdaters(actionArgs, dimensionActions),
+
+    /**
+     * Common filter actions
+     */
+    filters: createDashboardUpdaters(actionArgs, filterActions),
 
     /**
      * Actions related to dimensions filters

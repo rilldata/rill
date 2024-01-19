@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/server"
+	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -148,7 +149,7 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Log it
 	if reportErr != nil {
-		r.C.Logger.Error("Report run failed", "report", self.Meta.Name, "error", reportErr.Error())
+		r.C.Logger.Error("Report run failed", zap.Any("report", self.Meta.Name), zap.Any("error", reportErr.Error()))
 	}
 
 	// Commit CurrentExecution to history
@@ -251,12 +252,12 @@ func (r *ReportReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 // sendReport composes and sends the actual report to the configured recipients.
 // It returns true if an error occurred after some or all emails were sent.
 func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, t time.Time) (bool, error) {
-	r.C.Logger.Info("Sending report", "report", self.Meta.Name.Name, "report_time", t)
+	r.C.Logger.Info("Sending report", zap.String("report", self.Meta.Name.Name), zap.Time("report_time", t))
 
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
 	if err != nil {
 		if errors.Is(err, runtime.ErrAdminNotConfigured) {
-			r.C.Logger.Info("Skipped sending report because an admin service is not configured", "report", self.Meta.Name.Name)
+			r.C.Logger.Info("Skipped sending report because an admin service is not configured", zap.String("report", self.Meta.Name.Name))
 			return false, nil
 		}
 		return false, fmt.Errorf("failed to get admin client: %w", err)

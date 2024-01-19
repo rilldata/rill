@@ -47,7 +47,8 @@ _**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measur
   - _**`format_preset`**_ — controls the formatting of this measure in the dashboard according to option specified below. Measures cannot have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
     - _`humanize`_ — round off numbers in an opinionated way to thousands (K), millions (M), billions (B), etc
     - _`none`_ — raw output
-    - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign
+    - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign: `$`
+    - _`currency_eur`_ —  output rounded to 2 decimal points prepended with a euro symbol: `€`
     - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
     - _`interval_ms`_ — time intervals given in milliseconds are transformed into human readable time units like hours (h), days (d), years (y), etc
 

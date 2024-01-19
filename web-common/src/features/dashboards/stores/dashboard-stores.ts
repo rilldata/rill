@@ -2,6 +2,10 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import {
+  createAndExpression,
+  filterExpressions,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   getMapFromArray,
@@ -13,13 +17,13 @@ import type {
   TimeRange,
 } from "@rilldata/web-common/lib/time/types";
 import type {
-  V1ColumnTimeRangeResponse,
   V1MetricsView,
   V1MetricsViewFilter,
   V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import { derived, Readable, writable } from "svelte/store";
+import { Readable, derived, writable } from "svelte/store";
 import {
   SortDirection,
   SortType,
@@ -125,12 +129,11 @@ function syncDimensions(
     metricsView.dimensions,
     (dimension) => dimension.name,
   );
-  metricsExplorer.filters.include = metricsExplorer.filters.include.filter(
-    (filter) => dimensionsMap.has(filter.name),
-  );
-  metricsExplorer.filters.exclude = metricsExplorer.filters.exclude.filter(
-    (filter) => dimensionsMap.has(filter.name),
-  );
+  metricsExplorer.whereFilter =
+    filterExpressions(metricsExplorer.whereFilter, (e) => {
+      if (!e.cond?.exprs?.length) return true;
+      return dimensionsMap.has(e.cond.exprs[0].ident);
+    }) ?? createAndExpression([]);
 
   if (
     metricsExplorer.selectedDimensionName &&
@@ -158,7 +161,7 @@ const metricViewReducers = {
   init(
     name: string,
     metricsView: V1MetricsViewSpec,
-    fullTimeRange: V1ColumnTimeRangeResponse | undefined,
+    fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
   ) {
     update((state) => {
       if (state.entities[name]) return state;
@@ -514,9 +517,7 @@ const metricViewReducers = {
         const filtersIn = filters[dimensionEntryIndex].in;
         if (filtersIn === undefined) return;
 
-        const index = filtersIn?.findIndex(
-          (value) => value === dimensionValue,
-        ) as number;
+        const index = filtersIn?.findIndex((value) => value === dimensionValue);
         if (index >= 0) {
           filtersIn?.splice(index, 1);
           if (filtersIn.length === 0) {

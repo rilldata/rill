@@ -64,6 +64,11 @@ export enum LogLevel {
    * @generated from enum value: LOG_LEVEL_ERROR = 16;
    */
   ERROR = 16,
+
+  /**
+   * @generated from enum value: LOG_LEVEL_FATAL = 20;
+   */
+  FATAL = 20,
 }
 // Retrieve enum metadata with: proto3.getEnumType(LogLevel)
 proto3.util.setEnumType(LogLevel, "rill.runtime.v1.LogLevel", [
@@ -72,6 +77,7 @@ proto3.util.setEnumType(LogLevel, "rill.runtime.v1.LogLevel", [
   { no: 8, name: "LOG_LEVEL_INFO" },
   { no: 12, name: "LOG_LEVEL_WARN" },
   { no: 16, name: "LOG_LEVEL_ERROR" },
+  { no: 20, name: "LOG_LEVEL_FATAL" },
 ]);
 
 /**
@@ -1807,6 +1813,11 @@ export class GetLogsRequest extends Message<GetLogsRequest> {
    */
   limit = 0;
 
+  /**
+   * @generated from field: rill.runtime.v1.LogLevel level = 4;
+   */
+  level = LogLevel.UNSPECIFIED;
+
   constructor(data?: PartialMessage<GetLogsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1818,6 +1829,7 @@ export class GetLogsRequest extends Message<GetLogsRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "ascending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "level", kind: "enum", T: proto3.getEnumType(LogLevel) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetLogsRequest {
@@ -1893,6 +1905,11 @@ export class WatchLogsRequest extends Message<WatchLogsRequest> {
    */
   replayLimit = 0;
 
+  /**
+   * @generated from field: rill.runtime.v1.LogLevel level = 4;
+   */
+  level = LogLevel.UNSPECIFIED;
+
   constructor(data?: PartialMessage<WatchLogsRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1904,6 +1921,7 @@ export class WatchLogsRequest extends Message<WatchLogsRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "replay", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "replay_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "level", kind: "enum", T: proto3.getEnumType(LogLevel) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchLogsRequest {
@@ -2059,6 +2077,11 @@ export class WatchResourcesRequest extends Message<WatchResourcesRequest> {
    */
   replay = false;
 
+  /**
+   * @generated from field: string level = 4;
+   */
+  level = "";
+
   constructor(data?: PartialMessage<WatchResourcesRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2070,6 +2093,7 @@ export class WatchResourcesRequest extends Message<WatchResourcesRequest> {
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "kind", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "replay", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "level", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): WatchResourcesRequest {

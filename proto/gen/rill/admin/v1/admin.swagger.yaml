@@ -1507,6 +1507,27 @@ paths:
             $ref: '#/definitions/v1SetSuperuserRequest'
       tags:
         - AdminService
+  /v1/superuser/projects/annotations:
+    patch:
+      summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
+      operationId: AdminService_SudoUpdateAnnotations
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateAnnotationsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateAnnotationsRequest'
+      tags:
+        - AdminService
   /v1/superuser/projects/search:
     get:
       summary: SearchProjectNames returns project names matching the pattern
@@ -1525,13 +1546,11 @@ paths:
           in: query
           required: false
           type: string
-        - name: tags
+        - name: annotations
+          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
           in: query
           required: false
-          type: array
-          items:
-            type: string
-          collectionFormat: multi
+          type: string
         - name: pageSize
           in: query
           required: false
@@ -1541,27 +1560,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
-  /v1/superuser/projects/tags:
-    patch:
-      summary: Add a SudoUpdateTags endpoint for superusers to update tags
-      operationId: AdminService_SudoUpdateTags
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1SudoUpdateTagsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: body
-          in: body
-          required: true
-          schema:
-            $ref: '#/definitions/v1SudoUpdateTagsRequest'
       tags:
         - AdminService
   /v1/superuser/quotas/organization:
@@ -2377,9 +2375,9 @@ definitions:
       prodTtlSeconds:
         type: string
         format: int64
-      tags:
-        type: array
-        items:
+      annotations:
+        type: object
+        additionalProperties:
           type: string
       createdOn:
         type: string
@@ -2546,6 +2544,22 @@ definitions:
         $ref: '#/definitions/v1Deployment'
       instance:
         $ref: '#/definitions/v1Deployment'
+  v1SudoUpdateAnnotationsRequest:
+    type: object
+    properties:
+      organization:
+        type: string
+      project:
+        type: string
+      annotations:
+        type: object
+        additionalProperties:
+          type: string
+  v1SudoUpdateAnnotationsResponse:
+    type: object
+    properties:
+      project:
+        $ref: '#/definitions/v1Project'
   v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:
@@ -2571,22 +2585,6 @@ definitions:
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
-  v1SudoUpdateTagsRequest:
-    type: object
-    properties:
-      organization:
-        type: string
-      project:
-        type: string
-      tags:
-        type: array
-        items:
-          type: string
-  v1SudoUpdateTagsResponse:
-    type: object
-    properties:
-      project:
-        $ref: '#/definitions/v1Project'
   v1SudoUpdateUserQuotasRequest:
     type: object
     properties:
