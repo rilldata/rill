@@ -41,6 +41,7 @@ require (
 	github.com/go-logr/zapr v1.2.4
 	github.com/go-playground/validator/v10 v10.14.0
 	github.com/go-redis/redis_rate/v10 v10.0.1
+	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-github/v50 v50.2.0
 	github.com/google/uuid v1.4.0
@@ -57,7 +58,6 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
-	github.com/lib/pq v1.10.9
 	github.com/marcboeker/go-duckdb v1.5.4
 	github.com/mazznoer/csscolorparser v0.1.3
 	github.com/mitchellh/mapstructure v1.5.0
@@ -85,7 +85,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.21.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.25.0
-	go.uber.org/zap/exp v0.1.0
 	gocloud.dev v0.34.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/oauth2 v0.13.0
@@ -99,7 +98,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.22.1
-	moul.io/zapfilter v1.7.0
 )
 
 require (
@@ -122,7 +120,7 @@ require (
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
-	github.com/jackc/pgtype v1.12.0 // indirect
+	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
