@@ -4,18 +4,18 @@
   import Select from "../../components/forms/Select.svelte";
   import DataPreview from "./DataPreview.svelte";
 
-  let title: string;
-  let titleError: string;
-  let splitByDimension: string;
-  let forEvery: string;
+  export let formState: any; // svelte-forms-lib's FormState
+
+  const { form, errors, handleChange } = formState;
 </script>
 
 <div class="flex flex-col gap-y-5">
   <FormSection title="Alert name">
     <InputV2
-      bind:value={title}
-      error={titleError}
-      id="title"
+      on:change={handleChange}
+      value={$form["name"]}
+      error={$errors["name"]}
+      id="name"
       placeholder="My alert"
     />
   </FormSection>
@@ -28,13 +28,13 @@
     description="Select the measures you want to monitor."
   >
     <InputV2
-      bind:value={title}
-      error={titleError}
+      bind:value={$form["measures"]}
+      error={$errors["measures"]}
       id="measures"
       placeholder="Add measures"
     />
     <Select
-      bind:value={splitByDimension}
+      bind:value={$form["splitByDimension"]}
       id="dimensionSplit"
       label="Split by dimension"
       options={["Dim1", "Dim2", "Dim3"].map((dimension) => ({
@@ -42,7 +42,7 @@
       }))}
     />
     <Select
-      bind:value={forEvery}
+      bind:value={$form["forEvery"]}
       id="forEvery"
       label="For every"
       options={["Interval1", "Interval2", "Interval3"].map((timeInterval) => ({

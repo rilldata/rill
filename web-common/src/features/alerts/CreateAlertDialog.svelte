@@ -5,6 +5,7 @@
   import TabList from "@rilldata/web-admin/components/tabs/TabList.svelte";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
+  import * as yup from "yup";
   import { Button } from "../../components/button";
   import Dialog from "../../components/dialog-v2/Dialog.svelte";
   import AlertDialogCriteriaTab from "./AlertDialogCriteriaTab.svelte";
@@ -15,17 +16,53 @@
 
   const dispatch = createEventDispatcher();
 
-  createForm({
-    initialValues: {},
+  const formState = createForm({
+    initialValues: {
+      name: "",
+    },
+    validationSchema: yup.object({
+      name: yup.string().required("Required"),
+    }),
     onSubmit: async (values) => {
       console.log("submitting alerts form with these values: ", values);
       dispatch("close");
     },
   });
 
-  // const { isSubmitting, form } = formState;
+  const { isSubmitting, errors, touched } = formState;
 
   const tabs = ["Data", "Criteria", "Delivery"];
+
+  /**
+   * Because this form's fields are spread over multiple tabs, we implement our own `isValid` logic for each tab.
+   * A tab is valid (i.e. it's okay to proceed to the next tab) if:
+   * 1) The tab's required fields have been touched
+   * 2) The tab's fields don't have errors.
+   */
+  function isTabValid(
+    tabIndex: number,
+    touched: Record<string, boolean>,
+    errors: Record<string, string>,
+  ): boolean {
+    let tabTouched: boolean;
+    let tabErrors: boolean;
+    if (tabIndex === 0) {
+      tabTouched = touched.name;
+      tabErrors = !!errors.name;
+    } else if (tabIndex === 1) {
+      // TODO
+      tabTouched = false;
+      tabErrors = true;
+    } else if (tabIndex === 2) {
+      // TODO
+      tabTouched = false;
+      tabErrors = true;
+    } else {
+      throw new Error(`Unexpected tabIndex: ${tabIndex}`);
+    }
+
+    return tabTouched && !tabErrors;
+  }
 </script>
 
 <Dialog {open} titleMarginBottomOverride="mb-1">
@@ -41,26 +78,34 @@
           </Tab>
         {/each}
       </TabList>
-      <TabPanels>
+      <TabPanels let:selectedIndex={selectedTabIndex}>
         <TabPanel>
-          <AlertDialogDataTab />
+          <AlertDialogDataTab {formState} />
         </TabPanel>
         <TabPanel>
-          <AlertDialogCriteriaTab />
+          <AlertDialogCriteriaTab {formState} />
         </TabPanel>
         <TabPanel>
-          <AlertDialogDeliveryTab />
+          <AlertDialogDeliveryTab {formState} />
         </TabPanel>
+        <div class="flex items-center gap-x-2 mt-5">
+          <div class="grow" />
+          <Button on:click={() => dispatch("close")} type="secondary">
+            Cancel
+          </Button>
+          {#if selectedTabIndex !== null}
+            <Button
+              disabled={!isTabValid(selectedTabIndex, $touched, $errors) ||
+                $isSubmitting}
+              form={selectedTabIndex === 2 ? "create-alert-form" : undefined}
+              submitForm={selectedTabIndex === 2}
+              type="primary"
+            >
+              {selectedTabIndex === 2 ? "Create" : "Next"}
+            </Button>
+          {/if}
+        </div>
       </TabPanels>
     </TabGroup>
-  </svelte:fragment>
-  <svelte:fragment slot="footer">
-    <div class="flex items-center gap-x-2 mt-5">
-      <div class="grow" />
-      <Button on:click={() => dispatch("close")} type="secondary">
-        Cancel
-      </Button>
-      <Button form="create-alert-form" submitForm type="primary">Create</Button>
-    </div>
   </svelte:fragment>
 </Dialog>
