@@ -1,6 +1,6 @@
-import type { PivotDataRow, PivotDataStoreConfig } from "./types";
-import { createIndexMap, getAccessorForCell } from "./pivot-utils";
 import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
+import { createIndexMap, getAccessorForCell } from "./pivot-utils";
+import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 
 /**
  * Create a barebone table with row  headers.

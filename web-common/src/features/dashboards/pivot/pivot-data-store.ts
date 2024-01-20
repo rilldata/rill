@@ -1,15 +1,26 @@
-import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
 import { derived, Readable } from "svelte/store";
 
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import type { ColumnDef } from "@tanstack/svelte-table";
+import { getColumnDefForPivot } from "./pivot-column-definition";
 import {
   addExpandedDataToPivot,
   queryExpandedRowMeasureValues,
 } from "./pivot-expansion";
 import {
-  getColumnDefForPivot,
+  createPivotAggregationRowQuery,
+  getAxisForDimensions,
+} from "./pivot-queries";
+import {
+  createTableWithAxes,
+  prepareNestedPivotData,
+  reduceTableCellDataIntoRows,
+} from "./pivot-table-transformations";
+import {
   getDimensionsInPivotColumns,
   getDimensionsInPivotRow,
   getFilterForPivotTable,
@@ -18,18 +29,7 @@ import {
   getSortForAccessor,
   reconcileMissingDimensionValues,
 } from "./pivot-utils";
-import {
-  createTableWithAxes,
-  reduceTableCellDataIntoRows,
-  prepareNestedPivotData,
-} from "./pivot-table-transformations";
 import type { PivotDataRow, PivotDataStoreConfig } from "./types";
-import {
-  createPivotAggregationRowQuery,
-  getAxisForDimensions,
-} from "./pivot-queries";
-import type { ColumnDef } from "@tanstack/svelte-table";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 
 /**
  * Extract out config relevant to pivot from dashboard and meta store

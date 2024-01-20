@@ -1,24 +1,24 @@
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+import type {
+  MetricsViewFilterCond,
+  V1MetricsViewAggregationResponseDataItem,
+} from "@rilldata/web-common/runtime-client";
 import { Readable, derived, writable } from "svelte/store";
-import type { PivotDataRow, PivotDataStoreConfig, TimeFilters } from "./types";
 import {
-  getFilterForPivotTable,
-  getSortForAccessor,
-  getTimeForQuery,
-} from "./pivot-utils";
+  createPivotAggregationRowQuery,
+  getAxisForDimensions,
+} from "./pivot-queries";
 import {
   createTableWithAxes,
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
 import {
-  createPivotAggregationRowQuery,
-  getAxisForDimensions,
-} from "./pivot-queries";
-import type {
-  MetricsViewFilterCond,
-  V1MetricsViewAggregationResponseDataItem,
-} from "@rilldata/web-common/runtime-client";
-import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+  getFilterForPivotTable,
+  getSortForAccessor,
+  getTimeForQuery,
+} from "./pivot-utils";
+import type { PivotDataRow, PivotDataStoreConfig, TimeFilters } from "./types";
 
 /**
  * Extracts and organizes dimension values from a nested array structure
