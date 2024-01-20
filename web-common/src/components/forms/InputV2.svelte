@@ -30,22 +30,28 @@
 </script>
 
 <div class="flex flex-col gap-y-2">
-  <div class="flex items-center gap-x-1">
-    <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
-    {#if hint}
-      <Tooltip location="right" alignment="middle" distance={8}>
-        <div class="text-gray-500" style="transform:translateY(-.5px)">
-          <InfoCircle size="13px" />
-        </div>
-        <TooltipContent maxWidth="400px" slot="tooltip-content">
-          {@html hint}
-        </TooltipContent>
-      </Tooltip>
-    {/if}
-    {#if optional}
-      <span class="text-gray-500 text-sm">(optional)</span>
-    {/if}
-  </div>
+  {#if label}
+    <div class="flex items-center gap-x-1">
+      {#if label}
+        <label for={id} class="text-gray-800 text-sm font-medium">
+          {label}
+        </label>
+      {/if}
+      {#if hint}
+        <Tooltip location="right" alignment="middle" distance={8}>
+          <div class="text-gray-500" style="transform:translateY(-.5px)">
+            <InfoCircle size="13px" />
+          </div>
+          <TooltipContent maxWidth="400px" slot="tooltip-content">
+            {@html hint}
+          </TooltipContent>
+        </Tooltip>
+      {/if}
+      {#if optional}
+        <span class="text-gray-500 text-sm">(optional)</span>
+      {/if}
+    </div>
+  {/if}
   <input
     bind:this={inputElement}
     bind:value
