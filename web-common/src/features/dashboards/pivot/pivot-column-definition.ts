@@ -1,3 +1,4 @@
+import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
 import {
@@ -64,10 +65,19 @@ export function getColumnDefForPivot(
 
   const { measureNames, rowDimensionNames, colDimensionNames } = config;
 
-  const measures = measureNames.map((m) => ({
-    label: config.allMeasures.find((measure) => measure.name === m)?.label || m,
-    name: m,
-  }));
+  const measures = measureNames.map((m) => {
+    const measure = config.allMeasures.find((measure) => measure.name === m);
+
+    if (!measure) {
+      throw new Error(`Measure ${m} not found in config.allMeasures`);
+    }
+
+    return {
+      label: measure?.label || m,
+      formatter: createMeasureValueFormatter<null | undefined>(measure),
+      name: m,
+    };
+  });
 
   const rowDimensions = rowDimensionNames.map((d) => ({
     label:
@@ -105,7 +115,7 @@ export function getColumnDefForPivot(
     return {
       accessorKey: m.name,
       header: m.label || m.name,
-      cell: (info) => info.getValue(),
+      cell: (info) => m.formatter(info.getValue() as number | null | undefined),
     };
   });
 
