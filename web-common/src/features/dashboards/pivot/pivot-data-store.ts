@@ -96,7 +96,10 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
 
 /**
  * Returns a query for cell data for the initial table.
- * TODO: Add description for sorting methodolgy
+ * The table cell is sorted by the anchor dimension irrespective
+ * of the sort config. The dimension axes values are sorted using
+ * the config and values from this query are used to create the
+ * table.
  */
 export function createTableCellQuery(
   ctx: StateManagers,
