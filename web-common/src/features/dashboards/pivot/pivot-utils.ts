@@ -252,11 +252,17 @@ export function getSortForAccessor(
 ) {
   let sortPivotBy: V1MetricsViewAggregationSort[] = [];
 
+  const defaultTimeRange = {
+    start: config.time.timeStart,
+    end: config.time.timeEnd,
+  };
+
   // Return un-changed filter if no sorting is applied
   if (config.pivot?.sorting?.length === 0) {
     return {
       filters: config.filters,
       sortPivotBy,
+      timeRange: defaultTimeRange,
     };
   }
 
@@ -275,6 +281,7 @@ export function getSortForAccessor(
     return {
       filters: config.filters,
       sortPivotBy,
+      timeRange: defaultTimeRange,
     };
   }
   // Strip the measure string from the accessor
@@ -282,26 +289,39 @@ export function getSortForAccessor(
   const accessorParts = accessorWithoutMeasure.split("_");
 
   let colDimensionFilters: MetricsViewFilterCond[];
+  const timeFilters: TimeFilters[] = [];
   if (accessorParts[0] === "") {
     // There are no column dimensions in the accessor
     colDimensionFilters = [];
   } else {
-    colDimensionFilters = accessorParts.map((part) => {
-      const { c, v } = extractNumbers(part);
-      const columnDimensionName = colDimensionNames[c];
-      const value = columnDimensionAxes[columnDimensionName][v];
+    colDimensionFilters = accessorParts
+      .map((part) => {
+        const { c, v } = extractNumbers(part);
+        const columnDimensionName = colDimensionNames[c];
+        const value = columnDimensionAxes[columnDimensionName][v];
 
-      return {
-        name: columnDimensionName,
-        in: [value],
-      };
-    });
+        return {
+          name: columnDimensionName,
+          in: [value],
+        };
+      })
+      .filter((colFilter) => {
+        if (colFilter.name === config.time.timeDimension) {
+          timeFilters.push({
+            timeStart: colFilter.in[0],
+            interval: config.time.interval,
+          });
+          return false;
+        } else return true;
+      });
   }
 
   const filterForSort: V1MetricsViewFilter = {
     include: [...colDimensionFilters],
     exclude: [],
   };
+
+  const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
 
   sortPivotBy = [
     {
@@ -313,6 +333,7 @@ export function getSortForAccessor(
   return {
     filters: filterForSort,
     sortPivotBy,
+    timeRange,
   };
 }
 

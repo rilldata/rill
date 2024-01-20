@@ -218,7 +218,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         }
         const anchorDimension = rowDimensionNames[0];
 
-        const { filters, sortPivotBy } = getSortForAccessor(
+        const { filters, sortPivotBy, timeRange } = getSortForAccessor(
           anchorDimension,
           config,
           columnDimensionAxes?.data,
@@ -230,6 +230,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           rowDimensionNames.slice(0, 1),
           filters,
           sortPivotBy,
+          timeRange,
         );
 
         /**
