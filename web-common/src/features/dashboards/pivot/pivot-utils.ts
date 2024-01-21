@@ -61,13 +61,17 @@ export function reconcileMissingDimensionValues(
   const sortedRowAxisValues = new Set(
     sortedRowAxesData?.[anchorDimension] || [],
   );
+
+  if (sortedRowAxisValues?.size >= 100)
+    return sortedRowAxesData?.[anchorDimension];
+
   const unsortedRowAxisValues = unsortedRowAxesData?.[anchorDimension] || [];
 
   const missingValues = unsortedRowAxisValues.filter(
     (value) => !sortedRowAxisValues.has(value),
   );
 
-  return [...sortedRowAxisValues, ...missingValues];
+  return [...sortedRowAxisValues, ...missingValues].slice(0, 100);
 }
 /**
  * Construct a key for a pivot config to store expanded table data
