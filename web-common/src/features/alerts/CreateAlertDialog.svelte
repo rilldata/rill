@@ -19,9 +19,12 @@
   const formState = createForm({
     initialValues: {
       name: "",
+      measure: "",
+      splitByDimension: "",
     },
     validationSchema: yup.object({
       name: yup.string().required("Required"),
+      measure: yup.string().required("Required"),
     }),
     onSubmit: async (values) => {
       console.log("submitting alerts form with these values: ", values);
@@ -67,7 +70,7 @@
 
 <Dialog {open} titleMarginBottomOverride="mb-1">
   <svelte:fragment slot="title">Create alert</svelte:fragment>
-  <svelte:fragment slot="body">
+  <div slot="body" class="overflow-auto">
     <!-- TODO: match Figma mocks -->
     <!-- TODO: tabs shouldn't be clickable -->
     <TabGroup>
@@ -107,5 +110,5 @@
         </div>
       </TabPanels>
     </TabGroup>
-  </svelte:fragment>
+  </div>
 </Dialog>
