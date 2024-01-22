@@ -16,7 +16,7 @@
   }
 </script>
 
-<div class="flex items-center gap-x-4">
+<div class="flex items-center gap-x-4 p-2 px-4">
   <Button
     square
     type="secondary"
