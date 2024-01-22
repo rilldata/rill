@@ -9,41 +9,45 @@
 
   const stateManagers = getStateManagers();
 
+  let showPanels = true;
+
   $: pivotDataStore = usePivotDataStore(stateManagers);
 </script>
 
 <div class="layout">
-  <PivotSidebar />
+  {#if showPanels}
+    <PivotSidebar />
+  {/if}
   <div class="content">
-    <PivotHeader />
-    <PivotToolbar />
-    <div class="table-view">
-      {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
-        <PivotEmpty />
-      {:else}
-        <PivotTable
-          data={$pivotDataStore.data}
-          columns={$pivotDataStore.columnDef}
-        />
-      {/if}
+    {#if showPanels}
+      <PivotHeader />
+    {/if}
+    <div class="p-2 px-4">
+      <PivotToolbar bind:showPanels />
+      <div class="table-view">
+        {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
+          <PivotEmpty />
+        {:else}
+          <PivotTable
+            data={$pivotDataStore.data}
+            columns={$pivotDataStore.columnDef}
+          />
+        {/if}
+      </div>
     </div>
   </div>
 </div>
 
-<style>
+<style lang="postcss">
   .layout {
-    display: flex;
-    height: 100%;
-    box-sizing: border-box;
+    @apply flex box-border h-full;
   }
 
   .content {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
+    @apply flex w-full flex-col;
   }
 
   .table-view {
-    overflow-y: auto;
+    @apply overflow-y-auto;
   }
 </style>

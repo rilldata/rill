@@ -34,7 +34,7 @@
       on:update={(e) =>
         metricsExplorerStore.setPivotColumns(
           $metricsViewName,
-          e.detail?.map((item) => item.id)
+          e.detail?.map((item) => item.id),
         )}
       items={colMeasures}
       style="horizontal"
@@ -47,7 +47,7 @@
       on:update={(e) =>
         metricsExplorerStore.setPivotRows(
           $metricsViewName,
-          e.detail?.map((item) => item.id)
+          e.detail?.map((item) => item.id),
         )}
       items={rowDimensions}
       style="horizontal"
