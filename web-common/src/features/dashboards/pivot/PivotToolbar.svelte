@@ -21,7 +21,10 @@
     square
     type="secondary"
     selected={showPanels}
-    on:click={() => (showPanels = !showPanels)}
+    on:click={(e) => {
+      showPanels = !showPanels;
+      e.detail.currentTarget.blur();
+    }}
   >
     <PivotPanel size="18px" />
   </Button>
