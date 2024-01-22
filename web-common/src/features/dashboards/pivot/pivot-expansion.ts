@@ -142,20 +142,21 @@ export function queryExpandedRowMeasureValues(
       const timeFilters: TimeFilters[] = [];
       // TODO: handle for already existing filters
       const rowNestFilters = values
-        .filter((v, i) => {
-          if (rowDimensionNames[i] === config.time.timeDimension) {
-            timeFilters.push({
-              timeStart: v,
-              interval: config.time.interval,
-            });
-            return false;
-          } else return true;
-        })
         .map((value, index) => {
           return {
             name: rowDimensionNames[index],
             in: [value],
           };
+        })
+        .filter((f) => {
+          // We map first and filter later to ensure that dimensions are in order
+          if (f.name === config.time.timeDimension) {
+            timeFilters.push({
+              timeStart: f.in[0],
+              interval: config.time.interval,
+            });
+            return false;
+          } else return true;
         });
 
       const filterForRowDimensionAxes = {
