@@ -9,14 +9,20 @@
 
   const stateManagers = getStateManagers();
 
+  let showPanels = true;
+
   $: pivotDataStore = usePivotDataStore(stateManagers);
 </script>
 
 <div class="layout">
-  <PivotSidebar />
+  {#if showPanels}
+    <PivotSidebar />
+  {/if}
   <div class="content">
-    <PivotHeader />
-    <PivotToolbar />
+    {#if showPanels}
+      <PivotHeader />
+    {/if}
+    <PivotToolbar bind:showPanels />
     <div class="table-view">
       {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
         <PivotEmpty />
