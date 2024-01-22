@@ -31,7 +31,7 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    false,
 			Href:        "https://github.com/go-sql-driver/mysql?tab=readme-ov-file#dsn-data-source-name",
-			Placeholder: "[username[:password]@][protocol[(address)]]/dbname[?param1=value1&...&paramN=valueN]",
+			Placeholder: "username:password@tcp(example.com:3306)/my-db",
 			Hint:        "Either set this or pass --env connector.mysql.dsn=... to rill start",
 		},
 	},
