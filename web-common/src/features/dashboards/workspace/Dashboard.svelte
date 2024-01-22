@@ -70,7 +70,7 @@
   use:listenToNodeResize
 >
   <div
-    class="border-b mb-3 w-full flex flex-col"
+    class="border-b mb-3 w-full flex flex-col bg-slate-50"
     id="header"
     style:padding-left={leftSide}
   >
