@@ -106,12 +106,17 @@ export function reduceTableCellDataIntoRows(
         });
       }
     } else {
-      // If there is no anchor dimension, the cell data is the row data
+      // In absence of any anchor dimension, the first row is the only row
+
+      if (!tableData.length) {
+        tableData = [{}];
+      }
+      const row = tableData[0];
+
       accessors.forEach((accessor, i) => {
-        cell[accessor] = cell[config.measureNames[i]] as string | number;
+        row[accessor] = cell[config.measureNames[i]] as string | number;
       });
 
-      tableData[0] = cell;
       return;
     }
   });
