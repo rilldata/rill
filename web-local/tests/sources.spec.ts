@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
+  TestEntityType,
   deleteEntity,
   renameEntityUsingMenu,
   updateCodeEditor,
@@ -8,7 +9,6 @@ import {
   waitForAdBids,
   waitForAdImpressions,
 } from "./utils/dataSpecifcHelpers";
-import { TestEntityType } from "./utils/helpers";
 import {
   TestDataPath,
   createOrReplaceSource,
