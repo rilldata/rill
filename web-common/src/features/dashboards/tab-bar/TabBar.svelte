@@ -6,9 +6,7 @@
 
   const StateManagers = getStateManagers();
 
-const {
-  metricsViewName,
-} = StateManagers;
+  const { metricsViewName } = StateManagers;
 
   let currentTabIndex = 0;
 
@@ -25,10 +23,11 @@ const {
     const selectedTab = tabs[event.detail];
     console.log(`Switching to tab: ${selectedTab.label}`);
 
-    metricsExplorerStore.setPivotMode($metricsViewName, selectedTab.label === "Pivot")
+    metricsExplorerStore.setPivotMode(
+      $metricsViewName,
+      selectedTab.label === "Pivot",
+    );
   }
-
-
 </script>
 
 <div class="mr-4">

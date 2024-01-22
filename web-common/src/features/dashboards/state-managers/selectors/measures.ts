@@ -23,11 +23,11 @@ export const measureLabel = ({
 }: DashboardDataSources): ((m: string) => string) => {
   return (measureName) => {
     const measure = metricsSpecQueryResult.data?.measures?.find(
-      (d) => d.name === measureName
+      (d) => d.name === measureName,
     );
     return measure?.label ?? measureName;
-    }
   };
+};
 export const isMeasureValidPercentOfTotal = ({
   metricsSpecQueryResult,
 }: DashboardDataSources): ((measureName: string) => boolean) => {
