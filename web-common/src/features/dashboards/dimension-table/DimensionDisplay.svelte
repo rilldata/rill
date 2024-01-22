@@ -11,7 +11,6 @@
     createQueryServiceMetricsViewComparison,
     createQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
@@ -53,8 +52,6 @@
   $: dimensionColumnName = $dimensionTableColumnName(dimensionName) as string;
 
   let searchText = "";
-
-  const queryClient = useQueryClient();
 
   $: instanceId = $runtime.instanceId;
 

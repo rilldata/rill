@@ -6,7 +6,6 @@ import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/d
 import {
   createAndExpression,
   filterExpressions,
-  forEachExpression,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
