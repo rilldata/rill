@@ -98,7 +98,12 @@
     on:blur={onLeave}
     on:click={(e) => {
       if (e.shiftKey) return;
-      toggleDimensionValueSelection(dimensionName, label);
+      toggleDimensionValueSelection(
+        dimensionName,
+        label,
+        false,
+        e.ctrlKey || e.metaKey,
+      );
     }}
     on:focus={onHover}
     on:keydown
@@ -109,8 +114,8 @@
     use:shiftClickAction
   >
     <LeaderboardItemFilterIcon
-      {isBeingCompared}
       {excluded}
+      {isBeingCompared}
       selectionIndex={itemData?.selectedIndex}
     />
     <BarAndLabel
@@ -179,6 +184,7 @@
     {excluded}
     {filterExcludeMode}
     {label}
+    {selected}
     slot="tooltip-content"
   />
 </Tooltip>
