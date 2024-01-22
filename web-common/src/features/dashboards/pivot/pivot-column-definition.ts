@@ -83,6 +83,36 @@ function createColumnDefinitionForDimensions(
   return createNestedColumns(0, {});
 }
 
+/**
+ * Get formatted value for row dimension values. Format
+ * time dimension values if present.
+ */
+function formatRowDimensionValue(
+  value: string,
+  depth: number,
+  timeConfig: PivotTimeConfig,
+  rowDimensionNames: string[],
+) {
+  const dimension = rowDimensionNames?.[depth];
+  if (dimension === timeConfig?.timeDimension) {
+    const timeGrain = timeConfig?.interval;
+    const dt = addZoneOffset(
+      removeLocalTimezoneOffset(new Date(value)),
+      timeConfig?.timeZone,
+    );
+    const timeFormatter = timeFormat(
+      timeGrain ? TIME_GRAIN[timeGrain]?.d3format : "%H:%M",
+    ) as (d: Date) => string;
+
+    return timeFormatter(dt);
+  }
+  return value;
+}
+
+/**
+ * Create column definitions object for pivot table
+ * as required by Tanstack Table
+ */
 export function getColumnDefForPivot(
   config: PivotDataStoreConfig,
   columnDimensionAxes: Record<string, string[]> | undefined,
@@ -131,7 +161,12 @@ export function getColumnDefForPivot(
         header: nestedLabel,
         cell: ({ row, getValue }) =>
           cellComponent(PivotExpandableCell, {
-            value: getValue(),
+            value: formatRowDimensionValue(
+              getValue() as string,
+              row.depth,
+              config.time,
+              rowDimensionNames,
+            ),
             row,
           }),
       };

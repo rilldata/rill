@@ -1,8 +1,6 @@
 <script lang="ts">
   export let row;
   export let value: string;
-
-  // $: console.log(row);
 </script>
 
 <div class="flex gap-x-1" style:padding-left={`${row.depth * 2}rem`}>
