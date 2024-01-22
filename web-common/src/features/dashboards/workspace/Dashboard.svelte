@@ -117,7 +117,7 @@
           <PivotDisplay />
         </div>
       {:else}
-        <div class="flex gap-x-1 pt-4">
+        <div class="flex gap-x-1 pt-4 w-full overflow-hidden flex-row">
           <div
             class:fixed-metric-height={expandedMeasureName}
             class="overflow-y-scroll pb-8 flex-none"
