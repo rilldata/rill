@@ -1,18 +1,29 @@
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import {
+  addZoneOffset,
+  removeLocalTimezoneOffset,
+} from "@rilldata/web-common/lib/time/timezone";
 import type { ColumnDef } from "@tanstack/svelte-table";
+import { timeFormat } from "d3-time-format";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
 import {
   cellComponent,
   createIndexMap,
   getAccessorForCell,
 } from "./pivot-utils";
-import type { PivotDataRow, PivotDataStoreConfig } from "./types";
+import type {
+  PivotDataRow,
+  PivotDataStoreConfig,
+  PivotTimeConfig,
+} from "./types";
 
 /***
  * Create nested and grouped column definitions for pivot table
  */
 function createColumnDefinitionForDimensions(
   dimensionNames: string[],
+  timeConfig: PivotTimeConfig,
   headers: Record<string, string[]>,
   leafData: ColumnDef<PivotDataRow>[],
 ): ColumnDef<PivotDataRow>[] {
@@ -44,13 +55,28 @@ function createColumnDefinitionForDimensions(
 
     // Recursive case: create nested headers
     const headerValues = headers[dimensionNames?.[level]];
-    return headerValues?.map((value) => ({
-      header: value,
-      columns: createNestedColumns(level + 1, {
-        ...colValuePair,
-        [dimensionNames[level]]: value,
-      }),
-    }));
+    return headerValues?.map((value) => {
+      let displayValue = value;
+      if (timeConfig?.timeDimension === dimensionNames?.[level]) {
+        const timeGrain = timeConfig?.interval;
+        const dt = addZoneOffset(
+          removeLocalTimezoneOffset(new Date(value)),
+          timeConfig?.timeZone,
+        );
+        const timeFormatter = timeFormat(
+          timeGrain ? TIME_GRAIN[timeGrain]?.d3format : "%H:%M",
+        ) as (d: Date) => string;
+
+        displayValue = timeFormatter(dt);
+      }
+      return {
+        header: displayValue,
+        columns: createNestedColumns(level + 1, {
+          ...colValuePair,
+          [dimensionNames[level]]: value,
+        }),
+      };
+    });
   }
 
   // Start the recursion
@@ -121,6 +147,7 @@ export function getColumnDefForPivot(
 
   const groupedColDef = createColumnDefinitionForDimensions(
     colDimensions.map((d) => d.name) || [],
+    config.time,
     columnDimensionAxes || {},
     leafColumns,
   );
