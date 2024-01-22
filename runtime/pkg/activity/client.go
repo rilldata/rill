@@ -87,14 +87,12 @@ func NewClientFromConf(
 		logger.Fatal(fmt.Sprintf("unknown activity sink type: %s", sinkType))
 	}
 
-	client := NewBufferedClient(BufferedClientOptions{
+	return NewBufferedClient(BufferedClientOptions{
 		Sink:       sink,
 		SinkPeriod: time.Duration(sinkPeriodMs) * time.Millisecond,
 		BufferSize: maxBufferSize,
 		Logger:     logger,
 	})
-
-	return client
 }
 
 func NewBufferedClient(opts BufferedClientOptions) Client {
