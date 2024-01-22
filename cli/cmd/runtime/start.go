@@ -32,6 +32,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
+	_ "github.com/rilldata/rill/runtime/drivers/clickhouse"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/github"

@@ -68,7 +68,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	if err != nil {
 		return err
 	}
-	if olap.Dialect() == drivers.DialectDruid {
+	if olap.Dialect() == drivers.DialectDruid || olap.Dialect() == drivers.DialectClickHouse {
 		release()
 		return query.Resolve(ctx, r, instanceID, priority)
 	}

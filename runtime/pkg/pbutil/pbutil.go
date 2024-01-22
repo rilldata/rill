@@ -1,6 +1,7 @@
 package pbutil
 
 import (
+	"encoding/base64"
 	"fmt"
 	"math"
 	"math/big"
@@ -17,6 +18,8 @@ import (
 // structpb.NewValue, but adds support for a few extra primitive types.
 func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 	switch v := v.(type) {
+	case nil:
+		return structpb.NewNullValue(), nil
 	// In addition to the extra supported types, we also override handling for
 	// maps and lists since we need to use valToPB on nested fields.
 	case map[string]any:
@@ -105,6 +108,84 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			}
 		}
 		return structpb.NewValue(v)
+	// pointers to base types
+	case *bool:
+		return structpb.NewBoolValue(*v), nil
+	case *int:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *int32:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *int64:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *uint:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *uint32:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *uint64:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *string:
+		if !utf8.ValidString(*v) {
+			return nil, fmt.Errorf("invalid UTF-8 in string: %q", *v)
+		}
+		return structpb.NewStringValue(*v), nil
+	case *[]byte:
+		s := base64.StdEncoding.EncodeToString(*v)
+		return structpb.NewStringValue(s), nil
+	case *map[string]any:
+		var t2 *runtimev1.StructType
+		if t != nil {
+			t2 = t.StructType
+		}
+		v2, err := ToStruct(*v, t2)
+		if err != nil {
+			return nil, err
+		}
+		return structpb.NewStructValue(v2), nil
+	case *[]any:
+		v2, err := ToListValue(*v, t)
+		if err != nil {
+			return nil, err
+		}
+		return structpb.NewListValue(v2), nil
+	case *int8:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *int16:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *uint8:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *uint16:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *time.Time:
+		if t != nil && t.Code == runtimev1.Type_CODE_DATE {
+			s := v.Format(time.DateOnly)
+			return structpb.NewStringValue(s), nil
+		}
+		s := v.Format(time.RFC3339Nano)
+		return structpb.NewStringValue(s), nil
+	case *float32:
+		// Turning NaNs and Infs into nulls until frontend can deal with them as strings
+		// (They don't have a native JSON representation)
+		if math.IsNaN(float64(*v)) || math.IsInf(float64(*v), 0) {
+			return structpb.NewNullValue(), nil
+		}
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *float64:
+		// Turning NaNs and Infs into nulls until frontend can deal with them as strings
+		// (They don't have a native JSON representation)
+		if math.IsNaN(*v) || math.IsInf(*v, 0) {
+			return structpb.NewNullValue(), nil
+		}
+		return structpb.NewNumberValue(*v), nil
+	case *map[any]any:
+		var t2 *runtimev1.MapType
+		if t != nil {
+			t2 = t.MapType
+		}
+		v2, err := ToStructCoerceKeys(*v, t2)
+		if err != nil {
+			return nil, err
+		}
+		return structpb.NewStructValue(v2), nil
 	default:
 		// Default handling for basic types (ints, string, etc.)
 		return structpb.NewValue(v)

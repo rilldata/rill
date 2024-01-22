@@ -73,7 +73,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 

@@ -62,6 +62,8 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return q.resolveDuckDB(ctx, olap, priority)
 	case drivers.DialectDruid:
 		return q.resolveDruid(ctx, olap, priority)
+	case drivers.DialectClickHouse:
+		return q.resolveClickHouse(ctx, olap, priority)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
@@ -212,6 +214,50 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	summary.Max = timestamppb.New(maxTime)
 	summary.Interval = &runtimev1.TimeRangeSummary_Interval{
 		Micros: maxTime.Sub(minTime).Microseconds(),
+	}
+	q.Result = summary
+
+	return nil
+}
+
+func (q *ColumnTimeRange) resolveClickHouse(ctx context.Context, olap drivers.OLAPStore, priority int) error {
+	sql := fmt.Sprintf(
+		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\" FROM %[2]s",
+		safeName(q.ColumnName),
+		safeName(q.TableName),
+	)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            sql,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	// solves for nullable, weird impl in driver ?
+	var minTime, maxTime *time.Time
+	for rows.Next() {
+		err = rows.Scan(&minTime, &maxTime)
+		if err != nil {
+			return err
+		}
+	}
+
+	summary := &runtimev1.TimeRangeSummary{}
+	// TODO: check for nil
+	if minTime != nil {
+		summary.Min = timestamppb.New(*minTime)
+	}
+	if maxTime != nil {
+		summary.Max = timestamppb.New(*maxTime)
+	}
+	if minTime != nil && maxTime != nil {
+		summary.Interval = &runtimev1.TimeRangeSummary_Interval{
+			Micros: maxTime.Sub(*minTime).Microseconds(),
+		}
 	}
 	q.Result = summary
 

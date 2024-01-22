@@ -78,7 +78,7 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -682,6 +682,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 	var sql string
 	if dialect != drivers.DialectDruid {
+		var joinOnClause string
+		if dialect == drivers.DialectClickHouse {
+			joinOnClause = fmt.Sprintf("base.%[1]s = comparison.%[1]s", colName)
+		} else {
+			joinOnClause = fmt.Sprintf("base.%[1]s = comparison.%[1]s OR (base.%[1]s is null and comparison.%[1]s is null)", colName)
+		}
 		if havingClause != "" {
 			// measure filter could include the base measure name.
 			// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
@@ -697,7 +703,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
 			) comparison
 		ON
-				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
+				%[16]s
 		%[6]s
 		%[7]s
 		OFFSET
@@ -719,6 +725,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				comparisonLimitClause, // 13
 				unnestClause,          // 14
 				havingClause,          // 15
+				joinOnClause,          // 16
 			)
 		} else {
 			sql = fmt.Sprintf(`
@@ -731,7 +738,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
 			) comparison
 		ON
-				base.%[2]s = comparison.%[2]s OR (base.%[2]s is null and comparison.%[2]s is null)
+				%[15]s)
 		%[6]s
 		%[7]s
 		OFFSET
@@ -751,6 +758,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				baseLimitClause,       // 12
 				comparisonLimitClause, // 13
 				unnestClause,          // 14
+				joinOnClause,          // 15
 			)
 		}
 	} else {
