@@ -1,13 +1,18 @@
 <script lang="ts">
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import TableIcon from "../../components/icons/TableIcon.svelte";
   import PreviewTable from "../../components/preview-table/PreviewTable.svelte";
   import type { VirtualizedTableColumns } from "../../components/virtualized-table/types";
-  import { createQueryServiceMetricsViewAggregation } from "../../runtime-client";
+  import {
+    createQueryServiceMetricsViewAggregation,
+    V1Expression,
+  } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
 
   export let metricsView: string;
-  export let measure: any;
-  export let dimension: any;
+  export let measure: string;
+  export let dimension: string;
+  export let criteria: V1Expression | undefined = undefined;
 
   $: aggregation = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
@@ -15,6 +20,7 @@
     {
       measures: [{ name: measure }],
       dimensions: dimension ? [{ name: dimension }] : [],
+      having: sanitiseExpression(criteria),
     },
     {
       query: {
@@ -36,6 +42,8 @@
       }) as VirtualizedTableColumns[];
     }
   }
+
+  $: console.log(criteria);
 </script>
 
 {#if !$aggregation.data}

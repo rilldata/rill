@@ -18,7 +18,9 @@
 </script>
 
 <div class="flex flex-col gap-y-2">
-  <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
+  {#if label?.length}
+    <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
+  {/if}
   <Menu>
     <MenuButton
       className="w-full border px-3 py-1 h-8 flex gap-x-2 justify-between items-center"

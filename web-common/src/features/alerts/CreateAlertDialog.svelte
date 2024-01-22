@@ -3,12 +3,13 @@
   import Tab from "@rilldata/web-admin/components/tabs/Tab.svelte";
   import TabGroup from "@rilldata/web-admin/components/tabs/TabGroup.svelte";
   import TabList from "@rilldata/web-admin/components/tabs/TabList.svelte";
+  import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { Button } from "../../components/button";
   import Dialog from "../../components/dialog-v2/Dialog.svelte";
-  import AlertDialogCriteriaTab from "./AlertDialogCriteriaTab.svelte";
+  import AlertDialogCriteriaTab from "web-common/src/features/alerts/criteria-tab/AlertDialogCriteriaTab.svelte";
   import AlertDialogDataTab from "./AlertDialogDataTab.svelte";
   import AlertDialogDeliveryTab from "./AlertDialogDeliveryTab.svelte";
 
@@ -21,6 +22,7 @@
       name: "",
       measure: "",
       splitByDimension: "",
+      criteria: createAndExpression([]),
     },
     validationSchema: yup.object({
       name: yup.string().required("Required"),
@@ -70,7 +72,7 @@
 
 <Dialog {open} titleMarginBottomOverride="mb-1">
   <svelte:fragment slot="title">Create alert</svelte:fragment>
-  <div slot="body" class="overflow-auto">
+  <div class="overflow-auto" slot="body">
     <!-- TODO: match Figma mocks -->
     <!-- TODO: tabs shouldn't be clickable -->
     <TabGroup>
