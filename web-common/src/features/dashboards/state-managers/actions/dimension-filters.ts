@@ -1,6 +1,7 @@
 import {
   createInExpression,
   getValueIndexInExpression,
+  getValuesInExpression,
   negateExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
@@ -124,7 +125,7 @@ export function selectItemsInFilter(
   }
 
   // preserve old selections and add only new ones
-  const oldValues = expr.cond.exprs.slice(1).map((e) => e.val as string);
+  const oldValues = getValuesInExpression(expr);
   const newValues = values.filter((v) => !oldValues.includes(v));
   // newValuesSelected = newValues.length; // TODO
   expr.cond.exprs.push(...newValues.map((v): V1Expression => ({ val: v })));
@@ -151,7 +152,7 @@ export function deselectItemsInFilter(
   }
 
   // remove only deselected values
-  const oldValues = expr.cond.exprs.slice(1).map((e) => e.val as string);
+  const oldValues = getValuesInExpression(expr);
   const newValues = oldValues.filter((v) => !values.includes(v));
 
   if (newValues.length) {

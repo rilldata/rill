@@ -1,24 +1,25 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
   createAndExpression,
   filterExpressions,
+  forEachExpression,
+  forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import {
-  getMapFromArray,
-  removeIfExists,
-} from "@rilldata/web-common/lib/arrayUtils";
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
   DashboardTimeControls,
   ScrubRange,
   TimeRange,
 } from "@rilldata/web-common/lib/time/types";
+import { V1Operation } from "@rilldata/web-common/runtime-client";
 import type {
+  V1Expression,
   V1MetricsView,
-  V1MetricsViewFilter,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
@@ -56,9 +57,14 @@ export const updateMetricsExplorerByName = (
   });
 };
 
-function includeExcludeModeFromFilters(filters: V1MetricsViewFilter) {
+function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
   const map = new Map<string, boolean>();
-  filters?.exclude.forEach((cond) => map.set(cond.name, true));
+  if (!filters) return map;
+  forEachIdentifier(filters, (e, ident) => {
+    if (e.cond?.op === V1Operation.OPERATION_NIN) {
+      map.set(ident, true);
+    }
+  });
   return map;
 }
 
@@ -194,7 +200,7 @@ const metricViewReducers = {
         metricsExplorer.showTimeComparison = false;
       }
       metricsExplorer.dimensionFilterExcludeMode =
-        includeExcludeModeFromFilters(partial.filters);
+        includeExcludeModeFromFilters(partial.whereFilter);
     });
   },
 
@@ -507,22 +513,16 @@ function getPinIndexForDimension(
   metricsExplorer: MetricsExplorerEntity,
   dimensionName: string,
 ) {
-  const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-    dimensionName,
-  )
-    ? "exclude"
-    : "include";
+  const dimensionEntryIndex = getWhereFilterExpressionIndex({
+    dashboard: metricsExplorer,
+  })(dimensionName);
+  if (dimensionEntryIndex === undefined || dimensionEntryIndex === -1)
+    return -1;
 
-  const dimensionEntryIndex = metricsExplorer.filters[
-    relevantFilterKey
-  ].findIndex((filter) => filter.name === dimensionName);
+  const dimExpr =
+    metricsExplorer.whereFilter.cond?.exprs?.[dimensionEntryIndex];
+  if (!dimExpr?.cond?.exprs?.length) return -1;
 
-  if (dimensionEntryIndex >= 0) {
-    return (
-      metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex]?.in
-        ?.length - 1
-    );
-  }
-
-  return -1;
+  // 1st entry in the expression is the identifier. hence the -2 here.
+  return dimExpr.cond.exprs.length - 2;
 }

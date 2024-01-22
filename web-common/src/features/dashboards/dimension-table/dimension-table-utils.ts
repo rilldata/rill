@@ -18,7 +18,6 @@ import type {
   V1Expression,
   V1MetricsViewComparisonRow,
   V1MetricsViewComparisonValue,
-  V1MetricsViewFilter,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
 
@@ -505,23 +504,4 @@ export function prepareDimensionTableRows(
       return rowOut;
     });
   return tableRows;
-}
-
-export function getSelectedRowIndicesFromFilters(
-  rows: DimensionTableRow[],
-  filters: V1MetricsViewFilter,
-  dimensionName: string,
-  excludeMode: boolean,
-): number[] {
-  const selectedDimValues =
-    ((excludeMode
-      ? filters?.exclude?.find((d) => d.name === dimensionName)?.in
-      : filters?.include?.find((d) => d.name === dimensionName)
-          ?.in) as string[]) ?? [];
-
-  return selectedDimValues
-    .map((label) => {
-      return rows.findIndex((row) => row[dimensionName] === label);
-    })
-    .filter((i) => i >= 0);
 }
