@@ -3,6 +3,7 @@ import {
   getValueIndexInExpression,
   negateExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { DashboardMutables } from "./types";
 import { getWhereFilterExpressionIndex } from "../selectors/dimension-filters";
 
@@ -98,6 +99,72 @@ export function removeDimensionFilter(
   dashboard.whereFilter?.cond?.exprs?.splice(exprIdx, 1);
 }
 
+export function selectItemsInFilter(
+  { dashboard, cancelQueries }: DashboardMutables,
+  dimensionName: string,
+  values: string[],
+) {
+  // if we are able to update the filters, we must cancel any queries
+  // that are currently running.
+  cancelQueries();
+
+  const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
+  const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
+  if (exprIdx === undefined || exprIdx === -1) {
+    dashboard.whereFilter.cond?.exprs?.push(
+      createInExpression(dimensionName, values, !isInclude),
+    );
+    return;
+  }
+
+  const expr = dashboard.whereFilter.cond?.exprs?.[exprIdx];
+  if (!expr?.cond?.exprs) {
+    // should never happen since getWhereFilterExpressionIndex runs a find
+    return;
+  }
+
+  // preserve old selections and add only new ones
+  const oldValues = expr.cond.exprs.slice(1).map((e) => e.val as string);
+  const newValues = values.filter((v) => !oldValues.includes(v));
+  // newValuesSelected = newValues.length; // TODO
+  expr.cond.exprs.push(...newValues.map((v): V1Expression => ({ val: v })));
+}
+
+export function deselectItemsInFilter(
+  { dashboard, cancelQueries }: DashboardMutables,
+  dimensionName: string,
+  values: string[],
+) {
+  // if we are able to update the filters, we must cancel any queries
+  // that are currently running.
+  cancelQueries();
+
+  const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
+  if (exprIdx === undefined || exprIdx === -1) {
+    return;
+  }
+
+  const expr = dashboard.whereFilter.cond?.exprs?.[exprIdx];
+  if (!expr?.cond?.exprs) {
+    // should never happen since getWhereFilterExpressionIndex runs a find
+    return;
+  }
+
+  // remove only deselected values
+  const oldValues = expr.cond.exprs.slice(1).map((e) => e.val as string);
+  const newValues = oldValues.filter((v) => !values.includes(v));
+
+  if (newValues.length) {
+    expr.cond.exprs.splice(
+      1,
+      expr.cond.exprs.length - 1,
+      ...newValues.map((v): V1Expression => ({ val: v })),
+    );
+  } else {
+    dashboard.whereFilter.cond?.exprs?.splice(exprIdx, 1);
+  }
+}
+
 export const dimensionFilterActions = {
   /**
    * Toggles whether the given dimension value is selected in the
@@ -110,4 +177,6 @@ export const dimensionFilterActions = {
   toggleDimensionValueSelection,
   toggleDimensionFilterMode,
   removeDimensionFilter,
+  selectItemsInFilter,
+  deselectItemsInFilter,
 };

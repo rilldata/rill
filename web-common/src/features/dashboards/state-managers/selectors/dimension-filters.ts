@@ -163,6 +163,23 @@ export const getAllDimensionFilterItems = (
   };
 };
 
+export const unselectedDimensionValues = (
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
+) => {
+  return (dimensionName: string, values: unknown[]): unknown[] => {
+    const expr = getWhereFilterExpression(dashData)(dimensionName);
+    if (expr === undefined) {
+      return values;
+    }
+
+    return (
+      expr.cond?.exprs
+        ?.filter((e, i) => i > 0 && values.includes(e.val))
+        .map((e) => e.val) ?? []
+    );
+  };
+};
+
 export const dimensionFilterSelectors = {
   /**
    * Returns a function that can be used to get
@@ -203,4 +220,6 @@ export const dimensionFilterSelectors = {
    * Get filter items on dimension along with an empty entry for temporary filter if it is a dimension
    */
   getAllDimensionFilterItems,
+
+  unselectedDimensionValues,
 };

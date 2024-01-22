@@ -32,7 +32,7 @@ export default async function exportMetrics({
         metricsViewRowsRequest: {
           instanceId: get(runtime).instanceId,
           metricsViewName: metricViewName,
-          filter: dashboard.filters,
+          where: dashboard.whereFilter,
           timeStart: timeControlState.timeStart,
           timeEnd: timeControlState.timeEnd,
         },
