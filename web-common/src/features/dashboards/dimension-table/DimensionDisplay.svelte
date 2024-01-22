@@ -96,8 +96,13 @@
   );
 
   function onSelectItem(event) {
-    const label = tableRows[event.detail][dimensionColumnName] as string;
-    toggleDimensionValueSelection(dimensionName, label);
+    const label = tableRows[event.detail.index][dimensionColumnName] as string;
+    toggleDimensionValueSelection(
+      dimensionName,
+      label,
+      false,
+      event.detail.meta,
+    );
   }
 
   function toggleComparisonDimension(dimensionName, isBeingCompared) {

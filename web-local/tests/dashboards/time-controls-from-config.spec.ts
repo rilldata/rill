@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { useDashboardFlowTestSetup } from "web-local/test/ui/dashboard-flows/dashboard-flow-test-setup";
-import { updateCodeEditor } from "web-local/test/ui/utils/commonHelpers";
+import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
+import { updateCodeEditor } from "web-local/tests/utils/commonHelpers";
 import {
   interactWithTimeRangeMenu,
   waitForDashboard,
-} from "web-local/test/ui/utils/dashboardHelpers";
-import { startRuntimeForEachTest } from "web-local/test/ui/utils/startRuntimeForEachTest";
+} from "web-local/tests/utils/dashboardHelpers";
+import { startRuntimeForEachTest } from "web-local/tests/utils/startRuntimeForEachTest";
 
 test.describe("time controls settings from dashboard config", () => {
   startRuntimeForEachTest();
