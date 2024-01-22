@@ -8,6 +8,7 @@ divider
 see more button
 -->
 <script lang="ts">
+  import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -16,6 +17,7 @@ see more button
   import { isClipboardApiSupported } from "../../../lib/actions/shift-click-action";
 
   export let label: string | number;
+  export let selected: boolean;
   export let excluded: boolean;
   // false = include, true = exclude
   export let filterExcludeMode: boolean;
@@ -51,6 +53,14 @@ see more button
       </div>
       <Shortcut>
         <span style="font-family: var(--system);">⇧</span> + Click
+      </Shortcut>
+    </TooltipShortcutContainer>
+  {/if}
+  {#if !selected && atLeastOneActive}
+    <TooltipShortcutContainer>
+      <div>Exclusively select this dimension value</div>
+      <Shortcut>
+        <MetaKey />
       </Shortcut>
     </TooltipShortcutContainer>
   {/if}
