@@ -41,6 +41,15 @@ function setPrimaryColor(primary: V1Color) {
     "--color-primary-scrub-area-1-hue",
     "--color-primary-scrub-area-2-hue",
   ].forEach((cssVar) => root.style.setProperty(cssVar, hueVal));
+
+  console.log("before theme update, getPrimaryColors", getPrimaryColors());
+  getPrimaryColors().forEach(([cssVar, color]) => {
+    root.style.setProperty(
+      cssVar,
+      `hsl(${themeColorToHSLString(replaceHue(hue, color))})`,
+    );
+  });
+  console.log("after theme update, getPrimaryColors", getPrimaryColors());
 }
 
 function setSecondaryColor(secondary: V1Color, variance: number) {
@@ -71,17 +80,39 @@ function getDefaultPrimaryColors() {
   });
 }
 
+const getPrimaryColors = () => getPaletteVarsByPrefix("--color-primary-");
+
+/**
+ * Gets all the CSS variables that start with the provided prefix.
+ * This will enable us to extend the list of colors in the CSS and
+ * have them automatically picked up here. This would have been
+ * useful in the past when we needed e.g. blue-75, but hard-coded it
+ * in components.
+ */
+function getPaletteVarsByPrefix(prefix: string): [string, HSLColor][] {
+  const style = getComputedStyle(document.documentElement);
+  // Create a dynamic regex based on the provided prefix.
+  // Matches the input prefix followed by a 1 to 3 digit number/
+  const regex = new RegExp(`^${prefix}\\d{1,3}$`);
+  return Object.values(style)
+    .filter((v) => regex.test(v))
+    .map((varName) => [varName, HexToHSL(style.getPropertyValue(varName))]);
+}
+
+/**
+ * Replaces hue in HSL color
+ */
+function replaceHue(hue: number, hsl: HSLColor): HSLColor {
+  return [hue, hsl[1], hsl[2]];
+}
+
 /**
  * Right now copies over saturation and lightness from the default primary color, keeping the hue from input
  */
 export function generateColorPalette(
   input: V1Color,
-  defaultColors: HSLColor[],
+  inputColors: HSLColor[],
 ): HSLColor[] {
   const [hue] = RGBToHSL(convertColor(input));
-  return TailwindColorSpacing.map((c) => [
-    hue,
-    defaultColors[c][1],
-    defaultColors[c][2],
-  ]);
+  return inputColors.map((c) => replaceHue(hue, c));
 }

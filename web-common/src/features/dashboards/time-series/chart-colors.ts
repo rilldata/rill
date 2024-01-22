@@ -1,15 +1,33 @@
-export const MainLineNormalColor =
-  "hsla(var(--color-primary-graph-line-hue), 60%, 55%, 1)";
-export const MainLineSubRangeColor =
-  "hsla(var(--color-primary-graph-scrubbing-line-hue), 10%, 60%, 1)";
+/**
+ * Color used for the focused line in time series chart,
+ * including when there is no scrubbing and thus the
+ * whole line is focused.
+ */
+export const MainLineColor = "var(--color-primary-500)";
+/**
+ * Color used for the focused arae in time series chart,
+ * including when there is no scrubbing and thus the
+ * whole chart is focused.
+ */
+export const MainAreaColor = "var(--color-primary-200)";
 
-export const AreaNormalColor =
-  "hsla(var(--color-primary-graph-area-hue), 70%, 80%, 0.4)";
-export const AreaSubRangeColor =
-  "hsla(var(--color-primary-graph-scrubbing-line-hue), 20%, 80%, .2)";
+/**
+ * Color used for the focused time series comparison
+ */
+export const TimeComparisonLineColor = "var(--color-muted-500)";
 
-export const ScrubBoxColor =
-  "hsl(var(--color-primary-scrub-box-hue), 94%, 68%)";
+/**
+ * Color used for the unfocused line in time series chart,
+ */
+export const LineMutedColor = "var(--color-muted-500)";
+// export const LineMutedColor = "theme('colors.muted.800')";
+
+/**
+ * Color used for the unfocused area in time series chart,
+ */
+export const AreaMutedColor = "var(--color-muted-200)";
+
+export const ScrubBoxColor = "var(--color-primary-scrub-box-hue)";
 export const ScrubArea0Color =
   "hsl(var(--color-primary-scrub-area-0-hue), 100%, 67%)";
 export const ScrubArea1Color =
