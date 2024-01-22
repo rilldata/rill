@@ -79,6 +79,8 @@ func (n *TestSink) Sink(_ context.Context, events []Event) error {
 	return nil
 }
 
+func (n *TestSink) SetActivity(Client) {}
+
 func (n *TestSink) GetEvents() []Event {
 	n.eventsMu.Lock()
 	defer n.eventsMu.Unlock()

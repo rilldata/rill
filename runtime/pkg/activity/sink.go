@@ -25,7 +25,7 @@ func (n *NoopSink) Sink(_ context.Context, _ []Event) error {
 	return nil
 }
 
-func (n *NoopSink) SetActivity(activity Client) {}
+func (n *NoopSink) SetActivity(Client) {}
 
 func (n *NoopSink) Close() error {
 	return nil
@@ -54,7 +54,7 @@ func (s *ConsoleSink) Sink(_ context.Context, events []Event) error {
 	return nil
 }
 
-func (s *ConsoleSink) SetActivity(activity Client) {}
+func (s *ConsoleSink) SetActivity(Client) {}
 
 func (s *ConsoleSink) Close() error {
 	return nil
