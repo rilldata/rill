@@ -94,10 +94,6 @@ func NewClientFromConf(
 		Logger:     logger,
 	})
 
-	if s, ok := sink.(*KafkaSink); ok {
-		s.SetActivity(client)
-	}
-
 	return client
 }
 
@@ -110,6 +106,8 @@ func NewBufferedClient(opts BufferedClientOptions) Client {
 		stop:       make(chan struct{}),
 		logger:     opts.Logger,
 	}
+
+	opts.Sink.SetActivity(client)
 
 	go client.init()
 
