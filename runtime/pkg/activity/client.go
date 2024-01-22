@@ -87,12 +87,18 @@ func NewClientFromConf(
 		logger.Fatal(fmt.Sprintf("unknown activity sink type: %s", sinkType))
 	}
 
-	return NewBufferedClient(BufferedClientOptions{
+	client := NewBufferedClient(BufferedClientOptions{
 		Sink:       sink,
 		SinkPeriod: time.Duration(sinkPeriodMs) * time.Millisecond,
 		BufferSize: maxBufferSize,
 		Logger:     logger,
 	})
+
+	if s, ok := sink.(*KafkaSink); ok {
+		s.SetActivity(client)
+	}
+
+	return client
 }
 
 func NewBufferedClient(opts BufferedClientOptions) Client {

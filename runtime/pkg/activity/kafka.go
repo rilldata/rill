@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -16,10 +17,10 @@ const (
 	lingerMs         = 200
 	compressionCodec = "lz4"
 	// Retry props
-	retryN                  = 3
-	retryWait               = lingerMs * time.Millisecond
-	metadataTimeout         = 5 * time.Second
-	logDeliveryErrorsPeriod = 1 * time.Minute
+	retryN            = 3
+	retryWait         = lingerMs * time.Millisecond
+	metadataTimeout   = 5 * time.Second
+	reportStatsPeriod = 1 * time.Minute
 )
 
 // KafkaSink sinks events to a Kafka cluster.
@@ -28,6 +29,7 @@ type KafkaSink struct {
 	topic    string
 	logger   *zap.Logger
 	logChan  chan kafka.LogEvent
+	activity Client
 }
 
 func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error) {
@@ -45,8 +47,6 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error)
 		return nil, err
 	}
 
-	go processProducerEvents(producer, logger)
-
 	go forwardKafkaLogEventToLogger(logChan, logger)
 
 	// Check connectivity and fail fast if Kafka cluster is unreachable
@@ -57,26 +57,47 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error)
 		return nil, err
 	}
 
-	return &KafkaSink{
+	sink := KafkaSink{
 		producer: producer,
 		topic:    topic,
 		logger:   logger,
 		logChan:  logChan,
-	}, nil
+	}
+
+	go sink.processProducerEvents(producer, logger)
+
+	return &sink, nil
 }
 
-func processProducerEvents(producer *kafka.Producer, logger *zap.Logger) {
-	var deliveryErrorCount int
+func (s *KafkaSink) SetActivity(activity Client) {
+	s.activity = activity
+}
+
+func (s *KafkaSink) processProducerEvents(producer *kafka.Producer, logger *zap.Logger) {
+	var deliverySuccessCount int
+	var deliveryFailureCount int
 	var lastDeliveryError error
 
-	ticker := time.NewTicker(logDeliveryErrorsPeriod)
+	ticker := time.NewTicker(reportStatsPeriod)
 	defer ticker.Stop()
 
-	reportDeliveryErrors := func() {
-		if deliveryErrorCount > 0 {
-			logger.Warn(fmt.Sprintf("Kafka sink: delivery errors in the last minute: %d", deliveryErrorCount),
+	reportDeliveryStats := func() {
+		if deliverySuccessCount > 0 {
+			if s.activity != nil {
+				s.activity.Emit(context.Background(), "activity_kafka_delivery_success", float64(deliverySuccessCount))
+			}
+			deliverySuccessCount = 0
+		}
+		if deliveryFailureCount > 0 {
+			logger.Warn(fmt.Sprintf("Kafka sink: delivery failures in the last minute: %d", deliveryFailureCount),
 				zap.Error(lastDeliveryError))
-			deliveryErrorCount = 0
+			if s.activity != nil {
+				// Be optimistic - if delivery failed because of a temporary issue then
+				// the following activity event might be eventually delivered
+				s.activity.Emit(context.Background(), "activity_kafka_delivery_failure", float64(deliveryFailureCount),
+					attribute.String("error", lastDeliveryError.Error()))
+			}
+			deliveryFailureCount = 0
 			lastDeliveryError = nil
 		}
 	}
@@ -86,10 +107,11 @@ func processProducerEvents(producer *kafka.Producer, logger *zap.Logger) {
 		case e := <-producer.Events():
 			switch ev := e.(type) {
 			case *kafka.Message:
-				m := ev
-				if m.TopicPartition.Error != nil {
-					deliveryErrorCount++
-					lastDeliveryError = m.TopicPartition.Error
+				if ev.TopicPartition.Error != nil {
+					deliveryFailureCount++
+					lastDeliveryError = ev.TopicPartition.Error
+				} else {
+					deliverySuccessCount++
 				}
 			case kafka.Error:
 				logger.Warn("Kafka sink: producer error", zap.String("error", ev.Error()))
@@ -98,7 +120,7 @@ func processProducerEvents(producer *kafka.Producer, logger *zap.Logger) {
 			}
 
 		case <-ticker.C:
-			reportDeliveryErrors()
+			reportDeliveryStats()
 		}
 	}
 }
