@@ -69,11 +69,11 @@
 </script>
 
 <section
-  class="flex flex-col gap-y-1 h-full overflow-x-auto overflow-y-hidden dashboard-theme-boundary"
+  class="flex flex-col h-full overflow-x-auto overflow-y-hidden dashboard-theme-boundary"
   use:listenToNodeResize
 >
   <div
-    class="border-b mb-3 w-full flex flex-col"
+    class="border-b w-full flex flex-col"
     id="header"
     style:padding-left={leftSide}
   >
@@ -109,7 +109,7 @@
     <MockUserHasNoAccess />
   {:else}
     <div
-      class="flex gap-x-1 h-full overflow-hidden flex-{dashboardAlignment}"
+      class="flex w-full h-full overflow-hidden flex-{dashboardAlignment}"
       style:padding-left={leftSide}
     >
       {#if showPivot}
@@ -117,30 +117,34 @@
           <PivotDisplay />
         </div>
       {:else}
-        <div
-          class:fixed-metric-height={expandedMeasureName}
-          class="overflow-y-scroll pb-8 flex-none"
-        >
-          {#key metricViewName}
-            {#if hasTimeSeries}
-              <MetricsTimeSeriesCharts
-                {metricViewName}
-                workspaceWidth={exploreContainerWidth}
-              />
-            {:else}
-              <MeasuresContainer {exploreContainerWidth} {metricViewName} />
-            {/if}
-          {/key}
-        </div>
+        <div class="flex gap-x-1 pt-4">
+          <div
+            class:fixed-metric-height={expandedMeasureName}
+            class="overflow-y-scroll pb-8 flex-none"
+          >
+            {#key metricViewName}
+              {#if hasTimeSeries}
+                <MetricsTimeSeriesCharts
+                  {metricViewName}
+                  workspaceWidth={exploreContainerWidth}
+                />
+              {:else}
+                <MeasuresContainer {exploreContainerWidth} {metricViewName} />
+              {/if}
+            {/key}
+          </div>
 
-        <div class="overflow-y-hidden grow {expandedMeasureName ? '' : 'px-4'}">
-          {#if expandedMeasureName}
-            <TimeDimensionDisplay {metricViewName} />
-          {:else if selectedDimensionName}
-            <DimensionDisplay />
-          {:else}
-            <LeaderboardDisplay />
-          {/if}
+          <div
+            class="overflow-y-hidden grow {expandedMeasureName ? '' : 'px-4'}"
+          >
+            {#if expandedMeasureName}
+              <TimeDimensionDisplay {metricViewName} />
+            {:else if selectedDimensionName}
+              <DimensionDisplay />
+            {:else}
+              <LeaderboardDisplay />
+            {/if}
+          </div>
         </div>
       {/if}
     </div>
