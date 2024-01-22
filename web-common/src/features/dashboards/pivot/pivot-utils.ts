@@ -63,7 +63,7 @@ export function reconcileMissingDimensionValues(
   );
 
   if (sortedRowAxisValues?.size >= 100)
-    return sortedRowAxesData?.[anchorDimension];
+    return sortedRowAxesData?.[anchorDimension] || [];
 
   const unsortedRowAxisValues = unsortedRowAxesData?.[anchorDimension] || [];
 
