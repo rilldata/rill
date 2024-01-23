@@ -176,6 +176,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				conf.ActivitySinkKafkaTopic,
 				logger,
 			)
+			activityClient.GetSink().SetActivity(activityClient) // Let the sink emit its metrics
 
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())

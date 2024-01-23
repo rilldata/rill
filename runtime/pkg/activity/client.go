@@ -15,6 +15,7 @@ import (
 type Client interface {
 	With(dims ...attribute.KeyValue) Client
 	Emit(ctx context.Context, name string, value float64, dims ...attribute.KeyValue)
+	GetSink() Sink
 	Close() error
 }
 
@@ -42,6 +43,10 @@ func (w *wrappedClient) With(dims ...attribute.KeyValue) Client {
 func (w *wrappedClient) Emit(ctx context.Context, name string, value float64, dims ...attribute.KeyValue) {
 	dims = append(dims, w.commonDims...)
 	w.client.Emit(ctx, name, value, dims...)
+}
+
+func (w *wrappedClient) GetSink() Sink {
+	return w.client.GetSink()
 }
 
 func (w *wrappedClient) Close() error {
@@ -105,8 +110,6 @@ func NewBufferedClient(opts BufferedClientOptions) Client {
 		logger:     opts.Logger,
 	}
 
-	opts.Sink.SetActivity(client)
-
 	go client.init()
 
 	return client
@@ -145,6 +148,10 @@ func (c *bufferedClient) Emit(ctx context.Context, name string, value float64, d
 			}
 		}()
 	}
+}
+
+func (c *bufferedClient) GetSink() Sink {
+	return c.sink
 }
 
 func (c *bufferedClient) Close() error {
@@ -221,6 +228,10 @@ func (n *noopClient) With(_ ...attribute.KeyValue) Client {
 }
 
 func (n *noopClient) Emit(_ context.Context, _ string, _ float64, _ ...attribute.KeyValue) {
+}
+
+func (n *noopClient) GetSink() Sink {
+	return NewNoopSink()
 }
 
 func (n *noopClient) Close() error {
