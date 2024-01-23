@@ -1,29 +1,30 @@
 <script lang="ts">
-  import { page } from "$app/stores";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import FormSection from "../../components/forms/FormSection.svelte";
   import InputV2 from "../../components/forms/InputV2.svelte";
   import Select from "../../components/forms/Select.svelte";
-  import { runtime } from "../../runtime-client/runtime-store";
   import Filters from "../dashboards/filters/Filters.svelte";
-  import { useDashboard } from "../dashboards/selectors";
   import DataPreview from "./DataPreview.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState
 
   const { form, errors, handleChange } = formState;
 
-  $: dashboardName = $page.params.dashboard;
-  $: dashboard = useDashboard($runtime.instanceId, dashboardName);
+  const {
+    dashboardStore,
+    selectors: {
+      measures: { allMeasures },
+      dimensions: { allDimensions },
+    },
+  } = getStateManagers();
 
-  $: measures = $dashboard.data?.metricsView?.spec?.measures;
   $: measureOptions =
-    measures?.map((measure) => ({
+    $allMeasures?.map((measure) => ({
       value: measure.name as string,
       label: measure.label,
     })) ?? [];
-  $: dimensions = $dashboard.data?.metricsView?.spec?.dimensions;
   $: dimensionOptions =
-    dimensions?.map((dimension) => ({
+    $allDimensions?.map((dimension) => ({
       value: dimension.name as string,
       label: dimension.label,
     })) ?? [];
@@ -34,40 +35,36 @@
 <div class="flex flex-col gap-y-5">
   <FormSection title="Alert name">
     <InputV2
-      on:change={handleChange}
-      value={$form["name"]}
       error={$errors["name"]}
       id="name"
+      on:change={handleChange}
       placeholder="My alert"
+      value={$form["name"]}
     />
   </FormSection>
   <FormSection
-    title="Filters"
     description="These are inherited from the underlying dashboard view."
+    title="Filters"
   >
     <!-- TODO: make these filters read-only -->
-    <Filters />
+    <Filters readonly />
   </FormSection>
   <FormSection
-    title="Alert data"
     description="Select the measures you want to monitor."
+    title="Alert data"
   >
-    {#if measures}
-      <Select
-        bind:value={$form["measure"]}
-        id="measure"
-        label="Choose a measure"
-        options={measureOptions}
-      />
-    {/if}
-    {#if dimensions}
-      <Select
-        bind:value={$form["splitByDimension"]}
-        id="splitByDimension"
-        label="Split by dimension"
-        options={dimensionOptions}
-      />
-    {/if}
+    <Select
+      bind:value={$form["measure"]}
+      id="measure"
+      label="Choose a measure"
+      options={measureOptions}
+    />
+    <Select
+      bind:value={$form["splitByDimension"]}
+      id="splitByDimension"
+      label="Split by dimension"
+      options={dimensionOptions}
+    />
     <!-- TODO -->
     <!-- <Select
       bind:value={$form["forEvery"]}
@@ -80,9 +77,10 @@
   </FormSection>
   <FormSection title="Data preview">
     <DataPreview
-      metricsView={dashboardName}
-      measure={$form["measure"]}
       dimension={$form["splitByDimension"]}
+      filter={$dashboardStore.whereFilter}
+      measure={$form["measure"]}
+      metricsView={$dashboardStore.name}
     />
   </FormSection>
 </div>

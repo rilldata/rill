@@ -20,6 +20,8 @@ The main feature-set component for dashboard filters
   import { getStateManagers } from "../state-managers/state-managers";
   import FilterButton from "./FilterButton.svelte";
 
+  export let readonly = false;
+
   const StateManagers = getStateManagers();
   const {
     dashboardStore,
@@ -121,12 +123,13 @@ The main feature-set component for dashboard filters
           !$dashboardStore.dimensionFilterExcludeMode.get(name)}
         <div animate:flip={{ duration: 200 }}>
           <RemovableListChip
-            on:toggle={() => toggleDimensionFilterMode(name)}
+            on:toggle={() => !readonly && toggleDimensionFilterMode(name)}
             on:remove={() => {
-              removeDimensionFilter(name);
+              !readonly && removeDimensionFilter(name);
             }}
             on:apply={(event) => {
-              toggleDimensionValueSelection(name, event.detail, true);
+              !readonly &&
+                toggleDimensionValueSelection(name, event.detail, true);
             }}
             on:search={(event) => {
               setActiveDimension(name, event.detail);
@@ -152,32 +155,34 @@ The main feature-set component for dashboard filters
         </div>
       {/each}
     {/if}
-    <FilterButton
-      on:focus={({ detail: { name } }) => {
-        setActiveDimension(name);
-      }}
-      on:hover={({ detail: { name } }) => {
-        setActiveDimension(name);
-      }}
-    />
-    <!-- if filters are present, place a chip at the end of the flex container 
+    {#if !readonly}
+      <FilterButton
+        on:focus={({ detail: { name } }) => {
+          setActiveDimension(name);
+        }}
+        on:hover={({ detail: { name } }) => {
+          setActiveDimension(name);
+        }}
+      />
+      <!-- if filters are present, place a chip at the end of the flex container 
       that enables clearing all filters -->
-    {#if hasFilters}
-      <div class="ml-auto">
-        <Chip
-          bgBaseClass="surface"
-          bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
-          textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
-          bgActiveClass="bg-gray-200 dark:bg-gray-600"
-          outlineClass="outline-gray-400"
-          on:click={clearAllFilters}
-        >
-          <span slot="icon" class="ui-copy-disabled-faint">
-            <FilterRemove size="16px" />
-          </span>
-          <svelte:fragment slot="body">Clear filters</svelte:fragment>
-        </Chip>
-      </div>
+      {#if hasFilters}
+        <div class="ml-auto">
+          <Chip
+            bgBaseClass="surface"
+            bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
+            textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
+            bgActiveClass="bg-gray-200 dark:bg-gray-600"
+            outlineClass="outline-gray-400"
+            on:click={clearAllFilters}
+          >
+            <span slot="icon" class="ui-copy-disabled-faint">
+              <FilterRemove size="16px" />
+            </span>
+            <svelte:fragment slot="body">Clear filters</svelte:fragment>
+          </Chip>
+        </div>
+      {/if}
     {/if}
   </ChipContainer>
 </section>

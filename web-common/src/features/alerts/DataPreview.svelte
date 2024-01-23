@@ -12,6 +12,7 @@
   export let metricsView: string;
   export let measure: string;
   export let dimension: string;
+  export let filter: V1Expression;
   export let criteria: V1Expression | undefined = undefined;
 
   $: aggregation = createQueryServiceMetricsViewAggregation(
@@ -20,6 +21,7 @@
     {
       measures: [{ name: measure }],
       dimensions: dimension ? [{ name: dimension }] : [],
+      where: sanitiseExpression(filter),
       having: sanitiseExpression(criteria),
     },
     {

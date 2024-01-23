@@ -1,15 +1,15 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import { translateFilter } from "@rilldata/web-common/features/alerts/alert-filter-utils";
   import CriteriaGroup from "@rilldata/web-common/features/alerts/criteria-tab/CriteriaGroup.svelte";
   import DataPreview from "@rilldata/web-common/features/alerts/DataPreview.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 
   export let formState: any; // svelte-forms-lib's FormState
 
   const { form } = formState;
 
-  $: dashboardName = $page.params.dashboard;
+  const { dashboardStore } = getStateManagers();
 </script>
 
 <div class="flex flex-col gap-y-5 p-2.5 max-h-96 bg-gray-100 overflow-scroll">
@@ -23,8 +23,9 @@
     <DataPreview
       criteria={translateFilter($form["criteria"], true)}
       dimension={$form["splitByDimension"]}
+      filter={$dashboardStore.whereFilter}
       measure={$form["measure"]}
-      metricsView={dashboardName}
+      metricsView={$dashboardStore.name}
     />
   </FormSection>
 </div>
