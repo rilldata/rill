@@ -230,15 +230,9 @@ describe("dashboard-stores", () => {
     );
 
     let metrics = get(metricsExplorerStore).entities[AD_BIDS_NAME];
-    // unspecified mode will default to time comparison
-    expect(metrics.showTimeComparison).toBeTruthy();
-    expect(metrics.selectedComparisonTimeRange?.name).toBe("rill-PP");
-    expect(metrics.selectedComparisonTimeRange.start).toEqual(
-      TestTimeOffsetConstants.LAST_12_HOURS,
-    );
-    expect(metrics.selectedComparisonTimeRange.end).toEqual(
-      TestTimeOffsetConstants.LAST_6_HOURS,
-    );
+    // unspecified mode will default to no time comparison
+    expect(metrics.showTimeComparison).toBeFalsy();
+    expect(metrics.selectedComparisonTimeRange).toBeUndefined();
     expect(metrics.selectedComparisonDimension).toBeUndefined();
 
     metricsExplorerStore.remove(AD_BIDS_NAME);
