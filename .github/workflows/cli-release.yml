@@ -65,7 +65,7 @@ jobs:
 
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             export NIGHTLY="--snapshot"
-            LATEST_TAG=$(curl -s https://api.github.com/repos/rilldata/rill/releases/latest | jq -r '.name')
+            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
             echo "GORELEASER_CURRENT_TAG=${LATEST_TAG}" >> .release-env 
           fi
 

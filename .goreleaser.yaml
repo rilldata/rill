@@ -110,7 +110,7 @@ checksum:
   name_template: checksums.txt
 
 snapshot:
-  name_template: "{{ incminor .Version }}-snapshot"
+  name_template: "{{ incminor .Version }}-nightly"
 
 changelog:
   sort: asc
