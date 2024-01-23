@@ -67,6 +67,7 @@ jobs:
             export NIGHTLY="--snapshot"
             LATEST_TAG=$(curl -s https://api.github.com/repos/rilldata/rill/releases/latest | jq -r '.name')
             echo "GORELEASER_CURRENT_TAG=${LATEST_TAG}" >> .release-env
+            echo "Running nightly build for the version ${LATEST_TAG}-snapshot" 
           fi
 
           docker run \
