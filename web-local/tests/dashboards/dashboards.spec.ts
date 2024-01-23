@@ -791,6 +791,11 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
    * - and then switch back to percent of total
    */
 
+  // Need to manually enable comparison since we disabled it
+  await interactWithComparisonMenu(page, "No Comparison", (l) =>
+    l.getByRole("menuitem", { name: "Time" }).click(),
+  );
+
   // open the context column menu
   await page.getByLabel("Select a context column").click();
   // click on "percent change" menuitem

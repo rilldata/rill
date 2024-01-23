@@ -1,5 +1,9 @@
 import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
-import { waitForDashboard } from "../utils/dashboardHelpers";
+import {
+  interactWithComparisonMenu,
+  interactWithTimeRangeMenu,
+  waitForDashboard,
+} from "../utils/dashboardHelpers";
 import { test, expect } from "@playwright/test";
 import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
 import { updateCodeEditor } from "../utils/commonHelpers";
@@ -136,11 +140,12 @@ dimensions:
     await page.getByRole("button", { name: "percentage", exact: true }).click();
     await page.getByRole("menuitem", { name: "interval_ms" }).click();
     // ...and add a time comparison to check absolute change
-    await page.getByRole("button", { name: "Select time range" }).click();
-    await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
-
-    await page.getByRole("button", { name: "No comparison" }).click();
-    await page.getByRole("menuitem", { name: "Time" }).click();
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
+    });
+    await interactWithComparisonMenu(page, "No comparison", (l) =>
+      l.getByRole("menuitem", { name: "Time" }).click(),
+    );
 
     await expect(
       page.getByRole("button", { name: "null 27 s 33%" }),

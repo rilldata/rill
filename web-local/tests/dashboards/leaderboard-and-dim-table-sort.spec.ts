@@ -1,6 +1,4 @@
 import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
-import { createDashboardFromModel } from "../utils/dashboardHelpers";
-import { createAdBidsModel } from "../utils/dataSpecifcHelpers";
 import { test, expect, Locator } from "@playwright/test";
 import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
 
