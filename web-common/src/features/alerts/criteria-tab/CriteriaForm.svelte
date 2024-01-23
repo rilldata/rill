@@ -36,10 +36,10 @@
     options={MeasureFilterOptions}
   />
   <Select
-    bind:value={$form["criteria"][index].compareWith}
     id="compareWith"
     label=""
     options={[{ value: "value" }, { value: "measure" }]}
+    value={"value"}
   />
   <InputV2
     bind:value={$form["criteria"][index].value}

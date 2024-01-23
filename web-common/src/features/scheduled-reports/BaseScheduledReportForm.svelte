@@ -1,5 +1,6 @@
 <script lang="ts">
   import TimePicker from "@rilldata/web-common/components/forms/TimePicker.svelte";
+  import RecipientsInput from "@rilldata/web-common/features/scheduled-reports/RecipientsInput.svelte";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import InputArray from "../../components/forms/InputArray.svelte";
   import InputV2 from "../../components/forms/InputV2.svelte";
@@ -13,10 +14,6 @@
   export let metricsViewName: string;
 
   const { form, errors, handleSubmit } = formState;
-
-  // There's a bug in how `svelte-forms-lib` types the `$errors` store for arrays.
-  // See: https://github.com/tjinauyeung/svelte-forms-lib/issues/154#issuecomment-1087331250
-  $: recipientErrors = $errors.recipients as unknown as { email: string }[];
 
   // Pull the time zone options from the dashboard's spec
   $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
@@ -92,32 +89,9 @@
     optional
     placeholder="1000"
   />
-  <InputArray
-    id="recipients"
-    label="Recipients"
-    bind:values={$form["recipients"]}
-    bind:errors={recipientErrors}
-    accessorKey="email"
+  <RecipientsInput
+    {formState}
     hint="Recipients will receive different views based on their security policy.
         Recipients without project access can't view the report."
-    placeholder="Enter an email address"
-    addItemLabel="Add email"
-    on:add-item={() => {
-      $form["recipients"] = $form["recipients"].concat({ email: "" });
-      recipientErrors = recipientErrors.concat({ email: "" });
-
-      // Focus on the new input element
-      setTimeout(() => {
-        const input = document.getElementById(
-          `recipients.${$form["recipients"].length - 1}.email`,
-        );
-        input?.focus();
-      }, 0);
-    }}
-    on:remove-item={(event) => {
-      const index = event.detail.index;
-      $form["recipients"] = $form["recipients"].filter((r, i) => i !== index);
-      recipientErrors = recipientErrors.filter((r, i) => i !== index);
-    }}
   />
 </form>

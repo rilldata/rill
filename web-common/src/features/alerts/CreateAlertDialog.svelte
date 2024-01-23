@@ -1,5 +1,6 @@
 <script lang="ts">
   import { TabPanel, TabPanels } from "@rgossiaux/svelte-headlessui";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import Tab from "@rilldata/web-admin/components/tabs/Tab.svelte";
   import TabGroup from "@rilldata/web-admin/components/tabs/TabGroup.svelte";
   import TabList from "@rilldata/web-admin/components/tabs/TabList.svelte";
@@ -10,11 +11,12 @@
   import Dialog from "../../components/dialog-v2/Dialog.svelte";
   import AlertDialogCriteriaTab from "web-common/src/features/alerts/criteria-tab/AlertDialogCriteriaTab.svelte";
   import AlertDialogDataTab from "./AlertDialogDataTab.svelte";
-  import AlertDialogDeliveryTab from "./AlertDialogDeliveryTab.svelte";
+  import AlertDialogDeliveryTab from "web-common/src/features/alerts/delivery-tab/AlertDialogDeliveryTab.svelte";
 
   export let open: boolean;
 
   const dispatch = createEventDispatcher();
+  const user = createAdminServiceGetCurrentUser();
 
   const formState = createForm({
     initialValues: {
@@ -28,6 +30,11 @@
           value: 0,
         },
       ],
+      snooze: "OFF", // TODO: use enum from backend
+      recipients: [
+        { email: $user.data?.user?.email ? $user.data.user.email : "" },
+        { email: "" },
+      ],
     },
     validationSchema: yup.object({
       name: yup.string().required("Required"),
@@ -40,6 +47,12 @@
         }),
       ),
       criteriaJoiner: yup.string().required("Required"),
+      snooze: yup.string().required("Required"),
+      recipients: yup.array().of(
+        yup.object().shape({
+          email: yup.string().email("Invalid email"),
+        }),
+      ),
     }),
     onSubmit: async (values) => {
       console.log("submitting alerts form with these values: ", values);
