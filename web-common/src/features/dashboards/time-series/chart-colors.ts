@@ -12,7 +12,7 @@ export const MainLineColor = "var(--color-primary-500)";
 export const MainAreaColor = "var(--color-primary-200)";
 
 /**
- * Color used for the focused time series comparison
+ * Color used for the time series comparison
  */
 export const TimeComparisonLineColor = "var(--color-muted-500)";
 
@@ -20,13 +20,15 @@ export const TimeComparisonLineColor = "var(--color-muted-500)";
  * Color used for the unfocused line in time series chart,
  */
 export const LineMutedColor = "var(--color-muted-500)";
-// export const LineMutedColor = "theme('colors.muted.800')";
 
 /**
  * Color used for the unfocused area in time series chart,
  */
 export const AreaMutedColor = "var(--color-muted-200)";
 
+/**
+ * Colors used for the scrub box in time series chart,
+ */
 export const ScrubBoxColor = "var(--color-primary-200)";
 export const ScrubArea0Color = "var(--color-primary-200)";
 export const ScrubArea1Color = "var(--color-primary-100)";

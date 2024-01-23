@@ -11,14 +11,9 @@ export type LightnessMap = { [key: number]: string };
  */
 export type ThemeColorKind = "primary" | "secondary" | "muted";
 
-// NOTE: run-time defaultPrimaryColors here MUST match
-// compile-time defaultPrimaryColors in
-// web-common/tailwind.config.cjs.
-//
-// Runtime copy is needed because components can load
-// before css is loaded, so we need a copy in the bundle.
-// Compile-time copy is needed so that tailwind can generate
-// color classes for the default colors (bg-primary-500, etc).
+/**
+ * Rill primary brand colors.
+ */
 export const defaultPrimaryColors: LightnessMap = {
   50: "#ecf0ff",
   100: "#dde4ff",
@@ -33,6 +28,8 @@ export const defaultPrimaryColors: LightnessMap = {
   950: "#1c1650",
 };
 
+// backup pallette of primary colors
+// useful for testing application of colors
 // export const defaultPrimaryColors = Object.fromEntries(
 //   [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((n) => [
 //     n,
@@ -64,16 +61,17 @@ export const defaultSecondaryColors = {
 // );
 
 /*
-	colors for greyed-out elements. For now, using tailwind's
-	standard "Gray", but using semantic color vars will
-	allow us to change this to a custom palette
-	or use e.g. tailwind's "slate", "zinc", etc if we want.
-
-	Copied from https://github.com/shadcn-ui/ui/issues/669#issue-1771280130
-
-	Visit that link if we want to copy/paste if
-	we switch to "slate", "zinc", etc
-	*/
+ * colors for greyed-out elements. For now, using tailwind's
+ * standard "Gray", but using semantic color vars will
+ * allow us to change this to a custom palette
+ * or use e.g. tailwind's "slate", "zinc", etc if we want.
+ *
+ * Copied from https://github.com/shadcn-ui/ui/issues/669#issue-1771280130
+ *
+ * Visit that link if we want to copy/paste if
+ * we switch to "slate", "zinc", etc
+ *
+ */
 export const mutedColors = {
   50: "hsl(210, 20%, 98%)",
   100: "hsl(220, 14.3%, 95.9%)",
