@@ -108,16 +108,15 @@
   {#if mockUserHasNoAccess}
     <MockUserHasNoAccess />
   {:else}
-    <div
-      class="flex w-full h-full overflow-hidden flex-{dashboardAlignment}"
-      style:padding-left={leftSide}
-    >
+    <div class="w-full h-full overflow-hidden" style:padding-left={leftSide}>
       {#if showPivot}
         <div class="overflow-y-hidden flex-1">
           <PivotDisplay />
         </div>
       {:else}
-        <div class="flex gap-x-1 pt-4 w-full overflow-hidden flex-row">
+        <div
+          class="flex gap-x-1 pt-4 w-full overflow-hidden flex-{dashboardAlignment}"
+        >
           <div
             class:fixed-metric-height={expandedMeasureName}
             class="overflow-y-scroll pb-8 flex-none"
