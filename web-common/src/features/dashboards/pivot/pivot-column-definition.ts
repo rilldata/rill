@@ -7,6 +7,7 @@ import {
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { timeFormat } from "d3-time-format";
 import PivotExpandableCell from "./PivotExpandableCell.svelte";
+import PivotMeasureCell from "./PivotMeasureCell.svelte";
 import {
   cellComponent,
   createIndexMap,
@@ -176,7 +177,12 @@ export function getColumnDefForPivot(
     return {
       accessorKey: m.name,
       header: m.label || m.name,
-      cell: (info) => m.formatter(info.getValue() as number | null | undefined),
+      cell: (info) => {
+        const value = m.formatter(info.getValue() as number | null | undefined);
+
+        if (value == null) return cellComponent(PivotMeasureCell, {});
+        return value;
+      },
     };
   });
 
