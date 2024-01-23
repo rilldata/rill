@@ -3,7 +3,6 @@ import { PerRangeFormatter } from "./per-range";
 import { describe, it, expect } from "vitest";
 
 const invalidRangeOptions1: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     { minMag: 3, supMag: 3, maxDigitsRight: 0 },
     { minMag: -3, supMag: 3, maxDigitsRight: 3 },
@@ -13,7 +12,6 @@ const invalidRangeOptions1: FormatterFactoryOptions = {
 };
 
 const invalidRangeOptions2: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     { minMag: 3, supMag: 2, maxDigitsRight: 0 },
     { minMag: -3, supMag: 3, maxDigitsRight: 3 },
@@ -24,19 +22,14 @@ const invalidRangeOptions2: FormatterFactoryOptions = {
 
 describe("range formatter constructor, throws if given an invalid range", () => {
   it(`should throw`, () => {
-    expect(
-      () => new PerRangeFormatter([100.12], invalidRangeOptions1),
-    ).toThrow();
+    expect(() => new PerRangeFormatter(invalidRangeOptions1)).toThrow();
   });
   it(`should throw`, () => {
-    expect(
-      () => new PerRangeFormatter([100.12], invalidRangeOptions2),
-    ).toThrow();
+    expect(() => new PerRangeFormatter(invalidRangeOptions2)).toThrow();
   });
 });
 
 const overlappingRangeOptions1: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     { minMag: 2, supMag: 6, maxDigitsRight: 0 },
     { minMag: -3, supMag: 3, maxDigitsRight: 3 },
@@ -46,7 +39,6 @@ const overlappingRangeOptions1: FormatterFactoryOptions = {
 };
 
 const overlappingRangeOptions2: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     { minMag: 2, supMag: 6, maxDigitsRight: 0 },
     { minMag: -3, supMag: 3, maxDigitsRight: 3 },
@@ -59,19 +51,14 @@ const overlappingRangeOptions2: FormatterFactoryOptions = {
 
 describe("range formatter constructor, throws if given overlapping ranges", () => {
   it(`should throw`, () => {
-    expect(
-      () => new PerRangeFormatter([100.12], overlappingRangeOptions1),
-    ).toThrow();
+    expect(() => new PerRangeFormatter(overlappingRangeOptions1)).toThrow();
   });
   it(`should throw`, () => {
-    expect(
-      () => new PerRangeFormatter([100.12], overlappingRangeOptions2),
-    ).toThrow();
+    expect(() => new PerRangeFormatter(overlappingRangeOptions2)).toThrow();
   });
 });
 
 const gappedRangeOptions1: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     { minMag: 6, supMag: 9, maxDigitsRight: 0 },
     { minMag: -3, supMag: 3, maxDigitsRight: 3 },
@@ -82,14 +69,11 @@ const gappedRangeOptions1: FormatterFactoryOptions = {
 
 describe("range formatter constructor, throws if given gap in range coverage", () => {
   it(`should throw`, () => {
-    expect(
-      () => new PerRangeFormatter([100.12], gappedRangeOptions1),
-    ).toThrow();
+    expect(() => new PerRangeFormatter(gappedRangeOptions1)).toThrow();
   });
 });
 
 const mar2ProposalOptions: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     {
       minMag: 3,
@@ -181,14 +165,13 @@ const mar2ProposalTestCases: [number, string][] = [
 describe("range formatter, using options for 2022-03-02 proposal `.stringFormat()`", () => {
   mar2ProposalTestCases.forEach(([input, output]) => {
     it(`returns the correct string in case: ${input}`, () => {
-      const formatter = new PerRangeFormatter([input], mar2ProposalOptions);
+      const formatter = new PerRangeFormatter(mar2ProposalOptions);
       expect(formatter.stringFormat(input)).toEqual(output);
     });
   });
 });
 
 const mar2ProposalNoZeroPadOptions: FormatterFactoryOptions = {
-  strategy: "perRange",
   rangeSpecs: [
     {
       minMag: 3,
@@ -244,10 +227,7 @@ const mar2ProposalNoZeroPadTestCases: [number, string][] = [
 describe("range formatter, using options for 2022-03-02 proposal and NO padding with insignificant zeros `.stringFormat()`", () => {
   mar2ProposalNoZeroPadTestCases.forEach(([input, output]) => {
     it(`returns the correct string in case: ${input}`, () => {
-      const formatter = new PerRangeFormatter(
-        [input],
-        mar2ProposalNoZeroPadOptions,
-      );
+      const formatter = new PerRangeFormatter(mar2ProposalNoZeroPadOptions);
       expect(formatter.stringFormat(input)).toEqual(output);
     });
   });
@@ -255,7 +235,6 @@ describe("range formatter, using options for 2022-03-02 proposal and NO padding 
 
 describe("range formatter, correct handling of useTrailingDot`.stringFormat()`", () => {
   const options: FormatterFactoryOptions = {
-    strategy: "perRange",
     rangeSpecs: [
       {
         minMag: 3,
@@ -286,7 +265,7 @@ describe("range formatter, correct handling of useTrailingDot`.stringFormat()`",
 
   testCases.forEach(([input, output]) => {
     it(`returns the correct string in case: ${input}`, () => {
-      const formatter = new PerRangeFormatter([input], options);
+      const formatter = new PerRangeFormatter(options);
       expect(formatter.stringFormat(input)).toEqual(output);
     });
   });

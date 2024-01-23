@@ -168,7 +168,7 @@
 
 <div class="flex flex-row items-center gap-x-1">
   {#if !hasTimeSeries}
-    <NoTimeDimensionCTA {metricViewName} modelName={$metaQuery?.data?.table} />
+    <NoTimeDimensionCTA />
   {:else if allTimeRange?.start}
     <TimeRangeSelector
       {metricViewName}

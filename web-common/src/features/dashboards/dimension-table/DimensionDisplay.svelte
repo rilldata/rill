@@ -37,6 +37,9 @@
       },
       activeMeasure: { activeMeasureName },
     },
+    actions: {
+      dimensionsFilter: { toggleDimensionValueSelection },
+    },
     metricsViewName,
     runtime,
   } = stateManagers;
@@ -55,7 +58,7 @@
   const timeControlsStore = useTimeControlStore(stateManagers);
 
   $: filterSet = getDimensionFilterWithSearch(
-    $dashboardStore?.filters,
+    $dashboardStore?.whereFilter,
     searchText,
     dimensionName,
   );
@@ -93,9 +96,13 @@
   );
 
   function onSelectItem(event) {
-    const label = tableRows[event.detail][dimensionColumnName] as string;
-    cancelDashboardQueries(queryClient, $metricsViewName);
-    metricsExplorerStore.toggleFilter($metricsViewName, dimensionName, label);
+    const label = tableRows[event.detail.index][dimensionColumnName] as string;
+    toggleDimensionValueSelection(
+      dimensionName,
+      label,
+      false,
+      event.detail.meta,
+    );
   }
 
   function toggleComparisonDimension(dimensionName, isBeingCompared) {

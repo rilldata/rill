@@ -2,6 +2,7 @@ import { getQuerySortType } from "@rilldata/web-common/features/dashboards/leade
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -57,7 +58,7 @@ export function getDimensionTableExportArgs(
             sortType: getQuerySortType(dashboardState.dashboardSortType),
           },
         ],
-        filter: dashboardState.filters,
+        where: sanitiseExpression(dashboardState.whereFilter),
         offset: "0",
       };
     },
