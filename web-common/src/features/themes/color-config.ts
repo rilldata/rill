@@ -37,6 +37,9 @@ export const defaultPrimaryColors: LightnessMap = {
 //   ]),
 // );
 
+/**
+ * Rill secondary brand colors.
+ */
 export const defaultSecondaryColors = {
   50: "#effaff",
   100: "#def3ff",
