@@ -43,7 +43,7 @@
     }
   }
 
-  $: console.log(criteria);
+  // TODO: throttle fetches
 </script>
 
 {#if !$aggregation.data}

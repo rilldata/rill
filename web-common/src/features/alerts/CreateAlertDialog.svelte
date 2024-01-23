@@ -3,7 +3,6 @@
   import Tab from "@rilldata/web-admin/components/tabs/Tab.svelte";
   import TabGroup from "@rilldata/web-admin/components/tabs/TabGroup.svelte";
   import TabList from "@rilldata/web-admin/components/tabs/TabList.svelte";
-  import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
@@ -22,11 +21,25 @@
       name: "",
       measure: "",
       splitByDimension: "",
-      criteria: createAndExpression([]),
+      criteria: [
+        {
+          field: "",
+          operation: "",
+          value: 0,
+        },
+      ],
     },
     validationSchema: yup.object({
       name: yup.string().required("Required"),
       measure: yup.string().required("Required"),
+      criteria: yup.array().of(
+        yup.object().shape({
+          field: yup.string().required("Required"),
+          operation: yup.string().required("Required"),
+          value: yup.number().required("Required"),
+        }),
+      ),
+      criteriaJoiner: yup.string().required("Required"),
     }),
     onSubmit: async (values) => {
       console.log("submitting alerts form with these values: ", values);
