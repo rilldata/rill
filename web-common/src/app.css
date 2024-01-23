@@ -116,15 +116,6 @@
   :root {
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
 
-    --color-primary-graph-line-hue: 224;
-    --color-primary-graph-area-hue: 217;
-
-    --color-primary-graph-scrubbing-line-hue: 217;
-    --color-primary-graph-scrubbing-area-hue: 225;
-    --color-primary-scrub-box-hue: 213;
-    --color-primary-scrub-area-0-hue: 221;
-    --color-primary-scrub-area-1-hue: 221;
-    --color-primary-scrub-area-2-hue: 221;
 
 
     --color-secondary-gradient-max-hue: 300;

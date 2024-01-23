@@ -27,10 +27,7 @@ export const LineMutedColor = "var(--color-muted-500)";
  */
 export const AreaMutedColor = "var(--color-muted-200)";
 
-export const ScrubBoxColor = "var(--color-primary-scrub-box-hue)";
-export const ScrubArea0Color =
-  "hsl(var(--color-primary-scrub-area-0-hue), 100%, 67%)";
-export const ScrubArea1Color =
-  "hsl(var(--color-primary-scrub-area-1-hue), 100%, 64%)";
-export const ScrubArea2Color =
-  "hsl(var(--color-primary-scrub-area-2-hue), 83%, 53%)";
+export const ScrubBoxColor = "var(--color-primary-200)";
+export const ScrubArea0Color = "var(--color-primary-200)";
+export const ScrubArea1Color = "var(--color-primary-100)";
+export const ScrubArea2Color = "var(--color-primary-50)";
