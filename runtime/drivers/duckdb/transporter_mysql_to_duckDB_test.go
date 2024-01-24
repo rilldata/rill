@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	_ "github.com/rilldata/rill/runtime/drivers/mysql"
-	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/testcontainers/testcontainers-go"
-	"time"
 	"fmt"
+	_ "github.com/rilldata/rill/runtime/drivers/mysql"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
+	"time"
 )
 
 var mysqlInitStmt = `

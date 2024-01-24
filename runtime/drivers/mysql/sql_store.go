@@ -38,7 +38,6 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 
 	db, err := sql.Open("mysql", conf.FormatDSN())
 	if err != nil {
-		db.Close()
 		return nil, err
 	}
 
