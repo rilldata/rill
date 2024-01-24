@@ -3,19 +3,28 @@
   import Tab from "./Tab.svelte";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import Chart from "@rilldata/web-common/components/icons/Chart.svelte";
+  import Pivot from "@rilldata/web-common/components/icons/Pivot.svelte";
 
   const StateManagers = getStateManagers();
 
-  const { metricsViewName } = StateManagers;
+  const {
+    metricsViewName,
+    selectors: {
+      pivot: { showPivot },
+    },
+  } = StateManagers;
 
-  let currentTabIndex = 0;
+  $: currentTabIndex = $showPivot ? 1 : 0;
 
   const tabs = [
     {
       label: "Explore",
+      icon: Chart,
     },
     {
       label: "Pivot",
+      icon: Pivot,
     },
   ];
 
@@ -35,7 +44,10 @@
     <TabList class="flex gap-x-4">
       {#each tabs as tab}
         <Tab>
-          {tab.label}
+          <div class="flex gap-2 items-center">
+            <svelte:component this={tab.icon} />
+            {tab.label}
+          </div>
         </Tab>
       {/each}
     </TabList>
