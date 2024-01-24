@@ -19,5 +19,6 @@
       `/${organization}/${project}/${$parsedReport.metricsView}?state=${$parsedReport.state}`,
     );
   }
-  $: console.log($parsedReport);
+
+  // TODO: error handling
 </script>

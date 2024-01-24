@@ -52,7 +52,7 @@ export function parseReport(
       ready: false,
     });
 
-  let metricsViewName: string;
+  let metricsViewName: string = "";
   const req: ReportQueryRequest = correctRequest(
     JSON.parse(reportResource.report.spec.queryArgsJson),
   );
@@ -81,6 +81,13 @@ export function parseReport(
       break;
   }
 
+  if (!metricsViewName) {
+    // error state
+    return readable({
+      ready: true,
+    });
+  }
+
   return derived(
     [
       useMetaQuery(get(runtime).instanceId, metricsViewName),
@@ -96,6 +103,13 @@ export function parseReport(
         return {
           ready: false,
         };
+
+      if (metricsViewResource.error || timeRangeSummary.error) {
+        // error state
+        return {
+          ready: true,
+        };
+      }
 
       initLocalUserPreferenceStore(metricsViewName);
       const dashboard = getDefaultMetricsExplorerEntity(
