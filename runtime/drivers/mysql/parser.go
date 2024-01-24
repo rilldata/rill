@@ -3,7 +3,7 @@ package mysql
 import (
 	"database/sql"
 	"fmt"
-	reflect "reflect"
+	"reflect"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
@@ -18,31 +18,31 @@ func getDBTypeNameToMapperMap() map[string]mapper {
 	m := make(map[string]mapper)
 
 	// bit
-	m[("BIT")] = &bitMapper{}
+	m["BIT"] = &bitMapper{}
 
 	// numeric
-	m[("TINYINT")] = &numericMapper{}
-	m[("SMALLINT")] = &numericMapper{}
-	m[("MEDIUMINT")] = &numericMapper{}
-	m[("INT")] = &numericMapper{}
-	m[("UNSIGNED TINYINT")] = &numericMapper{}
-	m[("UNSIGNED SMALLINT")] = &numericMapper{}
-	m[("UNSIGNED INT")] = &numericMapper{}
-	m[("UNSIGNED BIGINT")] = &numericMapper{}
-	m[("BIGINT")] = &numericMapper{}
-	m[("DOUBLE")] = &numericMapper{}
-	m[("FLOAT")] = &numericMapper{}
+	m["TINYINT"] = &numericMapper{}
+	m["SMALLINT"] = &numericMapper{}
+	m["MEDIUMINT"] = &numericMapper{}
+	m["INT"] = &numericMapper{}
+	m["UNSIGNED TINYINT"] = &numericMapper{}
+	m["UNSIGNED SMALLINT"] = &numericMapper{}
+	m["UNSIGNED INT"] = &numericMapper{}
+	m["UNSIGNED BIGINT"] = &numericMapper{}
+	m["BIGINT"] = &numericMapper{}
+	m["DOUBLE"] = &numericMapper{}
+	m["FLOAT"] = &numericMapper{}
 	// MySQL stores DECIMAL value in binary format
 	// It might be stored as string without losing precision
-	m[("DECIMAL")] = &charMapper{}
+	m["DECIMAL"] = &charMapper{}
 
 	// string
-	m[("CHAR")] = &charMapper{}
-	m[("LONGTEXT")] = &charMapper{}
-	m[("MEDIUMTEXT")] = &charMapper{}
-	m[("TEXT")] = &charMapper{}
-	m[("TINYTEXT")] = &charMapper{}
-	m[("VARCHAR")] = &charMapper{}
+	m["CHAR"] = &charMapper{}
+	m["LONGTEXT"] = &charMapper{}
+	m["MEDIUMTEXT"] = &charMapper{}
+	m["TEXT"] = &charMapper{}
+	m["TINYTEXT"] = &charMapper{}
+	m["VARCHAR"] = &charMapper{}
 
 	// binary
 	m[("BINARY")] = &byteMapper{}
