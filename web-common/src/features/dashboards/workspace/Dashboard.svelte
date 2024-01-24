@@ -1,16 +1,18 @@
 <script lang="ts">
   import { getEltSize } from "@rilldata/web-common/features/dashboards/get-element-size";
+  import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
   import {
     useDashboard,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
+  import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { getContext } from "svelte";
   import type { Tweened } from "svelte/motion";
+  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import DimensionDisplay from "../dimension-table/DimensionDisplay.svelte";
   import Filters from "../filters/Filters.svelte";
   import MockUserHasNoAccess from "../granular-access-policies/MockUserHasNoAccess.svelte";
@@ -18,12 +20,10 @@
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
   import TimeControls from "../time-controls/TimeControls.svelte";
+  import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import DashboardCTAs from "./DashboardCTAs.svelte";
   import DashboardTitle from "./DashboardTitle.svelte";
-  import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
-  import PivotDisplay from "@rilldata/web-common/features/dashboards/pivot/PivotDisplay.svelte";
-  import TabBar from "@rilldata/web-common/features/dashboards/tab-bar/TabBar.svelte";
 
   export let metricViewName: string;
   export let leftMargin = undefined;
@@ -145,7 +145,7 @@
       {/if}
     </div>
 
-    {#if isRillDeveloper && !expandedMeasureName}
+    {#if isRillDeveloper && !expandedMeasureName && !showPivot}
       <RowsViewerAccordion {metricViewName} />
     {/if}
   {/if}
