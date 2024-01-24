@@ -1,9 +1,10 @@
+import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
-import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { derived, writable, type Readable, Writable } from "svelte/store";
+import { createTotalsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/totals-data-store";
+import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time-series/utils";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
@@ -11,13 +12,12 @@ import {
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { prepareTimeSeries } from "@rilldata/web-common/features/dashboards/time-series/utils";
-import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import { Writable, derived, writable, type Readable } from "svelte/store";
+import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import {
   DimensionDataItem,
   getDimensionValueTimeSeries,
 } from "./multiple-dimension-queries";
-import { createTotalsForMeasure } from "@rilldata/web-common/features/dashboards/time-series/totals-data-store";
 
 export type TimeSeriesDataState = {
   isFetching: boolean;
@@ -80,7 +80,7 @@ function createMetricsViewTimeSeries(
 
 export function createTimeSeriesDataStore(ctx: StateManagers) {
   return derived(
-    [useMetaQuery(ctx), useTimeControlStore(ctx), ctx.dashboardStore],
+    [useMetricsView(ctx), useTimeControlStore(ctx), ctx.dashboardStore],
     ([metricsView, timeControls, dashboardStore], set) => {
       if (!timeControls.ready || timeControls.isFetching) {
         set({

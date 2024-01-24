@@ -11,7 +11,7 @@ import type {
   V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, get, Readable } from "svelte/store";
+import { Readable, derived, get } from "svelte/store";
 
 export type ShowHideSelectorState = {
   selectableItems: Array<SearchableFilterSelectableItem>;
@@ -28,7 +28,7 @@ export type ShowHideSelectorStore = Readable<ShowHideSelectorState> &
 
 function createShowHideStore<Item>(
   metricsViewName: string,
-  metaQuery: CreateQueryResult<V1MetricsView, RpcStatus>,
+  metricsView: CreateQueryResult<V1MetricsView, RpcStatus>,
   fieldInMeta: keyof Pick<V1MetricsView, "dimensions" | "measures">,
   visibleFieldInStore: keyof Pick<
     MetricsExplorerEntity,
@@ -41,7 +41,7 @@ function createShowHideStore<Item>(
   labelSelector: (i: Item) => string,
 ) {
   const derivedStore = derived(
-    [metaQuery, useDashboardStore(metricsViewName)],
+    [metricsView, useDashboardStore(metricsViewName)],
     ([meta, metricsExplorer]) => {
       if (
         !meta?.data ||
@@ -133,11 +133,11 @@ function createShowHideStore<Item>(
 
 export function createShowHideMeasuresStore(
   metricsViewName: string,
-  metaQuery: CreateQueryResult<V1MetricsView, RpcStatus>,
+  metricsView: CreateQueryResult<V1MetricsView, RpcStatus>,
 ) {
   return createShowHideStore<MetricsViewSpecMeasureV2>(
     metricsViewName,
-    metaQuery,
+    metricsView,
     "measures",
     "visibleMeasureKeys",
     "allMeasuresVisible",
@@ -152,11 +152,11 @@ export function createShowHideMeasuresStore(
 
 export function createShowHideDimensionsStore(
   metricsViewName: string,
-  metaQuery: CreateQueryResult<V1MetricsView, RpcStatus>,
+  metricsView: CreateQueryResult<V1MetricsView, RpcStatus>,
 ) {
   return createShowHideStore<MetricsViewDimension>(
     metricsViewName,
-    metaQuery,
+    metricsView,
     "dimensions",
     "visibleDimensionKeys",
     "allDimensionsVisible",

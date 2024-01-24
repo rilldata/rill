@@ -13,10 +13,10 @@ The main feature-set component for dashboard filters
   } from "@rilldata/web-common/components/chip/chip-types";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
-  import { useMetaQuery, getFilterSearchList } from "../selectors/index";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
+  import { getFilterSearchList, useMetricsView } from "../selectors/index";
   import { getStateManagers } from "../state-managers/state-managers";
   import FilterButton from "./FilterButton.svelte";
 
@@ -41,8 +41,8 @@ The main feature-set component for dashboard filters
   /** the minimum container height */
   const MIN_CONTAINER_HEIGHT = "34px";
 
-  const metaQuery = useMetaQuery(StateManagers);
-  $: dimensions = $metaQuery.data?.dimensions ?? [];
+  const metricsView = useMetricsView(StateManagers);
+  $: dimensions = $metricsView.data?.dimensions ?? [];
 
   let searchText = "";
   let allValues: Record<string, string[]> = {};

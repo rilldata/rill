@@ -1,7 +1,7 @@
 <script lang="ts">
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
-    useMetaQuery,
+    useMetricsView,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -44,7 +44,7 @@
   let minTimeGrain: V1TimeGrain | undefined;
   let availableTimeZones: string[] = [];
 
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
   $: hasTimeSeriesQuery = useModelHasTimeSeries(
     $runtime.instanceId,
@@ -58,10 +58,10 @@
 
   $: if (
     $timeControlsStore.ready &&
-    !!$metaQuery?.data?.table &&
-    !!$metaQuery?.data?.timeDimension
+    !!$metricsView?.data?.table &&
+    !!$metricsView?.data?.timeDimension
   ) {
-    availableTimeZones = $metaQuery?.data?.availableTimeZones ?? [];
+    availableTimeZones = $metricsView?.data?.availableTimeZones ?? [];
 
     /**
      * Remove the timezone selector if no timezone key is present
@@ -104,7 +104,7 @@
 
     // Get valid option for the new time range
     const validComparison = getValidComparisonOption(
-      $metaQuery.data,
+      $metricsView.data,
       baseTimeRange,
       $dashboardStore.selectedComparisonTimeRange?.name,
       $timeControlsStore.allTimeRange,
