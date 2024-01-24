@@ -108,13 +108,14 @@
   {#if mockUserHasNoAccess}
     <MockUserHasNoAccess />
   {:else}
-    <div class="w-full h-full" style:padding-left={leftSide}>
+    <div class="flex h-full overflow-hidden">
       {#if showPivot}
         <div class="overflow-y-hidden flex-1">
           <PivotDisplay />
         </div>
       {:else}
         <div
+          style:padding-left={leftSide}
           class="flex gap-x-1 mt-3 h-full overflow-hidden flex-{dashboardAlignment}"
         >
           <div
