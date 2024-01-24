@@ -116,7 +116,7 @@
       {:else}
         <div
           style:padding-left={leftSide}
-          class="flex gap-x-1 mt-3 h-full overflow-hidden flex-{dashboardAlignment}"
+          class="flex gap-x-1 mt-3 w-full h-full overflow-hidden flex-{dashboardAlignment}"
         >
           <div
             class:fixed-metric-height={expandedMeasureName}
