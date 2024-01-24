@@ -7,7 +7,6 @@
     createQueryServiceExport,
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
-  import { get } from "svelte/store";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { useDashboard } from "../selectors";
   import exportTDD from "./export-tdd";
@@ -19,7 +18,8 @@
   let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
-  const metricsView = useDashboard(get(ctx.runtime).instanceId, metricViewName);
+  const { runtime } = ctx;
+  const metricsView = useDashboard($runtime.instanceId, metricViewName);
 
   const exportDash = createQueryServiceExport();
   const handleExportTDD = async (format: V1ExportFormat) => {
