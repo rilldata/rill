@@ -1450,6 +1450,10 @@ paths:
           in: query
           required: false
           type: string
+        - name: executionTime
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:

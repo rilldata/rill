@@ -5433,6 +5433,11 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
    */
   annotations: { [key: string]: string } = {};
 
+  /**
+   * @generated from field: string execution_time = 5;
+   */
+  executionTime = "";
+
   constructor(data?: PartialMessage<GetReportMetaRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5445,6 +5450,7 @@ export class GetReportMetaRequest extends Message<GetReportMetaRequest> {
     { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "report", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 5, name: "execution_time", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetReportMetaRequest {

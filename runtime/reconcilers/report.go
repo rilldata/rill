@@ -264,7 +264,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	defer release()
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec.Annotations)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec.Annotations, t.UTC().String())
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}
@@ -292,6 +292,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	exportURL.RawQuery = exportURLQry.Encode()
 
+	fmt.Println(meta)
 	for _, recipient := range rep.Spec.EmailRecipients {
 		err := r.C.Runtime.Email.SendScheduledReport(&email.ScheduledReport{
 			ToEmail:        recipient,

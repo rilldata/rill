@@ -7,12 +7,13 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (h *Handle) GetReportMetadata(ctx context.Context, reportName string, annotations map[string]string) (*drivers.ReportMetadata, error) {
+func (h *Handle) GetReportMetadata(ctx context.Context, reportName string, annotations map[string]string, executionTime string) (*drivers.ReportMetadata, error) {
 	res, err := h.admin.GetReportMeta(ctx, &adminv1.GetReportMetaRequest{
-		ProjectId:   h.config.ProjectID,
-		Branch:      h.config.Branch,
-		Report:      reportName,
-		Annotations: annotations,
+		ProjectId:     h.config.ProjectID,
+		Branch:        h.config.Branch,
+		Report:        reportName,
+		Annotations:   annotations,
+		ExecutionTime: executionTime,
 	})
 	if err != nil {
 		return nil, err

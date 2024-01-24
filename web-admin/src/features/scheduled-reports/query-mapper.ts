@@ -3,10 +3,15 @@ import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashbo
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
-import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import {
+  type DashboardTimeControls,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
 import {
   createQueryServiceMetricsViewTimeRange,
+  V1TimeRange,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewComparisonRequest,
   type V1MetricsViewRowsRequest,
@@ -48,8 +53,8 @@ export function parseReport(
     });
 
   let metricsViewName: string;
-  const req: ReportQueryRequest = JSON.parse(
-    reportResource.report.spec.queryArgsJson,
+  const req: ReportQueryRequest = correctRequest(
+    JSON.parse(reportResource.report.spec.queryArgsJson),
   );
   let queryMapper: (args: QueryMapperArgs<ReportQueryRequest>) => void;
 
@@ -92,6 +97,7 @@ export function parseReport(
           ready: false,
         };
 
+      initLocalUserPreferenceStore(metricsViewName);
       const dashboard = getDefaultMetricsExplorerEntity(
         metricsViewName,
         metricsViewResource.data,
@@ -113,11 +119,32 @@ export function parseReport(
   );
 }
 
+/**
+ * This method corrects the underscore naming to camel case.
+ * This is the drawback of storing the request object as is.
+ */
+function correctRequest(req: Record<string, any>): Record<string, any> {
+  const newReq: Record<string, any> = {};
+
+  for (const key in req) {
+    const newKey = key.replace(/_(\w)/g, (_, c: string) => c.toUpperCase());
+    const val = req[key];
+    if (val && typeof val === "object" && !("length" in val)) {
+      newReq[newKey] = correctRequest(val);
+    } else {
+      newReq[newKey] = val;
+    }
+  }
+
+  return newReq;
+}
+
 function mapMetricsViewAggregationRequest({
   req,
   dashboard,
 }: QueryMapperArgs<V1MetricsViewAggregationRequest>) {
   if (req.where) dashboard.whereFilter = req.where;
+  req.timeRange;
 }
 
 function mapMetricsViewToplistRequest({
@@ -125,6 +152,7 @@ function mapMetricsViewToplistRequest({
   dashboard,
 }: QueryMapperArgs<V1MetricsViewToplistRequest>) {
   if (req.where) dashboard.whereFilter = req.where;
+  // TODO
 }
 
 function mapMetricsViewRowsRequest({
@@ -132,6 +160,7 @@ function mapMetricsViewRowsRequest({
   dashboard,
 }: QueryMapperArgs<V1MetricsViewRowsRequest>) {
   if (req.where) dashboard.whereFilter = req.where;
+  // TODO
 }
 
 function mapMetricsViewTimeSeriesRequest({
@@ -139,6 +168,7 @@ function mapMetricsViewTimeSeriesRequest({
   dashboard,
 }: QueryMapperArgs<V1MetricsViewTimeSeriesRequest>) {
   if (req.where) dashboard.whereFilter = req.where;
+  // TODO
 }
 
 function mapMetricsViewComparisonRequest({
@@ -151,38 +181,24 @@ function mapMetricsViewComparisonRequest({
   if (req.where) dashboard.whereFilter = req.where;
 
   if (req.timeRange) {
-    if (req.timeRange.start && req.timeRange.end) {
-      dashboard.selectedTimeRange = {
-        name: TimeRangePreset.CUSTOM,
-        start: new Date(req.timeRange.start),
-        end: new Date(req.timeRange.end),
-      };
-    } else {
-      dashboard.selectedTimeRange = isoDurationToFullTimeRange(
-        req.timeRange.isoDuration,
-        new Date(timeRangeSummary.min),
-        new Date(executionTime),
-      );
-    }
-
     // TODO: get grain from report frequency
-    dashboard.selectedTimeRange.interval = req.timeRange.roundToGrain;
+    dashboard.selectedTimeRange = getSelectedTimeRange(
+      req.timeRange,
+      timeRangeSummary,
+      executionTime,
+    );
+  }
+
+  if (req.timeRange?.timeZone) {
+    dashboard.selectedTimezone = req.timeRange?.timeZone;
   }
 
   if (req.comparisonTimeRange) {
-    if (req.comparisonTimeRange.start && req.comparisonTimeRange.end) {
-      dashboard.selectedComparisonTimeRange = {
-        name: TimeRangePreset.CUSTOM,
-        start: new Date(req.comparisonTimeRange.start),
-        end: new Date(req.comparisonTimeRange.end),
-      };
-    } else {
-      dashboard.selectedComparisonTimeRange = isoDurationToFullTimeRange(
-        req.comparisonTimeRange.isoDuration,
-        new Date(timeRangeSummary.min),
-        new Date(executionTime),
-      );
-    }
+    dashboard.selectedComparisonTimeRange = getSelectedTimeRange(
+      req.comparisonTimeRange,
+      timeRangeSummary,
+      executionTime,
+    );
 
     dashboard.selectedComparisonTimeRange.interval =
       dashboard.selectedTimeRange?.interval;
@@ -193,7 +209,7 @@ function mapMetricsViewComparisonRequest({
 
   // if the selected sort is a measure set it to leaderboardMeasureName
   if (
-    req.sort.length > 0 &&
+    req.sort?.length &&
     metricsView.measures.findIndex((m) => m.name === req.sort[0].name) >= 0
   ) {
     dashboard.leaderboardMeasureName = req.sort[0].name;
@@ -202,4 +218,31 @@ function mapMetricsViewComparisonRequest({
       : SortDirection.ASCENDING;
     // TODO: sort type
   }
+}
+
+function getSelectedTimeRange(
+  timeRange: V1TimeRange,
+  timeRangeSummary: V1TimeRangeSummary,
+  executionTime: string,
+) {
+  let selectedTimeRange: DashboardTimeControls;
+
+  if (timeRange.start && timeRange.end) {
+    selectedTimeRange = {
+      name: TimeRangePreset.CUSTOM,
+      start: new Date(timeRange.start),
+      end: new Date(timeRange.end),
+    };
+  } else {
+    selectedTimeRange = isoDurationToFullTimeRange(
+      timeRange.isoDuration,
+      new Date(timeRangeSummary.min),
+      new Date(executionTime),
+    );
+  }
+
+  // TODO: get grain from report frequency
+  selectedTimeRange.interval = timeRange.roundToGrain;
+
+  return selectedTimeRange;
 }

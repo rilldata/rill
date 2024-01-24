@@ -15893,6 +15893,8 @@ func (m *GetReportMetaRequest) validate(all bool) error {
 
 	// no validation rules for Annotations
 
+	// no validation rules for ExecutionTime
+
 	if len(errors) > 0 {
 		return GetReportMetaRequestMultiError(errors)
 	}
