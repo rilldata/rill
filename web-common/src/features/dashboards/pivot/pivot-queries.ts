@@ -1,17 +1,18 @@
+import type { PivotDataStoreConfig } from "@rilldata/web-common/features/dashboards/pivot/types";
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
-  createQueryServiceMetricsViewAggregation,
-  V1MetricsViewFilter,
-  type V1MetricsViewAggregationResponse,
-  V1MetricsViewAggregationSort,
   V1BuiltinMeasure,
   V1MetricsViewAggregationDimension,
+  V1MetricsViewAggregationResponseDataItem,
+  V1MetricsViewAggregationSort,
+  V1MetricsViewFilter,
+  createQueryServiceMetricsViewAggregation,
+  type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
-import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { derived, writable } from "svelte/store";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import type { PivotDataStoreConfig } from "@rilldata/web-common/features/dashboards/pivot/types";
-import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
+import { derived, writable } from "svelte/store";
 
 /**
  * Wrapper function for Aggregate Query API
@@ -77,13 +78,7 @@ export function getAxisForDimensions(
   if (!dimensions.length) return writable(null);
 
   // FIXME: If sorting by measure, add that to measure list
-  let measures: string[] = [];
-  if (sortBy.length) {
-    const sortMeasure = sortBy[0].name as string;
-    if (!dimensions.includes(sortMeasure)) {
-      measures = [sortMeasure];
-    }
-  }
+  const measures = config.measureNames;
 
   const { time } = config;
   const dimensionBody = dimensions.map((d) => {
@@ -111,6 +106,10 @@ export function getAxisForDimensions(
     ),
     (data) => {
       const axesMap: Record<string, string[]> = {};
+      const totalsMap: Record<
+        string,
+        V1MetricsViewAggregationResponseDataItem[]
+      > = {};
 
       // Wait for all data to populate
       if (data.some((d) => d?.isFetching)) return { isFetching: true };
@@ -120,6 +119,7 @@ export function getAxisForDimensions(
         axesMap[dimensionName] = (d?.data?.data || [])?.map(
           (dimValue) => dimValue[dimensionName] as string,
         );
+        totalsMap[dimensionName] = d?.data?.data || [];
       });
 
       if (Object.values(axesMap).some((d) => !d)) return { isFetching: true };
@@ -127,6 +127,7 @@ export function getAxisForDimensions(
       return {
         isFetching: false,
         data: axesMap,
+        totals: totalsMap,
       };
     },
   );
