@@ -22,18 +22,16 @@
     {#if showPanels}
       <PivotHeader />
     {/if}
-    <div class="p-2 px-4">
-      <PivotToolbar bind:showPanels />
-      <div class="table-view">
-        {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
-          <PivotEmpty />
-        {:else}
-          <PivotTable
-            data={$pivotDataStore.data}
-            columns={$pivotDataStore.columnDef}
-          />
-        {/if}
-      </div>
+    <PivotToolbar bind:showPanels />
+    <div class="table-view">
+      {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
+        <PivotEmpty />
+      {:else}
+        <PivotTable
+          data={$pivotDataStore.data}
+          columns={$pivotDataStore.columnDef}
+        />
+      {/if}
     </div>
   </div>
 </div>

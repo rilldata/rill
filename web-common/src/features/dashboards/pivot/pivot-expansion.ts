@@ -37,6 +37,9 @@ function getValuesForExpandedKey(
 ) {
   const indices = key.split(".").map((index) => parseInt(index, 10));
 
+  // The first row is always the totals row for the expanded context
+  indices[0] = indices[0] - 1;
+
   // Retrieve the value from the nested array
   let currentValue: PivotDataRow[] | undefined = tableData;
   const dimensionValues: string[] = [];
@@ -142,20 +145,21 @@ export function queryExpandedRowMeasureValues(
       const timeFilters: TimeFilters[] = [];
       // TODO: handle for already existing filters
       const rowNestFilters = values
-        .filter((v, i) => {
-          if (rowDimensionNames[i] === config.time.timeDimension) {
-            timeFilters.push({
-              timeStart: v,
-              interval: config.time.interval,
-            });
-            return false;
-          } else return true;
-        })
         .map((value, index) => {
           return {
             name: rowDimensionNames[index],
             in: [value],
           };
+        })
+        .filter((f) => {
+          // We map first and filter later to ensure that dimensions are in order
+          if (f.name === config.time.timeDimension) {
+            timeFilters.push({
+              timeStart: f.in[0],
+              interval: config.time.interval,
+            });
+            return false;
+          } else return true;
         });
 
       const filterForRowDimensionAxes = {
@@ -236,6 +240,9 @@ export function addExpandedDataToPivot(
     const indices = expandedRowData.expandIndex
       .split(".")
       .map((index) => parseInt(index, 10));
+
+    // The first row is always the totals row for the expanded context
+    indices[0] = indices[0] - 1;
 
     let parent: PivotDataRow[] = pivotData; // Keep a reference to the parent array
     let lastIdx = 0;
