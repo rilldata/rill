@@ -108,14 +108,14 @@
   {#if mockUserHasNoAccess}
     <MockUserHasNoAccess />
   {:else}
-    <div class="w-full h-full overflow-hidden" style:padding-left={leftSide}>
+    <div class="w-full h-full" style:padding-left={leftSide}>
       {#if showPivot}
         <div class="overflow-y-hidden flex-1">
           <PivotDisplay />
         </div>
       {:else}
         <div
-          class="flex gap-x-1 pt-4 w-full overflow-hidden flex-{dashboardAlignment}"
+          class="flex gap-x-1 mt-3 h-full overflow-hidden flex-{dashboardAlignment}"
         >
           <div
             class:fixed-metric-height={expandedMeasureName}
