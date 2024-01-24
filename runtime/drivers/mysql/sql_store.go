@@ -105,6 +105,7 @@ func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
 		return nil, err
 	}
 
+	// Scan expects destinations to be pointers
 	dests := make([]any, len(cts))
 	for i := range dests {
 		dests[i], err = r.fieldMappers[i].dest(cts[i].ScanType())
@@ -123,30 +124,33 @@ func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
 			r.row[i] = nil
 			continue
 		}
-		if reflect.ValueOf(v).Kind() == reflect.Ptr {
-			// Dereference the pointer
-			ptr := reflect.ValueOf(v)
-			value := reflect.Indirect(ptr)
-			if value.Kind() == reflect.Slice && value.IsNil() {
-				r.row[i] = nil
-				continue
-			}
-			// Unwrap nullable
-			switch c := value.Interface().(type) {
-			case sqldriver.Valuer:
-				r.row[i], err = c.Value()
-				if err != nil {
-					return nil, err
-				}
-			default:
-				r.row[i] = c
+		// BIT type can be scanned as bytes only and hence needs to be converted to a bit string for the sake of usability
+		// This is the only type that requires a conversion so no need for a generalization for now
+		if bm, ok := r.fieldMappers[i].(*bitMapper); ok {
+			r.row[i], err = bm.value(dests[i])
+			if err != nil {
+				return nil, err
 			}
 			continue
 		}
-
-		r.row[i] = v
+		// Destinations are pointers that need to be dereferenced before passing further
+		ptr := reflect.ValueOf(v)
+		value := reflect.Indirect(ptr)
+		// Binary destinations are slices that might be nil
+		if value.Kind() == reflect.Slice && value.IsNil() {
+			r.row[i] = nil
+			continue
+		}
+		// Nullable columns are Valuers that need to be unwrapped
+		if valuer, ok := value.Interface().(sqldriver.Valuer); ok {
+			r.row[i], err = valuer.Value()
+			if err != nil {
+				return nil, err
+			}
+			continue
+		}
+		r.row[i] = value.Interface()
 	}
-
 	return r.row, nil
 }
 

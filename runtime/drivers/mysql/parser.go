@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
@@ -148,11 +149,28 @@ func (c *numericMapper) dest(st reflect.Type) (any, error) {
 type bitMapper struct{}
 
 func (m *bitMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
-	return &runtimev1.Type{Code: runtimev1.Type_CODE_BYTES}, nil
+	return &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}, nil
 }
 
 func (m *bitMapper) dest(reflect.Type) (any, error) {
 	return &[]byte{}, nil
+}
+
+func (m *bitMapper) value(v any) (any, error) {
+	switch bs := v.(type) {
+	case *[]byte:
+		if *bs == nil {
+			return nil, nil
+		}
+		str := strings.Builder{}
+		for _, b := range *bs {
+			str.WriteString(fmt.Sprintf("%08b ", b))
+		}
+		s := str.String()[:len(*bs)]
+		return s, nil
+	default:
+		return nil, fmt.Errorf("bitMapper: unsupported type %v", bs)
+	}
 }
 
 type charMapper struct{}
