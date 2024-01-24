@@ -236,6 +236,19 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           timeRange,
         );
 
+        /** We have a query for totals row. In some cases it would be the same query as that
+         * for the initial table cell data. With svelte query cache we would not hit the
+         *  API twice
+         */
+
+        const totalsRowQuery = createTableCellQuery(
+          ctx,
+          config,
+          "",
+          columnDimensionAxes?.data,
+          [],
+        );
+
         /**
          * We need to query the unsorted row dimension values because the sorted
          * row dimension values may not have all the dimensions values
@@ -332,11 +345,11 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   columnDimensionAxes?.data,
                 );
                 /**
-                 * Derive a store based on expanded rows
+                 * Derive a store based on expanded rows and totals
                  */
                 return derived(
-                  expandedSubTableCellQuery,
-                  (expandedRowMeasureValues) => {
+                  [totalsRowQuery, expandedSubTableCellQuery],
+                  ([totalsRowResponse, expandedRowMeasureValues]) => {
                     prepareNestedPivotData(pivotData, rowDimensionNames);
                     let tableDataExpanded: PivotDataRow[] = pivotData;
                     if (expandedRowMeasureValues?.length) {
@@ -354,9 +367,22 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     lastPivotData = tableDataExpanded;
                     lastPivotColumnDef = columnDef;
 
+                    const totalsRowData = totalsRowResponse?.data?.data;
+                    const totalsRowTable = reduceTableCellDataIntoRows(
+                      config,
+                      "",
+                      [],
+                      columnDimensionAxes?.data || {},
+                      [],
+                      totalsRowData || [],
+                    );
+
+                    const totalsRow = totalsRowTable[0] || {};
+                    totalsRow[anchorDimension] = "Total";
+
                     return {
                       isFetching: false,
-                      data: tableDataExpanded,
+                      data: [totalsRow, ...tableDataExpanded],
                       columnDef,
                     };
                   },

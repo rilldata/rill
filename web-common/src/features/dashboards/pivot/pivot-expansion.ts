@@ -37,6 +37,9 @@ function getValuesForExpandedKey(
 ) {
   const indices = key.split(".").map((index) => parseInt(index, 10));
 
+  // The first row is always the totals row for the expanded context
+  indices[0] = indices[0] - 1;
+
   // Retrieve the value from the nested array
   let currentValue: PivotDataRow[] | undefined = tableData;
   const dimensionValues: string[] = [];
@@ -237,6 +240,9 @@ export function addExpandedDataToPivot(
     const indices = expandedRowData.expandIndex
       .split(".")
       .map((index) => parseInt(index, 10));
+
+    // The first row is always the totals row for the expanded context
+    indices[0] = indices[0] - 1;
 
     let parent: PivotDataRow[] = pivotData; // Keep a reference to the parent array
     let lastIdx = 0;
