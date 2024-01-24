@@ -44,9 +44,9 @@
     }));
 
   $: dimensions = $visibleDimensions
-    .filter((d) => !rowsInTable.includes((d.column ?? d.name) as string))
+    .filter((d) => !rowsInTable.includes((d.name ?? d.column) as string))
     .map((dimension) => ({
-      id: dimension.column || dimension.name,
+      id: dimension.name || dimension.column,
       title: dimension.label || dimension.name || dimension.column,
     }));
 
