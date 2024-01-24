@@ -4,6 +4,7 @@ import {
   createAndExpression,
   createInExpression,
   filterExpressions,
+  matchExpressionByName,
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { Readable, derived, writable } from "svelte/store";
@@ -82,9 +83,21 @@ export function getDimensionValuesForComparison(
       // Values to be compared
       let comparisonValues: string[] = [];
       if (surface === "chart") {
-        const dimensionValues = selectedDimensionValues({
+        let dimensionValues = selectedDimensionValues({
           dashboard: dashboardStore,
         })(dimensionName);
+        if (measureFilterResolution.filter) {
+          // if there is a measure filter for this dimension. remove values not in that filter
+          const dimVals = measureFilterResolution.filter.cond?.exprs?.find(
+            (e) => matchExpressionByName(e, dimensionName),
+          )?.cond?.exprs;
+          if (dimVals?.length) {
+            dimensionValues = dimensionValues.filter(
+              (d) => dimVals.findIndex((dimVal) => dimVal.val === d) >= 0,
+            );
+          }
+        }
+
         if (dimensionValues?.length) {
           // For TDD view max 11 allowed, for overview max 7 allowed
           comparisonValues = dimensionValues.slice(
