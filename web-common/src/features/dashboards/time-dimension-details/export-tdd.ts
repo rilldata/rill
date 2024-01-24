@@ -38,22 +38,17 @@ export default async function exportTDD({
             },
           ],
           filter: dashboard.filters,
-          having: undefined,
           instanceId: get(runtime).instanceId,
           limit: undefined, // the backend handles export limits
           measures: [{ name: dashboard.expandedMeasureName }],
           metricsView,
           offset: "0",
           pivotOn: [timeDimension], // spreads the time dimension across columns
-          priority: undefined,
           sort: undefined, // future work
-          timeEnd: undefined,
           timeRange: {
             start: selectedTimeRange?.start.toISOString(),
             end: selectedTimeRange?.end.toISOString(),
           },
-          timeStart: undefined,
-          where: undefined,
         },
       },
     },
