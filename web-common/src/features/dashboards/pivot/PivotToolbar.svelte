@@ -1,13 +1,14 @@
 <script lang="ts">
   import { Switch } from "@rilldata/web-common/components/button";
-  import { createEventDispatcher } from "svelte";
-  import { getStateManagers } from "../state-managers/state-managers";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { getStateManagers } from "../state-managers/state-managers";
 
   export let showPanels = true;
 
   const stateManagers = getStateManagers();
+  const { metricsViewName } = stateManagers;
 
   $: nestedMode = false;
 
@@ -32,4 +33,13 @@
     Nested
   </Switch>
   <div>Expand All</div>
+
+  <Button
+    type="text"
+    on:click={(e) => {
+      metricsExplorerStore.setPivotExpanded($metricsViewName, {});
+    }}
+  >
+    Collapse All
+  </Button>
 </div>
