@@ -236,11 +236,10 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           timeRange,
         );
 
-        /** We have a query for totals row. In some cases it would be the same query as that
+        /** In some cases the totals query would be the same query as that
          * for the initial table cell data. With svelte query cache we would not hit the
-         *  API twice
+         * API twice
          */
-
         const totalsRowQuery = createTableCellQuery(
           ctx,
           config,
