@@ -289,16 +289,13 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             return derived(
               [initialTableCellQuery],
               ([initialTableCellData], cellSet) => {
-                // Wait for data
-                if (
-                  initialTableCellData.isFetching ||
-                  initialTableCellData.error
-                )
-                  return axesSet({
-                    isFetching: false,
+                if (initialTableCellData.isFetching) {
+                  return cellSet({
+                    isFetching: true,
                     data: rowTotals,
                     columnDef,
                   });
+                }
 
                 const cellData = initialTableCellData.data
                   ?.data as V1MetricsViewAggregationResponseDataItem[];

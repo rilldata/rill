@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { PivotDataRow } from "@rilldata/web-common/features/dashboards/pivot/types";
+  import type { PivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
@@ -9,10 +9,11 @@
     getCoreRowModel,
     getExpandedRowModel,
   } from "@tanstack/svelte-table";
-  import { Writable, writable } from "svelte/store";
+  import type { Readable } from "svelte/motion";
+  import { derived } from "svelte/store";
+  import type { PivotDataRow } from "./types";
 
-  export let data;
-  export let columns;
+  export let pivotStore: PivotDataStore;
 
   const stateManagers = getStateManagers();
   const { dashboardStore, metricsViewName } = stateManagers;
@@ -23,13 +24,6 @@
   function handleExpandedChange(updater) {
     expanded = updater(expanded);
     metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
-
-    options.update((options) => ({
-      ...options,
-      state: {
-        expanded,
-      },
-    }));
   }
 
   function handleSorting(updater) {
@@ -38,47 +32,29 @@
     } else {
       sorting = updater;
     }
-
     metricsExplorerStore.setPivotSort($metricsViewName, sorting);
-    options.update((old) => ({
-      ...old,
+  }
+
+  const options: Readable<TableOptions<PivotDataRow>> = derived(
+    pivotStore,
+    (pivotData) => ({
+      data: pivotData.data,
+      columns: pivotData.columnDef,
       state: {
-        ...old.state,
+        expanded,
         sorting,
       },
-    }));
-  }
-
-  const options: Writable<TableOptions<PivotDataRow>> = writable({
-    data: data,
-    columns: columns,
-    state: {
-      expanded,
-    },
-    onExpandedChange: handleExpandedChange,
-    getSubRows: (row) => row.subRows,
-    onSortingChange: handleSorting,
-    getExpandedRowModel: getExpandedRowModel(),
-    getCoreRowModel: getCoreRowModel(),
-    enableSortingRemoval: false,
-    enableExpanding: true,
-  });
+      onExpandedChange: handleExpandedChange,
+      getSubRows: (row) => row.subRows,
+      onSortingChange: handleSorting,
+      getExpandedRowModel: getExpandedRowModel(),
+      getCoreRowModel: getCoreRowModel(),
+      enableSortingRemoval: false,
+      enableExpanding: true,
+    }),
+  );
 
   let table = createSvelteTable(options);
-
-  function rerender() {
-    options.update((options) => ({
-      ...options,
-      data: data,
-    }));
-
-    // FIXME: This is a hack to force the table to rerender, upadting
-    // the options in itself doesn't seem to work
-    table = createSvelteTable(options);
-  }
-
-  // Whenever the input data changes, rerender the table
-  $: data && rerender();
 </script>
 
 <table class="mx-2">
@@ -88,10 +64,7 @@
         {#each headerGroup.headers as header}
           <th colSpan={header.colSpan}>
             {#if !header.isPlaceholder}
-              <!-- TODO: Fix svelte a11y issues -->
-              <!-- svelte-ignore a11y-click-events-have-key-events -->
-              <!-- svelte-ignore a11y-no-static-element-interactions -->
-              <div
+              <button
                 class:cursor-pointer={header.column.getCanSort()}
                 class:select-none={header.column.getCanSort()}
                 on:click={header.column.getToggleSortingHandler()}
@@ -109,7 +82,7 @@
                     <span>▲</span>
                   {/if}
                 {/if}
-              </div>
+              </button>
             {/if}
           </th>
         {/each}

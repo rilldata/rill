@@ -1,11 +1,11 @@
 <script lang="ts">
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import PivotTable from "./PivotTable.svelte";
-  import PivotSidebar from "./PivotSidebar.svelte";
+  import PivotEmpty from "./PivotEmpty.svelte";
   import PivotHeader from "./PivotHeader.svelte";
+  import PivotSidebar from "./PivotSidebar.svelte";
+  import PivotTable from "./PivotTable.svelte";
   import PivotToolbar from "./PivotToolbar.svelte";
   import { usePivotDataStore } from "./pivot-data-store";
-  import PivotEmpty from "./PivotEmpty.svelte";
 
   const stateManagers = getStateManagers();
 
@@ -22,12 +22,13 @@
     {#if showPanels}
       <PivotHeader />
     {/if}
-    <PivotToolbar bind:showPanels />
+    <PivotToolbar isFetching={$pivotDataStore.isFetching} bind:showPanels />
     <div class="table-view">
       {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
         <PivotEmpty />
       {:else}
         <PivotTable
+          pivotStore={pivotDataStore}
           data={$pivotDataStore.data}
           columns={$pivotDataStore.columnDef}
         />
