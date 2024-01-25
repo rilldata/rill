@@ -36,7 +36,7 @@
 
   <Button
     type="text"
-    on:click={(e) => {
+    on:click={() => {
       metricsExplorerStore.setPivotExpanded($metricsViewName, {});
     }}
   >

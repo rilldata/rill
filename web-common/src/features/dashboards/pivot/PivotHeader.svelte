@@ -1,9 +1,9 @@
 <script lang="ts">
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
-  import DragList from "./DragList.svelte";
-  import { metricsExplorerStore } from "../stores/dashboard-stores";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { metricsExplorerStore } from "../stores/dashboard-stores";
+  import DragList from "./DragList.svelte";
 
   const stateManagers = getStateManagers();
   const {
@@ -13,7 +13,6 @@
       dimensions: { getDimensionDisplayName },
     },
     metricsViewName,
-    runtime,
   } = stateManagers;
 
   $: colMeasures = $dashboardStore?.pivot?.columns?.map((col) => ({
