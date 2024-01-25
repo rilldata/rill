@@ -43,8 +43,8 @@ type MetricsViewComparison struct {
 }
 
 type MeasureMeta struct {
-	innerIndex int  // relative position of the measure in the inner query, 0 based
-	outerIndex int  // relative start position of the measure in the outer query, this different from innerIndex as there may be derived measures like comparison, delta etc in the outer query after each base measure, 0 based
+	innerIndex int  // relative position of the measure in the inner query, 1 based
+	outerIndex int  // relative position of the measure in the outer query, this different from innerIndex as there may be derived measures like comparison, delta etc in the outer query after each base measure, 1 based
 	isExploded bool // whether the measure has derived measures like comparison, delta etc
 }
 
@@ -131,8 +131,8 @@ func (q *MetricsViewComparison) calculateMeasuresMeta() {
 
 	q.MeasuresMeta = make(map[string]*MeasureMeta, len(q.Measures))
 
-	inner := 0
-	outer := 0
+	inner := 1
+	outer := 1
 	for _, m := range q.Measures {
 		explode := (sortMap[m.Name] && compare) || aliasMap[m.Name]
 		q.MeasuresMeta[m.Name] = &MeasureMeta{
@@ -227,26 +227,26 @@ func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, ol
 		}
 		var measureValues []*runtimev1.MetricsViewComparisonValue
 
-		for i, m := range q.Measures {
+		for _, m := range q.Measures {
 			measureMeta := q.MeasuresMeta[m.Name]
 			index := measureMeta.outerIndex
 			if measureMeta.isExploded {
-				bv, err := pbutil.ToValue(values[1+index], safeFieldType(rows.Schema, 1+index))
+				bv, err := pbutil.ToValue(values[index], safeFieldType(rows.Schema, index))
 				if err != nil {
 					return err
 				}
 
-				cv, err := pbutil.ToValue(values[2+index], safeFieldType(rows.Schema, 2+index))
+				cv, err := pbutil.ToValue(values[1+index], safeFieldType(rows.Schema, 1+index))
 				if err != nil {
 					return err
 				}
 
-				da, err := pbutil.ToValue(values[3+index], safeFieldType(rows.Schema, 3+index))
+				da, err := pbutil.ToValue(values[2+index], safeFieldType(rows.Schema, 2+index))
 				if err != nil {
 					return err
 				}
 
-				dr, err := pbutil.ToValue(values[4+index], safeFieldType(rows.Schema, 4+index))
+				dr, err := pbutil.ToValue(values[3+index], safeFieldType(rows.Schema, 3+index))
 				if err != nil {
 					return err
 				}
@@ -259,7 +259,7 @@ func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, ol
 					DeltaRel:        dr,
 				})
 			} else {
-				v, err := pbutil.ToValue(values[1+i], safeFieldType(rows.Schema, 1+index))
+				v, err := pbutil.ToValue(values[index], safeFieldType(rows.Schema, index))
 				if err != nil {
 					return err
 				}
@@ -665,18 +665,18 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		var pos int
 		switch s.SortType {
 		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
-			pos = 2 + measureMeta.outerIndex
+			pos = 1 + measureMeta.outerIndex
 		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
-			pos = 3 + measureMeta.outerIndex
+			pos = 2 + measureMeta.outerIndex
 		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
-			pos = 4 + measureMeta.outerIndex
+			pos = 3 + measureMeta.outerIndex
 		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
-			pos = 5 + measureMeta.outerIndex
+			pos = 4 + measureMeta.outerIndex
 		default:
 			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.Name)
 		}
 		orderClause := fmt.Sprint(pos)
-		subQueryOrderClause := fmt.Sprint(measureMeta.innerIndex + 2) // 1-based + skip the first dim column
+		subQueryOrderClause := fmt.Sprint(measureMeta.innerIndex + 1) // 1-based + skip the first dim column
 		ending := ""
 		if s.Desc {
 			ending += " DESC"
