@@ -57,7 +57,7 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 		rows: rows,
 	}
 
-	if err := iter.setSchema(ctx); err != nil {
+	if err := iter.setSchema(); err != nil {
 		iter.Close()
 		return nil, err
 	}
@@ -76,6 +76,7 @@ type rowIterator struct {
 	schema       *runtimev1.StructType
 	row          []sqldriver.Value
 	fieldMappers []mapper
+	fieldDests   []any // Destinations are used while scanning rows
 }
 
 // Close implements drivers.RowIterator.
@@ -104,25 +105,20 @@ func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
 	}
 
 	// Scan expects destinations to be pointers
-	dests := make([]any, len(cts))
-	for i := range dests {
-		dests[i], err = r.fieldMappers[i].dest(cts[i].ScanType())
+	for i := range r.fieldDests {
+		r.fieldDests[i], err = r.fieldMappers[i].dest(cts[i].ScanType())
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if err := r.rows.Scan(dests...); err != nil {
+	if err := r.rows.Scan(r.fieldDests...); err != nil {
 		return nil, err
 	}
 
 	for i := range r.schema.Fields {
-		v := dests[i]
-		if v == nil {
-			r.row[i] = nil
-			continue
-		}
-		r.row[i], err = r.fieldMappers[i].value(dests[i])
+		// Dereference destinations and fill the row
+		r.row[i], err = r.fieldMappers[i].value(r.fieldDests[i])
 		if err != nil {
 			return nil, err
 		}
@@ -142,7 +138,7 @@ func (r *rowIterator) Size(unit drivers.ProgressUnit) (uint64, bool) {
 
 var _ drivers.RowIterator = &rowIterator{}
 
-func (r *rowIterator) setSchema(ctx context.Context) error {
+func (r *rowIterator) setSchema() error {
 	cts, err := r.rows.ColumnTypes()
 	if err != nil {
 		return err
@@ -171,6 +167,7 @@ func (r *rowIterator) setSchema(ctx context.Context) error {
 	r.schema = &runtimev1.StructType{Fields: fields}
 	r.fieldMappers = mappers
 	r.row = make([]sqldriver.Value, len(r.schema.Fields))
+	r.fieldDests = make([]any, len(r.schema.Fields))
 	return nil
 }
 
