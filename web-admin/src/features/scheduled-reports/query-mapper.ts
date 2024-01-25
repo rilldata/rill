@@ -138,6 +138,7 @@ export function parseReportQuery(
         timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
         executionTime,
       });
+      console.log(dashboard);
       return {
         ready: true,
         state: getProtoFromDashboardState(dashboard),
@@ -245,6 +246,8 @@ function mapMetricsViewComparisonRequest({
       : SortDirection.ASCENDING;
     dashboard.dashboardSortType = getSortType(req.sort[0].sortType);
   }
+
+  dashboard.selectedDimensionName = req.dimension.name;
 }
 
 function getSelectedTimeRange(

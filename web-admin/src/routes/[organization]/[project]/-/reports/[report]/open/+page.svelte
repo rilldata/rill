@@ -33,7 +33,7 @@
 <CtaLayoutContainer>
   <CtaContentContainer>
     {#if !$parsedReport.ready}
-      <div class="h-36">
+      <div class="h-36 mt-10">
         <Spinner
           bg="linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)"
           status={EntityStatus.Running}

@@ -263,7 +263,7 @@ const QuerySortTypeReverseMap: Record<ApiSortType, SortType> = {} as Record<
   SortType
 >;
 for (const k in QuerySortTypeMap) {
-  QuerySortTypeReverseMap[QuerySortTypeMap[k]] = k;
+  QuerySortTypeReverseMap[QuerySortTypeMap[k]] = Number(k);
 }
 export function getSortType(apiSortType: ApiSortType) {
   return QuerySortTypeReverseMap[apiSortType] || SortType.VALUE;
