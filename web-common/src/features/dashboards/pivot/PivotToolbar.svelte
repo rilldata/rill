@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { Switch } from "@rilldata/web-common/components/button";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
@@ -32,12 +31,19 @@
   >
     <PivotPanel size="18px" />
   </Button>
-  <Switch checked={nestedMode} on:click={() => toggleNestedMode()}>
-    Nested
-  </Switch>
-  <div>Expand All</div>
 
   <Button
+    compact
+    type="text"
+    on:click={() => {
+      metricsExplorerStore.setPivotExpanded($metricsViewName, {});
+    }}
+  >
+    Expand Visible
+  </Button>
+
+  <Button
+    compact
     type="text"
     on:click={() => {
       metricsExplorerStore.setPivotExpanded($metricsViewName, {});
