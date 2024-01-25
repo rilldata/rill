@@ -76,7 +76,7 @@
     @apply font-semibold text-gray-700 pt-2;
   }
   .sidebar {
-    @apply bg-slate-50 p-2;
+    @apply bg-white p-2 border-r border-slate-200 pl-4;
     min-width: 250px;
     overflow-y: auto;
   }
