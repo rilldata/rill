@@ -6,7 +6,6 @@ import (
 	sqldriver "database/sql/driver"
 	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/mitchellh/mapstructure"
@@ -123,32 +122,10 @@ func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
 			r.row[i] = nil
 			continue
 		}
-		// BIT type can be scanned as bytes only and hence needs to be converted to a bit string for the sake of usability
-		// This is the only type that requires a conversion so no need for a generalization for now
-		if bm, ok := r.fieldMappers[i].(*bitMapper); ok {
-			r.row[i], err = bm.value(dests[i])
-			if err != nil {
-				return nil, err
-			}
-			continue
+		r.row[i], err = r.fieldMappers[i].value(dests[i])
+		if err != nil {
+			return nil, err
 		}
-		// Destinations are pointers that need to be dereferenced before passing further
-		ptr := reflect.ValueOf(v)
-		value := reflect.Indirect(ptr)
-		// Binary destinations are slices that might be nil
-		if value.Kind() == reflect.Slice && value.IsNil() {
-			r.row[i] = nil
-			continue
-		}
-		// Nullable columns are Valuers that need to be unwrapped
-		if valuer, ok := value.Interface().(sqldriver.Valuer); ok {
-			r.row[i], err = valuer.Value()
-			if err != nil {
-				return nil, err
-			}
-			continue
-		}
-		r.row[i] = value.Interface()
 	}
 	return r.row, nil
 }

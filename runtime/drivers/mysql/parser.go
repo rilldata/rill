@@ -11,7 +11,10 @@ import (
 
 type mapper interface {
 	runtimeType(st reflect.Type) (*runtimev1.Type, error)
+	// dest returns a pointer to a destination value that can be used in Rows.Scan
 	dest(st reflect.Type) (any, error)
+	// value dereferences a pointer created by dest
+	value(p any) (any, error)
 }
 
 // refer https://github.com/go-sql-driver/mysql/blob/master/fields.go for base types
@@ -46,23 +49,23 @@ func getDBTypeNameToMapperMap() map[string]mapper {
 	m["VARCHAR"] = &charMapper{}
 
 	// binary
-	m[("BINARY")] = &byteMapper{}
-	m[("TINYBLOB")] = &byteMapper{}
-	m[("BLOB")] = &byteMapper{}
-	m[("LONGBLOB")] = &byteMapper{}
-	m[("MEDIUMBLOB")] = &byteMapper{}
-	m[("VARBINARY")] = &byteMapper{}
+	m["BINARY"] = &byteMapper{}
+	m["TINYBLOB"] = &byteMapper{}
+	m["BLOB"] = &byteMapper{}
+	m["LONGBLOB"] = &byteMapper{}
+	m["MEDIUMBLOB"] = &byteMapper{}
+	m["VARBINARY"] = &byteMapper{}
 
 	// date and time
-	m[("DATE")] = &dateMapper{}
-	m[("DATETIME")] = &dateMapper{}
-	m[("TIMESTAMP")] = &dateMapper{}
-	m[("YEAR")] = &int16Mapper{}
+	m["DATE"] = &dateMapper{}
+	m["DATETIME"] = &dateMapper{}
+	m["TIMESTAMP"] = &dateMapper{}
+	m["YEAR"] = &numericMapper{}
 	// TIME is scanned as bytes and can be converted to string
-	m[("TIME")] = &charMapper{}
+	m["TIME"] = &charMapper{}
 
 	// json
-	m[("JSON")] = &jsonMapper{}
+	m["JSON"] = &jsonMapper{}
 
 	return m
 }
@@ -84,7 +87,7 @@ var (
 
 type numericMapper struct{}
 
-func (c *numericMapper) runtimeType(st reflect.Type) (*runtimev1.Type, error) {
+func (m *numericMapper) runtimeType(st reflect.Type) (*runtimev1.Type, error) {
 	switch st {
 	case scanTypeInt8:
 		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT8}, nil
@@ -115,7 +118,7 @@ func (c *numericMapper) runtimeType(st reflect.Type) (*runtimev1.Type, error) {
 	}
 }
 
-func (c *numericMapper) dest(st reflect.Type) (any, error) {
+func (m *numericMapper) dest(st reflect.Type) (any, error) {
 	switch st {
 	case scanTypeInt8:
 		return new(int8), nil
@@ -146,6 +149,45 @@ func (c *numericMapper) dest(st reflect.Type) (any, error) {
 	}
 }
 
+func (m *numericMapper) value(p any) (any, error) {
+	switch v := p.(type) {
+	case *int8:
+		return *v, nil
+	case *int16:
+		return *v, nil
+	case *int32:
+		return *v, nil
+	case *int64:
+		return *v, nil
+	case *uint8:
+		return *v, nil
+	case *uint16:
+		return *v, nil
+	case *uint32:
+		return *v, nil
+	case *uint64:
+		return *v, nil
+	case *sql.NullInt64:
+		vl, err := v.Value()
+		if err != nil {
+			return nil, err
+		}
+		return vl, nil
+	case *float32:
+		return *v, nil
+	case *float64:
+		return *v, nil
+	case *sql.NullFloat64:
+		vl, err := v.Value()
+		if err != nil {
+			return nil, err
+		}
+		return vl, nil
+	default:
+		return nil, fmt.Errorf("numericMapper: unsupported value type %v", p)
+	}
+}
+
 type bitMapper struct{}
 
 func (m *bitMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
@@ -156,8 +198,8 @@ func (m *bitMapper) dest(reflect.Type) (any, error) {
 	return &[]byte{}, nil
 }
 
-func (m *bitMapper) value(v any) (any, error) {
-	switch bs := v.(type) {
+func (m *bitMapper) value(p any) (any, error) {
+	switch bs := p.(type) {
 	case *[]byte:
 		if *bs == nil {
 			return nil, nil
@@ -169,7 +211,7 @@ func (m *bitMapper) value(v any) (any, error) {
 		s := str.String()[:len(*bs)]
 		return s, nil
 	default:
-		return nil, fmt.Errorf("bitMapper: unsupported type %v", bs)
+		return nil, fmt.Errorf("bitMapper: unsupported value type %v", bs)
 	}
 }
 
@@ -183,6 +225,19 @@ func (m *charMapper) dest(reflect.Type) (any, error) {
 	return new(sql.NullString), nil
 }
 
+func (m *charMapper) value(p any) (any, error) {
+	switch v := p.(type) {
+	case *sql.NullString:
+		vl, err := v.Value()
+		if err != nil {
+			return nil, err
+		}
+		return vl, nil
+	default:
+		return nil, fmt.Errorf("charMapper: unsupported value type %v", v)
+	}
+}
+
 type byteMapper struct{}
 
 func (m *byteMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
@@ -191,6 +246,18 @@ func (m *byteMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
 
 func (m *byteMapper) dest(reflect.Type) (any, error) {
 	return &[]byte{}, nil
+}
+
+func (m *byteMapper) value(p any) (any, error) {
+	switch v := p.(type) {
+	case *[]byte:
+		if *v == nil {
+			return nil, nil
+		}
+		return *v, nil
+	default:
+		return nil, fmt.Errorf("byteMapper: unsupported value type %v", v)
+	}
 }
 
 type dateMapper struct{}
@@ -203,14 +270,17 @@ func (m *dateMapper) dest(reflect.Type) (any, error) {
 	return new(sql.NullTime), nil
 }
 
-type int16Mapper struct{}
-
-func (m *int16Mapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
-	return &runtimev1.Type{Code: runtimev1.Type_CODE_INT16}, nil
-}
-
-func (m *int16Mapper) dest(reflect.Type) (any, error) {
-	return new(sql.NullInt16), nil
+func (m *dateMapper) value(p any) (any, error) {
+	switch v := p.(type) {
+	case *sql.NullTime:
+		vl, err := v.Value()
+		if err != nil {
+			return nil, err
+		}
+		return vl, nil
+	default:
+		return nil, fmt.Errorf("dateMapper: unsupported value type %v", v)
+	}
 }
 
 type jsonMapper struct{}
@@ -221,4 +291,17 @@ func (m *jsonMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
 
 func (m *jsonMapper) dest(reflect.Type) (any, error) {
 	return new(sql.NullString), nil
+}
+
+func (m *jsonMapper) value(p any) (any, error) {
+	switch v := p.(type) {
+	case *sql.NullString:
+		vl, err := v.Value()
+		if err != nil {
+			return nil, err
+		}
+		return vl, nil
+	default:
+		return nil, fmt.Errorf("jsonMapper: unsupported value type %v", v)
+	}
 }
