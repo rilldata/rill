@@ -398,9 +398,9 @@ func newURLRegistry(opts *Options) *externalURLs {
 	}
 }
 
-func (u *externalURLs) reportOpen(org, project, report, executionTime string) string {
+func (u *externalURLs) reportOpen(org, project, report string, executionTime time.Time) string {
 	reportURL := urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report, "open")
-	reportURL += fmt.Sprintf("?execution_time=%s", executionTime)
+	reportURL += fmt.Sprintf("?execution_time=%s", executionTime.UTC().Format(time.RFC3339))
 	return reportURL
 }
 

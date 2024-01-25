@@ -1,9 +1,12 @@
 package drivers
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type AdminService interface {
-	GetReportMetadata(ctx context.Context, reportName string, annotations map[string]string, executionTime string) (*ReportMetadata, error)
+	GetReportMetadata(ctx context.Context, reportName string, annotations map[string]string, executionTime time.Time) (*ReportMetadata, error)
 }
 
 type ReportMetadata struct {

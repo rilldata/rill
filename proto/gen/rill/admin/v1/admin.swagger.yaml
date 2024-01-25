@@ -1454,6 +1454,7 @@ paths:
           in: query
           required: false
           type: string
+          format: date-time
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
