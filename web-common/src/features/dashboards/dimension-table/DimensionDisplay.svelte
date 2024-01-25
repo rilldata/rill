@@ -37,6 +37,9 @@
       },
       activeMeasure: { activeMeasureName },
     },
+    actions: {
+      dimensionsFilter: { toggleDimensionValueSelection },
+    },
     metricsViewName,
     runtime,
   } = stateManagers;
@@ -55,9 +58,9 @@
   const timeControlsStore = useTimeControlStore(stateManagers);
 
   $: filterSet = getDimensionFilterWithSearch(
-    $dashboardStore?.filters,
+    $dashboardStore?.whereFilter,
     searchText,
-    dimensionName
+    dimensionName,
   );
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
@@ -68,7 +71,7 @@
       query: {
         enabled: $timeControlsStore.ready,
       },
-    }
+    },
   );
 
   $: unfilteredTotal = $totalsQuery?.data?.data?.[$activeMeasureName] ?? 0;
@@ -83,25 +86,29 @@
       query: {
         enabled: $timeControlsStore.ready && !!filterSet,
       },
-    }
+    },
   );
 
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
-    $selectedDimensionValueNames.includes(row[dimensionColumnName] as string)
+    $selectedDimensionValueNames.includes(row[dimensionColumnName] as string),
   );
 
   function onSelectItem(event) {
-    const label = tableRows[event.detail][dimensionColumnName] as string;
-    cancelDashboardQueries(queryClient, $metricsViewName);
-    metricsExplorerStore.toggleFilter($metricsViewName, dimensionName, label);
+    const label = tableRows[event.detail.index][dimensionColumnName] as string;
+    toggleDimensionValueSelection(
+      dimensionName,
+      label,
+      false,
+      event.detail.meta,
+    );
   }
 
   function toggleComparisonDimension(dimensionName, isBeingCompared) {
     metricsExplorerStore.setComparisonDimension(
       $metricsViewName,
-      isBeingCompared ? undefined : dimensionName
+      isBeingCompared ? undefined : dimensionName,
     );
   }
 
@@ -113,7 +120,7 @@
       metricsExplorerStore.deselectItemsInFilter(
         $metricsViewName,
         dimensionName,
-        labels
+        labels,
       );
 
       notifications.send({
@@ -124,7 +131,7 @@
       const newValuesSelected = metricsExplorerStore.selectItemsInFilter(
         $metricsViewName,
         dimensionName,
-        labels
+        labels,
       );
       notifications.send({
         message: `Added ${newValuesSelected} items to filter`,

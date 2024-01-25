@@ -19,7 +19,7 @@ export function getFilePathFromPagePath(path: string): string {
 
 export function getFilePathFromNameAndType(
   name: string,
-  type: EntityType
+  type: EntityType,
 ): string {
   switch (type) {
     case EntityType.Table:
@@ -30,7 +30,7 @@ export function getFilePathFromNameAndType(
       return `/dashboards/${name}.yaml`;
     default:
       throw new Error(
-        "type must be either 'Table', 'Model', or 'MetricsDefinition'"
+        "type must be either 'Table', 'Model', or 'MetricsDefinition'",
       );
   }
 }
@@ -38,7 +38,7 @@ export function getFilePathFromNameAndType(
 // TODO: find a solution that works across backend and frontend
 export function getFileAPIPathFromNameAndType(
   name: string,
-  type: EntityType
+  type: EntityType,
 ): string {
   switch (type) {
     case EntityType.Table:
@@ -49,7 +49,7 @@ export function getFileAPIPathFromNameAndType(
       return `dashboards/${name}.yaml`;
     default:
       throw new Error(
-        "type must be either 'Table', 'Model', or 'MetricsDefinition'"
+        "type must be either 'Table', 'Model', or 'MetricsDefinition'",
       );
   }
 }
@@ -72,7 +72,7 @@ export function getRouteFromName(name: string, type: EntityType): string {
       return `/dashboard/${name}`;
     default:
       throw new Error(
-        "type must be either 'Table', 'Model', or 'MetricsDefinition'"
+        "type must be either 'Table', 'Model', or 'MetricsDefinition'",
       );
   }
 }
@@ -87,7 +87,7 @@ export function getLabel(entityType: EntityType) {
       return "dashboard";
     default:
       throw new Error(
-        "type must be either 'Table', 'Model', or 'MetricsDefinition'"
+        "type must be either 'Table', 'Model', or 'MetricsDefinition'",
       );
   }
 }

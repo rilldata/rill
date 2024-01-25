@@ -34,7 +34,7 @@
   $: expandedMeasureName = $metricsExplorer?.expandedMeasureName;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
-    metricViewName
+    metricViewName,
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
@@ -45,7 +45,7 @@
   // to animate the extra padding that needs to be added to the
   // dashboard container when the navigation pane is collapsed
   const navigationVisibilityTween = getContext(
-    "rill:app:navigation-visibility-tween"
+    "rill:app:navigation-visibility-tween",
   ) as Tweened<number>;
 
   const { observedNode, listenToNodeResize } =
@@ -70,7 +70,7 @@
   use:listenToNodeResize
 >
   <div
-    class="border-b mb-3 w-full flex flex-col"
+    class="border-b mb-3 w-full flex flex-col bg-slate-50"
     id="header"
     style:padding-left={leftSide}
   >

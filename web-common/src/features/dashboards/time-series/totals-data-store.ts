@@ -1,4 +1,5 @@
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   createQueryServiceMetricsViewAggregation,
@@ -11,7 +12,7 @@ export function createTotalsForMeasure(
   ctx: StateManagers,
   measures,
   isComparison = false,
-  noFilter = false
+  noFilter = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse> {
   return derived(
     [
@@ -26,7 +27,9 @@ export function createTotalsForMeasure(
         metricsViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),
-          filter: noFilter ? { include: [], exclude: [] } : dashboard?.filters,
+          where: noFilter
+            ? undefined
+            : sanitiseExpression(dashboard.whereFilter),
           timeStart: isComparison
             ? timeControls?.comparisonTimeStart
             : timeControls.timeStart,
@@ -39,7 +42,7 @@ export function createTotalsForMeasure(
             enabled: !!timeControls.ready && !!ctx.dashboardStore,
             queryClient: ctx.queryClient,
           },
-        }
-      ).subscribe(set)
+        },
+      ).subscribe(set),
   );
 }

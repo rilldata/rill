@@ -44,7 +44,7 @@
         queryKey: ["dashboardAllRowsCt", metricViewName],
         enabled: true,
       },
-    }
+    },
   );
 
   $: dashboardStore = useDashboardStore(metricViewName);
@@ -86,7 +86,7 @@
         ],
         enabled: $timeControlsStore.ready && !!$dashboardStore?.filters,
       },
-    }
+    },
   );
 
   let label = "";
@@ -94,7 +94,7 @@
   $: {
     if ($totalsQuery.data && $filteredTotalsQuery.data) {
       label = `${formatCompactInteger(
-        $filteredTotalsQuery.data.data?.count
+        $filteredTotalsQuery.data.data?.count,
       )} of ${formatCompactInteger($totalsQuery.data.data?.count)} rows`;
     }
   }

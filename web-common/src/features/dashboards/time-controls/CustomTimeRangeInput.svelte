@@ -45,7 +45,7 @@
       Intl.DateTimeFormat().resolvedOptions().locale,
       {
         timeZone: "UTC",
-      }
+      },
     );
   }
 
@@ -55,7 +55,7 @@
 
   export function getISOStringFromDate(
     date: string,
-    timeZone?: string
+    timeZone?: string,
   ): string {
     return parseLocaleStringDate(date, timeZone).toISOString();
   }
@@ -63,7 +63,7 @@
   function validateTimeRange(
     start: Date,
     end: Date,
-    minTimeGrain: V1TimeGrain
+    minTimeGrain: V1TimeGrain,
   ): string | undefined {
     const allowedTimeGrains = getAllowedTimeGrains(start, end);
     const allowedMaxGrain = allowedTimeGrains[allowedTimeGrains.length - 1];
@@ -87,9 +87,9 @@
       getOffset(
         new Date(getISOStringFromDate(end, "UTC")),
         Period.DAY,
-        TimeOffsetType.ADD
+        TimeOffsetType.ADD,
       ),
-      minTimeGrain
+      minTimeGrain,
     );
   }
 
@@ -103,7 +103,7 @@
     let endDate = getOffset(
       new Date(getISOStringFromDate(end, "UTC")),
       Period.DAY,
-      TimeOffsetType.ADD
+      TimeOffsetType.ADD,
     ).toISOString();
 
     startDate = removeZoneOffset(new Date(startDate), zone).toISOString();

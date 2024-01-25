@@ -38,7 +38,7 @@
       BehaviourEventAction.SourceAdd,
       BehaviourEventMedium.Button,
       $appScreen,
-      MetricsEventSpace.LeftPanel
+      MetricsEventSpace.LeftPanel,
     );
   };
 
@@ -47,7 +47,7 @@
       $runtime.instanceId,
       $modelNames?.data ?? [],
       tableName,
-      tableName
+      tableName,
     );
     // TODO: fire telemetry
   };

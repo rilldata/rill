@@ -13,7 +13,7 @@
   export let textClass = defaultChipColors.textClass;
 
   const tooltipSuppression = getContext(
-    "rill:app:childRequestedTooltipSuppression"
+    "rill:app:childRequestedTooltipSuppression",
   ) as Writable<boolean>;
   const dispatch = createEventDispatcher();
 

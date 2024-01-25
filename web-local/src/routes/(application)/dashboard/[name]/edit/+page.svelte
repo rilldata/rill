@@ -33,7 +33,7 @@
         // this will ensure that any changes done outside our app is pulled in.
         refetchOnWindowFocus: true,
       },
-    }
+    },
   );
 
   $: yaml = $fileQuery.data?.blob || "";

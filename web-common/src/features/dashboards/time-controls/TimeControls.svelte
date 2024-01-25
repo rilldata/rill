@@ -48,7 +48,7 @@
 
   $: hasTimeSeriesQuery = useModelHasTimeSeries(
     $runtime.instanceId,
-    metricViewName
+    metricViewName,
   );
   $: hasTimeSeries = $hasTimeSeriesQuery?.data;
 
@@ -87,7 +87,7 @@
   let timeGrainOptions: TimeGrain[];
   $: timeGrainOptions = getAllowedTimeGrains(
     new Date($timeControlsStore.timeStart),
-    new Date($timeControlsStore.timeEnd)
+    new Date($timeControlsStore.timeEnd),
   );
 
   function onSelectTimeRange(name: TimeRangePreset, start: Date, end: Date) {
@@ -99,7 +99,7 @@
 
     const defaultTimeGrain = getDefaultTimeGrain(
       baseTimeRange.start,
-      baseTimeRange.end
+      baseTimeRange.end,
     ).grain;
 
     // Get valid option for the new time range
@@ -107,19 +107,25 @@
       $metaQuery.data,
       baseTimeRange,
       $dashboardStore.selectedComparisonTimeRange?.name,
-      $timeControlsStore.allTimeRange
+      $timeControlsStore.allTimeRange,
     );
 
-    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, defaultTimeGrain, {
-      name: validComparison,
-    } as DashboardTimeControls);
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      baseTimeRange,
+      defaultTimeGrain,
+      $dashboardStore?.showTimeComparison
+        ? ({
+            name: validComparison,
+          } as DashboardTimeControls)
+        : undefined,
+    );
   }
 
   function onSelectTimeGrain(timeGrain: V1TimeGrain) {
     makeTimeSeriesTimeRangeAndUpdateAppState(
       baseTimeRange,
       timeGrain,
-      $dashboardStore?.selectedComparisonTimeRange
+      $dashboardStore?.selectedComparisonTimeRange,
     );
   }
 
@@ -131,7 +137,7 @@
   function onSelectComparisonRange(
     name: TimeComparisonOption,
     start: Date,
-    end: Date
+    end: Date,
   ) {
     metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
       name,
@@ -147,7 +153,7 @@
      * time range. Otherwise, the current comparison state should continue to be the
      * source of truth.
      */
-    comparisonTimeRange: DashboardTimeControls | undefined
+    comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
     cancelDashboardQueries(queryClient, metricViewName);
 
@@ -155,14 +161,14 @@
       metricViewName,
       timeRange,
       timeGrain,
-      comparisonTimeRange
+      comparisonTimeRange,
     );
   }
 </script>
 
 <div class="flex flex-row items-center gap-x-1">
   {#if !hasTimeSeries}
-    <NoTimeDimensionCTA {metricViewName} modelName={$metaQuery?.data?.table} />
+    <NoTimeDimensionCTA />
   {:else if allTimeRange?.start}
     <TimeRangeSelector
       {metricViewName}

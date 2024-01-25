@@ -17,7 +17,7 @@ function newEditorView(content: string, parent: HTMLElement) {
 /** convenience function for selecting the gutter elements */
 function getLines(container: HTMLElement) {
   return container.querySelectorAll(
-    `.cm-content > .cm-line`
+    `.cm-content > .cm-line`,
   ) as NodeListOf<HTMLElement>;
 }
 
@@ -30,7 +30,7 @@ describe("Indent Guide Extension (CodeMirror)", () => {
   it("renders indent guides for different levels of indentation", () => {
     const view = newEditorView("test", container);
     let guides = Array.from(getLines(container)).map((line) =>
-      Array.from(line.querySelectorAll(".cm-indent-guide"))
+      Array.from(line.querySelectorAll(".cm-indent-guide")),
     );
     // one line
     expect(guides.length).toBe(1);
@@ -47,7 +47,7 @@ describe("Indent Guide Extension (CodeMirror)", () => {
     });
 
     guides = Array.from(getLines(container)).map((line) =>
-      Array.from(line.querySelectorAll(".cm-indent-guide"))
+      Array.from(line.querySelectorAll(".cm-indent-guide")),
     );
     // one line starting with space
     // one indent guide
@@ -63,7 +63,7 @@ describe("Indent Guide Extension (CodeMirror)", () => {
       },
     });
     guides = Array.from(getLines(container)).map((line) =>
-      Array.from(line.querySelectorAll(".cm-indent-guide"))
+      Array.from(line.querySelectorAll(".cm-indent-guide")),
     );
     // one line starting with space
     // one indent guide
@@ -79,7 +79,7 @@ describe("Indent Guide Extension (CodeMirror)", () => {
       },
     });
     guides = Array.from(getLines(container)).map((line) =>
-      Array.from(line.querySelectorAll(".cm-indent-guide"))
+      Array.from(line.querySelectorAll(".cm-indent-guide")),
     );
     // one line starting with space
     // one indent guide
@@ -95,7 +95,7 @@ describe("Indent Guide Extension (CodeMirror)", () => {
       },
     });
     guides = Array.from(getLines(container)).map((line) =>
-      Array.from(line.querySelectorAll(".cm-indent-guide"))
+      Array.from(line.querySelectorAll(".cm-indent-guide")),
     );
     // one line starting with space
     // one indent guide
@@ -113,7 +113,7 @@ describe("Indent Guide Extension (CodeMirror)", () => {
       },
     });
     guides = Array.from(getLines(container)).map((line) =>
-      Array.from(line.querySelectorAll(".cm-indent-guide"))
+      Array.from(line.querySelectorAll(".cm-indent-guide")),
     );
     expect(guides[0]?.length).toBe(1);
     expect(guides[1]?.length).toBe(3);

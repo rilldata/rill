@@ -23,7 +23,7 @@
 
   $: numSelected = selectedItems.reduce(
     (sel, items) => sel + items.filter((i) => i).length,
-    0
+    0,
   );
 
   $: singleSelection = numSelected === 1;
@@ -32,16 +32,17 @@
     numSelected -
     menuGroups.reduce(
       (sel, mg) => sel + mg.items.filter((i) => i.selected).length,
-      0
+      0,
     );
 
   $: selectableCount = selectableGroups.reduce(
     (sel, g) => sel + g.items.length,
-    0
+    0,
   );
+
   $: searchResultCount = menuGroups.reduce(
     (sel, mg) => sel + mg.items.length,
-    0
+    0,
   );
 
   $: allToggleText =

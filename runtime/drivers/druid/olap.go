@@ -3,10 +3,18 @@ package druid
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/eapache/go-resiliency/retrier"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+)
+
+const (
+	numRetries = 3
+	retryWait  = 300 * time.Millisecond
 )
 
 var _ drivers.OLAPStore = &connection{}
@@ -75,17 +83,25 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
 	}
 
-	rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)
+	var rows *sqlx.Rows
+	var err error
+
+	re := retrier.New(retrier.ExponentialBackoff(numRetries, retryWait), retryErrClassifier{})
+	err = re.RunCtx(ctx, func(ctx2 context.Context) error {
+		rows, err = c.db.QueryxContext(ctx2, stmt.Query, stmt.Args...)
+		return err
+	})
+
 	if err != nil {
 		if cancelFunc != nil {
 			cancelFunc()
 		}
-
 		return nil, err
 	}
 
 	schema, err := rowsToSchema(rows)
 	if err != nil {
+		rows.Close()
 		if cancelFunc != nil {
 			cancelFunc()
 		}
@@ -301,4 +317,19 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	}
 
 	return t, nil
+}
+
+// retryErrClassifier classifies 429 errors as retryable and all other errors as non retryable
+type retryErrClassifier struct{}
+
+func (retryErrClassifier) Classify(err error) retrier.Action {
+	if err == nil {
+		return retrier.Succeed
+	}
+
+	if strings.Contains(err.Error(), "QueryCapacityExceededException") {
+		return retrier.Retry
+	}
+
+	return retrier.Fail
 }

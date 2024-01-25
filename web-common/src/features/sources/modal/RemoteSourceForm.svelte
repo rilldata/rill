@@ -92,7 +92,7 @@
         message={humanReadableErrorMessage(
           connector.name,
           rpcError.code,
-          rpcError.message
+          rpcError.message,
         )}
       />
     {/if}

@@ -109,7 +109,7 @@
       // Focus on the new input element
       setTimeout(() => {
         const input = document.getElementById(
-          `recipients.${$form["recipients"].length - 1}.email`
+          `recipients.${$form["recipients"].length - 1}.email`,
         );
         input?.focus();
       }, 0);

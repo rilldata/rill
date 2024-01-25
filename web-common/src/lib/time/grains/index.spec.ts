@@ -20,7 +20,7 @@ const allowedGrainTests = [
     test: "should return TIME_GRAIN_MINUTE and TIME_GRAIN_HOUR if otherwise < 6 hours",
     start: new Date(0),
     end: new Date(
-      6 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration) - 1
+      6 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration) - 1,
     ),
     expected: [TIME_GRAIN.TIME_GRAIN_MINUTE, TIME_GRAIN.TIME_GRAIN_HOUR],
   },
@@ -41,7 +41,7 @@ const allowedGrainTests = [
     test: "should return TIME_GRAIN_HOUR, TIME_GRAIN_DAY, and TIME_GRAIN_WEEK if otherwise < 30 days",
     start: new Date(0),
     end: new Date(
-      durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30 - 1
+      durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30 - 1,
     ),
     expected: [
       TIME_GRAIN.TIME_GRAIN_HOUR,
@@ -53,7 +53,7 @@ const allowedGrainTests = [
     test: "should return TIME_GRAIN_WEEK, TIME_GRAIN_MONTH, and TIME_GRAIN_YEAR if otherwise < 90 days",
     start: new Date(0),
     end: new Date(
-      durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 3 * 30 - 1
+      durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 3 * 30 - 1,
     ),
     expected: [
       TIME_GRAIN.TIME_GRAIN_DAY,
@@ -76,7 +76,7 @@ const allowedGrainTests = [
     test: "should return TIME_GRAIN_WEEK, TIME_GRAIN_MONTH, TIME_GRAIN_QUARTER and TIME_GRAIN_YEAR if otherwise < 10 years",
     start: new Date(0),
     end: new Date(
-      10 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration) - 1
+      10 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration) - 1,
     ),
     expected: [
       TIME_GRAIN.TIME_GRAIN_WEEK,
@@ -92,7 +92,7 @@ const defaultTimeGrainTests = [
     test: "should return TIME_GRAIN_MINUTE for < 2 hours",
     start: new Date(0),
     end: new Date(
-      2 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration) - 1
+      2 * durationToMillis(TIME_GRAIN.TIME_GRAIN_HOUR.duration) - 1,
     ),
     expected: TIME_GRAIN.TIME_GRAIN_MINUTE,
   },
@@ -106,7 +106,7 @@ const defaultTimeGrainTests = [
     test: "should return TIME_GRAIN_DAY if otherwise < 7 days",
     start: new Date(0),
     end: new Date(
-      3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30 - 1
+      3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_DAY.duration) * 30 - 1,
     ),
     expected: TIME_GRAIN.TIME_GRAIN_DAY,
   },
@@ -114,7 +114,7 @@ const defaultTimeGrainTests = [
     test: "should return TIME_GRAIN_WEEK if otherwise < 3 years",
     start: new Date(0),
     end: new Date(
-      3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration) - 1
+      3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration) - 1,
     ),
     expected: TIME_GRAIN.TIME_GRAIN_WEEK,
   },
@@ -122,7 +122,7 @@ const defaultTimeGrainTests = [
     test: "should return TIME_GRAIN_MONTH if otherwise >= 3 years",
     start: new Date(0),
     end: new Date(
-      3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration) + 1
+      3 * durationToMillis(TIME_GRAIN.TIME_GRAIN_YEAR.duration) + 1,
     ),
     expected: TIME_GRAIN.TIME_GRAIN_MONTH,
   },
@@ -133,18 +133,21 @@ const timeGrainOptions: TimeGrain[] = [
     grain: V1TimeGrain.TIME_GRAIN_DAY,
     label: "day",
     duration: Period.DAY,
+    d3format: "",
     formatDate: {},
   },
   {
     grain: V1TimeGrain.TIME_GRAIN_WEEK,
     label: "week",
     duration: Period.WEEK,
+    d3format: "",
     formatDate: {},
   },
   {
     grain: V1TimeGrain.TIME_GRAIN_MONTH,
     label: "month",
     duration: Period.MONTH,
+    d3format: "",
     formatDate: {},
   },
 ];
@@ -181,7 +184,7 @@ describe("getAllowedTimeGrains", () => {
     it(testCase.test, () => {
       const allowedTimeGrains = getAllowedTimeGrains(
         testCase.start,
-        testCase.end
+        testCase.end,
       );
       expect(allowedTimeGrains).toEqual(testCase.expected);
     });
@@ -193,7 +196,7 @@ describe("getDefaultTimeGrain", () => {
     it(testCase.test, () => {
       const defaultTimeGrain = getDefaultTimeGrain(
         testCase.start,
-        testCase.end
+        testCase.end,
       );
       expect(defaultTimeGrain).toEqual(testCase.expected);
     });
@@ -206,7 +209,7 @@ describe("findValidTimeGrain", () => {
       const defaultTimeGrain = findValidTimeGrain(
         testCase.timeGrain,
         timeGrainOptions,
-        testCase.minTimeGrain
+        testCase.minTimeGrain,
       );
       expect(defaultTimeGrain).toEqual(testCase.expected);
     });

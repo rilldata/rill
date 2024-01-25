@@ -65,6 +65,8 @@ jobs:
 
           if [[ ${{ env.PUBLISH_NIGHTLY }} == 'true' ]]; then
             export NIGHTLY="--snapshot"
+            LATEST_TAG=$(git describe --tags $(git rev-list --tags --max-count=1))
+            echo "GORELEASER_CURRENT_TAG=${LATEST_TAG}" >> .release-env 
           fi
 
           docker run \
@@ -81,7 +83,7 @@ jobs:
               release ${NIGHTLY}
 
       - name: Authenticate GCS
-        uses: google-github-actions/auth@v0
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
 

@@ -1,15 +1,20 @@
+import {
+  createAndExpression,
+  matchExpressionByName,
+  filterExpressions,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
 import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
 import { roundToNearestTimeUnit } from "./round-to-nearest-time-unit";
 import { getDurationMultiple, getOffset } from "../../../lib/time/transforms";
 import { removeZoneOffset } from "../../../lib/time/timezone";
 import { TimeOffsetType } from "../../../lib/time/types";
-import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 /** sets extents to 0 if it makes sense; otherwise, inflates each extent component */
 export function niceMeasureExtents(
   [smallest, largest]: [number, number],
-  inflator: number
+  inflator: number,
 ) {
   if (smallest === 0 && largest === 0) {
     return [0, 1];
@@ -31,7 +36,7 @@ export function toComparisonKeys(d, offsetDuration: string, zone: string) {
       acc["comparison.ts_position"] = getOffset(
         acc["comparison.ts"],
         offsetDuration,
-        TimeOffsetType.ADD
+        TimeOffsetType.ADD,
       );
     } else {
       acc[`comparison.${key}`] = d[key];
@@ -44,7 +49,7 @@ export function prepareTimeSeries(
   original,
   comparison,
   timeGrainDuration: string,
-  zone: string
+  zone: string,
 ) {
   return original?.map((originalPt, i) => {
     const comparisonPt = comparison?.[i];
@@ -67,11 +72,11 @@ export function getBisectedTimeFromCordinates(
   scaleStore,
   accessor,
   data,
-  grainLabel
+  grainLabel,
 ) {
   const roundedValue = roundToNearestTimeUnit(
     scaleStore.invert(value),
-    grainLabel
+    grainLabel,
   );
   return bisectData(roundedValue, "center", accessor, data)[accessor];
 }
@@ -99,35 +104,18 @@ export function getOrderedStartEnd(start: Date, stop: Date) {
 
 export function getFilterForComparedDimension(
   dimensionName: string,
-  filters: V1MetricsViewFilter,
-  topListValues: string[]
+  filters: V1Expression,
+  topListValues: string[],
 ) {
   const includedValues = topListValues?.slice(0, 250);
 
-  const includeFilter = [...(filters?.include || [])];
-  // Check if dimension already exists in filter
-  const dimensionEntryIndex = includeFilter.findIndex(
-    (filter) => filter.name === dimensionName
+  let updatedFilter = filterExpressions(
+    filters,
+    (e) => !matchExpressionByName(e, dimensionName),
   );
-
-  if (dimensionEntryIndex >= 0) {
-    includeFilter[dimensionEntryIndex] = {
-      name: dimensionName,
-      in: [],
-    };
+  if (!updatedFilter) {
+    updatedFilter = createAndExpression([]);
   }
-
-  // Add dimension to filter set
-  const updatedFilter = {
-    ...filters,
-    include: [
-      ...includeFilter,
-      {
-        name: dimensionName,
-        in: [],
-      },
-    ],
-  };
 
   return { includedValues, updatedFilter };
 }

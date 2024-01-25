@@ -10,10 +10,6 @@ const alias: Alias = [
     replacement: "/src",
   },
   {
-    find: "@rilldata/web-local",
-    replacement: "/src",
-  },
-  {
     find: "@rilldata/web-common",
     replacement: "/../web-common/src",
   },

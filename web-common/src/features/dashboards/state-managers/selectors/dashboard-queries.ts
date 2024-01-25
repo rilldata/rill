@@ -1,3 +1,4 @@
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   QueryServiceMetricsViewComparisonBody,
   QueryServiceMetricsViewTotalsBody,
@@ -23,7 +24,7 @@ import { dimensionTableSearchString } from "./dimension-table";
  * is not undefined, ie then the dimension table is visible.
  */
 export function dimensionTableSortedQueryBody(
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): QueryServiceMetricsViewComparisonBody {
   const dimensionName = dashData.dashboard.selectedDimensionName;
   if (!dimensionName) {
@@ -42,12 +43,12 @@ export function dimensionTableSortedQueryBody(
     sortingSelectors.sortMeasure(dashData),
     sortingSelectors.sortType(dashData),
     sortingSelectors.sortedAscending(dashData),
-    filters
+    filters,
   );
 }
 
 export function dimensionTableTotalQueryBody(
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): QueryServiceMetricsViewTotalsBody {
   const dimensionName = dashData.dashboard.selectedDimensionName;
   if (!dimensionName) {
@@ -61,7 +62,7 @@ export function dimensionTableTotalQueryBody(
  * for a leaderboard for the given dimension.
  */
 export function leaderboardSortedQueryBody(
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): (dimensionName: string) => QueryServiceMetricsViewComparisonBody {
   return (dimensionName: string) =>
     prepareSortedQueryBody(
@@ -71,12 +72,12 @@ export function leaderboardSortedQueryBody(
       sortingSelectors.sortMeasure(dashData),
       sortingSelectors.sortType(dashData),
       sortingSelectors.sortedAscending(dashData),
-      getFiltersForOtherDimensions(dashData)(dimensionName)
+      getFiltersForOtherDimensions(dashData)(dimensionName),
     );
 }
 
 export function leaderboardSortedQueryOptions(
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): (dimensionName: string) => { query: { enabled: boolean } } {
   return (dimensionName: string) => {
     const sortedQueryEnabled =
@@ -91,18 +92,20 @@ export function leaderboardSortedQueryOptions(
 }
 
 export function leaderboardDimensionTotalQueryBody(
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): (dimensionName: string) => QueryServiceMetricsViewTotalsBody {
   return (dimensionName: string) => ({
     measureNames: [activeMeasureName(dashData)],
-    filter: getFiltersForOtherDimensions(dashData)(dimensionName),
+    where: sanitiseExpression(
+      getFiltersForOtherDimensions(dashData)(dimensionName),
+    ),
     timeStart: timeControlsState(dashData).timeStart,
     timeEnd: timeControlsState(dashData).timeEnd,
   });
 }
 
 export function leaderboardDimensionTotalQueryOptions(
-  dashData: DashboardDataSources
+  dashData: DashboardDataSources,
 ): (dimensionName: string) => { query: { enabled: boolean } } {
   return (dimensionName: string) => {
     return {

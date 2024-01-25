@@ -33,7 +33,6 @@
     createRuntimeServicePutFile,
     runtimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
-  import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
@@ -49,6 +48,16 @@
   $: modelNames = useModelFileNames(instanceId);
   $: dashboardNames = useDashboardFileNames(instanceId);
 
+  import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
+
+  const MetricsSourceSelectionError = (
+    errors: Array<V1ReconcileError> | undefined,
+  ): string => {
+    return (
+      errors?.find((error) => error?.propertyPath?.length === 0)?.message ?? ""
+    );
+  };
+
   const createDashboard = createRuntimeServicePutFile();
 
   let showMetricsDefs = true;
@@ -58,11 +67,11 @@
 
   async function getDashboardArtifact(
     instanceId: string,
-    metricViewName: string
+    metricViewName: string,
   ) {
     const filePath = getFilePathFromNameAndType(
       metricViewName,
-      EntityType.MetricsDefinition
+      EntityType.MetricsDefinition,
     );
     const resp = await runtimeServiceGetFile(instanceId, filePath);
     const metricYAMLString = resp.blob as string;
@@ -83,7 +92,7 @@
       instanceId,
       path: getFileAPIPathFromNameAndType(
         newDashboardName,
-        EntityType.MetricsDefinition
+        EntityType.MetricsDefinition,
       ),
       data: {
         blob: "",
@@ -100,7 +109,7 @@
 
     const dashboardData = getDashboardData(
       $fileArtifactsStore.entities,
-      dashboardName
+      dashboardName,
     );
     const sourceModelName = dashboardData.jsonRepresentation?.model as string;
 
@@ -111,7 +120,7 @@
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
       previousActiveEntity,
-      MetricsEventScreenName.Model
+      MetricsEventScreenName.Model,
     );
   };
 
@@ -124,7 +133,7 @@
       BehaviourEventMedium.Menu,
       MetricsEventSpace.LeftPanel,
       previousActiveEntity,
-      MetricsEventScreenName.MetricsDefinition
+      MetricsEventScreenName.MetricsDefinition,
     );
   };
 
@@ -133,13 +142,13 @@
 
     const dashboardData = getDashboardData(
       $fileArtifactsStore.entities,
-      dashboardName
+      dashboardName,
     );
     await deleteFileArtifact(
       instanceId,
       dashboardName,
       EntityType.MetricsDefinition,
-      $dashboardNames?.data ?? []
+      $dashboardNames?.data ?? [],
     );
 
     // redirect to model when metric is deleted
@@ -153,7 +162,7 @@
           BehaviourEventMedium.Menu,
           MetricsEventSpace.LeftPanel,
           MetricsEventScreenName.MetricsDefinition,
-          MetricsEventScreenName.Model
+          MetricsEventScreenName.Model,
         );
       } else {
         goto("/");
@@ -163,11 +172,11 @@
 
   const getDashboardData = (
     entities: Record<string, FileArtifactsData>,
-    name: string
+    name: string,
   ) => {
     const dashboardPath = getFilePathFromNameAndType(
       name,
-      EntityType.MetricsDefinition
+      EntityType.MetricsDefinition,
     );
     return entities[dashboardPath];
   };
@@ -195,7 +204,7 @@
     {#each $dashboardNames.data as dashboardName (dashboardName)}
       {@const dashboardData = getDashboardData(
         $fileArtifactsStore.entities,
-        dashboardName
+        dashboardName,
       )}
       <NavigationEntry
         showContextMenu={!$featureFlags.readOnly}
@@ -207,7 +216,7 @@
       >
         <svelte:fragment slot="menu-items">
           {@const selectionError = MetricsSourceSelectionError(
-            dashboardData?.errors
+            dashboardData?.errors,
           )}
           {@const hasSourceError =
             selectionError !== SourceModelValidationStatus.OK &&

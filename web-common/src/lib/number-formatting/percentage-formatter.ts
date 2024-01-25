@@ -33,8 +33,7 @@ export function formatMeasurePercentageDifference(value: number): NumberParts {
     };
   }
 
-  const factory = new PerRangeFormatter([], {
-    strategy: "perRange",
+  const factory = new PerRangeFormatter({
     rangeSpecs: [
       {
         minMag: -2,

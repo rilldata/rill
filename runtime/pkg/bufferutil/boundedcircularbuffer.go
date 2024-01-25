@@ -98,6 +98,21 @@ func (cb *BoundedCircularBuffer[T]) ReverseIterate(callback func(item Item[T]), 
 	}
 }
 
+// ReverseIterateUntil iterates over the buffer from oldest to newest until the callback function returns false, or it has
+// iterated over the entire buffer.
+func (cb *BoundedCircularBuffer[T]) ReverseIterateUntil(callback func(item Item[T]) bool) {
+	pos := cb.head
+	for i := 0; i < cb.count; i++ {
+		pos = (pos - 1) % cb.capacity
+		if pos < 0 {
+			pos += cb.capacity
+		}
+		if !callback(cb.data[pos]) {
+			return
+		}
+	}
+}
+
 func (cb *BoundedCircularBuffer[T]) Count() int {
 	return cb.count
 }

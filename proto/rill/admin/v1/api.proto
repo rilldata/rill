@@ -298,6 +298,14 @@ service AdminService {
     };
   }
 
+  // SudoUpdateAnnotations endpoint for superusers to update project annotations
+  rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/projects/annotations",
+      body: "*"
+    };
+  }
+
   // ListService returns all the services per organization
   rpc ListServices(ListServicesRequest) returns (ListServicesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/services"};
@@ -516,6 +524,7 @@ message GetProjectResponse {
 
 message SearchProjectNamesRequest {
   string name_pattern = 1;
+  map<string, string> annotations = 5;
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
@@ -809,6 +818,16 @@ message SudoUpdateUserQuotasRequest {
 
 message SudoUpdateUserQuotasResponse {
   User user = 1;
+}
+
+message SudoUpdateAnnotationsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  map<string, string> annotations = 3;
+}
+
+message SudoUpdateAnnotationsResponse {
+  Project project = 1;
 }
 
 message ListProjectMembersRequest {
@@ -1178,6 +1197,7 @@ message Project {
   string prod_deployment_id = 13;
   string frontend_url = 16;
   int64 prod_ttl_seconds = 18;
+  map<string, string> annotations = 20;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }

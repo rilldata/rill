@@ -23,7 +23,7 @@ type createDeploymentOptions struct {
 	ProjectID      string
 	Region         string
 	ProdBranch     string
-	ProdVariables  database.Variables
+	ProdVariables  map[string]string
 	ProdOLAPDriver string
 	ProdOLAPDSN    string
 	ProdSlots      int
@@ -278,6 +278,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			Region:               proj.Region,
 			ProdTTLSeconds:       proj.ProdTTLSeconds,
 			ProdDeploymentID:     nil,
+			Annotations:          proj.Annotations,
 		})
 		if err != nil {
 			return err
@@ -338,28 +339,33 @@ func (s *Service) openRuntimeClient(host, audience string) (*client.Client, erro
 }
 
 type deploymentAnnotations struct {
-	orgID    string
-	orgName  string
-	projID   string
-	projName string
+	orgID           string
+	orgName         string
+	projID          string
+	projName        string
+	projAnnotations map[string]string
 }
 
 func newDeploymentAnnotations(org *database.Organization, proj *database.Project) deploymentAnnotations {
 	return deploymentAnnotations{
-		orgID:    org.ID,
-		orgName:  org.Name,
-		projID:   proj.ID,
-		projName: proj.Name,
+		orgID:           org.ID,
+		orgName:         org.Name,
+		projID:          proj.ID,
+		projName:        proj.Name,
+		projAnnotations: proj.Annotations,
 	}
 }
 
 func (da *deploymentAnnotations) toMap() map[string]string {
-	return map[string]string{
-		"organization_id":   da.orgID,
-		"organization_name": da.orgName,
-		"project_id":        da.projID,
-		"project_name":      da.projName,
+	res := make(map[string]string, len(da.projAnnotations)+4)
+	for k, v := range da.projAnnotations {
+		res[k] = v
 	}
+	res["organization_id"] = da.orgID
+	res["organization_name"] = da.orgName
+	res["project_id"] = da.projID
+	res["project_name"] = da.projName
+	return res
 }
 
 func defaultModelMaterialize(vars map[string]string) (bool, error) {

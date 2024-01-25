@@ -28,7 +28,7 @@
     <!-- Project name -->
     <h2
       class="text-gray-700 font-medium text-lg text-center px-4 {doesProjectNameIncludeUnderscores(
-        project
+        project,
       )
         ? 'break-all'
         : 'break-words'}"

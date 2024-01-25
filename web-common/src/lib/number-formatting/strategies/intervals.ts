@@ -24,10 +24,8 @@ const timeUnits = {
   y: "y",
 };
 
-// TODO: Rewrite this to use the sample and provided options
 export class IntervalFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterRangeSpecsStrategy;
-  initialSample: number[];
 
   stringFormat(x: number): string {
     return formatMsInterval(x);
@@ -79,7 +77,7 @@ export function formatMsInterval(ms: number): string {
       // THIS SHOULD NEVER HAPPEN, any negative values should
       // have been made positive above.
       console.warn(
-        `formatMsInterval: negative value ${ms} was not converted to positive.`
+        `formatMsInterval: negative value ${ms} was not converted to positive.`,
       );
       return "0 ms";
     case ms === 0:
@@ -114,7 +112,7 @@ export function formatMsInterval(ms: number): string {
  */
 export function formatMsToDuckDbIntervalString(
   ms: number,
-  style: "short" | "units" | "colon" = "short"
+  style: "short" | "units" | "colon" = "short",
 ): string {
   let neg = "";
   if (ms < 0) {
@@ -135,7 +133,7 @@ export function formatMsToDuckDbIntervalString(
   const years = Math.floor(ms / MS_PER_YEAR);
   const months = Math.floor((ms - years * MS_PER_YEAR) / MS_PER_MONTH);
   const days = Math.floor(
-    (ms - years * MS_PER_YEAR - months * MS_PER_MONTH) / MS_PER_DAY
+    (ms - years * MS_PER_YEAR - months * MS_PER_MONTH) / MS_PER_DAY,
   );
 
   const date = new Date(ms);
@@ -173,7 +171,7 @@ function formatUnitsHMS(
   m: number,
   s: number,
   ms: number,
-  neg: string
+  neg: string,
 ) {
   return [
     [h, timeUnits.h],
@@ -200,7 +198,7 @@ function formatShortHMS(
   m: number,
   s: number,
   msec: number,
-  neg: string
+  neg: string,
 ) {
   const string1 = formatColonHMS(h, m, s + msec / 1000, neg);
   const string2 = formatUnitsHMS(h, m, s, msec, neg);

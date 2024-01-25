@@ -9,9 +9,9 @@ export function removeIfExists<T>(array: Array<T>, checker: (e: T) => boolean) {
 
 export function getMapFromArray<T, K>(
   array: Array<T>,
-  keyGetter: (entity: T) => K
+  keyGetter: (entity: T) => K,
 ): Map<K, T> {
-  const map = new Map();
+  const map = new Map<K, T>();
   for (const entity of array) {
     map.set(keyGetter(entity), entity);
   }

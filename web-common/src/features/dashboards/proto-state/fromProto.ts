@@ -1,5 +1,7 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import { FromProtoOperationMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
+import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   DashboardTimeControls,
@@ -9,7 +11,7 @@ import {
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
-import type { MetricsViewFilter_Cond } from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
+import type { Expression } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
 import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
   DashboardState,
@@ -17,6 +19,7 @@ import {
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
+  V1Expression,
   V1MetricsView,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
@@ -40,17 +43,17 @@ const LeaderboardContextColumnReverseMap: Record<
 
 export function getDashboardStateFromUrl(
   urlState: string,
-  metricsView: V1MetricsView
+  metricsView: V1MetricsView,
 ): Partial<MetricsExplorerEntity> {
   return getDashboardStateFromProto(
     base64ToProto(decodeURIComponent(urlState)),
-    metricsView
+    metricsView,
   );
 }
 
 export function getDashboardStateFromProto(
   binary: Uint8Array,
-  metricsView: V1MetricsView
+  metricsView: V1MetricsView,
 ): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
   const entity: Partial<MetricsExplorerEntity> = {
@@ -61,13 +64,16 @@ export function getDashboardStateFromProto(
   };
 
   if (dashboard.filters) {
-    entity.filters ??= {};
-    entity.filters.include = fromFiltersProto(dashboard.filters.include);
-    entity.filters.exclude = fromFiltersProto(dashboard.filters.exclude);
+    entity.whereFilter = convertFilterToExpression(dashboard.filters);
+  } else if (dashboard.where) {
+    entity.whereFilter = fromExpressionProto(dashboard.where);
+  }
+  if (dashboard.having) {
+    entity.havingFilter = fromExpressionProto(dashboard.having);
   }
   if (dashboard.compareTimeRange) {
     entity.selectedComparisonTimeRange = fromTimeRangeProto(
-      dashboard.compareTimeRange
+      dashboard.compareTimeRange,
     );
     // backwards compatibility
     correctComparisonTimeRange(entity.selectedComparisonTimeRange);
@@ -83,10 +89,10 @@ export function getDashboardStateFromProto(
 
   if (dashboard.scrubRange) {
     entity.selectedScrubRange = fromTimeRangeProto(
-      dashboard.scrubRange
+      dashboard.scrubRange,
     ) as ScrubRange;
     entity.lastDefinedScrubRange = fromTimeRangeProto(
-      dashboard.scrubRange
+      dashboard.scrubRange,
     ) as ScrubRange;
   }
 
@@ -118,7 +124,7 @@ export function getDashboardStateFromProto(
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
     entity.visibleMeasureKeys = new Set(
-      metricsView.measures?.map((measure) => measure.name) ?? []
+      metricsView.measures?.map((measure) => measure.name) ?? [],
     ) as Set<string>;
   } else if (dashboard.visibleMeasures) {
     entity.allMeasuresVisible = false;
@@ -128,7 +134,7 @@ export function getDashboardStateFromProto(
   if (dashboard.allDimensionsVisible) {
     entity.allDimensionsVisible = true;
     entity.visibleDimensionKeys = new Set(
-      metricsView.dimensions?.map((measure) => measure.name) ?? []
+      metricsView.dimensions?.map((measure) => measure.name) ?? [],
     ) as Set<string>;
   } else if (dashboard.visibleDimensions) {
     entity.allDimensionsVisible = false;
@@ -154,20 +160,31 @@ export function base64ToProto(message: string) {
   return protoBase64.dec(message);
 }
 
-function fromFiltersProto(conditions: Array<MetricsViewFilter_Cond>) {
-  return conditions.map((condition) => {
-    return {
-      name: condition.name,
-      ...(condition.like?.length ? { like: condition.like } : {}),
-      ...(condition.in?.length
-        ? {
-            in: condition.in.map((v) =>
-              v.kind.case === "nullValue" ? null : v.kind.value
-            ),
-          }
-        : {}),
-    };
-  });
+function fromExpressionProto(expression: Expression): V1Expression | undefined {
+  switch (expression.expression.case) {
+    case "ident":
+      return {
+        ident: expression.expression.value,
+      };
+
+    case "val":
+      return {
+        val:
+          expression.expression.value.kind.case === "nullValue"
+            ? null
+            : expression.expression.value.kind.value,
+      };
+
+    case "cond":
+      return {
+        cond: {
+          op: FromProtoOperationMap[expression.expression.value.op],
+          exprs: expression.expression.value.exprs
+            .map((e) => fromExpressionProto(e))
+            .filter((e) => e !== undefined) as V1Expression[],
+        },
+      };
+  }
 }
 
 function fromTimeRangeProto(timeRange: DashboardTimeRange) {
@@ -190,7 +207,7 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
 }
 
 function correctComparisonTimeRange(
-  comparisonTimeRange: DashboardTimeControls
+  comparisonTimeRange: DashboardTimeControls,
 ) {
   switch (comparisonTimeRange.name as string) {
     case "CONTIGUOUS":

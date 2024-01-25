@@ -1,4 +1,4 @@
-import type { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type {
   SortDirection,
   SortType,
@@ -7,7 +7,10 @@ import type {
   DashboardTimeControls,
   ScrubRange,
 } from "@rilldata/web-common/lib/time/types";
-import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
+import type {
+  V1Expression,
+  V1MetricsViewFilter,
+} from "@rilldata/web-common/runtime-client";
 
 export interface MetricsExplorerEntity {
   name: string;
@@ -78,12 +81,20 @@ export interface MetricsExplorerEntity {
   sortDirection: SortDirection;
 
   filters: V1MetricsViewFilter;
+  whereFilter: V1Expression;
+  havingFilter: V1Expression;
 
   /**
    * stores whether a dimension is in include/exclude filter mode
    * false/absence = include, true = exclude
    */
   dimensionFilterExcludeMode: Map<string, boolean>;
+
+  /**
+   * Used to add a dropdown for newly added dimension/measure filters.
+   * Such filter will not have an entry in where/having expression objects.
+   */
+  temporaryFilterName: string | null;
 
   /**
    * user selected time range
@@ -126,6 +137,13 @@ export interface MetricsExplorerEntity {
   leaderboardContextColumn: LeaderboardContextColumn;
 
   /**
+   * Width of each context column. Needs to be reset to default
+   * when changing context column or switching between leaderboard
+   * and dimension detail table
+   */
+  contextColumnWidths: ContextColWidths;
+
+  /**
    * The name of the dimension that is currently shown in the dimension
    * detail table. If this is undefined, then the dimension detail table
    * is not shown.
@@ -134,3 +152,15 @@ export interface MetricsExplorerEntity {
 
   proto?: string;
 }
+
+export type ContextColWidths = {
+  [LeaderboardContextColumn.DELTA_ABSOLUTE]: number;
+  [LeaderboardContextColumn.DELTA_PERCENT]: number;
+  [LeaderboardContextColumn.PERCENT]: number;
+};
+
+export const contextColWidthDefaults: ContextColWidths = {
+  [LeaderboardContextColumn.DELTA_ABSOLUTE]: 56,
+  [LeaderboardContextColumn.DELTA_PERCENT]: 44,
+  [LeaderboardContextColumn.PERCENT]: 44,
+};

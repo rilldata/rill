@@ -7,7 +7,7 @@
   import { getDashboardsForProject } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import ProjectErrored from "@rilldata/web-admin/features/projects/ProjectErrored.svelte";
-  import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/selectors";
+  import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/status/selectors";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
@@ -56,7 +56,7 @@
         getRuntimeServiceGetResourceQueryKey(instanceId, {
           "name.name": dashboardName,
           "name.kind": ResourceKind.MetricsView,
-        })
+        }),
       );
     }
   }
@@ -64,7 +64,7 @@
   async function getDashboardsAndInvalidate() {
     const dashboardListings = await getDashboardsForProject($project.data);
     const dashboardNames = dashboardListings.map(
-      (listing) => listing.meta.name.name
+      (listing) => listing.meta.name.name,
     );
     return invalidateDashboardsQueries(queryClient, dashboardNames);
   }

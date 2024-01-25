@@ -1,3 +1,7 @@
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { describe, it, expect } from "vitest";
 import { niceMeasureExtents, getFilterForComparedDimension } from "./utils";
 
@@ -22,43 +26,59 @@ describe("niceMeasureExtents", () => {
 describe("getFilterForComparedDimension", () => {
   it("should slice top list values to max of 250 for table", () => {
     const dimensionName = "country";
-    const filters = { include: [], exclude: [] };
     const topListValues = new Array(300)
       .fill(null)
       .map((_, i) => `Country ${i}`);
 
     const result = getFilterForComparedDimension(
       dimensionName,
-      filters,
-      topListValues
+      createAndExpression([]),
+      topListValues,
     );
 
     expect(result.includedValues).toHaveLength(250);
   });
 
-  it("should not modify filters for unrelated dimensions", () => {
+  it("should remove filters for selected dimensions", () => {
     const dimensionName = "country";
 
-    const filters = {
-      include: [{ name: "company", in: ["zoom"] }],
-      exclude: [{ name: "device", in: ["mobile"] }],
-    };
+    const filters = createAndExpression([
+      createInExpression("company", ["zoom"]),
+      createInExpression("country", ["IN"], true),
+    ]);
 
     const topListValues = ["US", "IN", "CN"];
 
     const result = getFilterForComparedDimension(
       dimensionName,
       filters,
-      topListValues
+      topListValues,
     );
 
-    expect(result.updatedFilter).toEqual({
-      include: [
-        { name: "company", in: ["zoom"] },
-        { name: "country", in: [] },
-      ],
-      exclude: [{ name: "device", in: ["mobile"] }],
-    });
+    expect(result.updatedFilter).toEqual(
+      createAndExpression([createInExpression("company", ["zoom"])]),
+    );
+
+    expect(result.includedValues).toEqual(["US", "IN", "CN"]);
+  });
+
+  it("should not modify filters for unrelated dimensions", () => {
+    const dimensionName = "country";
+
+    const filters = createAndExpression([
+      createInExpression("company", ["zoom"]),
+      createInExpression("device", ["mobile"], true),
+    ]);
+
+    const topListValues = ["US", "IN", "CN"];
+
+    const result = getFilterForComparedDimension(
+      dimensionName,
+      filters,
+      topListValues,
+    );
+
+    expect(result.updatedFilter).toEqual(filters);
 
     expect(result.includedValues).toEqual(["US", "IN", "CN"]);
   });

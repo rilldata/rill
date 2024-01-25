@@ -379,15 +379,16 @@ func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition,
 }
 
 func buildAndOrExpressions(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect, joiner string) (string, []any, error) {
+	if len(cond.Exprs) == 0 {
+		return "", nil, fmt.Errorf("or/and expression should have atleast 1 sub expressions")
+	}
+
 	clauses := make([]string, 0)
 	var args []any
 	for _, expr := range cond.Exprs {
 		clause, subArgs, err := buildExpression(mv, expr, aliases, dialect)
 		if err != nil {
 			return "", nil, err
-		}
-		if strings.TrimSpace(clause) == "" {
-			continue
 		}
 		args = append(args, subArgs...)
 		clauses = append(clauses, fmt.Sprintf("(%s)", clause))
@@ -417,14 +418,12 @@ func convertFilterToExpression(filter *runtimev1.MetricsViewFilter) *runtimev1.E
 	var exprs []*runtimev1.Expression
 
 	if len(filter.Include) > 0 {
-		var includeExprs []*runtimev1.Expression
 		for _, cond := range filter.Include {
 			domExpr := convertDimensionFilterToExpression(cond, false)
 			if domExpr != nil {
-				includeExprs = append(includeExprs, domExpr)
+				exprs = append(exprs, domExpr)
 			}
 		}
-		exprs = append(exprs, expressionpb.Or(includeExprs))
 	}
 
 	if len(filter.Exclude) > 0 {

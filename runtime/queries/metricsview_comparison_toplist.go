@@ -755,40 +755,36 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		}
 	} else {
 		/*
-			Example of the SQL query:
+			Example of the SQL query with expression based dimension:
 
-			WITH base AS (
-				SELECT "user",
-					sum(added) measure
-				FROM "wikipedia"
-				WHERE 1=1
-				GROUP BY "user"
-				ORDER BY 2
-				LIMIT 10000
-				OFFSET 100
-			),
-			comparison AS (
-				SELECT "user",
-					sum(added) measure
-				FROM "wikipedia"
-				WHERE 1=1
-					AND "user" IN (SELECT "user" FROM base)
-				GROUP BY "user"
-				ORDER BY 2
-				LIMIT 10000
-			)
-			SELECT
-				base."user",
-				ANY_VALUE(base."measure"),
-				ANY_VALUE(comparison."measure"),
-				ANY_VALUE(base."measure" - comparison."measure"),
-				ANY_VALUE(SAFE_DIVIDE(base."measure" - comparison."measure", CAST(comparison."measure" AS DOUBLE)))
-			FROM base LEFT JOIN comparison
-			ON base."user" = comparison."user"
-			GROUP BY 1 -- Druid doesn't support ORDER BY non-time columns without GROUP BY
-			ORDER BY 2
-			LIMIT 100
-			OFFSET 100
+				WITH base AS (
+				  SELECT (replace("channel", 'a', 'b')) as "b",
+					count(*) as "total_records"
+					FROM "wikipedia"
+					WHERE 1=1 AND "__time" >= '2016-06-27T02:00:00.000Z' AND "__time" < '2016-06-27T03:00:00.000Z'
+					GROUP BY 1 -- Druid does not support group by aliases
+					ORDER BY 2 DESC
+					LIMIT 500 OFFSET 0
+				), comparison AS (
+				  SELECT (replace("channel", 'a', 'b')) as "c",
+					count(*) as "total_records"
+					FROM "wikipedia"
+					WHERE 1=1 AND "__time" >= '2016-06-27T01:00:00.000Z' AND "__time" < '2016-06-27T02:00:00.000Z'
+					AND replace("channel", 'a', 'b') IN (SELECT "b" FROM base)
+					GROUP BY 1 -- Druid does not support group by aliases
+					LIMIT 500
+				)
+				SELECT base."b" AS "channel",
+					ANY_VALUE(base."total_records") AS "total_records",
+					ANY_VALUE(comparison."total_records") AS "total_records__previous",
+					ANY_VALUE(base."total_records" - comparison."total_records") AS "total_records__delta_abs",
+					ANY_VALUE(SAFE_DIVIDE(base."total_records" - comparison."total_records", CAST(comparison."total_records" AS DOUBLE))) AS "total_records__delta_rel"
+				FROM base LEFT JOIN comparison ON base."b" = comparison."c"
+				GROUP BY 1 -- Druid does not support group by aliases
+				HAVING 1=1
+				ORDER BY 2 DESC
+				 LIMIT 250
+				OFFSET 0
 
 			Apache Druid requires that one part of the JOIN fits in memory, that can be achieved by pushing down the limit clause to a subquery (works only if the sorting is based entirely on a single subquery result)
 		*/
@@ -806,9 +802,9 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 		sql = fmt.Sprintf(`
 				WITH %[11]s AS (
-					SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY %[2]s %[13]s %[10]s OFFSET %[8]d
+					SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY 1 %[13]s %[10]s OFFSET %[8]d
 				), %[12]s AS (
-					SELECT %[1]s FROM %[3]s WHERE %[5]s AND %[2]s IN (SELECT %[2]s FROM %[11]s) GROUP BY %[2]s %[10]s
+					SELECT %[1]s FROM %[3]s WHERE %[5]s AND %[16]s IN (SELECT %[2]s FROM %[11]s) GROUP BY 1 %[10]s
 				)
 				SELECT %[11]s.%[2]s AS %[14]s, %[9]s FROM %[11]s LEFT JOIN %[12]s ON base.%[2]s = comparison.%[2]s
 				GROUP BY 1
@@ -817,21 +813,22 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				%[7]s
 				OFFSET %[8]d
 			`,
-			subSelectClause,       // 1
-			colName,               // 2
-			safeName(mv.Table),    // 3
-			leftWhereClause,       // 4
-			rightWhereClause,      // 5
-			orderByClause,         // 6
-			limitClause,           // 7
-			q.Offset,              // 8
-			finalSelectClause,     // 9
-			twiceTheLimitClause,   // 10
-			leftSubQueryAlias,     // 11
-			rightSubQueryAlias,    // 12
-			subQueryOrderByClause, // 13
-			finalDimName,          // 14
-			havingClause,          // 15
+			subSelectClause,                     // 1
+			colName,                             // 2
+			safeName(mv.Table),                  // 3
+			leftWhereClause,                     // 4
+			rightWhereClause,                    // 5
+			orderByClause,                       // 6
+			limitClause,                         // 7
+			q.Offset,                            // 8
+			finalSelectClause,                   // 9
+			twiceTheLimitClause,                 // 10
+			leftSubQueryAlias,                   // 11
+			rightSubQueryAlias,                  // 12
+			subQueryOrderByClause,               // 13
+			finalDimName,                        // 14
+			havingClause,                        // 15
+			metricsViewDimensionExpression(dim), // 16
 		)
 	}
 
@@ -848,6 +845,14 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
+			// temporary backwards compatibility
+			if q.Filter != nil {
+				if q.Where != nil {
+					return fmt.Errorf("both filter and where is provided")
+				}
+				q.Where = convertFilterToExpression(q.Filter)
+			}
+
 			var sql string
 			var args []any
 			if !isTimeRangeNil(q.ComparisonTimeRange) {
@@ -918,26 +923,32 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 	}
 	meta[0] = &runtimev1.MetricsViewColumn{
 		Name: dimName,
+		Type: runtimev1.Type_CODE_STRING.String(),
 	}
 	if comparison {
 		for i, m := range q.Result.Rows[0].MeasureValues {
 			meta[1+i*4] = &runtimev1.MetricsViewColumn{
 				Name: labelMap[m.MeasureName],
+				Type: runtimev1.Type_CODE_FLOAT64.String(),
 			}
 			meta[2+i*4] = &runtimev1.MetricsViewColumn{
 				Name: fmt.Sprintf("%s (prev)", labelMap[m.MeasureName]),
+				Type: runtimev1.Type_CODE_FLOAT64.String(),
 			}
 			meta[3+i*4] = &runtimev1.MetricsViewColumn{
 				Name: fmt.Sprintf("%s (Δ)", labelMap[m.MeasureName]),
+				Type: runtimev1.Type_CODE_FLOAT64.String(),
 			}
 			meta[4+i*4] = &runtimev1.MetricsViewColumn{
 				Name: fmt.Sprintf("%s (Δ%%)", labelMap[m.MeasureName]),
+				Type: runtimev1.Type_CODE_FLOAT64.String(),
 			}
 		}
 	} else {
 		for i, m := range q.Result.Rows[0].MeasureValues {
 			meta[1+i] = &runtimev1.MetricsViewColumn{
 				Name: labelMap[m.MeasureName],
+				Type: runtimev1.Type_CODE_FLOAT64.String(),
 			}
 		}
 	}

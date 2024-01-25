@@ -73,7 +73,7 @@ it to do any automatic binning of data, which is done server-side.
     $yScale,
     separator,
     closeBottom,
-    $inflator
+    $inflator,
   );
 </script>
 

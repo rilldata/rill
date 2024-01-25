@@ -1,9 +1,11 @@
 <script lang="ts">
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { createEventDispatcher, getContext } from "svelte";
   import Cell from "../../../components/virtualized-table/core/Cell.svelte";
-  import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
+  import type {
+    VirtualizedTableColumns,
+    VirtualizedTableConfig,
+  } from "../../../components/virtualized-table/types";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";

@@ -2,6 +2,7 @@ import { getQuerySortType } from "@rilldata/web-common/features/dashboards/leade
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -18,7 +19,7 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, Readable } from "svelte/store";
 
 export function getDimensionTableExportArgs(
-  ctx: StateManagers
+  ctx: StateManagers,
 ): Readable<V1MetricsViewComparisonRequest | undefined> {
   return derived(
     [
@@ -36,7 +37,7 @@ export function getDimensionTableExportArgs(
       const comparisonTimeRange = getComparisonTimeRange(
         dashboardState,
         timeControlState,
-        timeRange
+        timeRange,
       );
 
       return {
@@ -54,13 +55,13 @@ export function getDimensionTableExportArgs(
           {
             name: dashboardState.leaderboardMeasureName,
             desc: dashboardState.sortDirection === SortDirection.DESCENDING,
-            type: getQuerySortType(dashboardState.dashboardSortType),
+            sortType: getQuerySortType(dashboardState.dashboardSortType),
           },
         ],
-        filter: dashboardState.filters,
+        where: sanitiseExpression(dashboardState.whereFilter),
         offset: "0",
       };
-    }
+    },
   );
 }
 
@@ -70,7 +71,7 @@ export function getDimensionTableExportArgs(
  */
 function getTimeRange(
   timeControlState: TimeControlState,
-  metricsView: V1MetricsViewSpec
+  metricsView: V1MetricsViewSpec,
 ) {
   if (!timeControlState.selectedTimeRange?.name) return undefined;
 
@@ -100,7 +101,7 @@ function getTimeRange(
 function getComparisonTimeRange(
   dashboardState: MetricsExplorerEntity,
   timeControlState: TimeControlState,
-  timeRange: V1TimeRange | undefined
+  timeRange: V1TimeRange | undefined,
 ) {
   if (
     !timeRange ||

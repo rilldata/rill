@@ -41,8 +41,8 @@ func ResetCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if !force {
-				msg := "This will create a new deployment, causing downtime as data sources are reloaded from scratch. If you just need to refresh data, use `rill project refresh`. Do you want to continue?"
-				if !cmdutil.ConfirmPrompt(msg, "", false) {
+				ch.Printer.PrintlnWarn("This will create a new deployment, which means your project may be unavailable for a while as data sources are reloaded from scratch. If you just need to refresh data, use `rill project refresh`.")
+				if !cmdutil.ConfirmPrompt("Do you want to continue?", "", false) {
 					return nil
 				}
 			}

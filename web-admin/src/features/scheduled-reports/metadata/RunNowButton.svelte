@@ -42,7 +42,7 @@
         getRuntimeServiceGetResourceQueryKey($runtime.instanceId, {
           "name.name": report,
           "name.kind": ResourceKind.Report,
-        })
+        }),
       );
       await new Promise((resolve) => setTimeout(resolve, 1000));
     }

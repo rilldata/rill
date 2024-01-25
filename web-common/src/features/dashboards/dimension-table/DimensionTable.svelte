@@ -6,7 +6,6 @@ TableCells – the cell contents.
 <script lang="ts">
   import ColumnHeaders from "@rilldata/web-common/components/virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "@rilldata/web-common/components/virtualized-table/sections/TableCells.svelte";
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { createVirtualizer, VirtualItem } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";
   import type { DimensionTableRow } from "./dimension-table-types";
@@ -19,6 +18,7 @@ TableCells – the cell contents.
   import DimensionValueHeader from "./DimensionValueHeader.svelte";
 
   import { getStateManagers } from "../state-managers/state-managers";
+  import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 
   const dispatch = createEventDispatcher();
 
@@ -77,7 +77,7 @@ TableCells – the cell contents.
    */
   const { columnWidths, largestColumnLength } = estimateColumnCharacterWidths(
     columns,
-    rows
+    rows,
   );
 
   /* check if column header requires extra space for larger column names  */
@@ -93,10 +93,9 @@ TableCells – the cell contents.
   /* Separate out dimension column */
   // SAFETY: cast should be safe because if dimensionName is undefined,
   // we should not be in a dimension table sub-component
-
   $: dimensionColumnName = $dimensionTableColumnName(dimensionName) as string;
   $: dimensionColumn = columns?.find(
-    (c) => c.name == dimensionColumnName
+    (c) => c.name == dimensionColumnName,
   ) as VirtualizedTableColumns;
   $: measureColumns =
     columns?.filter((c) => c.name !== dimensionColumnName) ?? [];
@@ -119,7 +118,7 @@ TableCells – the cell contents.
       columns,
       columnWidths,
       containerWidth,
-      config
+      config,
     );
 
     const measureColumnSizeSum = estimateColumnSize
@@ -131,7 +130,7 @@ TableCells – the cell contents.
     if (manualDimensionColumnWidth === null) {
       estimateColumnSize[0] = Math.max(
         containerWidth - measureColumnSizeSum - FILTER_COLUMN_WIDTH,
-        estimateColumnSize[0]
+        estimateColumnSize[0],
       );
     } else {
       estimateColumnSize[0] = manualDimensionColumnWidth;

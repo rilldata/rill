@@ -1,4 +1,5 @@
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -35,7 +36,7 @@ export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
 function createMetricsViewTimeSeries(
   ctx: StateManagers,
   measures,
-  isComparison = false
+  isComparison = false,
 ): CreateQueryResult<V1MetricsViewTimeSeriesResponse> {
   return derived(
     [
@@ -50,7 +51,7 @@ function createMetricsViewTimeSeries(
         metricViewName,
         {
           measureNames: measures,
-          filter: dashboardStore?.filters,
+          where: sanitiseExpression(dashboardStore?.whereFilter),
           timeStart: isComparison
             ? timeControls.comparisonAdjustedStart
             : timeControls.adjustedStart,
@@ -72,8 +73,8 @@ function createMetricsViewTimeSeries(
             queryClient: ctx.queryClient,
             keepPreviousData: true,
           },
-        }
-      ).subscribe(set)
+        },
+      ).subscribe(set),
   );
 }
 
@@ -98,7 +99,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
       let measures = allMeasures;
       if (dashboardStore?.expandedMeasureName) {
         measures = allMeasures.filter(
-          (measure) => measure === dashboardStore.expandedMeasureName
+          (measure) => measure === dashboardStore.expandedMeasureName,
         );
       } else {
         measures = dashboardStore?.visibleMeasureKeys
@@ -109,7 +110,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
       const primaryTimeSeries = createMetricsViewTimeSeries(
         ctx,
         measures,
-        false
+        false,
       );
       const primaryTotals = createTotalsForMeasure(ctx, measures, false);
 
@@ -117,7 +118,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         ctx,
         measures,
         false,
-        true
+        true,
       );
 
       let comparisonTimeSeries:
@@ -138,7 +139,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
         dimensionTimeSeriesCharts = getDimensionValueTimeSeries(
           ctx,
           measures,
-          "chart"
+          "chart",
         );
       }
 
@@ -166,7 +167,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
               primary?.data?.data,
               comparison?.data?.data,
               TIME_GRAIN[interval]?.duration,
-              dashboardStore.selectedTimezone || "Etc/UTC"
+              dashboardStore.selectedTimezone || "Etc/UTC",
             );
           }
           return {
@@ -178,9 +179,9 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
             comparisonTotal: comparisonTotal?.data?.data?.[0],
             dimensionChartData: (dimensionChart as DimensionDataItem[]) || [],
           };
-        }
+        },
       ).subscribe(set);
-    }
+    },
   ) as TimeSeriesDataStore;
 }
 
@@ -188,5 +189,5 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
  * Memoized version of the store. Currently, memoized by metrics view name.
  */
 export const useTimeSeriesDataStore = memoizeMetricsStore<TimeSeriesDataStore>(
-  (ctx: StateManagers) => createTimeSeriesDataStore(ctx)
+  (ctx: StateManagers) => createTimeSeriesDataStore(ctx),
 );

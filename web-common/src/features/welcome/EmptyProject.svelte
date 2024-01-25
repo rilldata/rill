@@ -18,7 +18,7 @@
     behaviourEvent?.fireSplashEvent(
       BehaviourEventAction.ProjectEmpty,
       BehaviourEventMedium.Card,
-      MetricsEventSpace.Workspace
+      MetricsEventSpace.Workspace,
     );
 
     $unpackEmptyProject.mutate(
@@ -33,7 +33,7 @@
         onSuccess: () => {
           goto("/");
         },
-      }
+      },
     );
   }
 </script>

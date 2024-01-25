@@ -19,7 +19,7 @@ import { numberPartsToString } from "../utils/number-parts-utils";
  */
 export const closeToIntTimesPowerOfTen = (x: number) =>
   Math.abs(
-    x / 10 ** orderOfMagnitude(x) - Math.round(x / 10 ** orderOfMagnitude(x))
+    x / 10 ** orderOfMagnitude(x) - Math.round(x / 10 ** orderOfMagnitude(x)),
   ) < 1e-6;
 
 /**
@@ -44,27 +44,16 @@ export const closeToIntTimesPowerOfTen = (x: number) =>
  * of ten given as an input.
  */
 export class SingleDigitTimesPowerOfTenFormatter implements Formatter {
-  options: FormatterOptionsCommon & FormatterOptionsIntTimesPowerOfTenStrategy;
+  options: FormatterOptionsIntTimesPowerOfTenStrategy;
   initialSample: number[];
-
-  largestPossibleNumberStringParts: NumberParts;
 
   constructor(
     sample: number[],
-    options: FormatterOptionsCommon & FormatterOptionsIntTimesPowerOfTenStrategy
+    options: FormatterOptionsCommon &
+      FormatterOptionsIntTimesPowerOfTenStrategy,
   ) {
     this.options = options;
     this.initialSample = sample;
-
-    this.largestPossibleNumberStringParts = {
-      neg: "-",
-      dollar: options.numberKind === NumberKind.DOLLAR ? "$" : undefined,
-      int: "999",
-      dot: "",
-      frac: "",
-      suffix: "e-324",
-      percent: options.numberKind === NumberKind.PERCENT ? "%" : undefined,
-    };
   }
 
   stringFormat(x: number): string {
@@ -81,7 +70,6 @@ export class SingleDigitTimesPowerOfTenFormatter implements Formatter {
     }
     const { onInvalidInput } = this.options;
 
-    const isCurrency = this.options.numberKind === NumberKind.DOLLAR;
     const isPercent = this.options.numberKind === NumberKind.PERCENT;
 
     if (isPercent) x = 100 * x;
@@ -113,7 +101,7 @@ export class SingleDigitTimesPowerOfTenFormatter implements Formatter {
         magE,
         0,
         padWithZeros,
-        useTrailingDot
+        useTrailingDot,
       );
 
       numParts.suffix = shortScaleSuffixIfAvailableForStr(numParts.suffix);
@@ -123,8 +111,10 @@ export class SingleDigitTimesPowerOfTenFormatter implements Formatter {
       }
     }
 
-    if (isCurrency) {
-      numParts.dollar = "$";
+    if (this.options.numberKind === NumberKind.DOLLAR) {
+      numParts.currencySymbol = "$";
+    } else if (this.options.numberKind === NumberKind.EURO) {
+      numParts.currencySymbol = "€";
     }
     if (this.options.numberKind === NumberKind.PERCENT) {
       numParts.percent = "%";

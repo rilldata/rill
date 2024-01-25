@@ -2088,6 +2088,8 @@ func (m *SearchProjectNamesRequest) validate(all bool) error {
 
 	// no validation rules for NamePattern
 
+	// no validation rules for Annotations
+
 	if m.GetPageSize() != 0 {
 
 		if m.GetPageSize() > 1000 {
@@ -9206,6 +9208,265 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SudoUpdateUserQuotasResponseValidationError{}
+
+// Validate checks the field values on SudoUpdateAnnotationsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SudoUpdateAnnotationsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoUpdateAnnotationsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SudoUpdateAnnotationsRequestMultiError, or nil if none found.
+func (m *SudoUpdateAnnotationsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoUpdateAnnotationsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := SudoUpdateAnnotationsRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := SudoUpdateAnnotationsRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Annotations
+
+	if len(errors) > 0 {
+		return SudoUpdateAnnotationsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoUpdateAnnotationsRequestMultiError is an error wrapping multiple
+// validation errors returned by SudoUpdateAnnotationsRequest.ValidateAll() if
+// the designated constraints aren't met.
+type SudoUpdateAnnotationsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoUpdateAnnotationsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoUpdateAnnotationsRequestMultiError) AllErrors() []error { return m }
+
+// SudoUpdateAnnotationsRequestValidationError is the validation error returned
+// by SudoUpdateAnnotationsRequest.Validate if the designated constraints
+// aren't met.
+type SudoUpdateAnnotationsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoUpdateAnnotationsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoUpdateAnnotationsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoUpdateAnnotationsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoUpdateAnnotationsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoUpdateAnnotationsRequestValidationError) ErrorName() string {
+	return "SudoUpdateAnnotationsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoUpdateAnnotationsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoUpdateAnnotationsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoUpdateAnnotationsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoUpdateAnnotationsRequestValidationError{}
+
+// Validate checks the field values on SudoUpdateAnnotationsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SudoUpdateAnnotationsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoUpdateAnnotationsResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// SudoUpdateAnnotationsResponseMultiError, or nil if none found.
+func (m *SudoUpdateAnnotationsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoUpdateAnnotationsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetProject()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SudoUpdateAnnotationsResponseValidationError{
+					field:  "Project",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SudoUpdateAnnotationsResponseValidationError{
+					field:  "Project",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetProject()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SudoUpdateAnnotationsResponseValidationError{
+				field:  "Project",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return SudoUpdateAnnotationsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoUpdateAnnotationsResponseMultiError is an error wrapping multiple
+// validation errors returned by SudoUpdateAnnotationsResponse.ValidateAll()
+// if the designated constraints aren't met.
+type SudoUpdateAnnotationsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoUpdateAnnotationsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoUpdateAnnotationsResponseMultiError) AllErrors() []error { return m }
+
+// SudoUpdateAnnotationsResponseValidationError is the validation error
+// returned by SudoUpdateAnnotationsResponse.Validate if the designated
+// constraints aren't met.
+type SudoUpdateAnnotationsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoUpdateAnnotationsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoUpdateAnnotationsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoUpdateAnnotationsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoUpdateAnnotationsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoUpdateAnnotationsResponseValidationError) ErrorName() string {
+	return "SudoUpdateAnnotationsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoUpdateAnnotationsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoUpdateAnnotationsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoUpdateAnnotationsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoUpdateAnnotationsResponseValidationError{}
 
 // Validate checks the field values on ListProjectMembersRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -18249,6 +18510,8 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for FrontendUrl
 
 	// no validation rules for ProdTtlSeconds
+
+	// no validation rules for Annotations
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

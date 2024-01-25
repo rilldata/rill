@@ -256,12 +256,12 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 
 	listOpts, ok := listOptions(it.opts.GlobPattern)
 	if !ok {
-		it.logger.Info("glob pattern corresponds to single object", zap.String("glob", it.opts.GlobPattern))
+		it.logger.Debug("glob pattern corresponds to single object", zap.String("glob", it.opts.GlobPattern))
 		// required to fetch size to enforce disk limits
 		attr, err := it.bucket.Attributes(it.ctx, it.opts.GlobPattern)
 		if err != nil {
 			// can fail due to permission not available
-			it.logger.Info("failed to fetch attributes of the object", zap.Error(err))
+			it.logger.Error("failed to fetch attributes of the object", zap.Error(err))
 		} else {
 			size = attr.Size
 		}
@@ -272,7 +272,7 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		}
 		return planner.items(), nil
 	}
-	it.logger.Info("planner started", zap.String("glob", it.opts.GlobPattern), zap.String("prefix", listOpts.Prefix), observability.ZapCtx(it.ctx))
+	it.logger.Debug("planner started", zap.String("glob", it.opts.GlobPattern), zap.String("prefix", listOpts.Prefix), observability.ZapCtx(it.ctx))
 	token := blob.FirstPageToken
 	for token != nil && !planner.done() {
 		objs, nextToken, err := it.bucket.ListPage(it.ctx, token, it.opts.GlobPageSize, listOpts)
@@ -301,7 +301,7 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		return nil, fmt.Errorf("no files found for glob pattern %q", it.opts.GlobPattern)
 	}
 
-	it.logger.Info("planner completed", zap.String("glob", it.opts.GlobPattern), zap.Int64("listed_objects", fetched),
+	it.logger.Debug("planner completed", zap.String("glob", it.opts.GlobPattern), zap.Int64("listed_objects", fetched),
 		zap.Int("matched", matchCount), zap.Int64("bytes_matched", size), zap.Int64("batch_size", it.opts.BatchSizeBytes),
 		observability.ZapCtx(it.ctx))
 	return items, nil
@@ -387,7 +387,7 @@ func (it *blobIterator) downloadFiles() {
 			if err == nil {
 				size = st.Size()
 			}
-			it.logger.Info("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
+			it.logger.Debug("download complete", zap.String("object", obj.obj.Key), zap.Duration("duration", duration), observability.ZapCtx(it.ctx))
 			drivers.RecordDownloadMetrics(ctx, &drivers.DownloadMetrics{
 				Connector: "blob",
 				Ext:       ext,

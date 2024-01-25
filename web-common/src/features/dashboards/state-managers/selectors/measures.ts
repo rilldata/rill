@@ -13,7 +13,7 @@ export const visibleMeasures = ({
   dashboard,
 }: DashboardDataSources): MetricsViewSpecMeasureV2[] => {
   const measures = metricsSpecQueryResult.data?.measures?.filter(
-    (d) => d.name && dashboard.visibleMeasureKeys.has(d.name)
+    (d) => d.name && dashboard.visibleMeasureKeys.has(d.name),
   );
   return measures === undefined ? [] : measures;
 };
@@ -29,6 +29,11 @@ export const isMeasureValidPercentOfTotal = ({
 };
 
 export const measureSelectors = {
+  /**
+   * Get all measures in the dashboard.
+   */
+  allMeasures,
+
   /**
    * Gets all visible measures in the dashboard.
    */

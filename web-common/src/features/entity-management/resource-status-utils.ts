@@ -34,7 +34,7 @@ export type ResourceStatusState = {
 export function initialResourceStatusStore(
   queryClient: QueryClient,
   instanceId: string,
-  filePath: string
+  filePath: string,
 ): Readable<ResourceStatus> {
   return derived(
     [
@@ -45,21 +45,21 @@ export function initialResourceStatusStore(
       if (
         !projectParserResp.data ||
         (projectParserResp?.data?.projectParser?.state?.parseErrors?.filter(
-          (s) => s.filePath === filePath
+          (s) => s.filePath === filePath,
         ).length ?? 0) > 0
       ) {
         return ResourceStatus.Errored;
       }
 
       return !resourceName ? ResourceStatus.Busy : ResourceStatus.Idle;
-    }
+    },
   );
 }
 
 export function waitForResource(
   queryClient: QueryClient,
   instanceId: string,
-  filePath: string
+  filePath: string,
 ) {
   return new Promise<void>((resolve) => {
     let unsub: Unsubscriber;
@@ -67,7 +67,7 @@ export function waitForResource(
     unsub = initialResourceStatusStore(
       queryClient,
       instanceId,
-      filePath
+      filePath,
     ).subscribe((status) => {
       if (status === ResourceStatus.Busy) return;
       unsub?.();
@@ -84,7 +84,7 @@ export function resourceStatusStore(
   instanceId: string,
   filePath: string,
   kind: ResourceKind,
-  name: string
+  name: string,
 ) {
   const lastUpdatedOn = getLastStateUpdatedOnByKindAndName(kind, name);
   return derived(
@@ -118,7 +118,7 @@ export function resourceStatusStore(
           : ResourceStatus.Errored,
         changed,
       };
-    }
+    },
   );
 }
 
@@ -127,7 +127,7 @@ export function waitForResourceUpdate(
   instanceId: string,
   filePath: string,
   kind: ResourceKind,
-  name: string
+  name: string,
 ) {
   return new Promise<boolean>((resolve) => {
     let timer;
@@ -144,7 +144,7 @@ export function waitForResourceUpdate(
       instanceId,
       filePath,
       kind,
-      name
+      name,
     ).subscribe((status) => {
       if (status.status === ResourceStatus.Busy) return;
       if (timer) clearTimeout(timer);
@@ -174,7 +174,7 @@ export function getResourceStatusStore(
   queryClient: QueryClient,
   instanceId: string,
   filePath: string,
-  validator?: (res: V1Resource) => boolean
+  validator?: (res: V1Resource) => boolean,
 ): Readable<ResourceStatusState> {
   return derived(
     [
@@ -215,6 +215,6 @@ export function getResourceStatusStore(
         status: isBusy ? ResourceStatus.Busy : ResourceStatus.Idle,
         resource: resourceResp.data,
       };
-    }
+    },
   );
 }

@@ -24,7 +24,7 @@ function newEditorView(content: string, parent: HTMLElement) {
 /** convenience function for selecting the gutter elements */
 function getLines(container: HTMLElement) {
   return container.querySelectorAll(
-    `.cm-content > .cm-line`
+    `.cm-content > .cm-line`,
   ) as NodeListOf<HTMLElement>;
 }
 
@@ -58,12 +58,12 @@ describe("Line Status BG Highlighter Extension (CodeMirror)", () => {
         { line: 1, level: "error" },
         { line: 3, level: "error" },
       ],
-      view
+      view,
     );
     lines = getLines(container);
     Array.from(lines).forEach((line, i) => {
       expect(line.className.includes("cm-line-error")).toBe(
-        i === 0 || i === 2 ? true : false
+        i === 0 || i === 2 ? true : false,
       );
     });
 
@@ -72,8 +72,8 @@ describe("Line Status BG Highlighter Extension (CodeMirror)", () => {
     lines = getLines(container);
     expect(
       Array.from(lines).every(
-        (line) => !line.className.includes("cm-line-error")
-      )
+        (line) => !line.className.includes("cm-line-error"),
+      ),
     ).toBe(true);
   });
 
@@ -82,8 +82,8 @@ describe("Line Status BG Highlighter Extension (CodeMirror)", () => {
     const lines = getLines(container);
     expect(
       Array.from(lines).every(
-        (line) => !line.className.includes("cm-line-error")
-      )
+        (line) => !line.className.includes("cm-line-error"),
+      ),
     ).toBe(true);
   });
 });

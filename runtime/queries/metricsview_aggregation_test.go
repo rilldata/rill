@@ -717,6 +717,72 @@ func TestMetricsViewAggregation_measure_filters(t *testing.T) {
 	require.NotEmpty(t, "instagram.com", q.Result.Data[2].AsMap()["dom"])
 }
 
+func TestMetricsViewsAggregation_timezone(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView().Spec
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+				TimeZone:  "America/New_York",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		MetricsView: mv,
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "timestamp",
+			},
+		},
+
+		Limit: &limit,
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	rows := q.Result.Data
+
+	i := 0
+	require.Equal(t, "Facebook,2021-12-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	i++
+	require.Equal(t, "Facebook,2022-01-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	i++
+	require.Equal(t, "Facebook,2022-02-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	i++
+	require.Equal(t, "Facebook,2022-03-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	i++
+	require.Equal(t, "Google,2021-12-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	i++
+	require.Equal(t, "Google,2022-01-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	i++
+	require.Equal(t, "Google,2022-02-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	i++
+	require.Equal(t, "Google,2022-03-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	i++
+	require.Equal(t, "Microsoft,2021-12-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	i++
+	require.Equal(t, "Microsoft,2022-01-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+}
+
 func fieldsToString(row *structpb.Struct, args ...string) string {
 	s := make([]string, 0, len(args))
 	for _, arg := range args {

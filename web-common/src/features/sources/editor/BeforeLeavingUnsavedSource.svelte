@@ -17,13 +17,13 @@
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
     sourceName,
-    $sourceStore.clientYAML
+    $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
   $: file = createRuntimeServiceGetFile(
     $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table)
+    getFilePathFromNameAndType(sourceName, EntityType.Table),
   );
 
   // Intercepted navigation follows this example:

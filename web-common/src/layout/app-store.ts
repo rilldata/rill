@@ -18,8 +18,8 @@ export interface ActiveEntity {
  * Currently caches active entity from URL
  */
 interface AppStore {
-  activeEntity: ActiveEntity;
-  previousActiveEntity: ActiveEntity;
+  activeEntity: ActiveEntity | undefined;
+  previousActiveEntity: ActiveEntity | undefined;
 }
 
 export const appScreen = derived(page, ($page) => {
@@ -74,7 +74,7 @@ export const appScreen = derived(page, ($page) => {
 
   appStore.setActiveEntity(
     activeEntity.name,
-    ScreenToEntityMap[activeEntity.type]
+    ScreenToEntityMap[activeEntity.type],
   );
   return activeEntity;
 });

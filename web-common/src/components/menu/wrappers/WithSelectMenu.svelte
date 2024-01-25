@@ -42,7 +42,7 @@ and the menu closes.
     key: string,
     disabled = false,
     index: number,
-    closeEventHandler: () => void
+    closeEventHandler: () => void,
   ) {
     return async () => {
       if (!multiSelect && isSelected(selection, key)) {
@@ -72,7 +72,7 @@ and the menu closes.
    */
   $: isAlreadySelectedButNotBeingAnimated = (
     key: string,
-    isSelected: boolean
+    isSelected: boolean,
   ) => {
     if (multiSelect) return isSelected;
     else return temporarilySelectedKey === undefined && isSelected;
@@ -118,7 +118,7 @@ and the menu closes.
           key,
           disabled,
           i,
-          handleClose
+          handleClose,
         )}
         {selected}
       >

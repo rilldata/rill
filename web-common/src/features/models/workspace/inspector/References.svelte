@@ -12,7 +12,7 @@
     createQueryServiceTableCardinality,
     createRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
-  import * as classes from "@rilldata/web-local/lib/util/component-classes";
+
   import { getContext } from "svelte";
   import { Writable, derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
@@ -27,13 +27,17 @@
   let showSourceTables = true;
   let modelHasError = false;
 
+  /** classes for elements that trigger the highlight in a model query */
+  export const query_reference_trigger =
+    "hover:bg-yellow-200 hover:cursor-pointer";
+
   const queryHighlight: Writable<QueryHighlightState | undefined> = getContext(
-    "rill:app:query-highlight"
+    "rill:app:query-highlight",
   );
 
   $: getModelFile = createRuntimeServiceGetFile(
     $runtime?.instanceId,
-    getFilePathFromNameAndType(modelName, EntityType.Model)
+    getFilePathFromNameAndType(modelName, EntityType.Model),
   );
   $: references = getTableReferences($getModelFile?.data?.blob ?? "");
 
@@ -56,17 +60,17 @@
           writable(ref),
           createQueryServiceTableCardinality(
             $runtime?.instanceId,
-            resource?.meta?.name?.name ?? ""
+            resource?.meta?.name?.name ?? "",
           ),
         ],
         ([resource, ref, cardinality]) => ({
           resource,
           reference: ref,
           totalRows: +(cardinality?.data?.cardinality ?? 0),
-        })
+        }),
       );
     }),
-    (referencedThings) => referencedThings
+    (referencedThings) => referencedThings,
   );
 
   function focus(reference) {
@@ -101,7 +105,7 @@
                 href="/{reference?.resource?.source
                   ? 'source'
                   : 'model'}/{reference?.resource?.meta?.name?.name}"
-                class="ui-copy-muted grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} pl-4 pr-4"
+                class="ui-copy-muted grid justify-between gap-x-2 {query_reference_trigger} pl-4 pr-4"
                 style:grid-template-columns="auto max-content"
                 on:focus={focus(reference.reference)}
                 on:mouseover={focus(reference.reference)}

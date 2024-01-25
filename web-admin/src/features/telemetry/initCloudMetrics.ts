@@ -17,7 +17,7 @@ export async function initCloudMetrics() {
       new ProductHealthEventFactory(),
       new BehaviourEventFactory(),
       new ErrorEventFactory(),
-    ])
+    ]),
   );
 
   const commonUserMetrics = await collectCommonUserFields();
