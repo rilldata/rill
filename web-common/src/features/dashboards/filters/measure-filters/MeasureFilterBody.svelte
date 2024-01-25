@@ -1,8 +1,7 @@
 <!-- @component
   renders the body content of a filter set chip:
-  - a label for the current dimension
-  - a certain number of "show" values (default 1)
-  - an indication of how many other dimensions are selected past the show values
+  - a label for the current measure
+  - a short hand notation of the filter criteria
 -->
 <script lang="ts">
   import IconSpaceFixer from "@rilldata/web-common/components/button/IconSpaceFixer.svelte";

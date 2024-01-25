@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createEventDispatcher } from "svelte";
   import CaretDownIcon from "../icons/CaretDownIcon.svelte";
   import Menu from "../menu-v2/Menu.svelte";
   import MenuButton from "../menu-v2/MenuButton.svelte";
@@ -9,30 +10,47 @@
   export let id: string;
   export let label: string;
   export let options: { value: string; label?: string }[];
+  export let placeholder: string = "";
 
   // temporary till we figure out the menus
   export let detach = false;
   export let itemsClass = "";
+
+  const dispatch = createEventDispatcher();
 
   let displayValue: string;
   $: {
     const foundOption = options.find((option) => option.value === value);
     displayValue = foundOption?.label ?? value;
   }
+
+  // We should move to shadcn select soon. This is getting ugly.
+  $: hasNoValue = value === "" || value === null || value === undefined;
 </script>
 
 <div class="flex flex-col gap-y-2">
   <label class="text-gray-800 text-sm font-medium" for={id}>{label}</label>
   <Menu {detach}>
     <MenuButton
-      className="w-full border px-3 py-1 h-8 flex gap-x-2 justify-between items-center"
+      className="w-full border px-3 py-1 h-8 flex gap-x-2 justify-between items-center {hasNoValue
+        ? 'text-gray-400'
+        : ''}"
     >
-      {displayValue}
+      {#if hasNoValue}
+        {placeholder}
+      {:else}
+        {displayValue}
+      {/if}
       <CaretDownIcon />
     </MenuButton>
     <MenuItems positioningOverride={itemsClass}>
       {#each options as option}
-        <MenuItem on:click={() => (value = option.value)}>
+        <MenuItem
+          on:click={() => {
+            value = option.value;
+            dispatch("change", value);
+          }}
+        >
           {option?.label ?? option.value}
         </MenuItem>
       {/each}

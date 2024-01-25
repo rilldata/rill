@@ -91,6 +91,7 @@
       }
       dispatch("apply", {
         dimension: values.dimension,
+        oldDimension: dimensionName,
         expr: newExpr,
       });
     },
@@ -98,13 +99,8 @@
 
   const { form, errors, handleSubmit } = formState;
 
-  let oprn = $form["operation"];
-  $: if ($form["operation"] !== oprn) {
-    oprn = $form["operation"];
-    handleSubmit(new SubmitEvent(""));
-  }
-
-  $: isBetweenExpression = oprn === "b" || oprn === "nb";
+  $: isBetweenExpression =
+    $form["operation"] === "b" || $form["operation"] === "nb";
 </script>
 
 <Menu
@@ -128,10 +124,12 @@
       <Select
         bind:value={$form["dimension"]}
         detach
-        id="operation"
+        id="dimension"
         itemsClass="absolute left-4.5"
         label="By Dimension"
+        on:change={handleSubmit}
         options={dimensionOptions}
+        placeholder="Select dimension to split by"
       />
       <Select
         bind:value={$form["operation"]}
@@ -139,6 +137,7 @@
         id="operation"
         itemsClass="absolute left-4.5"
         label="Threshold"
+        on:change={handleSubmit}
         options={MeasureFilterOptions}
       />
       <InputV2

@@ -14,6 +14,7 @@ The main feature-set component for dashboard filters
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
+  import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { useMetaQuery, getFilterSearchList } from "../selectors/index";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
@@ -100,6 +101,18 @@ The main feature-set component for dashboard filters
   function getColorForChip(isInclude: boolean) {
     return isInclude ? defaultChipColors : excludeChipColors;
   }
+
+  function handleMeasureFilterApply(
+    dimension: string,
+    measureName: string,
+    oldDimension: string,
+    expr: V1Expression,
+  ) {
+    if (oldDimension && oldDimension !== dimension) {
+      removeMeasureFilter(oldDimension, measureName);
+    }
+    setMeasureFilter(dimension, measureName, expr);
+  }
 </script>
 
 <section
@@ -170,8 +183,8 @@ The main feature-set component for dashboard filters
             {dimensionName}
             {expr}
             on:remove={() => removeMeasureFilter(dimensionName, name)}
-            on:apply={({ detail: { dimension, expr } }) =>
-              setMeasureFilter(dimension, name, expr)}
+            on:apply={({ detail: { dimension, oldDimension, expr } }) =>
+              handleMeasureFilterApply(dimension, name, oldDimension, expr)}
           />
         </div>
       {/each}
