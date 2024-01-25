@@ -80,8 +80,16 @@ export function getAxisForDimensions(
 ): Readable<PivotAxesData | null> {
   if (!dimensions.length) return readable(null);
 
-  // FIXME: If sorting by measure, add that to measure list
   const measures = config.measureNames;
+
+  if (!sortBy.length) {
+    sortBy = [
+      {
+        desc: true,
+        name: measures[0] || dimensions?.[0],
+      },
+    ];
+  }
 
   const { time } = config;
   const dimensionBody = dimensions.map((d) => {
