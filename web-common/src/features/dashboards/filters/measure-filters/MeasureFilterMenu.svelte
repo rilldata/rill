@@ -67,7 +67,7 @@
     validationSchema: yup.object({
       dimension: yup.string().required("Required"),
       operation: yup.string().required("Required"),
-      value1: yup.number().required(),
+      value1: yup.number().required("Required"),
       value2: yup.number(),
     }),
     onSubmit: (values) => {
