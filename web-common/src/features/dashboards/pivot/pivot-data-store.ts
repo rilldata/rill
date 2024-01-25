@@ -360,22 +360,27 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     lastPivotData = tableDataExpanded;
                     lastPivotColumnDef = columnDef;
 
-                    const totalsRowData = totalsRowResponse?.data?.data;
-                    const totalsRowTable = reduceTableCellDataIntoRows(
-                      config,
-                      "",
-                      [],
-                      columnDimensionAxes?.data || {},
-                      [],
-                      totalsRowData || [],
-                    );
+                    let assembledTableData = tableDataExpanded;
+                    if (config.rowDimensionNames.length) {
+                      const totalsRowData = totalsRowResponse?.data?.data;
+                      const totalsRowTable = reduceTableCellDataIntoRows(
+                        config,
+                        "",
+                        [],
+                        columnDimensionAxes?.data || {},
+                        [],
+                        totalsRowData || [],
+                      );
 
-                    const totalsRow = totalsRowTable[0] || {};
-                    totalsRow[anchorDimension] = "Total";
+                      const totalsRow = totalsRowTable[0] || {};
+                      totalsRow[anchorDimension] = "Total";
+
+                      assembledTableData = [totalsRow, ...tableDataExpanded];
+                    }
 
                     return {
                       isFetching: false,
-                      data: [totalsRow, ...tableDataExpanded],
+                      data: assembledTableData,
                       columnDef,
                     };
                   },

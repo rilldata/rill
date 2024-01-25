@@ -321,6 +321,22 @@ export function getSortForAccessor(
       timeRange: defaultTimeRange,
     };
   }
+
+  // For the row totals, the accessor is the measure name
+  if (measureNames.includes(accessor)) {
+    sortPivotBy = [
+      {
+        desc: config.pivot.sorting[0].desc,
+        name: accessor,
+      },
+    ];
+    return {
+      filters: config.filters,
+      sortPivotBy,
+      timeRange: defaultTimeRange,
+    };
+  }
+
   // Strip the measure string from the accessor
   const [accessorWithoutMeasure, measureIndex] = accessor.split("m");
   const accessorParts = accessorWithoutMeasure.split("_");
