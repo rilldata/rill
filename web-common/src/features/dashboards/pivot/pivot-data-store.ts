@@ -16,7 +16,6 @@ import {
   getAxisForDimensions,
 } from "./pivot-queries";
 import {
-  createTableWithAxes,
   prepareNestedPivotData,
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
@@ -264,17 +263,12 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               });
             }
 
-            const rowDimensionValues: string[] =
+            const { rows: rowDimensionValues, totals: rowTotals } =
               reconcileMissingDimensionValues(
                 anchorDimension,
-                rowDimensionAxes?.data,
-                rowDimensionUnsortedAxis?.data,
+                rowDimensionAxes,
+                rowDimensionUnsortedAxis,
               );
-
-            const skeletonTableData = createTableWithAxes(
-              anchorDimension,
-              rowDimensionValues,
-            );
 
             const columnDef = getColumnDefForPivot(
               config,
@@ -302,7 +296,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 )
                   return axesSet({
                     isFetching: false,
-                    data: skeletonTableData,
+                    data: rowTotals,
                     columnDef,
                   });
 
@@ -314,7 +308,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   anchorDimension,
                   rowDimensionValues || [],
                   columnDimensionAxes?.data || {},
-                  skeletonTableData,
+                  rowTotals,
                   cellData,
                 );
 

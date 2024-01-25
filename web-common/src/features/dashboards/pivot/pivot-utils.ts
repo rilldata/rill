@@ -12,6 +12,7 @@ import type {
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import type {
+  PivotAxesData,
   PivotDataStoreConfig,
   PivotState,
   PivotTimeConfig,
@@ -55,24 +56,59 @@ export function getDimensionsInPivotColumns(
  */
 export function reconcileMissingDimensionValues(
   anchorDimension: string,
-  sortedRowAxesData: Record<string, string[]> | undefined,
-  unsortedRowAxesData: Record<string, string[]> | undefined,
+  sortedRowAxes: PivotAxesData | null,
+  unsortedRowAxes: PivotAxesData | null,
 ) {
-  const sortedRowAxisValues = new Set(
-    sortedRowAxesData?.[anchorDimension] || [],
-  );
+  // Return empty data if either sortedRowAxes or unsortedRowAxes is null
+  if (!sortedRowAxes || !unsortedRowAxes) {
+    return { rows: [], totals: [] };
+  }
 
-  if (sortedRowAxisValues?.size >= 100)
-    return sortedRowAxesData?.[anchorDimension] || [];
+  // Extract data and totals from sortedRowAxes
+  const sortedRowAxisValues = sortedRowAxes.data?.[anchorDimension] || [];
+  const sortedTotals = sortedRowAxes.totals?.[anchorDimension] || [];
 
-  const unsortedRowAxisValues = unsortedRowAxesData?.[anchorDimension] || [];
+  // Return early if there are too many values
+  if (sortedRowAxisValues.length >= 100) {
+    return {
+      rows: sortedRowAxisValues.slice(0, 100),
+      totals: sortedTotals.slice(0, 100),
+    };
+  }
 
+  // Extract data and totals from unsortedRowAxes
+  const unsortedRowAxisValues = unsortedRowAxes.data?.[anchorDimension] || [];
+  const unsortedTotals = unsortedRowAxes.totals?.[anchorDimension] || [];
+
+  // Find missing values that are in unsortedRowAxes but not in sortedRowAxes
   const missingValues = unsortedRowAxisValues.filter(
-    (value) => !sortedRowAxisValues.has(value),
+    (value) => !sortedRowAxisValues.includes(value),
   );
 
-  return [...sortedRowAxisValues, ...missingValues].slice(0, 100);
+  // Combine and limit the rows to 100
+  const combinedRows = [...sortedRowAxisValues, ...missingValues].slice(0, 100);
+
+  // Reorder the totals to match the order of combinedRows
+  const reorderedTotals = combinedRows.map((rowValue) => {
+    const sortedTotal = sortedTotals.find(
+      (total) => total[anchorDimension] === rowValue,
+    );
+    if (sortedTotal) {
+      return sortedTotal;
+    }
+    // Use the total from unsortedRowAxes if not found in sortedTotals
+    const unsortedTotal = unsortedTotals.find(
+      (total) => total[anchorDimension] === rowValue,
+    );
+    return unsortedTotal || { [anchorDimension]: rowValue };
+  });
+
+  return {
+    rows: combinedRows,
+    totals: reorderedTotals,
+  };
 }
+
 /**
  * Construct a key for a pivot config to store expanded table data
  * in the cache

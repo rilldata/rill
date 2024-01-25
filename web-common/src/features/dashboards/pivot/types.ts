@@ -1,6 +1,7 @@
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
+  V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewFilter,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
@@ -45,6 +46,14 @@ export interface PivotDataStoreConfig {
   filters: V1MetricsViewFilter;
   pivot: PivotState;
   time: PivotTimeConfig;
+}
+
+export interface PivotAxesData {
+  isFetching: boolean;
+  data?: Record<string, string[]> | undefined;
+  totals?:
+    | Record<string, V1MetricsViewAggregationResponseDataItem[]>
+    | undefined;
 }
 
 export type PivotMeasure = {

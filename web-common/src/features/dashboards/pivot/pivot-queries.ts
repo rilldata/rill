@@ -1,4 +1,7 @@
-import type { PivotDataStoreConfig } from "@rilldata/web-common/features/dashboards/pivot/types";
+import type {
+  PivotAxesData,
+  PivotDataStoreConfig,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
@@ -12,7 +15,7 @@ import {
   type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, writable } from "svelte/store";
+import { Readable, derived, readable } from "svelte/store";
 
 /**
  * Wrapper function for Aggregate Query API
@@ -74,8 +77,8 @@ export function getAxisForDimensions(
   filters: V1MetricsViewFilter,
   sortBy: V1MetricsViewAggregationSort[] = [],
   timeRange: TimeRangeString | undefined = undefined,
-) {
-  if (!dimensions.length) return writable(null);
+): Readable<PivotAxesData | null> {
+  if (!dimensions.length) return readable(null);
 
   // FIXME: If sorting by measure, add that to measure list
   const measures = config.measureNames;

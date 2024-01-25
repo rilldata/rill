@@ -3,12 +3,13 @@ import { createIndexMap, getAccessorForCell } from "./pivot-utils";
 import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 
 /**
+ * TODO: PROBABLY COULD BE DELTED NOW
  * Create a barebone table with row  headers.
  * This is used to render the table skeleton before cell data is fetched.
  */
 export function createTableWithAxes(
   anchorDimensionName: string,
-  rowDimensionValues: string[] | undefined,
+  rowDimensionValues: string[],
 ) {
   let data: PivotDataRow[] = [];
 

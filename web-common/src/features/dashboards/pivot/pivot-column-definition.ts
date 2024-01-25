@@ -23,11 +23,14 @@ import type {
  * Create nested and grouped column definitions for pivot table
  */
 function createColumnDefinitionForDimensions(
-  dimensionNames: string[],
-  timeConfig: PivotTimeConfig,
+  config: PivotDataStoreConfig,
+  colDimensions: { label: string; name: string }[],
   headers: Record<string, string[]>,
   leafData: ColumnDef<PivotDataRow>[],
 ): ColumnDef<PivotDataRow>[] {
+  const dimensionNames = config.colDimensionNames;
+  const timeConfig = config.time;
+
   const colValuesIndexMaps = dimensionNames?.map((colDimension) =>
     createIndexMap(headers[colDimension]),
   );
@@ -80,8 +83,25 @@ function createColumnDefinitionForDimensions(
     });
   }
 
+  // Construct column def for Row Totals
+  let rowTotalsColumns: ColumnDef<PivotDataRow>[] = [];
+  if (config.rowDimensionNames.length && config.colDimensionNames.length) {
+    rowTotalsColumns = colDimensions.reverse().reduce((acc, dimension) => {
+      const { label, name } = dimension;
+
+      const headColumn = {
+        header: label || name,
+        columns: acc,
+      };
+
+      return [headColumn];
+    }, leafData);
+  }
+
   // Start the recursion
-  return createNestedColumns(0, {});
+  const nestedColumns = createNestedColumns(0, {});
+
+  return [...rowTotalsColumns, ...nestedColumns];
 }
 
 /**
@@ -187,8 +207,8 @@ export function getColumnDefForPivot(
   });
 
   const groupedColDef = createColumnDefinitionForDimensions(
-    colDimensions.map((d) => d.name) || [],
-    config.time,
+    config,
+    colDimensions,
     columnDimensionAxes || {},
     leafColumns,
   );
