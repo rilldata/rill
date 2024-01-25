@@ -1,8 +1,14 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { parseReport } from "@rilldata/web-admin/features/scheduled-reports/query-mapper";
+  import { parseReportQuery } from "@rilldata/web-admin/features/scheduled-reports/query-mapper";
   import { useReport } from "@rilldata/web-admin/features/scheduled-reports/selectors";
+  import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
+  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
+  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   $: organization = $page.params.organization;
@@ -12,9 +18,10 @@
 
   $: report = useReport($runtime.instanceId, reportId);
 
-  $: parsedReport = parseReport($report.data?.resource, executionTime);
+  let parsedReport: ReturnType<typeof parseReportQuery>;
+  $: parsedReport = parseReportQuery($report.data?.resource, executionTime);
 
-  $: if ($parsedReport.ready) {
+  $: if ($parsedReport.state) {
     goto(
       `/${organization}/${project}/${$parsedReport.metricsView}?state=${$parsedReport.state}`,
     );
@@ -22,3 +29,32 @@
 
   // TODO: error handling
 </script>
+
+<CtaLayoutContainer>
+  <CtaContentContainer>
+    {#if !$parsedReport.ready}
+      <div class="h-36">
+        <Spinner
+          bg="linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)"
+          status={EntityStatus.Running}
+          size="7rem"
+          duration={725}
+        />
+      </div>
+    {:else if $parsedReport.error}
+      <div class="flex flex-col gap-y-2">
+        <h2 class="text-lg font-semibold">Download failed</h2>
+        <CtaMessage>
+          {$parsedReport.error}
+        </CtaMessage>
+      </div>
+      <CtaButton
+        on:click={() =>
+          goto(`/${organization}/${project}/-/reports/${reportId}`)}
+        variant="primary-outline"
+      >
+        Go to report page
+      </CtaButton>
+    {/if}
+  </CtaContentContainer>
+</CtaLayoutContainer>

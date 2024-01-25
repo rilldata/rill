@@ -1,3 +1,4 @@
+import { getSortType } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
@@ -39,14 +40,21 @@ type QueryMapperArgs<R extends ReportQueryRequest> = {
   executionTime: string;
 };
 
-export function parseReport(
-  reportResource: V1Resource,
-  executionTime: string,
-): Readable<{
+type ParsedReportQuery = {
   ready: boolean;
   state?: string;
   metricsView?: string;
-}> {
+  error?: string;
+};
+
+/**
+ * Reports manually written through file artifacts won't have the UI to feed the url state.
+ * Hence we are building the state from the query args in the report.
+ */
+export function parseReportQuery(
+  reportResource: V1Resource,
+  executionTime: string,
+): Readable<ParsedReportQuery> {
   if (!reportResource?.report?.spec?.queryName)
     return readable({
       ready: false,
@@ -58,6 +66,7 @@ export function parseReport(
   );
   let queryMapper: (args: QueryMapperArgs<ReportQueryRequest>) => void;
 
+  // get metrics view name and the query mapper function based on the query name.
   switch (reportResource.report.spec.queryName) {
     case "MetricsViewAggregation":
       metricsViewName = (req as V1MetricsViewAggregationRequest).metricsView;
@@ -85,6 +94,8 @@ export function parseReport(
     // error state
     return readable({
       ready: true,
+      error:
+        "Failed to find metrics view name. Please check the format of the report.",
     });
   }
 
@@ -108,6 +119,9 @@ export function parseReport(
         // error state
         return {
           ready: true,
+          error:
+            metricsViewResource.error?.message ??
+            timeRangeSummary.error?.message,
         };
       }
 
@@ -158,7 +172,7 @@ function mapMetricsViewAggregationRequest({
   dashboard,
 }: QueryMapperArgs<V1MetricsViewAggregationRequest>) {
   if (req.where) dashboard.whereFilter = req.where;
-  req.timeRange;
+  // TODO
 }
 
 function mapMetricsViewToplistRequest({
@@ -195,7 +209,6 @@ function mapMetricsViewComparisonRequest({
   if (req.where) dashboard.whereFilter = req.where;
 
   if (req.timeRange) {
-    // TODO: get grain from report frequency
     dashboard.selectedTimeRange = getSelectedTimeRange(
       req.timeRange,
       timeRangeSummary,
@@ -230,7 +243,7 @@ function mapMetricsViewComparisonRequest({
     dashboard.sortDirection = req.sort[0].desc
       ? SortDirection.DESCENDING
       : SortDirection.ASCENDING;
-    // TODO: sort type
+    dashboard.dashboardSortType = getSortType(req.sort[0].sortType);
   }
 }
 
@@ -255,7 +268,6 @@ function getSelectedTimeRange(
     );
   }
 
-  // TODO: get grain from report frequency
   selectedTimeRange.interval = timeRange.roundToGrain;
 
   return selectedTimeRange;
