@@ -2,7 +2,6 @@ package queries
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"reflect"
@@ -56,54 +55,6 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	if err != nil {
 		return err
 	}
-	var useSample string
-	if sampleSize > cq.Result {
-		useSample = ""
-	} else {
-		useSample = fmt.Sprintf("USING SAMPLE %d ROWS", sampleSize)
-	}
-
-	estimateSQL := fmt.Sprintf(`
-      WITH cleaned_column AS (
-          SELECT %s as cd
-          from %s
-          %s
-      ),
-      time_grains as (
-      SELECT 
-          approx_count_distinct(extract('years' from cd)) as year,
-          approx_count_distinct(extract('months' from cd)) as month,
-          approx_count_distinct(extract('dayofyear' from cd)) as dayofyear,
-          approx_count_distinct(extract('dayofmonth' from cd)) as dayofmonth,
-          min(cd = last_day(cd)) = TRUE as lastdayofmonth,
-          approx_count_distinct(extract('weekofyear' from cd)) as weekofyear,
-          approx_count_distinct(extract('dayofweek' from cd)) as dayofweek,
-          approx_count_distinct(extract('hour' from cd)) as hour,
-          approx_count_distinct(extract('minute' from cd)) as minute,
-          approx_count_distinct(extract('second' from cd)) as second,
-          approx_count_distinct(extract('millisecond' from cd) - extract('seconds' from cd) * 1000) as ms
-      FROM cleaned_column
-      )
-      SELECT 
-        COALESCE(
-            case WHEN ms > 1 THEN 'MILLISECOND' else NULL END,
-            CASE WHEN second > 1 THEN 'SECOND' else NULL END,
-            CASE WHEN minute > 1 THEN 'MINUTE' else null END,
-            CASE WHEN hour > 1 THEN 'HOUR' else null END,
-            -- cases above, if equal to 1, then we have some candidates for
-            -- bigger time grains. We need to reverse from here
-            -- years, months, weeks, days.
-            CASE WHEN dayofyear = 1 and year > 1 THEN 'YEAR' else null END,
-            CASE WHEN (dayofmonth = 1 OR lastdayofmonth) and month > 1 THEN 'MONTH' else null END,
-            CASE WHEN dayofweek = 1 and weekofyear > 1 THEN 'WEEK' else null END,
-            CASE WHEN hour = 1 THEN 'DAY' else null END
-        ) as estimatedSmallestTimeGrain
-      FROM time_grains
-      `,
-		safeName(q.ColumnName),
-		safeName(q.TableName),
-		useSample,
-	)
 
 	olap, release, err := rt.OLAP(ctx, instanceID)
 	if err != nil {
@@ -111,7 +62,100 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	var estimateSQL string
+	var useSample string
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		if sampleSize <= cq.Result {
+			useSample = fmt.Sprintf("USING SAMPLE %d ROWS", sampleSize)
+		}
+		estimateSQL = fmt.Sprintf(`
+		WITH cleaned_column AS (
+			SELECT %s as cd
+			from %s
+			%s
+		),
+		time_grains as (
+		SELECT 
+			approx_count_distinct(extract('years' from cd)) as year,
+			approx_count_distinct(extract('months' from cd)) as month,
+			approx_count_distinct(extract('dayofyear' from cd)) as dayofyear,
+			approx_count_distinct(extract('dayofmonth' from cd)) as dayofmonth,
+			min(cd = last_day(cd)) = TRUE as lastdayofmonth,
+			approx_count_distinct(extract('weekofyear' from cd)) as weekofyear,
+			approx_count_distinct(extract('dayofweek' from cd)) as dayofweek,
+			approx_count_distinct(extract('hour' from cd)) as hour,
+			approx_count_distinct(extract('minute' from cd)) as minute,
+			approx_count_distinct(extract('second' from cd)) as second,
+			approx_count_distinct(extract('millisecond' from cd) - extract('seconds' from cd) * 1000) as ms
+		FROM cleaned_column
+		)
+		SELECT 
+		  COALESCE(
+			  case WHEN ms > 1 THEN 'MILLISECOND' else NULL END,
+			  CASE WHEN second > 1 THEN 'SECOND' else NULL END,
+			  CASE WHEN minute > 1 THEN 'MINUTE' else null END,
+			  CASE WHEN hour > 1 THEN 'HOUR' else null END,
+			  -- cases above, if equal to 1, then we have some candidates for
+			  -- bigger time grains. We need to reverse from here
+			  -- years, months, weeks, days.
+			  CASE WHEN dayofyear = 1 and year > 1 THEN 'YEAR' else null END,
+			  CASE WHEN (dayofmonth = 1 OR lastdayofmonth) and month > 1 THEN 'MONTH' else null END,
+			  CASE WHEN dayofweek = 1 and weekofyear > 1 THEN 'WEEK' else null END,
+			  CASE WHEN hour = 1 THEN 'DAY' else null END
+		  ) as estimatedSmallestTimeGrain
+		FROM time_grains
+		`,
+			safeName(q.ColumnName),
+			safeName(q.TableName),
+			useSample,
+		)
+	case drivers.DialectClickHouse:
+		if sampleSize <= cq.Result {
+			useSample = fmt.Sprintf("SAMPLE %d", sampleSize)
+		}
+		estimateSQL = fmt.Sprintf(`
+		WITH cleaned_column AS (
+			SELECT %s as cd
+			from %s
+			%s
+		),
+		time_grains as (
+		SELECT 
+			uniq(toYear(cd)) as year,
+			uniq(toMonth(cd)) as month,
+			uniq(toDayOfYear(cd)) as dayofyear,
+			uniq(toDayOfMonth(cd)) as dayofmonth,
+			min(cd = toLastDayOfMonth(cd)) = TRUE as lastdayofmonth,
+			uniq(toISOWeek(cd)) as weekofyear,
+			uniq(toDayOfWeek(cd)) as dayofweek,
+			uniq(toHour(cd)) as hour,
+			uniq(toMinute(cd)) as minute,
+			uniq(toSecond(cd)) as second,
+			uniq(toUnixTimestamp64Milli(cd::DATETIME64) - toUnixTimestamp64Milli(date_trunc('minute', cd)::DATETIME64)) as ms
+		FROM cleaned_column
+		)
+		SELECT 
+		  COALESCE(
+			  case WHEN ms > 1 THEN 'MILLISECOND' else NULL END,
+			  CASE WHEN second > 1 THEN 'SECOND' else NULL END,
+			  CASE WHEN minute > 1 THEN 'MINUTE' else null END,
+			  CASE WHEN hour > 1 THEN 'HOUR' else null END,
+			  -- cases above, if equal to 1, then we have some candidates for
+			  -- bigger time grains. We need to reverse from here
+			  -- years, months, weeks, days.
+			  CASE WHEN dayofyear = 1 and year > 1 THEN 'YEAR' else null END,
+			  CASE WHEN (dayofmonth = 1 OR lastdayofmonth) and month > 1 THEN 'MONTH' else null END,
+			  CASE WHEN dayofweek = 1 and weekofyear > 1 THEN 'WEEK' else null END,
+			  CASE WHEN hour = 1 THEN 'DAY' else null END
+		  ) as estimatedSmallestTimeGrain
+		FROM time_grains
+		`,
+			safeName(q.ColumnName),
+			safeName(q.TableName),
+			useSample,
+		)
+	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -125,7 +169,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 	}
 	defer rows.Close()
 
-	var timeGrainString sql.NullString
+	var timeGrainString *string
 	if rows.Next() {
 		err := rows.Scan(&timeGrainString)
 		if err != nil {
@@ -138,12 +182,12 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return err
 	}
 
-	if !timeGrainString.Valid {
+	if timeGrainString == nil {
 		q.Result = runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED // It's the default value. This is just to clarify intended behavior.
 		return nil
 	}
 
-	q.Result = toTimeGrain(timeGrainString.String)
+	q.Result = toTimeGrain(*timeGrainString)
 	return nil
 }
 

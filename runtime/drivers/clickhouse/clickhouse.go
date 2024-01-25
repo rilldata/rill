@@ -46,6 +46,7 @@ func (d driver) Open(config map[string]any, shared bool, client activity.Client,
 	conn := &connection{
 		db:     db,
 		config: config,
+		logger: logger,
 	}
 	return conn, nil
 }
@@ -69,6 +70,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 type connection struct {
 	db     *sqlx.DB
 	config map[string]any
+	logger *zap.Logger
 }
 
 // Driver implements drivers.Connection.
@@ -128,6 +130,12 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
+	olap, _ := to.(*connection)
+	if c == to {
+		if store, ok := from.AsFileStore(); ok {
+			return NewFileStoreToClickHouse(store, olap, c.logger), true
+		}
+	}
 	return nil, false
 }
 

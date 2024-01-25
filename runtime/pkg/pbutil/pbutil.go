@@ -186,6 +186,19 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			return nil, err
 		}
 		return structpb.NewStructValue(v2), nil
+	case map[string]*string:
+		x := &structpb.Struct{Fields: make(map[string]*structpb.Value, len(v))}
+		for k, v := range v {
+			if !utf8.ValidString(k) {
+				return nil, fmt.Errorf("invalid UTF-8 in string: %q", k)
+			}
+			var err error
+			x.Fields[k], err = ToValue(v, nil)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return structpb.NewStructValue(x), nil
 	default:
 		// Default handling for basic types (ints, string, etc.)
 		return structpb.NewValue(v)

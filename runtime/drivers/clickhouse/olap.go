@@ -34,12 +34,27 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
-	return fmt.Errorf("clickhouse: data transformation not yet supported")
+	if view {
+		return c.Exec(ctx, &drivers.Statement{
+			Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), sql),
+		})
+	}
+	return c.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("CREATE OR REPLACE TABLE %s ENGINE = MergeTree ORDER BY tuple() AS %s", safeSQLName(name), sql),
+	})
 }
 
 // DropTable implements drivers.OLAPStore.
 func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
-	return fmt.Errorf("clickhouse: data transformation not yet supported")
+	var typ string
+	if view {
+		typ = "VIEW"
+	} else {
+		typ = "TABLE"
+	}
+	return c.Exec(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("DROP %s %s", typ, safeSQLName(name)),
+	})
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
@@ -49,7 +64,31 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byNam
 
 // RenameTable implements drivers.OLAPStore.
 func (c *connection) RenameTable(ctx context.Context, name, newName string, view bool) error {
-	return fmt.Errorf("clickhouse: data transformation not yet supported")
+	if !view {
+		return c.Exec(ctx, &drivers.Statement{
+			Query: fmt.Sprintf("RENAME TABLE %s TO %s", safeSQLName(name), safeSQLName(newName)),
+		})
+	}
+	res, err := c.Execute(ctx, &drivers.Statement{
+		Query: fmt.Sprintf("SHOW CREATE VIEW %s", safeSQLName(name)),
+	})
+	if err != nil {
+		return err
+	}
+
+	var sql string
+	if res.Next() {
+		if err := res.Scan(&sql); err != nil {
+			res.Close()
+			return err
+		}
+	}
+	res.Close()
+
+	sql = strings.Replace(sql, name, safeSQLName(newName), 1)
+	return c.Exec(ctx, &drivers.Statement{
+		Query: sql,
+	})
 }
 
 func (c *connection) Dialect() drivers.Dialect {
@@ -57,18 +96,25 @@ func (c *connection) Dialect() drivers.Dialect {
 }
 
 func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
-	return fmt.Errorf("clickhouse: WithConnection not supported")
-}
-
-func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	res, err := c.Execute(ctx, stmt)
+	conn, err := c.db.Conn(ctx)
 	if err != nil {
 		return err
 	}
-	if stmt.DryRun {
-		return nil
+	defer conn.Close()
+
+	return fn(ctx, ctx, conn)
+}
+
+func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
+	var cancelFunc context.CancelFunc
+	if stmt.ExecutionTimeout != 0 {
+		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
 	}
-	return res.Close()
+	_, err := c.db.ExecContext(ctx, stmt.Query, stmt.Args...)
+	if cancelFunc != nil {
+		cancelFunc()
+	}
+	return err
 }
 
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
@@ -104,6 +150,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 
 	schema, err := rowsToSchema(rows)
 	if err != nil {
+		rows.Close()
 		if cancelFunc != nil {
 			cancelFunc()
 		}
@@ -294,35 +341,52 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 
 	dbt = strings.ToUpper(dbt)
 	t := &runtimev1.Type{Nullable: nullable}
+	// int256 and uint256
 	switch dbt {
-	case "BOOLEAN":
+	case "BOOL":
 		t.Code = runtimev1.Type_CODE_BOOL
-	case "TINYINT":
+	case "INT8":
 		t.Code = runtimev1.Type_CODE_INT8
-	case "SMALLINT":
+	case "INT16":
 		t.Code = runtimev1.Type_CODE_INT16
-	case "INTEGER":
+	case "INT32":
 		t.Code = runtimev1.Type_CODE_INT32
-	case "BIGINT":
+	case "INT64":
 		t.Code = runtimev1.Type_CODE_INT64
-	case "FLOAT":
+	case "INT128":
+		t.Code = runtimev1.Type_CODE_INT128
+	case "UINT8":
+		t.Code = runtimev1.Type_CODE_UINT8
+	case "UINT16":
+		t.Code = runtimev1.Type_CODE_UINT16
+	case "UINT32":
+		t.Code = runtimev1.Type_CODE_UINT32
+	case "UINT64":
+		t.Code = runtimev1.Type_CODE_UINT64
+	case "UINT128":
+		t.Code = runtimev1.Type_CODE_UINT128
+	case "FLOAT32":
 		t.Code = runtimev1.Type_CODE_FLOAT32
-	case "DOUBLE":
+	case "FLOAT64":
 		t.Code = runtimev1.Type_CODE_FLOAT64
-	case "REAL":
+	case "DECIMAL": // todo :: check decimal
 		t.Code = runtimev1.Type_CODE_FLOAT64
-	case "DECIMAL":
-		t.Code = runtimev1.Type_CODE_FLOAT64
-	case "CHAR":
+	case "FIXEDSTRING":
 		t.Code = runtimev1.Type_CODE_STRING
-	case "VARCHAR":
+	case "STRING":
 		t.Code = runtimev1.Type_CODE_STRING
-	case "TIMESTAMP":
-		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "DATE":
+		t.Code = runtimev1.Type_CODE_DATE
+	case "DATE32":
 		t.Code = runtimev1.Type_CODE_DATE
 	case "DATETIME":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
+	case "DATETIME64":
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
+	case "JSON":
+		t.Code = runtimev1.Type_CODE_JSON
+	case "UUID":
+		t.Code = runtimev1.Type_CODE_UUID
 	case "OTHER":
 		t.Code = runtimev1.Type_CODE_JSON
 	}
