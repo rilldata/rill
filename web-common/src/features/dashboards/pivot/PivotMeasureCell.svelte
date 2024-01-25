@@ -5,8 +5,7 @@
 
 <style lang="postcss">
   .no-data-cell {
-    @apply italic;
-    color: var(--gray-300);
+    @apply italic text-gray-400;
     font-size: 0.925em;
   }
 </style>
