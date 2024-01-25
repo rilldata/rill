@@ -25,8 +25,8 @@ const (
 
 var (
 	meter                  = otel.Meter("github.com/rilldata/rill/runtime/pkg/activity")
-	deliverySuccessCounter = Must(meter.Int64Counter("kafka_delivery_success"))
-	deliveryFailureCounter = Must(meter.Int64Counter("kafka_delivery_failure"))
+	deliverySuccessCounter = must(meter.Int64Counter("kafka_delivery_success"))
+	deliveryFailureCounter = must(meter.Int64Counter("kafka_delivery_failure"))
 )
 
 // KafkaSink sinks events to a Kafka cluster.
@@ -79,7 +79,10 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error)
 func (s *KafkaSink) processProducerEvents(producer *kafka.Producer, logger *zap.Logger) {
 	for {
 		select {
-		case e := <-producer.Events():
+		case e, ok := <-producer.Events():
+			if !ok {
+				return
+			}
 			switch ev := e.(type) {
 			case *kafka.Message:
 				if ev.TopicPartition.Error != nil {
@@ -185,7 +188,7 @@ func retry(maxRetries int, delay time.Duration, fn func() error, retryOnErrFn fu
 	return err
 }
 
-func Must[T any](v T, err error) T {
+func must[T any](v T, err error) T {
 	if err != nil {
 		panic(err)
 	}
