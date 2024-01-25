@@ -72,7 +72,7 @@ function createColumnDefinitionForDimensions(
         ) as (d: Date) => string;
 
         displayValue = timeFormatter(dt);
-      }
+      } else if (displayValue === null) displayValue = "null";
       return {
         header: displayValue,
         columns: createNestedColumns(level + 1, {
