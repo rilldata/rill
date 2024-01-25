@@ -41,6 +41,14 @@ export const featureFlags = (() => {
         return flags;
       });
     },
+    update(changedFlags: Partial<FeatureFlags>) {
+      update((flags) => {
+        return {
+          ...flags,
+          ...changedFlags,
+        };
+      });
+    },
     toggle(...toggleFlags: (keyof FeatureFlags)[]) {
       update((flags) => {
         toggleFlags.forEach((n) => {
