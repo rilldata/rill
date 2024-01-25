@@ -2,7 +2,7 @@ export const disabledClasses = `disabled:cursor-not-allowed disabled:text-gray-7
 
 export const levels = {
   info: {
-    primary: `bg-gray-800 text-white border rounded-sm border-gray-800 hover:bg-gray-700 hover:border-gray-700 focus:ring-primary-ry-300`,
+    primary: `bg-gray-800 text-white border rounded-sm border-gray-800 hover:bg-gray-700 hover:border-gray-700 focus:ring-primary-300`,
     secondary:
       "text-gray-800 border rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-gray-700 hover:border-gray-300 focus:ring-primary-300",
     highlighted:
