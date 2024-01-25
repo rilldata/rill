@@ -21,51 +21,58 @@ type mapper interface {
 func getDBTypeNameToMapperMap() map[string]mapper {
 	m := make(map[string]mapper)
 
+	bit := bitMapper{}
+	numeric := numericMapper{}
+	char := charMapper{}
+	bytes := byteMapper{}
+	date := dateMapper{}
+	json := jsonMapper{}
+
 	// bit
-	m["BIT"] = &bitMapper{}
+	m["BIT"] = bit
 
 	// numeric
-	m["TINYINT"] = &numericMapper{}
-	m["SMALLINT"] = &numericMapper{}
-	m["MEDIUMINT"] = &numericMapper{}
-	m["INT"] = &numericMapper{}
-	m["UNSIGNED TINYINT"] = &numericMapper{}
-	m["UNSIGNED SMALLINT"] = &numericMapper{}
-	m["UNSIGNED INT"] = &numericMapper{}
-	m["UNSIGNED BIGINT"] = &numericMapper{}
-	m["BIGINT"] = &numericMapper{}
-	m["DOUBLE"] = &numericMapper{}
-	m["FLOAT"] = &numericMapper{}
+	m["TINYINT"] = numeric
+	m["SMALLINT"] = numeric
+	m["MEDIUMINT"] = numeric
+	m["INT"] = numeric
+	m["UNSIGNED TINYINT"] = numeric
+	m["UNSIGNED SMALLINT"] = numeric
+	m["UNSIGNED INT"] = numeric
+	m["UNSIGNED BIGINT"] = numeric
+	m["BIGINT"] = numeric
+	m["DOUBLE"] = numeric
+	m["FLOAT"] = numeric
 	// MySQL stores DECIMAL value in binary format
 	// It might be stored as string without losing precision
-	m["DECIMAL"] = &charMapper{}
+	m["DECIMAL"] = char
 
 	// string
-	m["CHAR"] = &charMapper{}
-	m["LONGTEXT"] = &charMapper{}
-	m["MEDIUMTEXT"] = &charMapper{}
-	m["TEXT"] = &charMapper{}
-	m["TINYTEXT"] = &charMapper{}
-	m["VARCHAR"] = &charMapper{}
+	m["CHAR"] = char
+	m["LONGTEXT"] = char
+	m["MEDIUMTEXT"] = char
+	m["TEXT"] = char
+	m["TINYTEXT"] = char
+	m["VARCHAR"] = char
 
 	// binary
-	m["BINARY"] = &byteMapper{}
-	m["TINYBLOB"] = &byteMapper{}
-	m["BLOB"] = &byteMapper{}
-	m["LONGBLOB"] = &byteMapper{}
-	m["MEDIUMBLOB"] = &byteMapper{}
-	m["VARBINARY"] = &byteMapper{}
+	m["BINARY"] = bytes
+	m["TINYBLOB"] = bytes
+	m["BLOB"] = bytes
+	m["LONGBLOB"] = bytes
+	m["MEDIUMBLOB"] = bytes
+	m["VARBINARY"] = bytes
 
 	// date and time
-	m["DATE"] = &dateMapper{}
-	m["DATETIME"] = &dateMapper{}
-	m["TIMESTAMP"] = &dateMapper{}
-	m["YEAR"] = &numericMapper{}
+	m["DATE"] = date
+	m["DATETIME"] = date
+	m["TIMESTAMP"] = date
+	m["YEAR"] = numeric
 	// TIME is scanned as bytes and can be converted to string
-	m["TIME"] = &charMapper{}
+	m["TIME"] = char
 
 	// json
-	m["JSON"] = &jsonMapper{}
+	m["JSON"] = json
 
 	return m
 }
@@ -87,7 +94,7 @@ var (
 
 type numericMapper struct{}
 
-func (m *numericMapper) runtimeType(st reflect.Type) (*runtimev1.Type, error) {
+func (m numericMapper) runtimeType(st reflect.Type) (*runtimev1.Type, error) {
 	switch st {
 	case scanTypeInt8:
 		return &runtimev1.Type{Code: runtimev1.Type_CODE_INT8}, nil
@@ -118,7 +125,7 @@ func (m *numericMapper) runtimeType(st reflect.Type) (*runtimev1.Type, error) {
 	}
 }
 
-func (m *numericMapper) dest(st reflect.Type) (any, error) {
+func (m numericMapper) dest(st reflect.Type) (any, error) {
 	switch st {
 	case scanTypeInt8:
 		return new(int8), nil
@@ -149,7 +156,7 @@ func (m *numericMapper) dest(st reflect.Type) (any, error) {
 	}
 }
 
-func (m *numericMapper) value(p any) (any, error) {
+func (m numericMapper) value(p any) (any, error) {
 	switch v := p.(type) {
 	case *int8:
 		return *v, nil
@@ -190,15 +197,15 @@ func (m *numericMapper) value(p any) (any, error) {
 
 type bitMapper struct{}
 
-func (m *bitMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
+func (m bitMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
 	return &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}, nil
 }
 
-func (m *bitMapper) dest(reflect.Type) (any, error) {
+func (m bitMapper) dest(reflect.Type) (any, error) {
 	return &[]byte{}, nil
 }
 
-func (m *bitMapper) value(p any) (any, error) {
+func (m bitMapper) value(p any) (any, error) {
 	switch bs := p.(type) {
 	case *[]byte:
 		if *bs == nil {
@@ -217,15 +224,15 @@ func (m *bitMapper) value(p any) (any, error) {
 
 type charMapper struct{}
 
-func (m *charMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
+func (m charMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
 	return &runtimev1.Type{Code: runtimev1.Type_CODE_STRING}, nil
 }
 
-func (m *charMapper) dest(reflect.Type) (any, error) {
+func (m charMapper) dest(reflect.Type) (any, error) {
 	return new(sql.NullString), nil
 }
 
-func (m *charMapper) value(p any) (any, error) {
+func (m charMapper) value(p any) (any, error) {
 	switch v := p.(type) {
 	case *sql.NullString:
 		vl, err := v.Value()
@@ -240,15 +247,15 @@ func (m *charMapper) value(p any) (any, error) {
 
 type byteMapper struct{}
 
-func (m *byteMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
+func (m byteMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
 	return &runtimev1.Type{Code: runtimev1.Type_CODE_BYTES}, nil
 }
 
-func (m *byteMapper) dest(reflect.Type) (any, error) {
+func (m byteMapper) dest(reflect.Type) (any, error) {
 	return &[]byte{}, nil
 }
 
-func (m *byteMapper) value(p any) (any, error) {
+func (m byteMapper) value(p any) (any, error) {
 	switch v := p.(type) {
 	case *[]byte:
 		if *v == nil {
@@ -262,15 +269,15 @@ func (m *byteMapper) value(p any) (any, error) {
 
 type dateMapper struct{}
 
-func (m *dateMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
+func (m dateMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
 	return &runtimev1.Type{Code: runtimev1.Type_CODE_DATE}, nil
 }
 
-func (m *dateMapper) dest(reflect.Type) (any, error) {
+func (m dateMapper) dest(reflect.Type) (any, error) {
 	return new(sql.NullTime), nil
 }
 
-func (m *dateMapper) value(p any) (any, error) {
+func (m dateMapper) value(p any) (any, error) {
 	switch v := p.(type) {
 	case *sql.NullTime:
 		vl, err := v.Value()
@@ -285,15 +292,15 @@ func (m *dateMapper) value(p any) (any, error) {
 
 type jsonMapper struct{}
 
-func (m *jsonMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
+func (m jsonMapper) runtimeType(reflect.Type) (*runtimev1.Type, error) {
 	return &runtimev1.Type{Code: runtimev1.Type_CODE_JSON}, nil
 }
 
-func (m *jsonMapper) dest(reflect.Type) (any, error) {
+func (m jsonMapper) dest(reflect.Type) (any, error) {
 	return new(sql.NullString), nil
 }
 
-func (m *jsonMapper) value(p any) (any, error) {
+func (m jsonMapper) value(p any) (any, error) {
 	switch v := p.(type) {
 	case *sql.NullString:
 		vl, err := v.Value()

@@ -77,6 +77,7 @@ type rowIterator struct {
 	row          []sqldriver.Value
 	fieldMappers []mapper
 	fieldDests   []any // Destinations are used while scanning rows
+	columnTypes  []*sql.ColumnType
 }
 
 // Close implements drivers.RowIterator.
@@ -88,6 +89,7 @@ func (r *rowIterator) Close() error {
 
 // Next implements drivers.RowIterator.
 func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
+	var err error
 	if !r.rows.Next() {
 		err := r.rows.Err()
 		if err == nil {
@@ -99,14 +101,9 @@ func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
 		return nil, err
 	}
 
-	cts, err := r.rows.ColumnTypes()
-	if err != nil {
-		return nil, err
-	}
-
 	// Scan expects destinations to be pointers
 	for i := range r.fieldDests {
-		r.fieldDests[i], err = r.fieldMappers[i].dest(cts[i].ScanType())
+		r.fieldDests[i], err = r.fieldMappers[i].dest(r.columnTypes[i].ScanType())
 		if err != nil {
 			return nil, err
 		}
@@ -165,9 +162,14 @@ func (r *rowIterator) setSchema() error {
 	}
 
 	r.schema = &runtimev1.StructType{Fields: fields}
-	r.fieldMappers = mappers
 	r.row = make([]sqldriver.Value, len(r.schema.Fields))
+	r.fieldMappers = mappers
 	r.fieldDests = make([]any, len(r.schema.Fields))
+	r.columnTypes, err = r.rows.ColumnTypes()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
