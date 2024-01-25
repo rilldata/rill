@@ -1,10 +1,10 @@
 <script lang="ts">
   import { TabGroup, TabList } from "@rgossiaux/svelte-headlessui";
-  import Tab from "./Tab.svelte";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import Chart from "@rilldata/web-common/components/icons/Chart.svelte";
   import Pivot from "@rilldata/web-common/components/icons/Pivot.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import Tab from "./Tab.svelte";
 
   const StateManagers = getStateManagers();
 
@@ -30,7 +30,6 @@
 
   function handleTabChange(event: CustomEvent) {
     const selectedTab = tabs[event.detail];
-    console.log(`Switching to tab: ${selectedTab.label}`);
 
     metricsExplorerStore.setPivotMode(
       $metricsViewName,
