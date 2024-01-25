@@ -10,8 +10,6 @@ import (
 // Sink is used by a bufferedClient to flush collected Event-s.
 type Sink interface {
 	Sink(ctx context.Context, events []Event) error
-	// SetActivity sets activity client so that a sink can emit activity events
-	SetActivity(activity Client)
 	Close() error
 }
 
