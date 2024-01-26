@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -16,7 +17,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const alertExecutionHistoryLimit = 10
+const alertExecutionHistoryLimit = 25
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindAlert, newAlertReconciler)
@@ -81,7 +82,6 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			Status:       runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR,
 			ErrorMessage: "Internal: alert execution was interrupted unexpectedly",
 		}
-		a.State.CurrentExecution.FinishedOn = timestamppb.Now()
 		err = r.popCurrentExecution(ctx, self, a)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -113,68 +113,19 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{}
 	}
 
-	// Determine time to evaluate the alert relative to.
-	// We use the "clean" scheduled time unless it's an ad-hoc trigger.
-	// TODO: We can incorporate watermarks here.
-	var alertTime *timestamppb.Timestamp
+	// Evaluate the trigger time of the alert. If triggered by schedule, we use the "clean" scheduled time.
+	// Note: Correction for watermarks and intervals is done in checkAlert.
+	var triggerTime time.Time
 	if scheduleTrigger && !adhocTrigger && !hashTrigger {
-		alertTime = a.State.NextRunOn
+		triggerTime = a.State.NextRunOn.AsTime()
 	} else {
-		alertTime = timestamppb.Now()
+		triggerTime = time.Now()
 	}
 
-	// Create new execution and save in State.CurrentExecution
-	a.State.CurrentExecution = &runtimev1.AlertExecution{
-		Adhoc:     adhocTrigger,
-		AlertTime: alertTime,
-		StartedOn: timestamppb.Now(),
-	}
-	err = r.C.UpdateState(ctx, self.Meta.Name, self)
-	if err != nil {
-		return runtime.ReconcileResult{Err: err}
-	}
+	// Run alert queries and send emails
+	retry, alertErr := r.checkAlert(ctx, self, a, triggerTime, adhocTrigger)
 
-	// Execute report
-	res, dirtyErr, alertErr := r.checkAlert(ctx, self, a, alertTime.AsTime())
-
-	// Update CurrentExecution
-	a.State.CurrentExecution.Result = res
-	a.State.CurrentExecution.FinishedOn = timestamppb.Now()
-
-	// If the check failed, set CurrentExecution.Result to an error and determine whether to retry.
-	// We're only going to retry on non-dirty cancellations.
-	retry := false
-	if alertErr != nil {
-		var msg string
-		if errors.Is(alertErr, context.Canceled) {
-			if dirtyErr {
-				msg = "Alert check was interrupted after some emails were sent. The alert will not automatically retry."
-			} else {
-				retry = true
-				msg = "Alert check was interrupted. It will automatically retry."
-			}
-		} else {
-			msg = fmt.Sprintf("Alert check failed: %v", alertErr.Error())
-		}
-		a.State.CurrentExecution.Result = &runtimev1.AssertionResult{
-			Status:       runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR,
-			ErrorMessage: msg,
-		}
-		alertErr = fmt.Errorf("Last alert check failed with error: %v", alertErr.Error())
-	}
-
-	// Log it
-	if alertErr != nil {
-		r.C.Logger.Error("Alert check failed", zap.String("name", self.Meta.Name.Name), zap.Error(alertErr))
-	}
-
-	// Commit CurrentExecution to history
-	err = r.popCurrentExecution(ctx, self, a)
-	if err != nil {
-		return runtime.ReconcileResult{Err: err}
-	}
-
-	// If we want to retry, exit without updating any other trigger-related state.
+	// If we were cancelled, exit without updating any other trigger-related state.
 	// NOTE: We don't set Retrigger here because we'll leave re-scheduling to whatever cancelled the reconciler.
 	if retry {
 		return runtime.ReconcileResult{Err: alertErr}
@@ -305,6 +256,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 		panic(fmt.Errorf("attempting to pop current execution when there is none"))
 	}
 
+	a.State.CurrentExecution.FinishedOn = timestamppb.Now()
 	a.State.ExecutionHistory = slices.Insert(a.State.ExecutionHistory, 0, a.State.CurrentExecution)
 	a.State.CurrentExecution = nil
 
@@ -335,18 +287,163 @@ func (r *AlertReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 
-// checkAlert runs the alert query and maybe sends emails.
-// It returns true if an error occurred after some or all emails were sent.
-func (r *AlertReconciler) checkAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, t time.Time) (*runtimev1.AssertionResult, bool, error) {
-	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("alert_time", t))
+// checkAlert runs queries and (maybe) sends emails for the alert. It also adds entries to a.State.ExecutionHistory.
+// By default, an alert is checked once for the current watermark, but if a.Spec.IntervalsIsoDuration is set, it will be checked *for each* interval that has elapsed since the previous execution watermark.
+func (r *AlertReconciler) checkAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, triggerTime time.Time, adhocTrigger bool) (bool, error) {
+	// Check refs
+	executionErr := checkRefs(ctx, r.C, self.Meta.Refs)
 
-	// Check refs - stop if any of them are invalid
-	err := checkRefs(ctx, r.C, self.Meta.Refs)
-	if err != nil {
-		return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR, ErrorMessage: err.Error()}, false, nil
+	// Evaluate watermark unless refs check failed.
+	watermark := triggerTime
+	if executionErr == nil && a.Spec.WatermarkInherit {
+		t, ok, err := r.computeInheritedWatermark(ctx, self.Meta.Refs)
+		if err != nil {
+			executionErr = err
+		} else if ok {
+			watermark = t
+		}
+		// If !ok, no watermark could be computed. So we'll just use the trigger time.
 	}
 
-	// TODO: Implement
+	// Evaluate previous watermark (will be equal to watermark if there was no previous execution)
+	previousWatermark := watermark
+	if executionErr == nil && a.State.ExecutionHistory != nil {
+		for _, e := range a.State.ExecutionHistory {
+			previousWatermark = e.ExecutionTime.AsTime()
+			break
+		}
+	}
 
-	return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, false, nil
+	// Evaluate and invoke intervals and add to execution history
+	dirty := false
+	if executionErr == nil {
+		log.Printf("HERE: %v", previousWatermark)
+		// TODO: Evaluate intervals
+		// TODO: Call checkSingleAlert for each interval
+		// TODO: Add to execution history.
+		// TODO: Update executionErr
+	}
+
+	// If executionErr is nil, we're done.
+	if executionErr == nil {
+		return false, nil
+	}
+
+	// If executionErr is a non-dirty cancellation, we're also done.
+	if errors.Is(executionErr, context.Canceled) && !dirty {
+		return false, executionErr
+	}
+
+	// There was an execution error. Add it to the execution history.
+	if a.State.CurrentExecution == nil {
+		// CurrentExecution will only be nil if we never made it to the point of checking the alert query.
+		a.State.CurrentExecution = &runtimev1.AlertExecution{
+			Adhoc:         adhocTrigger,
+			ExecutionTime: nil, // TODO: What to put here? triggerTime? watermark? nil? (the most recently tried interval?)
+			StartedOn:     timestamppb.Now(),
+		}
+	}
+	a.State.CurrentExecution.Result = &runtimev1.AssertionResult{
+		Status:       runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR,
+		ErrorMessage: executionErr.Error(),
+	}
+	a.State.CurrentExecution.FinishedOn = timestamppb.Now()
+	err := r.popCurrentExecution(ctx, self, a)
+	if err != nil {
+		return false, err
+	}
+
+	return !dirty, executionErr
+}
+
+// checkAlert runs the alert query and maybe sends emails.
+// It returns true if an error occurred after some or all emails were sent.
+func (r *AlertReconciler) checkSingleAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, executionTime time.Time, adhocTrigger bool) (bool, error) {
+	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+
+	// Create new execution and save in State.CurrentExecution
+	a.State.CurrentExecution = &runtimev1.AlertExecution{
+		Adhoc:         adhocTrigger,
+		ExecutionTime: timestamppb.New(executionTime),
+		StartedOn:     timestamppb.Now(),
+	}
+	err := r.C.UpdateState(ctx, self.Meta.Name, self)
+	if err != nil {
+		return false, err
+	}
+
+	// Query and email
+	res, dirtyErr, alertErr := r.executeSingleAlert(ctx, self, a, executionTime)
+
+	// If there was no error, we're done.
+	if alertErr == nil {
+		a.State.CurrentExecution.Result = res
+		a.State.CurrentExecution.FinishedOn = timestamppb.Now()
+		err = r.popCurrentExecution(ctx, self, a)
+		if err != nil {
+			return true, err
+		}
+		return false, nil
+	}
+
+	// If the error is a non-dirty cancellation, we're also done (will be retried)
+	if errors.Is(alertErr, context.Canceled) && !dirtyErr {
+		// Pretend the CurrentExecution never happened
+		a.State.CurrentExecution = nil
+		err = r.C.UpdateState(ctx, self.Meta.Name, self)
+		if err != nil {
+			return false, err
+		}
+
+		return false, alertErr
+	}
+
+	// There was an error. Add it to the execution history.
+	if errors.Is(alertErr, context.Canceled) {
+		alertErr = fmt.Errorf("Alert check was interrupted after some emails were sent. The alert will not automatically retry.")
+	} else {
+		alertErr = fmt.Errorf("Alert check failed: %v", alertErr.Error())
+	}
+	a.State.CurrentExecution.Result = &runtimev1.AssertionResult{
+		Status:       runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR,
+		ErrorMessage: alertErr.Error(),
+	}
+
+	// Commit CurrentExecution to history
+	err = r.popCurrentExecution(ctx, self, a)
+	if err != nil {
+		return true, err
+	}
+
+	return dirtyErr, alertErr
+}
+
+// executeSingleAlert runs the alert query and maybe sends emails.
+// It returns true if an error occurred after some or all emails were sent.
+func (r *AlertReconciler) executeSingleAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, executionTime time.Time) (*runtimev1.AssertionResult, bool, error) {
+	// TODO: Implement
+	r.C.Logger.Info("Triggered alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+	return nil, false, nil
+}
+
+// computeInheritedWatermark computes the inherited watermark for the alert.
+// It returns false if the watermark could not be computed.
+func (r *AlertReconciler) computeInheritedWatermark(ctx context.Context, refs []*runtimev1.ResourceName) (time.Time, bool, error) {
+	var t time.Time
+	for _, ref := range refs {
+		rs, err := r.C.Get(ctx, ref, false)
+		if err != nil {
+			return time.Time{}, false, fmt.Errorf("failed to get ref %v: %w", ref, err)
+		}
+
+		// Currently only metrics views have watermarks
+		mv := rs.GetMetricsView()
+		if mv == nil {
+			continue
+		}
+
+		// TODO: Query for the watermark
+	}
+
+	return t, !t.IsZero(), nil
 }
