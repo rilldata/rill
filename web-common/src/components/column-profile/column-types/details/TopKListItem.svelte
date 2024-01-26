@@ -4,7 +4,7 @@
   import { slide } from "svelte/transition";
 
   export let value: number; // should be between 0 and 1.
-  export let color = "bg-blue-200 dark:bg-blue-600";
+  export let color = "bg-primary-200 dark:bg-primary-600";
 
   /** compact mode is used in e.g. profiles */
 

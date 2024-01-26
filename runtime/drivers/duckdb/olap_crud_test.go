@@ -347,7 +347,7 @@ func Test_connection_CreateTableAsSelectStorageLimits(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	sql := "SELECT * from read_parquet('../../../web-local/test/data/AdBids.parquet')"
+	sql := "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')"
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
 			err := tt.c.CreateTableAsSelect(ctx, tt.name, tt.view, sql)
@@ -371,15 +371,15 @@ func Test_connection_InsertTableAsSelectLimits(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/test/data/AdBids.parquet')")
+	err = c.CreateTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')")
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/test/data/AdBids.parquet')")
+	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')")
 	if err != nil {
 		require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
 	}
 
-	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/test/data/AdBids.parquet')")
+	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')")
 	require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
 }
 

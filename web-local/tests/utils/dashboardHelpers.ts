@@ -1,8 +1,8 @@
-import { expect } from "@playwright/test";
+import { expect, Locator } from "@playwright/test";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
-import { waitForValidResource } from "web-local/test/ui/utils/commonHelpers";
-import { clickMenuButton, openEntityMenu } from "./helpers";
+import { waitForValidResource } from "web-local/tests/utils/commonHelpers";
+import { clickMenuButton, openEntityMenu } from "./commonHelpers";
 
 export async function createDashboardFromSource(page: Page, source: string) {
   await openEntityMenu(page, source);
@@ -175,6 +175,21 @@ export async function interactWithTimeRangeMenu(
   // Wait for menu to close
   await expect(
     page.getByRole("menu", { name: "Time range selector" }),
+  ).not.toBeVisible();
+}
+
+export async function interactWithComparisonMenu(
+  page: Page,
+  curLabel: string,
+  cb: (l: Locator) => void | Promise<void>,
+) {
+  // Open the menu
+  await page.getByRole("button", { name: curLabel }).click();
+  // Run the defined interactions
+  await cb(page.getByLabel("Comparison selector"));
+  // Wait for menu to close
+  await expect(
+    page.getByRole("menu", { name: "Comparison selector" }),
   ).not.toBeVisible();
 }
 

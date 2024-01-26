@@ -8,12 +8,12 @@ import {
   getEntityLink,
   TestEntityType,
   waitForProfiling,
-} from "./helpers";
+} from "./commonHelpers";
 import { waitForEntity } from "./waitHelpers";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-export const TestDataPath = path.join(__dirname, "../../data");
+export const TestDataPath = path.join(__dirname, "../data");
 
 /**
  * Used to upload local file as a source

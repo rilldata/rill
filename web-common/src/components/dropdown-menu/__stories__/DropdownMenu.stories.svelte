@@ -1,9 +1,10 @@
 <script lang="ts">
   import { Meta, Story } from "@storybook/addon-svelte-csf";
   import * as DropdownMenu from "..";
-  import { buttonClasses } from "../../button/classes";
+
   import CopyIcon from "../../icons/CopyIcon.svelte";
   import DashboardIcon from "../../icons/DashboardIcon.svelte";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   let subMenuOpen = false;
 </script>
@@ -12,8 +13,8 @@
 
 <Story name="Simple">
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger class={buttonClasses({ type: "secondary" })}>
-      Open menu
+    <DropdownMenu.Trigger asChild let:builder>
+      <Button builders={[builder]} type="secondary">Open menu</Button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
       <DropdownMenu.Item>Option 1</DropdownMenu.Item>
@@ -24,8 +25,8 @@
 
 <Story name="With icons">
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger class={buttonClasses({ type: "secondary" })}>
-      Open menu
+    <DropdownMenu.Trigger asChild let:builder>
+      <Button builders={[builder]} type="secondary">Open menu</Button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
       <DropdownMenu.Item>
@@ -42,8 +43,8 @@
 
 <Story name="With submenu">
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger class={buttonClasses({ type: "secondary" })}>
-      Open menu
+    <DropdownMenu.Trigger asChild let:builder>
+      <Button builders={[builder]} type="secondary">Open menu</Button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start">
       <DropdownMenu.Sub bind:open={subMenuOpen}>

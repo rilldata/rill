@@ -142,7 +142,7 @@
         stroke-width="4"
         class={showComparisonText && !comparisonIsPositive
           ? "stroke-red-300"
-          : "stroke-blue-300"}
+          : "stroke-primary-300"}
       />
       {#if showComparisonText}
         {@const signedDist = !comparisonIsPositive
@@ -159,7 +159,7 @@
             y2={yLoc + signedDist}
             class={showComparisonText && !comparisonIsPositive
               ? "stroke-red-300"
-              : "stroke-blue-300"}
+              : "stroke-primary-300"}
           />
           <line
             x1={output.x}
@@ -169,7 +169,7 @@
             y2={yLoc + signedDist}
             class={showComparisonText && !comparisonIsPositive
               ? "stroke-red-300"
-              : "stroke-blue-300"}
+              : "stroke-primary-300"}
           />
         {/if}
       {/if}
@@ -182,7 +182,7 @@
         r="3"
         class={showComparisonText && !comparisonIsPositive
           ? "fill-red-600"
-          : "fill-blue-500"}
+          : "fill-primary-500"}
       />
     {/if}
     {#if !isNull && showPoint && showComparisonText}
@@ -193,7 +193,7 @@
         r="3"
         class={showComparisonText && !comparisonIsPositive
           ? "fill-red-600"
-          : "fill-blue-500"}
+          : "fill-primary-500"}
       />
     {/if}
     {#if showComparisonText && percentageDifference}

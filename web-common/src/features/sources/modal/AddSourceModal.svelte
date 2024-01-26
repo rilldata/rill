@@ -1,6 +1,7 @@
 <script lang="ts">
   import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
+  import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import {
     createRuntimeServiceListConnectors,
     V1ConnectorSpec,
@@ -43,6 +44,7 @@
     "athena",
     "duckdb",
     "postgres",
+    "mysql",
     "sqlite",
     "snowflake",
     "salesforce",
@@ -59,6 +61,7 @@
     athena: AmazonAthena,
     duckdb: DuckDB,
     postgres: Postgres,
+    mysql: MySQL,
     sqlite: SQLite,
     snowflake: Snowflake,
     salesforce: Salesforce,
@@ -161,7 +164,7 @@
       <div class="text-slate-500">
         Don't see what you're looking for? <button
           on:click={goToRequestConnector}
-          class="text-blue-500 hover:text-blue-600 font-medium"
+          class="text-primary-500 hover:text-primary-600 font-medium"
           >Request a new connector</button
         >
       </div>

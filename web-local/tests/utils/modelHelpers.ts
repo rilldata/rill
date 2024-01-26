@@ -1,7 +1,11 @@
-import type { Page } from "playwright";
 import { expect } from "@playwright/test";
-import { renameEntityUsingTitle } from "./commonHelpers";
-import { clickMenuButton, openEntityMenu, TestEntityType } from "./helpers";
+import type { Page } from "playwright";
+import {
+  clickMenuButton,
+  openEntityMenu,
+  renameEntityUsingTitle,
+  TestEntityType,
+} from "./commonHelpers";
 import { waitForEntity } from "./waitHelpers";
 
 export async function createModel(page: Page, name: string) {

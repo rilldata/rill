@@ -1,30 +1,18 @@
+import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
 import {
-  createDashboardFromModel,
+  interactWithComparisonMenu,
+  interactWithTimeRangeMenu,
   waitForDashboard,
 } from "../utils/dashboardHelpers";
-import { createAdBidsModel } from "../utils/dataSpecifcHelpers";
 import { test, expect } from "@playwright/test";
 import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
 import { updateCodeEditor } from "../utils/commonHelpers";
 
 test.describe("smoke tests for number formatting", () => {
   startRuntimeForEachTest();
+  useDashboardFlowTestSetup();
 
   test("smoke tests for number formatting", async ({ page }) => {
-    test.setTimeout(60000);
-    await page.goto("/");
-    // disable animations
-    await page.addStyleTag({
-      content: `
-        *, *::before, *::after {
-          animation-duration: 0s !important;
-          transition-duration: 0s !important;
-        }
-      `,
-    });
-    await createAdBidsModel(page);
-    await createDashboardFromModel(page, "AdBids_model");
-
     // open metrics editor
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 
@@ -152,8 +140,12 @@ dimensions:
     await page.getByRole("button", { name: "percentage", exact: true }).click();
     await page.getByRole("menuitem", { name: "interval_ms" }).click();
     // ...and add a time comparison to check absolute change
-    await page.getByRole("button", { name: "Select time range" }).click();
-    await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
+    await interactWithTimeRangeMenu(page, async () => {
+      await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
+    });
+    await interactWithComparisonMenu(page, "No comparison", (l) =>
+      l.getByRole("menuitem", { name: "Time" }).click(),
+    );
 
     await expect(
       page.getByRole("button", { name: "null 27 s 33%" }),
