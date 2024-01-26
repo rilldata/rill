@@ -1158,7 +1158,7 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort, comparisonMap ma
 			if compareQuery {
 				return fmt.Errorf("sort measure '%s' is not present in the comparison measures", s.Name)
 			}
-			// for backward compatibility, UI still sends the old stage sometimes while switching from compare to no comparison
+			// for backward compatibility, UI uses the old state while switching from compare to no comparison
 			// in that case just sort the measure by base value
 			s.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
 		}
