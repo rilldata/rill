@@ -184,6 +184,8 @@ message MetricsViewSpec {
   string description = 4;
   // Name of the primary time dimension, used for rendering time series
   string time_dimension = 5;
+  // Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
+  string watermark_expression = 18;
   // Dimensions in the metrics view
   repeated DimensionV2 dimensions = 6;
   // Measures in the metrics view

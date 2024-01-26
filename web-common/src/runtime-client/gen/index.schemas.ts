@@ -1196,6 +1196,8 @@ export interface V1MetricsViewSpec {
   title?: string;
   description?: string;
   timeDimension?: string;
+  /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
+  watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimensionV2[];
   measures?: MetricsViewSpecMeasureV2[];
   smallestTimeGrain?: V1TimeGrain;

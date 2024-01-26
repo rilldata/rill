@@ -2597,6 +2597,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for TimeDimension
 
+	// no validation rules for WatermarkExpression
+
 	for idx, item := range m.GetDimensions() {
 		_, _ = idx, item
 

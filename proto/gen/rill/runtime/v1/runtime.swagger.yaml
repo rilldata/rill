@@ -3821,6 +3821,9 @@ definitions:
       timeDimension:
         type: string
         title: Name of the primary time dimension, used for rendering time series
+      watermarkExpression:
+        type: string
+        description: Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
       dimensions:
         type: array
         items:

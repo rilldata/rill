@@ -24,6 +24,7 @@ type MetricsViewYAML struct {
 	Model              string           `yaml:"model"`
 	Table              string           `yaml:"table"`
 	TimeDimension      string           `yaml:"timeseries"`
+	Watermark          string           `yaml:"watermark"`
 	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
 	DefaultTimeRange   string           `yaml:"default_time_range"`
 	AvailableTimeZones []string         `yaml:"available_time_zones"`
@@ -404,6 +405,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.Title = tmp.Title
 	spec.Description = tmp.Description
 	spec.TimeDimension = tmp.TimeDimension
+	spec.WatermarkExpression = tmp.Watermark
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.DefaultTimeRange = tmp.DefaultTimeRange
 	spec.AvailableTimeZones = tmp.AvailableTimeZones

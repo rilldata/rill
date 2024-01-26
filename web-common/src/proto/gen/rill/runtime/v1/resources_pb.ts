@@ -934,6 +934,13 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   timeDimension = "";
 
   /**
+   * Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
+   *
+   * @generated from field: string watermark_expression = 18;
+   */
+  watermarkExpression = "";
+
+  /**
    * Dimensions in the metrics view
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.DimensionV2 dimensions = 6;
@@ -1030,6 +1037,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 3, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "watermark_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_DimensionV2, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_MeasureV2, repeated: true },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
