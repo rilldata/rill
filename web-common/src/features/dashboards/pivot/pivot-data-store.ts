@@ -156,9 +156,11 @@ let lastPivotColumnDef: ColumnDef<PivotDataRow>[] = [];
 
 /**
  * The expanded table has to iterate over itself to find nested dimension values
- * which are being expanded.
+ * which are being expanded. Since the expanded values are added in one go, the previously
+ * expanded values are not available in the table data. This map stores the expanded table
+ * data for each pivot config. This is cleared when the pivot config changes.
  */
-const expandedTableMap: Record<string, PivotDataRow[]> = {};
+let expandedTableMap: Record<string, PivotDataRow[]> = {};
 
 /**
  * Main store for pivot table data
@@ -356,6 +358,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                       );
 
                       const key = getPivotConfigKey(config);
+                      expandedTableMap = {};
                       expandedTableMap[key] = tableDataExpanded;
                     }
                     lastPivotData = tableDataExpanded;
