@@ -8,24 +8,24 @@ import {
 import { Readable, derived, writable } from "svelte/store";
 
 import {
-  V1TimeSeriesValue,
-  createQueryServiceMetricsViewAggregation,
-  createQueryServiceMetricsViewTimeSeries,
-  V1Expression,
-} from "@rilldata/web-common/runtime-client";
-import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
-import {
   CHECKMARK_COLORS,
   LINE_COLORS,
 } from "@rilldata/web-common/features/dashboards/config";
-import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import {
+  V1Expression,
+  V1TimeSeriesValue,
+  createQueryServiceMetricsViewAggregation,
+  createQueryServiceMetricsViewTimeSeries,
+} from "@rilldata/web-common/runtime-client";
+import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
 
 export interface DimensionDataItem {
   value: string;
@@ -208,7 +208,7 @@ export function getDimensionValueTimeSeries(
       if (dashboardStore?.selectedScrubRange?.isScrubbing) return;
 
       return derived(
-        dimensionValues?.values?.map((value, i) => {
+        (dimensionValues?.values ?? [])?.map((value, i) => {
           // create a copy
           const updatedFilter =
             filterExpressions(dimensionValues?.filter, () => true) ??
