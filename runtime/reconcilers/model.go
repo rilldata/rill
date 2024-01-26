@@ -154,6 +154,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	trigger = trigger || !exists
 	trigger = trigger || !refreshOn.IsZero() && time.Now().After(refreshOn)
 
+	// Don't trigger if disabled
+	disabled := model.Spec.RefreshSchedule != nil && model.Spec.RefreshSchedule.Disable
+	trigger = trigger && !disabled
+
 	// We support "delayed materialization" for models. It will materialize a model if it stays unchanged for a duration of time.
 	// This is useful to support keystroke-by-keystroke editing.
 	var delayedMaterializeOn time.Time
@@ -334,17 +338,20 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 			return "", err
 		}
 
-		// Write state version (doesn't matter how the spec or meta has changed, only if/when state changes)
-		r, err := r.C.Get(ctx, ref, false)
-		var stateVersion int64
-		if err == nil {
-			stateVersion = r.Meta.StateVersion
-		} else {
-			stateVersion = -1
-		}
-		err = binary.Write(hash, binary.BigEndian, stateVersion)
-		if err != nil {
-			return "", err
+		// Incorporate the ref's state version in the hash if and only if we are supposed to trigger when a ref has refreshed (denoted by RefreshSchedule.RefUpdate).
+		if spec.RefreshSchedule != nil && spec.RefreshSchedule.RefUpdate {
+			// Note: Only writing the state version to the hash, not spec version, because it doesn't matter whether the spec/meta changes, only whether the state changes.
+			r, err := r.C.Get(ctx, ref, false)
+			var stateVersion int64
+			if err == nil {
+				stateVersion = r.Meta.StateVersion
+			} else {
+				stateVersion = -1
+			}
+			err = binary.Write(hash, binary.BigEndian, stateVersion)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 

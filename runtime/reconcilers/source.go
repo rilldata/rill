@@ -152,6 +152,10 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	trigger = trigger || !tableExists                                       // If the table has disappeared
 	trigger = trigger || !refreshOn.IsZero() && time.Now().After(refreshOn) // If the schedule says it's time
 
+	// Don't trigger if disabled
+	disabled := src.Spec.RefreshSchedule != nil && src.Spec.RefreshSchedule.Disable
+	trigger = trigger && !disabled
+
 	// Exit early if no trigger
 	if !trigger {
 		return runtime.ReconcileResult{Retrigger: refreshOn}

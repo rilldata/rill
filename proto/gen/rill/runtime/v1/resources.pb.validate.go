@@ -6618,6 +6618,10 @@ func (m *Schedule) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for RefUpdate
+
+	// no validation rules for Disable
+
 	// no validation rules for Cron
 
 	// no validation rules for TickerSeconds

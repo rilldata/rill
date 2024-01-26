@@ -376,6 +376,8 @@ message ThemeSpec {
 message ThemeState {}
 
 message Schedule {
+  bool ref_update = 4;
+  bool disable = 5;
   string cron = 1;
   uint32 ticker_seconds = 2;
   string time_zone = 3;

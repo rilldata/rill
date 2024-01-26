@@ -98,7 +98,8 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	adhocTrigger := a.Spec.Trigger
 	hashTrigger := a.State.SpecHash != hash
 	scheduleTrigger := a.State.NextRunOn != nil && !a.State.NextRunOn.AsTime().After(time.Now())
-	trigger := adhocTrigger || hashTrigger || scheduleTrigger
+	disabled := a.Spec.RefreshSchedule != nil && a.Spec.RefreshSchedule.Disable
+	trigger := !disabled && (adhocTrigger || hashTrigger || scheduleTrigger)
 
 	// If not triggering now, update NextRunOn and retrigger when it falls due
 	if !trigger {
@@ -224,17 +225,20 @@ func (r *AlertReconciler) executionSpecHash(ctx context.Context, spec *runtimev1
 			return "", err
 		}
 
-		// Write state version (doesn't matter how the spec or meta has changed, only if/when state changes)
-		r, err := r.C.Get(ctx, ref, false)
-		var stateVersion int64
-		if err == nil {
-			stateVersion = r.Meta.StateVersion
-		} else {
-			stateVersion = -1
-		}
-		err = binary.Write(hash, binary.BigEndian, stateVersion)
-		if err != nil {
-			return "", err
+		// Incorporate the ref's state version in the hash if and only if we are supposed to trigger when a ref has refreshed (denoted by RefreshSchedule.RefUpdate).
+		if spec.RefreshSchedule != nil && spec.RefreshSchedule.RefUpdate {
+			// Note: Only writing the state version to the hash, not spec version, because it doesn't matter whether the spec/meta changes, only whether the state changes.
+			r, err := r.C.Get(ctx, ref, false)
+			var stateVersion int64
+			if err == nil {
+				stateVersion = r.Meta.StateVersion
+			} else {
+				stateVersion = -1
+			}
+			err = binary.Write(hash, binary.BigEndian, stateVersion)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 

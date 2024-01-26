@@ -651,6 +651,8 @@ export interface V1Source {
 }
 
 export interface V1Schedule {
+  refUpdate?: boolean;
+  disable?: boolean;
   cron?: string;
   tickerSeconds?: number;
   timeZone?: string;

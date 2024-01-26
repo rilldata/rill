@@ -94,9 +94,11 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	// Determine whether to trigger
 	adhocTrigger := rep.Spec.Trigger
 	scheduleTrigger := rep.State.NextRunOn != nil && !rep.State.NextRunOn.AsTime().After(time.Now())
+	disabled := rep.Spec.RefreshSchedule != nil && rep.Spec.RefreshSchedule.Disable
+	trigger := !disabled && (adhocTrigger || scheduleTrigger)
 
 	// If not triggering now, update NextRunOn and retrigger when it falls due
-	if !adhocTrigger && !scheduleTrigger {
+	if !trigger {
 		err = r.updateNextRunOn(ctx, self, rep)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}

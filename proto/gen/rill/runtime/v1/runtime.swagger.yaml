@@ -4842,6 +4842,10 @@ definitions:
   v1Schedule:
     type: object
     properties:
+      refUpdate:
+        type: boolean
+      disable:
+        type: boolean
       cron:
         type: string
       tickerSeconds:

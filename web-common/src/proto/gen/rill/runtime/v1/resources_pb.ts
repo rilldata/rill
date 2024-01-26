@@ -2738,6 +2738,16 @@ export class ThemeState extends Message<ThemeState> {
  */
 export class Schedule extends Message<Schedule> {
   /**
+   * @generated from field: bool ref_update = 4;
+   */
+  refUpdate = false;
+
+  /**
+   * @generated from field: bool disable = 5;
+   */
+  disable = false;
+
+  /**
    * @generated from field: string cron = 1;
    */
   cron = "";
@@ -2760,6 +2770,8 @@ export class Schedule extends Message<Schedule> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.Schedule";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 4, name: "ref_update", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "disable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 1, name: "cron", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "ticker_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },

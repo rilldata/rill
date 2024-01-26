@@ -120,18 +120,32 @@ func (p *Parser) parseSource(ctx context.Context, node *Node) error {
 // ScheduleYAML is the raw structure of a refresh schedule clause defined in YAML.
 // This does not represent a stand-alone YAML file, just a partial used in other structs.
 type ScheduleYAML struct {
-	Cron     string `yaml:"cron" mapstructure:"cron"`
-	Every    string `yaml:"every" mapstructure:"every"`
-	TimeZone string `yaml:"time_zone" mapstructure:"time_zone"`
-	Disable  bool   `yaml:"disable" mapstructure:"disable"`
+	RefUpdate *bool  `yaml:"ref_update" mapstructure:"ref_update"`
+	Cron      string `yaml:"cron" mapstructure:"cron"`
+	Every     string `yaml:"every" mapstructure:"every"`
+	TimeZone  string `yaml:"time_zone" mapstructure:"time_zone"`
+	Disable   bool   `yaml:"disable" mapstructure:"disable"`
 }
 
 func parseScheduleYAML(raw *ScheduleYAML) (*runtimev1.Schedule, error) {
-	if raw == nil || raw.Disable || (raw.Cron == "" && raw.Every == "") {
-		return nil, nil
+	s := &runtimev1.Schedule{
+		RefUpdate: true, // By default, refresh on updates to refs
 	}
 
-	s := &runtimev1.Schedule{}
+	if raw == nil {
+		return s, nil
+	}
+
+	if raw.Disable {
+		s.RefUpdate = false
+		s.Disable = true
+		return s, nil
+	}
+
+	if raw.RefUpdate != nil {
+		s.RefUpdate = *raw.RefUpdate
+	}
+
 	if raw.Cron != "" {
 		_, err := cron.ParseStandard(raw.Cron)
 		if err != nil {
