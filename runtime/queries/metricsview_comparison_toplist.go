@@ -21,6 +21,7 @@ type MetricsViewComparison struct {
 	MetricsViewName     string                                         `json:"metrics_view_name,omitempty"`
 	DimensionName       string                                         `json:"dimension_name,omitempty"`
 	Measures            []*runtimev1.MetricsViewAggregationMeasure     `json:"measures,omitempty"`
+	ComparisonMeasures  []string                                       `json:"comparison_measures,omitempty"`
 	TimeRange           *runtimev1.TimeRange                           `json:"base_time_range,omitempty"`
 	ComparisonTimeRange *runtimev1.TimeRange                           `json:"comparison_time_range,omitempty"`
 	Limit               int64                                          `json:"limit,omitempty"`
@@ -37,15 +38,15 @@ type MetricsViewComparison struct {
 	Filter *runtimev1.MetricsViewFilter `json:"filter"`
 
 	// internal use
-	MeasuresMeta map[string]*MeasureMeta `json:"-"`
+	MeasuresMeta map[string]metricsViewMeasureMeta `json:"-"` // ignore this field when marshaling
 
 	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
 }
 
-type MeasureMeta struct {
+type metricsViewMeasureMeta struct {
 	innerIndex int  // relative position of the measure in the inner query, 1 based
 	outerIndex int  // relative position of the measure in the outer query, this different from innerIndex as there may be derived measures like comparison, delta etc in the outer query after each base measure, 1 based
-	isExploded bool // whether the measure has derived measures like comparison, delta etc
+	expand     bool // whether the measure has derived measures like comparison, delta etc
 }
 
 var _ runtime.Query = &MetricsViewComparison{}
@@ -108,7 +109,10 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 		q.Where = convertFilterToExpression(q.Filter)
 	}
 
-	q.calculateMeasuresMeta()
+	err = q.validateAndCalculateMeasuresMeta()
+	if err != nil {
+		return err
+	}
 
 	if !isTimeRangeNil(q.ComparisonTimeRange) {
 		return q.executeComparisonToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
@@ -117,36 +121,51 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 	return q.executeToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
 }
 
-func (q *MetricsViewComparison) calculateMeasuresMeta() {
-	compare := !isTimeRangeNil(q.ComparisonTimeRange)
-
-	sortMap := make(map[string]bool, len(q.Sort))
-	for _, s := range q.Sort {
-		sortMap[s.Name] = true
+func (q *MetricsViewComparison) validateAndCalculateMeasuresMeta() error {
+	measureMap := make(map[string]bool, len(q.Measures))
+	for _, m := range q.Measures {
+		measureMap[m.Name] = true
 	}
-	aliasMap := make(map[string]bool, len(q.Aliases))
+
+	comparisonMap := make(map[string]bool, len(q.ComparisonMeasures))
+	for _, m := range q.ComparisonMeasures {
+		if !measureMap[m] {
+			return fmt.Errorf("comparison measure '%s' is not present in the metrics view '%s'", m, q.MetricsViewName)
+		}
+		comparisonMap[m] = true
+	}
+
+	// if its a comparison query, add sort measure to comparison map so that it can be expanded
+	if !isTimeRangeNil(q.ComparisonTimeRange) {
+		for _, s := range q.Sort {
+			comparisonMap[s.Name] = true
+		}
+	}
+
+	// add aliases to comparison map as they need to be expanded too
 	for _, a := range q.Aliases {
-		aliasMap[a.Name] = true
+		comparisonMap[a.Name] = true
 	}
 
-	q.MeasuresMeta = make(map[string]*MeasureMeta, len(q.Measures))
+	q.MeasuresMeta = make(map[string]metricsViewMeasureMeta, len(q.Measures))
 
 	inner := 1
 	outer := 1
 	for _, m := range q.Measures {
-		explode := (sortMap[m.Name] && compare) || aliasMap[m.Name]
-		q.MeasuresMeta[m.Name] = &MeasureMeta{
+		expand := comparisonMap[m.Name]
+		q.MeasuresMeta[m.Name] = metricsViewMeasureMeta{
 			innerIndex: inner,
 			outerIndex: outer,
-			isExploded: explode,
+			expand:     expand,
 		}
-		if explode {
+		if expand {
 			outer += 4
 		} else {
 			outer++
 		}
 		inner++
 	}
+	return nil
 }
 
 func (q *MetricsViewComparison) executeToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
@@ -230,7 +249,7 @@ func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, ol
 		for _, m := range q.Measures {
 			measureMeta := q.MeasuresMeta[m.Name]
 			index := measureMeta.outerIndex
-			if measureMeta.isExploded {
+			if measureMeta.expand {
 				bv, err := pbutil.ToValue(values[index], safeFieldType(rows.Schema, index))
 				if err != nil {
 					return err
@@ -484,12 +503,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				return "", nil, err
 			}
 			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
-			if q.MeasuresMeta[m.Name].isExploded {
+			if q.MeasuresMeta[m.Name].expand {
 				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
 			}
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
 			selectCols = append(selectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
-			if q.MeasuresMeta[m.Name].isExploded {
+			if q.MeasuresMeta[m.Name].expand {
 				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
 			}
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
@@ -501,7 +520,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				return "", nil, fmt.Errorf("builtin measure '%s' expects non-empty string argument, got '%v'", m.BuiltinMeasure.String(), m.BuiltinMeasureArgs[0])
 			}
 			selectCols = append(selectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
-			if q.MeasuresMeta[m.Name].isExploded {
+			if q.MeasuresMeta[m.Name].expand {
 				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
 			}
 		default:
@@ -515,7 +534,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		var columnsTuple string
 		var labelTuple string
 		if dialect != drivers.DialectDruid {
-			if q.MeasuresMeta[m.Name].isExploded {
+			if q.MeasuresMeta[m.Name].expand {
 				columnsTuple = fmt.Sprintf(
 					"base.%[1]s AS %[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
 					safeName(m.Name),
@@ -536,7 +555,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				labelTuple = fmt.Sprintf("base.%[1]s AS %[2]s", safeName(m.Name), safeName(labelMap[m.Name]))
 			}
 		} else {
-			if q.MeasuresMeta[m.Name].isExploded {
+			if q.MeasuresMeta[m.Name].expand {
 				columnsTuple = fmt.Sprintf(
 					"ANY_VALUE(base.%[1]s) AS %[1]s, ANY_VALUE(comparison.%[1]s) AS %[2]s, ANY_VALUE(base.%[1]s - comparison.%[1]s) AS %[3]s, ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[4]s",
 					safeName(m.Name),
@@ -934,7 +953,10 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 				q.Where = convertFilterToExpression(q.Filter)
 			}
 
-			q.calculateMeasuresMeta()
+			err := q.validateAndCalculateMeasuresMeta()
+			if err != nil {
+				return err
+			}
 			var sql string
 			var args []any
 			if !isTimeRangeNil(q.ComparisonTimeRange) {
@@ -991,7 +1013,7 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 	}
 	var metaLen int
 	for _, m := range q.Result.Rows[0].MeasureValues {
-		if q.MeasuresMeta[m.MeasureName].isExploded {
+		if q.MeasuresMeta[m.MeasureName].expand {
 			metaLen += 4
 		} else {
 			metaLen++
@@ -1017,7 +1039,7 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 			Type: runtimev1.Type_CODE_FLOAT64.String(),
 		}
 		i++
-		if q.MeasuresMeta[m.MeasureName].isExploded {
+		if q.MeasuresMeta[m.MeasureName].expand {
 			meta[i] = &runtimev1.MetricsViewColumn{
 				Name: fmt.Sprintf("%s (prev)", labelMap[m.MeasureName]),
 				Type: runtimev1.Type_CODE_FLOAT64.String(),
@@ -1051,7 +1073,7 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 					NumberValue: m.BaseValue.GetNumberValue(),
 				},
 			}
-			if q.MeasuresMeta[m.MeasureName].isExploded {
+			if q.MeasuresMeta[m.MeasureName].expand {
 				data[i].Fields[fmt.Sprintf("%s (prev)", labelMap[m.MeasureName])] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.ComparisonValue.GetNumberValue(),
