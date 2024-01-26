@@ -116,8 +116,6 @@
   :root {
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
 
-
-
     --color-secondary-gradient-max-hue: 300;
     --color-secondary-gradient-min-hue: 1;
 
@@ -135,11 +133,42 @@
   
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
+
+    /* 
+    FIXME: 
+    We need to overhaul these ShadCN vars to use the new
+    palette as the source of truth, and remove these manual
+    translations/approximations in HSL, but this is fine for
+     the initial roll out
+     */
+    
+    /* 
+    `246, 57%, 20%` approximates primary color 
+    from our new palette vs previous color:
+    `--primary: 222.2 47.4% 11.2%
+    */
+    --primary: 246 57% 20%;
+    /* 
+    `227, 100%, 96%` approximates primary color 
+    from our new palette vs previous color:
+    `--primary-foreground: 210 40% 98%;`
+    */
+    --primary-foreground: 227 100% 96%;
   
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-  
-    --secondary: 210 40% 96.1%;
+    /* 
+    `202, 100%, 94%` approximates secondary color 
+    from our new palette vs previous color:
+    `--secondary: 210 40% 96.1%;`
+    */
+    --secondary: 202 100% 94%;
+    /* 
+    `202, 90%, 16%` approximates secondary color 
+    from our new palette vs previous color:
+    `--secondary-foreground: 222.2 47.4% 11.2%;`
+    Note that this one in particular is a poor approximation,
+    because the darkest color in the new palette is much
+    lighter than the previous --secondary-foreground color.
+    */
     --secondary-foreground: 222.2 47.4% 11.2%;
   
     --accent: 210 40% 96.1%;
