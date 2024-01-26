@@ -4211,6 +4211,14 @@ func (m *AlertSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for WatermarkInherit
+
+	// no validation rules for IntervalsIsoDuration
+
+	// no validation rules for IntervalsLimit
+
+	// no validation rules for IntervalsCheckUnclosed
+
 	// no validation rules for TimeoutSeconds
 
 	// no validation rules for QueryName
@@ -4223,7 +4231,9 @@ func (m *AlertSpec) validate(all bool) error {
 
 	// no validation rules for EmailOnError
 
-	// no validation rules for EmailSkipUnchanged
+	// no validation rules for EmailRenotify
+
+	// no validation rules for EmailRenotifyAfterSeconds
 
 	// no validation rules for Annotations
 
@@ -4623,11 +4633,11 @@ func (m *AlertExecution) validate(all bool) error {
 	}
 
 	if all {
-		switch v := interface{}(m.GetAlertTime()).(type) {
+		switch v := interface{}(m.GetExecutionTime()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, AlertExecutionValidationError{
-					field:  "AlertTime",
+					field:  "ExecutionTime",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -4635,16 +4645,16 @@ func (m *AlertExecution) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, AlertExecutionValidationError{
-					field:  "AlertTime",
+					field:  "ExecutionTime",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetAlertTime()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetExecutionTime()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return AlertExecutionValidationError{
-				field:  "AlertTime",
+				field:  "ExecutionTime",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

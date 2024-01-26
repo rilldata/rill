@@ -1002,7 +1002,13 @@ refs:
 
 refresh:
   ref_update: false
-  every: 24h
+  cron: '0 * * * *'
+
+watermark: inherit
+
+intervals:
+  duration: PT1H
+  limit: 10
 
 query:
   name: MetricsViewToplist
@@ -1013,7 +1019,8 @@ query:
 
 email:
   on_pass: true
-  skip_unchanged: true
+  renotify: true
+  renotify_after: 24h
   recipients:
     - benjamin@example.com
 
@@ -1041,15 +1048,19 @@ annotations:
 					RefUpdate:     false,
 					TickerSeconds: 86400,
 				},
-				QueryName:          "MetricsViewToplist",
-				QueryArgsJson:      `{"metrics_view":"mv1"}`,
-				QueryFor:           &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
-				EmailRecipients:    []string{"jane@example.com"},
-				EmailOnPass:        true,
-				EmailOnFail:        true,
-				EmailOnError:       false,
-				EmailSkipUnchanged: true,
-				Annotations:        map[string]string{"foo": "bar"},
+				WatermarkInherit:          true,
+				IntervalsIsoDuration:      "PT1H",
+				IntervalsLimit:            10,
+				QueryName:                 "MetricsViewToplist",
+				QueryArgsJson:             `{"metrics_view":"mv1"}`,
+				QueryFor:                  &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
+				EmailRecipients:           []string{"jane@example.com"},
+				EmailOnPass:               true,
+				EmailOnFail:               true,
+				EmailOnError:              false,
+				EmailRenotify:             true,
+				EmailRenotifyAfterSeconds: 24 * 60 * 60,
+				Annotations:               map[string]string{"foo": "bar"},
 			},
 		},
 	}

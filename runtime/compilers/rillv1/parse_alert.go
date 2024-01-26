@@ -19,8 +19,14 @@ type AlertYAML struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title      string           `yaml:"title"`
 	Refresh    *ScheduleYAML    `yaml:"refresh"`
-	Timeout    string           `yaml:"timeout"`
-	Query      struct {
+	Watermark  string           `yaml:"watermark"` // options: "trigger_time", "inherit"
+	Intervals  *struct {
+		Duration      string `yaml:"duration"`
+		Limit         uint   `yaml:"limit"`
+		CheckUnclosed bool   `yaml:"check_unclosed"`
+	} `yaml:"intervals"`
+	Timeout string `yaml:"timeout"`
+	Query   struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`
 		ArgsJSON string         `yaml:"args_json"`
@@ -39,7 +45,8 @@ type AlertYAML struct {
 		OnPass        *bool    `yaml:"on_pass"`
 		OnFail        *bool    `yaml:"on_fail"`
 		OnError       *bool    `yaml:"on_error"`
-		SkipUnchanged *bool    `yaml:"skip_unchanged"`
+		Renotify      *bool    `yaml:"renotify"`
+		RenotifyAfter string   `yaml:"renotify_after"`
 	} `yaml:"email"`
 	Annotations map[string]string `yaml:"annotations"`
 }
@@ -69,6 +76,27 @@ func (p *Parser) parseAlert(ctx context.Context, node *Node) error {
 	schedule, err := parseScheduleYAML(tmp.Refresh)
 	if err != nil {
 		return err
+	}
+
+	// Parse watermark
+	watermarkInherit := false
+	if tmp.Watermark != "" {
+		switch strings.ToLower(tmp.Watermark) {
+		case "inherit":
+			watermarkInherit = true
+		case "trigger_time":
+			// Do nothing
+		default:
+			return fmt.Errorf(`invalid value %q for property "watermark"`, tmp.Watermark)
+		}
+	}
+
+	// Validate the interval duration as a standard ISO8601 duration (without Rill extensions)
+	if tmp.Intervals.Duration != "" {
+		err := validateISO8601(tmp.Intervals.Duration, true)
+		if err != nil {
+			return fmt.Errorf(`invalid value %q for property "intervals.duration"`, tmp.Intervals.Duration)
+		}
 	}
 
 	// Parse timeout
@@ -141,6 +169,15 @@ func (p *Parser) parseAlert(ctx context.Context, node *Node) error {
 		}
 	}
 
+	// Validate email.renotify_after
+	var emailRenotifyAfter time.Duration
+	if tmp.Email.RenotifyAfter != "" {
+		emailRenotifyAfter, err = parseDuration(tmp.Email.RenotifyAfter)
+		if err != nil {
+			return fmt.Errorf(`invalid value for property "email.renotify_after": %w`, err)
+		}
+	}
+
 	// Track report
 	r, err := p.insertResource(ResourceKindAlert, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -152,6 +189,10 @@ func (p *Parser) parseAlert(ctx context.Context, node *Node) error {
 	if schedule != nil {
 		r.AlertSpec.RefreshSchedule = schedule
 	}
+	r.AlertSpec.WatermarkInherit = watermarkInherit
+	r.AlertSpec.IntervalsIsoDuration = tmp.Intervals.Duration
+	r.AlertSpec.IntervalsLimit = int32(tmp.Intervals.Limit)
+	r.AlertSpec.IntervalsCheckUnclosed = tmp.Intervals.CheckUnclosed
 	if timeout != 0 {
 		r.AlertSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
@@ -173,7 +214,9 @@ func (p *Parser) parseAlert(ctx context.Context, node *Node) error {
 	r.AlertSpec.EmailOnPass = false
 	r.AlertSpec.EmailOnFail = true
 	r.AlertSpec.EmailOnError = false
-	r.AlertSpec.EmailSkipUnchanged = true
+	r.AlertSpec.EmailRenotify = false
+
+	// Override email notification defaults
 	if tmp.Email.OnPass != nil {
 		r.AlertSpec.EmailOnPass = *tmp.Email.OnPass
 	}
@@ -183,8 +226,9 @@ func (p *Parser) parseAlert(ctx context.Context, node *Node) error {
 	if tmp.Email.OnError != nil {
 		r.AlertSpec.EmailOnError = *tmp.Email.OnError
 	}
-	if tmp.Email.SkipUnchanged != nil {
-		r.AlertSpec.EmailSkipUnchanged = *tmp.Email.SkipUnchanged
+	if tmp.Email.Renotify != nil {
+		r.AlertSpec.EmailRenotify = *tmp.Email.Renotify
+		r.AlertSpec.EmailRenotifyAfterSeconds = uint32(emailRenotifyAfter.Seconds())
 	}
 
 	r.AlertSpec.Annotations = tmp.Annotations

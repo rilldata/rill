@@ -1907,6 +1907,11 @@ export interface V1AlertSpec {
   trigger?: boolean;
   title?: string;
   refreshSchedule?: V1Schedule;
+  /** If true, will use the lowest watermark of its refs instead of the trigger time. */
+  watermarkInherit?: boolean;
+  intervalsIsoDuration?: string;
+  intervalsLimit?: number;
+  intervalsCheckUnclosed?: boolean;
   timeoutSeconds?: number;
   queryName?: string;
   queryArgsJson?: string;
@@ -1917,14 +1922,15 @@ export interface V1AlertSpec {
   emailOnPass?: boolean;
   emailOnFail?: boolean;
   emailOnError?: boolean;
-  emailSkipUnchanged?: boolean;
+  emailRenotify?: boolean;
+  emailRenotifyAfterSeconds?: number;
   annotations?: V1AlertSpecAnnotations;
 }
 
 export interface V1AlertExecution {
   adhoc?: boolean;
   result?: V1AssertionResult;
-  alertTime?: string;
+  executionTime?: string;
   startedOn?: string;
   finishedOn?: string;
 }

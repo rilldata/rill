@@ -1922,17 +1922,39 @@ export class AlertSpec extends Message<AlertSpec> {
   refreshSchedule?: Schedule;
 
   /**
-   * @generated from field: uint32 timeout_seconds = 4;
+   * If true, will use the lowest watermark of its refs instead of the trigger time.
+   *
+   * @generated from field: bool watermark_inherit = 4;
+   */
+  watermarkInherit = false;
+
+  /**
+   * @generated from field: string intervals_iso_duration = 5;
+   */
+  intervalsIsoDuration = "";
+
+  /**
+   * @generated from field: int32 intervals_limit = 6;
+   */
+  intervalsLimit = 0;
+
+  /**
+   * @generated from field: bool intervals_check_unclosed = 7;
+   */
+  intervalsCheckUnclosed = false;
+
+  /**
+   * @generated from field: uint32 timeout_seconds = 8;
    */
   timeoutSeconds = 0;
 
   /**
-   * @generated from field: string query_name = 5;
+   * @generated from field: string query_name = 9;
    */
   queryName = "";
 
   /**
-   * @generated from field: string query_args_json = 6;
+   * @generated from field: string query_args_json = 10;
    */
   queryArgsJson = "";
 
@@ -1941,51 +1963,56 @@ export class AlertSpec extends Message<AlertSpec> {
    */
   queryFor: {
     /**
-     * @generated from field: string query_for_user_id = 7;
+     * @generated from field: string query_for_user_id = 11;
      */
     value: string;
     case: "queryForUserId";
   } | {
     /**
-     * @generated from field: string query_for_user_email = 8;
+     * @generated from field: string query_for_user_email = 12;
      */
     value: string;
     case: "queryForUserEmail";
   } | {
     /**
-     * @generated from field: google.protobuf.Struct query_for_attributes = 9;
+     * @generated from field: google.protobuf.Struct query_for_attributes = 13;
      */
     value: Struct;
     case: "queryForAttributes";
   } | { case: undefined; value?: undefined } = { case: undefined };
 
   /**
-   * @generated from field: repeated string email_recipients = 10;
+   * @generated from field: repeated string email_recipients = 14;
    */
   emailRecipients: string[] = [];
 
   /**
-   * @generated from field: bool email_on_pass = 11;
+   * @generated from field: bool email_on_pass = 15;
    */
   emailOnPass = false;
 
   /**
-   * @generated from field: bool email_on_fail = 12;
+   * @generated from field: bool email_on_fail = 16;
    */
   emailOnFail = false;
 
   /**
-   * @generated from field: bool email_on_error = 13;
+   * @generated from field: bool email_on_error = 17;
    */
   emailOnError = false;
 
   /**
-   * @generated from field: bool email_skip_unchanged = 14;
+   * @generated from field: bool email_renotify = 18;
    */
-  emailSkipUnchanged = false;
+  emailRenotify = false;
 
   /**
-   * @generated from field: map<string, string> annotations = 15;
+   * @generated from field: uint32 email_renotify_after_seconds = 19;
+   */
+  emailRenotifyAfterSeconds = 0;
+
+  /**
+   * @generated from field: map<string, string> annotations = 20;
    */
   annotations: { [key: string]: string } = {};
 
@@ -2000,18 +2027,23 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 1, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "refresh_schedule", kind: "message", T: Schedule },
-    { no: 4, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 5, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
-    { no: 8, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
-    { no: 9, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
-    { no: 10, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 11, name: "email_on_pass", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 12, name: "email_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 13, name: "email_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 14, name: "email_skip_unchanged", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 15, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 4, name: "watermark_inherit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "intervals_iso_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "intervals_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 7, name: "intervals_check_unclosed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 9, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
+    { no: 14, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 15, name: "email_on_pass", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 16, name: "email_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 17, name: "email_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 18, name: "email_renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 19, name: "email_renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertSpec {
@@ -2107,9 +2139,9 @@ export class AlertExecution extends Message<AlertExecution> {
   result?: AssertionResult;
 
   /**
-   * @generated from field: google.protobuf.Timestamp alert_time = 3;
+   * @generated from field: google.protobuf.Timestamp execution_time = 3;
    */
-  alertTime?: Timestamp;
+  executionTime?: Timestamp;
 
   /**
    * @generated from field: google.protobuf.Timestamp started_on = 4;
@@ -2131,7 +2163,7 @@ export class AlertExecution extends Message<AlertExecution> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "adhoc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "result", kind: "message", T: AssertionResult },
-    { no: 3, name: "alert_time", kind: "message", T: Timestamp },
+    { no: 3, name: "execution_time", kind: "message", T: Timestamp },
     { no: 4, name: "started_on", kind: "message", T: Timestamp },
     { no: 5, name: "finished_on", kind: "message", T: Timestamp },
   ]);

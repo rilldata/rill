@@ -273,20 +273,25 @@ message AlertSpec {
   bool trigger = 1;
   string title = 2;
   Schedule refresh_schedule = 3;
-  uint32 timeout_seconds = 4;
-  string query_name = 5;
-  string query_args_json = 6;
+  bool watermark_inherit = 4; // If true, will use the lowest watermark of its refs instead of the trigger time.
+  string intervals_iso_duration = 5;
+  int32 intervals_limit = 6;
+  bool intervals_check_unclosed = 7;
+  uint32 timeout_seconds = 8;
+  string query_name = 9;
+  string query_args_json = 10;
   oneof query_for {
-    string query_for_user_id = 7;
-    string query_for_user_email = 8;
-    google.protobuf.Struct query_for_attributes = 9;
+    string query_for_user_id = 11;
+    string query_for_user_email = 12;
+    google.protobuf.Struct query_for_attributes = 13;
   }
-  repeated string email_recipients = 10;
-  bool email_on_pass = 11;
-  bool email_on_fail = 12;
-  bool email_on_error = 13;
-  bool email_skip_unchanged = 14;
-  map<string, string> annotations = 15;
+  repeated string email_recipients = 14;
+  bool email_on_pass = 15;
+  bool email_on_fail = 16;
+  bool email_on_error = 17;
+  bool email_renotify = 18;
+  uint32 email_renotify_after_seconds = 19;
+  map<string, string> annotations = 20;
 }
 
 message AlertState {
@@ -300,7 +305,7 @@ message AlertState {
 message AlertExecution {
   bool adhoc = 1;
   AssertionResult result = 2;
-  google.protobuf.Timestamp alert_time = 3;
+  google.protobuf.Timestamp execution_time = 3;
   google.protobuf.Timestamp started_on = 4;
   google.protobuf.Timestamp finished_on = 5;
 }

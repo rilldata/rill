@@ -201,7 +201,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	if tmp.DefaultTimeRange != "" {
-		_, err := parseISO8601(tmp.DefaultTimeRange)
+		err := validateISO8601(tmp.DefaultTimeRange, false)
 		if err != nil {
 			return fmt.Errorf(`invalid "default_time_range": %w`, err)
 		}
@@ -285,19 +285,19 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 	if tmp.AvailableTimeRanges != nil {
 		for _, r := range tmp.AvailableTimeRanges {
-			_, err := parseISO8601(r.Range)
+			err := validateISO8601(r.Range, false)
 			if err != nil {
 				return fmt.Errorf("invalid range in available_time_ranges: %w", err)
 			}
 
 			for _, o := range r.ComparisonOffsets {
-				_, err := parseISO8601(o.Offset)
+				err := validateISO8601(o.Offset, false)
 				if err != nil {
 					return fmt.Errorf("invalid offset in comparison_offsets: %w", err)
 				}
 
 				if o.Range != "" {
-					_, err := parseISO8601(o.Range)
+					err := validateISO8601(o.Range, false)
 					if err != nil {
 						return fmt.Errorf("invalid range in comparison_offsets: %w", err)
 					}
@@ -523,18 +523,25 @@ func parseTimeGrain(s string) (runtimev1.TimeGrain, error) {
 	}
 }
 
-// parseISO8601 is a wrapper around duration.ParseISO8601 that disallows grains < minute
-func parseISO8601(isoDuration string) (duration.Duration, error) {
+// validateISO8601 is a wrapper around duration.ParseISO8601 with additional validation:
+// a) that the duration does not have seconds granularity,
+// b) if onlyStandard is true, that the duration does not use any of the Rill-specific extensions (such as year-to-date).
+func validateISO8601(isoDuration string, onlyStandard bool) error {
 	d, err := duration.ParseISO8601(isoDuration)
 	if err != nil {
-		return d, err
+		return err
 	}
 
-	if sd, ok := d.(duration.StandardDuration); ok {
-		if sd.Second != 0 {
-			return sd, fmt.Errorf("durations with seconds is not supported")
+	sd, ok := d.(duration.StandardDuration)
+	if !ok {
+		if onlyStandard {
+			return fmt.Errorf("only standard durations are allowed")
 		}
 	}
 
-	return d, nil
+	if sd.Second != 0 {
+		return fmt.Errorf("durations with seconds are not allowed")
+	}
+
+	return nil
 }

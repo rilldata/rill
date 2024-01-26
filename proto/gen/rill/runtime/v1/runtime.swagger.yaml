@@ -2662,7 +2662,7 @@ definitions:
         type: boolean
       result:
         $ref: '#/definitions/v1AssertionResult'
-      alertTime:
+      executionTime:
         type: string
         format: date-time
       startedOn:
@@ -2680,6 +2680,16 @@ definitions:
         type: string
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
+      watermarkInherit:
+        type: boolean
+        description: If true, will use the lowest watermark of its refs instead of the trigger time.
+      intervalsIsoDuration:
+        type: string
+      intervalsLimit:
+        type: integer
+        format: int32
+      intervalsCheckUnclosed:
+        type: boolean
       timeoutSeconds:
         type: integer
         format: int64
@@ -2703,8 +2713,11 @@ definitions:
         type: boolean
       emailOnError:
         type: boolean
-      emailSkipUnchanged:
+      emailRenotify:
         type: boolean
+      emailRenotifyAfterSeconds:
+        type: integer
+        format: int64
       annotations:
         type: object
         additionalProperties:
