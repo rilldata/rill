@@ -5,6 +5,11 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Tab from "./Tab.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { featureFlags } from "../../feature-flags";
+
+  const { pivot: pivotAllowed } = featureFlags;
 
   const StateManagers = getStateManagers();
 
@@ -31,6 +36,8 @@
   function handleTabChange(event: CustomEvent) {
     const selectedTab = tabs[event.detail];
 
+    if (selectedTab.label === "Pivot" && !$pivotAllowed) return;
+
     metricsExplorerStore.setPivotMode(
       $metricsViewName,
       selectedTab.label === "Pivot",
@@ -42,12 +49,25 @@
   <TabGroup defaultIndex={currentTabIndex} on:change={handleTabChange}>
     <TabList class="flex gap-x-4">
       {#each tabs as tab}
-        <Tab>
-          <div class="flex gap-2 items-center">
-            <svelte:component this={tab.icon} />
-            {tab.label}
-          </div>
-        </Tab>
+        {@const disabled = tab.label === "Pivot" && !$pivotAllowed}
+        {#if disabled}
+          <Tooltip>
+            <TooltipContent slot="tooltip-content">Coming Soon</TooltipContent>
+            <Tab {disabled}>
+              <div class="flex gap-2 items-center">
+                <svelte:component this={tab.icon} />
+                {tab.label}
+              </div>
+            </Tab>
+          </Tooltip>
+        {:else}
+          <Tab {disabled}>
+            <div class="flex gap-2 items-center">
+              <svelte:component this={tab.icon} />
+              {tab.label}
+            </div>
+          </Tab>
+        {/if}
       {/each}
     </TabList>
   </TabGroup>
