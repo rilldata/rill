@@ -7,6 +7,7 @@ import {
   matchExpressionByName,
   filterExpressions,
   createAndExpression,
+  copyFilterExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { V1Operation } from "../../../runtime-client";
 import PercentOfTotal from "./PercentOfTotal.svelte";
@@ -43,6 +44,7 @@ export function updateFilterOnSearch(
   dimensionName: string,
 ): V1Expression | undefined {
   if (!filterForDimension) return undefined;
+  // create a copy
   const addNull = "null".includes(searchText);
   if (searchText !== "") {
     let cond: V1Expression;
@@ -56,6 +58,7 @@ export function updateFilterOnSearch(
       cond = createLikeExpression(dimensionName, `%${searchText}%`);
     }
 
+    filterForDimension = copyFilterExpression(filterForDimension);
     const filterIdx = filterForDimension.cond?.exprs?.findIndex((e) =>
       matchExpressionByName(e, dimensionName),
     );
@@ -65,12 +68,13 @@ export function updateFilterOnSearch(
       filterForDimension.cond?.exprs?.splice(filterIdx, 0, cond);
     }
   } else {
-    filterExpressions(
-      filterForDimension,
-      (e) =>
-        e.cond?.op === V1Operation.OPERATION_LIKE ||
-        e.cond?.op === V1Operation.OPERATION_NLIKE,
-    );
+    filterForDimension =
+      filterExpressions(
+        filterForDimension,
+        (e) =>
+          e.cond?.op === V1Operation.OPERATION_LIKE ||
+          e.cond?.op === V1Operation.OPERATION_NLIKE,
+      ) ?? createAndExpression([]);
   }
   return filterForDimension;
 }

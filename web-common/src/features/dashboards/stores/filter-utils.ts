@@ -187,6 +187,10 @@ export function filterExpressions(
   return newExpr;
 }
 
+export function copyFilterExpression(expr: V1Expression) {
+  return filterExpressions(expr, () => true) ?? createAndExpression([]);
+}
+
 export function getValueIndexInExpression(expr: V1Expression, value: string) {
   return expr.cond?.exprs?.findIndex((e, i) => i > 0 && e.val === value);
 }

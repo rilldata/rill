@@ -157,10 +157,8 @@ export const unselectedDimensionValues = (
       return values;
     }
 
-    return (
-      expr.cond?.exprs
-        ?.filter((e, i) => i > 0 && values.includes(e.val))
-        .map((e) => e.val) ?? []
+    return values.filter(
+      (v) => expr.cond?.exprs?.findIndex((e) => e.val === v) === -1,
     );
   };
 };
