@@ -18,6 +18,7 @@
   const stateManagers = getStateManagers();
   const { dashboardStore, metricsViewName } = stateManagers;
 
+  $: assembled = $pivotStore.assembled;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: sorting = $dashboardStore?.pivot?.sorting ?? [];
 
@@ -99,7 +100,11 @@
               : cell.column.columnDef.cell}
           <td class="ui-copy-number">
             {#if result?.component && result?.props}
-              <svelte:component this={result.component} {...result.props} />
+              <svelte:component
+                this={result.component}
+                {...result.props}
+                {assembled}
+              />
             {:else if typeof result === "string" || typeof result === "number"}
               {result}
             {:else}

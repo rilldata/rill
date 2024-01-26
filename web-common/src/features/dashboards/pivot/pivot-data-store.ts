@@ -199,6 +199,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         isFetching: false,
         data: lastPivotData,
         columnDef: lastPivotColumnDef,
+        assembled: false,
       });
     }
     const columnDimensionAxesQuery = getAxisForDimensions(
@@ -216,6 +217,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             isFetching: true,
             data: lastPivotData,
             columnDef: lastPivotColumnDef,
+            assembled: false,
           });
         }
         const anchorDimension = rowDimensionNames[0];
@@ -260,6 +262,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 isFetching: true,
                 data: lastPivotData,
                 columnDef: lastPivotColumnDef,
+                assembled: false,
               });
             }
 
@@ -294,6 +297,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     isFetching: true,
                     data: rowTotals,
                     columnDef,
+                    assembled: false,
                   });
                 }
 
@@ -379,6 +383,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                       isFetching: false,
                       data: assembledTableData,
                       columnDef,
+                      assembled: true,
                     };
                   },
                 ).subscribe(cellSet);
@@ -395,6 +400,7 @@ interface PivotDataState {
   isFetching: boolean;
   data: PivotDataRow[];
   columnDef: ColumnDef<PivotDataRow>[];
+  assembled: boolean;
 }
 
 export type PivotDataStore = Readable<PivotDataState>;
