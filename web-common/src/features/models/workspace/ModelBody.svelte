@@ -26,6 +26,7 @@
   import { useModel, useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
   export let modelName: string;
   export let focusEditorOnMount = false;
@@ -112,6 +113,7 @@
       console.error(err);
     }
   }
+
   $: selections = $queryHighlight?.map((selection) => ({
     from: selection?.referenceIndex,
     to: selection?.referenceIndex + selection?.reference?.length,
@@ -126,6 +128,8 @@
       if (runtimeError) errors.push(runtimeError.message);
     }
   }
+
+  const debounceUpdateModelContent = debounce(updateModelContent, 0);
 </script>
 
 <svelte:window bind:innerHeight />
@@ -143,7 +147,7 @@
             content={modelSql}
             {selections}
             focusOnMount={focusEditorOnMount}
-            on:write={(evt) => updateModelContent(evt.detail.content)}
+            on:write={(evt) => debounceUpdateModelContent(evt.detail.content)}
           />
         {/key}
       </div>
