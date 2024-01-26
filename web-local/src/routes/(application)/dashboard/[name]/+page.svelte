@@ -94,17 +94,19 @@
     bgClass="bg-white"
     inspector={false}
   >
-    <StateManagersProvider metricsViewName={metricViewName} slot="body">
+    <svelte:fragment slot="body">
       {#key metricViewName}
-        <DashboardStateProvider {metricViewName}>
-          <DashboardURLStateProvider {metricViewName}>
-            <DashboardThemeProvider>
-              <Dashboard {metricViewName} />
-            </DashboardThemeProvider>
-          </DashboardURLStateProvider>
-        </DashboardStateProvider>
+        <StateManagersProvider metricsViewName={metricViewName}>
+          <DashboardStateProvider {metricViewName}>
+            <DashboardURLStateProvider {metricViewName}>
+              <DashboardThemeProvider>
+                <Dashboard {metricViewName} />
+              </DashboardThemeProvider>
+            </DashboardURLStateProvider>
+          </DashboardStateProvider>
+        </StateManagersProvider>
       {/key}
-    </StateManagersProvider>
+    </svelte:fragment>
   </WorkspaceContainer>
 {:else if $resourceStatusStore.status === ResourceStatus.Busy}
   <WorkspaceContainer
