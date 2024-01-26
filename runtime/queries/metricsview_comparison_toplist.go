@@ -142,7 +142,7 @@ func (q *MetricsViewComparison) calculateMeasuresMeta() error {
 		comparisonMap[m] = true
 	}
 
-	err := validateSort(q.Sort, comparisonMap)
+	err := validateSort(q.Sort, comparisonMap, compare)
 	if err != nil {
 		return err
 	}
@@ -1126,7 +1126,7 @@ func timeRangeClause(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec, dia
 	return clause, nil
 }
 
-func validateSort(sorts []*runtimev1.MetricsViewComparisonSort, comparisonMap map[string]bool) error {
+func validateSort(sorts []*runtimev1.MetricsViewComparisonSort, comparisonMap map[string]bool, compareQuery bool) error {
 	if len(sorts) == 0 {
 		return fmt.Errorf("sorting is required")
 	}
@@ -1155,7 +1155,12 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort, comparisonMap ma
 		}
 		// check if sorting measure is a derived measure, if it is then it should be present in comparison map
 		if s.SortType != runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE && !comparisonMap[s.Name] {
-			return fmt.Errorf("sort measure '%s' is not present in the comparison measures", s.Name)
+			if compareQuery {
+				return fmt.Errorf("sort measure '%s' is not present in the comparison measures", s.Name)
+			}
+			// for backward compatibility, UI still sends the old stage sometimes while switching from compare to no comparison
+			// in that case just sort the measure by base value
+			s.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
 		}
 	}
 	return nil
