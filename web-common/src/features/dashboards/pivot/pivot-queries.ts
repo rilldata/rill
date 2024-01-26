@@ -6,7 +6,7 @@ import type { StateManagers } from "@rilldata/web-common/features/dashboards/sta
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
-  V1BuiltinMeasure,
+  V1Expression,
   V1MetricsViewAggregationDimension,
   V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewAggregationSort,
@@ -25,6 +25,7 @@ export function createPivotAggregationRowQuery(
   measures: string[],
   dimensions: V1MetricsViewAggregationDimension[],
   filters: V1MetricsViewFilter,
+  whereFilter: V1Expression,
   sort: V1MetricsViewAggregationSort[] = [],
   limit = "100",
   offset = "0",
@@ -38,6 +39,7 @@ export function createPivotAggregationRowQuery(
       },
     ];
   }
+
   return derived(
     [ctx.runtime, ctx.metricsViewName, useTimeControlStore(ctx)],
     ([runtime, metricViewName, timeControls], set) =>
@@ -55,6 +57,7 @@ export function createPivotAggregationRowQuery(
           sort,
           limit,
           offset,
+          // where: whereFilter,
         },
         {
           query: {
@@ -109,6 +112,7 @@ export function getAxisForDimensions(
         measures,
         [dimension],
         filters,
+        config.whereFilter,
         sortBy,
         "100",
         "0",
@@ -141,41 +145,5 @@ export function getAxisForDimensions(
         totals: totalsMap,
       };
     },
-  );
-}
-
-/**
- * Get a count of unique values for a given dimension
- */
-export function getDimensionCount(
-  ctx: StateManagers,
-  dimensionName: string,
-  filters: V1MetricsViewFilter,
-): CreateQueryResult<V1MetricsViewAggregationResponse> {
-  const measures = [
-    {
-      name: "__count",
-      builtinMeasure: V1BuiltinMeasure.BUILTIN_MEASURE_COUNT_DISTINCT,
-      builtinMeasureArgs: [dimensionName],
-    },
-  ];
-  return derived(
-    [ctx.runtime, ctx.metricsViewName, useTimeControlStore(ctx)],
-    ([runtime, metricViewName, timeControls], set) =>
-      createQueryServiceMetricsViewAggregation(
-        runtime.instanceId,
-        metricViewName,
-        {
-          measures,
-          filter: filters,
-        },
-        {
-          query: {
-            enabled: !!timeControls.ready && !!ctx.dashboardStore,
-            queryClient: ctx.queryClient,
-            keepPreviousData: true,
-          },
-        },
-      ).subscribe(set),
   );
 }

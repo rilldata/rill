@@ -61,6 +61,7 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
           allMeasures: [],
           allDimensions: [],
           filters: dashboardStore.filters,
+          whereFilter: dashboardStore.whereFilter,
           pivot: dashboardStore.pivot,
           time,
         };
@@ -86,6 +87,7 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
         allMeasures: metricsView.data?.measures,
         allDimensions: metricsView.data?.dimensions,
         filters: dashboardStore.filters,
+        whereFilter: dashboardStore.whereFilter,
         pivot: dashboardStore.pivot,
         time,
       };
@@ -141,6 +143,7 @@ export function createTableCellQuery(
     config.measureNames,
     dimensionBody,
     filterForInitialTable,
+    config.whereFilter,
     sortBy,
     "10000",
   );
@@ -199,8 +202,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
     if (!rowDimensionNames.length && !measureNames.length) {
       return configSet({
         isFetching: false,
-        data: lastPivotData,
-        columnDef: lastPivotColumnDef,
+        data: [],
+        columnDef: [],
         assembled: false,
       });
     }

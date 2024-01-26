@@ -1,6 +1,7 @@
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
+  V1Expression,
   V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewFilter,
   V1TimeGrain,
@@ -44,6 +45,7 @@ export interface PivotDataStoreConfig {
   allMeasures: MetricsViewSpecMeasureV2[];
   allDimensions: MetricsViewSpecDimensionV2[];
   filters: V1MetricsViewFilter;
+  whereFilter: V1Expression;
   pivot: PivotState;
   time: PivotTimeConfig;
 }
