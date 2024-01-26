@@ -101,6 +101,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 
 	schema, err := rowsToSchema(rows)
 	if err != nil {
+		rows.Close()
 		if cancelFunc != nil {
 			cancelFunc()
 		}

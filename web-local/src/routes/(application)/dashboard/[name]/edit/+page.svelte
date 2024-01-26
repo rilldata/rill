@@ -12,8 +12,10 @@
 
   $: metricViewName = $page.params.name;
 
+  const { readOnly } = featureFlags;
+
   onMount(() => {
-    if ($featureFlags.readOnly) {
+    if ($readOnly) {
       throw error(404, "Page not found");
     }
   });

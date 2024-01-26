@@ -28,7 +28,12 @@ env:
 jobs:
   build:
     # https://github.com/orgs/community/discussions/54860
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || ( github.event_name == 'create' && startsWith(github.ref_name, 'release') )
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      github.event_name == 'push' || 
+      (github.event_name == 'create' && 
+        ( startsWith(github.ref_name, 'release') || startsWith(github.ref, 'refs/tags/v') ) 
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -40,7 +45,7 @@ jobs:
           node-version: 16
 
       - name: Setup Env variables from Inputs for Prod
-        if: ( github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') ) || ( github.event_name == 'workflow_dispatch' && inputs.env == 'prod' )
+        if: ( github.event_name == 'create' && startsWith(github.ref, 'refs/tags/v') ) || ( github.event_name == 'workflow_dispatch' && inputs.env == 'prod' )
         run: |-
           echo "NETLIFY_SITE_ID=afb26917-7a60-47d9-81dc-c0babbb0d9a9" >> $GITHUB_ENV
           echo "DOMAIN=rilldata.com" >> $GITHUB_ENV
