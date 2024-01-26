@@ -2,6 +2,7 @@
   import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
@@ -131,14 +132,14 @@
     metricViewName,
     {
       measureNames: $selectedMeasureNames,
-      filter: $dashboardStore?.filters,
+      where: sanitiseExpression($dashboardStore?.whereFilter),
     },
     {
       query: {
         enabled:
           $selectedMeasureNames?.length > 0 &&
           $timeControlsStore.ready &&
-          !!$dashboardStore?.filters,
+          !!$dashboardStore?.whereFilter,
       },
     },
   );

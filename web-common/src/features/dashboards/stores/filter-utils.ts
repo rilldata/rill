@@ -129,6 +129,25 @@ export function forEachExpression(
   }
 }
 
+export function forEachIdentifier(
+  expr: V1Expression,
+  cb: (e: V1Expression, ident: string) => void,
+) {
+  forEachExpression(expr, (e) => {
+    if (
+      e.cond?.op !== V1Operation.OPERATION_IN &&
+      e.cond?.op !== V1Operation.OPERATION_NIN
+    ) {
+      return;
+    }
+    const ident = e.cond?.exprs?.[0].ident;
+    if (ident === undefined) {
+      return;
+    }
+    cb(e, ident);
+  });
+}
+
 /**
  * Creates a copy of the expression with sub expressions filtered based on {@link checker}
  */
@@ -166,6 +185,10 @@ export function filterExpressions(
   }
 
   return newExpr;
+}
+
+export function copyFilterExpression(expr: V1Expression) {
+  return filterExpressions(expr, () => true) ?? createAndExpression([]);
 }
 
 export function getValueIndexInExpression(expr: V1Expression, value: string) {
