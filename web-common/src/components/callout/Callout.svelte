@@ -7,7 +7,7 @@
 
   const sharedClasses = "p-3 grid gap-x-4 border rounded items-center border-1";
   const classes = {
-    info: "bg-primary-50 t-primary-ue-800 border-primary-600",
+    info: "bg-primary-50 text-primary-800 border-primary-600",
     warning: "bg-yellow-100 text-yellow-800 border-yellow-600",
     error: "bg-red-100 text-red-800 border-red-600",
   };

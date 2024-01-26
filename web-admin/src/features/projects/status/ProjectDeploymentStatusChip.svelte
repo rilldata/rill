@@ -80,10 +80,10 @@
   const statusDisplays: Record<V1DeploymentStatus, StatusDisplay> = {
     [V1DeploymentStatus.DEPLOYMENT_STATUS_OK]: {
       icon: CheckCircle,
-      iconProps: { className: "text-primary-600 hover:t-primary-ue-500" },
+      iconProps: { className: "text-primary-600 hover:text-primary-500" },
       text: "ready",
       textClass: "text-primary-600",
-      wrapperClass: "bg-primary-50 bor-primary-ue-300",
+      wrapperClass: "bg-primary-50 border-primary-300",
     },
     [V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING]: {
       icon: Spinner,
