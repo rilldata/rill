@@ -990,8 +990,9 @@ func TestServer_MetricsViewComparison_no_comparison(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Desc: true,
+				Name:     "measure_2",
+				Desc:     true,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -1007,6 +1008,33 @@ func TestServer_MetricsViewComparison_no_comparison(t *testing.T) {
 
 	require.Equal(t, "yahoo.com", tr.Rows[1].DimensionValue.GetStringValue())
 	require.Equal(t, 1.0, tr.Rows[1].MeasureValues[0].BaseValue.GetNumberValue())
+}
+
+func TestServer_MetricsViewComparison_no_comparison_no_sort_type(t *testing.T) {
+	t.Parallel()
+	server, instanceId := getMetricsTestServer(t, "ad_bids_2rows")
+
+	_, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
+		InstanceId:      instanceId,
+		MetricsViewName: "ad_bids_metrics",
+		Dimension: &runtimev1.MetricsViewAggregationDimension{
+			Name: "domain",
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_2",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name: "measure_2",
+				Desc: true,
+			},
+		},
+		Exact: true,
+	})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "sort measure 'measure_2' does not have a sort type")
 }
 
 func TestServer_MetricsViewComparison_no_comparison_quotes(t *testing.T) {
@@ -1026,7 +1054,8 @@ func TestServer_MetricsViewComparison_no_comparison_quotes(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_0",
+				Name:     "measure_0",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -1057,7 +1086,8 @@ func TestServer_MetricsViewComparison_no_comparison_numeric_dim(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_0",
+				Name:     "measure_0",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -1123,8 +1153,9 @@ func TestServer_MetricsViewComparison_no_comparison_asc(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Desc: false,
+				Name:     "measure_2",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -1159,8 +1190,9 @@ func TestServer_MetricsViewComparison_no_comparison_nulls_last(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_3",
-				Desc: false,
+				Name:     "measure_3",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -1190,8 +1222,9 @@ func TestServer_MetricsViewComparison_no_comparison_nulls_last(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_3",
-				Desc: true,
+				Name:     "measure_3",
+				Desc:     true,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -1227,8 +1260,9 @@ func TestServer_MetricsViewComparison_no_comparison_asc_limit(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_2",
-				Desc: false,
+				Name:     "measure_2",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Limit: 1,
@@ -1263,12 +1297,14 @@ func TestServer_MetricsViewComparison_no_comparison_2measures(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_0",
-				Desc: false,
+				Name:     "measure_0",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 			{
-				Name: "measure_2",
-				Desc: false,
+				Name:     "measure_2",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Exact: true,
@@ -1303,8 +1339,9 @@ func TestServer_MetricsViewComparison_no_comparison_complete_source_sanity_test(
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_0",
-				Desc: false,
+				Name:     "measure_0",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Where: expressionpb.NotIn(
@@ -1335,8 +1372,9 @@ func TestServer_MetricsViewComparison_no_comparison_dimension_expression(t *test
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_0",
-				Desc: false,
+				Name:     "measure_0",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Where: expressionpb.NotLike(
@@ -1371,8 +1409,9 @@ func TestServer_MetricsViewComparison_no_comparison_unnested_dimension_expressio
 		},
 		Sort: []*runtimev1.MetricsViewComparisonSort{
 			{
-				Name: "measure_0",
-				Desc: false,
+				Name:     "measure_0",
+				Desc:     false,
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
 			},
 		},
 		Where: expressionpb.NotIn(

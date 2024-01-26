@@ -28,6 +28,16 @@ export default async function exportToplist({
   const timeControlState = get(timeControlStore);
 
   const dashboard = get(dashboardStore);
+
+  // api now expects measure names for which comparison are calculated
+  let comparisonMeasures: string[] = [];
+  if (
+    timeControlState.comparisonTimeStart &&
+    timeControlState.comparisonTimeStart
+  ) {
+    comparisonMeasures = [dashboard.leaderboardMeasureName];
+  }
+
   const result = await get(query).mutateAsync({
     instanceId: get(runtime).instanceId,
     data: {
@@ -45,6 +55,7 @@ export default async function exportToplist({
                 name: name,
               },
           ),
+          comparisonMeasures: comparisonMeasures,
           timeRange: {
             start: timeControlState.timeStart,
             end: timeControlState.timeEnd,

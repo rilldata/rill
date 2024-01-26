@@ -40,6 +40,12 @@ export function getDimensionTableExportArgs(
         timeRange,
       );
 
+      // api now expects measure names for which comparison are calculated
+      let comparisonMeasures: string[] = [];
+      if (comparisonTimeRange) {
+        comparisonMeasures = [dashboardState.leaderboardMeasureName];
+      }
+
       return {
         instanceId: get(runtime).instanceId,
         metricsViewName: metricViewName,
@@ -49,6 +55,7 @@ export function getDimensionTableExportArgs(
         measures: [...dashboardState.visibleMeasureKeys].map((name) => ({
           name: name,
         })),
+        comparisonMeasures: comparisonMeasures,
         timeRange,
         ...(comparisonTimeRange ? { comparisonTimeRange } : {}),
         sort: [
