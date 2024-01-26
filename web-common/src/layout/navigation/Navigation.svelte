@@ -31,9 +31,11 @@
     (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
     tweened(0, { duration: 50 });
 
+  const { readOnly } = featureFlags;
+
   let previousWidth: number;
 
-  $: isModelerEnabled = $featureFlags.readOnly === false;
+  $: isModelerEnabled = $readOnly === false;
 
   function handleResize(
     e: UIEvent & {
