@@ -28,6 +28,8 @@
   import Editor from "./Editor.svelte";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
+  const QUERY_DEBOUNCE_TIME = 400;
+
   export let modelName: string;
   export let focusEditorOnMount = false;
 
@@ -129,7 +131,10 @@
     }
   }
 
-  const debounceUpdateModelContent = debounce(updateModelContent, 0);
+  const debounceUpdateModelContent = debounce(
+    updateModelContent,
+    QUERY_DEBOUNCE_TIME,
+  );
 </script>
 
 <svelte:window bind:innerHeight />
