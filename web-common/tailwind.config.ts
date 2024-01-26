@@ -8,10 +8,14 @@ import {
 } from "./src/features/themes/color-config";
 
 /**
- *
- * @param colorMap
- * @param colorName
- * @returns
+ * Takes a LightnessMap map object and a ThemeColorKind
+ * ("primary" | "secondary" | "muted"),
+ * and returns an object of the form e.g:
+ * {
+ *   "primary-50": "var(--color-primary-50)",
+ *   "primary-100": "var(--color-primary-100)",
+ * ...
+ * }
  */
 function addThemeColorsAsVarRefs(
   colorMap: LightnessMap,
@@ -27,6 +31,16 @@ function addThemeColorsAsVarRefs(
   );
 }
 
+/**
+ * Takes a LightnessMap map object and a ThemeColorKind
+ * ("primary" | "secondary" | "muted"),
+ * and returns an object of the form e.g:
+ * {
+ *   "--color-primary-50": "#ecf0ff",
+ *   "--color-primary-100": "#dde4ff",
+ * ...
+ * }
+ */
 function initializeDefaultColorsVars(
   colorMap: LightnessMap,
   colorName: ThemeColorKind,
@@ -95,25 +109,12 @@ export default {
     },
   },
   plugins: [
-    /**
-     * Note: this plugin creates css variables for all colors
-     * defined in the theme.colors object. These will be available
-     * as e.g. `var(--color-COLOR_NAME-500)`.
-     *
-     * This allows us to define our colors in only this file,
-     * without also needing to define them in the global CSS file.
-     *
-     * is taken from here:
-     * https://gist.github.com/Merott/d2a19b32db07565e94f10d13d11a8574
-     *
-     */
     function ({ addBase }) {
       const colorVars = {
         ...initializeDefaultColorsVars(defaultPrimaryColors, "primary"),
         ...initializeDefaultColorsVars(defaultSecondaryColors, "secondary"),
         ...initializeDefaultColorsVars(mutedColors, "muted"),
       };
-
       addBase({
         ":root": colorVars,
       });
