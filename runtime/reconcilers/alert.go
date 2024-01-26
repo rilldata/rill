@@ -11,6 +11,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -163,7 +164,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Log it
 	if alertErr != nil {
-		r.C.Logger.Error("Alert check failed", "alert", self.Meta.Name, "error", alertErr.Error())
+		r.C.Logger.Error("Alert check failed", zap.String("name", self.Meta.Name.Name), zap.Error(alertErr))
 	}
 
 	// Commit CurrentExecution to history
@@ -333,7 +334,7 @@ func (r *AlertReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 // checkAlert runs the alert query and maybe sends emails.
 // It returns true if an error occurred after some or all emails were sent.
 func (r *AlertReconciler) checkAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, t time.Time) (*runtimev1.AssertionResult, bool, error) {
-	r.C.Logger.Info("Checking alert", "alert", self.Meta.Name.Name, "alert_time", t)
+	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("alert_time", t))
 
 	// Check refs - stop if any of them are invalid
 	err := checkRefs(ctx, r.C, self.Meta.Refs)
