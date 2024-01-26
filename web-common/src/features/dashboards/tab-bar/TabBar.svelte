@@ -50,24 +50,15 @@
     <TabList class="flex gap-x-4">
       {#each tabs as tab}
         {@const disabled = tab.label === "Pivot" && !$pivotAllowed}
-        {#if disabled}
-          <Tooltip>
-            <TooltipContent slot="tooltip-content">Coming Soon</TooltipContent>
-            <Tab {disabled}>
-              <div class="flex gap-2 items-center">
-                <svelte:component this={tab.icon} />
-                {tab.label}
-              </div>
-            </Tab>
-          </Tooltip>
-        {:else}
+        <Tooltip suppress={!disabled}>
           <Tab {disabled}>
             <div class="flex gap-2 items-center">
               <svelte:component this={tab.icon} />
               {tab.label}
             </div>
           </Tab>
-        {/if}
+          <TooltipContent slot="tooltip-content">Coming Soon</TooltipContent>
+        </Tooltip>
       {/each}
     </TabList>
   </TabGroup>
