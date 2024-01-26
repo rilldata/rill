@@ -169,7 +169,7 @@
     because the darkest color in the new palette is much
     lighter than the previous --secondary-foreground color.
     */
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary-foreground: 202 90% 16%;
   
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
