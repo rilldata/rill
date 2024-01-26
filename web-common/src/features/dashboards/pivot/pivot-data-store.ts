@@ -60,7 +60,7 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
           colDimensionNames: [],
           allMeasures: [],
           allDimensions: [],
-          filters: dashboardStore.filters,
+          filters: { include: [], exclude: [] },
           whereFilter: dashboardStore.whereFilter,
           pivot: dashboardStore.pivot,
           time,
@@ -86,7 +86,7 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
         colDimensionNames,
         allMeasures: metricsView.data?.measures,
         allDimensions: metricsView.data?.dimensions,
-        filters: dashboardStore.filters,
+        filters: { include: [], exclude: [] },
         whereFilter: dashboardStore.whereFilter,
         pivot: dashboardStore.pivot,
         time,
@@ -335,6 +335,15 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                  * for the initial table cell data. With svelte query cache we would not hit the
                  * API twice
                  */
+                const globalTotalsQuery = createPivotAggregationRowQuery(
+                  ctx,
+                  config.measureNames,
+                  [],
+                  config.filters,
+                  config.whereFilter,
+                  [],
+                  "10000", // Using 10000 for cache hit
+                );
                 const totalsRowQuery = createTableCellQuery(
                   ctx,
                   config,
@@ -347,8 +356,16 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                  * Derive a store based on expanded rows and totals
                  */
                 return derived(
-                  [totalsRowQuery, expandedSubTableCellQuery],
-                  ([totalsRowResponse, expandedRowMeasureValues]) => {
+                  [
+                    globalTotalsQuery,
+                    totalsRowQuery,
+                    expandedSubTableCellQuery,
+                  ],
+                  ([
+                    globalTotalsResponse,
+                    totalsRowResponse,
+                    expandedRowMeasureValues,
+                  ]) => {
                     prepareNestedPivotData(pivotData, rowDimensionNames);
                     let tableDataExpanded: PivotDataRow[] = pivotData;
                     if (expandedRowMeasureValues?.length) {
@@ -370,6 +387,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     let assembledTableData = tableDataExpanded;
                     if (config.rowDimensionNames.length) {
                       const totalsRowData = totalsRowResponse?.data?.data;
+                      const globalTotalsData =
+                        globalTotalsResponse?.data?.data || [];
                       const totalsRowTable = reduceTableCellDataIntoRows(
                         config,
                         "",
@@ -379,8 +398,12 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                         totalsRowData || [],
                       );
 
-                      const totalsRow = totalsRowTable[0] || {};
+                      let totalsRow = totalsRowTable[0] || {};
                       totalsRow[anchorDimension] = "Total";
+
+                      globalTotalsData.forEach((total) => {
+                        totalsRow = { ...total, ...totalsRow };
+                      });
 
                       assembledTableData = [totalsRow, ...tableDataExpanded];
                     }
