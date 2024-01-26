@@ -48,6 +48,8 @@
     "rill:app:navigation-visibility-tween",
   ) as Tweened<number>;
 
+  const { readOnly } = featureFlags;
+
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
 
@@ -57,7 +59,7 @@
     ? leftMargin
     : `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
 
-  $: isRillDeveloper = $featureFlags.readOnly === false;
+  $: isRillDeveloper = $readOnly === false;
 
   // Check if the mock user (if selected) has access to the dashboard
   $: dashboard = useDashboard($runtime.instanceId, metricViewName);
