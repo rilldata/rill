@@ -188,13 +188,14 @@ export function createIndexMap<T>(arr: T[]): Map<T, number> {
 }
 
 /***
- * Get filter for table cells
+ * Get filter to be applied on aggregrate query for table cells
  */
 export function getFilterForPivotTable(
   config: PivotDataStoreConfig,
   colDimensionAxes: Record<string, string[]> = {},
   rowDimensionValues: string[] = [],
   isInitialTable = false,
+  anchorDimension: string | undefined = undefined,
   yLimit = 100,
   xLimit = 100,
 ) {
@@ -203,7 +204,6 @@ export function getFilterForPivotTable(
   const { colDimensionNames, rowDimensionNames, time } = config;
 
   let rowFilters: MetricsViewFilterCond[] = [];
-  const anchorDimension = rowDimensionNames?.[0];
   if (
     isInitialTable &&
     anchorDimension &&

@@ -1,10 +1,14 @@
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import type { V1MetricsViewAggregationResponseDataItem } from "@rilldata/web-common/runtime-client";
-import { derived, Readable } from "svelte/store";
+import type {
+  V1MetricsViewAggregationResponse,
+  V1MetricsViewAggregationResponseDataItem,
+} from "@rilldata/web-common/runtime-client";
+import { Readable, derived, readable } from "svelte/store";
 
 import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import type { CreateQueryResult } from "@tanstack/svelte-query/build/lib/types";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { getColumnDefForPivot } from "./pivot-column-definition";
 import {
@@ -105,7 +109,7 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
 export function createTableCellQuery(
   ctx: StateManagers,
   config: PivotDataStoreConfig,
-  anchorDimension: string,
+  anchorDimension: string | undefined,
   columnDimensionAxesData: Record<string, string[]> | undefined,
   rowDimensionValues: string[],
 ) {
@@ -130,6 +134,7 @@ export function createTableCellQuery(
     columnDimensionAxesData,
     rowDimensionValues,
     true,
+    anchorDimension,
   );
 
   const sortBy = [
@@ -283,13 +288,20 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               columnDimensionAxes?.data,
             );
 
-            const initialTableCellQuery = createTableCellQuery(
-              ctx,
-              config,
-              rowDimensionNames[0],
-              columnDimensionAxes?.data,
-              rowDimensionValues,
-            );
+            let initialTableCellQuery:
+              | Readable<null>
+              | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+              readable(null);
+
+            if (colDimensionNames.length || !rowDimensionNames.length) {
+              initialTableCellQuery = createTableCellQuery(
+                ctx,
+                config,
+                rowDimensionNames[0],
+                columnDimensionAxes?.data,
+                rowDimensionValues,
+              );
+            }
 
             /**
              * Derive a store from initial table cell data query
@@ -297,32 +309,34 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             return derived(
               [initialTableCellQuery],
               ([initialTableCellData], cellSet) => {
-                if (initialTableCellData.isFetching) {
-                  return cellSet({
-                    isFetching: true,
-                    data: rowTotals,
-                    columnDef,
-                    assembled: false,
-                  });
-                }
-
-                const cellData = initialTableCellData.data
-                  ?.data as V1MetricsViewAggregationResponseDataItem[];
-
-                const tableDataWithCells = reduceTableCellDataIntoRows(
-                  config,
-                  anchorDimension,
-                  rowDimensionValues || [],
-                  columnDimensionAxes?.data || {},
-                  rowTotals,
-                  cellData,
-                );
-
-                let pivotData = tableDataWithCells;
-
-                // TODO: Considering optimizing this derived store
+                let pivotData: PivotDataRow[] = [];
+                let cellData: V1MetricsViewAggregationResponseDataItem[] = [];
                 if (getPivotConfigKey(config) in expandedTableMap) {
                   pivotData = expandedTableMap[getPivotConfigKey(config)];
+                } else {
+                  if (initialTableCellData === null) {
+                    cellData = rowTotals;
+                  } else {
+                    if (initialTableCellData.isFetching) {
+                      return cellSet({
+                        isFetching: true,
+                        data: rowTotals,
+                        columnDef,
+                        assembled: false,
+                      });
+                    }
+                    cellData = initialTableCellData.data?.data || [];
+                  }
+                  const tableDataWithCells = reduceTableCellDataIntoRows(
+                    config,
+                    anchorDimension,
+                    rowDimensionValues || [],
+                    columnDimensionAxes?.data || {},
+                    rowTotals,
+                    cellData,
+                  );
+
+                  pivotData = tableDataWithCells;
                 }
 
                 const expandedSubTableCellQuery = queryExpandedRowMeasureValues(
@@ -347,7 +361,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 const totalsRowQuery = createTableCellQuery(
                   ctx,
                   config,
-                  "",
+                  undefined,
                   columnDimensionAxes?.data,
                   [],
                 );
