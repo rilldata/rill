@@ -4,9 +4,8 @@
 </script>
 
 <div class="flex gap-x-1" style:padding-left={`${row.depth * 2}rem`}>
-  <!-- TODO: Change LOADING_CELL to undefined -->
   {#if value === "LOADING_CELL"}
-    <span>🔄</span>
+    <span class="loading-cell" />
   {:else if row.getCanExpand()}
     <button on:click={row.getToggleExpandedHandler()} class="cursor-pointer">
       {row.getIsExpanded() ? "▼" : "▶"}
@@ -14,3 +13,9 @@
   {/if}
   {value === "LOADING_CELL" ? "" : value}
 </div>
+
+<style lang="postcss">
+  .loading-cell {
+    @apply h-2 bg-gray-200 rounded w-full inline-block;
+  }
+</style>
