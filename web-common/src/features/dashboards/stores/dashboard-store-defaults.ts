@@ -61,8 +61,6 @@ function setDefaultComparison(
         metricsView.dimensions?.[0]?.name;
       break;
 
-    // if default_comparison is not specified it defaults to time comparison
-    case MetricsViewSpecComparisonMode.COMPARISON_MODE_UNSPECIFIED:
     case MetricsViewSpecComparisonMode.COMPARISON_MODE_TIME:
       setDefaultComparisonTimeRange(
         metricsView,
@@ -70,6 +68,9 @@ function setDefaultComparison(
         fullTimeRange,
       );
       break;
+
+    // if default_comparison is not specified it defaults to no comparison
+    case MetricsViewSpecComparisonMode.COMPARISON_MODE_UNSPECIFIED:
   }
 }
 
@@ -79,6 +80,7 @@ function setDefaultComparisonTimeRange(
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   if (!fullTimeRange) return;
+  metricsExplorer.showTimeComparison = true;
 
   const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
   const comparisonOption = DEFAULT_TIME_RANGES[preset]
@@ -101,7 +103,6 @@ function setDefaultComparisonTimeRange(
     start: comparisonRange.start,
     end: comparisonRange.end,
   };
-  metricsExplorer.showTimeComparison = true;
   metricsExplorer.leaderboardContextColumn =
     LeaderboardContextColumn.DELTA_PERCENT;
 }

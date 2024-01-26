@@ -27,6 +27,8 @@
 
   const dispatch = createEventDispatcher();
 
+  const { adminServer } = featureFlags;
+
   const stateManagers = getStateManagers();
   const {
     selectors: {
@@ -150,7 +152,7 @@
     </Tooltip>
 
     <ExportDimensionTableDataButton
-      includeScheduledReport={$featureFlags.adminServer}
+      includeScheduledReport={$adminServer}
       metricViewName={$metricsViewName}
     />
   </div>

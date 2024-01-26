@@ -657,6 +657,9 @@ export function setDisplayComparison(
   showTimeComparison: boolean,
 ) {
   metricsExplorer.showTimeComparison = showTimeComparison;
+  if (showTimeComparison && !metricsExplorer.selectedComparisonTimeRange) {
+    metricsExplorer.selectedComparisonTimeRange = {} as any;
+  }
 
   if (showTimeComparison) {
     metricsExplorer.selectedComparisonDimension = undefined;
