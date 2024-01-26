@@ -26,9 +26,9 @@ export function getClassForCell(
       doubleHighlighted: "bg-slate-200",
     },
     scrubbed: {
-      base: "bg-blue-50",
-      highlighted: "bg-blue-100",
-      doubleHighlighted: "bg-blue-200",
+      base: "bg-primary-50",
+      highlighted: "bg-primary-100",
+      doubleHighlighted: "bg-primary-200",
     },
     default: {
       base: "bg-white",

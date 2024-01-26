@@ -21,7 +21,7 @@
   let inputClasses =
     "h-10 px-4 py-2 border border-slate-300 rounded-sm text-base";
   let focusClasses =
-    "ring-offset-2 focus:ring-2 focus:ring-blue-300 focus:outline-none";
+    "ring-offset-2 focus:ring-2 focus:ring-primary-ry-300 focus:outline-none";
 
   $: type = showPassword ? "text" : "password";
 
