@@ -45,7 +45,7 @@ export function prepareSortedQueryBody(
 
   // api now expects measure names for which comparison are calculated
   // to keep current behaviour add sort measure name to comparison measures
-  let comparisonMeasures: string[];
+  let comparisonMeasures: string[] = [];
   if (comparisonTimeRange.start && comparisonTimeRange.end && sortMeasureName) {
     comparisonMeasures = [sortMeasureName];
   }
