@@ -56,12 +56,7 @@ export function getDashboardStateFromProto(
   metricsView: V1MetricsView,
 ): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
-  const entity: Partial<MetricsExplorerEntity> = {
-    filters: {
-      include: [],
-      exclude: [],
-    },
-  };
+  const entity: Partial<MetricsExplorerEntity> = {};
 
   if (dashboard.filters) {
     entity.whereFilter = convertFilterToExpression(dashboard.filters);
