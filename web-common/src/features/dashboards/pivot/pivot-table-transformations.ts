@@ -3,28 +3,6 @@ import { createIndexMap, getAccessorForCell } from "./pivot-utils";
 import type { PivotDataRow, PivotDataStoreConfig } from "./types";
 
 /**
- * TODO: PROBABLY COULD BE DELTED NOW
- * Create a barebone table with row  headers.
- * This is used to render the table skeleton before cell data is fetched.
- */
-export function createTableWithAxes(
-  anchorDimensionName: string,
-  rowDimensionValues: string[],
-) {
-  let data: PivotDataRow[] = [];
-
-  if (anchorDimensionName && rowDimensionValues && rowDimensionValues?.length) {
-    data = rowDimensionValues?.map((value) => {
-      return {
-        [anchorDimensionName]: value,
-      };
-    });
-  }
-
-  return data;
-}
-
-/**
  * During the phase when queries are still being resolved, we don't have enough
  * information about the values present in an expanded group
  * For now fill it with empty values if there are more than one row dimensions

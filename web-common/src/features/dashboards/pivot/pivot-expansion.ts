@@ -9,10 +9,7 @@ import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,
 } from "./pivot-queries";
-import {
-  createTableWithAxes,
-  reduceTableCellDataIntoRows,
-} from "./pivot-table-transformations";
+import { reduceTableCellDataIntoRows } from "./pivot-table-transformations";
 import {
   getFilterForPivotTable,
   getSortForAccessor,
@@ -116,6 +113,7 @@ interface ExpandedRowMeasureValues {
   expandIndex: string;
   rowDimensionValues: string[];
   data: V1MetricsViewAggregationResponseDataItem[];
+  totals: V1MetricsViewAggregationResponseDataItem[];
 }
 
 /**
@@ -202,12 +200,12 @@ export function queryExpandedRowMeasureValues(
             timeRange,
           ),
         ],
-        ([expandIndex, subRowDimensionValues, subTableData]) => {
+        ([expandIndex, subRowDimensions, subTableData]) => {
           return {
             isFetching: subTableData?.isFetching,
             expandIndex,
-            rowDimensionValues:
-              subRowDimensionValues?.data?.[anchorDimension] || [],
+            rowDimensionValues: subRowDimensions?.data?.[anchorDimension] || [],
+            totals: subRowDimensions?.totals?.[anchorDimension] || [],
             data: subTableData?.data?.data || [],
           };
         },
@@ -267,8 +265,8 @@ export function addExpandedDataToPivot(
       let skeletonSubTable: PivotDataRow[] = [
         { [anchorDimension]: "LOADING_CELL" },
       ];
-      if (expandedRowData?.rowDimensionValues?.length) {
-        skeletonSubTable = createTableWithAxes(anchorDimension, rowValues);
+      if (expandedRowData?.totals?.length) {
+        skeletonSubTable = expandedRowData?.totals;
       }
 
       let subTableData = skeletonSubTable;
@@ -276,7 +274,7 @@ export function addExpandedDataToPivot(
         subTableData = reduceTableCellDataIntoRows(
           config,
           anchorDimension,
-          expandedRowData?.rowDimensionValues,
+          rowValues,
           columnDimensionAxes,
           skeletonSubTable,
           expandedRowData?.data,

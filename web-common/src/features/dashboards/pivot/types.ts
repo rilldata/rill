@@ -58,6 +58,7 @@ export interface PivotAxesData {
     | undefined;
 }
 
+// OLD PIVOT TYPES
 export type PivotMeasure = {
   def: string;
   minichart?: boolean;
