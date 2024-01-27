@@ -13,12 +13,12 @@
   import { derived } from "svelte/store";
   import type { PivotDataRow } from "./types";
 
-  export let pivotStore: PivotDataStore;
+  export let pivotDataStore: PivotDataStore;
 
   const stateManagers = getStateManagers();
   const { dashboardStore, metricsViewName } = stateManagers;
 
-  $: assembled = $pivotStore.assembled;
+  $: assembled = $pivotDataStore.assembled;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: sorting = $dashboardStore?.pivot?.sorting ?? [];
 
@@ -36,14 +36,18 @@
     metricsExplorerStore.setPivotSort($metricsViewName, sorting);
   }
 
+  const pivotDashboardStore = derived(dashboardStore, (dashboard) => {
+    return dashboard?.pivot;
+  });
+
   const options: Readable<TableOptions<PivotDataRow>> = derived(
-    pivotStore,
-    (pivotData) => ({
+    [pivotDashboardStore, pivotDataStore],
+    ([pivotConfig, pivotData]) => ({
       data: pivotData.data,
       columns: pivotData.columnDef,
       state: {
-        expanded,
-        sorting,
+        expanded: pivotConfig.expanded,
+        sorting: pivotConfig.sorting,
       },
       onExpandedChange: handleExpandedChange,
       getSubRows: (row) => row.subRows,

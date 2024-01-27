@@ -27,7 +27,7 @@
       {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
         <PivotEmpty />
       {:else}
-        <PivotTable pivotStore={pivotDataStore} />
+        <PivotTable {pivotDataStore} />
       {/if}
     </div>
   </div>
