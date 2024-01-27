@@ -43,6 +43,14 @@ export type AdminServicePullVirtualRepoParams = {
 
 export type AdminServiceGetRepoMetaParams = { branch?: string };
 
+export type AdminServiceGetAlertMetaParams = {
+  branch?: string;
+  alert?: string;
+  annotations?: string;
+  queryForUserId?: string;
+  queryForUserEmail?: string;
+};
+
 export type AdminServiceUpdateServiceBody = {
   newName?: string;
 };
@@ -634,6 +642,14 @@ export interface V1GetCurrentUserResponse {
 
 export interface V1GetBookmarkResponse {
   bookmark?: V1Bookmark;
+}
+
+export type V1GetAlertMetaResponseQueryForAttributes = { [key: string]: any };
+
+export interface V1GetAlertMetaResponse {
+  openUrl?: string;
+  editUrl?: string;
+  queryForAttributes?: V1GetAlertMetaResponseQueryForAttributes;
 }
 
 export interface V1GenerateReportYAMLResponse {

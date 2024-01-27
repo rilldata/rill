@@ -72,14 +72,19 @@ func (q *ResourceWatermark) Export(ctx context.Context, rt *runtime.Runtime, ins
 func (q *ResourceWatermark) resolveMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int, rs *runtimev1.Resource) error {
 	mv := rs.GetMetricsView()
 	if mv == nil {
-		return fmt.Errorf("internal: resource %q is not a metrics view", q.ResourceName)
+		return fmt.Errorf("internal: resource %q is not a metrics view", rs.Meta.Name.Name)
+	}
+
+	spec := mv.State.ValidSpec
+	if spec == nil {
+		return fmt.Errorf("metrics view %q is not valid", rs.Meta.Name.Name)
 	}
 
 	sql := ""
-	if mv.Spec.WatermarkExpression != "" {
-		sql = fmt.Sprintf("SELECT %s FROM %s", mv.Spec.WatermarkExpression, safeName(mv.Spec.Table))
-	} else if mv.Spec.TimeDimension != "" {
-		sql = fmt.Sprintf("SELECT MAX(%s) FROM %s", safeName(mv.Spec.TimeDimension), safeName(mv.Spec.Table))
+	if spec.WatermarkExpression != "" {
+		sql = fmt.Sprintf("SELECT %s FROM %s", spec.WatermarkExpression, safeName(spec.Table))
+	} else if spec.TimeDimension != "" {
+		sql = fmt.Sprintf("SELECT MAX(%s) FROM %s", safeName(spec.TimeDimension), safeName(spec.Table))
 	} else {
 		// No watermark available
 		return nil

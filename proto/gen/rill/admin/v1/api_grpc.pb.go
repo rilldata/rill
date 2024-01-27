@@ -81,6 +81,7 @@ const (
 	AdminService_GetRepoMeta_FullMethodName                  = "/rill.admin.v1.AdminService/GetRepoMeta"
 	AdminService_PullVirtualRepo_FullMethodName              = "/rill.admin.v1.AdminService/PullVirtualRepo"
 	AdminService_GetReportMeta_FullMethodName                = "/rill.admin.v1.AdminService/GetReportMeta"
+	AdminService_GetAlertMeta_FullMethodName                 = "/rill.admin.v1.AdminService/GetAlertMeta"
 	AdminService_CreateReport_FullMethodName                 = "/rill.admin.v1.AdminService/CreateReport"
 	AdminService_EditReport_FullMethodName                   = "/rill.admin.v1.AdminService/EditReport"
 	AdminService_UnsubscribeReport_FullMethodName            = "/rill.admin.v1.AdminService/UnsubscribeReport"
@@ -219,6 +220,8 @@ type AdminServiceClient interface {
 	PullVirtualRepo(ctx context.Context, in *PullVirtualRepoRequest, opts ...grpc.CallOption) (*PullVirtualRepoResponse, error)
 	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
 	GetReportMeta(ctx context.Context, in *GetReportMetaRequest, opts ...grpc.CallOption) (*GetReportMetaResponse, error)
+	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+	GetAlertMeta(ctx context.Context, in *GetAlertMetaRequest, opts ...grpc.CallOption) (*GetAlertMetaResponse, error)
 	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
 	CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error)
 	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
@@ -800,6 +803,15 @@ func (c *adminServiceClient) GetReportMeta(ctx context.Context, in *GetReportMet
 	return out, nil
 }
 
+func (c *adminServiceClient) GetAlertMeta(ctx context.Context, in *GetAlertMetaRequest, opts ...grpc.CallOption) (*GetAlertMetaResponse, error) {
+	out := new(GetAlertMetaResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetAlertMeta_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error) {
 	out := new(CreateReportResponse)
 	err := c.cc.Invoke(ctx, AdminService_CreateReport_FullMethodName, in, out, opts...)
@@ -992,6 +1004,8 @@ type AdminServiceServer interface {
 	PullVirtualRepo(context.Context, *PullVirtualRepoRequest) (*PullVirtualRepoResponse, error)
 	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
 	GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error)
+	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+	GetAlertMeta(context.Context, *GetAlertMetaRequest) (*GetAlertMetaResponse, error)
 	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
 	CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error)
 	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
@@ -1197,6 +1211,9 @@ func (UnimplementedAdminServiceServer) PullVirtualRepo(context.Context, *PullVir
 }
 func (UnimplementedAdminServiceServer) GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetReportMeta not implemented")
+}
+func (UnimplementedAdminServiceServer) GetAlertMeta(context.Context, *GetAlertMetaRequest) (*GetAlertMetaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAlertMeta not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateReport not implemented")
@@ -2348,6 +2365,24 @@ func _AdminService_GetReportMeta_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetAlertMeta_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAlertMetaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetAlertMeta(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetAlertMeta_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetAlertMeta(ctx, req.(*GetAlertMetaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_CreateReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateReportRequest)
 	if err := dec(in); err != nil {
@@ -2728,6 +2763,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetReportMeta",
 			Handler:    _AdminService_GetReportMeta_Handler,
+		},
+		{
+			MethodName: "GetAlertMeta",
+			Handler:    _AdminService_GetAlertMeta_Handler,
 		},
 		{
 			MethodName: "CreateReport",

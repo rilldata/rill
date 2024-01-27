@@ -1362,6 +1362,47 @@ paths:
             $ref: '#/definitions/v1TriggerRedeployRequest'
       tags:
         - AdminService
+  /v1/projects/{projectId}/alerts/meta:
+    get:
+      summary: GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+      operationId: AdminService_GetAlertMeta
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetAlertMetaResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          type: string
+        - name: branch
+          in: query
+          required: false
+          type: string
+        - name: alert
+          in: query
+          required: false
+          type: string
+        - name: annotations
+          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
+          in: query
+          required: false
+          type: string
+        - name: queryForUserId
+          in: query
+          required: false
+          type: string
+        - name: queryForUserEmail
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/projects/{projectId}/repo/meta:
     get:
       summary: GetRepoMeta returns credentials and other metadata for accessing a project's repo
@@ -2030,6 +2071,15 @@ definitions:
     properties:
       yaml:
         type: string
+  v1GetAlertMetaResponse:
+    type: object
+    properties:
+      openUrl:
+        type: string
+      editUrl:
+        type: string
+      queryForAttributes:
+        type: object
   v1GetBookmarkResponse:
     type: object
     properties:

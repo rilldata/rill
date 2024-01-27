@@ -24,3 +24,29 @@ func (h *Handle) GetReportMetadata(ctx context.Context, reportName string, annot
 		EditURL:   res.EditUrl,
 	}, nil
 }
+
+func (h *Handle) GetAlertMetadata(ctx context.Context, alertName string, annotations map[string]string, queryForUserID, queryForUserEmail string) (*drivers.AlertMetadata, error) {
+	req := &adminv1.GetAlertMetaRequest{
+		ProjectId:   h.config.ProjectID,
+		Branch:      h.config.Branch,
+		Alert:       alertName,
+		Annotations: annotations,
+	}
+
+	if queryForUserID != "" {
+		req.QueryFor = &adminv1.GetAlertMetaRequest_QueryForUserId{QueryForUserId: queryForUserID}
+	} else if queryForUserEmail != "" {
+		req.QueryFor = &adminv1.GetAlertMetaRequest_QueryForUserEmail{QueryForUserEmail: queryForUserEmail}
+	}
+
+	res, err := h.admin.GetAlertMeta(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &drivers.AlertMetadata{
+		OpenURL:            res.OpenUrl,
+		EditURL:            res.EditUrl,
+		QueryForAttributes: res.QueryForAttributes.AsMap(),
+	}, nil
+}

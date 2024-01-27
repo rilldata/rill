@@ -395,6 +395,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/projects/{project_id}/reports/meta"};
   }
 
+  // GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+  rpc GetAlertMeta(GetAlertMetaRequest) returns (GetAlertMetaResponse) {
+    option (google.api.http) = {get: "/v1/projects/{project_id}/alerts/meta"};
+  }
+
   // CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
   rpc CreateReport(CreateReportRequest) returns (CreateReportResponse) {
     option (google.api.http) = {
@@ -1072,6 +1077,23 @@ message GetReportMetaResponse {
   string open_url = 1;
   string export_url = 2;
   string edit_url = 3;
+}
+
+message GetAlertMetaRequest {
+  string project_id = 1;
+  string branch = 2;
+  string alert = 3;
+  map<string, string> annotations = 4;
+  oneof query_for {
+    string query_for_user_id = 5;
+    string query_for_user_email = 6;
+  }
+}
+
+message GetAlertMetaResponse {
+  string open_url = 1;
+  string edit_url = 2;
+  google.protobuf.Struct query_for_attributes = 3;
 }
 
 message CreateReportRequest {

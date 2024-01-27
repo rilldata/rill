@@ -7,17 +7,24 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/duration"
+	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/queries"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const alertExecutionHistoryLimit = 25
+
+const alertDefaultIntervalsLimit = 25
+
+const alertQueryPriority = 1
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindAlert, newAlertReconciler)
@@ -123,7 +130,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Run alert queries and send emails
-	retry, alertErr := r.checkAlert(ctx, self, a, triggerTime, adhocTrigger)
+	retry, alertErr := r.executeAlert(ctx, self, a, triggerTime, adhocTrigger)
 
 	// If we were cancelled, exit without updating any other trigger-related state.
 	// NOTE: We don't set Retrigger here because we'll leave re-scheduling to whatever cancelled the reconciler.
@@ -287,9 +294,9 @@ func (r *AlertReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 
-// checkAlert runs queries and (maybe) sends emails for the alert. It also adds entries to a.State.ExecutionHistory.
+// executeAlert runs queries and (maybe) sends emails for the alert. It also adds entries to a.State.ExecutionHistory.
 // By default, an alert is checked once for the current watermark, but if a.Spec.IntervalsIsoDuration is set, it will be checked *for each* interval that has elapsed since the previous execution watermark.
-func (r *AlertReconciler) checkAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, triggerTime time.Time, adhocTrigger bool) (bool, error) {
+func (r *AlertReconciler) executeAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, triggerTime time.Time, adhocTrigger bool) (bool, error) {
 	// Check refs
 	executionErr := checkRefs(ctx, r.C, self.Meta.Refs)
 
@@ -302,26 +309,25 @@ func (r *AlertReconciler) checkAlert(ctx context.Context, self *runtimev1.Resour
 		} else if ok {
 			watermark = t
 		}
-		// If !ok, no watermark could be computed. So we'll just use the trigger time.
-	}
-
-	// Evaluate previous watermark (will be equal to watermark if there was no previous execution)
-	previousWatermark := watermark
-	if executionErr == nil && a.State.ExecutionHistory != nil {
-		for _, e := range a.State.ExecutionHistory {
-			previousWatermark = e.ExecutionTime.AsTime()
-			break
-		}
+		// If !ok, no watermark could be computed. So we'll just stick to triggerTime.
 	}
 
 	// Evaluate and invoke intervals and add to execution history
 	dirty := false
 	if executionErr == nil {
-		log.Printf("HERE: %v", previousWatermark)
-		// TODO: Evaluate intervals
-		// TODO: Call checkSingleAlert for each interval
-		// TODO: Add to execution history.
-		// TODO: Update executionErr
+		ts, err := calculateExecutionTimes(self, a, watermark)
+		if err != nil {
+			// TODO: Okay to return? More than usually unexpected error.
+			return false, err
+		}
+
+		for _, t := range ts {
+			dirty, err = r.executeSingleAlert(ctx, self, a, t, adhocTrigger)
+			if err != nil {
+				executionErr = err
+				break
+			}
+		}
 	}
 
 	// If executionErr is nil, we're done.
@@ -331,6 +337,7 @@ func (r *AlertReconciler) checkAlert(ctx context.Context, self *runtimev1.Resour
 
 	// If executionErr is a non-dirty cancellation, we're also done.
 	if errors.Is(executionErr, context.Canceled) && !dirty {
+		// TODO: Might CurrentExecution be non-nil here?
 		return false, executionErr
 	}
 
@@ -356,9 +363,9 @@ func (r *AlertReconciler) checkAlert(ctx context.Context, self *runtimev1.Resour
 	return !dirty, executionErr
 }
 
-// checkAlert runs the alert query and maybe sends emails.
+// executeSingleAlert runs the alert query and maybe sends emails for a single execution time.
 // It returns true if an error occurred after some or all emails were sent.
-func (r *AlertReconciler) checkSingleAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, executionTime time.Time, adhocTrigger bool) (bool, error) {
+func (r *AlertReconciler) executeSingleAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, executionTime time.Time, adhocTrigger bool) (bool, error) {
 	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
 
 	// Create new execution and save in State.CurrentExecution
@@ -373,7 +380,7 @@ func (r *AlertReconciler) checkSingleAlert(ctx context.Context, self *runtimev1.
 	}
 
 	// Query and email
-	res, dirtyErr, alertErr := r.executeSingleAlert(ctx, self, a, executionTime)
+	res, dirtyErr, alertErr := r.checkAlert(ctx, self, a, executionTime)
 
 	// If there was no error, we're done.
 	if alertErr == nil {
@@ -418,12 +425,88 @@ func (r *AlertReconciler) checkSingleAlert(ctx context.Context, self *runtimev1.
 	return dirtyErr, alertErr
 }
 
-// executeSingleAlert runs the alert query and maybe sends emails.
+// checkAlert runs the alert query and maybe sends emails.
 // It returns true if an error occurred after some or all emails were sent.
-func (r *AlertReconciler) executeSingleAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, executionTime time.Time) (*runtimev1.AssertionResult, bool, error) {
-	// TODO: Implement
-	r.C.Logger.Info("Triggered alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
-	return nil, false, nil
+func (r *AlertReconciler) checkAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, executionTime time.Time) (*runtimev1.AssertionResult, bool, error) {
+	// Log
+	// TODO: Turn into debug log
+	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+
+	// Build query proto
+	qpb, err := buildProtoQuery(a.Spec.QueryName, a.Spec.QueryArgsJson, executionTime)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to parse query: %w", err)
+	}
+
+	// Connect to admin service
+	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
+	if err != nil {
+		if errors.Is(err, runtime.ErrAdminNotConfigured) {
+			r.C.Logger.Info("Skipped checking alert because an admin service is not configured", zap.String("name", self.Meta.Name.Name))
+			return nil, false, errors.New("skipped checking alert because an admin service is not configured")
+		}
+		return nil, false, fmt.Errorf("failed to get admin client: %w", err)
+	}
+	defer release()
+
+	// Get alert metadata
+	meta, err := admin.GetAlertMetadata(ctx, a.Spec.QueryName, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to get alert metadata: %w", err)
+	}
+
+	// Get query security attributes
+	var queryForAttrs map[string]any
+	if a.Spec.GetQueryForAttributes() != nil {
+		queryForAttrs = a.Spec.GetQueryForAttributes().AsMap()
+	} else {
+		queryForAttrs = meta.QueryForAttributes
+	}
+
+	// Create and execute query
+	q, err := buildRuntimeQuery(qpb, queryForAttrs)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to build query: %w", err)
+	}
+	err = r.C.Runtime.Query(ctx, r.C.InstanceID, q, alertQueryPriority)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	// Extract result row
+	row, ok, err := extractQueryResultFirstRow(q)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to extract query result: %w", err)
+	}
+	if !ok {
+		r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+		return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, false, nil
+	}
+
+	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+
+	// Send emails
+	for _, recipient := range a.Spec.EmailRecipients {
+		err := r.C.Runtime.Email.SendAlert(&email.Alert{
+			ToEmail:       recipient,
+			ToName:        "",
+			Title:         a.Spec.Title,
+			ExecutionTime: executionTime,
+			FailRow:       row,
+			OpenLink:      meta.OpenURL,
+			EditLink:      meta.EditURL,
+		})
+		if err != nil {
+			return nil, true, fmt.Errorf("failed to send email to %q: %w", recipient, err)
+		}
+	}
+
+	// Return fail row
+	failRow, err := structpb.NewStruct(row)
+	if err != nil {
+		return nil, true, fmt.Errorf("failed to convert fail row to proto: %w", err)
+	}
+	return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL, FailRow: failRow}, false, nil
 }
 
 // computeInheritedWatermark computes the inherited watermark for the alert.
@@ -431,19 +514,112 @@ func (r *AlertReconciler) executeSingleAlert(ctx context.Context, self *runtimev
 func (r *AlertReconciler) computeInheritedWatermark(ctx context.Context, refs []*runtimev1.ResourceName) (time.Time, bool, error) {
 	var t time.Time
 	for _, ref := range refs {
-		rs, err := r.C.Get(ctx, ref, false)
+		q := &queries.ResourceWatermark{
+			ResourceKind: ref.Kind,
+			ResourceName: ref.Name,
+		}
+		err := r.C.Runtime.Query(ctx, r.C.InstanceID, q, alertQueryPriority)
 		if err != nil {
-			return time.Time{}, false, fmt.Errorf("failed to get ref %v: %w", ref, err)
+			return t, false, fmt.Errorf("failed to resolve watermark for %s/%s: %w", ref.Kind, ref.Name, err)
 		}
 
-		// Currently only metrics views have watermarks
-		mv := rs.GetMetricsView()
-		if mv == nil {
-			continue
+		if q.Result != nil && (t.IsZero() || q.Result.Before(t)) {
+			t = *q.Result
 		}
-
-		// TODO: Query for the watermark
 	}
 
 	return t, !t.IsZero(), nil
+}
+
+// calculateExecutionTimes calculates the execution times for an alert, taking into consideration the alert's intervals configuration and previous executions.
+// If the alert is not configured to run on intervals, it will return a slice containing only the current watermark.
+func calculateExecutionTimes(self *runtimev1.Resource, a *runtimev1.Alert, watermark time.Time) ([]time.Time, error) {
+	// If the alert is not configured to run on intervals, check it just for the current watermark.
+	if a.Spec.IntervalsIsoDuration == "" {
+		return []time.Time{watermark}, nil
+	}
+
+	// Evaluate previous watermark (if there's no history, it defaults to the alert creation time)
+	previousWatermark := self.Meta.CreatedOn.AsTime()
+	for _, e := range a.State.ExecutionHistory {
+		if e.ExecutionTime != nil {
+			previousWatermark = e.ExecutionTime.AsTime()
+			break
+		}
+	}
+
+	// Note: The watermark and previousWatermark may be unaligned with the alert's interval duration.
+
+	// Parse the interval duration
+	// The YAML parser validates it as a StandardDuration, so this shouldn't fail.
+	di, err := duration.ParseISO8601(a.Spec.IntervalsIsoDuration)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse interval duration: %w", err)
+	}
+	d, ok := di.(duration.StandardDuration)
+	if !ok {
+		return nil, fmt.Errorf("interval duration %q is not a standard ISO 8601 duration", a.Spec.IntervalsIsoDuration)
+	}
+
+	// Extract time zone
+	tz := time.UTC
+	if a.Spec.RefreshSchedule != nil && a.Spec.RefreshSchedule.TimeZone != "" {
+		tz, err = time.LoadLocation(a.Spec.RefreshSchedule.TimeZone)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load time zone %q: %w", a.Spec.RefreshSchedule.TimeZone, err)
+		}
+	}
+
+	// Compute the last end time (rounded to the interval duration)
+	// TODO: Find a way to incorporate first day of week and first month of year?
+	end := watermark.In(tz)
+	if a.Spec.IntervalsCheckUnclosed {
+		// Ceil
+		t := d.Truncate(end, 1, 1)
+		if !t.Equal(end) {
+			end = d.Add(t)
+		}
+	} else {
+		// Floor
+		end = d.Truncate(end, 1, 1)
+	}
+
+	// Skip if end isn't past the previous watermark (unless we're supposed to check unclosed intervals)
+	if !a.Spec.IntervalsCheckUnclosed && !end.After(previousWatermark) {
+		return nil, nil
+	}
+
+	// Set a limit on the number of intervals to check
+	limit := int(a.Spec.IntervalsLimit)
+	if limit <= 0 {
+		limit = alertDefaultIntervalsLimit
+	}
+
+	// Calculate the execution times
+	ts := []time.Time{end}
+	for i := 0; i < limit; i++ {
+		t := ts[len(ts)-1]
+		t = d.Sub(t)
+		if !t.After(previousWatermark) {
+			break
+		}
+		ts = append(ts, t)
+	}
+
+	// Reverse execution times so we run them in chronological order
+	slices.Reverse(ts)
+
+	return ts, nil
+}
+
+// buildRuntimeQuery builds a runtime query from a proto query and security attributes.
+func buildRuntimeQuery(q *runtimev1.Query, attrs map[string]any) (runtime.Query, error) {
+	// TODO:
+	panic("")
+}
+
+// extractQueryResultFirstRow extracts the first row from a query result.
+func extractQueryResultFirstRow(q runtime.Query) (map[string]any, bool, error) {
+	// TODO:
+	panic("")
 }

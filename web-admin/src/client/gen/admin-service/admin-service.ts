@@ -87,6 +87,8 @@ import type {
   V1PingResponse,
   V1TriggerRedeployResponse,
   V1TriggerRedeployRequest,
+  V1GetAlertMetaResponse,
+  AdminServiceGetAlertMetaParams,
   V1GetRepoMetaResponse,
   AdminServiceGetRepoMetaParams,
   V1PullVirtualRepoResponse,
@@ -2957,6 +2959,72 @@ export const createAdminServiceTriggerRedeploy = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+ */
+export const adminServiceGetAlertMeta = (
+  projectId: string,
+  params?: AdminServiceGetAlertMetaParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetAlertMetaResponse>({
+    url: `/v1/projects/${projectId}/alerts/meta`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetAlertMetaQueryKey = (
+  projectId: string,
+  params?: AdminServiceGetAlertMetaParams,
+) => [`/v1/projects/${projectId}/alerts/meta`, ...(params ? [params] : [])];
+
+export type AdminServiceGetAlertMetaQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetAlertMeta>>
+>;
+export type AdminServiceGetAlertMetaQueryError = RpcStatus;
+
+export const createAdminServiceGetAlertMeta = <
+  TData = Awaited<ReturnType<typeof adminServiceGetAlertMeta>>,
+  TError = RpcStatus,
+>(
+  projectId: string,
+  params?: AdminServiceGetAlertMetaParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetAlertMeta>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetAlertMetaQueryKey(projectId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetAlertMeta>>
+  > = ({ signal }) => adminServiceGetAlertMeta(projectId, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetAlertMeta>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!projectId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary GetRepoMeta returns credentials and other metadata for accessing a project's repo
  */

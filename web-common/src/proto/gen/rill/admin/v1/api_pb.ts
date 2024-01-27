@@ -5514,6 +5514,129 @@ export class GetReportMetaResponse extends Message<GetReportMetaResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.GetAlertMetaRequest
+ */
+export class GetAlertMetaRequest extends Message<GetAlertMetaRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: string branch = 2;
+   */
+  branch = "";
+
+  /**
+   * @generated from field: string alert = 3;
+   */
+  alert = "";
+
+  /**
+   * @generated from field: map<string, string> annotations = 4;
+   */
+  annotations: { [key: string]: string } = {};
+
+  /**
+   * @generated from oneof rill.admin.v1.GetAlertMetaRequest.query_for
+   */
+  queryFor: {
+    /**
+     * @generated from field: string query_for_user_id = 5;
+     */
+    value: string;
+    case: "queryForUserId";
+  } | {
+    /**
+     * @generated from field: string query_for_user_email = 6;
+     */
+    value: string;
+    case: "queryForUserEmail";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<GetAlertMetaRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetAlertMetaRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "alert", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 5, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+    { no: 6, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAlertMetaRequest {
+    return new GetAlertMetaRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAlertMetaRequest {
+    return new GetAlertMetaRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAlertMetaRequest {
+    return new GetAlertMetaRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAlertMetaRequest | PlainMessage<GetAlertMetaRequest> | undefined, b: GetAlertMetaRequest | PlainMessage<GetAlertMetaRequest> | undefined): boolean {
+    return proto3.util.equals(GetAlertMetaRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetAlertMetaResponse
+ */
+export class GetAlertMetaResponse extends Message<GetAlertMetaResponse> {
+  /**
+   * @generated from field: string open_url = 1;
+   */
+  openUrl = "";
+
+  /**
+   * @generated from field: string edit_url = 2;
+   */
+  editUrl = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct query_for_attributes = 3;
+   */
+  queryForAttributes?: Struct;
+
+  constructor(data?: PartialMessage<GetAlertMetaResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetAlertMetaResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "open_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "edit_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "query_for_attributes", kind: "message", T: Struct },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetAlertMetaResponse {
+    return new GetAlertMetaResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetAlertMetaResponse {
+    return new GetAlertMetaResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetAlertMetaResponse {
+    return new GetAlertMetaResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetAlertMetaResponse | PlainMessage<GetAlertMetaResponse> | undefined, b: GetAlertMetaResponse | PlainMessage<GetAlertMetaResponse> | undefined): boolean {
+    return proto3.util.equals(GetAlertMetaResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.CreateReportRequest
  */
 export class CreateReportRequest extends Message<CreateReportRequest> {

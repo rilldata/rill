@@ -16081,6 +16081,280 @@ var _ interface {
 	ErrorName() string
 } = GetReportMetaResponseValidationError{}
 
+// Validate checks the field values on GetAlertMetaRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetAlertMetaRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetAlertMetaRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetAlertMetaRequestMultiError, or nil if none found.
+func (m *GetAlertMetaRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetAlertMetaRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ProjectId
+
+	// no validation rules for Branch
+
+	// no validation rules for Alert
+
+	// no validation rules for Annotations
+
+	switch v := m.QueryFor.(type) {
+	case *GetAlertMetaRequest_QueryForUserId:
+		if v == nil {
+			err := GetAlertMetaRequestValidationError{
+				field:  "QueryFor",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for QueryForUserId
+	case *GetAlertMetaRequest_QueryForUserEmail:
+		if v == nil {
+			err := GetAlertMetaRequestValidationError{
+				field:  "QueryFor",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for QueryForUserEmail
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return GetAlertMetaRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetAlertMetaRequestMultiError is an error wrapping multiple validation
+// errors returned by GetAlertMetaRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetAlertMetaRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetAlertMetaRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetAlertMetaRequestMultiError) AllErrors() []error { return m }
+
+// GetAlertMetaRequestValidationError is the validation error returned by
+// GetAlertMetaRequest.Validate if the designated constraints aren't met.
+type GetAlertMetaRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetAlertMetaRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetAlertMetaRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetAlertMetaRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetAlertMetaRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetAlertMetaRequestValidationError) ErrorName() string {
+	return "GetAlertMetaRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetAlertMetaRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetAlertMetaRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetAlertMetaRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetAlertMetaRequestValidationError{}
+
+// Validate checks the field values on GetAlertMetaResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetAlertMetaResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetAlertMetaResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetAlertMetaResponseMultiError, or nil if none found.
+func (m *GetAlertMetaResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetAlertMetaResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for OpenUrl
+
+	// no validation rules for EditUrl
+
+	if all {
+		switch v := interface{}(m.GetQueryForAttributes()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetAlertMetaResponseValidationError{
+					field:  "QueryForAttributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetAlertMetaResponseValidationError{
+					field:  "QueryForAttributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetQueryForAttributes()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetAlertMetaResponseValidationError{
+				field:  "QueryForAttributes",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetAlertMetaResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetAlertMetaResponseMultiError is an error wrapping multiple validation
+// errors returned by GetAlertMetaResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetAlertMetaResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetAlertMetaResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetAlertMetaResponseMultiError) AllErrors() []error { return m }
+
+// GetAlertMetaResponseValidationError is the validation error returned by
+// GetAlertMetaResponse.Validate if the designated constraints aren't met.
+type GetAlertMetaResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetAlertMetaResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetAlertMetaResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetAlertMetaResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetAlertMetaResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetAlertMetaResponseValidationError) ErrorName() string {
+	return "GetAlertMetaResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetAlertMetaResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetAlertMetaResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetAlertMetaResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetAlertMetaResponseValidationError{}
+
 // Validate checks the field values on CreateReportRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

@@ -37,7 +37,7 @@ type ScheduledReport struct {
 
 type scheduledReportData struct {
 	Title            string
-	ReportTimeString string // Will be inferred from ReportDate
+	ReportTimeString string // Will be inferred from ReportTime
 	DownloadFormat   string
 	OpenLink         template.URL
 	DownloadLink     template.URL
@@ -61,6 +61,48 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	// Resolve template
 	buf := new(bytes.Buffer)
 	err := c.templates.Lookup("scheduled_report.html").Execute(buf, data)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+
+	return c.sender.Send(opts.ToEmail, opts.ToName, subject, html)
+}
+
+type Alert struct {
+	ToEmail       string
+	ToName        string
+	Title         string
+	ExecutionTime time.Time
+	FailRow       map[string]any
+	OpenLink      string
+	EditLink      string
+}
+
+type alertData struct {
+	Title               string
+	ExecutionTimeString string // Will be inferred from ExecutionTime
+	FailRow             map[string]any
+	OpenLink            template.URL
+	EditLink            template.URL
+}
+
+func (c *Client) SendAlert(opts *Alert) error {
+	// Build template data
+	data := &alertData{
+		Title:               opts.Title,
+		ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
+		FailRow:             opts.FailRow,
+		OpenLink:            template.URL(opts.OpenLink),
+		EditLink:            template.URL(opts.EditLink),
+	}
+
+	// Build subject
+	subject := fmt.Sprintf("%s (%s)", opts.Title, data.ExecutionTimeString)
+
+	// Resolve template
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("alert.html").Execute(buf, data)
 	if err != nil {
 		return fmt.Errorf("email template error: %w", err)
 	}
