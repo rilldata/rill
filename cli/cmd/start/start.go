@@ -88,6 +88,17 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			client := activity.NewNoopClient()
 
+			// Check if projectPath has more than 1k+ files
+			fileCount, err := countFilesInDirectory(projectPath)
+			if err != nil {
+				return err
+			}
+
+			if fileCount > 1000 {
+				ch.Printer.PrintlnError("Project has more than 1k+ files. Create a new directory or use a different project path.")
+				return nil
+			}
+
 			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, debug, reset, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, client)
 			if err != nil {
 				return err
@@ -123,4 +134,24 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
 
 	return startCmd
+}
+
+func countFilesInDirectory(path string) (int, error) {
+	var fileCount int
+
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			fileCount++
+		}
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	return fileCount, nil
 }
