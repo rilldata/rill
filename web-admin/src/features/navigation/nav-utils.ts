@@ -13,10 +13,7 @@ export function isProjectPage(page: Page): boolean {
   );
 }
 export function isDashboardPage(page: Page): boolean {
-  return (
-    page.route.id === "/[organization]/[project]/[dashboard]" ||
-    page.route.id === "/-/embed"
-  );
+  return page.route.id === "/[organization]/[project]/[dashboard]";
 }
 
 export function isReportPage(page: Page): boolean {
