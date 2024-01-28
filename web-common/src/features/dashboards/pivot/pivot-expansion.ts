@@ -141,6 +141,19 @@ export function queryExpandedRowMeasureValues(
         expandIndex,
       );
 
+      if (
+        !anchorDimension ||
+        !values.length ||
+        values.some((v) => v === undefined || v === "LOADING_CELL")
+      )
+        return writable({
+          isFetching: true,
+          expandIndex,
+          rowDimensionValues: [],
+          data: [],
+          totals: [],
+        });
+
       const timeFilters: TimeFilters[] = [];
       // TODO: handle for already existing filters
       const rowNestFilters = values

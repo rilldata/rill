@@ -10,12 +10,38 @@
   export let isFetching = false;
 
   const stateManagers = getStateManagers();
-  const { metricsViewName } = stateManagers;
+  const { metricsViewName, dashboardStore } = stateManagers;
 
-  $: nestedMode = false;
+  $: expanded = $dashboardStore?.pivot?.expanded ?? {};
 
-  function toggleNestedMode() {
-    console.log("toggleNestedMode");
+  function expandVisible() {
+    const lowestVisibleRow = 0;
+    const nestedLevels = 4;
+    const maxNestedLevelsToExpand = 3;
+    const maxExpandPerLevel = 3;
+
+    // Helper function to recursively expand rows
+    function expandRow(rowId: string, level: number) {
+      if (level > maxNestedLevelsToExpand) {
+        return;
+      }
+
+      expanded[rowId] = true; // Expand the current row
+
+      // Generate and expand child rows
+      for (let i = 0; i < maxExpandPerLevel; i++) {
+        let childRowId = `${rowId}.${i}`;
+        expandRow(childRowId, level + 1);
+      }
+    }
+
+    // Expand rows starting from the lowest visible row
+    for (let i = 0; i < maxExpandPerLevel; i++) {
+      expandRow(i.toString(), 1); // Start from level 1
+    }
+
+    console.log(expanded);
+    metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
   }
 </script>
 
@@ -36,12 +62,11 @@
     compact
     type="text"
     on:click={() => {
-      metricsExplorerStore.setPivotExpanded($metricsViewName, {});
+      expandVisible();
     }}
   >
     Expand Visible
   </Button>
-
   <Button
     compact
     type="text"
