@@ -148,7 +148,6 @@ func countFilesInDirectory(path string) (int, error) {
 		}
 		return nil
 	})
-
 	if err != nil {
 		return 0, err
 	}
