@@ -41,6 +41,7 @@ require (
 	github.com/go-logr/zapr v1.2.4
 	github.com/go-playground/validator/v10 v10.14.0
 	github.com/go-redis/redis_rate/v10 v10.0.1
+	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-github/v50 v50.2.0
 	github.com/google/uuid v1.4.0
@@ -51,14 +52,14 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/golang-lru v0.6.0
 	github.com/jackc/pgconn v1.14.0
+	github.com/jackc/pgtype v1.12.0
 	github.com/jackc/pgx/v4 v4.17.2
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
-	github.com/lib/pq v1.10.9
-	github.com/marcboeker/go-duckdb v1.5.4
+	github.com/marcboeker/go-duckdb v1.5.5
 	github.com/mazznoer/csscolorparser v0.1.3
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.17.0
@@ -85,7 +86,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.21.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.25.0
-	go.uber.org/zap/exp v0.1.0
 	gocloud.dev v0.34.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/oauth2 v0.13.0
@@ -99,7 +99,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.22.1
-	moul.io/zapfilter v1.7.0
 )
 
 require (
@@ -122,7 +121,6 @@ require (
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
-	github.com/jackc/pgtype v1.12.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
@@ -300,7 +298,10 @@ require (
 
 // using a patch with changes to support decimal256
 // revert to original SDK on next duckDB release
-replace github.com/marcboeker/go-duckdb v1.5.4 => github.com/rilldata/go-duckdb v0.0.0-20231208152512-5e40f2025fc4
+// the go-duckdb v1.5.6 has breaking changes with respect to appender API. The rilldata fork adds query cancellation changes on top of v1.5.5
+// details on breaking changes here : https://github.com/marcboeker/go-duckdb/pull/147#issuecomment-1895771714
+// changes done on top of v1.5.5 : https://github.com/rilldata/go-duckdb/compare/branch_v1.5.5...rilldata:go-duckdb:appender_revert
+replace github.com/marcboeker/go-duckdb v1.5.5 => github.com/rilldata/go-duckdb v0.0.0-20240118102625-6f51039deb7b
 
 // snowflake uses arrow v12 but we need arrow v14 so we need to use a fork of snowflake upgraded to v14
 // revert to original SDK once this PR is merged : https://github.com/snowflakedb/gosnowflake/pull/977

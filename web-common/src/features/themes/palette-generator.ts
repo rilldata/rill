@@ -3,6 +3,11 @@ import chroma, { type Color } from "chroma-js";
 
 export type ThemeColorShift = [hueShift: number, saturationShift: number];
 
+export function generateColorPalette(inputColor: Color): Color[] {
+  const [palette, shift] = getPaletteAndShift(inputColor);
+  return applyShiftToPalette(palette, shift);
+}
+
 export function applyShiftToPalette(
   palette: Color[],
   [hueShift, saturationShift]: ThemeColorShift,

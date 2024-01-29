@@ -27,10 +27,8 @@
     const config = await runtimeServiceGetConfig();
     initMetrics(config);
 
-    featureFlags.set({
-      adminServer: false,
-      readOnly: config.readonly,
-    });
+    featureFlags.set(false, "adminServer");
+    featureFlags.set(config.readonly, "readOnly");
 
     appBuildMetaStore.set({
       version: config.version,

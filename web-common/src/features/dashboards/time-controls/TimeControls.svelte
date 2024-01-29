@@ -110,9 +110,15 @@
       $timeControlsStore.allTimeRange,
     );
 
-    makeTimeSeriesTimeRangeAndUpdateAppState(baseTimeRange, defaultTimeGrain, {
-      name: validComparison,
-    } as DashboardTimeControls);
+    makeTimeSeriesTimeRangeAndUpdateAppState(
+      baseTimeRange,
+      defaultTimeGrain,
+      $dashboardStore?.showTimeComparison
+        ? ({
+            name: validComparison,
+          } as DashboardTimeControls)
+        : undefined,
+    );
   }
 
   function onSelectTimeGrain(timeGrain: V1TimeGrain) {
@@ -162,7 +168,7 @@
 
 <div class="flex flex-row items-center gap-x-1">
   {#if !hasTimeSeries}
-    <NoTimeDimensionCTA {metricViewName} modelName={$metaQuery?.data?.table} />
+    <NoTimeDimensionCTA />
   {:else if allTimeRange?.start}
     <TimeRangeSelector
       {metricViewName}

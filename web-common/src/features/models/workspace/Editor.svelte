@@ -48,7 +48,6 @@
     lineNumbers,
     rectangularSelection,
   } from "@codemirror/view";
-  import { Debounce } from "@rilldata/web-common/features/models/utils/Debounce";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher, onMount } from "svelte";
@@ -65,16 +64,12 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
-  const QUERY_UPDATE_DEBOUNCE_TIMEOUT = 0; // disables debouncing
-  // const QUERY_SYNC_DEBOUNCE_TIMEOUT = 1000;
-
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
 
   $: editorHeight = $observedNode?.offsetHeight || 0;
 
   let latestContent = content;
-  const debounce = new Debounce();
 
   let editor: EditorView;
   let editorContainer;
@@ -232,15 +227,10 @@
             }
             if (v.docChanged) {
               latestContent = v.state.doc.toString();
-              debounce.debounce(
-                "write",
-                () => {
-                  dispatch("write", {
-                    content: latestContent,
-                  });
-                },
-                QUERY_UPDATE_DEBOUNCE_TIMEOUT,
-              );
+
+              dispatch("write", {
+                content: latestContent,
+              });
             }
           }),
         ],

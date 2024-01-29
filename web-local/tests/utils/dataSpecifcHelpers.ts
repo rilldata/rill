@@ -1,7 +1,10 @@
 import type { Page } from "playwright";
-import { updateCodeEditor } from "./commonHelpers";
+import {
+  updateCodeEditor,
+  waitForProfiling,
+  wrapRetryAssertion,
+} from "./commonHelpers";
 import { assertLeaderboards } from "./dashboardHelpers";
-import { waitForProfiling, wrapRetryAssertion } from "./helpers";
 import { createModel } from "./modelHelpers";
 import { uploadFile, waitForSource } from "./sourceHelpers";
 

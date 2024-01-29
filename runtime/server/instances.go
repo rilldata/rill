@@ -195,17 +195,24 @@ func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*r
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.Bool("args.ascending", req.Ascending),
+		attribute.Int("args.limit", int(req.Limit)),
+		attribute.String("args.level", req.Level.String()),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
 		return nil, ErrForbidden
 	}
 
-	logs, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
+	lvl := req.Level
+	if lvl == runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED {
+		lvl = runtimev1.LogLevel_LOG_LEVEL_INFO // backward compatibility
+	}
+
+	logBuffer, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	return &runtimev1.GetLogsResponse{Logs: logs.GetLogs(req.Ascending, int(req.Limit))}, nil
+	return &runtimev1.GetLogsResponse{Logs: logBuffer.GetLogs(req.Ascending, int(req.Limit), lvl)}, nil
 }
 
 // WatchLogs implements runtimev1.RuntimeServiceServer
@@ -215,18 +222,25 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.Bool("args.replay", req.Replay),
+		attribute.Int("args.replay_limit", int(req.ReplayLimit)),
+		attribute.String("args.level", req.Level.String()),
 	)
 
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
 		return ErrForbidden
 	}
 
-	logs, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
+	lvl := req.Level
+	if lvl == runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED {
+		lvl = runtimev1.LogLevel_LOG_LEVEL_INFO // backward compatibility
+	}
+
+	logBuffer, err := s.runtime.InstanceLogs(ctx, req.InstanceId)
 	if err != nil {
 		return status.Error(codes.InvalidArgument, err.Error())
 	}
 	if req.Replay {
-		for _, l := range logs.GetLogs(true, int(req.ReplayLimit)) {
+		for _, l := range logBuffer.GetLogs(true, int(req.ReplayLimit), lvl) {
 			err := srv.Send(&runtimev1.WatchLogsResponse{Log: l})
 			if err != nil {
 				return status.Error(codes.InvalidArgument, err.Error())
@@ -234,12 +248,12 @@ func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.Runtim
 		}
 	}
 
-	return logs.WatchLogs(srv.Context(), func(item *runtimev1.Log) {
+	return logBuffer.WatchLogs(srv.Context(), func(item *runtimev1.Log) {
 		err := srv.Send(&runtimev1.WatchLogsResponse{Log: item})
 		if err != nil {
 			s.logger.Info("failed to send log event", zap.Error(err))
 		}
-	})
+	}, lvl)
 }
 
 func instanceToPB(inst *drivers.Instance) *runtimev1.Instance {

@@ -7,6 +7,7 @@ import {
   matchExpressionByName,
   filterExpressions,
   createAndExpression,
+  copyFilterExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { V1Operation } from "../../../runtime-client";
 import PercentOfTotal from "./PercentOfTotal.svelte";
@@ -18,7 +19,6 @@ import type {
   V1Expression,
   V1MetricsViewComparisonRow,
   V1MetricsViewComparisonValue,
-  V1MetricsViewFilter,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
 
@@ -44,6 +44,7 @@ export function updateFilterOnSearch(
   dimensionName: string,
 ): V1Expression | undefined {
   if (!filterForDimension) return undefined;
+  // create a copy
   const addNull = "null".includes(searchText);
   if (searchText !== "") {
     let cond: V1Expression;
@@ -57,6 +58,7 @@ export function updateFilterOnSearch(
       cond = createLikeExpression(dimensionName, `%${searchText}%`);
     }
 
+    filterForDimension = copyFilterExpression(filterForDimension);
     const filterIdx = filterForDimension.cond?.exprs?.findIndex((e) =>
       matchExpressionByName(e, dimensionName),
     );
@@ -66,12 +68,13 @@ export function updateFilterOnSearch(
       filterForDimension.cond?.exprs?.splice(filterIdx, 0, cond);
     }
   } else {
-    filterExpressions(
-      filterForDimension,
-      (e) =>
-        e.cond?.op === V1Operation.OPERATION_LIKE ||
-        e.cond?.op === V1Operation.OPERATION_NLIKE,
-    );
+    filterForDimension =
+      filterExpressions(
+        filterForDimension,
+        (e) =>
+          e.cond?.op === V1Operation.OPERATION_LIKE ||
+          e.cond?.op === V1Operation.OPERATION_NLIKE,
+      ) ?? createAndExpression([]);
   }
   return filterForDimension;
 }
@@ -505,23 +508,4 @@ export function prepareDimensionTableRows(
       return rowOut;
     });
   return tableRows;
-}
-
-export function getSelectedRowIndicesFromFilters(
-  rows: DimensionTableRow[],
-  filters: V1MetricsViewFilter,
-  dimensionName: string,
-  excludeMode: boolean,
-): number[] {
-  const selectedDimValues =
-    ((excludeMode
-      ? filters?.exclude?.find((d) => d.name === dimensionName)?.in
-      : filters?.include?.find((d) => d.name === dimensionName)
-          ?.in) as string[]) ?? [];
-
-  return selectedDimValues
-    .map((label) => {
-      return rows.findIndex((row) => row[dimensionName] === label);
-    })
-    .filter((i) => i >= 0);
 }

@@ -36,6 +36,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
 	_ "github.com/rilldata/rill/runtime/drivers/github"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
+	_ "github.com/rilldata/rill/runtime/drivers/mysql"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/salesforce"

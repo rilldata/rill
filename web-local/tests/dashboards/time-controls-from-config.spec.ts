@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { useDashboardFlowTestSetup } from "web-local/test/ui/dashboard-flows/dashboard-flow-test-setup";
-import { updateCodeEditor } from "web-local/test/ui/utils/commonHelpers";
+import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
+import { updateCodeEditor } from "web-local/tests/utils/commonHelpers";
 import {
   interactWithTimeRangeMenu,
   waitForDashboard,
-} from "web-local/test/ui/utils/dashboardHelpers";
-import { startRuntimeForEachTest } from "web-local/test/ui/utils/startRuntimeForEachTest";
+} from "web-local/tests/utils/dashboardHelpers";
+import { startRuntimeForEachTest } from "web-local/tests/utils/startRuntimeForEachTest";
 
 test.describe("time controls settings from dashboard config", () => {
   startRuntimeForEachTest();
@@ -16,7 +16,13 @@ test.describe("time controls settings from dashboard config", () => {
     await page.getByRole("button", { name: "Edit metrics" }).click();
 
     // Set a time range that is one of the supported presets
-    await updateCodeEditor(page, getDashboardYaml(`default_time_range: "P4W"`));
+    await updateCodeEditor(
+      page,
+      getDashboardYaml(`default_time_range: "P4W"
+default_comparison:
+  mode: time
+`),
+    );
     await waitForDashboard(page);
     // Go to dashboard
     await page.getByRole("button", { name: "Go to dashboard" }).click();
@@ -31,7 +37,10 @@ test.describe("time controls settings from dashboard config", () => {
     // Set a time range that is one of the period to date preset
     await updateCodeEditor(
       page,
-      getDashboardYaml(`default_time_range: "rill-WTD"`),
+      getDashboardYaml(`default_time_range: "rill-WTD"
+default_comparison:
+  mode: time
+`),
     );
     await waitForDashboard(page);
     // Go to dashboard
@@ -57,7 +66,13 @@ test.describe("time controls settings from dashboard config", () => {
     await page.getByRole("button", { name: "Edit metrics" }).click();
 
     // Set a time range that is not one of the supported presets
-    await updateCodeEditor(page, getDashboardYaml(`default_time_range: "P2W"`));
+    await updateCodeEditor(
+      page,
+      getDashboardYaml(`default_time_range: "P2W"
+default_comparison:
+  mode: time
+`),
+    );
     await waitForDashboard(page);
     // Go to dashboard
     await page.getByRole("button", { name: "Go to dashboard" }).click();
@@ -125,6 +140,8 @@ default_comparison:
     await updateCodeEditor(
       page,
       getDashboardYaml(`default_time_range: "P4W"
+default_comparison:
+  mode: time
 available_time_ranges:
   - PT6H
   - range: P5D

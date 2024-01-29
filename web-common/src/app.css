@@ -88,11 +88,11 @@
   }
 
   .ui-measure-bar-included {
-    @apply bg-blue-100 dark:bg-blue-700;
+    @apply bg-primary-100 dark:bg-primary-700;
   }
 
   .ui-measure-bar-included-selected {
-    @apply bg-blue-200 dark:bg-blue-600;
+    @apply bg-primary-200 dark:bg-primary-600;
   }
 
   .ui-measure-bar-excluded {
@@ -116,32 +116,6 @@
   :root {
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
 
-    /* Defaults for the theme. This will be overridden based on the selected theme.
-       Should match the color palette blue from tailwind */
-    /* Primary colors */
-    --color-primary-50: #eff6ff;
-    --color-primary-100: #dbeafe;
-    --color-primary-200: #bfdbfe;
-    --color-primary-300: #93c5fd;
-    --color-primary-400: #60a5fa;
-    --color-primary-500: #3b82f6;
-    --color-primary-600: #2563eb;
-    --color-primary-700: #1d4ed8;
-    --color-primary-800: #1e40af;
-    --color-primary-900: #1e3a8a;
-    --color-primary-950: #172554;
-
-    --color-primary-graph-line-hue: 224;
-    --color-primary-graph-area-hue: 217;
-
-    --color-primary-graph-scrubbing-line-hue: 217;
-    --color-primary-graph-scrubbing-area-hue: 225;
-    --color-primary-scrub-box-hue: 213;
-    --color-primary-scrub-area-0-hue: 221;
-    --color-primary-scrub-area-1-hue: 221;
-    --color-primary-scrub-area-2-hue: 221;
-
-    /* Secondary Colors */
     --color-secondary-gradient-max-hue: 300;
     --color-secondary-gradient-min-hue: 1;
 
@@ -159,12 +133,43 @@
   
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
+
+    /* 
+    FIXME: 
+    We need to overhaul these ShadCN vars to use the new
+    palette as the source of truth, and remove these manual
+    translations/approximations in HSL, but this is fine for
+     the initial roll out
+     */
+    
+    /* 
+    `246, 57%, 20%` approximates primary color 
+    from our new palette vs previous color:
+    `--primary: 222.2 47.4% 11.2%
+    */
+    --primary: 246 57% 20%;
+    /* 
+    `227, 100%, 96%` approximates primary color 
+    from our new palette vs previous color:
+    `--primary-foreground: 210 40% 98%;`
+    */
+    --primary-foreground: 227 100% 96%;
   
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-  
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* 
+    `202, 100%, 94%` approximates secondary color 
+    from our new palette vs previous color:
+    `--secondary: 210 40% 96.1%;`
+    */
+    --secondary: 202 100% 94%;
+    /* 
+    `202, 90%, 16%` approximates secondary color 
+    from our new palette vs previous color:
+    `--secondary-foreground: 222.2 47.4% 11.2%;`
+    Note that this one in particular is a poor approximation,
+    because the darkest color in the new palette is much
+    lighter than the previous --secondary-foreground color.
+    */
+    --secondary-foreground: 202 90% 16%;
   
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
@@ -226,5 +231,5 @@ body {
 }
 
 a {
-  @apply text-blue-500 hover:text-blue-600 font-medium;
+  @apply text-primary-500 hover:text-primary-600 font-medium;
 }

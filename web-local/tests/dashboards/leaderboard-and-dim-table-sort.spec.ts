@@ -1,5 +1,4 @@
-import { createDashboardFromModel } from "../utils/dashboardHelpers";
-import { createAdBidsModel } from "../utils/dataSpecifcHelpers";
+import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
 import { test, expect, Locator } from "@playwright/test";
 import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
 
@@ -16,22 +15,9 @@ async function assertAAboveB(locA: Locator, locB: Locator) {
 
 test.describe("leaderboard and dimension table sorting", () => {
   startRuntimeForEachTest();
+  useDashboardFlowTestSetup();
 
   test("leaderboard and dimension table sorting", async ({ page }) => {
-    test.setTimeout(30000);
-    await page.goto("/");
-    // disable animations
-    await page.addStyleTag({
-      content: `
-        *, *::before, *::after {
-          animation-duration: 0s !important;
-          transition-duration: 0s !important;
-        }
-      `,
-    });
-    await createAdBidsModel(page);
-    await createDashboardFromModel(page, "AdBids_model");
-
     /**
      * LEADERBOARD
      */
@@ -82,6 +68,9 @@ test.describe("leaderboard and dimension table sorting", () => {
     );
 
     // add time comparison and select Pct change
+    await page.getByRole("button", { name: "No comparison" }).click();
+    await page.getByRole("menuitem", { name: "Time" }).click();
+
     await page.getByRole("button", { name: "Select time range" }).click();
     await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
 

@@ -6,6 +6,9 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -20,12 +23,19 @@ const (
 	metadataTimeout = 5 * time.Second
 )
 
+var (
+	meter                  = otel.Meter("github.com/rilldata/rill/runtime/pkg/activity")
+	deliverySuccessCounter = must(meter.Int64Counter("kafka_delivery_success"))
+	deliveryFailureCounter = must(meter.Int64Counter("kafka_delivery_failure"))
+)
+
 // KafkaSink sinks events to a Kafka cluster.
 type KafkaSink struct {
 	producer *kafka.Producer
 	topic    string
 	logger   *zap.Logger
 	logChan  chan kafka.LogEvent
+	closedCh chan struct{}
 }
 
 func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error) {
@@ -53,12 +63,45 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error)
 		return nil, err
 	}
 
-	return &KafkaSink{
+	sink := KafkaSink{
 		producer: producer,
 		topic:    topic,
 		logger:   logger,
 		logChan:  logChan,
-	}, nil
+		closedCh: make(chan struct{}),
+	}
+
+	go sink.processProducerEvents(producer, logger)
+
+	return &sink, nil
+}
+
+func (s *KafkaSink) processProducerEvents(producer *kafka.Producer, logger *zap.Logger) {
+	for {
+		select {
+		case e, ok := <-producer.Events():
+			if !ok {
+				return
+			}
+			switch ev := e.(type) {
+			case *kafka.Message:
+				if ev.TopicPartition.Error != nil {
+					deliveryFailureCounter.Add(context.Background(), 1,
+						metric.WithAttributes(attribute.String("error", ev.TopicPartition.Error.Error())))
+				} else {
+					deliverySuccessCounter.Add(context.Background(), 1)
+				}
+			case kafka.Error:
+				// This error might be a duplicate of what is logged by forwardKafkaLogEventToLogger
+				logger.Error("Kafka sink: producer error", zap.String("error", ev.Error()))
+			default:
+				// Ignore any other events
+			}
+
+		case <-s.closedCh:
+			return
+		}
+	}
 }
 
 // Sink doesn't wait till all events are delivered to Kafka
@@ -93,6 +136,7 @@ func (s *KafkaSink) Sink(_ context.Context, events []Event) error {
 func (s *KafkaSink) Close() error {
 	s.producer.Flush(100)
 	s.producer.Close()
+	close(s.closedCh)
 	close(s.logChan)
 	return nil
 }
@@ -142,4 +186,11 @@ func retry(maxRetries int, delay time.Duration, fn func() error, retryOnErrFn fu
 		}
 	}
 	return err
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
