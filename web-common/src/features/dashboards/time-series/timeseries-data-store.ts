@@ -1,3 +1,4 @@
+import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
@@ -35,7 +36,7 @@ export type TimeSeriesDataStore = Readable<TimeSeriesDataState>;
 
 function createMetricsViewTimeSeries(
   ctx: StateManagers,
-  measures,
+  measures: string[],
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewTimeSeriesResponse> {
   return derived(
@@ -44,14 +45,27 @@ function createMetricsViewTimeSeries(
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
+      measureFilterResolutionsStore(ctx),
     ],
-    ([runtime, metricViewName, dashboardStore, timeControls], set) =>
+    (
+      [
+        runtime,
+        metricViewName,
+        dashboardStore,
+        timeControls,
+        measureFilterResolution,
+      ],
+      set,
+    ) =>
       createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
         metricViewName,
         {
           measureNames: measures,
-          where: sanitiseExpression(dashboardStore?.whereFilter),
+          where: sanitiseExpression(
+            dashboardStore?.whereFilter,
+            measureFilterResolution.filter,
+          ),
           timeStart: isComparison
             ? timeControls.comparisonAdjustedStart
             : timeControls.adjustedStart,
@@ -69,7 +83,8 @@ function createMetricsViewTimeSeries(
               !!timeControls.ready &&
               !!ctx.dashboardStore &&
               // in case of comparison, we need to wait for the comparison start time to be available
-              (!isComparison || !!timeControls.comparisonAdjustedStart),
+              (!isComparison || !!timeControls.comparisonAdjustedStart) &&
+              measureFilterResolution.ready,
             queryClient: ctx.queryClient,
             keepPreviousData: true,
           },

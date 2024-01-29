@@ -13,6 +13,8 @@ The main feature-set component for dashboard filters
   } from "@rilldata/web-common/components/chip/chip-types";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
   import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
+  import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
+  import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { useMetaQuery, getFilterSearchList } from "../selectors/index";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import { flip } from "svelte/animate";
@@ -31,10 +33,12 @@ The main feature-set component for dashboard filters
         toggleDimensionFilterMode,
         removeDimensionFilter,
       },
+      measuresFilter: { setMeasureFilter, removeMeasureFilter },
       filters: { clearAllFilters },
     },
     selectors: {
       dimensionFilters: { getDimensionFilterItems, getAllDimensionFilterItems },
+      measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
     },
   } = StateManagers;
 
@@ -45,6 +49,12 @@ The main feature-set component for dashboard filters
 
   const metaQuery = useMetaQuery(StateManagers);
   $: dimensions = $metaQuery.data?.dimensions ?? [];
+  $: dimensionIdMap = getMapFromArray(
+    dimensions,
+    (dimension) => dimension.name as string,
+  );
+  $: measures = $metaQuery.data?.measures ?? [];
+  $: measureIdMap = getMapFromArray(measures, (m) => m.name as string);
 
   let searchText = "";
   let allValues: Record<string, string[]> = {};
@@ -55,7 +65,7 @@ The main feature-set component for dashboard filters
     dimensions.find((d) => d.name === activeDimensionName)?.column ??
     activeDimensionName;
 
-  $: if (activeDimensionName) {
+  $: if (activeDimensionName && dimensionIdMap.has(activeDimensionName)) {
     topListQuery = getFilterSearchList(StateManagers, {
       dimension: activeDimensionName,
       searchText,
@@ -69,19 +79,21 @@ The main feature-set component for dashboard filters
       topListData.map((datum) => datum[activeColumn]) ?? [];
   }
 
-  $: dimensionIdMap = getMapFromArray(
-    dimensions,
-    (dimension) => dimension.name as string,
-  );
-
   $: currentDimensionFilters = $getDimensionFilterItems(dimensionIdMap);
-  // hasFilter only checks for complete filters and excludes temporary ones
-  $: hasFilters = currentDimensionFilters.length > 0;
-
   $: allDimensionFilters = $getAllDimensionFilterItems(
     currentDimensionFilters,
     dimensionIdMap,
   );
+
+  $: currentMeasureFilters = $getMeasureFilterItems(measureIdMap);
+  $: allMeasureFilters = $getAllMeasureFilterItems(
+    currentMeasureFilters,
+    measureIdMap,
+  );
+
+  // hasFilter only checks for complete filters and excludes temporary ones
+  $: hasFilters =
+    currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
 
   function setActiveDimension(name: string, value = "") {
     activeDimensionName = name;
@@ -90,6 +102,18 @@ The main feature-set component for dashboard filters
 
   function getColorForChip(isInclude: boolean) {
     return isInclude ? defaultChipColors : excludeChipColors;
+  }
+
+  function handleMeasureFilterApply(
+    dimension: string,
+    measureName: string,
+    oldDimension: string,
+    expr: V1Expression,
+  ) {
+    if (oldDimension && oldDimension !== dimension) {
+      removeMeasureFilter(oldDimension, measureName);
+    }
+    setMeasureFilter(dimension, measureName, expr);
   }
 </script>
 
@@ -109,7 +133,7 @@ The main feature-set component for dashboard filters
   </div>
 
   <ChipContainer>
-    {#if !allDimensionFilters.length}
+    {#if !allDimensionFilters.length && !allMeasureFilters.length}
       <div
         in:fly|local={{ duration: 200, x: 8 }}
         class="ui-copy-disabled grid items-center"
@@ -152,6 +176,19 @@ The main feature-set component for dashboard filters
               Click to edit the the filters in this dimension
             </svelte:fragment>
           </RemovableListChip>
+        </div>
+      {/each}
+      {#each allMeasureFilters as { name, label, dimensionName, expr } (name)}
+        <div animate:flip={{ duration: 200 }}>
+          <MeasureFilter
+            {name}
+            {label}
+            {dimensionName}
+            {expr}
+            on:remove={() => removeMeasureFilter(dimensionName, name)}
+            on:apply={({ detail: { dimension, oldDimension, expr } }) =>
+              handleMeasureFilterApply(dimension, name, oldDimension, expr)}
+          />
         </div>
       {/each}
     {/if}

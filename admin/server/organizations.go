@@ -338,6 +338,9 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 			RoleID:    role.ID,
 		})
 		if err != nil {
+			if errors.Is(err, database.ErrNotUnique) {
+				return nil, status.Error(codes.AlreadyExists, err.Error())
+			}
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 

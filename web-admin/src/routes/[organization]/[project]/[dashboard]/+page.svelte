@@ -100,8 +100,8 @@
   {#if isDashboardErrored}
     <ProjectErrored organization={orgName} project={projectName} />
   {:else}
-    <StateManagersProvider metricsViewName={dashboardName}>
-      {#key dashboardName}
+    {#key dashboardName}
+      <StateManagersProvider metricsViewName={dashboardName}>
         <DashboardStateProvider metricViewName={dashboardName}>
           <DashboardURLStateProvider metricViewName={dashboardName}>
             <DashboardThemeProvider>
@@ -109,7 +109,7 @@
             </DashboardThemeProvider>
           </DashboardURLStateProvider>
         </DashboardStateProvider>
-      {/key}
-    </StateManagersProvider>
+      </StateManagersProvider>
+    {/key}
   {/if}
 {/if}

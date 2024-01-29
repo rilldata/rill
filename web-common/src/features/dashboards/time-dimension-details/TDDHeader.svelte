@@ -1,31 +1,33 @@
 <script lang="ts">
   import { Switch } from "@rilldata/web-common/components/button";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
-  import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
-  import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
+  import Row from "@rilldata/web-common/components/icons/Row.svelte";
+  import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
   import { Search } from "@rilldata/web-common/components/search";
+  import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-  import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { createEventDispatcher } from "svelte";
-  import { fly } from "svelte/transition";
+  import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
+  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { slideRight } from "@rilldata/web-common/lib/transitions";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { createEventDispatcher } from "svelte";
+  import { fly } from "svelte/transition";
+  import { featureFlags } from "../../feature-flags";
+  import TDDExportButton from "./TDDExportButton.svelte";
   import type { TDDComparison } from "./types";
 
   export let metricViewName: string;
@@ -178,7 +180,7 @@
       {/if}
 
       <Tooltip distance={16} location="left">
-        <div class="mr-3 ui-copy-icon" style:grid-column-gap=".4rem">
+        <div class="ui-copy-icon" style:grid-column-gap=".4rem">
           <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
             Exclude
           </Switch>
@@ -195,6 +197,11 @@
           </TooltipShortcutContainer>
         </TooltipContent>
       </Tooltip>
+
+      <TDDExportButton
+        {metricViewName}
+        includeScheduledReport={$featureFlags.adminServer}
+      />
     </div>
   {/if}
 </div>

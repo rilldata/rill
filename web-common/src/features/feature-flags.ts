@@ -9,12 +9,8 @@ export type FeatureFlags = {
 export const featureFlags = writable<FeatureFlags>();
 
 export function retainFeaturesFlags(navigation: BeforeNavigate) {
-  if (!navigation.from.url.searchParams.has("features")) {
-    return;
-  }
+  const featureFlags = navigation?.from?.url?.searchParams.get("features");
+  if (!featureFlags) return;
 
-  navigation.to.url.searchParams.set(
-    "features",
-    navigation.from.url.searchParams.get("features"),
-  );
+  navigation?.to?.url.searchParams.set("features", featureFlags);
 }
