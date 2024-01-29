@@ -132,7 +132,7 @@
     metricViewName,
     {
       measureNames: $selectedMeasureNames,
-      where: sanitiseExpression($dashboardStore?.whereFilter),
+      where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
     },
     {
       query: {
