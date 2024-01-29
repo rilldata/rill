@@ -106,6 +106,7 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 	defer rows.Close()
 
 	stats := new(runtimev1.NumericStatistics)
+	// clickhouse driver can't scan into sql.Nullx when value is not a null
 	var min, q25, q50, q75, max, mean, sd *float64
 	if rows.Next() {
 		err = rows.Scan(&min, &q25, &q50, &q75, &max, &mean, &sd)

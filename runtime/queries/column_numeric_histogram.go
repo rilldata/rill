@@ -77,15 +77,32 @@ func (q *ColumnNumericHistogram) Export(ctx context.Context, rt *runtime.Runtime
 
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int) (float64, error) {
 	sanitizedColumnName := safeName(q.ColumnName)
-	querySQL := fmt.Sprintf(
-		"SELECT (approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25))::DOUBLE AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s",
-		sanitizedColumnName,
-		sanitizedColumnName,
-		sanitizedColumnName,
-		sanitizedColumnName,
-		sanitizedColumnName,
-		safeName(q.TableName),
-	)
+	var querySQL string
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		querySQL = fmt.Sprintf(
+			"SELECT (approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25))::DOUBLE AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s",
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			safeName(q.TableName),
+		)
+	case drivers.DialectClickHouse:
+		// assumes that column exists otherwise cast to double fails in clickhouse
+		querySQL = fmt.Sprintf(
+			"SELECT (quantileTDigest(0.75)(%s)-quantileTDigest(0.25)(%s))::DOUBLE AS iqr, uniq(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s",
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			safeName(q.TableName),
+		)
+	default:
+		return 0, fmt.Errorf("unsupported dialect %v", olap.Dialect())
+	}
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            querySQL,
@@ -143,7 +160,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	if err != nil {
 		return err
 	}
-	if !min.Valid || !max.Valid || !rng.Valid {
+	if min == nil || max == nil || rng == nil {
 		return nil
 	}
 
@@ -158,63 +175,125 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	}
 
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
-	histogramSQL := fmt.Sprintf(
-		`
-          WITH data_table AS (
-            SELECT %[1]s as %[2]s 
-            FROM %[3]s
-            WHERE %[2]s IS NOT NULL
-          ), values AS (
-            SELECT %[2]s as value from data_table
-            WHERE %[2]s IS NOT NULL
-          ), buckets AS (
-            SELECT
-              range as bucket,
-              (range) * (%[7]v) / %[4]v + (%[5]v) as low,
-              (range + 1) * (%[7]v) / %[4]v + (%[5]v) as high
-            FROM range(0, %[4]v, 1)
-          ),
-          -- bin the values
-          binned_data AS (
-            SELECT 
-              FLOOR((value - (%[5]v)) / (%[7]v) * %[4]v) as bucket
-            from values
-          ),
-          -- join the bucket set with the binned values to generate the histogram
-          histogram_stage AS (
-          SELECT
-              buckets.bucket,
-              low,
-              high,
-              SUM(CASE WHEN binned_data.bucket = buckets.bucket THEN 1 ELSE 0 END) as count
-            FROM buckets
-            LEFT JOIN binned_data ON binned_data.bucket = buckets.bucket
-            GROUP BY buckets.bucket, low, high
-            ORDER BY buckets.bucket
-          ),
-          -- calculate the right edge, sine in histogram_stage we don't look at the values that
-          -- might be the largest.
-          right_edge AS (
-            SELECT count(*) as c from values WHERE value = %[6]v
-          )
-          SELECT 
-            bucket,
-            low,
-            high,
-            -- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
-            CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
-            FROM histogram_stage
-            ORDER BY bucket
-	      `,
-		selectColumn,
-		sanitizedColumnName,
-		safeName(q.TableName),
-		bucketSize,
-		min.Float64,
-		max.Float64,
-		rng.Float64,
-	)
-
+	var histogramSQL string
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		histogramSQL = fmt.Sprintf(
+			`
+			  WITH data_table AS (
+				SELECT %[1]s as %[2]s 
+				FROM %[3]s
+				WHERE %[2]s IS NOT NULL
+			  ), values AS (
+				SELECT %[2]s as value from data_table
+				WHERE %[2]s IS NOT NULL
+			  ), buckets AS (
+				SELECT
+				  range as bucket,
+				  (range) * (%[7]v) / %[4]v + (%[5]v) as low,
+				  (range + 1) * (%[7]v) / %[4]v + (%[5]v) as high
+				FROM range(0, %[4]v, 1)
+			  ),
+			  -- bin the values
+			  binned_data AS (
+				SELECT 
+				  FLOOR((value - (%[5]v)) / (%[7]v) * %[4]v) as bucket
+				from values
+			  ),
+			  -- join the bucket set with the binned values to generate the histogram
+			  histogram_stage AS (
+			  SELECT
+				  buckets.bucket,
+				  low,
+				  high,
+				  SUM(CASE WHEN binned_data.bucket = buckets.bucket THEN 1 ELSE 0 END) as count
+				FROM buckets
+				LEFT JOIN binned_data ON binned_data.bucket = buckets.bucket
+				GROUP BY buckets.bucket, low, high
+				ORDER BY buckets.bucket
+			  ),
+			  -- calculate the right edge, sine in histogram_stage we don't look at the values that
+			  -- might be the largest.
+			  right_edge AS (
+				SELECT count(*) as c from values WHERE value = %[6]v
+			  )
+			  SELECT 
+				bucket,
+				low,
+				high,
+				-- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
+				CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END AS count
+				FROM histogram_stage
+				ORDER BY bucket
+			  `,
+			selectColumn,
+			sanitizedColumnName,
+			safeName(q.TableName),
+			bucketSize,
+			*min,
+			*max,
+			*rng,
+		)
+	case drivers.DialectClickHouse:
+		histogramSQL = fmt.Sprintf(
+			`
+			  WITH data_table AS (
+				SELECT %[1]s as %[2]s 
+				FROM %[3]s
+				WHERE %[2]s IS NOT NULL
+			  ), values AS (
+				SELECT %[2]s as value from data_table
+				WHERE %[2]s IS NOT NULL
+			  ), buckets AS (
+				SELECT
+				  number::DOUBLE as bucket,
+				  ((number) * (%[7]v) / %[4]v + (%[5]v))::DOUBLE as low,
+				  ((number + 1) * (%[7]v) / %[4]v + (%[5]v))::DOUBLE as high
+				FROM numbers(%[4]v)
+			  ),
+			  -- bin the values
+			  binned_data AS (
+				SELECT 
+				  FLOOR((value - (%[5]v)) / (%[7]v) * %[4]v) as bucket
+				from values
+			  ),
+			  -- join the bucket set with the binned values to generate the histogram
+			  histogram_stage AS (
+			  SELECT
+				  buckets.bucket,
+				  low,
+				  high,
+				  SUM(CASE WHEN binned_data.bucket = buckets.bucket THEN 1 ELSE 0 END) as count
+				FROM buckets
+				LEFT JOIN binned_data ON binned_data.bucket = buckets.bucket
+				GROUP BY buckets.bucket, low, high
+				ORDER BY buckets.bucket
+			  ),
+			  -- calculate the right edge, sine in histogram_stage we don't look at the values that
+			  -- might be the largest.
+			  right_edge AS (
+				SELECT count(*) as c from values WHERE value = %[6]v
+			  )
+			  SELECT 
+			  	ifNull(bucket, 0)::Float64 as bucket,
+				ifNull(low, 0)::Float64 as low,
+				ifNull(high, 0)::Float64 as high,
+				-- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
+				ifNull(CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END, 0)::Float64 AS count
+				FROM histogram_stage
+				ORDER BY bucket
+			  `,
+			selectColumn,
+			sanitizedColumnName,
+			safeName(q.TableName),
+			bucketSize,
+			*min,
+			*max,
+			*rng,
+		)
+	default:
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
 	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            histogramSQL,
 		Priority:         priority,
@@ -257,30 +336,69 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.TableName, priority)
+	histogramSQL, err := histogramDiagnosticMethodSQL(ctx, olap, q.ColumnName, q.TableName, priority)
 	if err != nil {
 		return err
 	}
-	if !min.Valid || !max.Valid || !rng.Valid {
+	if histogramSQL == "" {
 		return nil
 	}
 
-	ticks := 40.0
-	if rng.Float64 < ticks {
-		ticks = rng.Float64
+	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            histogramSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
 	}
 
-	startTick, endTick, gap := NiceAndStep(min.Float64, max.Float64, ticks)
+	defer histogramRows.Close()
+
+	histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
+	for histogramRows.Next() {
+		bin := &runtimev1.NumericHistogramBins_Bin{}
+		err = histogramRows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Midpoint, &bin.Count)
+		if err != nil {
+			return err
+		}
+		histogramBins = append(histogramBins, bin)
+	}
+
+	err = histogramRows.Err()
+	if err != nil {
+		return err
+	}
+
+	q.Result = histogramBins
+
+	return nil
+}
+
+func histogramDiagnosticMethodSQL(ctx context.Context, olap drivers.OLAPStore, colName, tblName string, priority int) (string, error) {
+	min, max, rng, err := getMinMaxRange(ctx, olap, colName, tblName, priority)
+	if err != nil {
+		return "", err
+	}
+	if min == nil || max == nil || rng == nil {
+		return "", nil
+	}
+
+	ticks := 40.0
+	if *rng < ticks {
+		ticks = *rng
+	}
+
+	startTick, endTick, gap := NiceAndStep(*min, *max, ticks)
 	bucketCount := int(math.Ceil((endTick - startTick) / gap))
 	if gap == 1 {
 		bucketCount++
 	}
 
-	sanitizedColumnName := safeName(q.ColumnName)
+	sanitizedColumnName := safeName(colName)
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
-	var histogramSQL string
 	if olap.Dialect() == drivers.DialectDuckDB {
-		histogramSQL = fmt.Sprintf(
+		return fmt.Sprintf(
 			`
 			WITH data_table AS (
 				SELECT %[1]s as %[2]s
@@ -339,15 +457,16 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 			`,
 			selectColumn,
 			sanitizedColumnName,
-			safeName(q.TableName),
+			safeName(tblName),
 			bucketCount,
 			startTick,
 			endTick,
 			gap,
 			endTick-startTick,
-		)
-	} else if olap.Dialect() == drivers.DialectClickHouse {
-		histogramSQL = fmt.Sprintf(
+		), nil
+	}
+	if olap.Dialect() == drivers.DialectClickHouse {
+		return fmt.Sprintf(
 			`
 			WITH data_table AS (
 				SELECT %[1]s as %[2]s
@@ -406,56 +525,27 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 			`,
 			selectColumn,
 			sanitizedColumnName,
-			safeName(q.TableName),
+			safeName(tblName),
 			bucketCount,
 			startTick,
 			endTick,
 			gap,
 			endTick-startTick,
-		)
+		), nil
 	}
-
-	histogramRows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:            histogramSQL,
-		Priority:         priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
-	if err != nil {
-		return err
-	}
-
-	defer histogramRows.Close()
-
-	histogramBins := make([]*runtimev1.NumericHistogramBins_Bin, 0)
-	for histogramRows.Next() {
-		bin := &runtimev1.NumericHistogramBins_Bin{}
-		err = histogramRows.Scan(&bin.Bucket, &bin.Low, &bin.High, &bin.Midpoint, &bin.Count)
-		if err != nil {
-			return err
-		}
-		histogramBins = append(histogramBins, bin)
-	}
-
-	err = histogramRows.Err()
-	if err != nil {
-		return err
-	}
-
-	q.Result = histogramBins
-
-	return nil
+	return "", fmt.Errorf("unsupported dialect %s", olap.Dialect())
 }
 
 // getMinMaxRange get min, max and range of values for a given column. This is needed since nesting it in query is throwing error in 0.9.x
-func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, tableName string, priority int) (sql.NullFloat64, sql.NullFloat64, sql.NullFloat64, error) {
+func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, tableName string, priority int) (*float64, *float64, *float64, error) {
 	sanitizedColumnName := safeName(columnName)
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 	minMaxSQL := fmt.Sprintf(
 		`
 			SELECT
-				min(%[2]s) as min,
-				max(%[2]s) as max,
-				max(%[2]s) - min(%[2]s) as range
+				min(%[2]s) AS min,
+				max(%[2]s) AS max,
+				max(%[2]s) - min(%[2]s) AS range
 			FROM %[1]s
 			WHERE %[2]s IS NOT NULL
 		`,
@@ -469,7 +559,7 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, tab
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
-		return sql.NullFloat64{}, sql.NullFloat64{}, sql.NullFloat64{}, err
+		return nil, nil, nil, err
 	}
 
 	// clickhouse does not support scanning non null values into sql.Nullx
@@ -479,18 +569,11 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, tab
 		err = minMaxRow.Scan(&min, &max, &rng)
 		if err != nil {
 			minMaxRow.Close()
-			return sql.NullFloat64{}, sql.NullFloat64{}, sql.NullFloat64{}, err
+			return nil, nil, nil, err
 		}
 	}
 
 	minMaxRow.Close()
 
-	return sqlFloat64(min), sqlFloat64(max), sqlFloat64(rng), nil
-}
-
-func sqlFloat64(f *float64) sql.NullFloat64 {
-	if f == nil {
-		return sql.NullFloat64{}
-	}
-	return sql.NullFloat64{Float64: *f, Valid: true}
+	return min, max, rng, nil
 }

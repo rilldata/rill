@@ -7,7 +7,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 )
@@ -18,9 +20,10 @@ func init() {
 
 type driver struct{}
 
+var maxOpenConnections = 20
+
 // Open connects to Clickhouse using std API.
 // Connection string format : https://github.com/ClickHouse/clickhouse-go?tab=readme-ov-file#dsn
-// TODO :: evaluate native interface
 func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if shared {
 		return nil, fmt.Errorf("clickhouse driver can't be shared")
@@ -36,7 +39,8 @@ func (d driver) Open(config map[string]any, shared bool, client activity.Client,
 	}
 
 	// very roughly approximating num queries required for a typical page load
-	db.SetMaxOpenConns(20)
+	// TODO: copied from druid reevaluate
+	db.SetMaxOpenConns(maxOpenConnections)
 
 	err = db.Ping()
 	if err != nil {
@@ -44,9 +48,11 @@ func (d driver) Open(config map[string]any, shared bool, client activity.Client,
 	}
 
 	conn := &connection{
-		db:     db,
-		config: config,
-		logger: logger,
+		db:      db,
+		config:  config,
+		logger:  logger,
+		metaSem: semaphore.NewWeighted(1),
+		olapSem: priorityqueue.NewSemaphore(maxOpenConnections - 1),
 	}
 	return conn, nil
 }
@@ -68,9 +74,20 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	db     *sqlx.DB
-	config map[string]any
-	logger *zap.Logger
+	db       *sqlx.DB
+	config   map[string]any
+	logger   *zap.Logger
+	activity activity.Client
+
+	// logic around this copied from duckDB driver
+	// This driver may issue both OLAP and "meta" queries (like catalog info) against DuckDB.
+	// Meta queries are usually fast, but OLAP queries may take a long time. To enable predictable parallel performance,
+	// we gate queries with semaphores that limits the number of concurrent queries of each type.
+	// The metaSem allows 1 query at a time and the olapSem allows cfg.PoolSize-1 queries at a time.
+	// When cfg.PoolSize is 1, we set olapSem to still allow 1 query at a time.
+	// This creates contention for the same connection in database/sql's pool, but its locks will handle that.
+	metaSem *semaphore.Weighted
+	olapSem *priorityqueue.Semaphore
 }
 
 // Driver implements drivers.Connection.
@@ -134,6 +151,9 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 	if c == to {
 		if store, ok := from.AsFileStore(); ok {
 			return NewFileStoreToClickHouse(store, olap, c.logger), true
+		}
+		if from.Driver() == "s3" {
+			return NewS3Transporter(from, olap, c.logger), true
 		}
 	}
 	return nil, false

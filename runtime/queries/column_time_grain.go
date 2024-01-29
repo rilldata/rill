@@ -112,7 +112,8 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		)
 	case drivers.DialectClickHouse:
 		if sampleSize <= cq.Result {
-			useSample = fmt.Sprintf("SAMPLE %d", sampleSize)
+			// TODO : This is disastrous from performance POV, fix this with clickhouse native sampling.
+			useSample = fmt.Sprintf("ORDER BY rand() LIMIT %d", sampleSize)
 		}
 		estimateSQL = fmt.Sprintf(`
 		WITH cleaned_column AS (

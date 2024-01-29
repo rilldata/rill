@@ -57,7 +57,7 @@ func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	nullCountSQL := fmt.Sprintf("SELECT count(*) as count from %s WHERE %s IS NULL",
+	nullCountSQL := fmt.Sprintf("SELECT count(*) AS count FROM %s WHERE %s IS NULL",
 		safeName(q.TableName),
 		safeName(q.ColumnName),
 	)

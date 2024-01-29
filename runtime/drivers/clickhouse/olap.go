@@ -2,25 +2,180 @@ package clickhouse
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/eapache/go-resiliency/retrier"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
-)
-
-const (
-	numRetries = 3
-	retryWait  = 300 * time.Millisecond
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
+	"go.uber.org/zap"
 )
 
 var colDataTypePattern = regexp.MustCompile(`Nullable\(([^)]+)\)`)
 
+// Create instruments
+var (
+	meter                 = otel.Meter("github.com/rilldata/rill/runtime/drivers/clickhouse")
+	queriesCounter        = observability.Must(meter.Int64Counter("queries"))
+	queueLatencyHistogram = observability.Must(meter.Int64Histogram("queue_latency", metric.WithUnit("ms")))
+	queryLatencyHistogram = observability.Must(meter.Int64Histogram("query_latency", metric.WithUnit("ms")))
+	totalLatencyHistogram = observability.Must(meter.Int64Histogram("total_latency", metric.WithUnit("ms")))
+	// TODO: fix this
+	connectionsInUse = observability.Must(meter.Int64ObservableGauge("connections_in_use"))
+)
+
 var _ drivers.OLAPStore = &connection{}
+
+func (c *connection) Dialect() drivers.Dialect {
+	return drivers.DialectClickHouse
+}
+
+func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
+	// Check not nested
+	if connFromContext(ctx) != nil {
+		panic("nested WithConnection")
+	}
+
+	// Acquire connection
+	conn, release, err := c.acquireOLAPConn(ctx, priority)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = release() }()
+
+	// Call fn with connection embedded in context
+	wrappedCtx := contextWithConn(ctx, conn)
+	ensuredCtx := contextWithConn(context.Background(), conn)
+	return fn(wrappedCtx, ensuredCtx, conn.Conn)
+}
+
+func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
+	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
+	if err != nil {
+		return err
+	}
+
+	// TODO: should we use timeout to acquire connection as well ?
+	var cancelFunc context.CancelFunc
+	if stmt.ExecutionTimeout != 0 {
+		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
+	}
+	defer func() {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+		_ = release()
+	}()
+	_, err = conn.ExecContext(ctx, stmt.Query, stmt.Args...)
+	return err
+}
+
+func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res *drivers.Result, outErr error) {
+	// We use the meta conn for dry run queries
+	if stmt.DryRun {
+		conn, release, err := c.acquireMetaConn(ctx)
+		if err != nil {
+			return nil, err
+		}
+		defer func() { _ = release() }()
+
+		// TODO: Find way to validate with args
+
+		name := uuid.NewString()
+		_, err = conn.ExecContext(ctx, fmt.Sprintf("CREATE TEMPORARY VIEW %q AS %s", name, stmt.Query))
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW %q", name))
+		return nil, err
+	}
+
+	// Gather metrics only for actual queries
+	var acquiredTime time.Time
+	acquired := false
+	start := time.Now()
+	defer func() {
+		totalLatency := time.Since(start).Milliseconds()
+		queueLatency := acquiredTime.Sub(start).Milliseconds()
+
+		attrs := []attribute.KeyValue{
+			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
+			attribute.Bool("failed", outErr != nil),
+		}
+
+		attrSet := attribute.NewSet(attrs...)
+
+		queriesCounter.Add(ctx, 1, metric.WithAttributeSet(attrSet))
+		queueLatencyHistogram.Record(ctx, queueLatency, metric.WithAttributeSet(attrSet))
+		totalLatencyHistogram.Record(ctx, totalLatency, metric.WithAttributeSet(attrSet))
+		if acquired {
+			// Only track query latency when not cancelled in queue
+			queryLatencyHistogram.Record(ctx, totalLatency-queueLatency, metric.WithAttributeSet(attrSet))
+		}
+
+		if c.activity != nil {
+			c.activity.Emit(ctx, "clickhouse_queue_latency_ms", float64(queueLatency), attrs...)
+			c.activity.Emit(ctx, "clickhouse_total_latency_ms", float64(totalLatency), attrs...)
+			if acquired {
+				c.activity.Emit(ctx, "clickhouse_query_latency_ms", float64(totalLatency-queueLatency), attrs...)
+			}
+		}
+	}()
+
+	// Acquire connection
+	conn, release, err := c.acquireOLAPConn(ctx, stmt.Priority)
+	acquiredTime = time.Now()
+	if err != nil {
+		return nil, err
+	}
+	acquired = true
+
+	// NOTE: We can't just "defer release()" because release() will block until rows.Close() is called.
+	// We must be careful to make sure release() is called on all code paths.
+
+	var cancelFunc context.CancelFunc
+	if stmt.ExecutionTimeout != 0 {
+		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
+	}
+
+	rows, err := conn.QueryxContext(ctx, stmt.Query, stmt.Args...)
+	if err != nil {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+		_ = release()
+		return nil, err
+	}
+
+	schema, err := rowsToSchema(rows)
+	if err != nil {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+		_ = rows.Close()
+		_ = release()
+		return nil, err
+	}
+
+	res = &drivers.Result{Rows: rows, Schema: schema}
+	res.SetCleanupFunc(func() error {
+		if cancelFunc != nil {
+			cancelFunc()
+		}
+		return release()
+	})
+
+	return res, nil
+}
 
 // AddTableColumn implements drivers.OLAPStore.
 func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, typ string) error {
@@ -36,11 +191,13 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), sql),
+			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), sql),
+			Priority: 100,
 		})
 	}
 	return c.Exec(ctx, &drivers.Statement{
-		Query: fmt.Sprintf("CREATE OR REPLACE TABLE %s ENGINE = MergeTree ORDER BY tuple() AS %s", safeSQLName(name), sql),
+		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s ENGINE = MergeTree ORDER BY tuple() AS %s", safeSQLName(name), sql),
+		Priority: 100,
 	})
 }
 
@@ -53,7 +210,8 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 		typ = "TABLE"
 	}
 	return c.Exec(ctx, &drivers.Statement{
-		Query: fmt.Sprintf("DROP %s %s", typ, safeSQLName(name)),
+		Query:    fmt.Sprintf("DROP %s %s", typ, safeSQLName(name)),
+		Priority: 100,
 	})
 }
 
@@ -66,11 +224,15 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byNam
 func (c *connection) RenameTable(ctx context.Context, name, newName string, view bool) error {
 	if !view {
 		return c.Exec(ctx, &drivers.Statement{
-			Query: fmt.Sprintf("RENAME TABLE %s TO %s", safeSQLName(name), safeSQLName(newName)),
+			Query:    fmt.Sprintf("RENAME TABLE %s TO %s", safeSQLName(name), safeSQLName(newName)),
+			Priority: 100,
 		})
 	}
+
+	// clickhouse does not support renaming views so we capture the OLD view DDL and use it to create new view
 	res, err := c.Execute(ctx, &drivers.Statement{
-		Query: fmt.Sprintf("SHOW CREATE VIEW %s", safeSQLName(name)),
+		Query:    fmt.Sprintf("SHOW CREATE VIEW %s", safeSQLName(name)),
+		Priority: 100,
 	})
 	if err != nil {
 		return err
@@ -85,93 +247,106 @@ func (c *connection) RenameTable(ctx context.Context, name, newName string, view
 	}
 	res.Close()
 
+	// create new view
 	sql = strings.Replace(sql, name, safeSQLName(newName), 1)
-	return c.Exec(ctx, &drivers.Statement{
-		Query: sql,
+	err = c.Exec(ctx, &drivers.Statement{
+		Query:    sql,
+		Priority: 100,
 	})
-}
-
-func (c *connection) Dialect() drivers.Dialect {
-	return drivers.DialectClickHouse
-}
-
-func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
-	conn, err := c.db.Conn(ctx)
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
 
-	return fn(ctx, ctx, conn)
-}
-
-func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
-	var cancelFunc context.CancelFunc
-	if stmt.ExecutionTimeout != 0 {
-		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
-	}
-	_, err := c.db.ExecContext(ctx, stmt.Query, stmt.Args...)
-	if cancelFunc != nil {
-		cancelFunc()
-	}
-	return err
-}
-
-func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
-	if stmt.DryRun {
-		// TODO: Find way to validate with args
-		prepared, err := c.db.PrepareContext(ctx, stmt.Query)
-		if err != nil {
-			return nil, err
-		}
-		return nil, prepared.Close()
-	}
-
-	var cancelFunc context.CancelFunc
-	if stmt.ExecutionTimeout != 0 {
-		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
-	}
-
-	var rows *sqlx.Rows
-	var err error
-
-	re := retrier.New(retrier.ExponentialBackoff(numRetries, retryWait), retryErrClassifier{})
-	err = re.RunCtx(ctx, func(ctx2 context.Context) error {
-		rows, err = c.db.QueryxContext(ctx2, stmt.Query, stmt.Args...)
-		return err
+	// drop old view
+	err = c.Exec(context.Background(), &drivers.Statement{
+		Query:    fmt.Sprintf("DROP VIEW %s", safeSQLName(name)),
+		Priority: 100,
 	})
-
 	if err != nil {
-		if cancelFunc != nil {
-			cancelFunc()
-		}
-		return nil, err
+		c.logger.Error("clickhouse: failed to drop old view", zap.String("name", name), zap.Error(err))
 	}
-
-	schema, err := rowsToSchema(rows)
-	if err != nil {
-		rows.Close()
-		if cancelFunc != nil {
-			cancelFunc()
-		}
-
-		return nil, err
-	}
-
-	r := &drivers.Result{Rows: rows, Schema: schema}
-	r.SetCleanupFunc(func() error {
-		if cancelFunc != nil {
-			cancelFunc()
-		}
-
-		return nil
-	})
-
-	return r, nil
+	return nil
 }
 
 func (c *connection) DropDB() error {
 	return fmt.Errorf("dropping database not supported")
+}
+
+// acquireMetaConn gets a connection from the pool for "meta" queries like information schema (i.e. fast queries).
+// It returns a function that puts the connection back in the pool (if applicable).
+func (c *connection) acquireMetaConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+	// Try to get conn from context (means the call is wrapped in WithConnection)
+	conn := connFromContext(ctx)
+	if conn != nil {
+		return conn, func() error { return nil }, nil
+	}
+
+	// Acquire semaphore
+	err := c.metaSem.Acquire(ctx, 1)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Get new conn
+	conn, releaseConn, err := c.acquireConn(ctx)
+	if err != nil {
+		c.metaSem.Release(1)
+		return nil, nil, err
+	}
+
+	// Build release func
+	release := func() error {
+		err := releaseConn()
+		c.metaSem.Release(1)
+		return err
+	}
+
+	return conn, release, nil
+}
+
+// acquireOLAPConn gets a connection from the pool for OLAP queries (i.e. slow queries).
+// It returns a function that puts the connection back in the pool (if applicable).
+func (c *connection) acquireOLAPConn(ctx context.Context, priority int) (*sqlx.Conn, func() error, error) {
+	// Try to get conn from context (means the call is wrapped in WithConnection)
+	conn := connFromContext(ctx)
+	if conn != nil {
+		return conn, func() error { return nil }, nil
+	}
+
+	// Acquire semaphore
+	err := c.olapSem.Acquire(ctx, priority)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Get new conn
+	conn, releaseConn, err := c.acquireConn(ctx)
+	if err != nil {
+		c.olapSem.Release()
+		return nil, nil, err
+	}
+
+	// Build release func
+	release := func() error {
+		err := releaseConn()
+		c.olapSem.Release()
+		return err
+	}
+
+	return conn, release, nil
+}
+
+// acquireConn returns a DuckDB connection. It should only be used internally in acquireMetaConn and acquireOLAPConn.
+func (c *connection) acquireConn(ctx context.Context) (*sqlx.Conn, func() error, error) {
+	conn, err := c.db.Connx(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	release := func() error {
+		return conn.Close()
+	}
+	return conn, release, nil
 }
 
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
@@ -203,133 +378,6 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	}
 
 	return &runtimev1.StructType{Fields: fields}, nil
-}
-
-type informationSchema struct {
-	c *connection
-}
-
-func (c *connection) InformationSchema() drivers.InformationSchema {
-	return informationSchema{c: c}
-}
-
-func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
-	q := `
-		SELECT
-			T.TABLE_CATALOG AS DATABASE,
-			T.TABLE_SCHEMA AS SCHEMA,
-			T.TABLE_NAME AS NAME,
-			T.TABLE_TYPE AS TABLE_TYPE, 
-			C.COLUMN_NAME AS COLUMNS,
-			C.DATA_TYPE AS COLUMN_TYPE,
-			C.IS_NULLABLE = 'YES' AS IS_NULLABLE
-		FROM INFORMATION_SCHEMA.TABLES T 
-		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
-		WHERE T.TABLE_SCHEMA = 'default'
-		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
-	`
-
-	rows, err := i.c.db.QueryxContext(ctx, q)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	tables, err := i.scanTables(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	return tables, nil
-}
-
-func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Table, error) {
-	q := `
-		SELECT
-			T.TABLE_CATALOG AS DATABASE,
-			T.TABLE_SCHEMA AS SCHEMA,
-			T.TABLE_NAME AS NAME,
-			T.TABLE_TYPE AS TABLE_TYPE, 
-			C.COLUMN_NAME AS COLUMN_NAME,
-			C.DATA_TYPE AS COLUMN_TYPE,
-			C.IS_NULLABLE = '1' AS IS_NULLABLE
-		FROM INFORMATION_SCHEMA.TABLES T 
-		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
-		WHERE T.TABLE_SCHEMA = 'default' AND T.TABLE_NAME = ?
-		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
-	`
-
-	rows, err := i.c.db.QueryxContext(ctx, q, name)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	tables, err := i.scanTables(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(tables) == 0 {
-		return nil, drivers.ErrNotFound
-	}
-
-	return tables[0], nil
-}
-
-func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error) {
-	var res []*drivers.Table
-
-	for rows.Next() {
-		var database string
-		var schema string
-		var name string
-		var tableType string
-		var columnName string
-		var columnType string
-		var nullable bool
-
-		err := rows.Scan(&database, &schema, &name, &tableType, &columnName, &columnType, &nullable)
-		if err != nil {
-			return nil, err
-		}
-
-		// set t to res[len(res)-1] if it's the same table, else set t to a new table and append it
-		var t *drivers.Table
-		if len(res) > 0 {
-			t = res[len(res)-1]
-			if !(t.Database == database && t.DatabaseSchema == schema && t.Name == name) {
-				t = nil
-			}
-		}
-		if t == nil {
-			t = &drivers.Table{
-				Database:       database,
-				DatabaseSchema: schema,
-				Name:           name,
-				Schema:         &runtimev1.StructType{},
-			}
-			res = append(res, t)
-		}
-
-		// parse column type
-		colType, err := databaseTypeToPB(columnType, nullable)
-		if err != nil {
-			return nil, err
-		}
-
-		// append column
-		t.Schema.Fields = append(t.Schema.Fields, &runtimev1.StructType_Field{
-			Name: columnName,
-			Type: colType,
-		})
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return res, nil
 }
 
 func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
@@ -391,20 +439,9 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_JSON
 	}
 
+	if strings.Contains(dbt, "DATETIME") {
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
+	}
+
 	return t, nil
-}
-
-// retryErrClassifier classifies 429 errors as retryable and all other errors as non retryable
-type retryErrClassifier struct{}
-
-func (retryErrClassifier) Classify(err error) retrier.Action {
-	if err == nil {
-		return retrier.Succeed
-	}
-
-	if strings.Contains(err.Error(), "QueryCapacityExceededException") {
-		return retrier.Retry
-	}
-
-	return retrier.Fail
 }

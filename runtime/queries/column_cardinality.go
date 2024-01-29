@@ -54,10 +54,6 @@ func (q *ColumnCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
-		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
-	}
-
 	var requestSQL string
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:

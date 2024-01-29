@@ -61,21 +61,59 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.TableName, priority)
+	rugSQL, err := rugSQL(ctx, olap, q, priority)
 	if err != nil {
 		return err
 	}
-	if !min.Valid || !max.Valid || !rng.Valid {
+	if rugSQL == "" {
 		return nil
+	}
+
+	outlierResults, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            rugSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer outlierResults.Close()
+
+	outlierBins := make([]*runtimev1.NumericOutliers_Outlier, 0)
+	for outlierResults.Next() {
+		outlier := &runtimev1.NumericOutliers_Outlier{}
+		err = outlierResults.Scan(&outlier.Bucket, &outlier.Low, &outlier.High, &outlier.Present, &outlier.Count)
+		if err != nil {
+			return err
+		}
+		outlierBins = append(outlierBins, outlier)
+	}
+
+	err = outlierResults.Err()
+	if err != nil {
+		return err
+	}
+
+	q.Result = outlierBins
+
+	return nil
+}
+
+func rugSQL(ctx context.Context, olap drivers.OLAPStore, q *ColumnRugHistogram, priority int) (string, error) {
+	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.TableName, priority)
+	if err != nil {
+		return "", err
+	}
+	if min == nil || max == nil || rng == nil {
+		return "", nil
 	}
 
 	sanitizedColumnName := safeName(q.ColumnName)
 	outlierPseudoBucketSize := 500
 	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 
-	var rugSQL string
 	if olap.Dialect() == drivers.DialectDuckDB {
-		rugSQL = fmt.Sprintf(
+		return fmt.Sprintf(
 			`
   WITH data_table AS (
 		SELECT %[1]s as %[2]s
@@ -135,12 +173,12 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 			sanitizedColumnName,
 			safeName(q.TableName),
 			outlierPseudoBucketSize,
-			min.Float64,
-			max.Float64,
-			rng.Float64,
-		)
+			*min,
+			*max,
+			*rng,
+		), nil
 	} else if olap.Dialect() == drivers.DialectClickHouse {
-		rugSQL = fmt.Sprintf(
+		return fmt.Sprintf(
 			`
   WITH data_table AS (
 		SELECT %[1]s as %[2]s
@@ -200,40 +238,12 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 			sanitizedColumnName,
 			safeName(q.TableName),
 			outlierPseudoBucketSize,
-			min.Float64,
-			max.Float64,
-			rng.Float64,
-		)
+			*min,
+			*max,
+			*rng,
+		), nil
 	}
-
-	outlierResults, err := olap.Execute(ctx, &drivers.Statement{
-		Query:            rugSQL,
-		Priority:         priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
-	if err != nil {
-		return err
-	}
-	defer outlierResults.Close()
-
-	outlierBins := make([]*runtimev1.NumericOutliers_Outlier, 0)
-	for outlierResults.Next() {
-		outlier := &runtimev1.NumericOutliers_Outlier{}
-		err = outlierResults.Scan(&outlier.Bucket, &outlier.Low, &outlier.High, &outlier.Present, &outlier.Count)
-		if err != nil {
-			return err
-		}
-		outlierBins = append(outlierBins, outlier)
-	}
-
-	err = outlierResults.Err()
-	if err != nil {
-		return err
-	}
-
-	q.Result = outlierBins
-
-	return nil
+	return "", fmt.Errorf("unknown dialect '%s'", olap.Dialect())
 }
 
 func (q *ColumnRugHistogram) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {

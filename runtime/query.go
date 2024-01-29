@@ -68,6 +68,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 	if err != nil {
 		return err
 	}
+	// TODO :: check enabling caching at clickhouse level
 	if olap.Dialect() == drivers.DialectDruid || olap.Dialect() == drivers.DialectClickHouse {
 		release()
 		return query.Resolve(ctx, r, instanceID, priority)

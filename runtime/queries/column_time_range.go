@@ -237,7 +237,6 @@ func (q *ColumnTimeRange) resolveClickHouse(ctx context.Context, olap drivers.OL
 	}
 	defer rows.Close()
 
-	// solves for nullable, weird impl in driver ?
 	var minTime, maxTime *time.Time
 	for rows.Next() {
 		err = rows.Scan(&minTime, &maxTime)
@@ -247,7 +246,6 @@ func (q *ColumnTimeRange) resolveClickHouse(ctx context.Context, olap drivers.OL
 	}
 
 	summary := &runtimev1.TimeRangeSummary{}
-	// TODO: check for nil
 	if minTime != nil {
 		summary.Min = timestamppb.New(*minTime)
 	}
