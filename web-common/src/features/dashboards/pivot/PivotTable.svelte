@@ -62,7 +62,7 @@
 
   let table = createSvelteTable(options);
 
-  $: console.log(columnPage);
+  $: console.log(columnPage, totalColumns);
 
   let containerRefElement;
   // Called when the user scrolls and possibly on mount to fetch more data as the user scrolls
@@ -73,7 +73,7 @@
       const leftEndDistance = scrollLeft;
 
       // Distance threshold (in pixels) for triggering data fetch
-      const threshold = 400;
+      const threshold = 500;
 
       // Fetch more data when scrolling near the right end
       if (
@@ -102,8 +102,7 @@
 </script>
 
 <div
-  style:height="600px"
-  class="overflow-x-auto relative"
+  class="overflow-x-auto relative h-full"
   bind:this={containerRefElement}
   on:scroll={() => handleScroll(containerRefElement)}
 >

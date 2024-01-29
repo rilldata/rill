@@ -421,6 +421,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     let assembledTableData = tableDataExpanded;
                     if (config.rowDimensionNames.length) {
                       const totalsRowData = totalsRowResponse?.data?.data;
+
                       const globalTotalsData =
                         globalTotalsResponse?.data?.data || [];
                       const totalsRowTable = reduceTableCellDataIntoRows(

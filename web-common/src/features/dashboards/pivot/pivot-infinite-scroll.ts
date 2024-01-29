@@ -1,6 +1,6 @@
 import type { MetricsViewFilterCond } from "@rilldata/web-common/runtime-client";
 
-const NUM_COLUMNS_PER_PAGE = 30;
+const NUM_COLUMNS_PER_PAGE = 50;
 
 type ColumnNode = {
   value: string;
