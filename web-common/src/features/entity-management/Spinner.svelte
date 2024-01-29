@@ -12,9 +12,9 @@
   class:running={status === EntityStatus.Running}
   class:idle={status === EntityStatus.Idle}
   style="
-		--status-transition: {duration}ms;
-		--size: {size};
-		width: {size};
+    --status-transition: {duration}ms;
+    --size: {size};
+    width: {size};
     height: {size};"
 />
 
