@@ -4,8 +4,6 @@
   import Spinner from "../features/entity-management/Spinner.svelte";
   import { EntityStatus } from "../features/entity-management/types";
 
-  export let bg = "rgba(0,0,0,.6)";
-
   let status = EntityStatus.Running;
 
   setTimeout(
@@ -20,7 +18,7 @@
   );
 </script>
 
-<Overlay {bg}>
+<Overlay>
   <div
     transition:fly|global={{ duration: 200, y: 16 }}
     class="text-white text-center"
@@ -31,7 +29,7 @@
       style:font-size="48px"
     >
       <div class="on" style="--length: {2000 + Math.random() * 5000}ms;">
-        <Spinner {status} bg="white" duration={300 + Math.random() * 200} />
+        <Spinner {status} duration={300 + Math.random() * 200} />
       </div>
     </div>
     <div class=" pt-3"><slot name="title" /></div>
