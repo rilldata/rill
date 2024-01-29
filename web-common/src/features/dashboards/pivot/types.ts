@@ -113,3 +113,17 @@ export type PivotRenderCallback = (data: {
   value: any;
   element: HTMLElement;
 }) => string | void;
+
+export type PivotSidebarSection = "Time" | "Measures" | "Dimensions";
+
+export type PivotChipData = {
+  id: string;
+  title: string;
+  type: PivotChipType;
+};
+
+export enum PivotChipType {
+  Time = "Time",
+  Measure = "Measure",
+  Dimension = "Dimension",
+}
