@@ -26,7 +26,7 @@
   <RillLogoSquareNegative size="84px" gradient />
   <RadixH1>
     <span
-      class="bg-gradient-to-r from-primary-900 to-primary-800 text-transparent bg-clip-text"
+      class="bg-gradient-to-r from-primary-900 to-primary-800 text-transparent bg-clip-text opacity-75"
     >
       Welcome to Rill
     </span>
