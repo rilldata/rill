@@ -116,6 +116,7 @@ function formatRowDimensionValue(
 ) {
   const dimension = rowDimensionNames?.[depth];
   if (dimension === timeConfig?.timeDimension) {
+    if (value === "Total") return "Total";
     const timeGrain = timeConfig?.interval;
     const dt = addZoneOffset(
       removeLocalTimezoneOffset(new Date(value)),
