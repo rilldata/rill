@@ -614,12 +614,50 @@ func calculateExecutionTimes(self *runtimev1.Resource, a *runtimev1.Alert, water
 
 // buildRuntimeQuery builds a runtime query from a proto query and security attributes.
 func buildRuntimeQuery(q *runtimev1.Query, attrs map[string]any) (runtime.Query, error) {
-	// TODO:
-	panic("")
+	one := int64(1)
+
+	// NOTE: Pending refactors, this implementation is replicated from handlers in runtime/server.
+	switch r := q.Query.(type) {
+	case *runtimev1.Query_MetricsViewAggregationRequest:
+		req := r.MetricsViewAggregationRequest
+
+		tr := req.TimeRange
+		if req.TimeStart != nil || req.TimeEnd != nil {
+			tr = &runtimev1.TimeRange{
+				Start: req.TimeStart,
+				End:   req.TimeEnd,
+			}
+		}
+
+		return &queries.MetricsViewAggregation{
+			MetricsViewName:    req.MetricsView,
+			Dimensions:         req.Dimensions,
+			Measures:           req.Measures,
+			Sort:               req.Sort,
+			TimeRange:          tr,
+			Where:              req.Where,
+			Having:             req.Having,
+			Filter:             req.Filter,
+			Limit:              &one, // Alerts never inspect more than one row // TODO: Maybe put higher limit and return the minimum number of matching rows?
+			Offset:             req.Offset,
+			PivotOn:            req.PivotOn,
+			SecurityAttributes: attrs,
+		}, nil
+	default:
+		return nil, fmt.Errorf("query type %T not supported for alerts", r)
+	}
 }
 
 // extractQueryResultFirstRow extracts the first row from a query result.
 func extractQueryResultFirstRow(q runtime.Query) (map[string]any, bool, error) {
-	// TODO:
-	panic("")
+	switch q := q.(type) {
+	case *queries.MetricsViewAggregation:
+		if q.Result != nil && len(q.Result.Data) > 0 {
+			row := q.Result.Data[0]
+			return row.AsMap(), true, nil
+		}
+		return nil, false, nil
+	default:
+		return nil, false, fmt.Errorf("query type %T not supported for alerts", q)
+	}
 }
