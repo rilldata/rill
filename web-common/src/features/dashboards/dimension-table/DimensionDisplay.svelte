@@ -34,6 +34,7 @@
         prepareDimTableRows,
       },
       activeMeasure: { activeMeasureName },
+      measureFilters: { getResolvedFilterForMeasureFilters },
     },
     actions: {
       dimensionsFilter: {
@@ -57,6 +58,8 @@
 
   const timeControlsStore = useTimeControlStore(stateManagers);
 
+  $: resolvedFilter = $getResolvedFilterForMeasureFilters;
+
   $: filterSet = getDimensionFilterWithSearch(
     $dashboardStore?.whereFilter,
     searchText,
@@ -66,10 +69,10 @@
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     $metricsViewName,
-    $dimensionTableTotalQueryBody,
+    $dimensionTableTotalQueryBody($resolvedFilter),
     {
       query: {
-        enabled: $timeControlsStore.ready,
+        enabled: $timeControlsStore.ready && $resolvedFilter.ready,
       },
     },
   );
@@ -81,10 +84,11 @@
   $: sortedQuery = createQueryServiceMetricsViewComparison(
     $runtime.instanceId,
     $metricsViewName,
-    $dimensionTableSortedQueryBody,
+    $dimensionTableSortedQueryBody($resolvedFilter),
     {
       query: {
-        enabled: $timeControlsStore.ready && !!filterSet,
+        enabled:
+          $timeControlsStore.ready && !!filterSet && $resolvedFilter.ready,
       },
     },
   );

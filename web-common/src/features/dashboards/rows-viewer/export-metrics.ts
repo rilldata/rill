@@ -33,7 +33,7 @@ export default async function exportMetrics({
         metricsViewRowsRequest: {
           instanceId: get(runtime).instanceId,
           metricsViewName: metricViewName,
-          where: sanitiseExpression(dashboard.whereFilter),
+          where: sanitiseExpression(dashboard.whereFilter, undefined),
           timeStart: timeControlState.timeStart,
           timeEnd: timeControlState.timeEnd,
         },

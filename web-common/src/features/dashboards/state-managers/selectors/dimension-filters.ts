@@ -1,4 +1,4 @@
-import { getDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
 import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
 import {
   createAndExpression,
@@ -110,7 +110,7 @@ export function getDimensionFilterItems(
       addedDimension.add(ident);
       filteredDimensions.push({
         name: ident,
-        label: getDisplayName(dim),
+        label: getDimensionDisplayName(dim),
         selectedValues: getValuesInExpression(e),
       });
     });
@@ -136,7 +136,7 @@ export const getAllDimensionFilterItems = (
     ) {
       allDimensionFilterItem.push({
         name: dashData.dashboard.temporaryFilterName,
-        label: getDisplayName(
+        label: getDimensionDisplayName(
           dimensionIdMap.get(dashData.dashboard.temporaryFilterName),
         ),
         selectedValues: [],
