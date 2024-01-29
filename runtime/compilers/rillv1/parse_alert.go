@@ -155,9 +155,6 @@ func (p *Parser) parseAlert(ctx context.Context, node *Node) error {
 	}
 
 	// Validate recipients
-	if len(tmp.Email.Recipients) == 0 {
-		return fmt.Errorf(`missing required property "recipients"`)
-	}
 	for _, email := range tmp.Email.Recipients {
 		_, err := mail.ParseAddress(email)
 		if err != nil {
