@@ -48,12 +48,12 @@ jobs:
 
           gcloud auth configure-docker
 
-          docker build -t gcr.io/rilldata/rill-headless:${GITHUB_SHA} .
-          docker push gcr.io/rilldata/rill-headless:${GITHUB_SHA}
+          docker build -t gcr.io/rilldata/rill:${GITHUB_SHA} .
+          docker push gcr.io/rilldata/rill:${GITHUB_SHA}
 
           if [ ${RELEASE} == "true" ]; then
-            docker tag gcr.io/rilldata/rill-headless:${GITHUB_SHA} gcr.io/rilldata/rill-headless:${GITHUB_REF_NAME}
-            docker push gcr.io/rilldata/rill-headless:${GITHUB_REF_NAME}
+            docker tag gcr.io/rilldata/rill:${GITHUB_SHA} gcr.io/rilldata/rill:${GITHUB_REF_NAME}
+            docker push gcr.io/rilldata/rill:${GITHUB_REF_NAME}
           fi
 
       - name: Trigger Rill Cloud deployment
