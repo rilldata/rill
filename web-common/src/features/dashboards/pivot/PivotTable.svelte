@@ -167,7 +167,7 @@
   </table>
 </div>
 
-<style>
+<style lang="postcss">
   table {
     min-width: 300px;
     border-collapse: collapse;
@@ -184,6 +184,7 @@
 
   th,
   td {
+    @apply truncate;
     padding: 10px;
     border: 1px solid #ddd;
     text-align: left;
