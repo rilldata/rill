@@ -1,3 +1,4 @@
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { TimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
@@ -32,7 +33,7 @@ export default async function exportMetrics({
         metricsViewRowsRequest: {
           instanceId: get(runtime).instanceId,
           metricsViewName: metricViewName,
-          filter: dashboard.filters,
+          where: sanitiseExpression(dashboard.whereFilter, undefined),
           timeStart: timeControlState.timeStart,
           timeEnd: timeControlState.timeEnd,
         },

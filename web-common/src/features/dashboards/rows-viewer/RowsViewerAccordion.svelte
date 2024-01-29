@@ -2,6 +2,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
@@ -71,7 +72,7 @@
       ],
       timeStart: $timeControlsStore.timeStart,
       timeEnd,
-      filter: $dashboardStore?.filters,
+      where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
     },
     {
       query: {
@@ -81,10 +82,10 @@
           {
             timeStart: $timeControlsStore.timeStart,
             timeEnd,
-            filter: $dashboardStore?.filters,
+            where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
           },
         ],
-        enabled: $timeControlsStore.ready && !!$dashboardStore?.filters,
+        enabled: $timeControlsStore.ready && !!$dashboardStore?.whereFilter,
       },
     },
   );

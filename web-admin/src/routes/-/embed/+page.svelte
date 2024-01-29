@@ -37,14 +37,14 @@
   {#if isDashboardErrored}
     <br /> Dashboard Error <br />
   {:else}
-    <StateManagersProvider metricsViewName={dashboardName}>
-      {#key dashboardName}
+    {#key dashboardName}
+      <StateManagersProvider metricsViewName={dashboardName}>
         <DashboardStateProvider metricViewName={dashboardName}>
           <DashboardURLStateProvider metricViewName={dashboardName}>
             <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />
           </DashboardURLStateProvider>
         </DashboardStateProvider>
-      {/key}
-    </StateManagersProvider>
+      </StateManagersProvider>
+    {/key}
   {/if}
 {/if}

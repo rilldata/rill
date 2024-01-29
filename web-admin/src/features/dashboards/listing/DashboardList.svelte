@@ -26,7 +26,7 @@
       <li class="w-full h-[52px] border rounded">
         <a
           href={`/${organization}/${project}/${dashboard.meta.name.name}`}
-          class="w-full h-full overflow-x-auto p-3 flex items-center gap-x-6 text-gray-700 hover:text-blue-600 hover:bg-slate-50"
+          class="w-full h-full overflow-x-auto p-3 flex items-center gap-x-6 text-gray-700 hover:text-primary-600 hover:bg-slate-50"
         >
           <!-- Icon -->
           <div

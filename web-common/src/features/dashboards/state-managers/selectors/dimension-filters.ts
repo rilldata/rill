@@ -1,15 +1,13 @@
-import { getDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
 import { filterItemsSortFunction } from "@rilldata/web-common/features/dashboards/state-managers/selectors/filters";
 import {
   createAndExpression,
-  forEachExpression,
+  forEachIdentifier,
   getValuesInExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import {
-  MetricsViewSpecDimensionV2,
-  V1Operation,
-} from "@rilldata/web-common/runtime-client";
+import { V1Operation } from "@rilldata/web-common/runtime-client";
+import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { AtLeast } from "../types";
 import type { DashboardDataSources } from "./types";
@@ -103,21 +101,8 @@ export function getDimensionFilterItems(
 
     const filteredDimensions: DimensionFilterItem[] = [];
     const addedDimension = new Set<string>();
-    forEachExpression(dashData.dashboard.whereFilter, (e) => {
-      if (
-        e.cond?.op !== V1Operation.OPERATION_IN &&
-        e.cond?.op !== V1Operation.OPERATION_NIN
-      ) {
-        return;
-      }
-      const ident = e.cond?.exprs?.[0].ident;
-      if (
-        ident === undefined ||
-        addedDimension.has(ident) ||
-        !dimensionIdMap.has(ident)
-      ) {
-        return;
-      }
+    forEachIdentifier(dashData.dashboard.whereFilter, (e, ident) => {
+      if (addedDimension.has(ident) || !dimensionIdMap.has(ident)) return;
       const dim = dimensionIdMap.get(ident);
       if (!dim) {
         return;
@@ -125,8 +110,8 @@ export function getDimensionFilterItems(
       addedDimension.add(ident);
       filteredDimensions.push({
         name: ident,
-        label: getDisplayName(dim),
-        selectedValues: e.cond.exprs?.slice(1).map((e) => e.val) as any[],
+        label: getDimensionDisplayName(dim),
+        selectedValues: getValuesInExpression(e),
       });
     });
 
@@ -151,7 +136,7 @@ export const getAllDimensionFilterItems = (
     ) {
       allDimensionFilterItem.push({
         name: dashData.dashboard.temporaryFilterName,
-        label: getDisplayName(
+        label: getDimensionDisplayName(
           dimensionIdMap.get(dashData.dashboard.temporaryFilterName),
         ),
         selectedValues: [],
@@ -160,6 +145,34 @@ export const getAllDimensionFilterItems = (
 
     // sort based on name to make sure toggling include/exclude is not jarring
     return allDimensionFilterItem.sort(filterItemsSortFunction);
+  };
+};
+
+export const unselectedDimensionValues = (
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
+) => {
+  return (dimensionName: string, values: unknown[]): unknown[] => {
+    const expr = getWhereFilterExpression(dashData)(dimensionName);
+    if (expr === undefined) {
+      return values;
+    }
+
+    return values.filter(
+      (v) => expr.cond?.exprs?.findIndex((e) => e.val === v) === -1,
+    );
+  };
+};
+
+export const includedDimensionValues = (
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
+) => {
+  return (dimensionName: string): unknown[] => {
+    const expr = getWhereFilterExpression(dashData)(dimensionName);
+    if (expr === undefined || expr.cond?.op !== V1Operation.OPERATION_IN) {
+      return [];
+    }
+
+    return getValuesInExpression(expr);
   };
 };
 
@@ -203,4 +216,7 @@ export const dimensionFilterSelectors = {
    * Get filter items on dimension along with an empty entry for temporary filter if it is a dimension
    */
   getAllDimensionFilterItems,
+
+  unselectedDimensionValues,
+  includedDimensionValues,
 };

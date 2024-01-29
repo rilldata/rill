@@ -36,7 +36,8 @@ export function prepareSortedQueryBody(
   sortMeasureName: string | null,
   sortType: SortType,
   sortAscending: boolean,
-  filterForDimension: V1Expression,
+  whereFilterForDimension: V1Expression,
+  havingFilterForDimension: V1Expression | undefined,
 ): QueryServiceMetricsViewComparisonBody {
   let comparisonTimeRange = {
     start: timeControls.comparisonTimeStart,
@@ -88,7 +89,10 @@ export function prepareSortedQueryBody(
         sortType: querySortType,
       },
     ],
-    where: sanitiseExpression(filterForDimension),
+    where: sanitiseExpression(
+      whereFilterForDimension,
+      havingFilterForDimension,
+    ),
     limit: "250",
     offset: "0",
   };

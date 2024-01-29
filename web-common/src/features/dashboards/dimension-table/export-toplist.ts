@@ -71,7 +71,7 @@ export default async function exportToplist({
               sortType: getQuerySortType(dashboard.dashboardSortType),
             },
           ],
-          where: sanitiseExpression(dashboard.whereFilter),
+          where: sanitiseExpression(dashboard.whereFilter, undefined),
           limit: undefined, // the backend handles export limits
           offset: "0",
         },

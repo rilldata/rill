@@ -29,8 +29,15 @@
   const stateManagers = getStateManagers();
   const {
     dashboardStore,
+    selectors: {
+      dimensionFilters: { unselectedDimensionValues },
+    },
     actions: {
-      dimensionsFilter: { toggleDimensionValueSelection },
+      dimensionsFilter: {
+        toggleDimensionValueSelection,
+        selectItemsInFilter,
+        deselectItemsInFilter,
+      },
     },
   } = getStateManagers();
 
@@ -108,26 +115,21 @@
   }
 
   function toggleAllSearchItems() {
-    cancelDashboardQueries(queryClient, metricViewName);
     if (areAllTableRowsSelected) {
-      metricsExplorerStore.deselectItemsInFilter(
-        metricViewName,
-        dimensionName,
-        rowHeaderLabels,
-      );
+      deselectItemsInFilter(dimensionName, rowHeaderLabels);
+
       notifications.send({
         message: `Removed ${rowHeaderLabels.length} items from filter`,
       });
       return;
     } else {
-      const newValuesSelected = metricsExplorerStore.selectItemsInFilter(
-        metricViewName,
+      const newValuesSelected = $unselectedDimensionValues(
         dimensionName,
         rowHeaderLabels,
       );
-
+      selectItemsInFilter(dimensionName, rowHeaderLabels);
       notifications.send({
-        message: `Added ${newValuesSelected} items to filter`,
+        message: `Added ${newValuesSelected.length} items to filter`,
       });
     }
   }

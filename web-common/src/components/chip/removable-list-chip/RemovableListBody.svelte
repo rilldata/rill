@@ -25,7 +25,7 @@
   >
     {label}
   </div>
-  <div class="flex flex-wrap flex-row items-baseline gap-y-1">
+  <div class="flex flex-wrap flex-row items-center gap-y-1 gap-x-2">
     {#each visibleValues as value}
       <div
         class="text-ellipsis overflow-hidden whitespace-nowrap"
@@ -35,13 +35,13 @@
       </div>
     {/each}
     {#if values.length > 1}
-      <div class="italic pl-2">
+      <div class="italic">
         +{whatsLeft} other{#if whatsLeft !== 1}s{/if}
       </div>
     {/if}
-    <IconSpaceFixer className="pl-1" pullRight>
+    <IconSpaceFixer pullRight>
       <div class="transition-transform" class:-rotate-180={active}>
-        <CaretDownIcon size="10px" className="inline" />
+        <CaretDownIcon size="10px" />
       </div>
     </IconSpaceFixer>
   </div>

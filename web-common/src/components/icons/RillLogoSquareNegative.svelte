@@ -37,9 +37,8 @@
         y2="36.5"
         gradientUnits="userSpaceOnUse"
       >
-        <stop stop-color="#558AFF" />
-        <stop offset="0.359375" stop-color="#4881FF" />
-        <stop offset="1" stop-color="#2563EB" />
+        <stop stop-color="var(--color-primary-400)" />
+        <stop offset="1" stop-color="var(--color-primary-500)" />
       </linearGradient>
       <clipPath id="clip0_1445_29041">
         <rect
