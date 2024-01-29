@@ -1,3 +1,4 @@
+import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createAndExpression,
@@ -65,7 +66,7 @@ export function createSubTableCellQuery(
   config: PivotDataStoreConfig,
   anchorDimension: string,
   columnDimensionAxesData: Record<string, string[]> | undefined,
-  rowNestFilters: V1Expression[],
+  rowNestFilters: V1Expression,
   timeRange: TimeRangeString | undefined,
 ) {
   const allDimensions = config.colDimensionNames.concat([anchorDimension]);
@@ -86,7 +87,7 @@ export function createSubTableCellQuery(
     config,
     columnDimensionAxesData,
   );
-  filterForSubTable.cond?.exprs?.push(...rowNestFilters);
+  filterForSubTable.cond?.exprs?.push(...(rowNestFilters?.cond?.exprs ?? []));
 
   const sortBy = [
     {
@@ -98,7 +99,7 @@ export function createSubTableCellQuery(
     ctx,
     config.measureNames,
     dimensionBody,
-    filterForSubTable, // TODO: global filter
+    filterForSubTable,
     sortBy,
     "10000",
     "0",
@@ -182,8 +183,10 @@ export function queryExpandedRowMeasureValues(
         timeFilters,
       );
 
-      // TODO: Merge filters
-      // mergeFilters(rowNestFilters, sortFilters)
+      const mergedFilter = mergeFilters(
+        createAndExpression(rowNestFilters),
+        config.whereFilter,
+      );
 
       return derived(
         [
@@ -201,7 +204,7 @@ export function queryExpandedRowMeasureValues(
             config,
             anchorDimension,
             columnDimensionAxesData,
-            rowNestFilters,
+            mergedFilter,
             timeRange,
           ),
         ],

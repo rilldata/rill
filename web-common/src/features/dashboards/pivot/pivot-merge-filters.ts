@@ -4,50 +4,57 @@
  * filter format.
  */
 
-import type {
-  MetricsViewFilterCond,
-  V1MetricsViewFilter,
+import {
+  copyFilterExpression,
+  createAndExpression,
+  forEachIdentifier,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  type V1Expression,
+  V1Operation,
 } from "@rilldata/web-common/runtime-client";
 
-function mergeArrays<T>(arr1: T[], arr2: T[]): T[] {
-  return Array.from(new Set([...arr1, ...arr2]));
-}
+export function mergeFilters(
+  filter1: V1Expression,
+  filter2: V1Expression,
+): V1Expression {
+  const inExprMap = new Map<string, V1Expression>();
+  const likeExprMap = new Map<string, V1Expression>();
 
-function mergeFilterConds(
-  cond1: MetricsViewFilterCond[],
-  cond2: MetricsViewFilterCond[],
-): MetricsViewFilterCond[] {
-  const merged: MetricsViewFilterCond[] = [];
-  const allNames = new Set([
-    ...cond1.map((c) => c.name),
-    ...cond2.map((c) => c.name),
-  ]);
-
-  allNames.forEach((name) => {
-    const cond1Entry = cond1.find((c) => c.name === name);
-    const cond2Entry = cond2.find((c) => c.name === name);
-
-    if (cond1Entry && cond2Entry) {
-      merged.push({
-        name,
-        in: mergeArrays(cond1Entry.in || [], cond2Entry.in || []),
-        like: cond1Entry.like || [],
-      });
+  // build a map of identifier to IN and LIKE expressions separately
+  forEachIdentifier(filter1, (e, ident) => {
+    if (
+      e.cond?.op === V1Operation.OPERATION_LIKE ||
+      e.cond?.op === V1Operation.OPERATION_NLIKE
+    ) {
+      if (likeExprMap.has(ident)) return;
+      likeExprMap.set(ident, e);
     } else {
-      // If the condition only exists in one of the filters, add it directly.
-      merged.push((cond1Entry || cond2Entry) as MetricsViewFilterCond);
+      if (inExprMap.has(ident)) return;
+      inExprMap.set(ident, e);
     }
   });
 
-  return merged;
-}
+  // create a copy
+  filter2 = copyFilterExpression(filter2) ?? createAndExpression([]);
+  forEachIdentifier(filter2, (e, ident) => {
+    // ignore like expressions since those need individual expressions and cannot be merged
+    if (
+      e.cond?.op === V1Operation.OPERATION_LIKE ||
+      e.cond?.op === V1Operation.OPERATION_NLIKE
+    )
+      return;
+    if (!inExprMap.has(ident)) return;
+    e.cond?.exprs?.push(...(inExprMap.get(ident)?.cond?.exprs?.slice(1) ?? []));
+    inExprMap.delete(ident);
+  });
 
-export function mergeFilters(
-  filter1: V1MetricsViewFilter,
-  filter2: V1MetricsViewFilter,
-): V1MetricsViewFilter {
-  return {
-    include: mergeFilterConds(filter1.include || [], filter2.include || []),
-    exclude: mergeFilterConds(filter1.exclude || [], filter2.exclude || []),
-  };
+  inExprMap.forEach((ie) => {
+    filter2.cond?.exprs?.push(copyFilterExpression(ie));
+  });
+  likeExprMap.forEach((ie) => {
+    filter2.cond?.exprs?.push(copyFilterExpression(ie));
+  });
+
+  return filter2;
 }
