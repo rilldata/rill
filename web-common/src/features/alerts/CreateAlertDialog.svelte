@@ -4,6 +4,7 @@
   import Tab from "@rilldata/web-admin/components/tabs/Tab.svelte";
   import TabGroup from "@rilldata/web-admin/components/tabs/TabGroup.svelte";
   import TabList from "@rilldata/web-admin/components/tabs/TabList.svelte";
+  import { V1Operation } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
@@ -30,6 +31,7 @@
           value: 0,
         },
       ],
+      criteriaOperation: V1Operation.OPERATION_AND,
       snooze: "OFF", // TODO: use enum from backend
       recipients: [
         { email: $user.data?.user?.email ? $user.data.user.email : "" },
@@ -46,7 +48,7 @@
           value: yup.number().required("Required"),
         }),
       ),
-      criteriaJoiner: yup.string().required("Required"),
+      criteriaOperation: yup.string().required("Required"),
       snooze: yup.string().required("Required"),
       recipients: yup.array().of(
         yup.object().shape({

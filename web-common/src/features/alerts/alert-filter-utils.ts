@@ -16,12 +16,12 @@ export type FormFilterInput = {
 
 export function translateFilter(
   formInput: FormFilterInput[],
-  isAnd: boolean,
+  joiner: V1Operation,
 ): V1Expression {
   const exprs = formInput
     .filter((fi) => fi.operation in V1Operation)
     .map((fi) => createBinaryExpression(fi.field, fi.operation, fi.value));
-  if (isAnd) {
+  if (joiner === V1Operation.OPERATION_AND) {
     return createAndExpression(exprs);
   } else {
     return createOrExpression(exprs);

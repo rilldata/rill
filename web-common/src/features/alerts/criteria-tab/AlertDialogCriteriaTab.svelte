@@ -21,7 +21,7 @@
   </FormSection>
   <FormSection title="Alert Preview">
     <DataPreview
-      criteria={translateFilter($form["criteria"], true)}
+      criteria={translateFilter($form["criteria"], $form["criteriaOperation"])}
       dimension={$form["splitByDimension"]}
       filter={$dashboardStore.whereFilter}
       measure={$form["measure"]}
