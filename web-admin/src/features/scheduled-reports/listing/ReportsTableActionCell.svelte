@@ -5,7 +5,7 @@
 </script>
 
 <button
-  class="text-gray-500 hover:text-blue-500 hover:bg-slate-200 grid place-items-center rounded-sm"
+  class="text-gray-500 hover:text-primary-500 hover:bg-slate-200 grid place-items-center rounded-sm"
   on:click={() => console.log(`open actions for ${reportName}`)}
 >
   <ThreeDot size="16px" />

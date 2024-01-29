@@ -50,6 +50,7 @@ export type RuntimeServiceWatchResources200 = {
 export type RuntimeServiceWatchResourcesParams = {
   kind?: string;
   replay?: boolean;
+  level?: string;
 };
 
 export type RuntimeServiceListResourcesParams = { kind?: string };
@@ -260,14 +261,42 @@ export type RuntimeServiceWatchLogs200 = {
   error?: RpcStatus;
 };
 
+export type RuntimeServiceWatchLogsLevel =
+  (typeof RuntimeServiceWatchLogsLevel)[keyof typeof RuntimeServiceWatchLogsLevel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RuntimeServiceWatchLogsLevel = {
+  LOG_LEVEL_UNSPECIFIED: "LOG_LEVEL_UNSPECIFIED",
+  LOG_LEVEL_DEBUG: "LOG_LEVEL_DEBUG",
+  LOG_LEVEL_INFO: "LOG_LEVEL_INFO",
+  LOG_LEVEL_WARN: "LOG_LEVEL_WARN",
+  LOG_LEVEL_ERROR: "LOG_LEVEL_ERROR",
+  LOG_LEVEL_FATAL: "LOG_LEVEL_FATAL",
+} as const;
+
 export type RuntimeServiceWatchLogsParams = {
   replay?: boolean;
   replayLimit?: number;
+  level?: RuntimeServiceWatchLogsLevel;
 };
+
+export type RuntimeServiceGetLogsLevel =
+  (typeof RuntimeServiceGetLogsLevel)[keyof typeof RuntimeServiceGetLogsLevel];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RuntimeServiceGetLogsLevel = {
+  LOG_LEVEL_UNSPECIFIED: "LOG_LEVEL_UNSPECIFIED",
+  LOG_LEVEL_DEBUG: "LOG_LEVEL_DEBUG",
+  LOG_LEVEL_INFO: "LOG_LEVEL_INFO",
+  LOG_LEVEL_WARN: "LOG_LEVEL_WARN",
+  LOG_LEVEL_ERROR: "LOG_LEVEL_ERROR",
+  LOG_LEVEL_FATAL: "LOG_LEVEL_FATAL",
+} as const;
 
 export type RuntimeServiceGetLogsParams = {
   ascending?: boolean;
   limit?: number;
+  level?: RuntimeServiceGetLogsLevel;
 };
 
 export type RuntimeServiceWatchFiles200 = {

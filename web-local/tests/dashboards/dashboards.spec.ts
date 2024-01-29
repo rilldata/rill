@@ -1,25 +1,29 @@
 import { expect, Page, test } from "@playwright/test";
-import { updateCodeEditor } from "./utils/commonHelpers";
+import {
+  TestEntityType,
+  updateCodeEditor,
+  wrapRetryAssertion,
+} from "../utils/commonHelpers";
 import {
   assertLeaderboards,
   clickOnFilter,
   createDashboardFromModel,
   createDashboardFromSource,
+  interactWithComparisonMenu,
   interactWithTimeRangeMenu,
   metricsViewRequestFilterMatcher,
   RequestMatcher,
   waitForComparisonTopLists,
   waitForDashboard,
   waitForTimeSeries,
-} from "./utils/dashboardHelpers";
+} from "../utils/dashboardHelpers";
 import {
   assertAdBidsDashboard,
   createAdBidsModel,
-} from "./utils/dataSpecifcHelpers";
-import { TestEntityType, wrapRetryAssertion } from "./utils/helpers";
-import { createOrReplaceSource } from "./utils/sourceHelpers";
-import { startRuntimeForEachTest } from "./utils/startRuntimeForEachTest";
-import { waitForEntity } from "./utils/waitHelpers";
+} from "../utils/dataSpecifcHelpers";
+import { createOrReplaceSource } from "../utils/sourceHelpers";
+import { startRuntimeForEachTest } from "../utils/startRuntimeForEachTest";
+import { waitForEntity } from "../utils/waitHelpers";
 
 test.describe("dashboard", () => {
   startRuntimeForEachTest();
@@ -137,6 +141,10 @@ test.describe("dashboard", () => {
       page.getByRole("menuitem", { name: "UTC GMT +00:00 Etc/UTC" }),
     ).not.toBeVisible();
 
+    await interactWithComparisonMenu(page, "No comparison", (l) =>
+      l.getByRole("menuitem", { name: "Time" }).click(),
+    );
+
     // Check that the total records are 272 and have comparisons
     await expect(page.getByText("272 -23 -7%")).toBeVisible();
 
@@ -186,21 +194,17 @@ test.describe("dashboard", () => {
     expect(parquetRegex.test(downloadParquet.suggestedFilename())).toBe(true);
 
     // Turn off comparison
-    await page.getByRole("button", { name: "Comparing by Time" }).click();
-    await page
-      .getByLabel("Comparison selector")
-      .getByRole("menuitem", { name: "No comparison" })
-      .click();
+    await interactWithComparisonMenu(page, "Comparing by Time", (l) =>
+      l.getByRole("menuitem", { name: "No comparison" }).click(),
+    );
 
     // Check number
     await expect(page.getByText("272", { exact: true })).toBeVisible();
 
     // Add comparison back
-    await page.getByRole("button", { name: "No comparison" }).click();
-    await page
-      .getByLabel("Comparison selector")
-      .getByRole("menuitem", { name: "Time" })
-      .click();
+    await interactWithComparisonMenu(page, "No comparison", (l) =>
+      l.getByRole("menuitem", { name: "Time" }).click(),
+    );
 
     /*
       There is a bug where if you programmatically click the Time Range Selector button right after clicking the "Previous Period" menu item,
@@ -636,10 +640,14 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
    * is activated, but there is no valid_percent_of_total
    */
 
-  // Select a time range, which should automatically enable a time comparison (including context column)
+  // Select a time range, that supports comparisons
   await interactWithTimeRangeMenu(page, async () => {
     await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
   });
+  // enable comparisons which should automatically enable a time comparison (including context column)
+  await interactWithComparisonMenu(page, "No comparison", (l) =>
+    l.getByRole("menuitem", { name: "Time" }).click(),
+  );
 
   // check that the "select a context column" button now reads "with Percent change"
   await expect(
@@ -701,6 +709,9 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
   await interactWithTimeRangeMenu(page, async () => {
     await page.getByRole("menuitem", { name: "All Time" }).click();
   });
+  await interactWithComparisonMenu(page, "Comparing by Time", (l) =>
+    l.getByRole("menuitem", { name: "No Comparison" }).click(),
+  );
 
   // Check that time comparison context column is hidden
   await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
@@ -779,6 +790,11 @@ async function runThroughLeaderboardContextColumnFlows(page: Page) {
    * - switch context column to percent change
    * - and then switch back to percent of total
    */
+
+  // Need to manually enable comparison since we disabled it
+  await interactWithComparisonMenu(page, "No Comparison", (l) =>
+    l.getByRole("menuitem", { name: "Time" }).click(),
+  );
 
   // open the context column menu
   await page.getByLabel("Select a context column").click();

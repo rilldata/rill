@@ -10,10 +10,12 @@
   import { error } from "@sveltejs/kit";
   import { onMount } from "svelte";
 
+  const { readOnly } = featureFlags;
+
   $: sourceName = $page.params.name;
 
   onMount(() => {
-    if ($featureFlags.readOnly) {
+    if ($readOnly) {
       throw error(404, "Page not found");
     }
   });

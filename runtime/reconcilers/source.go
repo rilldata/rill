@@ -116,7 +116,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 			src.State.RefreshedOn = nil
 			err = r.C.UpdateState(ctx, self.Meta.Name, self)
 			if err != nil {
-				r.C.Logger.Error("refs check: failed to update state", zap.Any("err", err))
+				r.C.Logger.Error("refs check: failed to update state", zap.Any("error", err))
 			}
 		}
 		return runtime.ReconcileResult{Err: err}

@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import type { Page } from "playwright";
-import { getEntityLink, TestEntityType } from "./helpers";
+import { getEntityLink, TestEntityType } from "./commonHelpers";
 
 export async function waitForEntity(
   page: Page,

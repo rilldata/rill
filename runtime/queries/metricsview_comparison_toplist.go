@@ -845,6 +845,14 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
+			// temporary backwards compatibility
+			if q.Filter != nil {
+				if q.Where != nil {
+					return fmt.Errorf("both filter and where is provided")
+				}
+				q.Where = convertFilterToExpression(q.Filter)
+			}
+
 			var sql string
 			var args []any
 			if !isTimeRangeNil(q.ComparisonTimeRange) {

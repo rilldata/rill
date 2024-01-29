@@ -1,9 +1,6 @@
-import {
-  getEmbeddedReferences,
-  getTableReferences,
-} from "@rilldata/web-common/features/models/utils/get-table-references";
-import { tests } from "@rilldata/web-common/features/models/utils/get-table-references/test-data";
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { getEmbeddedReferences, getTableReferences } from ".";
+import { tests } from "./test-data";
 
 describe("getAllTableReferences", () => {
   it("correctly assesses the table references", () => {

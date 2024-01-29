@@ -80,6 +80,7 @@
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
     @apply border border-dashed border-slate-300;
+    @apply bg-white;
   }
 
   button:hover {

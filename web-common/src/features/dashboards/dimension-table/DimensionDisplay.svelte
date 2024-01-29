@@ -5,15 +5,12 @@
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     createQueryServiceMetricsViewComparison,
     createQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
@@ -30,6 +27,7 @@
       },
       comparison: { isBeingCompared },
       dimensions: { dimensionTableDimName, dimensionTableColumnName },
+      dimensionFilters: { unselectedDimensionValues },
       dimensionTable: {
         virtualizedTableColumns,
         selectedDimensionValueNames,
@@ -39,7 +37,11 @@
       measureFilters: { getResolvedFilterForMeasureFilters },
     },
     actions: {
-      dimensionsFilter: { toggleDimensionValueSelection },
+      dimensionsFilter: {
+        toggleDimensionValueSelection,
+        selectItemsInFilter,
+        deselectItemsInFilter,
+      },
     },
     metricsViewName,
     runtime,
@@ -51,8 +53,6 @@
   $: dimensionColumnName = $dimensionTableColumnName(dimensionName) as string;
 
   let searchText = "";
-
-  const queryClient = useQueryClient();
 
   $: instanceId = $runtime.instanceId;
 
@@ -100,8 +100,13 @@
   );
 
   function onSelectItem(event) {
-    const label = tableRows[event.detail][dimensionColumnName] as string;
-    toggleDimensionValueSelection(dimensionName, label);
+    const label = tableRows[event.detail.index][dimensionColumnName] as string;
+    toggleDimensionValueSelection(
+      dimensionName,
+      label,
+      false,
+      event.detail.meta,
+    );
   }
 
   function toggleComparisonDimension(dimensionName, isBeingCompared) {
@@ -113,27 +118,22 @@
 
   function toggleAllSearchItems() {
     const labels = tableRows.map((row) => row[dimensionColumnName] as string);
-    cancelDashboardQueries(queryClient, $metricsViewName);
 
     if (areAllTableRowsSelected) {
-      metricsExplorerStore.deselectItemsInFilter(
-        $metricsViewName,
-        dimensionName,
-        labels,
-      );
+      deselectItemsInFilter(dimensionName, labels);
 
       notifications.send({
         message: `Removed ${labels.length} items from filter`,
       });
       return;
     } else {
-      const newValuesSelected = metricsExplorerStore.selectItemsInFilter(
-        $metricsViewName,
+      const newValuesSelected = $unselectedDimensionValues(
         dimensionName,
         labels,
       );
+      selectItemsInFilter(dimensionName, labels);
       notifications.send({
-        message: `Added ${newValuesSelected} items to filter`,
+        message: `Added ${newValuesSelected.length} items to filter`,
       });
     }
   }
