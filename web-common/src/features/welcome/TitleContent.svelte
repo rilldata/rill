@@ -26,15 +26,14 @@
   <RillLogoSquareNegative size="84px" gradient />
   <RadixH1>
     <span
-      class="bg-gradient-to-r from-primary-900 to-primary-800 text-transparent bg-clip-text"
+      class="bg-gradient-to-r from-primary-900 to-primary-800 text-transparent bg-clip-text opacity-75"
     >
       Welcome to Rill
     </span>
   </RadixH1>
   <div class="flex flex-col gap-y-2">
     <Subheading twColor="text-slate-600">
-      You're on your way to building fast, exploratory dashboards your team will
-      actually use.
+      Build fast operational dashboards that your team will actually use.
     </Subheading>
     <Subheading twColor="text-slate-600">Let’s get started.</Subheading>
   </div>
