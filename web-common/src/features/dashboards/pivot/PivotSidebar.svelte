@@ -1,6 +1,7 @@
 <script lang="ts">
   import DragList from "@rilldata/web-common/features/dashboards/pivot/DragList.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { createQueryServiceMetricsViewRows } from "@rilldata/web-common/runtime-client";
 
@@ -21,13 +22,13 @@
     $metricsViewName,
     {
       limit: 1,
-      filter: $dashboardStore.filters,
+      where: sanitiseExpression($dashboardStore.whereFilter),
       timeStart: $timeControlsStore.timeStart,
       timeEnd: $timeControlsStore.timeEnd,
     },
     {
       query: {
-        enabled: $timeControlsStore.ready && !!$dashboardStore?.filters,
+        enabled: $timeControlsStore.ready && !!$dashboardStore?.whereFilter,
       },
     },
   );
