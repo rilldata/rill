@@ -26,6 +26,8 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
+  import { featureFlags } from "../../feature-flags";
+  import TDDExportButton from "./TDDExportButton.svelte";
   import type { TDDComparison } from "./types";
 
   export let metricViewName: string;
@@ -178,7 +180,7 @@
       {/if}
 
       <Tooltip distance={16} location="left">
-        <div class="mr-3 ui-copy-icon" style:grid-column-gap=".4rem">
+        <div class="ui-copy-icon" style:grid-column-gap=".4rem">
           <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
             Exclude
           </Switch>
@@ -195,6 +197,11 @@
           </TooltipShortcutContainer>
         </TooltipContent>
       </Tooltip>
+
+      <TDDExportButton
+        {metricViewName}
+        includeScheduledReport={$featureFlags.adminServer}
+      />
     </div>
   {/if}
 </div>

@@ -1,9 +1,10 @@
 <script lang="ts">
   import {
-    AreaSubRangeColor,
-    AreaNormalColor,
-    MainLineSubRangeColor,
-    MainLineNormalColor,
+    AreaMutedColor,
+    MainAreaColor,
+    LineMutedColor,
+    MainLineColor,
+    TimeComparisonLineColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { writable } from "svelte/store";
   import {
@@ -13,9 +14,9 @@
   import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 
-  export let xMin: Date = undefined;
-  export let xMax: Date = undefined;
-  export let yExtentMax: number = undefined;
+  export let xMin: Date | undefined = undefined;
+  export let xMax: Date | undefined = undefined;
+  export let yExtentMax: number | undefined = undefined;
   export let showComparison: boolean;
   export let dimensionValue: string;
   export let isHovering: boolean;
@@ -28,11 +29,9 @@
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
-  $: mainLineColor = hasSubrangeSelected
-    ? MainLineSubRangeColor
-    : MainLineNormalColor;
+  $: mainLineColor = hasSubrangeSelected ? LineMutedColor : MainLineColor;
 
-  $: areaColor = hasSubrangeSelected ? AreaSubRangeColor : AreaNormalColor;
+  $: areaColor = hasSubrangeSelected ? AreaMutedColor : MainAreaColor;
 
   $: isDimValueHiglighted =
     dimensionValue !== undefined &&
@@ -102,7 +101,7 @@
       >
         <ChunkedLine
           area={false}
-          lineColor={MainLineSubRangeColor}
+          lineColor={TimeComparisonLineColor}
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
           $timeRangeKey !== $previousTimeRangeKey
@@ -129,8 +128,8 @@
       <ClippedChunkedLine
         start={Math.min(scrubStart, scrubEnd)}
         end={Math.max(scrubStart, scrubEnd)}
-        lineColor={MainLineNormalColor}
-        areaColor={AreaNormalColor}
+        lineColor={MainLineColor}
+        areaColor={MainAreaColor}
         delay={0}
         duration={0}
         {data}

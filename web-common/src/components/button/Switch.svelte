@@ -71,7 +71,7 @@
   }
 
   input:checked {
-    @apply bg-blue-500;
+    @apply bg-primary-500;
   }
 
   input:checked::before {

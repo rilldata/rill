@@ -42,6 +42,7 @@
   const {
     selectors: {
       measures: { isMeasureValidPercentOfTotal },
+      dimensionFilters: { includedDimensionValues },
     },
   } = getStateManagers();
 
@@ -64,10 +65,9 @@
   $: isPercOfTotalAsContextColumn =
     $dashboardStore?.leaderboardContextColumn ===
     LeaderboardContextColumn.PERCENT;
-  $: includedValuesForDimension =
-    $dashboardStore?.filters?.include?.find(
-      (filter) => filter.name === comparisonDimension,
-    )?.in || [];
+  $: includedValuesForDimension = $includedDimensionValues(
+    comparisonDimension as string,
+  );
 
   // List of measures which will be shown on the dashboard
   let renderedMeasures = [];

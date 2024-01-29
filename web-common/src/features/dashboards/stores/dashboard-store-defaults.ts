@@ -131,12 +131,9 @@ export function getDefaultMetricsExplorerEntity(
     visibleDimensionKeys: new Set(defaultDimNames),
     allDimensionsVisible: true,
     leaderboardMeasureName: defaultMeasureNames[0],
-    filters: {
-      include: [],
-      exclude: [],
-    },
     whereFilter: createAndExpression([]),
     havingFilter: createAndExpression([]),
+    dimensionThresholdFilters: [],
     dimensionFilterExcludeMode: new Map(),
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
     dashboardSortType: SortType.VALUE,

@@ -4,7 +4,9 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { featureFlags } from "../../feature-flags";
 
-  $: isReadOnlyDashboard = $featureFlags.readOnly === true;
+  const { readOnly } = featureFlags;
+
+  $: isReadOnlyDashboard = $readOnly === true;
 </script>
 
 <Tooltip location="bottom" distance={8}>

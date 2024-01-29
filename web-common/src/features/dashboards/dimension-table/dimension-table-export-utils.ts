@@ -58,7 +58,7 @@ export function getDimensionTableExportArgs(
             sortType: getQuerySortType(dashboardState.dashboardSortType),
           },
         ],
-        where: sanitiseExpression(dashboardState.whereFilter),
+        where: sanitiseExpression(dashboardState.whereFilter, undefined),
         offset: "0",
       };
     },
