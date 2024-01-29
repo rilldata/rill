@@ -68,7 +68,13 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
 
-	rows, err := i.c.db.QueryxContext(ctx, q, name)
+	conn, release, err := i.c.acquireMetaConn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = release() }()
+
+	rows, err := conn.QueryxContext(ctx, q, name)
 	if err != nil {
 		return nil, err
 	}

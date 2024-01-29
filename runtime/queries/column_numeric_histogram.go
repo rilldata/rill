@@ -396,8 +396,8 @@ func histogramDiagnosticMethodSQL(ctx context.Context, olap drivers.OLAPStore, c
 	}
 
 	sanitizedColumnName := safeName(colName)
-	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 	if olap.Dialect() == drivers.DialectDuckDB {
+		selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
 		return fmt.Sprintf(
 			`
 			WITH data_table AS (
@@ -466,6 +466,7 @@ func histogramDiagnosticMethodSQL(ctx context.Context, olap drivers.OLAPStore, c
 		), nil
 	}
 	if olap.Dialect() == drivers.DialectClickHouse {
+		selectColumn := fmt.Sprintf("%s::Nullable(DOUBLE)", sanitizedColumnName)
 		return fmt.Sprintf(
 			`
 			WITH data_table AS (
@@ -539,7 +540,16 @@ func histogramDiagnosticMethodSQL(ctx context.Context, olap drivers.OLAPStore, c
 // getMinMaxRange get min, max and range of values for a given column. This is needed since nesting it in query is throwing error in 0.9.x
 func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, tableName string, priority int) (*float64, *float64, *float64, error) {
 	sanitizedColumnName := safeName(columnName)
-	selectColumn := fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
+	var selectColumn string
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		selectColumn = fmt.Sprintf("%s::DOUBLE", sanitizedColumnName)
+	case drivers.DialectClickHouse:
+		selectColumn = fmt.Sprintf("%s::Nullable(DOUBLE)", sanitizedColumnName)
+	default:
+		return nil, nil, nil, fmt.Errorf("unsupported dialect %s", olap.Dialect())
+	}
+
 	minMaxSQL := fmt.Sprintf(
 		`
 			SELECT

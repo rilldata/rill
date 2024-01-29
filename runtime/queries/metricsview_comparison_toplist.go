@@ -888,6 +888,10 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 		if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
 			return err
 		}
+	case drivers.DialectClickHouse:
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}

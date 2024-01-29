@@ -28,8 +28,6 @@ var (
 	queueLatencyHistogram = observability.Must(meter.Int64Histogram("queue_latency", metric.WithUnit("ms")))
 	queryLatencyHistogram = observability.Must(meter.Int64Histogram("query_latency", metric.WithUnit("ms")))
 	totalLatencyHistogram = observability.Must(meter.Int64Histogram("total_latency", metric.WithUnit("ms")))
-	// TODO: fix this
-	connectionsInUse = observability.Must(meter.Int64ObservableGauge("connections_in_use"))
 )
 
 var _ drivers.OLAPStore = &connection{}

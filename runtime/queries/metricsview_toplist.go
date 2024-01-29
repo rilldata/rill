@@ -141,6 +141,10 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
 			return err
 		}
+	case drivers.DialectClickHouse:
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap, q.MetricsView); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}

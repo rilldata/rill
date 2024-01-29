@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 
+	// import clickhouse driver
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 )
 
@@ -149,9 +150,6 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	olap, _ := to.(*connection)
 	if c == to {
-		if store, ok := from.AsFileStore(); ok {
-			return NewFileStoreToClickHouse(store, olap, c.logger), true
-		}
 		if from.Driver() == "s3" {
 			return NewS3Transporter(from, olap, c.logger), true
 		}
@@ -175,5 +173,5 @@ func (c *connection) EstimateSize() (int64, bool) {
 }
 
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
-	return func() {}, nil
+	return nil, fmt.Errorf("not implemented")
 }

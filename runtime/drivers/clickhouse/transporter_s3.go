@@ -17,7 +17,7 @@ type s3transporter struct {
 	logger *zap.Logger
 }
 
-var _ drivers.Transporter = &transporter{}
+var _ drivers.Transporter = &s3transporter{}
 
 type sourceProperties struct {
 	URI       string `mapstructure:"uri"`
@@ -52,16 +52,16 @@ func (t *s3transporter) Transfer(ctx context.Context, srcProps, sinkProps map[st
 	}
 	settings := fmt.Sprintf("url='%s', use_environment_credentials=%s", conf.URI, useEnvCreds)
 	if conf.AWSRegion != "" {
-		settings = settings + fmt.Sprintf(", region='%s'", conf.AWSRegion)
+		settings += fmt.Sprintf(", region='%s'", conf.AWSRegion)
 	}
 	if v, ok := config["aws_access_key_id"].(string); ok && v != "" {
-		settings = settings + fmt.Sprintf(", access_key_id='%s'", v)
+		settings += fmt.Sprintf(", access_key_id='%s'", v)
 	}
 	if v, ok := config["aws_secret_access_key"].(string); ok && v != "" {
-		settings = settings + fmt.Sprintf(", secret_access_key='%s'", v)
+		settings += fmt.Sprintf(", secret_access_key='%s'", v)
 	}
 	if v, ok := config["aws_access_token"].(string); ok && v != "" {
-		settings = settings + fmt.Sprintf(", session_token='%s'", v)
+		settings += fmt.Sprintf(", session_token='%s'", v)
 	}
 
 	collectionName := fmt.Sprintf("s3_%v", time.Now().Unix())
@@ -76,5 +76,4 @@ func (t *s3transporter) Transfer(ctx context.Context, srcProps, sinkProps map[st
 	}()
 
 	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM s3(%v)", collectionName))
-
 }

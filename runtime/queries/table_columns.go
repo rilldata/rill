@@ -128,7 +128,6 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
-
 }
 
 func (q *TableColumns) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {

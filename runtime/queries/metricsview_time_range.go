@@ -237,93 +237,54 @@ func (q *MetricsViewTimeRange) resolveClickHouse(ctx context.Context, olap drive
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
 
-	var minTime, maxTime time.Time
-	group, ctx := errgroup.WithContext(ctx)
+	rangeSQL := fmt.Sprintf(
+		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", max(%[1]s) - min(%[1]s) as \"interval\" FROM %[2]s %[3]s",
+		safeName(timeDim),
+		safeName(tableName),
+		filter,
+	)
 
-	group.Go(func() error {
-		minSQL := fmt.Sprintf(
-			"SELECT min(%[1]s) as \"min\" FROM %[2]s %[3]s",
-			safeName(timeDim),
-			safeName(tableName),
-			filter,
-		)
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            rangeSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
 
-		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:            minSQL,
-			Priority:         priority,
-			ExecutionTimeout: defaultExecutionTimeout,
-		})
+	if rows.Next() {
+		summary := &runtimev1.TimeRangeSummary{}
+		rowMap := make(map[string]any)
+		err = rows.MapScan(rowMap)
 		if err != nil {
 			return err
 		}
-		defer rows.Close()
-
-		if rows.Next() {
-			err = rows.Scan(&minTime)
-			if err != nil {
-				return err
+		if v := rowMap["min"]; v != nil {
+			minTime, ok := v.(time.Time)
+			if !ok {
+				return fmt.Errorf("not a timestamp column")
 			}
-		} else {
-			err = rows.Err()
-			if err != nil {
-				return err
+			maxTime := rowMap["max"].(time.Time)
+			summary.Min = timestamppb.New(minTime)
+			summary.Max = timestamppb.New(maxTime)
+			summary.Interval = &runtimev1.TimeRangeSummary_Interval{
+				Micros: maxTime.Sub(minTime).Microseconds(),
 			}
-			return errors.New("no rows returned for min time")
 		}
-
+		q.Result = &runtimev1.MetricsViewTimeRangeResponse{
+			TimeRangeSummary: summary,
+		}
 		return nil
-	})
+	}
 
-	group.Go(func() error {
-		maxSQL := fmt.Sprintf(
-			"SELECT max(%[1]s) as \"max\" FROM %[2]s %[3]s",
-			safeName(timeDim),
-			safeName(tableName),
-			filter,
-		)
-
-		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:            maxSQL,
-			Priority:         priority,
-			ExecutionTimeout: defaultExecutionTimeout,
-		})
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		if rows.Next() {
-			err = rows.Scan(&maxTime)
-			if err != nil {
-				return err
-			}
-		} else {
-			err = rows.Err()
-			if err != nil {
-				return err
-			}
-			return errors.New("no rows returned for max time")
-		}
-
-		return nil
-	})
-
-	err := group.Wait()
+	err = rows.Err()
 	if err != nil {
 		return err
 	}
 
-	summary := &runtimev1.TimeRangeSummary{}
-	summary.Min = timestamppb.New(minTime)
-	summary.Max = timestamppb.New(maxTime)
-	summary.Interval = &runtimev1.TimeRangeSummary_Interval{
-		Micros: maxTime.Sub(minTime).Microseconds(),
-	}
-	q.Result = &runtimev1.MetricsViewTimeRangeResponse{
-		TimeRangeSummary: summary,
-	}
-
-	return nil
+	return errors.New("no rows returned")
 }
 
 func (q *MetricsViewTimeRange) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
