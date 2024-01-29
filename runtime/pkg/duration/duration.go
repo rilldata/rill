@@ -105,12 +105,10 @@ func ParseISO8601(from string) (Duration, error) {
 // StandardDuration represents an ISO8601 duration with Rill-specific extensions.
 // See ParseISO8601 for details.
 type StandardDuration struct {
-	// Date component
-	Year  int
-	Month int
-	Week  int
-	Day   int
-	// Time Component
+	Year   int
+	Month  int
+	Week   int
+	Day    int
 	Hour   int
 	Minute int
 	Second int
@@ -140,18 +138,15 @@ func (d StandardDuration) Sub(t time.Time) time.Time {
 // TODO: Merge with timeutil.TruncateTime
 func (d StandardDuration) Truncate(t time.Time, firstDayOfWeek, firstMonthOfYear int) time.Time {
 	if d.Second != 0 {
-		n := t.Second()
-		n -= n % d.Second
+		n := t.Second() % d.Second
 		return t.Truncate(time.Second).Add(-time.Duration(n) * time.Second)
 	}
 	if d.Minute != 0 {
-		n := t.Minute()
-		n -= n % d.Minute
+		n := t.Minute() % d.Minute
 		return t.Truncate(time.Minute).Add(-time.Duration(n) * time.Minute)
 	}
 	if d.Hour != 0 {
-		n := t.Hour()
-		n -= n % d.Hour
+		n := t.Hour() % d.Hour
 		return t.Truncate(time.Hour).Add(-time.Duration(n) * time.Hour)
 	}
 	if d.Day != 0 {
@@ -169,7 +164,7 @@ func (d StandardDuration) Truncate(t time.Time, firstDayOfWeek, firstMonthOfYear
 		}
 
 		weekday := int(t.Weekday())
-		if weekday == 0 {
+		if weekday == 0 { // We treat Sunday as 7, not 0
 			weekday = 7
 		}
 
@@ -180,11 +175,11 @@ func (d StandardDuration) Truncate(t time.Time, firstDayOfWeek, firstMonthOfYear
 
 		_, weeksToSubtract := t.AddDate(0, 0, -daysToSubstract).ISOWeek()
 		weeksToSubtract-- // ISOWeek is 1-indexed
-		weeksToSubtract -= weeksToSubtract % d.Week
+		weeksToSubtract %= d.Week
 
 		daysToSubstract += weeksToSubtract * 7
 
-		return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()).AddDate(0, 0, -daysToSubstract)
+		return time.Date(t.Year(), t.Month(), t.Day()-daysToSubstract, 0, 0, 0, 0, t.Location())
 	}
 	if d.Month != 0 {
 		n := int(t.Month()) - 1 // Month is 1-indexed
