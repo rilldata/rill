@@ -118,12 +118,7 @@
                   class:select-none={header.column.getCanSort()}
                   on:click={header.column.getToggleSortingHandler()}
                 >
-                  <svelte:component
-                    this={flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
-                  />
+                  {header.column.columnDef.header}
                   {#if header.column.getIsSorted()}
                     {#if header.column.getIsSorted().toString() === "asc"}
                       <span>▼</span>
@@ -183,11 +178,16 @@
     border-bottom: 1px solid lightgray;
   }
 
+  thead th {
+    white-space: nowrap;
+  }
+
   th,
   td {
     padding: 10px;
     border: 1px solid #ddd;
     text-align: left;
+    min-width: 100px;
   }
 
   th {
