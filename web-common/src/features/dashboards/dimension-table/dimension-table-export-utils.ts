@@ -1,11 +1,11 @@
 import { getQuerySortType } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   TimeComparisonOption,
   TimeRangePreset,
@@ -16,7 +16,7 @@ import type {
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, Readable } from "svelte/store";
+import { Readable, derived, get } from "svelte/store";
 
 export function getDimensionTableExportArgs(
   ctx: StateManagers,
@@ -26,7 +26,7 @@ export function getDimensionTableExportArgs(
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
-      useMetaQuery(ctx),
+      useMetricsView(ctx),
     ],
     ([metricViewName, dashboardState, timeControlState, metricsView]) => {
       if (!metricsView.data || !timeControlState.ready) return undefined;

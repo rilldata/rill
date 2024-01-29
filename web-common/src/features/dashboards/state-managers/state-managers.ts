@@ -70,7 +70,7 @@ export function createStateManagers({
     },
   );
 
-  // Note: this is equivalent to `useMetaQuery`
+  // Note: this is equivalent to `useMetricsView`
   const metricsSpecStore: Readable<
     QueryObserverResult<V1MetricsViewSpec, RpcStatus>
   > = derived([runtime, metricsViewNameStore], ([r, metricViewName], set) => {

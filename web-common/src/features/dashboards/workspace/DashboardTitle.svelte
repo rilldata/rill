@@ -1,11 +1,11 @@
 <script lang="ts">
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useMetaQuery } from "../selectors";
+  import { useMetricsView } from "../selectors";
 
   export let metricViewName: string;
 
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
-  $: displayName = $metaQuery.data?.title;
+  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
+  $: displayName = $metricsView.data?.title;
 </script>
 
 <h1 class="ui-copy-dashboard-header">
