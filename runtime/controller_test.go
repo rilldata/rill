@@ -1187,11 +1187,31 @@ colors:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
-func must[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return v
+func TestAlert(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `__time,country
+2024-01-01T00:00:00Z,Denmark
+`,
+		"/sources/foo.yaml": `
+type: local_file
+path: data/foo.csv
+`,
+		"/models/bar.sql": `SELECT * FROM foo`,
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+dimensions:
+- column: country
+measures:
+- expression: count(*)
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)"}, []string{"country"})
+	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
 func newSource(name, path string) (*runtimev1.SourceV2, *runtimev1.Resource) {
@@ -1299,4 +1319,11 @@ func newMetricsView(name, table string, measures, dimensions []string) (*runtime
 		},
 	}
 	return metrics, metricsRes
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

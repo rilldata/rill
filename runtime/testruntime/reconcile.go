@@ -162,6 +162,13 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 		state := b.GetModel().State
 		state.RefreshedOn = nil
 		state.SpecHash = ""
+	case runtime.ResourceKindAlert:
+		state := b.GetAlert().State
+		state.SpecHash = ""
+		for _, e := range state.ExecutionHistory {
+			e.StartedOn = nil
+			e.FinishedOn = nil
+		}
 	}
 
 	// Hack to only compare the Resource field (not Meta)

@@ -13,13 +13,13 @@ import (
 var templatesFS embed.FS
 
 type Client struct {
-	sender    Sender
+	Sender    Sender
 	templates *template.Template
 }
 
 func New(sender Sender) *Client {
 	return &Client{
-		sender:    sender,
+		Sender:    sender,
 		templates: template.Must(template.New("").ParseFS(templatesFS, "templates/gen/*.html")),
 	}
 }
@@ -66,7 +66,7 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	}
 	html := buf.String()
 
-	return c.sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
 }
 
 type Alert struct {
@@ -108,7 +108,7 @@ func (c *Client) SendAlert(opts *Alert) error {
 	}
 	html := buf.String()
 
-	return c.sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
 }
 
 type CallToAction struct {
@@ -128,7 +128,7 @@ func (c *Client) SendCallToAction(opts *CallToAction) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
 }
 
 type OrganizationInvite struct {

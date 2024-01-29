@@ -279,11 +279,26 @@ func parseYAMLRefs(refs []yaml.Node) ([]ResourceName, error) {
 
 		// We support map refs of the form { kind: "kind", name: "my-resource" }
 		if ref.Kind == yaml.MappingNode {
-			var name ResourceName
-			err := ref.Decode(&name)
+			m := make(map[string]string)
+			err := ref.Decode(m)
 			if err != nil {
 				return nil, fmt.Errorf("invalid refs: %w", err)
 			}
+			if m["name"] == "" {
+				return nil, errors.New(`an object ref must provide the properties "kind" and "name" properties`)
+			}
+
+			var name ResourceName
+			name.Name = m["name"]
+
+			if m["kind"] != "" {
+				kind, err := ParseResourceKind(m["kind"])
+				if err != nil {
+					return nil, fmt.Errorf("invalid refs: %w", err)
+				}
+				name.Kind = kind
+			}
+
 			res = append(res, name)
 			continue
 		}

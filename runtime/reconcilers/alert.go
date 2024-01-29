@@ -361,7 +361,7 @@ func (r *AlertReconciler) executeAlert(ctx context.Context, self *runtimev1.Reso
 		// CurrentExecution will only be nil if we never made it to the point of checking the alert query.
 		a.State.CurrentExecution = &runtimev1.AlertExecution{
 			Adhoc:         adhocTrigger,
-			ExecutionTime: nil, // TODO: What to put here? triggerTime? watermark? nil? (the most recently tried interval?)
+			ExecutionTime: timestamppb.New(triggerTime), // TODO: What to put here? triggerTime? watermark? nil? (the most recently tried interval?)
 			StartedOn:     timestamppb.Now(),
 		}
 	}
@@ -454,28 +454,29 @@ func (r *AlertReconciler) checkAlert(ctx context.Context, self *runtimev1.Resour
 	}
 
 	// Connect to admin service
+	var openURL, editURL string
+	var queryForAttrs map[string]any
 	admin, release, err := r.C.Runtime.Admin(ctx, r.C.InstanceID)
-	if err != nil {
-		if errors.Is(err, runtime.ErrAdminNotConfigured) {
-			r.C.Logger.Info("Skipped checking alert because an admin service is not configured", zap.String("name", self.Meta.Name.Name))
-			return nil, false, errors.New("skipped checking alert because an admin service is not configured")
-		}
+	if err != nil && !errors.Is(err, runtime.ErrAdminNotConfigured) {
 		return nil, false, fmt.Errorf("failed to get admin client: %w", err)
 	}
-	defer release()
+	if err == nil {
+		// Connected successfully
+		defer release()
 
-	// Get alert metadata
-	meta, err := admin.GetAlertMetadata(ctx, a.Spec.QueryName, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
-	if err != nil {
-		return nil, false, fmt.Errorf("failed to get alert metadata: %w", err)
+		// Get alert metadata
+		meta, err := admin.GetAlertMetadata(ctx, a.Spec.QueryName, a.Spec.Annotations, a.Spec.GetQueryForUserId(), a.Spec.GetQueryForUserEmail())
+		if err != nil {
+			return nil, false, fmt.Errorf("failed to get alert metadata: %w", err)
+		}
+		queryForAttrs = meta.QueryForAttributes
+		openURL = meta.OpenURL
+		editURL = meta.EditURL
 	}
 
-	// Get query security attributes
-	var queryForAttrs map[string]any
+	// Let explicit queryForAttributes take precedence
 	if a.Spec.GetQueryForAttributes() != nil {
 		queryForAttrs = a.Spec.GetQueryForAttributes().AsMap()
-	} else {
-		queryForAttrs = meta.QueryForAttributes
 	}
 
 	// Create and execute query
@@ -508,8 +509,8 @@ func (r *AlertReconciler) checkAlert(ctx context.Context, self *runtimev1.Resour
 			Title:         a.Spec.Title,
 			ExecutionTime: executionTime,
 			FailRow:       row,
-			OpenLink:      meta.OpenURL,
-			EditLink:      meta.EditURL,
+			OpenLink:      openURL,
+			EditLink:      editURL,
 		})
 		if err != nil {
 			return nil, true, fmt.Errorf("failed to send email to %q: %w", recipient, err)
@@ -555,7 +556,7 @@ func calculateExecutionTimes(self *runtimev1.Resource, a *runtimev1.Alert, water
 	}
 
 	// Evaluate previous watermark (if there's no history, it defaults to the alert creation time)
-	previousWatermark := self.Meta.CreatedOn.AsTime()
+	var previousWatermark time.Time
 	for _, e := range a.State.ExecutionHistory {
 		if e.ExecutionTime != nil {
 			previousWatermark = e.ExecutionTime.AsTime()
@@ -597,6 +598,11 @@ func calculateExecutionTimes(self *runtimev1.Resource, a *runtimev1.Alert, water
 	} else {
 		// Floor
 		end = d.Truncate(end, 1, 1)
+	}
+
+	// If there isn't a previous watermark, we'll just check the current watermark.
+	if previousWatermark.IsZero() {
+		return []time.Time{end}, nil
 	}
 
 	// Skip if end isn't past the previous watermark (unless we're supposed to check unclosed intervals)
