@@ -1,15 +1,15 @@
+import { sliceColumnAxesDataForDef } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
+import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
-import { Readable, derived, readable } from "svelte/store";
-
-import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
-import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { CreateQueryResult } from "@tanstack/svelte-query/build/lib/types";
 import type { ColumnDef } from "@tanstack/svelte-table";
+import { Readable, derived, readable } from "svelte/store";
 import { getColumnDefForPivot } from "./pivot-column-definition";
 import {
   addExpandedDataToPivot,
@@ -30,9 +30,14 @@ import {
   getMeasuresInPivotColumns,
   getPivotConfigKey,
   getSortForAccessor,
+  getTotalColumnCount,
   reconcileMissingDimensionValues,
 } from "./pivot-utils";
-import type { PivotDataRow, PivotDataStoreConfig } from "./types";
+import type {
+  PivotDataRow,
+  PivotDataStore,
+  PivotDataStoreConfig,
+} from "./types";
 
 /**
  * Extract out config relevant to pivot from dashboard and meta store
@@ -210,6 +215,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         data: [],
         columnDef: [],
         assembled: false,
+        totalColumns: 0,
       });
     }
     const columnDimensionAxesQuery = getAxisForDimensions(
@@ -225,9 +231,10 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         if (columnDimensionAxes?.isFetching) {
           return columnSet({
             isFetching: true,
-            data: lastPivotData,
-            columnDef: lastPivotColumnDef,
+            data: [],
+            columnDef: [],
             assembled: false,
+            totalColumns: 0,
           });
         }
         const anchorDimension = rowDimensionNames[0];
@@ -237,6 +244,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           config,
           columnDimensionAxes?.data,
         );
+
+        const totalColumns = getTotalColumnCount(columnDimensionAxes?.data);
 
         const rowDimensionAxisQuery = getAxisForDimensions(
           ctx,
@@ -273,6 +282,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 data: lastPivotData,
                 columnDef: lastPivotColumnDef,
                 assembled: false,
+                totalColumns,
               });
             }
 
@@ -283,7 +293,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                 rowDimensionUnsortedAxis,
               );
 
-            const columnDef = getColumnDefForPivot(
+            let columnDef = getColumnDefForPivot(
               config,
               columnDimensionAxes?.data,
             );
@@ -294,6 +304,15 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               readable(null);
 
             if (colDimensionNames.length || !rowDimensionNames.length) {
+              const slicedAxesDataForPage = sliceColumnAxesDataForDef(
+                colDimensionNames,
+                columnDimensionAxes?.data,
+                config.pivot.columnPage,
+                measureNames.length,
+              );
+
+              columnDef = getColumnDefForPivot(config, slicedAxesDataForPage);
+
               initialTableCellQuery = createTableCellQuery(
                 ctx,
                 config,
@@ -323,6 +342,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                         data: rowTotals,
                         columnDef,
                         assembled: false,
+                        totalColumns,
                       });
                     }
                     cellData = initialTableCellData.data?.data || [];
@@ -427,6 +447,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                       data: assembledTableData,
                       columnDef,
                       assembled: true,
+                      totalColumns,
                     };
                   },
                 ).subscribe(cellSet);
@@ -438,15 +459,6 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
     ).subscribe(configSet);
   });
 }
-
-interface PivotDataState {
-  isFetching: boolean;
-  data: PivotDataRow[];
-  columnDef: ColumnDef<PivotDataRow>[];
-  assembled: boolean;
-}
-
-export type PivotDataStore = Readable<PivotDataState>;
 
 /**
  * Memoized version of the store. Currently, memoized by metrics view name.

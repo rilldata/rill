@@ -11,6 +11,7 @@ import type {
   V1MetricsViewAggregationSort,
   V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
+import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import type {
   PivotAxesData,
   PivotDataStoreConfig,
@@ -187,6 +188,21 @@ export function createIndexMap<T>(arr: T[]): Map<T, number> {
   return indexMap;
 }
 
+/**
+ * Returns total number of columns for the table
+ * excluding row and group totals columns
+ */
+export function getTotalColumnCount(
+  columnDimensionAxes: Record<string, string[]> | undefined,
+) {
+  if (!columnDimensionAxes) return 0;
+
+  return Object.values(columnDimensionAxes).reduce(
+    (acc, columnDimension) => acc * columnDimension.length,
+    1,
+  );
+}
+
 /***
  * Get filter to be applied on aggregrate query for table cells
  */
@@ -197,7 +213,6 @@ export function getFilterForPivotTable(
   isInitialTable = false,
   anchorDimension: string | undefined = undefined,
   yLimit = 100,
-  xLimit = 100,
 ) {
   // TODO: handle for already existing global filters
 
@@ -216,17 +231,18 @@ export function getFilterForPivotTable(
       },
     ];
   }
-  const colFilters = colDimensionNames
-    .filter((dimension) => dimension !== config.time.timeDimension)
-    .map((colDimensionName) => {
-      return {
-        name: colDimensionName,
-        in: colDimensionAxes?.[colDimensionName].slice(0, xLimit),
-      };
-    });
+
+  const colFiltersForPage = getColumnFiltersForPage(
+    colDimensionNames.filter(
+      (dimension) => dimension !== config.time.timeDimension,
+    ),
+    colDimensionAxes,
+    config.pivot.columnPage,
+    config.measureNames.length,
+  );
 
   const filters = {
-    include: [...colFilters, ...rowFilters],
+    include: [...colFiltersForPage, ...rowFilters],
     exclude: [],
   };
 

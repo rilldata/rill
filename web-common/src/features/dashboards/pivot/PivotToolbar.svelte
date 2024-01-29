@@ -40,7 +40,6 @@
       expandRow(i.toString(), 1); // Start from level 1
     }
 
-    console.log(expanded);
     metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
   }
 </script>

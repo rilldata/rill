@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { PivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
@@ -11,7 +10,7 @@
   } from "@tanstack/svelte-table";
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
-  import type { PivotDataRow } from "./types";
+  import type { PivotDataRow, PivotDataStore } from "./types";
 
   export let pivotDataStore: PivotDataStore;
 
@@ -21,6 +20,8 @@
   $: assembled = $pivotDataStore.assembled;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: sorting = $dashboardStore?.pivot?.sorting ?? [];
+  $: columnPage = $dashboardStore.pivot.columnPage;
+  $: totalColumns = $pivotDataStore.totalColumns;
 
   function handleExpandedChange(updater) {
     expanded = updater(expanded);
@@ -60,69 +61,117 @@
   );
 
   let table = createSvelteTable(options);
+
+  $: console.log(columnPage);
+
+  let containerRefElement;
+  // Called when the user scrolls and possibly on mount to fetch more data as the user scrolls
+  const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
+    if (containerRefElement) {
+      const { scrollWidth, scrollLeft, clientWidth } = containerRefElement;
+      const rightEndDistance = scrollWidth - scrollLeft - clientWidth;
+      const leftEndDistance = scrollLeft;
+
+      // Distance threshold (in pixels) for triggering data fetch
+      const threshold = 400;
+
+      // Fetch more data when scrolling near the right end
+      if (
+        rightEndDistance < threshold &&
+        !$pivotDataStore.isFetching &&
+        30 * columnPage < totalColumns
+      ) {
+        metricsExplorerStore.setPivotColumnPage(
+          $metricsViewName,
+          columnPage + 1,
+        );
+      }
+
+      // // Decrease page number when scrolling near the left end
+      // else if (
+      //   leftEndDistance < threshold &&
+      //   columnPage > 1 // Ensure we don't go below the first page
+      // ) {
+      //   metricsExplorerStore.setPivotColumnPage(
+      //     $metricsViewName,
+      //     columnPage - 1,
+      //   );
+      // }
+    }
+  };
 </script>
 
-<table class="mx-2">
-  <thead>
-    {#each $table.getHeaderGroups() as headerGroup}
-      <tr>
-        {#each headerGroup.headers as header}
-          <th colSpan={header.colSpan}>
-            {#if !header.isPlaceholder}
-              <button
-                class:cursor-pointer={header.column.getCanSort()}
-                class:select-none={header.column.getCanSort()}
-                on:click={header.column.getToggleSortingHandler()}
-              >
+<div
+  style:height="600px"
+  class="overflow-x-auto relative"
+  bind:this={containerRefElement}
+  on:scroll={() => handleScroll(containerRefElement)}
+>
+  <table class="mx-2">
+    <thead>
+      {#each $table.getHeaderGroups() as headerGroup}
+        <tr>
+          {#each headerGroup.headers as header}
+            <th colSpan={header.colSpan}>
+              {#if !header.isPlaceholder}
+                <button
+                  class:cursor-pointer={header.column.getCanSort()}
+                  class:select-none={header.column.getCanSort()}
+                  on:click={header.column.getToggleSortingHandler()}
+                >
+                  <svelte:component
+                    this={flexRender(
+                      header.column.columnDef.header,
+                      header.getContext(),
+                    )}
+                  />
+                  {#if header.column.getIsSorted()}
+                    {#if header.column.getIsSorted().toString() === "asc"}
+                      <span>▼</span>
+                    {:else}
+                      <span>▲</span>
+                    {/if}
+                  {/if}
+                </button>
+              {/if}
+            </th>
+          {/each}
+        </tr>
+      {/each}
+    </thead>
+    <tbody>
+      {#each $table.getRowModel().rows as row}
+        <tr>
+          {#each row.getVisibleCells() as cell}
+            {@const result =
+              typeof cell.column.columnDef.cell === "function"
+                ? cell.column.columnDef.cell(cell.getContext())
+                : cell.column.columnDef.cell}
+            <td class="ui-copy-number">
+              {#if result?.component && result?.props}
+                <svelte:component
+                  this={result.component}
+                  {...result.props}
+                  {assembled}
+                />
+              {:else if typeof result === "string" || typeof result === "number"}
+                {result}
+              {:else}
+                <!-- flexRender is REALLY slow https://github.com/TanStack/table/issues/4962#issuecomment-1821011742 -->
                 <svelte:component
                   this={flexRender(
-                    header.column.columnDef.header,
-                    header.getContext(),
+                    cell.column.columnDef.cell,
+                    cell.getContext(),
                   )}
                 />
-                {#if header.column.getIsSorted()}
-                  {#if header.column.getIsSorted().toString() === "asc"}
-                    <span>▼</span>
-                  {:else}
-                    <span>▲</span>
-                  {/if}
-                {/if}
-              </button>
-            {/if}
-          </th>
-        {/each}
-      </tr>
-    {/each}
-  </thead>
-  <tbody>
-    {#each $table.getRowModel().rows as row}
-      <tr>
-        {#each row.getVisibleCells() as cell}
-          {@const result =
-            typeof cell.column.columnDef.cell === "function"
-              ? cell.column.columnDef.cell(cell.getContext())
-              : cell.column.columnDef.cell}
-          <td class="ui-copy-number">
-            {#if result?.component && result?.props}
-              <svelte:component
-                this={result.component}
-                {...result.props}
-                {assembled}
-              />
-            {:else if typeof result === "string" || typeof result === "number"}
-              {result}
-            {:else}
-              <!-- flexRender is REALLY slow https://github.com/TanStack/table/issues/4962#issuecomment-1821011742 -->
-              <svelte:component
-                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
-              />
-            {/if}
-          </td>
-        {/each}
-      </tr>
-    {/each}
-  </tbody>
-</table>
+              {/if}
+            </td>
+          {/each}
+        </tr>
+      {/each}
+    </tbody>
+  </table>
+</div>
 
 <style>
   table {

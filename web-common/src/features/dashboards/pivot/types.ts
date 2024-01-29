@@ -6,7 +6,22 @@ import type {
   V1MetricsViewFilter,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
+import type {
+  ColumnDef,
+  ExpandedState,
+  SortingState,
+} from "@tanstack/svelte-table";
+import type { Readable } from "svelte/motion";
+
+export interface PivotDataState {
+  isFetching: boolean;
+  data: PivotDataRow[];
+  columnDef: ColumnDef<PivotDataRow>[];
+  assembled: boolean;
+  totalColumns: number; // total columns excluding row and group totals columns
+}
+
+export type PivotDataStore = Readable<PivotDataState>;
 
 export interface PivotState {
   active: boolean;
@@ -14,6 +29,7 @@ export interface PivotState {
   columns: string[];
   expanded: ExpandedState;
   sorting: SortingState;
+  columnPage: number;
   rowJoinType: "flat" | "nest";
 }
 

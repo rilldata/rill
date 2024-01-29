@@ -149,6 +149,7 @@ export function getDefaultMetricsExplorerEntity(
       rowJoinType: "nest",
       expanded: {},
       sorting: [],
+      columnPage: 1,
     },
     contextColumnWidths: { ...contextColWidthDefaults },
   };
