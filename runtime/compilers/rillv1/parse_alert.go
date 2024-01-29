@@ -20,7 +20,7 @@ type AlertYAML struct {
 	Title      string           `yaml:"title"`
 	Refresh    *ScheduleYAML    `yaml:"refresh"`
 	Watermark  string           `yaml:"watermark"` // options: "trigger_time", "inherit"
-	Intervals  *struct {
+	Intervals  struct {
 		Duration      string `yaml:"duration"`
 		Limit         uint   `yaml:"limit"`
 		CheckUnclosed bool   `yaml:"check_unclosed"`

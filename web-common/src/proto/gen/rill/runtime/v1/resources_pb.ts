@@ -2073,22 +2073,27 @@ export class AlertState extends Message<AlertState> {
   specHash = "";
 
   /**
-   * @generated from field: google.protobuf.Timestamp next_run_on = 2;
+   * @generated from field: string refs_hash = 2;
+   */
+  refsHash = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp next_run_on = 3;
    */
   nextRunOn?: Timestamp;
 
   /**
-   * @generated from field: rill.runtime.v1.AlertExecution current_execution = 3;
+   * @generated from field: rill.runtime.v1.AlertExecution current_execution = 4;
    */
   currentExecution?: AlertExecution;
 
   /**
-   * @generated from field: repeated rill.runtime.v1.AlertExecution execution_history = 4;
+   * @generated from field: repeated rill.runtime.v1.AlertExecution execution_history = 5;
    */
   executionHistory: AlertExecution[] = [];
 
   /**
-   * @generated from field: uint32 execution_count = 5;
+   * @generated from field: uint32 execution_count = 6;
    */
   executionCount = 0;
 
@@ -2101,10 +2106,11 @@ export class AlertState extends Message<AlertState> {
   static readonly typeName = "rill.runtime.v1.AlertState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "next_run_on", kind: "message", T: Timestamp },
-    { no: 3, name: "current_execution", kind: "message", T: AlertExecution },
-    { no: 4, name: "execution_history", kind: "message", T: AlertExecution, repeated: true },
-    { no: 5, name: "execution_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 2, name: "refs_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "next_run_on", kind: "message", T: Timestamp },
+    { no: 4, name: "current_execution", kind: "message", T: AlertExecution },
+    { no: 5, name: "execution_history", kind: "message", T: AlertExecution, repeated: true },
+    { no: 6, name: "execution_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertState {

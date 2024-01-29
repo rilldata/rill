@@ -102,17 +102,22 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{}
 	}
 
-	// Use a hash of execution-related fields from the spec to determine if something has changed
-	hash, err := r.executionSpecHash(ctx, a.Spec, self.Meta.Refs)
+	// TODO: Comment
+	specHash, err := r.executionSpecHash(ctx, a.Spec, self.Meta.Refs)
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
+	}
+	refsHash, err := r.refsStateHash(ctx, self.Meta.Refs)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
 	}
 
 	// Determine whether to trigger
 	adhocTrigger := a.Spec.Trigger
-	hashTrigger := a.State.SpecHash != hash
+	specHashTrigger := a.State.SpecHash != specHash
+	refsHashTrigger := a.State.RefsHash != refsHash
 	scheduleTrigger := a.State.NextRunOn != nil && !a.State.NextRunOn.AsTime().After(time.Now())
-	trigger := adhocTrigger || hashTrigger || scheduleTrigger
+	trigger := adhocTrigger || specHashTrigger || refsHashTrigger || scheduleTrigger
 
 	// If not triggering now, update NextRunOn and retrigger when it falls due
 	if !trigger {
@@ -126,10 +131,24 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{}
 	}
 
+	// If the spec hash changed, clear all alert state
+	if specHashTrigger {
+		a.State.SpecHash = specHash
+		a.State.RefsHash = ""
+		a.State.NextRunOn = nil
+		a.State.CurrentExecution = nil
+		a.State.ExecutionHistory = nil
+		a.State.ExecutionCount = 0
+		err = r.C.UpdateState(ctx, self.Meta.Name, self)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
+	}
+
 	// Evaluate the trigger time of the alert. If triggered by schedule, we use the "clean" scheduled time.
 	// Note: Correction for watermarks and intervals is done in checkAlert.
 	var triggerTime time.Time
-	if scheduleTrigger && !adhocTrigger && !hashTrigger {
+	if scheduleTrigger && !adhocTrigger && !specHashTrigger && !refsHashTrigger {
 		triggerTime = a.State.NextRunOn.AsTime()
 	} else {
 		triggerTime = time.Now()
@@ -158,9 +177,9 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
-	// Update spec hash
-	if hashTrigger {
-		a.State.SpecHash = hash
+	// Update refs hash
+	if refsHashTrigger {
+		a.State.RefsHash = refsHash
 		err = r.C.UpdateState(ctx, self.Meta.Name, self)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -175,6 +194,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 }
 
 // executionSpecHash computes a hash of the alert properties that impact execution.
+// NOTE: Unlike other resources, we don't include the refs' state version in the hash since it's managed separately using refsStateHash.
 func (r *AlertReconciler) executionSpecHash(ctx context.Context, spec *runtimev1.AlertSpec, refs []*runtimev1.ResourceName) (string, error) {
 	hash := md5.New()
 
@@ -188,25 +208,31 @@ func (r *AlertReconciler) executionSpecHash(ctx context.Context, spec *runtimev1
 		if err != nil {
 			return "", err
 		}
+	}
 
-		// Incorporate the ref's state version in the hash if and only if we are supposed to trigger when a ref has refreshed (denoted by RefreshSchedule.RefUpdate).
-		if spec.RefreshSchedule != nil && spec.RefreshSchedule.RefUpdate {
-			// Note: Only writing the state version to the hash, not spec version, because it doesn't matter whether the spec/meta changes, only whether the state changes.
-			r, err := r.C.Get(ctx, ref, false)
-			var stateVersion int64
-			if err == nil {
-				stateVersion = r.Meta.StateVersion
-			} else {
-				stateVersion = -1
-			}
-			err = binary.Write(hash, binary.BigEndian, stateVersion)
-			if err != nil {
-				return "", err
-			}
+	if spec.RefreshSchedule != nil {
+		_, err := hash.Write([]byte(spec.RefreshSchedule.TimeZone))
+		if err != nil {
+			return "", err
 		}
 	}
 
-	_, err := hash.Write([]byte(spec.QueryName))
+	err := binary.Write(hash, binary.BigEndian, spec.WatermarkInherit)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = hash.Write([]byte(spec.IntervalsIsoDuration))
+	if err != nil {
+		return "", err
+	}
+
+	err = binary.Write(hash, binary.BigEndian, spec.IntervalsCheckUnclosed)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = hash.Write([]byte(spec.QueryName))
 	if err != nil {
 		return "", err
 	}
@@ -231,6 +257,38 @@ func (r *AlertReconciler) executionSpecHash(ctx context.Context, spec *runtimev1
 	err = binary.Write(hash, binary.BigEndian, spec.TimeoutSeconds)
 	if err != nil {
 		return "", err
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
+// refsStateHash computes a hash of the refs and their state versions.
+func (r *AlertReconciler) refsStateHash(ctx context.Context, refs []*runtimev1.ResourceName) (string, error) {
+	hash := md5.New()
+
+	for _, ref := range refs { // Refs are always sorted
+		// Write name
+		_, err := hash.Write([]byte(ref.Kind))
+		if err != nil {
+			return "", err
+		}
+		_, err = hash.Write([]byte(ref.Name))
+		if err != nil {
+			return "", err
+		}
+
+		// Note: Only writing the state version to the hash, not spec version, because it doesn't matter whether the spec/meta changes, only whether the state changes.
+		r, err := r.C.Get(ctx, ref, false)
+		var stateVersion int64
+		if err == nil {
+			stateVersion = r.Meta.StateVersion
+		} else {
+			stateVersion = -1
+		}
+		err = binary.Write(hash, binary.BigEndian, stateVersion)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	return hex.EncodeToString(hash.Sum(nil)), nil
@@ -330,10 +388,25 @@ func (r *AlertReconciler) executeAlert(ctx context.Context, self *runtimev1.Reso
 	// Evaluate and invoke intervals and add to execution history
 	dirty := false
 	if executionErr == nil {
-		ts, err := calculateExecutionTimes(self, a, watermark)
+		// Evaluate previous watermark (if any)
+		var previousWatermark time.Time
+		for _, e := range a.State.ExecutionHistory {
+			if e.ExecutionTime != nil {
+				previousWatermark = e.ExecutionTime.AsTime()
+				break
+			}
+		}
+
+		// Evaluate watermarks to run for
+		ts, err := calculateExecutionTimes(self, a, watermark, previousWatermark)
 		if err != nil {
 			// TODO: Okay to return? More than usually unexpected error.
 			return false, err
+		}
+
+		if len(ts) == 0 {
+			// TODO: Debug log
+			r.C.Logger.Info("Skipped alert check because watermark has not advanced by a full interval", zap.String("name", self.Meta.Name.Name), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", a.Spec.IntervalsIsoDuration))
 		}
 
 		for _, t := range ts {
@@ -381,8 +454,6 @@ func (r *AlertReconciler) executeAlert(ctx context.Context, self *runtimev1.Reso
 // executeSingleAlert runs the alert query and maybe sends emails for a single execution time.
 // It returns true if an error occurred after some or all emails were sent.
 func (r *AlertReconciler) executeSingleAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, executionTime time.Time, adhocTrigger bool) (bool, error) {
-	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
-
 	// Create new execution and save in State.CurrentExecution
 	a.State.CurrentExecution = &runtimev1.AlertExecution{
 		Adhoc:         adhocTrigger,
@@ -420,23 +491,12 @@ func (r *AlertReconciler) executeSingleAlert(ctx context.Context, self *runtimev
 		return false, alertErr
 	}
 
-	// There was an error. Add it to the execution history.
+	// There was an error. By returning it, the caller will add it to the execution history.
 	if errors.Is(alertErr, context.Canceled) {
 		alertErr = fmt.Errorf("Alert check was interrupted after some emails were sent. The alert will not automatically retry.")
 	} else {
 		alertErr = fmt.Errorf("Alert check failed: %v", alertErr.Error())
 	}
-	a.State.CurrentExecution.Result = &runtimev1.AssertionResult{
-		Status:       runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR,
-		ErrorMessage: alertErr.Error(),
-	}
-
-	// Commit CurrentExecution to history
-	err = r.popCurrentExecution(ctx, self, a)
-	if err != nil {
-		return true, err
-	}
-
 	return dirtyErr, alertErr
 }
 
@@ -549,19 +609,10 @@ func (r *AlertReconciler) computeInheritedWatermark(ctx context.Context, refs []
 
 // calculateExecutionTimes calculates the execution times for an alert, taking into consideration the alert's intervals configuration and previous executions.
 // If the alert is not configured to run on intervals, it will return a slice containing only the current watermark.
-func calculateExecutionTimes(self *runtimev1.Resource, a *runtimev1.Alert, watermark time.Time) ([]time.Time, error) {
+func calculateExecutionTimes(self *runtimev1.Resource, a *runtimev1.Alert, watermark, previousWatermark time.Time) ([]time.Time, error) {
 	// If the alert is not configured to run on intervals, check it just for the current watermark.
 	if a.Spec.IntervalsIsoDuration == "" {
 		return []time.Time{watermark}, nil
-	}
-
-	// Evaluate previous watermark (if there's no history, it defaults to the alert creation time)
-	var previousWatermark time.Time
-	for _, e := range a.State.ExecutionHistory {
-		if e.ExecutionTime != nil {
-			previousWatermark = e.ExecutionTime.AsTime()
-			break
-		}
 	}
 
 	// Note: The watermark and previousWatermark may be unaligned with the alert's interval duration.

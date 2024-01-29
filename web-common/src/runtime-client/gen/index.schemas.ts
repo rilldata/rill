@@ -1893,6 +1893,7 @@ export interface V1AssertionResult {
 
 export interface V1AlertState {
   specHash?: string;
+  refsHash?: string;
   nextRunOn?: string;
   currentExecution?: V1AlertExecution;
   executionHistory?: V1AlertExecution[];

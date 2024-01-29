@@ -296,10 +296,11 @@ message AlertSpec {
 
 message AlertState {
   string spec_hash = 1;
-  google.protobuf.Timestamp next_run_on = 2;
-  AlertExecution current_execution = 3;
-  repeated AlertExecution execution_history = 4;
-  uint32 execution_count = 5;
+  string refs_hash = 2;
+  google.protobuf.Timestamp next_run_on = 3;
+  AlertExecution current_execution = 4;
+  repeated AlertExecution execution_history = 5;
+  uint32 execution_count = 6;
 }
 
 message AlertExecution {
