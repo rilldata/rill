@@ -3,17 +3,19 @@
 
   export let size = "1em";
   export let status: EntityStatus = EntityStatus.Idle;
+
   export let duration = 500;
 </script>
 
 <div
-  class="status bg-gradient-to-b from-primary-500 to-secondary-500"
+  class="status bg-gradient-to-b from-primary-700 to-secondary-700"
   class:running={status === EntityStatus.Running}
   class:idle={status === EntityStatus.Idle}
   style="
 		--status-transition: {duration}ms;
 		--size: {size};
-		width: {size}; height: {size};"
+		width: {size};
+    height: {size};"
 />
 
 <style>
