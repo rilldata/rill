@@ -143,7 +143,7 @@ export function getDefaultMetricsExplorerEntity(
     temporaryFilterName: null,
     pinIndex: -1,
     pivot: {
-      active: false,
+      active: true,
       rows: [],
       columns: [],
       rowJoinType: "nest",
