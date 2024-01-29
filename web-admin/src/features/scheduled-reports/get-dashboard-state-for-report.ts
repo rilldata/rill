@@ -1,3 +1,4 @@
+import type { CompoundQueryResult } from "@rilldata/web-common/features/compound-query-result";
 import { getSortType } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
@@ -23,7 +24,7 @@ import {
   type V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, type Readable, readable } from "svelte/store";
+import { derived, get, readable } from "svelte/store";
 
 type ReportQueryRequest =
   | V1MetricsViewAggregationRequest
@@ -40,60 +41,61 @@ type QueryMapperArgs<R extends ReportQueryRequest> = {
   executionTime: string;
 };
 
-type ParsedReportQuery = {
-  ready: boolean;
+type DashboardStateForReport = {
   state?: string;
   metricsView?: string;
-  error?: string;
 };
 
 /**
  * Reports manually written through file artifacts won't have the UI to feed the url state.
  * Hence we are building the state from the query args in the report.
  */
-export function parseReportQuery(
+export function getDashboardStateForReport(
   reportResource: V1Resource,
   executionTime: string,
-): Readable<ParsedReportQuery> {
+): CompoundQueryResult<DashboardStateForReport> {
   if (!reportResource?.report?.spec?.queryName)
     return readable({
-      ready: false,
+      isFetching: false,
+      error: "",
     });
 
   let metricsViewName: string = "";
-  const req: ReportQueryRequest = correctRequest(
+  const req: ReportQueryRequest = convertRequestKeysToCamelCase(
     JSON.parse(reportResource.report.spec.queryArgsJson),
   );
-  let queryMapper: (args: QueryMapperArgs<ReportQueryRequest>) => void;
+  let getDashboardState: (
+    args: QueryMapperArgs<ReportQueryRequest>,
+  ) => MetricsExplorerEntity;
 
   // get metrics view name and the query mapper function based on the query name.
   switch (reportResource.report.spec.queryName) {
     case "MetricsViewAggregation":
       metricsViewName = (req as V1MetricsViewAggregationRequest).metricsView;
-      queryMapper = mapMetricsViewAggregationRequest;
+      getDashboardState = getDashboardFromAggregationRequest;
       break;
     case "MetricsViewToplist":
       metricsViewName = (req as V1MetricsViewToplistRequest).metricsViewName;
-      queryMapper = mapMetricsViewToplistRequest;
+      getDashboardState = getDashboardFromToplistRequest;
       break;
     case "MetricsViewRows":
       metricsViewName = (req as V1MetricsViewRowsRequest).metricsViewName;
-      queryMapper = mapMetricsViewRowsRequest;
+      getDashboardState = getDashboardFromRowsRequest;
       break;
     case "MetricsViewTimeSeries":
       metricsViewName = (req as V1MetricsViewTimeSeriesRequest).metricsViewName;
-      queryMapper = mapMetricsViewTimeSeriesRequest;
+      getDashboardState = getDashboardFromTimeSeriesRequest;
       break;
     case "MetricsViewComparison":
       metricsViewName = (req as V1MetricsViewComparisonRequest).metricsViewName;
-      queryMapper = mapMetricsViewComparisonRequest;
+      getDashboardState = getDashboardFromComparisonRequest;
       break;
   }
 
   if (!metricsViewName) {
     // error state
     return readable({
-      ready: true,
+      isFetching: false,
       error:
         "Failed to find metrics view name. Please check the format of the report.",
     });
@@ -112,13 +114,14 @@ export function parseReportQuery(
     ([metricsViewResource, timeRangeSummary]) => {
       if (!metricsViewResource.data || !timeRangeSummary.data)
         return {
-          ready: false,
+          isFetching: true,
+          error: "",
         };
 
       if (metricsViewResource.error || timeRangeSummary.error) {
         // error state
         return {
-          ready: true,
+          isFetching: false,
           error:
             metricsViewResource.error?.message ??
             timeRangeSummary.error?.message,
@@ -126,23 +129,25 @@ export function parseReportQuery(
       }
 
       initLocalUserPreferenceStore(metricsViewName);
-      const dashboard = getDefaultMetricsExplorerEntity(
+      const defaultDashboard = getDefaultMetricsExplorerEntity(
         metricsViewName,
         metricsViewResource.data,
         timeRangeSummary.data,
       );
-      queryMapper({
-        dashboard,
+      const newDashboard = getDashboardState({
+        dashboard: defaultDashboard,
         req,
         metricsView: metricsViewResource.data,
         timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
         executionTime,
       });
-      console.log(dashboard);
       return {
-        ready: true,
-        state: getProtoFromDashboardState(dashboard),
-        metricsView: metricsViewName,
+        isFetching: false,
+        error: "",
+        data: {
+          state: getProtoFromDashboardState(newDashboard),
+          metricsView: metricsViewName,
+        },
       };
     },
   );
@@ -152,14 +157,16 @@ export function parseReportQuery(
  * This method corrects the underscore naming to camel case.
  * This is the drawback of storing the request object as is.
  */
-function correctRequest(req: Record<string, any>): Record<string, any> {
+function convertRequestKeysToCamelCase(
+  req: Record<string, any>,
+): Record<string, any> {
   const newReq: Record<string, any> = {};
 
   for (const key in req) {
     const newKey = key.replace(/_(\w)/g, (_, c: string) => c.toUpperCase());
     const val = req[key];
     if (val && typeof val === "object" && !("length" in val)) {
-      newReq[newKey] = correctRequest(val);
+      newReq[newKey] = convertRequestKeysToCamelCase(val);
     } else {
       newReq[newKey] = val;
     }
@@ -168,39 +175,47 @@ function correctRequest(req: Record<string, any>): Record<string, any> {
   return newReq;
 }
 
-function mapMetricsViewAggregationRequest({
+function getDashboardFromAggregationRequest({
   req,
   dashboard,
 }: QueryMapperArgs<V1MetricsViewAggregationRequest>) {
   if (req.where) dashboard.whereFilter = req.where;
   // TODO
+
+  return dashboard;
 }
 
-function mapMetricsViewToplistRequest({
+function getDashboardFromToplistRequest({
   req,
   dashboard,
 }: QueryMapperArgs<V1MetricsViewToplistRequest>) {
   if (req.where) dashboard.whereFilter = req.where;
   // TODO
+
+  return dashboard;
 }
 
-function mapMetricsViewRowsRequest({
+function getDashboardFromRowsRequest({
   req,
   dashboard,
 }: QueryMapperArgs<V1MetricsViewRowsRequest>) {
   if (req.where) dashboard.whereFilter = req.where;
   // TODO
+
+  return dashboard;
 }
 
-function mapMetricsViewTimeSeriesRequest({
+function getDashboardFromTimeSeriesRequest({
   req,
   dashboard,
 }: QueryMapperArgs<V1MetricsViewTimeSeriesRequest>) {
   if (req.where) dashboard.whereFilter = req.where;
   // TODO
+
+  return dashboard;
 }
 
-function mapMetricsViewComparisonRequest({
+function getDashboardFromComparisonRequest({
   req,
   dashboard,
   metricsView,
@@ -213,6 +228,7 @@ function mapMetricsViewComparisonRequest({
     dashboard.selectedTimeRange = getSelectedTimeRange(
       req.timeRange,
       timeRangeSummary,
+      req.timeRange.isoDuration,
       executionTime,
     );
   }
@@ -225,14 +241,15 @@ function mapMetricsViewComparisonRequest({
     dashboard.selectedComparisonTimeRange = getSelectedTimeRange(
       req.comparisonTimeRange,
       timeRangeSummary,
+      req.comparisonTimeRange.isoOffset,
       executionTime,
     );
 
     dashboard.selectedComparisonTimeRange.interval =
       dashboard.selectedTimeRange?.interval;
+    dashboard.showTimeComparison = true;
   }
 
-  dashboard.selectedComparisonDimension = req.dimension.name;
   dashboard.visibleMeasureKeys = new Set(req.measures.map((m) => m.name));
 
   // if the selected sort is a measure set it to leaderboardMeasureName
@@ -248,11 +265,14 @@ function mapMetricsViewComparisonRequest({
   }
 
   dashboard.selectedDimensionName = req.dimension.name;
+
+  return dashboard;
 }
 
 function getSelectedTimeRange(
   timeRange: V1TimeRange,
   timeRangeSummary: V1TimeRangeSummary,
+  duration: string,
   executionTime: string,
 ) {
   let selectedTimeRange: DashboardTimeControls;
@@ -263,12 +283,14 @@ function getSelectedTimeRange(
       start: new Date(timeRange.start),
       end: new Date(timeRange.end),
     };
-  } else {
+  } else if (duration) {
     selectedTimeRange = isoDurationToFullTimeRange(
-      timeRange.isoDuration,
+      duration,
       new Date(timeRangeSummary.min),
       new Date(executionTime),
     );
+  } else {
+    return undefined;
   }
 
   selectedTimeRange.interval = timeRange.roundToGrain;

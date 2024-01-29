@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { parseReportQuery } from "@rilldata/web-admin/features/scheduled-reports/query-mapper";
+  import { getDashboardStateForReport } from "@rilldata/web-admin/features/scheduled-reports/get-dashboard-state-for-report";
   import { useReport } from "@rilldata/web-admin/features/scheduled-reports/selectors";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
@@ -18,12 +18,15 @@
 
   $: report = useReport($runtime.instanceId, reportId);
 
-  let parsedReport: ReturnType<typeof parseReportQuery>;
-  $: parsedReport = parseReportQuery($report.data?.resource, executionTime);
+  let dashboardStateForReport: ReturnType<typeof getDashboardStateForReport>;
+  $: dashboardStateForReport = getDashboardStateForReport(
+    $report.data?.resource,
+    executionTime,
+  );
 
-  $: if ($parsedReport.state) {
+  $: if ($dashboardStateForReport.data) {
     goto(
-      `/${organization}/${project}/${$parsedReport.metricsView}?state=${$parsedReport.state}`,
+      `/${organization}/${project}/${$dashboardStateForReport.data.metricsView}?state=${$dashboardStateForReport.data.state}`,
     );
   }
 
@@ -32,7 +35,7 @@
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    {#if !$parsedReport.ready}
+    {#if $dashboardStateForReport.isFetching}
       <div class="h-36 mt-10">
         <Spinner
           bg="linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)"
@@ -41,11 +44,11 @@
           duration={725}
         />
       </div>
-    {:else if $parsedReport.error}
+    {:else if $dashboardStateForReport.error}
       <div class="flex flex-col gap-y-2">
-        <h2 class="text-lg font-semibold">Download failed</h2>
+        <h2 class="text-lg font-semibold">Unable to open report</h2>
         <CtaMessage>
-          {$parsedReport.error}
+          {$dashboardStateForReport.error}
         </CtaMessage>
       </div>
       <CtaButton
