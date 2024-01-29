@@ -4,51 +4,52 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
+  import { getFormattedHeaderValues } from "./pivot-utils";
 
   const stateManagers = getStateManagers();
   const {
     dashboardStore,
     selectors: {
-      measures: { measureLabel },
-      dimensions: { getDimensionDisplayName },
+      measures: { visibleMeasures },
+      dimensions: { visibleDimensions },
     },
     metricsViewName,
   } = stateManagers;
 
-  $: colMeasures = $dashboardStore?.pivot?.columns?.map((col) => ({
-    id: col,
-    title: $measureLabel(col),
-  }));
-
-  $: rowDimensions = $dashboardStore?.pivot?.rows?.map((row) => ({
-    id: row,
-    title: $getDimensionDisplayName(row),
-  }));
+  $: headerData = getFormattedHeaderValues(
+    $dashboardStore?.pivot,
+    $visibleMeasures,
+    $visibleDimensions,
+  );
 </script>
 
 <div class="header">
   <div class="header-row">
     <span class="row-label"> <Column size="16px" /> Columns</span>
     <DragList
-      on:update={(e) =>
+      removable
+      items={headerData.columns}
+      style="horizontal"
+      on:update={(e) => {
         metricsExplorerStore.setPivotColumns(
           $metricsViewName,
           e.detail?.map((item) => item.id),
-        )}
-      items={colMeasures}
-      style="horizontal"
+        );
+      }}
     />
   </div>
   <div class="header-row">
     <span class="row-label"> <Row size="16px" /> Rows</span>
 
     <DragList
-      on:update={(e) =>
+      removable
+      on:update={(e) => {
         metricsExplorerStore.setPivotRows(
           $metricsViewName,
           e.detail?.map((item) => item.id),
-        )}
-      items={rowDimensions}
+        );
+      }}
+      items={headerData.rows}
       style="horizontal"
     />
   </div>

@@ -7,6 +7,7 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import type {
   MetricsViewFilterCond,
+  MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   V1MetricsViewAggregationSort,
   V1MetricsViewFilter,
@@ -19,6 +20,7 @@ import type {
   PivotTimeConfig,
   TimeFilters,
 } from "./types";
+import { PivotChipType } from "./types";
 
 export function getMeasuresInPivotColumns(
   pivot: PivotState,
@@ -49,6 +51,85 @@ export function getDimensionsInPivotColumns(
   return columns.filter(
     (colName) => measures.findIndex((m) => m?.name === colName) === -1,
   );
+}
+
+export function getFormattedColumn(
+  pivot: PivotState,
+  allMeasures: MetricsViewSpecMeasureV2[],
+  alldimensions: MetricsViewSpecDimensionV2[],
+) {
+  const measures: string[] = [];
+  const dimensions: string[] = [];
+  const time: string[] = [];
+
+  const { columns } = pivot;
+
+  columns.forEach((colName) => {
+    const measure = allMeasures.find((m) => m?.name === colName);
+    const dimension = alldimensions.find((d) => d?.name === colName);
+
+    if (measure && measure.name) {
+      measures.push(measure.name);
+    } else if (dimension && dimension.name) {
+      dimensions.push(dimension.name);
+    } else {
+      time.push(colName);
+    }
+  });
+
+  return {
+    measures: measures.map((m) => {
+      return { id: m, title: m, type: PivotChipType.Measure };
+    }),
+    dimensions: dimensions.map((d) => {
+      return { id: d, title: d, type: PivotChipType.Dimension };
+    }),
+    time: time.map((t) => {
+      return { id: t, title: t, type: PivotChipType.Time };
+    }),
+  };
+}
+
+export function getFormattedRow(
+  pivot: PivotState,
+  allDimensions: MetricsViewSpecDimensionV2[],
+) {
+  const dimensions: string[] = [];
+  const time: string[] = [];
+  const { rows } = pivot;
+
+  rows.forEach((rowName) => {
+    const dimension = allDimensions.find((m) => m?.name === rowName);
+
+    if (dimension && dimension.name) {
+      dimensions.push(dimension.name);
+    } else {
+      time.push(rowName);
+    }
+  });
+
+  return {
+    dimensions: dimensions.map((m) => {
+      return { id: m, title: m, type: PivotChipType.Dimension };
+    }),
+    time: time.map((t) => {
+      return { id: t, title: t, type: PivotChipType.Time };
+    }),
+  };
+}
+
+export function getFormattedHeaderValues(
+  pivot: PivotState,
+  allMeasures: MetricsViewSpecMeasureV2[],
+  alldimensions: MetricsViewSpecDimensionV2[],
+) {
+  const rows = getFormattedRow(pivot, alldimensions);
+  const columns = getFormattedColumn(pivot, allMeasures, alldimensions);
+
+  return {
+    rows: [...rows.dimensions, ...rows.time],
+    columns: [...columns.dimensions, ...columns.measures, ...columns.time],
+  };
 }
 
 /**
