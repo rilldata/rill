@@ -9,7 +9,7 @@ export const MainLineColor = "var(--color-primary-500)";
  * including when there is no scrubbing and thus the
  * whole chart is focused.
  */
-export const MainAreaColor = "var(--color-primary-200)";
+export const MainAreaColor = "var(--color-primary-300)";
 
 /**
  * Color used for the time series comparison

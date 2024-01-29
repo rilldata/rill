@@ -161,7 +161,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     <!-- clip rects for segments -->
     <defs>
       <linearGradient id="gradient-{id}" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="5%" stop-color={areaColor} />
+        <stop offset="5%" stop-color={areaColor} stop-opacity={stopOpacity} />
         <stop offset="95%" stop-color={areaColor} stop-opacity={stopOpacity} />
       </linearGradient>
       <clipPath id="path-segments-{id}">
