@@ -33,8 +33,7 @@
   </RadixH1>
   <div class="flex flex-col gap-y-2">
     <Subheading twColor="text-slate-600">
-      You're on your way to building fast, exploratory dashboards your team will
-      actually use.
+      Build fast operational dashboards that your team will actually use.
     </Subheading>
     <Subheading twColor="text-slate-600">Let’s get started.</Subheading>
   </div>
