@@ -88,13 +88,13 @@ import type {
   V1TriggerRedeployResponse,
   V1TriggerRedeployRequest,
   V1GetAlertMetaResponse,
-  AdminServiceGetAlertMetaParams,
+  AdminServiceGetAlertMetaBody,
   V1GetRepoMetaResponse,
   AdminServiceGetRepoMetaParams,
   V1PullVirtualRepoResponse,
   AdminServicePullVirtualRepoParams,
   V1GetReportMetaResponse,
-  AdminServiceGetReportMetaParams,
+  AdminServiceGetReportMetaBody,
   V1RevokeServiceAuthTokenResponse,
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
@@ -2964,67 +2964,51 @@ export const createAdminServiceTriggerRedeploy = <
  */
 export const adminServiceGetAlertMeta = (
   projectId: string,
-  params?: AdminServiceGetAlertMetaParams,
-  signal?: AbortSignal,
+  adminServiceGetAlertMetaBody: AdminServiceGetAlertMetaBody,
 ) => {
   return httpClient<V1GetAlertMetaResponse>({
     url: `/v1/projects/${projectId}/alerts/meta`,
-    method: "get",
-    params,
-    signal,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceGetAlertMetaBody,
   });
 };
 
-export const getAdminServiceGetAlertMetaQueryKey = (
-  projectId: string,
-  params?: AdminServiceGetAlertMetaParams,
-) => [`/v1/projects/${projectId}/alerts/meta`, ...(params ? [params] : [])];
-
-export type AdminServiceGetAlertMetaQueryResult = NonNullable<
+export type AdminServiceGetAlertMetaMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceGetAlertMeta>>
 >;
-export type AdminServiceGetAlertMetaQueryError = RpcStatus;
+export type AdminServiceGetAlertMetaMutationBody = AdminServiceGetAlertMetaBody;
+export type AdminServiceGetAlertMetaMutationError = RpcStatus;
 
 export const createAdminServiceGetAlertMeta = <
-  TData = Awaited<ReturnType<typeof adminServiceGetAlertMeta>>,
   TError = RpcStatus,
->(
-  projectId: string,
-  params?: AdminServiceGetAlertMetaParams,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetAlertMeta>>,
-      TError,
-      TData
-    >;
-  },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceGetAlertMetaQueryKey(projectId, params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetAlertMeta>>
-  > = ({ signal }) => adminServiceGetAlertMeta(projectId, params, signal);
-
-  const query = createQuery<
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceGetAlertMeta>>,
     TError,
-    TData
-  >({
-    queryKey,
-    queryFn,
-    enabled: !!projectId,
-    ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+    { projectId: string; data: AdminServiceGetAlertMetaBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
 
-  query.queryKey = queryKey;
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceGetAlertMeta>>,
+    { projectId: string; data: AdminServiceGetAlertMetaBody }
+  > = (props) => {
+    const { projectId, data } = props ?? {};
 
-  return query;
+    return adminServiceGetAlertMeta(projectId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceGetAlertMeta>>,
+    TError,
+    { projectId: string; data: AdminServiceGetAlertMetaBody },
+    TContext
+  >(mutationFn, mutationOptions);
 };
-
 /**
  * @summary GetRepoMeta returns credentials and other metadata for accessing a project's repo
  */
@@ -3162,67 +3146,52 @@ export const createAdminServicePullVirtualRepo = <
  */
 export const adminServiceGetReportMeta = (
   projectId: string,
-  params?: AdminServiceGetReportMetaParams,
-  signal?: AbortSignal,
+  adminServiceGetReportMetaBody: AdminServiceGetReportMetaBody,
 ) => {
   return httpClient<V1GetReportMetaResponse>({
     url: `/v1/projects/${projectId}/reports/meta`,
-    method: "get",
-    params,
-    signal,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceGetReportMetaBody,
   });
 };
 
-export const getAdminServiceGetReportMetaQueryKey = (
-  projectId: string,
-  params?: AdminServiceGetReportMetaParams,
-) => [`/v1/projects/${projectId}/reports/meta`, ...(params ? [params] : [])];
-
-export type AdminServiceGetReportMetaQueryResult = NonNullable<
+export type AdminServiceGetReportMetaMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceGetReportMeta>>
 >;
-export type AdminServiceGetReportMetaQueryError = RpcStatus;
+export type AdminServiceGetReportMetaMutationBody =
+  AdminServiceGetReportMetaBody;
+export type AdminServiceGetReportMetaMutationError = RpcStatus;
 
 export const createAdminServiceGetReportMeta = <
-  TData = Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
   TError = RpcStatus,
->(
-  projectId: string,
-  params?: AdminServiceGetReportMetaParams,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
-      TError,
-      TData
-    >;
-  },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceGetReportMetaQueryKey(projectId, params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetReportMeta>>
-  > = ({ signal }) => adminServiceGetReportMeta(projectId, params, signal);
-
-  const query = createQuery<
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
     TError,
-    TData
-  >({
-    queryKey,
-    queryFn,
-    enabled: !!projectId,
-    ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+    { projectId: string; data: AdminServiceGetReportMetaBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
 
-  query.queryKey = queryKey;
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
+    { projectId: string; data: AdminServiceGetReportMetaBody }
+  > = (props) => {
+    const { projectId, data } = props ?? {};
 
-  return query;
+    return adminServiceGetReportMeta(projectId, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceGetReportMeta>>,
+    TError,
+    { projectId: string; data: AdminServiceGetReportMetaBody },
+    TContext
+  >(mutationFn, mutationOptions);
 };
-
 /**
  * @summary RevokeServiceAuthToken revoke the service auth token
  */

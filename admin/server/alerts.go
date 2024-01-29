@@ -33,7 +33,7 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !permissions.ReadProdStatus {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read report meta")
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read alert meta")
 	}
 
 	if proj.ProdBranch != req.Branch {

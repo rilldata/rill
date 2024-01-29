@@ -44,9 +44,14 @@ func (h *Handle) GetAlertMetadata(ctx context.Context, alertName string, annotat
 		return nil, err
 	}
 
-	return &drivers.AlertMetadata{
-		OpenURL:            res.OpenUrl,
-		EditURL:            res.EditUrl,
-		QueryForAttributes: res.QueryForAttributes.AsMap(),
-	}, nil
+	meta := &drivers.AlertMetadata{
+		OpenURL: res.OpenUrl,
+		EditURL: res.EditUrl,
+	}
+
+	if res.QueryForAttributes != nil {
+		meta.QueryForAttributes = res.QueryForAttributes.AsMap()
+	}
+
+	return meta, nil
 }

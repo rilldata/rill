@@ -3481,13 +3481,13 @@ func local_request_AdminService_PullVirtualRepo_0(ctx context.Context, marshaler
 
 }
 
-var (
-	filter_AdminService_GetReportMeta_0 = &utilities.DoubleArray{Encoding: map[string]int{"project_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
-
 func request_AdminService_GetReportMeta_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetReportMetaRequest
 	var metadata runtime.ServerMetadata
+
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 
 	var (
 		val string
@@ -3504,13 +3504,6 @@ func request_AdminService_GetReportMeta_0(ctx context.Context, marshaler runtime
 	protoReq.ProjectId, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_GetReportMeta_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetReportMeta(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -3522,6 +3515,10 @@ func local_request_AdminService_GetReportMeta_0(ctx context.Context, marshaler r
 	var protoReq GetReportMetaRequest
 	var metadata runtime.ServerMetadata
 
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	var (
 		val string
 		ok  bool
@@ -3537,13 +3534,6 @@ func local_request_AdminService_GetReportMeta_0(ctx context.Context, marshaler r
 	protoReq.ProjectId, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_GetReportMeta_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := server.GetReportMeta(ctx, &protoReq)
@@ -3551,13 +3541,13 @@ func local_request_AdminService_GetReportMeta_0(ctx context.Context, marshaler r
 
 }
 
-var (
-	filter_AdminService_GetAlertMeta_0 = &utilities.DoubleArray{Encoding: map[string]int{"project_id": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
-
 func request_AdminService_GetAlertMeta_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetAlertMetaRequest
 	var metadata runtime.ServerMetadata
+
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
 
 	var (
 		val string
@@ -3574,13 +3564,6 @@ func request_AdminService_GetAlertMeta_0(ctx context.Context, marshaler runtime.
 	protoReq.ProjectId, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_GetAlertMeta_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.GetAlertMeta(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -3592,6 +3575,10 @@ func local_request_AdminService_GetAlertMeta_0(ctx context.Context, marshaler ru
 	var protoReq GetAlertMetaRequest
 	var metadata runtime.ServerMetadata
 
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
 	var (
 		val string
 		ok  bool
@@ -3607,13 +3594,6 @@ func local_request_AdminService_GetAlertMeta_0(ctx context.Context, marshaler ru
 	protoReq.ProjectId, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project_id", err)
-	}
-
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_GetAlertMeta_0); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := server.GetAlertMeta(ctx, &protoReq)
@@ -5730,7 +5710,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("GET", pattern_AdminService_GetReportMeta_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AdminService_GetReportMeta_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -5755,7 +5735,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("GET", pattern_AdminService_GetAlertMeta_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AdminService_GetAlertMeta_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -7338,7 +7318,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("GET", pattern_AdminService_GetReportMeta_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AdminService_GetReportMeta_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -7360,7 +7340,7 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("GET", pattern_AdminService_GetAlertMeta_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AdminService_GetAlertMeta_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)

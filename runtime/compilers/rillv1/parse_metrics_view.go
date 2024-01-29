@@ -537,6 +537,7 @@ func validateISO8601(isoDuration string, onlyStandard bool) error {
 		if onlyStandard {
 			return fmt.Errorf("only standard durations are allowed")
 		}
+		return nil
 	}
 
 	if sd.Second != 0 {

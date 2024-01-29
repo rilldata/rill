@@ -20,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	"github.com/rilldata/rill/runtime/pkg/securetoken"
+	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -306,6 +307,9 @@ func mapGRPCError(err error) error {
 	}
 	if errors.Is(err, context.Canceled) {
 		return status.Error(codes.Canceled, err.Error())
+	}
+	if errors.Is(err, queries.ErrForbidden) {
+		return ErrForbidden
 	}
 	return err
 }

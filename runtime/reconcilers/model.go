@@ -101,6 +101,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		// Note: Not exiting early. It might need to be created/materialized., and we need to set the correct retrigger time based on the refresh schedule.
 	}
 
+	// Exit early if disabled
+	if model.Spec.RefreshSchedule != nil && model.Spec.RefreshSchedule.Disable {
+		return runtime.ReconcileResult{}
+	}
+
 	// Check refs - stop if any of them are invalid
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
@@ -153,10 +158,6 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	trigger = trigger || model.State.SpecHash != hash
 	trigger = trigger || !exists
 	trigger = trigger || !refreshOn.IsZero() && time.Now().After(refreshOn)
-
-	// Don't trigger if disabled
-	disabled := model.Spec.RefreshSchedule != nil && model.Spec.RefreshSchedule.Disable
-	trigger = trigger && !disabled
 
 	// We support "delayed materialization" for models. It will materialize a model if it stays unchanged for a duration of time.
 	// This is useful to support keystroke-by-keystroke editing.

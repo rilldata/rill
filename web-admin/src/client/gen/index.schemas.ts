@@ -29,10 +29,14 @@ export type AdminServiceSearchProjectNamesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceGetReportMetaParams = {
+export type AdminServiceGetReportMetaBodyAnnotations = {
+  [key: string]: string;
+};
+
+export type AdminServiceGetReportMetaBody = {
   branch?: string;
   report?: string;
-  annotations?: string;
+  annotations?: AdminServiceGetReportMetaBodyAnnotations;
 };
 
 export type AdminServicePullVirtualRepoParams = {
@@ -43,10 +47,12 @@ export type AdminServicePullVirtualRepoParams = {
 
 export type AdminServiceGetRepoMetaParams = { branch?: string };
 
-export type AdminServiceGetAlertMetaParams = {
+export type AdminServiceGetAlertMetaBodyAnnotations = { [key: string]: string };
+
+export type AdminServiceGetAlertMetaBody = {
   branch?: string;
   alert?: string;
-  annotations?: string;
+  annotations?: AdminServiceGetAlertMetaBodyAnnotations;
   queryForUserId?: string;
   queryForUserEmail?: string;
 };

@@ -1363,7 +1363,7 @@ paths:
       tags:
         - AdminService
   /v1/projects/{projectId}/alerts/meta:
-    get:
+    post:
       summary: GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
       operationId: AdminService_GetAlertMeta
       responses:
@@ -1380,27 +1380,24 @@ paths:
           in: path
           required: true
           type: string
-        - name: branch
-          in: query
-          required: false
-          type: string
-        - name: alert
-          in: query
-          required: false
-          type: string
-        - name: annotations
-          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-          in: query
-          required: false
-          type: string
-        - name: queryForUserId
-          in: query
-          required: false
-          type: string
-        - name: queryForUserEmail
-          in: query
-          required: false
-          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branch:
+                type: string
+              alert:
+                type: string
+              annotations:
+                type: object
+                additionalProperties:
+                  type: string
+              queryForUserId:
+                type: string
+              queryForUserEmail:
+                type: string
       tags:
         - AdminService
   /v1/projects/{projectId}/repo/meta:
@@ -1461,7 +1458,7 @@ paths:
       tags:
         - AdminService
   /v1/projects/{projectId}/reports/meta:
-    get:
+    post:
       summary: GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
       operationId: AdminService_GetReportMeta
       responses:
@@ -1478,19 +1475,20 @@ paths:
           in: path
           required: true
           type: string
-        - name: branch
-          in: query
-          required: false
-          type: string
-        - name: report
-          in: query
-          required: false
-          type: string
-        - name: annotations
-          description: This is a request variable of the map type. The query format is "map_name[key]=value", e.g. If the map name is Age, the key type is string, and the value type is integer, the query parameter is expressed as Age["bob"]=18
-          in: query
-          required: false
-          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              branch:
+                type: string
+              report:
+                type: string
+              annotations:
+                type: object
+                additionalProperties:
+                  type: string
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:

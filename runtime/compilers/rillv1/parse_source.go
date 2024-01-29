@@ -9,6 +9,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/robfig/cron/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -185,12 +186,22 @@ func parseDuration(v any) (time.Duration, error) {
 		if err == nil {
 			return time.Duration(res) * time.Second, nil
 		}
-		// Try parsing with a unit
+		// Try parsing as a Go duration string
 		d, err := time.ParseDuration(v)
-		if err != nil {
-			return 0, fmt.Errorf("invalid time duration value %v: %w", v, err)
+		if err == nil {
+			return d, nil
 		}
-		return d, nil
+		// Try parsing as an ISO 8601 duration string
+		id, err := duration.ParseISO8601(v)
+		if err == nil {
+			d, ok := id.EstimateNative()
+			if !ok {
+				return 0, fmt.Errorf("time duration string %q can't be resolved to an absolute duration", v)
+			}
+			return d, nil
+		}
+		// Give up
+		return 0, fmt.Errorf("invalid time duration string %q", v)
 	default:
 		return 0, fmt.Errorf("invalid time duration value <%v>", v)
 	}

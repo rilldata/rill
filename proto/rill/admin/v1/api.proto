@@ -392,12 +392,18 @@ service AdminService {
 
   // GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
   rpc GetReportMeta(GetReportMetaRequest) returns (GetReportMetaResponse) {
-    option (google.api.http) = {get: "/v1/projects/{project_id}/reports/meta"};
+    option (google.api.http) = {
+      post: "/v1/projects/{project_id}/reports/meta",
+      body: "*"
+    };
   }
 
   // GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
   rpc GetAlertMeta(GetAlertMetaRequest) returns (GetAlertMetaResponse) {
-    option (google.api.http) = {get: "/v1/projects/{project_id}/alerts/meta"};
+    option (google.api.http) = {
+      post: "/v1/projects/{project_id}/alerts/meta",
+      body: "*"
+    };
   }
 
   // CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog

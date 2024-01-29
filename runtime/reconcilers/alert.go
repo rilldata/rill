@@ -26,6 +26,8 @@ const alertDefaultIntervalsLimit = 25
 
 const alertQueryPriority = 1
 
+const alertCheckDefaultTimeout = 5 * time.Minute
+
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindAlert, newAlertReconciler)
 }
@@ -95,6 +97,11 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
+	// Exit early if disabled
+	if a.Spec.RefreshSchedule != nil && a.Spec.RefreshSchedule.Disable {
+		return runtime.ReconcileResult{}
+	}
+
 	// Use a hash of execution-related fields from the spec to determine if something has changed
 	hash, err := r.executionSpecHash(ctx, a.Spec, self.Meta.Refs)
 	if err != nil {
@@ -105,8 +112,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	adhocTrigger := a.Spec.Trigger
 	hashTrigger := a.State.SpecHash != hash
 	scheduleTrigger := a.State.NextRunOn != nil && !a.State.NextRunOn.AsTime().After(time.Now())
-	disabled := a.Spec.RefreshSchedule != nil && a.Spec.RefreshSchedule.Disable
-	trigger := !disabled && (adhocTrigger || hashTrigger || scheduleTrigger)
+	trigger := adhocTrigger || hashTrigger || scheduleTrigger
 
 	// If not triggering now, update NextRunOn and retrigger when it falls due
 	if !trigger {
@@ -266,6 +272,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 	a.State.CurrentExecution.FinishedOn = timestamppb.Now()
 	a.State.ExecutionHistory = slices.Insert(a.State.ExecutionHistory, 0, a.State.CurrentExecution)
 	a.State.CurrentExecution = nil
+	a.State.ExecutionCount++
 
 	if len(a.State.ExecutionHistory) > alertExecutionHistoryLimit {
 		a.State.ExecutionHistory = a.State.ExecutionHistory[:alertExecutionHistoryLimit]
@@ -297,6 +304,14 @@ func (r *AlertReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 // executeAlert runs queries and (maybe) sends emails for the alert. It also adds entries to a.State.ExecutionHistory.
 // By default, an alert is checked once for the current watermark, but if a.Spec.IntervalsIsoDuration is set, it will be checked *for each* interval that has elapsed since the previous execution watermark.
 func (r *AlertReconciler) executeAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, triggerTime time.Time, adhocTrigger bool) (bool, error) {
+	// Enforce timeout
+	timeout := alertCheckDefaultTimeout
+	if a.Spec.TimeoutSeconds > 0 {
+		timeout = time.Duration(a.Spec.TimeoutSeconds) * time.Second
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	// Check refs
 	executionErr := checkRefs(ctx, r.C, self.Meta.Refs)
 

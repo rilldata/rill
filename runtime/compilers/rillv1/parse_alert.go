@@ -36,10 +36,6 @@ type AlertYAML struct {
 			Attributes map[string]any `yaml:"attributes"`
 		} `yaml:"for"`
 	} `yaml:"query"`
-	Export struct {
-		Format string `yaml:"format"`
-		Limit  uint   `yaml:"limit"`
-	} `yaml:"export"`
 	Email struct {
 		Recipients    []string `yaml:"recipients"`
 		OnPass        *bool    `yaml:"on_pass"`
@@ -56,7 +52,7 @@ func (p *Parser) parseAlert(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &AlertYAML{}
 	if node.YAMLRaw != "" {
-		// Can't use node.YAML because we want to set KnownFields for reports
+		// Can't use node.YAML because we want to set KnownFields for alerts
 		dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
 		dec.KnownFields(true)
 		if err := dec.Decode(tmp); err != nil {
@@ -178,7 +174,7 @@ func (p *Parser) parseAlert(ctx context.Context, node *Node) error {
 		}
 	}
 
-	// Track report
+	// Track alert
 	r, err := p.insertResource(ResourceKindAlert, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err

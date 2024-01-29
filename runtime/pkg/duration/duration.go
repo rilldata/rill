@@ -14,6 +14,7 @@ import (
 type Duration interface {
 	Add(t time.Time) time.Time
 	Sub(t time.Time) time.Time
+	EstimateNative() (time.Duration, bool)
 }
 
 // Regexes used by ParseISO8601
@@ -132,6 +133,16 @@ func (d StandardDuration) Sub(t time.Time) time.Time {
 	return t.Add(-td)
 }
 
+// EstimateNative estimates the duration as a native Go duration.
+func (d StandardDuration) EstimateNative() (time.Duration, bool) {
+	res := time.Duration(d.Second)*time.Second + time.Duration(d.Minute)*time.Minute + time.Duration(d.Hour)*time.Hour
+	res += time.Duration(d.Day) * 24 * time.Hour
+	res += time.Duration(d.Week*7) * 24 * time.Hour
+	res += time.Duration(d.Month*30) * 24 * time.Hour
+	res += time.Duration(d.Year*365) * 24 * time.Hour
+	return res, true
+}
+
 // Truncate truncates a timestamp to the duration.
 // TODO: Handle if multiple parts are set
 // TODO: Check DST
@@ -208,6 +219,10 @@ func (d InfDuration) Sub(t time.Time) time.Time {
 	return time.Time{}
 }
 
+func (d InfDuration) EstimateNative() (time.Duration, bool) {
+	return 0, false
+}
+
 type TruncToDateDuration struct {
 	anchor timeutil.TimeGrain
 }
@@ -218,4 +233,8 @@ func (d TruncToDateDuration) Add(t time.Time) time.Time {
 
 func (d TruncToDateDuration) Sub(t time.Time) time.Time {
 	return timeutil.TruncateTime(t, d.anchor, t.Location(), 1, 1) // TODO: get first day and month
+}
+
+func (d TruncToDateDuration) EstimateNative() (time.Duration, bool) {
+	return 0, false
 }

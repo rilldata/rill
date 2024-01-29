@@ -34,8 +34,6 @@ type MetricsViewAggregation struct {
 	Offset             int64                                        `json:"offset,omitempty"`
 	PivotOn            []string                                     `json:"pivot_on,omitempty"`
 	SecurityAttributes map[string]any                               `json:"security_attributes,omitempty"`
-	// MetricsView        *runtimev1.MetricsViewSpec                   `json:"-"`
-	// ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity         `json:"security"`
 
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }

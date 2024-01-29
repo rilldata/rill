@@ -104,6 +104,11 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		// Note: Not exiting early. It might need to be (re-)ingested, and we need to set the correct retrigger time based on the refresh schedule.
 	}
 
+	// Exit early if disabled
+	if src.Spec.RefreshSchedule != nil && src.Spec.RefreshSchedule.Disable {
+		return runtime.ReconcileResult{}
+	}
+
 	// Check refs - stop if any of them are invalid
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
@@ -151,10 +156,6 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	trigger = trigger || src.State.SpecHash != hash                         // If the spec has changed
 	trigger = trigger || !tableExists                                       // If the table has disappeared
 	trigger = trigger || !refreshOn.IsZero() && time.Now().After(refreshOn) // If the schedule says it's time
-
-	// Don't trigger if disabled
-	disabled := src.Spec.RefreshSchedule != nil && src.Spec.RefreshSchedule.Disable
-	trigger = trigger && !disabled
 
 	// Exit early if no trigger
 	if !trigger {
