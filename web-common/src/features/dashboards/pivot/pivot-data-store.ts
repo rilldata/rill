@@ -1,5 +1,5 @@
 import { sliceColumnAxesDataForDef } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
-import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -44,7 +44,7 @@ import type {
  */
 function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
   return derived(
-    [useMetaQuery(ctx), ctx.dashboardStore, useTimeControlStore(ctx)],
+    [useMetricsView(ctx), ctx.dashboardStore, useTimeControlStore(ctx)],
     ([metricsView, dashboardStore, timeControls]) => {
       const { rows, columns } = dashboardStore.pivot;
 
