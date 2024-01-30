@@ -144,16 +144,6 @@ func (q *MetricsViewComparison) calculateMeasuresMeta() error {
 		}
 	}
 
-	err := validateSort(q.Sort, q.ComparisonMeasures, compare)
-	if err != nil {
-		return err
-	}
-
-	err = validateMeasureAliases(q.Aliases, q.ComparisonMeasures, compare)
-	if err != nil {
-		return err
-	}
-
 	q.measuresMeta = make(map[string]metricsViewMeasureMeta, len(q.Measures))
 
 	inner := 1
@@ -178,6 +168,17 @@ func (q *MetricsViewComparison) calculateMeasuresMeta() error {
 		}
 		inner++
 	}
+
+	err := validateSort(q.Sort, q.measuresMeta, compare)
+	if err != nil {
+		return err
+	}
+
+	err = validateMeasureAliases(q.Aliases, q.measuresMeta, compare)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -1134,7 +1135,7 @@ func timeRangeClause(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec, dia
 	return clause, nil
 }
 
-func validateSort(sorts []*runtimev1.MetricsViewComparisonSort, comparisonMeasures []string, hasComparison bool) error {
+func validateSort(sorts []*runtimev1.MetricsViewComparisonSort, measuresMeta map[string]metricsViewMeasureMeta, hasComparison bool) error {
 	if len(sorts) == 0 {
 		return fmt.Errorf("sorting is required")
 	}
@@ -1165,15 +1166,8 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort, comparisonMeasur
 			if s.SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE ||
 				s.SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA ||
 				s.SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA {
-				found := false
-				for _, m := range comparisonMeasures {
-					if m == s.Name {
-						found = true
-						break
-					}
-				}
-				if !found {
-					return fmt.Errorf("sort measure '%s' is not present in the comparison measures", s.Name)
+				if !measuresMeta[s.Name].expand {
+					return fmt.Errorf("comparison not enabled for sort measure '%s'", s.Name)
 				}
 			}
 		}
@@ -1181,24 +1175,14 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort, comparisonMeasur
 	return nil
 }
 
-func validateMeasureAliases(aliases []*runtimev1.MetricsViewComparisonMeasureAlias, comparisonMeasures []string, hasComparison bool) error {
+func validateMeasureAliases(aliases []*runtimev1.MetricsViewComparisonMeasureAlias, measuresMeta map[string]metricsViewMeasureMeta, hasComparison bool) error {
 	for _, alias := range aliases {
 		switch alias.Type {
 		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
 			runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
 			runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
-			if !hasComparison {
+			if !hasComparison || !measuresMeta[alias.Name].expand {
 				return fmt.Errorf("comparison not enabled for alias %s", alias.Alias)
-			}
-			found := false
-			for _, m := range comparisonMeasures {
-				if m == alias.Name {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return fmt.Errorf("alias measure '%s' is not present in the comparison measures", alias.Name)
 			}
 		}
 	}
