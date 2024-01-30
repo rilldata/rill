@@ -223,7 +223,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 			return "", nil, err
 		}
 		if strings.TrimSpace(clause) != "" {
-			whereClause += " AND " + clause
+			whereClause += fmt.Sprintf(" AND (%s)", clause)
 		}
 		args = append(args, clauseArgs...)
 	}
