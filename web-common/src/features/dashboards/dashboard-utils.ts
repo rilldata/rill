@@ -44,6 +44,13 @@ export function prepareSortedQueryBody(
     end: timeControls.comparisonTimeEnd,
   };
 
+  // api now expects measure names for which comparison are calculated
+  // to keep current behaviour add sort measure name to comparison measures
+  let comparisonMeasures: string[] = [];
+  if (comparisonTimeRange.start && comparisonTimeRange.end && sortMeasureName) {
+    comparisonMeasures = [sortMeasureName];
+  }
+
   // FIXME: As a temporary way of enabling sorting by dimension values,
   // Benjamin and Egor put in a patch that will allow us to use the
   // dimension name as the measure name. This will need to be updated
@@ -53,6 +60,8 @@ export function prepareSortedQueryBody(
     // note also that we need to remove the comparison time range
     // when sorting by dimension values, or the query errors
     comparisonTimeRange = undefined;
+    // and we need to remove the comparison measures
+    comparisonMeasures = [];
   }
 
   const querySortType = getQuerySortType(sortType);
@@ -67,6 +76,7 @@ export function prepareSortedQueryBody(
           name: n,
         },
     ),
+    comparisonMeasures: comparisonMeasures,
     timeRange: {
       start: timeControls.timeStart,
       end: timeControls.timeEnd,

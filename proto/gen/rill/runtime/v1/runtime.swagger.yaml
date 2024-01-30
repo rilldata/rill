@@ -1131,6 +1131,10 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+              comparisonMeasures:
+                type: array
+                items:
+                  type: string
               sort:
                 type: array
                 items:
@@ -3557,6 +3561,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+      comparisonMeasures:
+        type: array
+        items:
+          type: string
       sort:
         type: array
         items:
