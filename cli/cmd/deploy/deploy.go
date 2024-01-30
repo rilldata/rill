@@ -147,7 +147,10 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		// If not, we still navigate user to login and then fail afterwards.
 		if !rillv1beta.HasRillProject(localProjectPath) {
 			if !cfg.IsAuthenticated() {
-				_ = loginWithTelemetry(ctx, ch, "", tel)
+				err := loginWithTelemetry(ctx, ch, "", tel)
+				if err != nil {
+					ch.Printer.PrintlnWarn(fmt.Sprintf("Login failed with error: %s", err.Error()))
+				}
 				fmt.Println()
 			}
 
@@ -163,7 +166,10 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		if err != nil {
 			// It's not a valid remote for Github. But we still navigate user to login and then fail afterwards.
 			if !cfg.IsAuthenticated() {
-				_ = loginWithTelemetry(ctx, ch, "", tel)
+				err := loginWithTelemetry(ctx, ch, "", tel)
+				if err != nil {
+					ch.Printer.PrintlnWarn(fmt.Sprintf("Login failed with error: %s", err.Error()))
+				}
 				fmt.Println()
 			}
 			if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
