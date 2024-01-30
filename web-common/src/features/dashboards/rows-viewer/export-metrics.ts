@@ -1,33 +1,29 @@
+import { getMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type { TimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
-import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
 import type {
   V1ExportFormat,
   createQueryServiceExport,
-  V1Expression,
 } from "@rilldata/web-common/runtime-client";
 
 export default async function exportMetrics({
+  ctx,
   query,
-  metricViewName,
   format,
-  timeControlStore,
-  measureFilters,
 }: {
+  ctx: StateManagers;
   query: ReturnType<typeof createQueryServiceExport>;
-  metricViewName: string;
   format: V1ExportFormat;
-  // we need this from argument since getContext is called to get the state managers
-  // which cannot run outside of component initialisation
-  timeControlStore: TimeControlStore;
-  measureFilters: V1Expression | undefined;
 }) {
-  const dashboardStore = useDashboardStore(metricViewName);
-  const timeControlState = get(timeControlStore);
+  const metricsViewName = get(ctx.metricsViewName);
+  const dashboard = get(ctx.dashboardStore);
+  const timeControlState = get(
+    ctx.selectors.timeRangeSelectors.timeControlsState,
+  );
+  const measureFilters = await getMeasureFilters(ctx);
 
-  const dashboard = get(dashboardStore);
   const result = await get(query).mutateAsync({
     instanceId: get(runtime).instanceId,
     data: {
@@ -35,7 +31,7 @@ export default async function exportMetrics({
       query: {
         metricsViewRowsRequest: {
           instanceId: get(runtime).instanceId,
-          metricsViewName: metricViewName,
+          metricsViewName,
           where: sanitiseExpression(dashboard.whereFilter, measureFilters),
           timeStart: timeControlState.timeStart,
           timeEnd: timeControlState.timeEnd,

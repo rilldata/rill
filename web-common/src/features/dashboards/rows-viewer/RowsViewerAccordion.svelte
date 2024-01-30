@@ -135,7 +135,7 @@
       {label}
     </button>
     <div class="ml-auto">
-      {#if isLocal}<ExportModelDataButton {metricViewName} />{/if}
+      {#if isLocal}<ExportModelDataButton />{/if}
     </div>
   </div>
 

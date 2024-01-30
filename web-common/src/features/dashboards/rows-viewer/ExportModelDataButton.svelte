@@ -2,8 +2,6 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import {
     V1ExportFormat,
     createQueryServiceExport,
@@ -11,26 +9,16 @@
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import exportMetrics from "./export-metrics";
 
-  export let metricViewName;
   let exportMenuOpen = false;
 
-  const timeControlStore = useTimeControlStore(getStateManagers());
-  const {
-    selectors: {
-      measureFilters: { getResolvedFilterForMeasureFilters },
-    },
-  } = getStateManagers();
-  $: resolvedFilter = $getResolvedFilterForMeasureFilters;
+  const ctx = getStateManagers();
 
   const exportDash = createQueryServiceExport();
   const handleExportMetrics = async (format: V1ExportFormat) => {
-    await waitUntil(() => $resolvedFilter.ready);
     exportMetrics({
-      metricViewName,
+      ctx,
       query: exportDash,
       format,
-      timeControlStore,
-      measureFilters: $resolvedFilter.filter,
     });
   };
 </script>

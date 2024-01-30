@@ -7,6 +7,7 @@ import {
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import {
   createQueryServiceMetricsViewToplist,
   V1Expression,
@@ -116,4 +117,10 @@ export function measureFilterResolutionsStore(
       ).subscribe(set);
     },
   );
+}
+
+export async function getMeasureFilters(ctx: StateManagers) {
+  const measureFiltersStore = measureFilterResolutionsStore(ctx);
+  await waitUntil(() => get(measureFiltersStore).ready);
+  return get(measureFiltersStore).filter;
 }
