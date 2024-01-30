@@ -13,7 +13,7 @@
     selectors: {
       contextColumn: {
         contextColumn,
-        widthPx,
+        width,
         isDeltaAbsolute,
         isDeltaPercent,
         isPercentOfTotal,
@@ -24,13 +24,8 @@
     actions: {
       contextCol: { observeContextColumnWidth },
     },
-    contextColumnWidths,
   } = getStateManagers();
 
-  // let widthPx = "0px";
-  // $: widthPx = $contextColumn
-  //   ? $contextColumnWidths[$contextColumn] + "px"
-  //   : "0px";
   $: negativeChange = itemData.deltaAbs !== null && itemData.deltaAbs < 0;
   $: noChangeData = itemData.deltaRel === null;
 
@@ -44,27 +39,10 @@
         // the element may be gone by the time we get here,
         // if so, don't try to observe it
         if (!element) return;
-        const width = element.getBoundingClientRect().width;
-
-        // // Conditional, separate store for widths
-        // if (
-        //   width > $contextColumnWidths[$contextColumn] &&
-        //   width < CONTEXT_COL_MAX_WIDTH
-        // ) {
-        //   $contextColumnWidths[$contextColumn] = width;
-        // }
-
-        // NOT conditional, separate store for widths
-        // $contextColumnWidths[$contextColumn] = Math.min(
-        //   Math.max(width, $contextColumnWidths[$contextColumn]),
-        //   CONTEXT_COL_MAX_WIDTH,
-        // );
+        const this_width = element.getBoundingClientRect().width;
 
         // conditional, current store implementation
-        if (
-          width > $contextColumnWidths[$contextColumn] &&
-          width < CONTEXT_COL_MAX_WIDTH
-        ) {
+        if (this_width > $width && this_width < CONTEXT_COL_MAX_WIDTH) {
           observeContextColumnWidth(
             $contextColumn,
             element.getBoundingClientRect().width,
@@ -82,7 +60,7 @@
 </script>
 
 {#if !$isHidden}
-  <div style:width={$widthPx} class="overflow-hidden">
+  <div style:width={$width + "px"} class="overflow-hidden">
     <div class="inline-block" bind:this={element}>
       {#if $isPercentOfTotal}
         <PercentageChange

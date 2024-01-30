@@ -50,13 +50,6 @@ export type StateManagers = {
    * A collection of functions that update the dashboard data model.
    */
   actions: StateManagerActions;
-  /**
-   * Store to track the width of the context columns in leaderboards.
-   * FIXME: this was implemented as a low-risk fix for in advance of
-   * the new branding release 2024-01-31, but should be revisted since
-   * it's a one-off solution that introduces another new pattern.
-   */
-  contextColumnWidths: Writable<ContextColWidths>;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
@@ -154,6 +147,5 @@ export function createStateManagers({
         queryClient.cancelQueries();
       },
     }),
-    contextColumnWidths,
   };
 }

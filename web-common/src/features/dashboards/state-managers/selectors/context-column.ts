@@ -1,13 +1,13 @@
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
+
 import type { DashboardDataSources } from "./types";
 
-const contextColumnWidth = ({ dashboard }: DashboardDataSources): string => {
+const contextColumnWidth = ({ dashboard }: DashboardDataSources): number => {
   const contextType = dashboard.leaderboardContextColumn;
-  const width = dashboard.contextColumnWidths[contextType];
-  if (typeof width === "number") {
-    return width + "px";
+  if (contextType === LeaderboardContextColumn.HIDDEN) {
+    return 0;
   }
-  return "0px";
+  return dashboard.contextColumnWidths[contextType];
 };
 
 export const contextColSelectors = {
@@ -56,5 +56,5 @@ export const contextColSelectors = {
    * returns a css style string specifying the width of the context
    * column in the leaderboards.
    */
-  widthPx: contextColumnWidth,
+  width: contextColumnWidth,
 };
