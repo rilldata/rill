@@ -1,10 +1,12 @@
 package local
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path"
@@ -427,22 +429,30 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 			return
 		}
 
+		// Read entire body up front (since it may be closed before the request is sent in the goroutine below)
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			a.BaseLogger.Info("failed to read telemetry request", zap.Error(err))
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Proxy request to rill intake
+		proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", bytes.NewReader(body))
+		if err != nil {
+			a.BaseLogger.Info("failed to create telemetry request", zap.Error(err))
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Copy the auth header
+		proxyReq.Header = http.Header{
+			"Authorization": r.Header["Authorization"],
+		}
+
 		// Send event in the background to avoid blocking the frontend.
 		// NOTE: If we stay with this telemetry approach, we should refactor and use ./cli/pkg/telemetry for batching and flushing events.
 		go func() {
-			// Proxy request to rill intake
-			proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", r.Body)
-			if err != nil {
-				a.BaseLogger.Info("failed to create telemetry request", zap.Error(err))
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-
-			// Copy the auth header
-			proxyReq.Header = http.Header{
-				"Authorization": r.Header["Authorization"],
-			}
-
 			// Send proxied request
 			resp, err := http.DefaultClient.Do(proxyReq)
 			if err != nil {
@@ -450,7 +460,7 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 				w.WriteHeader(http.StatusOK)
 				return
 			}
-			defer resp.Body.Close()
+			resp.Body.Close()
 		}()
 
 		// Done
