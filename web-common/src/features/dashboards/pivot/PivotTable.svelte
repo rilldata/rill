@@ -11,31 +11,19 @@
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
   import type { PivotDataRow, PivotDataStore } from "./types";
+  import { ChevronDown } from "lucide-svelte";
+  import { getMeasureCountInColumn } from "./pivot-utils";
 
   export let pivotDataStore: PivotDataStore;
 
   const stateManagers = getStateManagers();
-  const { dashboardStore, metricsViewName } = stateManagers;
-
-  $: assembled = $pivotDataStore.assembled;
-  $: expanded = $dashboardStore?.pivot?.expanded ?? {};
-  $: sorting = $dashboardStore?.pivot?.sorting ?? [];
-  $: columnPage = $dashboardStore.pivot.columnPage;
-  $: totalColumns = $pivotDataStore.totalColumns;
-
-  function handleExpandedChange(updater) {
-    expanded = updater(expanded);
-    metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
-  }
-
-  function handleSorting(updater) {
-    if (updater instanceof Function) {
-      sorting = updater(sorting);
-    } else {
-      sorting = updater;
-    }
-    metricsExplorerStore.setPivotSort($metricsViewName, sorting);
-  }
+  const {
+    dashboardStore,
+    metricsViewName,
+    selectors: {
+      measures: { visibleMeasures },
+    },
+  } = stateManagers;
 
   const pivotDashboardStore = derived(dashboardStore, (dashboard) => {
     return dashboard?.pivot;
@@ -60,11 +48,38 @@
     }),
   );
 
-  let table = createSvelteTable(options);
+  const table = createSvelteTable(options);
+
+  let containerRefElement: HTMLDivElement;
+
+  $: assembled = $pivotDataStore.assembled;
+  $: expanded = $dashboardStore?.pivot?.expanded ?? {};
+  $: sorting = $dashboardStore?.pivot?.sorting ?? [];
+  $: columnPage = $dashboardStore.pivot.columnPage;
+  $: totalColumns = $pivotDataStore.totalColumns;
+
+  $: headerGroups = $table.getHeaderGroups();
+
+  $: measureCount = getMeasureCountInColumn(
+    $dashboardStore.pivot,
+    $visibleMeasures,
+  );
 
   $: console.log(columnPage, totalColumns);
 
-  let containerRefElement;
+  function handleExpandedChange(updater) {
+    expanded = updater(expanded);
+    metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
+  }
+
+  function handleSorting(updater) {
+    if (updater instanceof Function) {
+      sorting = updater(sorting);
+    } else {
+      sorting = updater;
+    }
+    metricsExplorerStore.setPivotSort($metricsViewName, sorting);
+  }
 
   // TODO: Ideally we would like to handle page changes by knowing the scroll
   // position of the container and getting x0, x1, y0, y1 from the table
@@ -102,32 +117,37 @@
 </script>
 
 <div
-  class="overflow-x-auto relative h-full"
+  class="overflow-scroll h-full border rounded-md bg-white"
   bind:this={containerRefElement}
   on:scroll={() => handleScroll(containerRefElement)}
 >
-  <table class="mx-2">
+  <table class="overflow-scroll">
     <thead>
-      {#each $table.getHeaderGroups() as headerGroup}
+      {#each headerGroups as headerGroup}
         <tr>
           {#each headerGroup.headers as header}
             <th colSpan={header.colSpan}>
-              {#if !header.isPlaceholder}
-                <button
-                  class:cursor-pointer={header.column.getCanSort()}
-                  class:select-none={header.column.getCanSort()}
-                  on:click={header.column.getToggleSortingHandler()}
-                >
-                  {header.column.columnDef.header}
-                  {#if header.column.getIsSorted()}
-                    {#if header.column.getIsSorted().toString() === "asc"}
-                      <span>▼</span>
-                    {:else}
-                      <span>▲</span>
+              <div class="header-cell">
+                {#if !header.isPlaceholder}
+                  <button
+                    class:cursor-pointer={header.column.getCanSort()}
+                    class:select-none={header.column.getCanSort()}
+                    on:click={header.column.getToggleSortingHandler()}
+                  >
+                    {header.column.columnDef.header}
+                    {#if header.column.getIsSorted()}
+                      {#if header.column.getIsSorted().toString() === "asc"}
+                        <span>▼</span>
+                        <ChevronDown />
+                      {:else}
+                        <span>▲</span>
+                      {/if}
                     {/if}
-                  {/if}
-                </button>
-              {/if}
+                  </button>
+                {:else}
+                  <button class="w-full h-full"></button>
+                {/if}
+              </div>
             </th>
           {/each}
         </tr>
@@ -136,29 +156,33 @@
     <tbody>
       {#each $table.getRowModel().rows as row}
         <tr>
-          {#each row.getVisibleCells() as cell}
+          {#each row.getVisibleCells() as cell, i}
             {@const result =
               typeof cell.column.columnDef.cell === "function"
                 ? cell.column.columnDef.cell(cell.getContext())
                 : cell.column.columnDef.cell}
-            <td class="ui-copy-number">
-              {#if result?.component && result?.props}
-                <svelte:component
-                  this={result.component}
-                  {...result.props}
-                  {assembled}
-                />
-              {:else if typeof result === "string" || typeof result === "number"}
-                {result}
-              {:else}
-                <!-- flexRender is REALLY slow https://github.com/TanStack/table/issues/4962#issuecomment-1821011742 -->
-                <svelte:component
-                  this={flexRender(
-                    cell.column.columnDef.cell,
-                    cell.getContext(),
-                  )}
-                />
-              {/if}
+            <td
+              class="ui-copy-number"
+              class:border-right={i % measureCount === 0 && i}
+            >
+              <div class="cell">
+                {#if result?.component && result?.props}
+                  <svelte:component
+                    this={result.component}
+                    {...result.props}
+                    {assembled}
+                  />
+                {:else if typeof result === "string" || typeof result === "number"}
+                  {result}
+                {:else}
+                  <svelte:component
+                    this={flexRender(
+                      cell.column.columnDef.cell,
+                      cell.getContext(),
+                    )}
+                  />
+                {/if}
+              </div>
             </td>
           {/each}
         </tr>
@@ -169,51 +193,78 @@
 
 <style lang="postcss">
   table {
-    min-width: 300px;
-    border-collapse: collapse;
-    color: #333;
+    @apply bg-white;
   }
 
-  tbody {
-    border-bottom: 1px solid lightgray;
+  * {
+    @apply border-slate-200;
   }
 
-  thead th {
-    white-space: nowrap;
+  thead {
+    @apply sticky top-0;
+    @apply z-10;
+  }
+
+  .header-cell {
+    @apply w-full h-full;
+    @apply bg-white;
+    @apply p-2 px-2;
+    @apply border-r border-b;
+    @apply text-left;
+  }
+
+  thead > tr:first-of-type > th:first-of-type > .header-cell {
+    @apply border-b-0;
+  }
+
+  thead > tr:last-of-type > th > div {
+    @apply text-right;
+  }
+
+  th {
+    @apply p-0 m-0;
+  }
+
+  td {
+    @apply border-none;
+    @apply text-right;
+    @apply p-0 m-0;
+  }
+
+  tr > th:first-of-type,
+  tr > td:first-of-type {
+    @apply sticky left-0;
+    @apply bg-white;
+  }
+
+  tr > td:first-of-type > .cell {
+    @apply border-r font-medium;
   }
 
   th,
   td {
-    @apply truncate;
-    padding: 10px;
-    border: 1px solid #ddd;
-    text-align: left;
-    min-width: 100px;
+    @apply whitespace-nowrap text-xs;
   }
 
-  th {
-    background-color: #f2f2f2;
-    font-weight: bold;
-    outline: 1px solid #ddd;
+  .cell {
+    @apply p-1 px-2;
   }
 
-  tr:nth-child(even) {
-    background-color: #f9f9f9;
-  }
-  tr:first-child {
-    font-weight: bold;
-  }
-  tr:hover {
-    background-color: #e8e8e8;
+  tbody > tr:first-of-type {
+    @apply bg-slate-100;
   }
 
-  thead {
-    border-bottom: 2px solid #333;
-    position: sticky;
-    top: 0;
+  .border-right {
+    border-right: solid black 1px;
+    @apply border-gray-200;
   }
 
-  td {
-    text-align: right;
+  tbody > tr:first-of-type > td:first-of-type > .cell {
+    @apply font-bold;
+  }
+
+  td:last-of-type,
+  th:last-of-type > .header-cell {
+    @apply border-r-0;
   }
 </style>

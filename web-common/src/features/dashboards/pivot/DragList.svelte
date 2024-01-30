@@ -45,7 +45,7 @@
 </script>
 
 <div
-  class={listClasses}
+  class="{listClasses} rounded-sm"
   use:dndzone={{ items, flipDurationMs }}
   on:consider={handleConsider}
   on:finalize={handleFinalize}

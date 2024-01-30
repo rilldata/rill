@@ -35,14 +35,16 @@
 
 <style lang="postcss">
   .layout {
-    @apply flex box-border h-full;
+    @apply flex box-border h-full overflow-hidden;
   }
 
   .content {
-    @apply flex w-full flex-col;
+    @apply flex w-full flex-col bg-slate-100 overflow-hidden;
   }
 
   .table-view {
-    @apply overflow-y-auto;
+    @apply p-2 w-full h-full;
+    @apply flex items-start;
+    @apply overflow-hidden;
   }
 </style>
