@@ -3,6 +3,7 @@
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import {
     V1ExportFormat,
     createQueryServiceExport,
@@ -14,14 +15,22 @@
   let exportMenuOpen = false;
 
   const timeControlStore = useTimeControlStore(getStateManagers());
+  const {
+    selectors: {
+      measureFilters: { getResolvedFilterForMeasureFilters },
+    },
+  } = getStateManagers();
+  $: resolvedFilter = $getResolvedFilterForMeasureFilters;
 
   const exportDash = createQueryServiceExport();
   const handleExportMetrics = async (format: V1ExportFormat) => {
+    await waitUntil(() => $resolvedFilter.ready);
     exportMetrics({
       metricViewName,
       query: exportDash,
       format,
       timeControlStore,
+      measureFilters: $resolvedFilter.filter,
     });
   };
 </script>
@@ -36,24 +45,24 @@
 >
   <button
     aria-label="Export model data"
+    class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700"
     on:click={(evt) => {
       evt.stopPropagation();
       toggleFloatingElement();
     }}
-    class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700"
   >
     Export
     <CaretDownIcon
-      size="10px"
       className="transition-transform {exportMenuOpen && '-rotate-180'}"
+      size="10px"
     />
   </button>
   <Menu
+    let:toggleFloatingElement
     minWidth=""
     on:click-outside={toggleFloatingElement}
     on:escape={toggleFloatingElement}
     slot="floating-element"
-    let:toggleFloatingElement
   >
     <MenuItem
       on:select={() => {

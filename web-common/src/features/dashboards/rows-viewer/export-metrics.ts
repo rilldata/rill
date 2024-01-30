@@ -6,6 +6,7 @@ import { useDashboardStore } from "web-common/src/features/dashboards/stores/das
 import type {
   V1ExportFormat,
   createQueryServiceExport,
+  V1Expression,
 } from "@rilldata/web-common/runtime-client";
 
 export default async function exportMetrics({
@@ -13,6 +14,7 @@ export default async function exportMetrics({
   metricViewName,
   format,
   timeControlStore,
+  measureFilters,
 }: {
   query: ReturnType<typeof createQueryServiceExport>;
   metricViewName: string;
@@ -20,6 +22,7 @@ export default async function exportMetrics({
   // we need this from argument since getContext is called to get the state managers
   // which cannot run outside of component initialisation
   timeControlStore: TimeControlStore;
+  measureFilters: V1Expression | undefined;
 }) {
   const dashboardStore = useDashboardStore(metricViewName);
   const timeControlState = get(timeControlStore);
@@ -33,7 +36,7 @@ export default async function exportMetrics({
         metricsViewRowsRequest: {
           instanceId: get(runtime).instanceId,
           metricsViewName: metricViewName,
-          where: sanitiseExpression(dashboard.whereFilter, undefined),
+          where: sanitiseExpression(dashboard.whereFilter, measureFilters),
           timeStart: timeControlState.timeStart,
           timeEnd: timeControlState.timeEnd,
         },
