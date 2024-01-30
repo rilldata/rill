@@ -427,27 +427,31 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 			return
 		}
 
-		// Proxy request to rill intake
-		proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", r.Body)
-		if err != nil {
-			a.BaseLogger.Info("failed to create telemetry request", zap.Error(err))
-			w.WriteHeader(http.StatusOK)
-			return
-		}
+		// Send event in the background to avoid blocking the frontend.
+		// NOTE: If we stay with this telemetry approach, we should refactor and use ./cli/pkg/telemetry for batching and flushing events.
+		go func() {
+			// Proxy request to rill intake
+			proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", r.Body)
+			if err != nil {
+				a.BaseLogger.Info("failed to create telemetry request", zap.Error(err))
+				w.WriteHeader(http.StatusOK)
+				return
+			}
 
-		// Copy the auth header
-		proxyReq.Header = http.Header{
-			"Authorization": r.Header["Authorization"],
-		}
+			// Copy the auth header
+			proxyReq.Header = http.Header{
+				"Authorization": r.Header["Authorization"],
+			}
 
-		// Send proxied request
-		resp, err := http.DefaultClient.Do(proxyReq)
-		if err != nil {
-			a.BaseLogger.Info("failed to send telemetry", zap.Error(err))
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		defer resp.Body.Close()
+			// Send proxied request
+			resp, err := http.DefaultClient.Do(proxyReq)
+			if err != nil {
+				a.BaseLogger.Info("failed to send telemetry", zap.Error(err))
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			defer resp.Body.Close()
+		}()
 
 		// Done
 		w.WriteHeader(http.StatusOK)
