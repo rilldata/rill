@@ -20,7 +20,7 @@
   const {
     selectors: {
       contextColumn: {
-        widthPx,
+        width,
         isDeltaAbsolute,
         isDeltaPercent,
         isPercentOfTotal,
@@ -124,7 +124,7 @@
           on:click={toggleSortByActiveContextColumn}
           class="shrink flex flex-row items-center justify-end"
           aria-label="Toggle sort leaderboards by context column"
-          style:width={$widthPx}
+          style:width={$width + "px"}
         >
           {#if $isDeltaPercent}
             <Delta /> %
