@@ -129,19 +129,6 @@ func (q *MetricsViewComparison) calculateMeasuresMeta() error {
 		for i, m := range q.Measures {
 			q.ComparisonMeasures[i] = m.Name
 		}
-	} else {
-		for _, cm := range q.ComparisonMeasures {
-			found := false
-			for _, m := range q.Measures {
-				if m.Name == cm {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return fmt.Errorf("comparison measure '%s' is not present in the measures list", cm)
-			}
-		}
 	}
 
 	q.measuresMeta = make(map[string]metricsViewMeasureMeta, len(q.Measures))
@@ -167,6 +154,13 @@ func (q *MetricsViewComparison) calculateMeasuresMeta() error {
 			outer++
 		}
 		inner++
+	}
+
+	// check all comparison measures are present in the measures list
+	for _, cm := range q.ComparisonMeasures {
+		if _, ok := q.measuresMeta[cm]; !ok {
+			return fmt.Errorf("comparison measure '%s' is not present in the measures list", cm)
+		}
 	}
 
 	err := validateSort(q.Sort, q.measuresMeta, compare)
