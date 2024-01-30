@@ -309,7 +309,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 			return "", nil, err
 		}
 		if strings.TrimSpace(clause) != "" {
-			baseWhereClause += " AND " + clause
+			baseWhereClause += fmt.Sprintf(" AND (%s)", clause)
 		}
 
 		args = append(args, clauseArgs...)
@@ -524,7 +524,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	baseWhereClause += trc
 
 	if whereClause != "" {
-		baseWhereClause += " AND " + whereClause
+		baseWhereClause += fmt.Sprintf(" AND (%s)", whereClause)
 		args = append(args, whereClauseArgs...)
 	}
 
@@ -535,7 +535,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	comparisonWhereClause += trc
 
 	if whereClause != "" {
-		comparisonWhereClause += " AND " + whereClause
+		comparisonWhereClause += fmt.Sprintf(" AND (%s)", whereClause)
 		args = append(args, whereClauseArgs...)
 	}
 
