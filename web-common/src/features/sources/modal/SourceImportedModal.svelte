@@ -39,7 +39,7 @@
 <Dialog on:close={close} {open}>
   <div class="flex flex-auto gap-x-2.5" slot="title">
     <div class="w-6 m-auto ml-0 mr-0">
-      <CheckCircleNew className="fill-blue-500" size="24px" />
+      <CheckCircleNew className="fill-primary-500" size="24px" />
     </div>
     <div>Source imported successfully</div>
   </div>

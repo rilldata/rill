@@ -1,9 +1,10 @@
+import { measureFilterSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import type {
   RpcStatus,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryObserverResult } from "@tanstack/svelte-query";
+import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import { derived, type Readable } from "svelte/store";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 import { activeMeasureSelectors } from "./active-measure";
@@ -28,6 +29,7 @@ export type DashboardDataReadables = {
   timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   >;
+  queryClient: QueryClient;
 };
 
 export type StateManagerReadables = ReturnType<
@@ -81,7 +83,7 @@ export const createStateManagerReadables = (
     ),
 
     /**
-     * Readables related to the dimension dimension.
+     * Readables related to the dimension table.
      *
      * These are valid when the dimension table is visible, and
      * should only be used from within dimension table components.
@@ -92,12 +94,20 @@ export const createStateManagerReadables = (
     ),
 
     /**
-     * Readables related to selected (aka "filtered)
+     * Readables related to selected (aka "filtered")
      * dimension values in the leaderboard, including
      * whether or not a dimension is in include or exclude mode.
      */
     dimensionFilters: createReadablesFromSelectors(
       dimensionFilterSelectors,
+      dashboardDataReadables,
+    ),
+
+    /**
+     * Readables related to measure filters applied to a dimension leaderboard.
+     */
+    measureFilters: createReadablesFromSelectors(
+      measureFilterSelectors,
       dashboardDataReadables,
     ),
 
@@ -163,6 +173,7 @@ function createReadablesFromSelectors<T extends SelectorFnsObj>(
             dashboard,
             metricsSpecQueryResult,
             timeRangeSummary,
+            queryClient: readables.queryClient,
           }),
       ),
     ]),

@@ -70,7 +70,7 @@ export function createStateManagers({
     },
   );
 
-  // Note: this is equivalent to `useMetaQuery`
+  // Note: this is equivalent to `useMetricsView`
   const metricsSpecStore: Readable<
     QueryObserverResult<V1MetricsViewSpec, RpcStatus>
   > = derived([runtime, metricsViewNameStore], ([r, metricViewName], set) => {
@@ -124,6 +124,7 @@ export function createStateManagers({
       dashboardStore,
       metricsSpecQueryResultStore: metricsSpecStore,
       timeRangeSummaryStore,
+      queryClient,
     }),
     /**
      * A collection of functions that update the dashboard data model.

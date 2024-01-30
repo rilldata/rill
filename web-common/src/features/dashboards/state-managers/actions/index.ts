@@ -1,4 +1,5 @@
 import { filterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/filters";
+import { measureFilterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/measure-filters";
 import { sortActions } from "./sorting";
 import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
@@ -78,6 +79,11 @@ export const createStateManagerActions = (
      * Actions related to the dimension table.
      */
     dimensionTable: createDashboardUpdaters(actionArgs, dimensionTableActions),
+
+    /**
+     * Actions related to measure filters
+     */
+    measuresFilter: createDashboardUpdaters(actionArgs, measureFilterActions),
 
     // Note: for now, some core actions are kept in the root of the
     // actions object. Can revisit that later if we want to move them.

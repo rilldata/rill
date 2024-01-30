@@ -64,7 +64,10 @@ export function getDashboardStateFromProto(
     entity.whereFilter = fromExpressionProto(dashboard.where);
   }
   if (dashboard.having) {
-    entity.havingFilter = fromExpressionProto(dashboard.having);
+    entity.dimensionThresholdFilters = dashboard.having.map((h) => ({
+      name: h.name,
+      filter: fromExpressionProto(h.filter as Expression) as V1Expression,
+    }));
   }
   if (dashboard.compareTimeRange) {
     entity.selectedComparisonTimeRange = fromTimeRangeProto(
@@ -176,7 +179,7 @@ function fromExpressionProto(expression: Expression): V1Expression | undefined {
           op: FromProtoOperationMap[expression.expression.value.op],
           exprs: expression.expression.value.exprs
             .map((e) => fromExpressionProto(e))
-            .filter((e) => e !== undefined) as V1Expression[],
+            .filter((e): e is V1Expression => e !== undefined),
         },
       };
   }

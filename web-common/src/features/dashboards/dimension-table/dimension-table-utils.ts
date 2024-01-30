@@ -72,8 +72,8 @@ export function updateFilterOnSearch(
       filterExpressions(
         filterForDimension,
         (e) =>
-          e.cond?.op === V1Operation.OPERATION_LIKE ||
-          e.cond?.op === V1Operation.OPERATION_NLIKE,
+          e.cond?.op !== V1Operation.OPERATION_LIKE &&
+          e.cond?.op !== V1Operation.OPERATION_NLIKE,
       ) ?? createAndExpression([]);
   }
   return filterForDimension;

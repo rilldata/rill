@@ -13,7 +13,7 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     metricsExplorerStore,
@@ -26,6 +26,8 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
+  import { featureFlags } from "../../feature-flags";
+  import TDDExportButton from "./TDDExportButton.svelte";
   import type { TDDComparison } from "./types";
 
   export let metricViewName: string;
@@ -44,11 +46,11 @@
     },
   } = getStateManagers();
 
-  $: metaQuery = useMetaQuery(getStateManagers());
+  $: metricsView = useMetricsView(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
 
   $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
-  $: allMeasures = $metaQuery?.data?.measures ?? [];
+  $: allMeasures = $metricsView?.data?.measures ?? [];
 
   $: selectableMeasures = allMeasures
     ?.filter((m) => m.name !== undefined || m.label !== undefined)
@@ -178,7 +180,7 @@
       {/if}
 
       <Tooltip distance={16} location="left">
-        <div class="mr-3 ui-copy-icon" style:grid-column-gap=".4rem">
+        <div class="ui-copy-icon" style:grid-column-gap=".4rem">
           <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
             Exclude
           </Switch>
@@ -195,6 +197,11 @@
           </TooltipShortcutContainer>
         </TooltipContent>
       </Tooltip>
+
+      <TDDExportButton
+        {metricViewName}
+        includeScheduledReport={$featureFlags.adminServer}
+      />
     </div>
   {/if}
 </div>

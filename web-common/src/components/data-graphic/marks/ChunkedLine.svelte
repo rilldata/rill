@@ -23,8 +23,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     lineFactory,
   } from "@rilldata/web-common/components/data-graphic/utils";
   import {
-    AreaSubRangeColor,
-    MainLineSubRangeColor,
+    AreaMutedColor,
+    LineMutedColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { interpolatePath } from "d3-interpolate-path";
@@ -42,8 +42,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
 
   export let stopOpacity = 0.3;
   // FIXME – this is a different prop than elsewhere
-  export let lineColor = MainLineSubRangeColor;
-  export let areaColor = AreaSubRangeColor;
+  export let lineColor = LineMutedColor;
+  export let areaColor = AreaMutedColor;
   export let lineClasses = "";
 
   const id = guidGenerator();

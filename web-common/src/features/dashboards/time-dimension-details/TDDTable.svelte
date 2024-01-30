@@ -65,9 +65,9 @@
       "bg-white",
       "bg-gray-100",
       "bg-gray-200",
-      "bg-blue-50",
-      "bg-blue-100",
-      "bg-blue-200",
+      "bg-primary-50",
+      "bg-primary-100",
+      "bg-primary-200",
       "bg-slate-50",
       "bg-slate-100",
       "bg-slate-200",
@@ -139,7 +139,7 @@
 
     if (comparing === "time") {
       let icon = "";
-      if (y == 1) icon = SelectedCheckmark("fill-blue-500");
+      if (y == 1) icon = SelectedCheckmark("fill-primary-500");
       else if (y == 2) icon = SelectedCheckmark("fill-gray-300");
       return { icon, muted: false };
     }
