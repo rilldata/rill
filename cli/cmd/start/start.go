@@ -156,6 +156,9 @@ func countFilesInDirectory(path string) (int, error) {
 		return nil
 	})
 	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
 		return 0, err
 	}
 
