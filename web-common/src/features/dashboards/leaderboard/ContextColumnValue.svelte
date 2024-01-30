@@ -7,6 +7,8 @@
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { CONTEXT_COL_MAX_WIDTH } from "../state-managers/actions/context-columns";
 
+  import { LeaderboardContextColumn } from "../leaderboard-context-column";
+
   export let itemData: LeaderboardItemData;
 
   const {
@@ -24,9 +26,10 @@
   } = getStateManagers();
 
   let widthPx = "0px";
-  $: widthPx = $contextColumn
-    ? $contextColumnWidths[$contextColumn] + "px"
-    : "0px";
+  $: widthPx =
+    $contextColumn !== LeaderboardContextColumn.HIDDEN
+      ? $contextColumnWidths[$contextColumn] + "px"
+      : "0px";
   $: negativeChange = itemData.deltaAbs !== null && itemData.deltaAbs < 0;
   $: noChangeData = itemData.deltaRel === null;
 
