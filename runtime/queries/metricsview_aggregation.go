@@ -539,13 +539,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
 
-	if q.PivotOn != nil {
+	var sql string
+	if len(q.PivotOn) > 0 {
 		l := maxPivotCells / q.cols()
 		limitClause = fmt.Sprintf("LIMIT %d", l+1)
-	}
 
-	var sql string
-	if q.PivotOn != nil {
 		if q.Offset != 0 {
 			return "", nil, fmt.Errorf("offset not supported for pivot queries")
 		}
