@@ -44,16 +44,16 @@ jobs:
             git fetch --all --tags;
           fi
 
-          go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(git describe --tags `git rev-list --tags --max-count=1`)-headless -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
+          go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(git describe --tags `git rev-list --tags --max-count=1`) -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
 
           gcloud auth configure-docker
 
-          docker build -t gcr.io/rilldata/rill:${GITHUB_SHA} .
-          docker push gcr.io/rilldata/rill:${GITHUB_SHA}
+          docker build -t gcr.io/rilldata/rill-headless:${GITHUB_SHA} .
+          docker push gcr.io/rilldata/rill-headless:${GITHUB_SHA}
 
           if [ ${RELEASE} == "true" ]; then
-            docker tag gcr.io/rilldata/rill:${GITHUB_SHA} gcr.io/rilldata/rill:${GITHUB_REF_NAME}
-            docker push gcr.io/rilldata/rill:${GITHUB_REF_NAME}
+            docker tag gcr.io/rilldata/rill-headless:${GITHUB_SHA} gcr.io/rilldata/rill-headless:${GITHUB_REF_NAME}
+            docker push gcr.io/rilldata/rill-headless:${GITHUB_REF_NAME}
           fi
 
       - name: Trigger Rill Cloud deployment
