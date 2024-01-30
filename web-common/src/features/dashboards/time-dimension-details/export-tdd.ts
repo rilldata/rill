@@ -1,3 +1,5 @@
+import { getMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   V1ExportFormat,
   createQueryServiceExport,
@@ -22,6 +24,7 @@ export default async function exportTDD({
   const selectedTimeRange = get(
     ctx.selectors.timeRangeSelectors.selectedTimeRangeState,
   );
+  const measureFilters = await getMeasureFilters(ctx);
 
   const result = await get(query).mutateAsync({
     instanceId: get(runtime).instanceId,
@@ -37,7 +40,7 @@ export default async function exportTDD({
               timeZone: dashboard.selectedTimezone,
             },
           ],
-          filter: dashboard.filters,
+          where: sanitiseExpression(dashboard.whereFilter, measureFilters),
           instanceId: get(runtime).instanceId,
           limit: undefined, // the backend handles export limits
           measures: [{ name: dashboard.expandedMeasureName }],
