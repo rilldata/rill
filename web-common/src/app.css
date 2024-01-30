@@ -116,9 +116,6 @@
   :root {
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
 
-    --color-secondary-gradient-max-hue: 300;
-    --color-secondary-gradient-min-hue: 1;
-
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
   

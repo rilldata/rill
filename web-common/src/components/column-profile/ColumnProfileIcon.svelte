@@ -19,7 +19,7 @@
         style:height="16px"
       >
         {#if isFetching}
-          <Spinner status={EntityStatus.Running} bg="rgba(0,0,0,.2)" />
+          <Spinner status={EntityStatus.Running} />
         {:else}
           <DataTypeIcon {type} />
         {/if}
