@@ -13,7 +13,6 @@
     selectors: {
       contextColumn: {
         contextColumn,
-        widthPx,
         isDeltaAbsolute,
         isDeltaPercent,
         isPercentOfTotal,
@@ -21,16 +20,13 @@
       },
       numberFormat: { activeMeasureFormatter },
     },
-    actions: {
-      contextCol: { observeContextColumnWidth },
-    },
     contextColumnWidths,
   } = getStateManagers();
 
-  // let widthPx = "0px";
-  // $: widthPx = $contextColumn
-  //   ? $contextColumnWidths[$contextColumn] + "px"
-  //   : "0px";
+  let widthPx = "0px";
+  $: widthPx = $contextColumn
+    ? $contextColumnWidths[$contextColumn] + "px"
+    : "0px";
   $: negativeChange = itemData.deltaAbs !== null && itemData.deltaAbs < 0;
   $: noChangeData = itemData.deltaRel === null;
 
@@ -47,34 +43,17 @@
         const width = element.getBoundingClientRect().width;
 
         // // Conditional, separate store for widths
-        // if (
-        //   width > $contextColumnWidths[$contextColumn] &&
-        //   width < CONTEXT_COL_MAX_WIDTH
-        // ) {
-        //   $contextColumnWidths[$contextColumn] = width;
-        // }
+        if (
+          width > $contextColumnWidths[$contextColumn] &&
+          width < CONTEXT_COL_MAX_WIDTH
+        ) {
+          $contextColumnWidths[$contextColumn] = width;
+        }
 
         // NOT conditional, separate store for widths
         // $contextColumnWidths[$contextColumn] = Math.min(
         //   Math.max(width, $contextColumnWidths[$contextColumn]),
         //   CONTEXT_COL_MAX_WIDTH,
-        // );
-
-        // conditional, current store implementation
-        if (
-          width > $contextColumnWidths[$contextColumn] &&
-          width < CONTEXT_COL_MAX_WIDTH
-        ) {
-          observeContextColumnWidth(
-            $contextColumn,
-            element.getBoundingClientRect().width,
-          );
-        }
-
-        // NOT conditional, current store implementation
-        // observeContextColumnWidth(
-        //   $contextColumn,
-        //   element.getBoundingClientRect().width,
         // );
       }, 17);
     }
@@ -82,7 +61,7 @@
 </script>
 
 {#if !$isHidden}
-  <div style:width={$widthPx} class="overflow-hidden">
+  <div style:width={widthPx} class="overflow-hidden">
     <div class="inline-block" bind:this={element}>
       {#if $isPercentOfTotal}
         <PercentageChange

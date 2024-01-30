@@ -120,7 +120,6 @@ export function createStateManagers({
     updateMetricsExplorerByName(name, callback);
   };
 
-  //
   const contextColumnWidths = writable<ContextColWidths>(
     contextColWidthDefaults,
   );
