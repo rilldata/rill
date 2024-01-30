@@ -15,6 +15,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// maxProjectFiles is the maximum number of files that can be in a project directory.
+// It corresponds to the file watcher limit in runtime/drivers/file/repo.go.
+const maxProjectFiles = 1000
+
 // StartCmd represents the start command
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var olapDriver string
@@ -81,23 +85,22 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			// Check that projectPath doesn't have an excessive number of files
+			n, err := countFilesInDirectory(projectPath)
+			if err != nil {
+				return err
+			}
+			if n > maxProjectFiles {
+				ch.Printer.PrintlnError(fmt.Sprintf("The project directory exceeds the limit of %d files (found %d files). Please open Rill against a directory with fewer files.", maxProjectFiles, n))
+				return nil
+			}
+
 			parsedLogFormat, ok := local.ParseLogFormat(logFormat)
 			if !ok {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
 			client := activity.NewNoopClient()
-
-			// Check if projectPath has more than 1k+ files
-			fileCount, err := countFilesInDirectory(projectPath)
-			if err != nil {
-				return err
-			}
-
-			if fileCount > 1000 {
-				ch.Printer.PrintlnError("Project has more than 1k+ files. Create a new directory or use a different project path.")
-				return nil
-			}
 
 			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, debug, reset, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, client)
 			if err != nil {
