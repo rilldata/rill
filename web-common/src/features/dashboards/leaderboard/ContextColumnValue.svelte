@@ -5,6 +5,7 @@
   import type { LeaderboardItemData } from "./leaderboard-utils";
   import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+  import { CONTEXT_COL_MAX_WIDTH } from "../state-managers/actions/context-columns";
 
   export let itemData: LeaderboardItemData;
 
@@ -23,8 +24,13 @@
     actions: {
       contextCol: { observeContextColumnWidth },
     },
+    contextColumnWidths,
   } = getStateManagers();
 
+  // let widthPx = "0px";
+  // $: widthPx = $contextColumn
+  //   ? $contextColumnWidths[$contextColumn] + "px"
+  //   : "0px";
   $: negativeChange = itemData.deltaAbs !== null && itemData.deltaAbs < 0;
   $: noChangeData = itemData.deltaRel === null;
 
@@ -38,10 +44,38 @@
         // the element may be gone by the time we get here,
         // if so, don't try to observe it
         if (!element) return;
-        observeContextColumnWidth(
-          $contextColumn,
-          element.getBoundingClientRect().width,
-        );
+        const width = element.getBoundingClientRect().width;
+
+        // // Conditional, separate store for widths
+        // if (
+        //   width > $contextColumnWidths[$contextColumn] &&
+        //   width < CONTEXT_COL_MAX_WIDTH
+        // ) {
+        //   $contextColumnWidths[$contextColumn] = width;
+        // }
+
+        // NOT conditional, separate store for widths
+        // $contextColumnWidths[$contextColumn] = Math.min(
+        //   Math.max(width, $contextColumnWidths[$contextColumn]),
+        //   CONTEXT_COL_MAX_WIDTH,
+        // );
+
+        // conditional, current store implementation
+        if (
+          width > $contextColumnWidths[$contextColumn] &&
+          width < CONTEXT_COL_MAX_WIDTH
+        ) {
+          observeContextColumnWidth(
+            $contextColumn,
+            element.getBoundingClientRect().width,
+          );
+        }
+
+        // NOT conditional, current store implementation
+        // observeContextColumnWidth(
+        //   $contextColumn,
+        //   element.getBoundingClientRect().width,
+        // );
       }, 17);
     }
   }
