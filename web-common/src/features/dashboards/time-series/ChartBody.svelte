@@ -33,10 +33,15 @@
 
   $: mainLineColor = hasSubrangeSelected ? LineMutedColor : MainLineColor;
 
+  const focusedAreaGradient: [string, string] = [
+    MainAreaColorGradientDark,
+    MainAreaColorGradientLight,
+  ];
+
   $: areaGradientColors = (
     hasSubrangeSelected
       ? [AreaMutedColorGradientDark, AreaMutedColorGradientLight]
-      : [MainAreaColorGradientDark, MainAreaColorGradientLight]
+      : focusedAreaGradient
   ) as [string, string];
 
   $: isDimValueHiglighted =
@@ -133,7 +138,7 @@
         start={Math.min(scrubStart, scrubEnd)}
         end={Math.max(scrubStart, scrubEnd)}
         lineColor={MainLineColor}
-        {areaGradientColors}
+        areaGradientColors={focusedAreaGradient}
         delay={0}
         duration={0}
         {data}
