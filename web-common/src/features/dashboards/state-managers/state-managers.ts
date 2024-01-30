@@ -85,17 +85,20 @@ export function createStateManagers({
 
   const timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
-  > = derived([runtime, metricsViewNameStore], ([runtime, mvName], set) =>
-    createQueryServiceMetricsViewTimeRange(
-      runtime.instanceId,
-      mvName,
-      {},
-      {
-        query: {
-          queryClient: queryClient,
+  > = derived(
+    [runtime, metricsViewNameStore, metricsSpecStore],
+    ([runtime, mvName, metricsView], set) =>
+      createQueryServiceMetricsViewTimeRange(
+        runtime.instanceId,
+        mvName,
+        {},
+        {
+          query: {
+            queryClient: queryClient,
+            enabled: !!metricsView.data?.timeDimension,
+          },
         },
-      },
-    ).subscribe(set),
+      ).subscribe(set),
   );
 
   const updateDashboard = (

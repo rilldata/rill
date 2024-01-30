@@ -102,8 +102,8 @@ export function createTimeRangeSummary(
   ctx: StateManagers,
 ): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
   return derived(
-    [ctx.runtime, ctx.metricsViewName],
-    ([runtime, metricsViewName], set) =>
+    [ctx.runtime, ctx.metricsViewName, useMetricsView(ctx)],
+    ([runtime, metricsViewName, metricsView], set) =>
       createQueryServiceMetricsViewTimeRange(
         runtime.instanceId,
         metricsViewName,
@@ -111,6 +111,7 @@ export function createTimeRangeSummary(
         {
           query: {
             queryClient: ctx.queryClient,
+            enabled: !!metricsView.data?.timeDimension,
           },
         },
       ).subscribe(set),
