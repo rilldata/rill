@@ -49,9 +49,11 @@ export function mergeFilters(
     inExprMap.delete(ident);
   });
 
+  // add the remaining in expressions
   inExprMap.forEach((ie) => {
     filter2.cond?.exprs?.push(copyFilterExpression(ie));
   });
+  // add all like expressions
   likeExprMap.forEach((ie) => {
     filter2.cond?.exprs?.push(copyFilterExpression(ie));
   });

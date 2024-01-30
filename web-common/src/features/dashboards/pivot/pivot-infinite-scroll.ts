@@ -116,7 +116,10 @@ export function getColumnFiltersForPage(
     effectiveColumnsPerPage,
   );
 
-  return Object.entries(pageGroups).map(([colDimensionName, values]) =>
-    createInExpression(colDimensionName, Array.from(values)),
+  return Object.entries(pageGroups).map(([colDimensionId, values]) =>
+    createInExpression(
+      colDimensionNames[parseInt(colDimensionId)],
+      Array.from(values),
+    ),
   );
 }
