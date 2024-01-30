@@ -1,6 +1,6 @@
 import {
   createTimeRangeSummary,
-  useMetaQuery,
+  useMetricsView,
 } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -143,7 +143,7 @@ export const timeControlStateSelector = ([
 
 export function createTimeControlStore(ctx: StateManagers) {
   return derived(
-    [useMetaQuery(ctx), createTimeRangeSummary(ctx), ctx.dashboardStore],
+    [useMetricsView(ctx), createTimeRangeSummary(ctx), ctx.dashboardStore],
     timeControlStateSelector,
   );
 }

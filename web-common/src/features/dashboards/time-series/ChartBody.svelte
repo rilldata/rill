@@ -1,10 +1,12 @@
 <script lang="ts">
   import {
-    AreaMutedColor,
-    MainAreaColor,
-    LineMutedColor,
+    MainAreaColorGradientDark,
+    MainAreaColorGradientLight,
     MainLineColor,
     TimeComparisonLineColor,
+    AreaMutedColorGradientDark,
+    AreaMutedColorGradientLight,
+    LineMutedColor,
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { writable } from "svelte/store";
   import {
@@ -31,7 +33,16 @@
 
   $: mainLineColor = hasSubrangeSelected ? LineMutedColor : MainLineColor;
 
-  $: areaColor = hasSubrangeSelected ? AreaMutedColor : MainAreaColor;
+  const focusedAreaGradient: [string, string] = [
+    MainAreaColorGradientDark,
+    MainAreaColorGradientLight,
+  ];
+
+  $: areaGradientColors = (
+    hasSubrangeSelected
+      ? [AreaMutedColorGradientDark, AreaMutedColorGradientLight]
+      : focusedAreaGradient
+  ) as [string, string];
 
   $: isDimValueHiglighted =
     dimensionValue !== undefined &&
@@ -78,7 +89,6 @@
         class:opacity-20={isDimValueHiglighted && !isHighlighted}
       >
         <ChunkedLine
-          area={false}
           isComparingDimension
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
@@ -100,7 +110,6 @@
         class:opacity-40={!isHovering}
       >
         <ChunkedLine
-          area={false}
           lineColor={TimeComparisonLineColor}
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
@@ -115,7 +124,7 @@
     {/if}
     <ChunkedLine
       lineColor={mainLineColor}
-      {areaColor}
+      {areaGradientColors}
       delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
       duration={hasSubrangeSelected || $timeRangeKey !== $previousTimeRangeKey
         ? 0
@@ -129,7 +138,7 @@
         start={Math.min(scrubStart, scrubEnd)}
         end={Math.max(scrubStart, scrubEnd)}
         lineColor={MainLineColor}
-        areaColor={MainAreaColor}
+        areaGradientColors={focusedAreaGradient}
         delay={0}
         duration={0}
         {data}

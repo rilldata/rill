@@ -8,9 +8,9 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
-  createQueryServiceMetricsViewTimeRange,
   V1Expression,
   V1MetricsViewSpec,
+  createQueryServiceMetricsViewTimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions } from "@tanstack/svelte-query";
 
@@ -30,7 +30,7 @@ export function useDashboard(instanceId: string, metricViewName: string) {
  * Gets the valid metrics view spec. Only to be used in displaying a dashboard.
  * Use {@link useDashboard} in the metrics view editor and other use cases.
  */
-export const useMetaQuery = <T = V1MetricsViewSpec>(
+export const useMetricsView = <T = V1MetricsViewSpec>(
   instanceId: string,
   metricViewName: string,
   selector?: (meta: V1MetricsViewSpec) => T,
@@ -50,7 +50,8 @@ export const useMetaQuery = <T = V1MetricsViewSpec>(
 export const useModelHasTimeSeries = (
   instanceId: string,
   metricViewName: string,
-) => useMetaQuery(instanceId, metricViewName, (meta) => !!meta?.timeDimension);
+) =>
+  useMetricsView(instanceId, metricViewName, (meta) => !!meta?.timeDimension);
 
 export function useModelAllTimeRange(
   instanceId: string,
@@ -87,7 +88,7 @@ export const useMetaMeasure = (
   metricViewName: string,
   measureName: string,
 ) =>
-  useMetaQuery(
+  useMetricsView(
     instanceId,
     metricViewName,
     (meta) => meta?.measures?.find((measure) => measure.name === measureName),
@@ -98,7 +99,7 @@ export const useMetaDimension = (
   metricViewName: string,
   dimensionName: string,
 ) =>
-  useMetaQuery(instanceId, metricViewName, (meta) => {
+  useMetricsView(instanceId, metricViewName, (meta) => {
     const dim = meta?.dimensions?.find(
       (dimension) => dimension.name === dimensionName,
     );

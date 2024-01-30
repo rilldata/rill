@@ -74,7 +74,7 @@
         {/if}
       </div>
     {/each}
-    <Button on:click={() => dispatch("add-item")} dashed>
+    <Button on:click={() => dispatch("add-item")} type="secondary" dashed>
       <div class="flex gap-x-2">
         <Add className="text-gray-700" />
         {addItemLabel}

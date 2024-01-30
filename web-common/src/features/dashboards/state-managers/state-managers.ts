@@ -70,7 +70,7 @@ export function createStateManagers({
     },
   );
 
-  // Note: this is equivalent to `useMetaQuery`
+  // Note: this is equivalent to `useMetricsView`
   const metricsSpecStore: Readable<
     QueryObserverResult<V1MetricsViewSpec, RpcStatus>
   > = derived([runtime, metricsViewNameStore], ([r, metricViewName], set) => {
@@ -85,17 +85,20 @@ export function createStateManagers({
 
   const timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
-  > = derived([runtime, metricsViewNameStore], ([runtime, mvName], set) =>
-    createQueryServiceMetricsViewTimeRange(
-      runtime.instanceId,
-      mvName,
-      {},
-      {
-        query: {
-          queryClient: queryClient,
+  > = derived(
+    [runtime, metricsViewNameStore, metricsSpecStore],
+    ([runtime, mvName, metricsView], set) =>
+      createQueryServiceMetricsViewTimeRange(
+        runtime.instanceId,
+        mvName,
+        {},
+        {
+          query: {
+            queryClient: queryClient,
+            enabled: !!metricsView.data?.timeDimension,
+          },
         },
-      },
-    ).subscribe(set),
+      ).subscribe(set),
   );
 
   const updateDashboard = (
