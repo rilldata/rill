@@ -142,6 +142,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 func countFilesInDirectory(path string) (int, error) {
 	var fileCount int
 
+	if path == "" {
+		path = "."
+	}
+
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
