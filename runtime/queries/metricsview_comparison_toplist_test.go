@@ -213,8 +213,7 @@ func TestMetricsViewsComparison_dim_order_no_sort_order(t *testing.T) {
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "sort measure 'dom' does not have a sort type")
+	require.NoError(t, err) // allow undefined sort type
 }
 
 func TestMetricsViewsComparison_measure_order(t *testing.T) {

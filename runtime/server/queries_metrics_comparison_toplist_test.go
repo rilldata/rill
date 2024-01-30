@@ -1033,8 +1033,7 @@ func TestServer_MetricsViewComparison_no_comparison_no_sort_type(t *testing.T) {
 		},
 		Exact: true,
 	})
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "sort measure 'measure_2' does not have a sort type")
+	require.NoError(t, err) // allow undefined sort type
 }
 
 func TestServer_MetricsViewComparison_no_comparison_quotes(t *testing.T) {
