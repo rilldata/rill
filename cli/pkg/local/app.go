@@ -601,10 +601,9 @@ func (s skipFieldZapEncoder) AddString(key, val string) {
 	}
 }
 
-// isExternalStorageEnabled checks if external storage is enabled for an existing project.
+// isExternalStorageEnabled determines if external storage can be enabled.
 // we can't always enable `external_table_storage` if the project dir already has a db file
 // it could have been created with older logic where every source was a table in the main db
-// if its not a fresh project we need a way to detect if `external_table_storage` was enabled before
 func isExternalStorageEnabled(dbPath string, variables map[string]string) (bool, error) {
 	_, err := os.Stat(filepath.Join(dbPath, DefaultOLAPDSN))
 	if err != nil {
