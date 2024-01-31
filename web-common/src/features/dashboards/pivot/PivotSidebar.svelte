@@ -24,7 +24,7 @@
     $metricsViewName,
     {
       limit: 1,
-      where: sanitiseExpression($dashboardStore.whereFilter),
+      where: sanitiseExpression($dashboardStore.whereFilter, undefined),
       timeStart: $timeControlsStore.timeStart,
       timeEnd: $timeControlsStore.timeEnd,
     },

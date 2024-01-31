@@ -20,8 +20,8 @@
   $: assembled = $pivotDataStore.assembled;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: sorting = $dashboardStore?.pivot?.sorting ?? [];
-  $: columnPage = $dashboardStore.pivot.columnPage;
-  $: totalColumns = $pivotDataStore.totalColumns;
+  // $: columnPage = $dashboardStore.pivot.columnPage;
+  // $: totalColumns = $pivotDataStore.totalColumns;
 
   function handleExpandedChange(updater) {
     expanded = updater(expanded);
