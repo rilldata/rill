@@ -62,8 +62,6 @@
 
   let table = createSvelteTable(options);
 
-  $: console.log(columnPage, totalColumns);
-
   let containerRefElement;
 
   // TODO: Ideally we would like to handle page changes by knowing the scroll

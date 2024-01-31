@@ -3,7 +3,6 @@ import type {
   MetricsViewSpecMeasureV2,
   V1Expression,
   V1MetricsViewAggregationResponseDataItem,
-  V1MetricsViewFilter,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import type {
@@ -60,7 +59,6 @@ export interface PivotDataStoreConfig {
   colDimensionNames: string[];
   allMeasures: MetricsViewSpecMeasureV2[];
   allDimensions: MetricsViewSpecDimensionV2[];
-  filters: V1MetricsViewFilter;
   whereFilter: V1Expression;
   pivot: PivotState;
   time: PivotTimeConfig;

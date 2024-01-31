@@ -48,7 +48,7 @@ export function createPivotAggregationRowQuery(
         {
           measures: measures.map((measure) => ({ name: measure })),
           dimensions,
-          where: sanitiseExpression(whereFilter),
+          where: sanitiseExpression(whereFilter, undefined),
           // TODO: having filter
           timeStart: timeRange?.start
             ? timeRange.start
