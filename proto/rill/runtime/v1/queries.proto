@@ -327,7 +327,7 @@ message MetricsViewAggregationDimension {
   string name = 1;
   // Optional
   TimeGrain time_grain = 2;
-  // Optional. Defaults to UTC
+  // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 3;
 }
 
@@ -353,7 +353,7 @@ enum BuiltinMeasure {
   BUILTIN_MEASURE_COUNT_DISTINCT = 2;
 }
 
-// Deprecated
+// Deprecated, use MetricsViewComparisonRequest without a comparison time range
 message MetricsViewToplistRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
@@ -381,7 +381,7 @@ message MetricsViewComparisonRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   // Required
-  MetricsViewAggregationDimension dimension = 3 [(validate.rules).repeated.min_items = 1];
+  MetricsViewAggregationDimension dimension = 3;
   // Required
   repeated MetricsViewAggregationMeasure measures = 4 [(validate.rules).repeated.min_items = 1];
   // Measures that should be compared
@@ -399,9 +399,9 @@ message MetricsViewComparisonRequest {
   Expression having = 12;
   // Optional
   repeated MetricsViewComparisonMeasureAlias aliases = 15;
-  // Optional
+  // Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
   int64 limit = 9 [(validate.rules).int64.gte = 0];
-  // Optional
+  // Optional. Defaults to 0
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   // Optional
   int32 priority = 11;
@@ -427,7 +427,7 @@ message TimeRange {
   // Optional, ie PT1M
   string iso_offset = 4;
   TimeGrain round_to_grain = 5;
-  // Optional. Defaults to UTC
+  // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 6;
 }
 
@@ -494,7 +494,7 @@ message MetricsViewTimeSeriesRequest {
   Expression where = 7;
   // Optional
   Expression having = 11;
-  // Optional. Defaults to UTC
+  // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 10;
   int32 priority = 8;
   MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
@@ -544,7 +544,7 @@ message MetricsViewRowsRequest {
   // Optional
   int64 offset = 8 [(validate.rules).int64.gte = 0];
   int32 priority = 9;
-  // Optional, defaults to UTC
+  // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 11;
   MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
 }
@@ -775,13 +775,17 @@ message TimeRangeSummary {
 }
 
 message ColumnCardinalityRequest {
+  // Required
   string instance_id = 1;
+  // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
+  // Required
   string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
 message ColumnCardinalityResponse {
+  // Not null
   CategoricalSummary categorical_summary = 1;
 }
 
@@ -800,7 +804,7 @@ message ColumnTimeSeriesRequest {
   // Unused
   int32 sample_size = 8 [(validate.rules).int32.gte = 0];
   int32 priority = 9;
-  // Optional. Defaults to UTC
+  // Optional. IANA format, ie Europe/Copenhagen. Defaults to UTC
   string time_zone = 10;
   message BasicMeasure {
     // Unused
