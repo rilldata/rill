@@ -9,6 +9,7 @@ import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dash
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   type DashboardTimeControls,
+  TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
@@ -238,15 +239,28 @@ function getDashboardFromComparisonRequest({
   }
 
   if (req.comparisonTimeRange) {
-    dashboard.selectedComparisonTimeRange = getSelectedTimeRange(
-      req.comparisonTimeRange,
-      timeRangeSummary,
-      req.comparisonTimeRange.isoOffset,
-      executionTime,
-    );
+    if (
+      !req.comparisonTimeRange.isoOffset &&
+      req.comparisonTimeRange.isoDuration
+    ) {
+      dashboard.selectedComparisonTimeRange = {
+        name: TimeComparisonOption.CONTIGUOUS,
+        start: undefined,
+        end: undefined,
+      };
+    } else {
+      dashboard.selectedComparisonTimeRange = getSelectedTimeRange(
+        req.comparisonTimeRange,
+        timeRangeSummary,
+        req.comparisonTimeRange.isoOffset,
+        executionTime,
+      );
+    }
 
-    dashboard.selectedComparisonTimeRange.interval =
-      dashboard.selectedTimeRange?.interval;
+    if (dashboard.selectedComparisonTimeRange) {
+      dashboard.selectedComparisonTimeRange.interval =
+        dashboard.selectedTimeRange?.interval;
+    }
     dashboard.showTimeComparison = true;
   }
 
@@ -274,7 +288,7 @@ function getSelectedTimeRange(
   timeRangeSummary: V1TimeRangeSummary,
   duration: string,
   executionTime: string,
-) {
+): DashboardTimeControls | undefined {
   let selectedTimeRange: DashboardTimeControls;
 
   if (timeRange.start && timeRange.end) {
