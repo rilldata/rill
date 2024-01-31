@@ -66,15 +66,17 @@
   >
     Expand Visible
   </Button>
-  <Button
-    compact
-    type="text"
-    on:click={() => {
-      metricsExplorerStore.setPivotExpanded($metricsViewName, {});
-    }}
-  >
-    Collapse All
-  </Button>
+  {#if Object.keys(expanded).length > 0}
+    <Button
+      compact
+      type="text"
+      on:click={() => {
+        metricsExplorerStore.setPivotExpanded($metricsViewName, {});
+      }}
+    >
+      Collapse All
+    </Button>
+  {/if}
   {#if isFetching}
     <Spinner size="18px" status={EntityStatus.Running} />
   {/if}
