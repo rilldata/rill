@@ -9,13 +9,15 @@
   import { error } from "@sveltejs/kit";
   import { onMount } from "svelte";
 
+  const { readOnly } = featureFlags;
+
   $: modelName = $page.params.name;
 
   /** If ?focus, tell the page to focus the editor as soon as available */
   $: focusEditor = $page.url.searchParams.get("focus") === "";
 
   onMount(() => {
-    if ($featureFlags.readOnly) {
+    if ($readOnly) {
       throw error(404, "Page not found");
     }
   });

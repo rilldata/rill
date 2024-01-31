@@ -224,7 +224,7 @@
           cy={y1}
           r={3}
           paint-order="stroke"
-          class="fill-blue-700"
+          class="fill-primary-700"
           stroke="white"
           stroke-width="3"
         />
@@ -236,7 +236,7 @@
           cy={y1}
           r={3}
           paint-order="stroke"
-          class="fill-blue-700"
+          class="fill-primary-700"
           stroke="white"
           stroke-width="3"
         />

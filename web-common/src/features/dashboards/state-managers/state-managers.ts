@@ -1,4 +1,8 @@
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  contextColWidthDefaults,
+  type ContextColWidths,
+  type MetricsExplorerEntity,
+} from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   V1MetricsViewTimeRangeResponse,
   createQueryServiceMetricsViewTimeRange,
@@ -46,6 +50,13 @@ export type StateManagers = {
    * A collection of functions that update the dashboard data model.
    */
   actions: StateManagerActions;
+  /**
+   * Store to track the width of the context columns in leaderboards.
+   * FIXME: this was implemented as a low-risk fix for in advance of
+   * the new branding release 2024-01-31, but should be revisted since
+   * it's a one-off solution that introduces another new pattern.
+   */
+  contextColumnWidths: Writable<ContextColWidths>;
 };
 
 export const DEFAULT_STORE_KEY = Symbol("state-managers");
@@ -70,7 +81,7 @@ export function createStateManagers({
     },
   );
 
-  // Note: this is equivalent to `useMetaQuery`
+  // Note: this is equivalent to `useMetricsView`
   const metricsSpecStore: Readable<
     QueryObserverResult<V1MetricsViewSpec, RpcStatus>
   > = derived([runtime, metricsViewNameStore], ([r, metricViewName], set) => {
@@ -85,17 +96,20 @@ export function createStateManagers({
 
   const timeRangeSummaryStore: Readable<
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
-  > = derived([runtime, metricsViewNameStore], ([runtime, mvName], set) =>
-    createQueryServiceMetricsViewTimeRange(
-      runtime.instanceId,
-      mvName,
-      {},
-      {
-        query: {
-          queryClient: queryClient,
+  > = derived(
+    [runtime, metricsViewNameStore, metricsSpecStore],
+    ([runtime, mvName, metricsView], set) =>
+      createQueryServiceMetricsViewTimeRange(
+        runtime.instanceId,
+        mvName,
+        {},
+        {
+          query: {
+            queryClient: queryClient,
+            enabled: !!metricsView.data?.timeDimension,
+          },
         },
-      },
-    ).subscribe(set),
+      ).subscribe(set),
   );
 
   const updateDashboard = (
@@ -105,6 +119,10 @@ export function createStateManagers({
     // TODO: Remove dependency on MetricsExplorerStore singleton and its exports
     updateMetricsExplorerByName(name, callback);
   };
+
+  const contextColumnWidths = writable<ContextColWidths>(
+    contextColWidthDefaults,
+  );
 
   return {
     runtime: runtime,
@@ -124,6 +142,7 @@ export function createStateManagers({
       dashboardStore,
       metricsSpecQueryResultStore: metricsSpecStore,
       timeRangeSummaryStore,
+      queryClient,
     }),
     /**
      * A collection of functions that update the dashboard data model.
@@ -134,5 +153,6 @@ export function createStateManagers({
         queryClient.cancelQueries();
       },
     }),
+    contextColumnWidths,
   };
 }

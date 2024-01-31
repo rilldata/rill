@@ -3,7 +3,6 @@
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getDimensionTableExportArgs } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export-utils";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
     V1ExportFormat,
     createQueryServiceExport,
@@ -13,21 +12,18 @@
   import exportToplist from "./export-toplist";
 
   export let includeScheduledReport: boolean;
-  export let metricViewName: string;
 
   let exportMenuOpen = false;
   let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
-  const timeControlStore = useTimeControlStore(ctx);
 
   const exportDash = createQueryServiceExport();
   const handleExportTopList = async (format: V1ExportFormat) => {
     exportToplist({
-      metricViewName,
+      ctx,
       query: exportDash,
       format,
-      timeControlStore,
     });
   };
 
@@ -69,11 +65,11 @@
     />
   </button>
   <Menu
+    let:toggleFloatingElement
     minWidth=""
     on:click-outside={toggleFloatingElement}
     on:escape={toggleFloatingElement}
     slot="floating-element"
-    let:toggleFloatingElement
   >
     <MenuItem
       on:select={() => {

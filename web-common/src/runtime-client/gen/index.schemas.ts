@@ -208,6 +208,7 @@ export type QueryServiceMetricsViewRowsBody = {
 export type QueryServiceMetricsViewComparisonBody = {
   dimension?: V1MetricsViewAggregationDimension;
   measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
   sort?: V1MetricsViewComparisonSort[];
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
@@ -1563,6 +1564,7 @@ export interface V1MetricsViewComparisonRequest {
   metricsViewName?: string;
   dimension?: V1MetricsViewAggregationDimension;
   measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
   sort?: V1MetricsViewComparisonSort[];
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;

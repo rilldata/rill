@@ -7,7 +7,8 @@ export function clearAllFilters({
 }: DashboardMutables) {
   const hasFilters =
     dashboard.whereFilter.cond?.exprs?.length ||
-    dashboard.havingFilter.cond?.exprs?.length;
+    dashboard.havingFilter.cond?.exprs?.length ||
+    dashboard.dimensionThresholdFilters?.length;
   if (!hasFilters) {
     return;
   }
@@ -16,6 +17,7 @@ export function clearAllFilters({
 
   dashboard.whereFilter = createAndExpression([]);
   dashboard.havingFilter = createAndExpression([]);
+  dashboard.dimensionThresholdFilters = [];
   dashboard.temporaryFilterName = null;
   dashboard.dimensionFilterExcludeMode.clear();
   dashboard.pinIndex = -1;

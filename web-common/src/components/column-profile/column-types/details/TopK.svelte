@@ -23,7 +23,7 @@
   import { slide } from "svelte/transition";
   import TopKListItem from "./TopKListItem.svelte";
 
-  export let colorClass = "bg-blue-200";
+  export let colorClass = "bg-primary-200";
 
   const { shiftClickAction } = createShiftClickAction();
 

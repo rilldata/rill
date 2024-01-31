@@ -243,7 +243,7 @@
         {yExtentMax}
       />
       <line
-        class="stroke-blue-200"
+        class="stroke-primary-200"
         x1={config.plotLeft}
         x2={config.plotLeft + config.plotRight}
         y1={yScale(0)}
