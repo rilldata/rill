@@ -6,7 +6,6 @@
   import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { CONTEXT_COL_MAX_WIDTH } from "../state-managers/actions/context-columns";
-
   import { LeaderboardContextColumn } from "../leaderboard-context-column";
 
   export let itemData: LeaderboardItemData;
