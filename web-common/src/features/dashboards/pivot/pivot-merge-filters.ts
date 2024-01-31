@@ -1,18 +1,21 @@
-/**
- * Merge two filters together.
- * This might change later when move to the newer
- * filter format.
- */
-
 import {
   copyFilterExpression,
   createAndExpression,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
-  type V1Expression,
   V1Operation,
+  type V1Expression,
 } from "@rilldata/web-common/runtime-client";
+
+function valueIntersection(
+  valueArray1: V1Expression[],
+  valueArray2: V1Expression[],
+) {
+  return valueArray1.filter((obj1) =>
+    valueArray2.some((obj2) => obj1.val === obj2.val),
+  );
+}
 
 export function mergeFilters(
   filter1: V1Expression,
@@ -45,7 +48,20 @@ export function mergeFilters(
     )
       return;
     if (!inExprMap.has(ident)) return;
-    e.cond?.exprs?.push(...(inExprMap.get(ident)?.cond?.exprs?.slice(1) ?? []));
+
+    // take intersection of IN expressions
+    const inExpr = inExprMap.get(ident);
+    const inExprVals = inExpr?.cond?.exprs?.slice(1) ?? [];
+    const exprVals = e.cond?.exprs?.slice(1) ?? [];
+    const intersection = valueIntersection(inExprVals, exprVals);
+    if (intersection.length === 0) {
+      // no intersection, remove the identifier from the map
+      inExprMap.delete(ident);
+      return;
+    }
+    // replace the expression with the intersection
+    e.cond!.exprs = [{ ident }, ...intersection]; // asserting that e.cond is not undefined
+    // remove the identifier from the map
     inExprMap.delete(ident);
   });
 

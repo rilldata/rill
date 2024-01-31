@@ -1,3 +1,4 @@
+import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   createAndExpression,
   createInExpression,
@@ -9,25 +10,22 @@ import {
   TimeOffsetType,
   TimeRangeString,
 } from "@rilldata/web-common/lib/time/types";
-import type { DashboardTimeRange } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
-  MetricsViewFilterCond,
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   V1Expression,
   V1MetricsViewAggregationSort,
-  V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import type {
   PivotAxesData,
+  PivotChipData,
   PivotDataStoreConfig,
   PivotState,
   PivotTimeConfig,
   TimeFilters,
 } from "./types";
 import { PivotChipType } from "./types";
-import type { PivotChipData } from "./types";
 
 export function getMeasuresInPivotColumns(
   pivot: PivotState,
@@ -482,6 +480,7 @@ export function getSortForAccessor(
   }
 
   const filterForSort: V1Expression = createAndExpression(colDimensionFilters);
+  const mergedFilter = mergeFilters(config.whereFilter, filterForSort);
 
   const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
 
@@ -493,7 +492,7 @@ export function getSortForAccessor(
   ];
 
   return {
-    where: filterForSort,
+    where: mergedFilter,
     sortPivotBy,
     timeRange,
   };

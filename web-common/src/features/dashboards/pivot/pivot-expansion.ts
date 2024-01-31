@@ -1,3 +1,4 @@
+import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createAndExpression,
@@ -171,7 +172,7 @@ export function queryExpandedRowMeasureValues(
 
       const filterForRowDimensionAxes = createAndExpression(rowNestFilters);
 
-      const { sortPivotBy } = getSortForAccessor(
+      const { where, sortPivotBy } = getSortForAccessor(
         anchorDimension,
         config,
         columnDimensionAxesData,
@@ -182,10 +183,15 @@ export function queryExpandedRowMeasureValues(
         timeFilters,
       );
 
-      // const mergedFilter = mergeFilters(
-      //   createAndExpression(rowNestFilters),
-      //   config.whereFilter,
-      // );
+      const mergeRowAndSortFilters = mergeFilters(
+        filterForRowDimensionAxes,
+        where,
+      );
+
+      const allMergedFilters = mergeFilters(
+        mergeRowAndSortFilters,
+        config.whereFilter,
+      );
 
       return derived(
         [
@@ -194,7 +200,7 @@ export function queryExpandedRowMeasureValues(
             ctx,
             config,
             [anchorDimension],
-            filterForRowDimensionAxes,
+            allMergedFilters,
             sortPivotBy,
             timeRange,
           ),
@@ -203,7 +209,7 @@ export function queryExpandedRowMeasureValues(
             config,
             anchorDimension,
             columnDimensionAxesData,
-            createAndExpression(rowNestFilters),
+            allMergedFilters,
             timeRange,
           ),
         ],

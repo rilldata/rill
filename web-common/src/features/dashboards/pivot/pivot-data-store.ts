@@ -1,4 +1,5 @@
 import { sliceColumnAxesDataForDef } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
+import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -140,6 +141,8 @@ export function createTableCellQuery(
     anchorDimension,
   );
 
+  const mergedFilter = mergeFilters(filterForInitialTable, config.whereFilter);
+
   const sortBy = [
     {
       desc: false,
@@ -150,7 +153,7 @@ export function createTableCellQuery(
     ctx,
     config.measureNames,
     dimensionBody,
-    filterForInitialTable, // TODO: merge with global filter
+    mergedFilter,
     sortBy,
     "10000",
   );
