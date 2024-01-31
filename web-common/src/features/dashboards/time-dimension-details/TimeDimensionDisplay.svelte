@@ -135,7 +135,7 @@
   }
 
   function togglePin() {
-    cancelDashboardQueries(queryClient, metricViewName);
+    // cancelDashboardQueries(queryClient, metricViewName);
 
     const pinIndex = $dashboardStore?.pinIndex;
     let newPinIndex = -1;
@@ -171,7 +171,7 @@
   isRowsEmpty={!rowHeaderLabels.length}
   {metricViewName}
   on:search={(e) => {
-    cancelDashboardQueries(queryClient, metricViewName);
+    // cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setSearchText(metricViewName, e.detail);
   }}
   on:toggle-all-search-items={() => toggleAllSearchItems()}
@@ -196,7 +196,7 @@
     on:toggle-pin={togglePin}
     on:toggle-filter={toggleFilter}
     on:toggle-sort={(e) => {
-      cancelDashboardQueries(queryClient, metricViewName);
+      // cancelDashboardQueries(queryClient, metricViewName);
       metricsExplorerStore.toggleSort(
         metricViewName,
         e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE,

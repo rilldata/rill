@@ -135,7 +135,7 @@ export function createStateManagers({
     actions: createStateManagerActions({
       updateDashboard,
       cancelQueries: () => {
-        queryClient.cancelQueries();
+        // queryClient.cancelQueries();
       },
     }),
   };

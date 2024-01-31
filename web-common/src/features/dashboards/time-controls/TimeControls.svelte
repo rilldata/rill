@@ -155,7 +155,7 @@
      */
     comparisonTimeRange: DashboardTimeControls | undefined,
   ) {
-    cancelDashboardQueries(queryClient, metricViewName);
+    // cancelDashboardQueries(queryClient, metricViewName);
 
     metricsExplorerStore.selectTimeRange(
       metricViewName,

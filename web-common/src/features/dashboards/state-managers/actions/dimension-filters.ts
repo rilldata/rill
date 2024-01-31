@@ -20,7 +20,7 @@ export function toggleDimensionValueSelection(
 ) {
   // if we are able to update the filters, we must cancel any queries
   // that are currently running.
-  cancelQueries();
+  // cancelQueries();
 
   if (dashboard.temporaryFilterName !== null) {
     dashboard.temporaryFilterName = null;
@@ -79,7 +79,7 @@ export function toggleDimensionFilterMode(
 
   // if we are able to update the filters, we must cancel any queries
   // that are currently running.
-  cancelQueries();
+  // cancelQueries();
 
   const exprIdx = dashboard.whereFilter.cond.exprs.findIndex(
     (e) => e.cond?.exprs?.[0].ident === dimensionName,
@@ -98,7 +98,7 @@ export function removeDimensionFilter(
 ) {
   // if we are able to update the filters, we must cancel any queries
   // that are currently running.
-  cancelQueries();
+  // cancelQueries();
 
   if (dashboard.temporaryFilterName === dimensionName) {
     dashboard.temporaryFilterName = null;
@@ -117,7 +117,7 @@ export function selectItemsInFilter(
 ) {
   // if we are able to update the filters, we must cancel any queries
   // that are currently running.
-  cancelQueries();
+  // cancelQueries();
 
   const isInclude = !dashboard.dimensionFilterExcludeMode.get(dimensionName);
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
@@ -148,7 +148,7 @@ export function deselectItemsInFilter(
 ) {
   // if we are able to update the filters, we must cancel any queries
   // that are currently running.
-  cancelQueries();
+  // cancelQueries();
 
   const exprIdx = getWhereFilterExpressionIndex({ dashboard })(dimensionName);
   if (exprIdx === undefined || exprIdx === -1) {

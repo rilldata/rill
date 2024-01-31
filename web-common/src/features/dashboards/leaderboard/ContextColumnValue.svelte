@@ -30,21 +30,21 @@
 
   let element: HTMLElement;
 
-  $: {
-    // Re-observe the width when the context column changes,
-    // but after a short delay to allow the DOM to update.
-    if (element && $contextColumn) {
-      setTimeout(() => {
-        // the element may be gone by the time we get here,
-        // if so, don't try to observe it
-        if (!element) return;
-        observeContextColumnWidth(
-          $contextColumn,
-          element.getBoundingClientRect().width,
-        );
-      }, 17);
-    }
-  }
+  // $: {
+  //   // Re-observe the width when the context column changes,
+  //   // but after a short delay to allow the DOM to update.
+  //   if (element && $contextColumn) {
+  //     setTimeout(() => {
+  //       // the element may be gone by the time we get here,
+  //       // if so, don't try to observe it
+  //       if (!element) return;
+  //       observeContextColumnWidth(
+  //         $contextColumn,
+  //         element.getBoundingClientRect().width,
+  //       );
+  //     }, 17);
+  //   }
+  // }
 </script>
 
 {#if !$isHidden}

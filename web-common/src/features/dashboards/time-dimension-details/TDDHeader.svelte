@@ -97,12 +97,12 @@
   }
 
   function toggleFilterMode() {
-    cancelDashboardQueries(queryClient, metricViewName);
+    // cancelDashboardQueries(queryClient, metricViewName);
     toggleDimensionFilterMode(dimensionName);
   }
 
   function switchMeasure(event) {
-    cancelDashboardQueries(queryClient, metricViewName);
+    // cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setExpandedMeasureName(metricViewName, event.detail);
   }
 </script>

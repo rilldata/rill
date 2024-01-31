@@ -96,10 +96,10 @@
       if (hasChanged) {
         httpRequestQueue.removeByName(modelName);
         // cancel all existing analytical queries currently running.
-        await queryClient.cancelQueries({
-          fetchStatus: "fetching",
-          predicate: (query) => isProfilingQuery(query, modelName),
-        });
+        // await queryClient.cancelQueries({
+        //   fetchStatus: "fetching",
+        //   predicate: (query) => isProfilingQuery(query, modelName),
+        // });
       }
 
       await $updateModel.mutateAsync({

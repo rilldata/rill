@@ -109,7 +109,8 @@ function dashboardMutatorToUpdater<T extends unknown[]>(
   return (...x) => {
     const callback = (dash: MetricsExplorerEntity) =>
       mutator(
-        { dashboard: dash, cancelQueries: connectedMutators.cancelQueries },
+        { dashboard: dash, cancelQueries: () => {} },
+        // connectedMutators.cancelQueries },
         ...x,
       );
     connectedMutators.updateDashboard(callback);

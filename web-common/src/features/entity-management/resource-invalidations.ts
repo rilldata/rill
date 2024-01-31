@@ -149,16 +149,16 @@ async function invalidateRemovedResource(
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:
-      queryClient.cancelQueries({
-        predicate: (query) => isProfilingQuery(query, resource.meta.name.name),
-      });
+      // queryClient.cancelQueries({
+      //   predicate: (query) => isProfilingQuery(query, resource.meta.name.name),
+      // });
       break;
 
     case ResourceKind.MetricsView:
-      queryClient.cancelQueries({
-        predicate: (query) =>
-          invalidationForMetricsViewData(query, resource.meta.name.name),
-      });
+      // queryClient.cancelQueries({
+      //   predicate: (query) =>
+      //     invalidationForMetricsViewData(query, resource.meta.name.name),
+      // });
       break;
   }
 }

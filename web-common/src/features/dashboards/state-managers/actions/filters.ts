@@ -13,7 +13,7 @@ export function clearAllFilters({
     return;
   }
 
-  cancelQueries();
+  // cancelQueries();
 
   dashboard.whereFilter = createAndExpression([]);
   dashboard.havingFilter = createAndExpression([]);
