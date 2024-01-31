@@ -1,3 +1,8 @@
+import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { getOffset } from "@rilldata/web-common/lib/time/transforms";
 import {
@@ -6,22 +11,21 @@ import {
   TimeRangeString,
 } from "@rilldata/web-common/lib/time/types";
 import type {
-  MetricsViewFilterCond,
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
+  V1Expression,
   V1MetricsViewAggregationSort,
-  V1MetricsViewFilter,
 } from "@rilldata/web-common/runtime-client";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import type {
   PivotAxesData,
+  PivotChipData,
   PivotDataStoreConfig,
   PivotState,
   PivotTimeConfig,
   TimeFilters,
 } from "./types";
 import { PivotChipType } from "./types";
-import type { PivotChipData } from "./types";
 
 export function getMeasuresInPivotColumns(
   pivot: PivotState,
@@ -219,12 +223,17 @@ export function reconcileMissingDimensionValues(
  * in the cache
  */
 export function getPivotConfigKey(config: PivotDataStoreConfig) {
-  const { colDimensionNames, rowDimensionNames, measureNames, filters, pivot } =
-    config;
+  const {
+    colDimensionNames,
+    rowDimensionNames,
+    measureNames,
+    whereFilter,
+    pivot,
+  } = config;
 
   const { sorting } = pivot;
   const sortingKey = JSON.stringify(sorting);
-  const filterKey = JSON.stringify(filters);
+  const filterKey = JSON.stringify(whereFilter);
   const dimsAndMeasures = rowDimensionNames
     .concat(measureNames, colDimensionNames)
     .join("_");
@@ -317,23 +326,21 @@ export function getFilterForPivotTable(
   isInitialTable = false,
   anchorDimension: string | undefined = undefined,
   yLimit = 100,
-) {
+): V1Expression {
   // TODO: handle for already existing global filters
 
   const { colDimensionNames, rowDimensionNames, time } = config;
 
-  let rowFilters: MetricsViewFilterCond[] = [];
+  let rowFilters: V1Expression | undefined;
   if (
     isInitialTable &&
     anchorDimension &&
     anchorDimension !== time.timeDimension
   ) {
-    rowFilters = [
-      {
-        name: rowDimensionNames[0],
-        in: rowDimensionValues.slice(0, yLimit),
-      },
-    ];
+    rowFilters = createInExpression(
+      rowDimensionNames[0],
+      rowDimensionValues.slice(0, yLimit),
+    );
   }
 
   const colFiltersForPage = getColumnFiltersForPage(
@@ -345,12 +352,10 @@ export function getFilterForPivotTable(
     config.measureNames.length,
   );
 
-  const filters = {
-    include: [...colFiltersForPage, ...rowFilters],
-    exclude: [],
-  };
-
-  return filters;
+  return createAndExpression([
+    ...colFiltersForPage,
+    ...(rowFilters ? [rowFilters] : []),
+  ]);
 }
 
 /**
@@ -406,7 +411,11 @@ export function getSortForAccessor(
   anchorDimension: string,
   config: PivotDataStoreConfig,
   columnDimensionAxes: Record<string, string[]> = {},
-) {
+): {
+  where: V1Expression;
+  sortPivotBy: V1MetricsViewAggregationSort[];
+  timeRange: TimeRangeString;
+} {
   let sortPivotBy: V1MetricsViewAggregationSort[] = [];
 
   const defaultTimeRange = {
@@ -417,7 +426,7 @@ export function getSortForAccessor(
   // Return un-changed filter if no sorting is applied
   if (config.pivot?.sorting?.length === 0) {
     return {
-      filters: config.filters,
+      where: config.whereFilter,
       sortPivotBy,
       timeRange: defaultTimeRange,
     };
@@ -436,7 +445,7 @@ export function getSortForAccessor(
       },
     ];
     return {
-      filters: config.filters,
+      where: config.whereFilter,
       sortPivotBy,
       timeRange: defaultTimeRange,
     };
@@ -451,7 +460,7 @@ export function getSortForAccessor(
       },
     ];
     return {
-      filters: config.filters,
+      where: config.whereFilter,
       sortPivotBy,
       timeRange: defaultTimeRange,
     };
@@ -461,7 +470,7 @@ export function getSortForAccessor(
   const [accessorWithoutMeasure, measureIndex] = accessor.split("m");
   const accessorParts = accessorWithoutMeasure.split("_");
 
-  let colDimensionFilters: MetricsViewFilterCond[];
+  let colDimensionFilters: V1Expression[];
   const timeFilters: TimeFilters[] = [];
   if (accessorParts[0] === "") {
     // There are no column dimensions in the accessor
@@ -473,15 +482,12 @@ export function getSortForAccessor(
         const columnDimensionName = colDimensionNames[c];
         const value = columnDimensionAxes[columnDimensionName][v];
 
-        return {
-          name: columnDimensionName,
-          in: [value],
-        };
+        return createInExpression(columnDimensionName, [value]);
       })
       .filter((colFilter) => {
-        if (colFilter.name === config.time.timeDimension) {
+        if (colFilter.cond?.exprs?.[0].ident === config.time.timeDimension) {
           timeFilters.push({
-            timeStart: colFilter.in[0],
+            timeStart: colFilter.cond?.exprs?.[1].val as string,
             interval: config.time.interval,
           });
           return false;
@@ -489,10 +495,8 @@ export function getSortForAccessor(
       });
   }
 
-  const filterForSort: V1MetricsViewFilter = {
-    include: [...colDimensionFilters],
-    exclude: [],
-  };
+  const filterForSort: V1Expression = createAndExpression(colDimensionFilters);
+  const mergedFilter = mergeFilters(config.whereFilter, filterForSort);
 
   const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
 
@@ -504,7 +508,7 @@ export function getSortForAccessor(
   ];
 
   return {
-    filters: filterForSort,
+    where: mergedFilter,
     sortPivotBy,
     timeRange,
   };

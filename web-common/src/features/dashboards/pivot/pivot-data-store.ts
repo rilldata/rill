@@ -1,4 +1,5 @@
 import { sliceColumnAxesDataForDef } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
+import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -69,7 +70,6 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
           colDimensionNames: [],
           allMeasures: [],
           allDimensions: [],
-          filters: { include: [], exclude: [] },
           whereFilter: dashboardStore.whereFilter,
           pivot: dashboardStore.pivot,
           time,
@@ -95,7 +95,6 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
         colDimensionNames,
         allMeasures: metricsView.data?.measures,
         allDimensions: metricsView.data?.dimensions,
-        filters: { include: [], exclude: [] },
         whereFilter: dashboardStore.whereFilter,
         pivot: dashboardStore.pivot,
         time,
@@ -142,6 +141,8 @@ export function createTableCellQuery(
     anchorDimension,
   );
 
+  const mergedFilter = mergeFilters(filterForInitialTable, config.whereFilter);
+
   const sortBy = [
     {
       desc: false,
@@ -152,8 +153,7 @@ export function createTableCellQuery(
     ctx,
     config.measureNames,
     dimensionBody,
-    filterForInitialTable,
-    config.whereFilter,
+    mergedFilter,
     sortBy,
     "10000",
   );
@@ -222,7 +222,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
       ctx,
       config,
       colDimensionNames,
-      config.filters,
+      config.whereFilter,
     );
 
     return derived(
@@ -239,7 +239,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         }
         const anchorDimension = rowDimensionNames[0];
 
-        const { filters, sortPivotBy, timeRange } = getSortForAccessor(
+        const { where, sortPivotBy, timeRange } = getSortForAccessor(
           anchorDimension,
           config,
           columnDimensionAxes?.data,
@@ -251,7 +251,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           ctx,
           config,
           rowDimensionNames.slice(0, 1),
-          filters,
+          where,
           sortPivotBy,
           timeRange,
         );
@@ -264,7 +264,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           ctx,
           config,
           rowDimensionNames.slice(0, 1),
-          config.filters,
+          config.whereFilter,
         );
 
         /**
@@ -373,7 +373,6 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   ctx,
                   config.measureNames,
                   [],
-                  config.filters,
                   config.whereFilter,
                   [],
                   "10000", // Using 10000 for cache hit

@@ -15,9 +15,9 @@
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
 
   function expandVisible() {
-    const lowestVisibleRow = 0;
+    // const lowestVisibleRow = 0;
     const nestedLevels = 4;
-    const maxNestedLevelsToExpand = 3;
+    const maxNestedLevelsToExpand = Math.max(3, nestedLevels);
     const maxExpandPerLevel = 3;
 
     // Helper function to recursively expand rows

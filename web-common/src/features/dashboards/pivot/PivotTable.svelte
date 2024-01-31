@@ -55,17 +55,14 @@
   $: assembled = $pivotDataStore.assembled;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: sorting = $dashboardStore?.pivot?.sorting ?? [];
-  $: columnPage = $dashboardStore.pivot.columnPage;
-  $: totalColumns = $pivotDataStore.totalColumns;
+  // $: columnPage = $dashboardStore.pivot.columnPage;
+  // $: totalColumns = $pivotDataStore.totalColumns;
 
   $: headerGroups = $table.getHeaderGroups();
-
   $: measureCount = getMeasureCountInColumn(
     $dashboardStore.pivot,
     $visibleMeasures,
   );
-
-  $: console.log(columnPage, totalColumns);
 
   function handleExpandedChange(updater) {
     expanded = updater(expanded);
