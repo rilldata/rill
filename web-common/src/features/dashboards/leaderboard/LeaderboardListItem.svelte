@@ -1,11 +1,10 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { FormattedDataType } from "@rilldata/web-common/components/data-types";
   import { fly, slide } from "svelte/transition";
   import BarAndLabel from "../../../components/BarAndLabel.svelte";
-  import { FormattedDataType } from "@rilldata/web-common/components/data-types";
 
-  import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
+  import { slideRight } from "@rilldata/web-common/lib/transitions";
 
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
 
@@ -16,11 +15,11 @@
 
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
 
+  import { getStateManagers } from "../state-managers/state-managers";
+  import ContextColumnValue from "./ContextColumnValue.svelte";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import type { LeaderboardItemData } from "./leaderboard-utils";
-  import ContextColumnValue from "./ContextColumnValue.svelte";
-  import { getStateManagers } from "../state-managers/state-managers";
 
   export let dimensionName: string;
 
@@ -69,8 +68,8 @@
   $: color = excluded
     ? "ui-measure-bar-excluded"
     : selected
-    ? "ui-measure-bar-included-selected"
-    : "ui-measure-bar-included";
+      ? "ui-measure-bar-included-selected"
+      : "ui-measure-bar-included";
 
   const { shiftClickAction } = createShiftClickAction();
   async function shiftClickHandler(label) {
@@ -83,16 +82,13 @@
       message: `copied dimension value "${truncatedLabel}" to clipboard`,
     });
   }
-  const dispatch = createEventDispatcher();
 
   let hovered = false;
   const onHover = () => {
     hovered = true;
-    dispatch("focus");
   };
   const onLeave = () => {
     hovered = false;
-    dispatch("blur");
   };
 </script>
 
@@ -102,19 +98,24 @@
     on:blur={onLeave}
     on:click={(e) => {
       if (e.shiftKey) return;
-      toggleDimensionValueSelection(dimensionName, label);
+      toggleDimensionValueSelection(
+        dimensionName,
+        label,
+        false,
+        e.ctrlKey || e.metaKey,
+      );
     }}
     on:focus={onHover}
     on:keydown
     on:mouseleave={onLeave}
     on:mouseover={onHover}
     on:shift-click={() => shiftClickHandler(label)}
-    transition:slide|local={{ duration: 200 }}
+    transition:slide={{ duration: 200 }}
     use:shiftClickAction
   >
     <LeaderboardItemFilterIcon
-      {isBeingCompared}
       {excluded}
+      {isBeingCompared}
       selectionIndex={itemData?.selectedIndex}
     />
     <BarAndLabel
@@ -142,14 +143,22 @@
         <div
           class="justify-self-end overflow-hidden ui-copy-number flex gap-x-4 items-baseline"
         >
+          <!--
+            FIXME: "local" default in svelte 4.0, remove after upgrading
+            https://github.com/sveltejs/svelte/issues/6812#issuecomment-1593551644
+          -->
           <div
             class="flex items-baseline gap-x-1"
-            in:fly={{ duration: 200, y: 4 }}
+            in:fly|local={{ duration: 200, y: 4 }}
           >
             {#if showPreviousTimeValue}
+              <!--
+              FIXME: "local" default in svelte 4.0, remove after upgrading
+              https://github.com/sveltejs/svelte/issues/6812#issuecomment-1593551644
+            -->
               <span
                 class="inline-block opacity-50"
-                transition:slideRight={{ duration: LIST_SLIDE_DURATION }}
+                transition:slideRight|local={{ duration: LIST_SLIDE_DURATION }}
               >
                 {previousValueString}
                 →
@@ -175,6 +184,7 @@
     {excluded}
     {filterExcludeMode}
     {label}
+    {selected}
     slot="tooltip-content"
   />
 </Tooltip>

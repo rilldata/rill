@@ -1,0 +1,10 @@
+The `duckdb` driver has a number of complexities that can be removed as we change our logic or duckDB evolves:
+
+- `duckDB` runs into a number of issues on concurrent reads and writes like the `wal` file explodes. To solve this we write every table in a different `.db` file and attach it into `main` db. Relevant issue : https://github.com/duckdb/duckdb/issues/9150 (Note : its not fully fixed as of writing). We call this as `external table storage`.
+- `duckDB` doesn't free storage when table is dropped. We see that it is also not able to re-use this entire space leading to ever increasing db file size due to source refreshes. The above fix also solve this issue since every new table is created in a new file.
+- `duckDB` sometimes can run into internal errors after which every new query fails. So we need to reopen db handles when this happens. Check `reopenDB()` in `runtime/drivers/duckdb/duckdb.go`.
+- `varchar` columns can take up more space and are inefficient for querying due to duckDB's lightweight compression. If the cardinality of such columns is low, we can convert them into `enum` to improve performance. More details in this notion doc : https://www.notion.so/rilldata/Converting-low-cardinality-VARCHAR-dimensions-to-ENUMs-a07ca0a26bca4338a6f941c2604e9f62?pvs=4
+- `duckDB` views have somewhat unusual behaviour if using `*` in the view definition and order of the columns in the underlying table changes. Refer `Test_connection_ChangingOrder` in `runtime/drivers/duckdb/olap_crud_test.go` for an example. To mitigate this we expand `*` to include all columns in sorted order in the view. Refer `generateSelectQuery` in `runtime/drivers/duckdb/olap.go`. Since we are changing order of the columns we also enable it just for cloud since users can be interested in original order while doing modelling locally. 
+- We use `allow_host_access` as a proxy to check if its local or cloud which is a hack we would like to remove in future. 
+
+Few others are also listed in comments in the code. 

@@ -4,23 +4,23 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func OrgCmd(cfg *config.Config) *cobra.Command {
+func OrgCmd(ch *cmdutil.Helper) *cobra.Command {
 	orgCmd := &cobra.Command{
 		Use:               "org",
 		Short:             "Manage organisations",
-		PersistentPreRunE: cmdutil.CheckAuth(cfg),
+		PersistentPreRunE: cmdutil.CheckAuth(ch.Config),
 	}
-	orgCmd.AddCommand(CreateCmd(cfg))
-	orgCmd.AddCommand(EditCmd(cfg))
-	orgCmd.AddCommand(SwitchCmd(cfg))
-	orgCmd.AddCommand(ListCmd(cfg))
-	orgCmd.AddCommand(DeleteCmd(cfg))
-	orgCmd.AddCommand(RenameCmd(cfg))
+
+	orgCmd.AddCommand(CreateCmd(ch))
+	orgCmd.AddCommand(EditCmd(ch))
+	orgCmd.AddCommand(SwitchCmd(ch))
+	orgCmd.AddCommand(ListCmd(ch))
+	orgCmd.AddCommand(DeleteCmd(ch))
+	orgCmd.AddCommand(RenameCmd(ch))
 
 	return orgCmd
 }

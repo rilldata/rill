@@ -1,4 +1,13 @@
 <script lang="ts">
+  import {
+    MainAreaColorGradientDark,
+    MainAreaColorGradientLight,
+    MainLineColor,
+    TimeComparisonLineColor,
+    AreaMutedColorGradientDark,
+    AreaMutedColorGradientLight,
+    LineMutedColor,
+  } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { writable } from "svelte/store";
   import {
     ChunkedLine,
@@ -7,9 +16,9 @@
   import { previousValueStore } from "@rilldata/web-common/lib/store-utils";
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
 
-  export let xMin: Date = undefined;
-  export let xMax: Date = undefined;
-  export let yExtentMax: number = undefined;
+  export let xMin: Date | undefined = undefined;
+  export let xMax: Date | undefined = undefined;
+  export let yExtentMax: number | undefined = undefined;
   export let showComparison: boolean;
   export let dimensionValue: string;
   export let isHovering: boolean;
@@ -22,13 +31,18 @@
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
-  $: mainLineColor = hasSubrangeSelected
-    ? "hsla(217, 10%, 60%, 1)"
-    : "hsla(217,60%, 55%, 1)";
+  $: mainLineColor = hasSubrangeSelected ? LineMutedColor : MainLineColor;
 
-  $: areaColor = hasSubrangeSelected
-    ? "hsla(225, 20%, 80%, .2)"
-    : "hsla(217,70%, 80%, .4)";
+  const focusedAreaGradient: [string, string] = [
+    MainAreaColorGradientDark,
+    MainAreaColorGradientLight,
+  ];
+
+  $: areaGradientColors = (
+    hasSubrangeSelected
+      ? [AreaMutedColorGradientDark, AreaMutedColorGradientLight]
+      : focusedAreaGradient
+  ) as [string, string];
 
   $: isDimValueHiglighted =
     dimensionValue !== undefined &&
@@ -75,7 +89,6 @@
         class:opacity-20={isDimValueHiglighted && !isHighlighted}
       >
         <ChunkedLine
-          area={false}
           isComparingDimension
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
@@ -97,8 +110,7 @@
         class:opacity-40={!isHovering}
       >
         <ChunkedLine
-          area={false}
-          lineColor={`hsl(217, 10%, 60%)`}
+          lineColor={TimeComparisonLineColor}
           delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
           duration={hasSubrangeSelected ||
           $timeRangeKey !== $previousTimeRangeKey
@@ -112,7 +124,7 @@
     {/if}
     <ChunkedLine
       lineColor={mainLineColor}
-      {areaColor}
+      {areaGradientColors}
       delay={$timeRangeKey !== $previousTimeRangeKey ? 0 : delay}
       duration={hasSubrangeSelected || $timeRangeKey !== $previousTimeRangeKey
         ? 0
@@ -125,8 +137,8 @@
       <ClippedChunkedLine
         start={Math.min(scrubStart, scrubEnd)}
         end={Math.max(scrubStart, scrubEnd)}
-        lineColor="hsla(217,60%, 55%, 1)"
-        areaColor="hsla(217,70%, 80%, .4)"
+        lineColor={MainLineColor}
+        areaGradientColors={focusedAreaGradient}
         delay={0}
         duration={0}
         {data}

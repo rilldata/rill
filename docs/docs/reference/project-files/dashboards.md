@@ -14,7 +14,7 @@ _**`title`**_ — the display name for the dashboard _(required)_
 
 _**`timeseries`**_ — the timestamp column from your model that will underlie x-axis data in the line charts _(optional)_. If not specified, the line charts will not appear.
 
-_**`default_time_range`**_ — the default time range shown when a user initially loads the dashboard _(optional)_. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, `PT12H` for 12 hours, `P1M` for 1 month, or `P26W` for 26 weeks) or the constant value `inf` for all time (default). If not specified, defaults to the full time range of the `timeseries` column.
+_**`default_time_range`**_ — the default time range shown when a user initially loads the dashboard _(optional)_. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, `PT12H` for 12 hours, `P1M` for 1 month, or `P26W` for 26 weeks) or one of the [Rill ISO 8601 extensions](../rill-iso-extensions.md#extensions) (default). If not specified, defaults to the full time range of the `timeseries` column.
 
 _**`smallest_time_grain`**_ — the smallest time granularity the user is allowed to view in the dashboard _(optional)_. The valid values are: `millisecond`, `second`, `minute`, `hour`, `day`, `week`, `month`, `quarter`, `year`.
 
@@ -24,11 +24,14 @@ _**`first_month_of_year`**_ — the first month of the year for time grain aggre
 
 _**`available_time_zones`**_ — time zones that should be pinned to the top of the time zone selector _(optional)_. It should be a list of [IANA time zone identifiers](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). By adding one or more time zones will make the dashboard time zone aware and allow users to change current time zone within the dashboard.
 
+_**`default_theme`**_ — default theme to apply to the dashboard _(optional)_. A valid theme must be defined in the project. Read this [page](./themes.md) for more detailed information about themes.
+
 _**`dimensions`**_ — for exploring [segments](../../develop/metrics-dashboard#dimensions) and filtering the dashboard _(required)_
   - _**`column`**_ — a categorical column _(required)_ 
   - _**`name`**_ — a stable identifier for the dimension _(optional)_
   - _**`label`**_ — a label for your dashboard dimension _(optional)_ 
-  - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_ 
+  - _**`description`**_ — a freeform text description of the dimension for your dashboard _(optional)_
+  - _**`unnest`**_ - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match _(optional)_
   - _**`ignore`**_ — hides the dimension _(optional)_ 
 
 _**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measures) of columns from your data model  _(required)_
@@ -44,9 +47,29 @@ _**`measures`**_ — numeric [aggregates](../../develop/metrics-dashboard#measur
   - _**`format_preset`**_ — controls the formatting of this measure in the dashboard according to option specified below. Measures cannot have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
     - _`humanize`_ — round off numbers in an opinionated way to thousands (K), millions (M), billions (B), etc
     - _`none`_ — raw output
-    - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign
+    - _`currency_usd`_ —  output rounded to 2 decimal points prepended with a dollar sign: `$`
+    - _`currency_eur`_ —  output rounded to 2 decimal points prepended with a euro symbol: `€`
     - _`percentage`_ — output transformed from a rate to a percentage appended with a percentage sign
     - _`interval_ms`_ — time intervals given in milliseconds are transformed into human readable time units like hours (h), days (d), years (y), etc
+
+_**`available_time_ranges`**_ — Override the list of default time range selections available in the dropdown _(optional)_. Note that `All Time` and `Custom` selections are always available.
+  - _**`range`**_ — a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) or one of the [Rill ISO 8601 extensions](../rill-iso-extensions.md#extensions) for the selection _(required)_
+  - _**`comparison_offsets`**_ — list of time comparison options for this time range selection _(optional)_. Must be one of the [Rill ISO 8601 extensions](../rill-iso-extensions.md#extensions).
+  - **Example**:
+    ```yaml
+    available_time_ranges:
+    - PT15M // Simplified syntax to specify only the range
+    - PT1H
+    - PT6H
+    - P7D
+    - range: P5D // Advanced syntax to specify comparison_offsets as well
+      comparison_offsets:
+        - rill-PP
+        - rill-PW
+    - P4W
+    - rill-TD // Today
+    - rill-WTD // Week-To-date
+    ```
 
 _**`security`**_ - define a [security policy](../../develop/security) for the dashboard _(optional)_
   - _**`access`**_ - Expression indicating if the user should be granted access to the dashboard. If not defined, it will resolve to `false` and the dashboard won't be accessible to anyone. Needs to be a valid SQL expression that evaluates to a boolean. _(optional)_

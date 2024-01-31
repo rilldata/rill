@@ -40,7 +40,7 @@
       if (y < 0) y = 1;
       return {
         period: new Date(
-          +new Date("2010-01-01 00:01:04") + i * 1000 * 60 * 60 * 24
+          +new Date("2010-01-01 00:01:04") + i * 1000 * 60 * 60 * 24,
         ),
         y,
       };
@@ -50,7 +50,7 @@
 
   let datasets = tweened(
     Array.from({ length: 36 }).map(() => makeData(60)),
-    { duration: 500, easing: cubicOut }
+    { duration: 500, easing: cubicOut },
   );
 </script>
 
@@ -81,7 +81,7 @@
           >
             <Body bottomBorder>
               {#if hovered}
-                <g transition:fade={{ duration: 100 }}>
+                <g transition:fade|global={{ duration: 100 }}>
                   <Area
                     {data}
                     xAccessor="period"
@@ -104,7 +104,7 @@
               </g>
             {/if}
             {#if mouseoverValue?.x}
-              <g transition:fade={{ duration: 50 }}>
+              <g transition:fade|global={{ duration: 50 }}>
                 <WithBisector
                   {data}
                   value={mouseoverValue.x}

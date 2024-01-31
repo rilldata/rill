@@ -5,7 +5,6 @@
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { dynamicTextInputWidth } from "@rilldata/web-common/lib/actions/dynamic-text-input-width";
   import { getContext } from "svelte";
@@ -16,26 +15,23 @@
 
   export let onChangeCallback;
   export let titleInput;
-  export let appRunning = true;
   export let editable = true;
   export let showInspectorToggle = true;
-  export let width: number = undefined;
 
   let titleInputElement;
   let editingTitle = false;
 
-  let titleInputValue;
   let tooltipActive;
 
   const { listenToNodeResize, observedNode } =
     createResizeListenerActionFactory();
 
   const inspectorLayout = getContext(
-    "rill:app:inspector-layout"
+    "rill:app:inspector-layout",
   ) as Writable<LayoutElement>;
 
   const navigationVisibilityTween = getContext(
-    "rill:app:navigation-visibility-tween"
+    "rill:app:navigation-visibility-tween",
   ) as Tweened<number>;
 
   function onKeydown(event) {
@@ -44,9 +40,13 @@
     }
   }
 
-  $: applicationStatus = appRunning ? EntityStatus.Running : EntityStatus.Idle;
-
   $: width = $observedNode?.getBoundingClientRect()?.width;
+
+  function onInput() {
+    if (editable) {
+      editingTitle = true;
+    }
+  }
 </script>
 
 <svelte:window on:keydown={onKeydown} />
@@ -75,14 +75,8 @@
             bind:this={titleInputElement}
             on:focus={() => {
               editingTitle = true;
-              titleInputValue = titleInput;
             }}
-            on:input={(evt) => {
-              if (editable) {
-                titleInputValue = evt.target.value;
-                editingTitle = true;
-              }
-            }}
+            on:input={onInput}
             class="bg-transparent border border-transparent border-2 {editable
               ? 'hover:border-gray-400 cursor-pointer'
               : ''} rounded pl-2 pr-2"

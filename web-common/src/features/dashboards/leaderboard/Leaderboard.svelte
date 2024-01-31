@@ -14,12 +14,12 @@
   } from "@rilldata/web-common/runtime-client";
 
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
+  import LeaderboardListItem from "./LeaderboardListItem.svelte";
   import {
     LeaderboardItemData,
     getLabeledComparisonFromComparisonRow,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
-  import LeaderboardListItem from "./LeaderboardListItem.svelte";
 
   export let dimensionName: string;
   /** The reference value is the one that the bar in the LeaderboardListItem
@@ -33,6 +33,7 @@
     selectors: {
       activeMeasure: { activeMeasureName },
       dimensionFilters: { selectedDimensionValues },
+      measureFilters: { getResolvedFilterForMeasureFilters },
       dashboardQueries: {
         leaderboardSortedQueryBody,
         leaderboardSortedQueryOptions,
@@ -47,18 +48,20 @@
     runtime,
   } = getStateManagers();
 
+  $: resolvedFilter = $getResolvedFilterForMeasureFilters;
+
   $: sortedQuery = createQueryServiceMetricsViewComparison(
     $runtime.instanceId,
     $metricsViewName,
-    $leaderboardSortedQueryBody(dimensionName),
-    $leaderboardSortedQueryOptions(dimensionName)
+    $leaderboardSortedQueryBody(dimensionName, $resolvedFilter),
+    $leaderboardSortedQueryOptions(dimensionName, $resolvedFilter),
   );
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
     $metricsViewName,
-    $leaderboardDimensionTotalQueryBody(dimensionName),
-    $leaderboardDimensionTotalQueryOptions(dimensionName)
+    $leaderboardDimensionTotalQueryBody(dimensionName, $resolvedFilter),
+    $leaderboardDimensionTotalQueryOptions(dimensionName, $resolvedFilter),
   );
 
   $: leaderboardTotal = $totalsQuery?.data?.data?.[$activeMeasureName];
@@ -70,11 +73,11 @@
   $: if (sortedQuery && !$sortedQuery?.isFetching) {
     const leaderboardData = prepareLeaderboardItemData(
       $sortedQuery?.data?.rows?.map((r) =>
-        getLabeledComparisonFromComparisonRow(r, $activeMeasureName)
+        getLabeledComparisonFromComparisonRow(r, $activeMeasureName),
       ) ?? [],
       slice,
       $selectedDimensionValues(dimensionName),
-      leaderboardTotal
+      leaderboardTotal,
     );
 
     aboveTheFold = leaderboardData.aboveTheFold;
@@ -88,6 +91,8 @@
 
 {#if $sortedQuery !== undefined}
   <div
+    role="grid"
+    tabindex="0"
     style:width="315px"
     on:mouseenter={() => (hovered = true)}
     on:mouseleave={() => (hovered = false)}

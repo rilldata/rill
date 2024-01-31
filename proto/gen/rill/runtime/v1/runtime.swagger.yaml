@@ -831,6 +831,18 @@ paths:
           required: false
           type: integer
           format: int32
+        - name: level
+          in: query
+          required: false
+          type: string
+          enum:
+            - LOG_LEVEL_UNSPECIFIED
+            - LOG_LEVEL_DEBUG
+            - LOG_LEVEL_INFO
+            - LOG_LEVEL_WARN
+            - LOG_LEVEL_ERROR
+            - LOG_LEVEL_FATAL
+          default: LOG_LEVEL_UNSPECIFIED
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs/watch:
@@ -866,6 +878,18 @@ paths:
           required: false
           type: integer
           format: int32
+        - name: level
+          in: query
+          required: false
+          type: string
+          enum:
+            - LOG_LEVEL_UNSPECIFIED
+            - LOG_LEVEL_DEBUG
+            - LOG_LEVEL_INFO
+            - LOG_LEVEL_WARN
+            - LOG_LEVEL_ERROR
+            - LOG_LEVEL_FATAL
+          default: LOG_LEVEL_UNSPECIFIED
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
@@ -1051,8 +1075,14 @@ paths:
                 type: string
                 format: date-time
                 title: Deprecated in favor of time_range
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
+              pivotOn:
+                type: array
+                items:
+                  type: string
+              where:
+                $ref: '#/definitions/v1Expression'
+              having:
+                $ref: '#/definitions/v1Expression'
               limit:
                 type: string
                 format: int64
@@ -1062,6 +1092,9 @@ paths:
               priority:
                 type: integer
                 format: int32
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+                title: Deprecated. should be removed once UI is moved to use new filters
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -1098,6 +1131,10 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+              comparisonMeasures:
+                type: array
+                items:
+                  type: string
               sort:
                 type: array
                 items:
@@ -1107,8 +1144,15 @@ paths:
                 $ref: '#/definitions/v1TimeRange'
               comparisonTimeRange:
                 $ref: '#/definitions/v1TimeRange'
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
+              where:
+                $ref: '#/definitions/v1Expression'
+              having:
+                $ref: '#/definitions/v1Expression'
+              aliases:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewComparisonMeasureAlias'
               limit:
                 type: string
                 format: int64
@@ -1120,6 +1164,9 @@ paths:
                 format: int32
               exact:
                 type: boolean
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+                title: Deprecated. should be removed once UI is moved to use new filters
             title: Request message for QueryService.MetricsViewComparison
       tags:
         - QueryService
@@ -1159,8 +1206,8 @@ paths:
                 format: date-time
               timeGranularity:
                 $ref: '#/definitions/v1TimeGrain'
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
+              where:
+                $ref: '#/definitions/v1Expression'
               sort:
                 type: array
                 items:
@@ -1177,6 +1224,9 @@ paths:
                 format: int32
               timeZone:
                 type: string
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+                title: Deprecated. should be removed once UI is moved to use new filters
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
@@ -1259,13 +1309,18 @@ paths:
                 format: date-time
               timeGranularity:
                 $ref: '#/definitions/v1TimeGrain'
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
+              where:
+                $ref: '#/definitions/v1Expression'
+              having:
+                $ref: '#/definitions/v1Expression'
               timeZone:
                 type: string
               priority:
                 type: integer
                 format: int32
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+                title: Deprecated. should be removed once UI is moved to use new filters
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/toplist:
@@ -1326,11 +1381,16 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewSort'
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
+              where:
+                $ref: '#/definitions/v1Expression'
+              having:
+                $ref: '#/definitions/v1Expression'
               priority:
                 type: integer
                 format: int32
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+                title: Deprecated. should be removed once UI is moved to use new filters
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/totals:
@@ -1378,11 +1438,14 @@ paths:
               timeEnd:
                 type: string
                 format: date-time
-              filter:
-                $ref: '#/definitions/v1MetricsViewFilter'
+              where:
+                $ref: '#/definitions/v1Expression'
               priority:
                 type: integer
                 format: int32
+              filter:
+                $ref: '#/definitions/v1MetricsViewFilter'
+                title: Deprecated. should be removed once UI is moved to use new filters
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/null-count/tables/{tableName}:
@@ -1966,6 +2029,10 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: level
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/trigger:
@@ -2393,6 +2460,8 @@ definitions:
         type: string
       column:
         type: string
+      expression:
+        type: string
       label:
         type: string
       description:
@@ -2684,6 +2753,21 @@ definitions:
       cardinality:
         type: number
         format: double
+  v1Color:
+    type: object
+    properties:
+      red:
+        type: number
+        format: float
+      green:
+        type: number
+        format: float
+      blue:
+        type: number
+        format: float
+      alpha:
+        type: number
+        format: float
   v1ColumnCardinalityRequest:
     type: object
     properties:
@@ -2885,6 +2969,16 @@ definitions:
     properties:
       categoricalSummary:
         $ref: '#/definitions/v1CategoricalSummary'
+  v1Condition:
+    type: object
+    properties:
+      op:
+        $ref: '#/definitions/v1Operation'
+      exprs:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Expression'
   v1Connector:
     type: object
     properties:
@@ -3038,6 +3132,14 @@ definitions:
     properties:
       downloadUrlPath:
         type: string
+  v1Expression:
+    type: object
+    properties:
+      ident:
+        type: string
+      val: {}
+      cond:
+        $ref: '#/definitions/v1Condition'
   v1FileEvent:
     type: string
     enum:
@@ -3270,6 +3372,7 @@ definitions:
       - LOG_LEVEL_INFO
       - LOG_LEVEL_WARN
       - LOG_LEVEL_ERROR
+      - LOG_LEVEL_FATAL
     default: LOG_LEVEL_UNSPECIFIED
   v1MapType:
     type: object
@@ -3381,8 +3484,14 @@ definitions:
         type: string
         format: date-time
         title: Deprecated in favor of time_range
-      filter:
-        $ref: '#/definitions/v1MetricsViewFilter'
+      pivotOn:
+        type: array
+        items:
+          type: string
+      where:
+        $ref: '#/definitions/v1Expression'
+      having:
+        $ref: '#/definitions/v1Expression'
       limit:
         type: string
         format: int64
@@ -3392,6 +3501,9 @@ definitions:
       priority:
         type: integer
         format: int32
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+        title: Deprecated. should be removed once UI is moved to use new filters
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -3417,6 +3529,24 @@ definitions:
         type: string
       nullable:
         type: boolean
+  v1MetricsViewComparisonMeasureAlias:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        $ref: '#/definitions/v1MetricsViewComparisonMeasureType'
+      alias:
+        type: string
+  v1MetricsViewComparisonMeasureType:
+    type: string
+    enum:
+      - METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED
+      - METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
+      - METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE
+      - METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA
+      - METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
+    default: METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED
   v1MetricsViewComparisonRequest:
     type: object
     properties:
@@ -3431,6 +3561,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+      comparisonMeasures:
+        type: array
+        items:
+          type: string
       sort:
         type: array
         items:
@@ -3440,8 +3574,15 @@ definitions:
         $ref: '#/definitions/v1TimeRange'
       comparisonTimeRange:
         $ref: '#/definitions/v1TimeRange'
-      filter:
-        $ref: '#/definitions/v1MetricsViewFilter'
+      where:
+        $ref: '#/definitions/v1Expression'
+      having:
+        $ref: '#/definitions/v1Expression'
+      aliases:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewComparisonMeasureAlias'
       limit:
         type: string
         format: int64
@@ -3453,6 +3594,9 @@ definitions:
         format: int32
       exact:
         type: boolean
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+        title: Deprecated. should be removed once UI is moved to use new filters
     title: Request message for QueryService.MetricsViewComparison
   v1MetricsViewComparisonResponse:
     type: object
@@ -3481,6 +3625,9 @@ definitions:
         type: boolean
       type:
         $ref: '#/definitions/v1MetricsViewComparisonSortType'
+        title: Deprecated. Present for backwards compatibility for older reports
+      sortType:
+        $ref: '#/definitions/v1MetricsViewComparisonMeasureType'
   v1MetricsViewComparisonSortType:
     type: string
     enum:
@@ -3490,6 +3637,7 @@ definitions:
       - METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA
       - METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA
     default: METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED
+    title: Present for backwards compatibility
   v1MetricsViewComparisonValue:
     type: object
     properties:
@@ -3527,8 +3675,8 @@ definitions:
         format: date-time
       timeGranularity:
         $ref: '#/definitions/v1TimeGrain'
-      filter:
-        $ref: '#/definitions/v1MetricsViewFilter'
+      where:
+        $ref: '#/definitions/v1Expression'
       sort:
         type: array
         items:
@@ -3545,6 +3693,9 @@ definitions:
         format: int32
       timeZone:
         type: string
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+        title: Deprecated. should be removed once UI is moved to use new filters
   v1MetricsViewRowsResponse:
     type: object
     properties:
@@ -3628,6 +3779,9 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewSpecAvailableTimeRange'
         description: List of available time ranges with comparison ranges that would replace the default list.
+      defaultTheme:
+        type: string
+        title: Default theme to apply
   v1MetricsViewState:
     type: object
     properties:
@@ -3662,13 +3816,18 @@ definitions:
         format: date-time
       timeGranularity:
         $ref: '#/definitions/v1TimeGrain'
-      filter:
-        $ref: '#/definitions/v1MetricsViewFilter'
+      where:
+        $ref: '#/definitions/v1Expression'
+      having:
+        $ref: '#/definitions/v1Expression'
       timeZone:
         type: string
       priority:
         type: integer
         format: int32
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+        title: Deprecated. should be removed once UI is moved to use new filters
   v1MetricsViewTimeSeriesResponse:
     type: object
     properties:
@@ -3717,11 +3876,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewSort'
-      filter:
-        $ref: '#/definitions/v1MetricsViewFilter'
+      where:
+        $ref: '#/definitions/v1Expression'
+      having:
+        $ref: '#/definitions/v1Expression'
       priority:
         type: integer
         format: int32
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+        title: Deprecated. should be removed once UI is moved to use new filters
   v1MetricsViewToplistResponse:
     type: object
     properties:
@@ -3756,11 +3920,14 @@ definitions:
       timeEnd:
         type: string
         format: date-time
-      filter:
-        $ref: '#/definitions/v1MetricsViewFilter'
+      where:
+        $ref: '#/definitions/v1Expression'
       priority:
         type: integer
         format: int32
+      filter:
+        $ref: '#/definitions/v1MetricsViewFilter'
+        title: Deprecated. should be removed once UI is moved to use new filters
   v1MetricsViewTotalsResponse:
     type: object
     properties:
@@ -3937,6 +4104,23 @@ definitions:
       - OBJECT_TYPE_METRICS_VIEW
     default: OBJECT_TYPE_UNSPECIFIED
     title: ObjectType represents the different kinds of catalog objects
+  v1Operation:
+    type: string
+    enum:
+      - OPERATION_UNSPECIFIED
+      - OPERATION_EQ
+      - OPERATION_NEQ
+      - OPERATION_LT
+      - OPERATION_LTE
+      - OPERATION_GT
+      - OPERATION_GTE
+      - OPERATION_OR
+      - OPERATION_AND
+      - OPERATION_IN
+      - OPERATION_NIN
+      - OPERATION_LIKE
+      - OPERATION_NLIKE
+    default: OPERATION_UNSPECIFIED
   v1ParseError:
     type: object
     properties:
@@ -4436,6 +4620,8 @@ definitions:
         $ref: '#/definitions/v1RefreshTrigger'
       bucketPlanner:
         $ref: '#/definitions/v1BucketPlanner'
+      theme:
+        $ref: '#/definitions/v1Theme'
   v1ResourceEvent:
     type: string
     enum:
@@ -4718,6 +4904,22 @@ definitions:
         type: array
         items:
           type: object
+  v1Theme:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ThemeSpec'
+      state:
+        $ref: '#/definitions/v1ThemeState'
+  v1ThemeSpec:
+    type: object
+    properties:
+      primaryColor:
+        $ref: '#/definitions/v1Color'
+      secondaryColor:
+        $ref: '#/definitions/v1Color'
+  v1ThemeState:
+    type: object
   v1TimeGrain:
     type: string
     enum:

@@ -21,26 +21,26 @@ for any of its children.
     SimpleDataGraphicConfigurationArguments,
   } from "../state/types";
 
-  export let width: number = undefined;
-  export let height: number = undefined;
-  export let top: number = undefined;
-  export let bottom: number = undefined;
-  export let left: number = undefined;
-  export let right: number = undefined;
+  export let width: number | undefined = undefined;
+  export let height: number | undefined = undefined;
+  export let top: number | undefined = undefined;
+  export let bottom: number | undefined = undefined;
+  export let left: number | undefined = undefined;
+  export let right: number | undefined = undefined;
 
-  export let fontSize: number = undefined;
-  export let textGap: number = undefined;
+  export let fontSize: number | undefined = undefined;
+  export let textGap: number | undefined = undefined;
 
-  export let bodyBuffer: number = undefined;
-  export let marginBuffer: number = undefined;
+  export let bodyBuffer: number | undefined = undefined;
+  export let marginBuffer: number | undefined = undefined;
 
-  export let xType = undefined;
-  export let yType = undefined;
+  export let xType: string | undefined = undefined;
+  export let yType: string | undefined = undefined;
 
-  export let xMin: number | Date = undefined;
-  export let xMax: number | Date = undefined;
-  export let yMin: number | Date = undefined;
-  export let yMax: number | Date = undefined;
+  export let xMin: number | undefined | Date = undefined;
+  export let xMax: number | undefined | Date = undefined;
+  export let yMin: number | undefined | Date = undefined;
+  export let yMax: number | undefined | Date = undefined;
 
   export let xMinTweenProps = { duration: 0 };
   export let xMaxTweenProps = { duration: 0 };
@@ -152,7 +152,7 @@ for any of its children.
         config.top -
         config.bottom -
         2 * (config.bodyBuffer || 0),
-    }
+    },
   );
 
   $: config.reconcileProps(parameters);
@@ -200,7 +200,7 @@ for any of its children.
   const yMinStore = getContext(contexts.min("y")) as ExtremumResolutionStore;
   const yMaxStore = getContext(contexts.max("y")) as ExtremumResolutionStore;
 
-  $: if (yMaxTweenProps) {
+  $: if (yMaxTweenProps && yMaxStore) {
     yMaxStore.setTweenProps(yMaxTweenProps);
   }
 

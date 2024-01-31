@@ -21,13 +21,16 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { CATALOG_ENTRY_NOT_FOUND } from "../../../../lib/errors/messages";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
+  import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
 
   const queryClient = useQueryClient();
+
+  const { readOnly } = featureFlags;
 
   $: metricViewName = $page.params.name;
   $: filePath = getFilePathFromNameAndType(
     metricViewName,
-    EntityType.MetricsDefinition
+    EntityType.MetricsDefinition,
   );
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
@@ -46,21 +49,21 @@
     queryClient,
     $runtime.instanceId,
     filePath,
-    (res) => !!res?.metricsView?.state?.validSpec
+    (res) => !!res?.metricsView?.state?.validSpec,
   );
   let showErrorPage = false;
   $: if (metricViewName) {
     showErrorPage = false;
     if ($resourceStatusStore.status === ResourceStatus.Errored) {
       // When the catalog entry doesn't exist, the dashboard config is invalid
-      if ($featureFlags.readOnly) {
+      if ($readOnly) {
         throw error(400, "Invalid dashboard");
       }
 
       // When a mock user doesn't have access to the dashboard, stay on the page to show a message
       if (
         $selectedMockUserStore === null ||
-        $resourceStatusStore.error.response?.status !== 404
+        $resourceStatusStore?.error?.response?.status !== 404
       ) {
         // On all other errors, redirect to the `/edit` page
         goto(`/dashboard/${metricViewName}/edit`);
@@ -70,7 +73,7 @@
     } else if ($resourceStatusStore.status === ResourceStatus.Idle) {
       // Redirect to the `/edit` page if no measures are defined
       if (
-        !$featureFlags.readOnly &&
+        !$readOnly &&
         !$resourceStatusStore.resource?.metricsView?.state?.validSpec?.measures
           ?.length
       ) {
@@ -93,15 +96,19 @@
     bgClass="bg-white"
     inspector={false}
   >
-    <StateManagersProvider metricsViewName={metricViewName} slot="body">
+    <svelte:fragment slot="body">
       {#key metricViewName}
-        <DashboardStateProvider {metricViewName}>
-          <DashboardURLStateProvider {metricViewName}>
-            <Dashboard {metricViewName} />
-          </DashboardURLStateProvider>
-        </DashboardStateProvider>
+        <StateManagersProvider metricsViewName={metricViewName}>
+          <DashboardStateProvider {metricViewName}>
+            <DashboardURLStateProvider {metricViewName}>
+              <DashboardThemeProvider>
+                <Dashboard {metricViewName} />
+              </DashboardThemeProvider>
+            </DashboardURLStateProvider>
+          </DashboardStateProvider>
+        </StateManagersProvider>
       {/key}
-    </StateManagersProvider>
+    </svelte:fragment>
   </WorkspaceContainer>
 {:else if $resourceStatusStore.status === ResourceStatus.Busy}
   <WorkspaceContainer

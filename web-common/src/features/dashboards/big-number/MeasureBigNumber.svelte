@@ -1,11 +1,18 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+  import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
   import type { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
+  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import { createEventDispatcher } from "svelte";
   import {
     CrossfadeParams,
     FlyParams,
@@ -13,17 +20,10 @@
     fly,
   } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
-  import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
-  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
-  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
-  import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
 
   export let measure: MetricsViewSpecMeasureV2;
-  export let value: number;
+  export let value: number | null;
   export let comparisonOption: TimeComparisonOption | undefined = undefined;
   export let comparisonValue: number | undefined = undefined;
   export let comparisonPercChange: number | undefined = undefined;
@@ -34,16 +34,20 @@
 
   const dispatch = createEventDispatcher();
 
-  $: measureValueFormatter = createMeasureValueFormatter(measure);
+  $: measureValueFormatter = createMeasureValueFormatter<null>(measure);
 
-  $: measureValueFormatterUnabridged = createMeasureValueFormatter(
+  // this is used to show the full value in tooltips when the user hovers
+  // over the number. If not present, we'll use the string "no data"
+  $: measureValueFormatterUnabridged = createMeasureValueFormatter<null>(
     measure,
-    true
+    true,
   );
 
   $: name = measure?.label || measure?.expression;
 
-  $: valueIsPresent = value !== undefined && value !== null;
+  $: if (value === undefined) {
+    value = null;
+  }
 
   const [send, receive] = crossfade({
     fallback: (node: Element, params: CrossfadeParams) =>
@@ -51,23 +55,24 @@
   });
 
   $: diff =
-    valueIsPresent && comparisonValue !== undefined
+    value !== null && comparisonValue !== undefined
       ? value - comparisonValue
       : 0;
   $: noChange = !comparisonValue;
   $: isComparisonPositive = diff >= 0;
 
   $: formattedDiff = `${isComparisonPositive ? "+" : ""}${measureValueFormatter(
-    diff
+    diff,
   )}`;
 
   /** when the measure is a percentage, we don't show a percentage change. */
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
-  $: hoveredValue = measureValueFormatterUnabridged(value);
+  $: hoveredValue = measureValueFormatterUnabridged(value) ?? "no data";
 
   const { shiftClickAction } = createShiftClickAction();
-  async function shiftClickHandler(number: string) {
+  async function shiftClickHandler(number: string | undefined) {
+    if (number === undefined) return;
     await navigator.clipboard.writeText(number);
     notifications.send({
       message: `copied dimension value "${number}" to clipboard`,
@@ -112,7 +117,7 @@
         style:font-weight="light"
       >
         <div>
-          {#if valueIsPresent && status === EntityStatus.Idle}
+          {#if value !== null && status === EntityStatus.Idle}
             <div class="w-max">
               <WithTween {value} tweenProps={{ duration: 500 }} let:output>
                 {measureValueFormatter(output)}
@@ -122,10 +127,13 @@
               <div class="flex items-baseline gap-x-3">
                 {#if comparisonValue != null}
                   <div
+                    role="complementary"
                     on:mouseenter={() =>
-                      (hoveredValue = measureValueFormatterUnabridged(diff))}
+                      (hoveredValue =
+                        measureValueFormatterUnabridged(diff) ?? "no data")}
                     on:mouseleave={() =>
-                      (hoveredValue = measureValueFormatterUnabridged(value))}
+                      (hoveredValue =
+                        measureValueFormatterUnabridged(value) ?? "no data")}
                     class="w-max text-sm ui-copy-inactive"
                     class:font-semibold={isComparisonPositive}
                   >
@@ -141,14 +149,16 @@
                 {/if}
                 {#if comparisonPercChange != null && !noChange && !measureIsPercentage}
                   <div
+                    role="complementary"
                     on:mouseenter={() =>
                       (hoveredValue = numberPartsToString(
                         formatMeasurePercentageDifference(
-                          comparisonPercChange ?? 0
-                        )
+                          comparisonPercChange ?? 0,
+                        ),
                       ))}
                     on:mouseleave={() =>
-                      (hoveredValue = measureValueFormatterUnabridged(value))}
+                      (hoveredValue =
+                        measureValueFormatterUnabridged(value) ?? "no data")}
                     class="w-max text-sm
               {isComparisonPositive ? 'ui-copy-inactive' : 'text-red-500'}"
                   >
@@ -171,12 +181,12 @@
           {:else if status === EntityStatus.Running}
             <div
               class="{withTimeseries ? '' : 'bottom-0'} absolute p-2"
-              in:receive|local={{ key: "spinner" }}
-              out:send|local={{ key: "spinner" }}
+              in:receive={{ key: "spinner" }}
+              out:send={{ key: "spinner" }}
             >
               <Spinner status={EntityStatus.Running} />
             </div>
-          {:else if !valueIsPresent}
+          {:else if value === null}
             <span class="ui-copy-disabled-faint italic text-sm">no data</span>
           {/if}
         </div>
@@ -192,7 +202,8 @@
       --gradient_white-slate50,
       linear-gradient(180deg, #fff 0%, #f8fafc 100%)
     );
-    box-shadow: 0px 4px 6px 0px rgba(15, 23, 42, 0.09),
+    box-shadow:
+      0px 4px 6px 0px rgba(15, 23, 42, 0.09),
       0px 0px 0px 1px rgba(15, 23, 42, 0.06),
       0px 1px 3px 0px rgba(15, 23, 42, 0.04),
       0px 2px 3px 0px rgba(15, 23, 42, 0.03);

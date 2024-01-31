@@ -1,3 +1,4 @@
+import { filterExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
@@ -7,9 +8,9 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
-  createQueryServiceMetricsViewTimeRange,
-  V1MetricsViewFilter,
+  V1Expression,
   V1MetricsViewSpec,
+  createQueryServiceMetricsViewTimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryOptions } from "@tanstack/svelte-query";
 
@@ -29,10 +30,10 @@ export function useDashboard(instanceId: string, metricViewName: string) {
  * Gets the valid metrics view spec. Only to be used in displaying a dashboard.
  * Use {@link useDashboard} in the metrics view editor and other use cases.
  */
-export const useMetaQuery = <T = V1MetricsViewSpec>(
+export const useMetricsView = <T = V1MetricsViewSpec>(
   instanceId: string,
   metricViewName: string,
-  selector?: (meta: V1MetricsViewSpec) => T
+  selector?: (meta: V1MetricsViewSpec) => T,
 ) => {
   return useResource<T>(
     instanceId,
@@ -41,22 +42,23 @@ export const useMetaQuery = <T = V1MetricsViewSpec>(
     (data) =>
       selector
         ? selector(data.metricsView?.state?.validSpec)
-        : (data.metricsView?.state?.validSpec as T)
+        : (data.metricsView?.state?.validSpec as T),
   );
 };
 
 // TODO: cleanup usage of useModelHasTimeSeries and useModelAllTimeRange
 export const useModelHasTimeSeries = (
   instanceId: string,
-  metricViewName: string
-) => useMetaQuery(instanceId, metricViewName, (meta) => !!meta?.timeDimension);
+  metricViewName: string,
+) =>
+  useMetricsView(instanceId, metricViewName, (meta) => !!meta?.timeDimension);
 
 export function useModelAllTimeRange(
   instanceId: string,
   metricsViewName: string,
   options?: {
     query?: CreateQueryOptions;
-  }
+  },
 ) {
   const { query: queryOptions } = options ?? {};
 
@@ -77,27 +79,29 @@ export function useModelAllTimeRange(
         },
         ...queryOptions,
       },
-    }
+    },
   );
 }
 
 export const useMetaMeasure = (
   instanceId: string,
   metricViewName: string,
-  measureName: string
+  measureName: string,
 ) =>
-  useMetaQuery(instanceId, metricViewName, (meta) =>
-    meta?.measures?.find((measure) => measure.name === measureName)
+  useMetricsView(
+    instanceId,
+    metricViewName,
+    (meta) => meta?.measures?.find((measure) => measure.name === measureName),
   );
 
 export const useMetaDimension = (
   instanceId: string,
   metricViewName: string,
-  dimensionName: string
+  dimensionName: string,
 ) =>
-  useMetaQuery(instanceId, metricViewName, (meta) => {
+  useMetricsView(instanceId, metricViewName, (meta) => {
     const dim = meta?.dimensions?.find(
-      (dimension) => dimension.name === dimensionName
+      (dimension) => dimension.name === dimensionName,
     );
     return {
       ...dim,
@@ -111,35 +115,21 @@ export const useMetaDimension = (
  * the filters for the specified dimension name.
  */
 export const getFiltersForOtherDimensions = (
-  filters: V1MetricsViewFilter,
-  dimensionName?: string
+  filters: V1Expression,
+  dimensionName: string,
 ) => {
-  if (!filters) return { include: [], exclude: [] };
-
-  const filter: V1MetricsViewFilter = {
-    include:
-      filters.include
-        ?.filter((dimensionValues) => dimensionName !== dimensionValues.name)
-        .map((dimensionValues) => ({
-          name: dimensionValues.name,
-          in: dimensionValues.in,
-        })) ?? [],
-    exclude:
-      filters.exclude
-        ?.filter((dimensionValues) => dimensionName !== dimensionValues.name)
-        .map((dimensionValues) => ({
-          name: dimensionValues.name,
-          in: dimensionValues.in,
-        })) ?? [],
-  };
-  return filter;
+  if (!filters) return undefined;
+  return filterExpressions(
+    filters,
+    (e) => e.cond?.exprs?.[0].ident !== dimensionName,
+  );
 };
 
 export const useGetDashboardsForModel = (
   instanceId: string,
-  modelName: string
+  modelName: string,
 ) => {
   return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
-    data.resources.filter((res) => res.metricsView?.spec?.table === modelName)
+    data.resources.filter((res) => res.metricsView?.spec?.table === modelName),
   );
 };

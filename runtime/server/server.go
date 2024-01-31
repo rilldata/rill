@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/securetoken"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -125,30 +126,29 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
-			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
-			errorMappingStreamServerInterceptor(),
 			grpc_validator.StreamServerInterceptor(),
 			auth.StreamServerInterceptor(s.aud),
 			middleware.ActivityStreamServerInterceptor(s.activity),
+			errorMappingStreamServerInterceptor(),
 			grpc_auth.StreamServerInterceptor(s.checkRateLimit),
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
-			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
-			errorMappingUnaryServerInterceptor(),
 			grpc_validator.UnaryServerInterceptor(),
 			auth.UnaryServerInterceptor(s.aud),
 			middleware.ActivityUnaryServerInterceptor(s.activity),
+			errorMappingUnaryServerInterceptor(),
 			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
 		),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
 
 	runtimev1.RegisterRuntimeServiceServer(server, s)
 	runtimev1.RegisterQueryServiceServer(server, s)
 	runtimev1.RegisterConnectorServiceServer(server, s)
-	s.logger.Named("console").Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
+	s.logger.Sugar().Infof("serving runtime gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
 
@@ -160,7 +160,7 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 	}
 
 	server := &http.Server{Handler: handler}
-	s.logger.Named("console").Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
+	s.logger.Sugar().Infof("serving HTTP on port:%v", s.opts.HTTPPort)
 	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
 }
 
@@ -169,7 +169,7 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 	// Create REST gateway
 	gwMux := gateway.NewServeMux(gateway.WithErrorHandler(HTTPErrorHandler))
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
+	grpcAddress := fmt.Sprintf("localhost:%d", s.opts.GRPCPort)
 	err := runtimev1.RegisterRuntimeServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
 	if err != nil {
 		return nil, err

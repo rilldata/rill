@@ -26,10 +26,10 @@ props as needed.
   import { fly } from "svelte/transition";
   import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
 
+  import SelectButton from "../menu/triggers/SelectButton.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import SearchableFilterDropdown from "./SearchableFilterDropdown.svelte";
-  import SelectButton from "../menu/triggers/SelectButton.svelte";
 
   export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: boolean[];
@@ -43,7 +43,7 @@ props as needed.
       selectableItems?.length !== selectedItems?.length
     ) {
       throw new Error(
-        "SearchableFilterButton component requires props `selectableItems` and `selectedItems` to be arrays of equal length"
+        "SearchableFilterButton component requires props `selectableItems` and `selectedItems` to be arrays of equal length",
       );
     }
   }
@@ -68,16 +68,17 @@ props as needed.
     location="bottom"
     suppress={active}
   >
-    <SelectButton {active} disabled={false} on:click={toggleFloatingElement}
+    <SelectButton {active} on:click={toggleFloatingElement}
       ><strong>{numShownString} {label}</strong></SelectButton
     >
-    <div slot="tooltip-content" transition:fly|local={{ duration: 300, y: 4 }}>
+    <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
       <TooltipContent maxWidth="400px">
         {tooltipText}
       </TooltipContent>
     </div>
   </Tooltip>
   <SearchableFilterDropdown
+    let:toggleFloatingElement
     on:apply
     on:click-outside={toggleFloatingElement}
     on:deselect-all
@@ -85,8 +86,8 @@ props as needed.
     on:item-clicked
     on:search
     on:select-all
-    {selectableItems}
-    {selectedItems}
+    selectableGroups={[{ name: "", items: selectableItems }]}
+    selectedItems={[selectedItems]}
     slot="floating-element"
   />
 </WithTogglableFloatingElement>

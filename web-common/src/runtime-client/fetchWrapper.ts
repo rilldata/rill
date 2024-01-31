@@ -8,6 +8,16 @@ export type FetchWrapperOptions = {
   signal?: AbortSignal;
 };
 
+export interface HTTPError {
+  response: {
+    status: number;
+    data: {
+      message: string;
+    };
+  };
+  message: string;
+}
+
 export async function fetchWrapper({
   url,
   method,

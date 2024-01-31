@@ -9,6 +9,7 @@ to the props.
   import { createScrubAction } from "../actions/scrub-action-factory";
   import { contexts } from "../constants";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
+  import type { DomainCoordinates } from "../constants/types";
 
   const config = getContext(contexts.config) as SimpleConfigurationStore;
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
@@ -38,8 +39,8 @@ to the props.
     plotBottom: $config?.plotBottom,
   });
 
-  export let mouseoverValue = undefined;
-  export let hovered = undefined;
+  export let mouseoverValue: DomainCoordinates | undefined = undefined;
+  export let hovered: boolean | undefined = undefined;
   export let overflowHidden = true;
 
   $: mouseoverValue = $coordinates;
@@ -49,6 +50,8 @@ to the props.
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <svg
+  role="button"
+  tabindex="0"
   style="overflow: {overflowHidden ? 'hidden' : 'visible'}"
   use:scrub
   on:scrub-start

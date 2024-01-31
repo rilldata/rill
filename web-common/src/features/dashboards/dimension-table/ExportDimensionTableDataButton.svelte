@@ -3,41 +3,39 @@
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getDimensionTableExportArgs } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export-utils";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
-    createQueryServiceExport,
     V1ExportFormat,
+    createQueryServiceExport,
   } from "@rilldata/web-common/runtime-client";
-  import { onMount, SvelteComponent } from "svelte";
+  import { onMount } from "svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import exportToplist from "./export-toplist";
 
   export let includeScheduledReport: boolean;
-  export let metricViewName: string;
 
   let exportMenuOpen = false;
   let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
-  const timeControlStore = useTimeControlStore(ctx);
 
   const exportDash = createQueryServiceExport();
   const handleExportTopList = async (format: V1ExportFormat) => {
     exportToplist({
-      metricViewName,
+      ctx,
       query: exportDash,
       format,
-      timeControlStore,
     });
   };
 
   // Only import the Scheduled Report dialog if in the Cloud context.
   // This ensures Rill Developer doesn't try and fail to import the admin-client.
-  let CreateScheduledReportDialog: typeof SvelteComponent | undefined;
+  let CreateScheduledReportDialog;
   onMount(async () => {
     if (includeScheduledReport) {
       CreateScheduledReportDialog = (
-        await import("../scheduled-reports/CreateScheduledReportDialog.svelte")
+        await import(
+          "../../scheduled-reports/CreateScheduledReportDialog.svelte"
+        )
       ).default;
     }
   });
@@ -67,6 +65,7 @@
     />
   </button>
   <Menu
+    let:toggleFloatingElement
     minWidth=""
     on:click-outside={toggleFloatingElement}
     on:escape={toggleFloatingElement}

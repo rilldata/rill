@@ -1,5 +1,13 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
+import {
+  getScreenNameFromPage,
+  isDashboardPage,
+  isProjectPage,
+} from "@rilldata/web-admin/features/navigation/nav-utils";
+import { errorEvent } from "@rilldata/web-common/metrics/initMetrics";
+import type { Query } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
@@ -9,15 +17,36 @@ import { ADMIN_URL } from "../../client/http-client";
 import { ErrorStoreState, errorStore } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
-  return (error: AxiosError) => {
-    const isProjectPage = get(page).route.id === "/[organization]/[project]";
-    const isDashboardPage =
-      get(page).route.id === "/[organization]/[project]/[dashboard]";
+  return (error: AxiosError, query: Query) => {
+    const screenName = getScreenNameFromPage(get(page));
+    if (!error.response) {
+      errorEvent?.fireHTTPErrorBoundaryEvent(
+        query.queryKey[0] as string,
+        "",
+        "unknown error",
+        screenName,
+      );
+      return;
+    } else {
+      errorEvent?.fireHTTPErrorBoundaryEvent(
+        query.queryKey[0] as string,
+        error.response?.status + "" ?? error.status,
+        (error.response?.data as RpcStatus)?.message ?? error.message,
+        screenName,
+      );
+    }
 
-    if (!error.response) return;
+    // If unauthorized to the admin server, redirect to login page
+    if (isAdminServerQuery(query) && error.response?.status === 401) {
+      goto(
+        `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
+      );
+      return;
+    }
 
     // Special handling for some errors on the Project page
-    if (isProjectPage && error.response?.status === 400) {
+    const onProjectPage = isProjectPage(get(page));
+    if (onProjectPage && error.response?.status === 400) {
       // If "repository not found", ignore the error and show the page
       if (
         (error.response.data as RpcStatus).message === "repository not found"
@@ -33,7 +62,8 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     }
 
     // Special handling for some errors on the Dashboard page
-    if (isDashboardPage) {
+    const onDashboardPage = isDashboardPage(get(page));
+    if (onDashboardPage) {
       // If a dashboard wasn't found, let +page.svelte handle the error.
       // Because the project may be reconciling, in which case we want to show a loading spinner not a 404.
       if (
@@ -50,12 +80,6 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       }
     }
 
-    // If Unauthorized, redirect to login page
-    if (error.response?.status === 401) {
-      goto(`${ADMIN_URL}/auth/login?redirect=${window.origin}`);
-      return;
-    }
-
     // Create a pretty message for the error page
     const errorStoreState = createErrorStoreStateFromAxiosError(error);
 
@@ -64,7 +88,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
 }
 
 function createErrorStoreStateFromAxiosError(
-  error: AxiosError
+  error: AxiosError,
 ): ErrorStoreState {
   // Handle network errors
   if (error.message === "Network Error") {
@@ -113,7 +137,7 @@ function createErrorStoreStateFromAxiosError(
 }
 
 export function createErrorPagePropsFromRoutingError(
-  statusCode: number
+  statusCode: number,
 ): ErrorStoreState {
   if (statusCode === 404) {
     return {
@@ -128,5 +152,39 @@ export function createErrorPagePropsFromRoutingError(
     statusCode: statusCode,
     header: "Sorry, unexpected error!",
     body: "Try refreshing the page, and reach out to us if that doesn't fix the error.",
+  };
+}
+
+export function addJavascriptErrorListeners() {
+  const errorHandler = (errorEvt: ErrorEvent) => {
+    errorEvent?.fireJavascriptErrorBoundaryEvent(
+      errorEvt.error?.stack ?? "",
+      errorEvt.message,
+      getScreenNameFromPage(get(page)),
+    );
+  };
+  const unhandledRejectionHandler = (rejectionEvent: PromiseRejectionEvent) => {
+    let stack = "";
+    let message = "";
+    if (typeof rejectionEvent.reason === "string") {
+      message = rejectionEvent.reason;
+    } else if (rejectionEvent.reason instanceof Error) {
+      stack = rejectionEvent.reason.stack ?? "";
+      message = rejectionEvent.reason.message;
+    } else {
+      message = String.toString.apply(rejectionEvent.reason);
+    }
+    errorEvent?.fireJavascriptErrorBoundaryEvent(
+      stack,
+      message,
+      getScreenNameFromPage(get(page)),
+    );
+  };
+
+  window.addEventListener("error", errorHandler);
+  window.addEventListener("unhandledrejection", unhandledRejectionHandler);
+  return () => {
+    window.removeEventListener("error", errorHandler);
+    window.removeEventListener("unhandledrejection", unhandledRejectionHandler);
   };
 }

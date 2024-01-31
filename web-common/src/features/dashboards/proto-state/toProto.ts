@@ -3,35 +3,35 @@ import {
   PartialMessage,
   Timestamp,
   Value,
+  protoBase64,
 } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import {
-  TimeComparisonOption,
-  TimeRangePreset,
-} from "@rilldata/web-common/lib/time/types";
 import type {
   DashboardTimeControls,
   ScrubRange,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  MetricsViewFilter,
-  MetricsViewFilter_Cond,
-} from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
+  TimeComparisonOption,
+  TimeRangePreset,
+} from "@rilldata/web-common/lib/time/types";
+import {
+  Condition,
+  Expression,
+} from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
 import {
   TimeGrain,
   TimeGrain as TimeGrainProto,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
+  DashboardDimensionFilter,
   DashboardState,
   DashboardState_LeaderboardContextColumn,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import type {
-  MetricsViewFilterCond,
-  V1MetricsViewFilter,
-} from "@rilldata/web-common/runtime-client";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import { V1Operation, V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import { ToProtoOperationMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 
 // TODO: make a follow up PR to use the one from the proto directly
 const LeaderboardContextColumnMap: Record<
@@ -49,13 +49,22 @@ const LeaderboardContextColumnMap: Record<
 };
 
 export function getProtoFromDashboardState(
-  metrics: MetricsExplorerEntity
+  metrics: MetricsExplorerEntity,
 ): string {
   if (!metrics) return "";
 
   const state: PartialMessage<DashboardState> = {};
-  if (metrics.filters) {
-    state.filters = toFiltersProto(metrics.filters);
+  if (metrics.whereFilter) {
+    state.where = toExpressionProto(metrics.whereFilter);
+  }
+  if (metrics.dimensionThresholdFilters.length) {
+    state.having = metrics.dimensionThresholdFilters.map(
+      ({ name, filter }) =>
+        new DashboardDimensionFilter({
+          name,
+          filter: toExpressionProto(filter),
+        }),
+    );
   }
   if (metrics.selectedTimeRange) {
     state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
@@ -65,7 +74,7 @@ export function getProtoFromDashboardState(
   }
   if (metrics.selectedComparisonTimeRange) {
     state.compareTimeRange = toTimeRangeProto(
-      metrics.selectedComparisonTimeRange
+      metrics.selectedComparisonTimeRange,
     );
   }
   if (metrics.lastDefinedScrubRange) {
@@ -120,14 +129,7 @@ export function getProtoFromDashboardState(
 }
 
 function protoToBase64(proto: Uint8Array) {
-  return btoa(String.fromCharCode.apply(null, proto));
-}
-
-function toFiltersProto(filters: V1MetricsViewFilter) {
-  return new MetricsViewFilter({
-    include: toFilterCondProto(filters.include ?? []),
-    exclude: toFilterCondProto(filters.exclude ?? []),
-  });
+  return protoBase64.enc(proto);
 }
 
 function toTimeRangeProto(range: DashboardTimeControls) {
@@ -186,28 +188,81 @@ function toTimeGrainProto(timeGrain: V1TimeGrain) {
   }
 }
 
-function toFilterCondProto(conds: Array<MetricsViewFilterCond>) {
-  return conds.map(
-    (include) =>
-      new MetricsViewFilter_Cond({
-        name: include.name,
-        like: include.like,
-        in: include.in?.map(
-          (v) =>
-            (v === null
-              ? new Value({
-                  kind: {
-                    case: "nullValue",
-                    value: NullValue.NULL_VALUE,
-                  },
-                })
-              : new Value({
-                  kind: {
-                    case: "stringValue",
-                    value: v as string,
-                  },
-                })) ?? []
-        ),
-      })
-  );
+function toExpressionProto(
+  expression: V1Expression | undefined,
+): Expression | undefined {
+  if (!expression) return undefined;
+  if ("ident" in expression) {
+    return new Expression({
+      expression: {
+        case: "ident",
+        value: expression.ident as string,
+      },
+    });
+  }
+  if ("val" in expression) {
+    return new Expression({
+      expression: {
+        case: "val",
+        value: toPbValue(expression.val),
+      },
+    });
+  }
+  if (expression.cond) {
+    return new Expression({
+      expression: {
+        case: "cond",
+        value: new Condition({
+          op: ToProtoOperationMap[
+            expression.cond.op ?? V1Operation.OPERATION_UNSPECIFIED
+          ],
+          exprs: expression.cond.exprs?.map((e) => toExpressionProto(e)) ?? [],
+        }),
+      },
+    });
+  }
+  return undefined;
+}
+
+function toPbValue(val: unknown) {
+  if (val === null) {
+    return new Value({
+      kind: {
+        case: "nullValue",
+        value: NullValue.NULL_VALUE,
+      },
+    });
+  }
+  switch (typeof val) {
+    case "string":
+      return new Value({
+        kind: {
+          case: "stringValue",
+          value: val,
+        },
+      });
+    case "number":
+      return new Value({
+        kind: {
+          case: "numberValue",
+          value: val,
+        },
+      });
+    case "boolean":
+      return new Value({
+        kind: {
+          case: "boolValue",
+          value: val,
+        },
+      });
+    // TODO: other options are not currently in a filter. but we might need them in future
+    default:
+      // force as string for unknown types. this is the older behaviour
+      return new Value({
+        kind: {
+          case: "stringValue",
+          value: JSON.stringify(val),
+        },
+      });
+  }
 }

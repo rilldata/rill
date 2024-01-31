@@ -12,8 +12,10 @@
 
   $: metricViewName = $page.params.name;
 
+  const { readOnly } = featureFlags;
+
   onMount(() => {
-    if ($featureFlags.readOnly) {
+    if ($readOnly) {
       throw error(404, "Page not found");
     }
   });
@@ -33,7 +35,7 @@
         // this will ensure that any changes done outside our app is pulled in.
         refetchOnWindowFocus: true,
       },
-    }
+    },
   );
 
   $: yaml = $fileQuery.data?.blob || "";

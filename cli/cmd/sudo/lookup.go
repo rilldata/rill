@@ -7,18 +7,18 @@ import (
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func lookupCmd(cfg *config.Config) *cobra.Command {
+func lookupCmd(ch *cmdutil.Helper) *cobra.Command {
 	lookupCmd := &cobra.Command{
 		Use:   "lookup {user|org|project|deployment|instance} <id>",
 		Short: "Lookup resource by ID",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			cfg := ch.Config
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {

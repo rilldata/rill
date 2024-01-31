@@ -18,11 +18,10 @@
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import {
+    V1SourceV2,
     createRuntimeServiceGetFile,
     createRuntimeServiceRefreshAndReconcile,
-    V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
-  import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
   import { WithTogglableFloatingElement } from "../../../components/floating-element";
@@ -68,11 +67,11 @@
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
   $: file = createRuntimeServiceGetFile(runtimeInstanceId, filePath);
 
-  let source: V1SourceV2;
+  let source: V1SourceV2 | undefined;
   $: source = $sourceQuery.data?.source;
   $: sourceIsReconciling = resourceIsLoading($sourceQuery.data);
 
-  let connector: string;
+  let connector: string | undefined;
   $: connector = source?.state?.connector;
 
   $: allNamesQuery = useAllNames(runtimeInstanceId);
@@ -86,7 +85,9 @@
       e.target.value = sourceName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, sourceName, $allNamesQuery.data)) {
+    if (
+      isDuplicateName(e.target.value, sourceName, $allNamesQuery?.data ?? [])
+    ) {
       notifications.send({
         message: `Name ${e.target.value} is already in use`,
       });
@@ -101,7 +102,7 @@
         runtimeInstanceId,
         sourceName,
         toName,
-        entityType
+        entityType,
       );
       goto(getRouteFromName(toName, entityType), {
         replaceState: true,
@@ -123,6 +124,9 @@
   };
 
   const onRefreshClick = async (tableName: string) => {
+    // no-op if connector is undefined
+    if (connector === undefined) return;
+
     try {
       await refreshSource(connector, tableName, runtimeInstanceId);
     } catch (err) {
@@ -132,7 +136,7 @@
 
   $: isLocalFileConnectorQuery = useIsLocalFileConnector(
     $runtime.instanceId,
-    sourceName
+    sourceName,
   );
   $: isLocalFileConnector = $isLocalFileConnectorQuery.data;
 
@@ -156,7 +160,7 @@
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
     sourceName,
-    $sourceStore.clientYAML
+    $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 
@@ -168,7 +172,7 @@
       BehaviourEventMedium.Button,
       MetricsEventSpace.RightPanel,
       MetricsEventScreenName.Source,
-      MetricsEventScreenName.Model
+      MetricsEventScreenName.Model,
     );
   };
 
@@ -180,11 +184,7 @@
 </script>
 
 <div class="grid items-center" style:grid-template-columns="auto max-content">
-  <WorkspaceHeader
-    {...{ titleInput: sourceName, onChangeCallback }}
-    appRunning={$appQueryStatusStore}
-    let:width={headerWidth}
-  >
+  <WorkspaceHeader {...{ titleInput: sourceName, onChangeCallback }}>
     <svelte:fragment slot="workspace-controls">
       {#if $refreshSourceMutation.isLoading}
         Refreshing...
@@ -194,7 +194,7 @@
             <div
               class="ml-2 ui-copy-muted line-clamp-2"
               style:font-size="11px"
-              transition:fade|local={{ duration: 200 }}
+              transition:fade={{ duration: 200 }}
             >
               Ingested on {formatRefreshedOn(source?.state?.refreshedOn)}
             </div>
@@ -202,7 +202,7 @@
         </div>
       {/if}
     </svelte:fragment>
-    <svelte:fragment slot="cta">
+    <svelte:fragment slot="cta" let:width={headerWidth}>
       <PanelCTA side="right">
         <Button
           disabled={!isSourceUnsaved}
@@ -229,8 +229,8 @@
               isSourceUnsaved
                 ? onSaveAndRefreshClick(sourceName)
                 : isLocalFileConnector
-                ? toggleFloatingElement()
-                : onRefreshClick(sourceName)}
+                  ? toggleFloatingElement()
+                  : onRefreshClick(sourceName)}
             type={isSourceUnsaved ? "primary" : "secondary"}
           >
             <IconSpaceFixer
@@ -243,7 +243,7 @@
               <div class="flex">
                 {#if isSourceUnsaved}<div
                     class="pr-1"
-                    transition:slideRight={{ duration: 250 }}
+                    transition:slideRight|global={{ duration: 250 }}
                   >
                     Save and
                   </div>{/if}
@@ -259,6 +259,7 @@
             on:click-outside={toggleFloatingElement}
             on:escape={toggleFloatingElement}
             slot="floating-element"
+            let:toggleFloatingElement
           >
             <MenuItem
               on:select={() => {

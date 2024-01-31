@@ -22,11 +22,11 @@
   export let zoomWindowColor = "hsla(217, 90%, 60%, .2)";
   // the color of the zoom window boundaries
   export let zoomWindowBoundaryColor = "rgb(100,100,100)";
-  export let zoomWindowXMin: Date = undefined;
-  export let zoomWindowXMax: Date = undefined;
+  export let zoomWindowXMin: Date | undefined = undefined;
+  export let zoomWindowXMax: Date | undefined = undefined;
 
-  export let xAccessor: string = undefined;
-  export let yAccessor: string = undefined;
+  export let xAccessor: string | undefined = undefined;
+  export let yAccessor: string | undefined = undefined;
 
   // rowsize for table
   export let left = 0;
@@ -43,7 +43,7 @@
       start = 0,
       opacity = 0,
       scaleDown = false,
-    } = {}
+    } = {},
   ) {
     const style = getComputedStyle(node);
     const target_opacity = +style.opacity;
@@ -86,13 +86,13 @@
     let:xScale
     let:config
   >
-    <g transition:scaleVertical|local={{ duration: 400, start: 0.3 }}>
+    <g transition:scaleVertical={{ duration: 400, start: 0.3 }}>
       <Line {data} {xAccessor} {yAccessor} {color} lineThickness={0.5} />
       <Area {data} {xAccessor} {yAccessor} {color} />
     </g>
     <!-- show zoom boundaries -->
     {#if zoomWindowXMin && zoomWindowXMax}
-      <g transition:fade|local={{ duration: 100 }}>
+      <g transition:fade={{ duration: 100 }}>
         <rect
           x={xScale(zoomWindowXMin)}
           y={config.plotTop}

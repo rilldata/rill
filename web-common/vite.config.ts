@@ -10,10 +10,6 @@ const alias: Alias = [
     replacement: "/src",
   },
   {
-    find: "@rilldata/web-local",
-    replacement: "/src",
-  },
-  {
     find: "@rilldata/web-common",
     replacement: "/../web-common/src",
   },
@@ -29,11 +25,6 @@ if (process.env["STORYBOOK_MODE"] === "true") {
 export default defineConfig(({ mode }) => {
   if (mode === "test") {
     alias.push({
-      find: /^svelte$/,
-      replacement: "/../node_modules/svelte/index.mjs",
-    });
-
-    alias.push({
       find: "$app/environment",
       replacement: "/../web-common/.storybook/app-environment.mock.ts",
     });
@@ -45,6 +36,9 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [svelte()],
     test: {
+      // This alias fixes `onMount` not getting called during vitest unit tests.
+      // See: https://stackoverflow.com/questions/76577665/vitest-and-svelte-components-onmount
+      alias: [{ find: /^svelte$/, replacement: "svelte/internal" }],
       coverage: {
         provider: "c8",
         src: ["./src"],

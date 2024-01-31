@@ -8,7 +8,6 @@
   import { useAllNames } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { appQueryStatusStore } from "@rilldata/web-common/runtime-client/application-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
@@ -33,20 +32,20 @@
   $: allNamesQuery = useAllNames(runtimeInstanceId);
 
   const outputLayout = getContext(
-    "rill:app:output-layout"
+    "rill:app:output-layout",
   ) as Writable<LayoutElement>;
   $: modelPath = getFilePathFromNameAndType(modelName, EntityType.Model);
   $: modelHasError = getFileHasErrors(
     queryClient,
     runtimeInstanceId,
-    modelPath
+    modelPath,
   );
 
   let contextMenuOpen = false;
 
   $: availableDashboards = useGetDashboardsForModel(
     runtimeInstanceId,
-    modelName
+    modelName,
   );
 
   function formatModelName(str) {
@@ -62,7 +61,9 @@
       e.target.value = modelName; // resets the input
       return;
     }
-    if (isDuplicateName(e.target.value, modelName, $allNamesQuery.data)) {
+    if (
+      isDuplicateName(e.target.value, modelName, $allNamesQuery?.data ?? [])
+    ) {
       notifications.send({
         message: `Name ${e.target.value} is already in use`,
       });
@@ -77,7 +78,7 @@
         runtimeInstanceId,
         modelName,
         toName,
-        entityType
+        entityType,
       );
       goto(getRouteFromName(toName, entityType), {
         replaceState: true,
@@ -92,8 +93,6 @@
 
 <WorkspaceHeader
   {...{ titleInput: formatModelName(titleInput), onChangeCallback }}
-  appRunning={$appQueryStatusStore}
-  let:width
 >
   <svelte:fragment slot="workspace-controls">
     <IconButton
@@ -111,11 +110,11 @@
       </svelte:fragment>
     </IconButton>
   </svelte:fragment>
-  <svelte:fragment slot="cta">
+  <svelte:fragment slot="cta" let:width>
     {@const collapse = width < 800}
     <PanelCTA side="right">
       <ModelWorkspaceCTAs
-        availableDashboards={$availableDashboards?.data}
+        availableDashboards={$availableDashboards?.data ?? []}
         {collapse}
         modelHasError={$modelHasError}
         {modelName}

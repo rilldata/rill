@@ -1,9 +1,11 @@
 <script lang="ts">
   import StickyHeader from "@rilldata/web-common/components/virtualized-table/core/StickyHeader.svelte";
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
   import { createEventDispatcher, getContext } from "svelte";
   import Cell from "../../../components/virtualized-table/core/Cell.svelte";
-  import type { VirtualizedTableConfig } from "../../../components/virtualized-table/types";
+  import type {
+    VirtualizedTableColumns,
+    VirtualizedTableConfig,
+  } from "../../../components/virtualized-table/types";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -77,11 +79,11 @@
       {#if $sortedByDimensionValue}
         <div class="ui-copy-icon">
           {#if $sortedAscending}
-            <div in:fly={{ duration: 200, y: -8 }} style:opacity={1}>
+            <div in:fly|global={{ duration: 200, y: -8 }} style:opacity={1}>
               <ArrowDown size="12px" />
             </div>
           {:else}
-            <div in:fly={{ duration: 200, y: 8 }} style:opacity={1}>
+            <div in:fly|global={{ duration: 200, y: 8 }} style:opacity={1}>
               <ArrowDown transform="scale(1 -1)" size="12px" />
             </div>
           {/if}

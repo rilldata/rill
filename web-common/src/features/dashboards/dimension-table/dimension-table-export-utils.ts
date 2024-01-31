@@ -1,10 +1,11 @@
 import { getQuerySortType } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   TimeComparisonOption,
   TimeRangePreset,
@@ -15,17 +16,17 @@ import type {
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, Readable } from "svelte/store";
+import { Readable, derived, get } from "svelte/store";
 
 export function getDimensionTableExportArgs(
-  ctx: StateManagers
+  ctx: StateManagers,
 ): Readable<V1MetricsViewComparisonRequest | undefined> {
   return derived(
     [
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
-      useMetaQuery(ctx),
+      useMetricsView(ctx),
     ],
     ([metricViewName, dashboardState, timeControlState, metricsView]) => {
       if (!metricsView.data || !timeControlState.ready) return undefined;
@@ -36,8 +37,14 @@ export function getDimensionTableExportArgs(
       const comparisonTimeRange = getComparisonTimeRange(
         dashboardState,
         timeControlState,
-        timeRange
+        timeRange,
       );
+
+      // api now expects measure names for which comparison are calculated
+      let comparisonMeasures: string[] = [];
+      if (comparisonTimeRange) {
+        comparisonMeasures = [dashboardState.leaderboardMeasureName];
+      }
 
       return {
         instanceId: get(runtime).instanceId,
@@ -45,22 +52,23 @@ export function getDimensionTableExportArgs(
         dimension: {
           name: dashboardState.selectedDimensionName,
         },
-        measures: dashboardState.selectedMeasureNames.map((name) => ({
+        measures: [...dashboardState.visibleMeasureKeys].map((name) => ({
           name: name,
         })),
+        comparisonMeasures: comparisonMeasures,
         timeRange,
         ...(comparisonTimeRange ? { comparisonTimeRange } : {}),
         sort: [
           {
             name: dashboardState.leaderboardMeasureName,
             desc: dashboardState.sortDirection === SortDirection.DESCENDING,
-            type: getQuerySortType(dashboardState.dashboardSortType),
+            sortType: getQuerySortType(dashboardState.dashboardSortType),
           },
         ],
-        filter: dashboardState.filters,
+        where: sanitiseExpression(dashboardState.whereFilter, undefined),
         offset: "0",
       };
-    }
+    },
   );
 }
 
@@ -70,7 +78,7 @@ export function getDimensionTableExportArgs(
  */
 function getTimeRange(
   timeControlState: TimeControlState,
-  metricsView: V1MetricsViewSpec
+  metricsView: V1MetricsViewSpec,
 ) {
   if (!timeControlState.selectedTimeRange?.name) return undefined;
 
@@ -100,7 +108,7 @@ function getTimeRange(
 function getComparisonTimeRange(
   dashboardState: MetricsExplorerEntity,
   timeControlState: TimeControlState,
-  timeRange: V1TimeRange | undefined
+  timeRange: V1TimeRange | undefined,
 ) {
   if (
     !timeRange ||

@@ -6,7 +6,7 @@ import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-clie
  */
 export function useMainEntityFiles(
   instanceId: string,
-  prefix: "sources" | "models" | "dashboards"
+  prefix: "sources" | "models" | "dashboards",
 ) {
   let extension: string;
   switch (prefix) {
@@ -31,13 +31,13 @@ export function useMainEntityFiles(
           data.paths
             ?.filter((path) => path.includes(`${prefix}/`))
             .map((path) =>
-              path.replace(`/${prefix}/`, "").replace(extension, "")
+              path.replace(`/${prefix}/`, "").replace(extension, ""),
             )
             // sort alphabetically case-insensitive
             .sort((a, b) =>
-              a.localeCompare(b, undefined, { sensitivity: "base" })
-            ),
+              a.localeCompare(b, undefined, { sensitivity: "base" }),
+            ) ?? [],
       },
-    }
+    },
   );
 }

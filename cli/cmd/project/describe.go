@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -14,7 +13,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-func DescribeCmd(cfg *config.Config) *cobra.Command {
+func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 
 	statusCmd := &cobra.Command{
@@ -23,6 +22,7 @@ func DescribeCmd(cfg *config.Config) *cobra.Command {
 		Short: "Retrieve detailed state for a resource",
 		Long:  "Retrieve detailed state for a specific resource (source, model, dashboard, ...)",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err

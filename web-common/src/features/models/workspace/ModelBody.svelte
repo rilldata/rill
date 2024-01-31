@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { SelectionRange } from "@codemirror/state";
-  import Portal from "@rilldata/web-common/components/Portal.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import {
     getFileAPIPathFromNameAndType,
@@ -27,6 +26,9 @@
   import { useModel, useModelFileIsEmpty } from "../selectors";
   import { sanitizeQuery } from "../utils/sanitize-query";
   import Editor from "./Editor.svelte";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+
+  const QUERY_DEBOUNCE_TIME = 400;
 
   export let modelName: string;
   export let focusEditorOnMount = false;
@@ -34,7 +36,7 @@
   const queryClient = useQueryClient();
 
   const queryHighlight: Writable<QueryHighlightState> = getContext(
-    "rill:app:query-highlight"
+    "rill:app:query-highlight",
   );
 
   $: runtimeInstanceId = $runtime.instanceId;
@@ -52,7 +54,7 @@
 
   $: modelEmpty = useModelFileIsEmpty(runtimeInstanceId, modelName);
 
-  $: modelSql = $modelSqlQuery?.data?.blob;
+  $: modelSql = $modelSqlQuery?.data?.blob ?? "";
   $: hasModelSql = typeof modelSql === "string";
 
   $: modelQuery = useModel(runtimeInstanceId, modelName);
@@ -63,28 +65,28 @@
   $: allErrors = getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
-    modelPath
+    modelPath,
   );
   $: modelError = $allErrors?.[0]?.message;
 
   $: tableQuery = createQueryServiceTableRows(
     runtimeInstanceId,
-    $modelQuery.data?.model?.state?.table,
+    $modelQuery.data?.model?.state?.table ?? "",
     {
       limit,
-    }
+    },
   );
 
-  $: runtimeError = ($tableQuery.error as any)?.response.data;
+  $: runtimeError = $tableQuery.error?.response.data;
 
   const outputLayout = getContext(
-    "rill:app:output-layout"
+    "rill:app:output-layout",
   ) as Writable<LayoutElement>;
   const outputPosition = getContext(
-    "rill:app:output-height-tween"
+    "rill:app:output-height-tween",
   ) as Writable<number>;
   const outputVisibilityTween = getContext(
-    "rill:app:output-visibility-tween"
+    "rill:app:output-visibility-tween",
   ) as Writable<number>;
 
   async function updateModelContent(content: string) {
@@ -113,12 +115,13 @@
       console.error(err);
     }
   }
+
   $: selections = $queryHighlight?.map((selection) => ({
     from: selection?.referenceIndex,
     to: selection?.referenceIndex + selection?.reference?.length,
   })) as SelectionRange[];
 
-  let errors = [];
+  let errors: string[] = [];
   $: {
     errors = [];
     // only add error if sql is present
@@ -127,36 +130,39 @@
       if (runtimeError) errors.push(runtimeError.message);
     }
   }
+
+  const debounceUpdateModelContent = debounce(
+    updateModelContent,
+    QUERY_DEBOUNCE_TIME,
+  );
 </script>
 
 <svelte:window bind:innerHeight />
 
-<div class="editor-pane bg-gray-100">
+<div class="editor-pane h-full pb-3">
   <div
+    class="p-5"
     style:height="calc({innerHeight}px - {$outputPosition *
       $outputVisibilityTween}px - var(--header-height))"
   >
     {#if hasModelSql}
-      <div class="h-full p-5 grid overflow-auto">
+      <div class="h-full grid overflow-auto">
         {#key modelName}
           <Editor
             content={modelSql}
             {selections}
             focusOnMount={focusEditorOnMount}
-            on:write={(evt) => updateModelContent(evt.detail.content)}
+            on:write={(evt) => debounceUpdateModelContent(evt.detail.content)}
           />
         {/key}
       </div>
     {/if}
   </div>
-  <Portal target=".body">
-    {#if $outputLayout.visible}
-      <HorizontalSplitter />
-    {/if}
-  </Portal>
-
+  {#if $outputLayout.visible}
+    <HorizontalSplitter className="px-5" />
+  {/if}
   {#if hasModelSql}
-    <div style:height="{$outputPosition}px" class="p-5 flex flex-col gap-6">
+    <div class="p-5 flex flex-col gap-6" style:height="{$outputPosition}px">
       <div
         class="rounded border border-gray-200 border-2 overflow-auto h-full grow-1 {!showPreview &&
           'hidden'}"
@@ -185,7 +191,7 @@
       </div>
       {#if errors.length > 0}
         <div
-          transition:slide|local={{ duration: 200 }}
+          transition:slide={{ duration: 200 }}
           class="error break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
         >
           {#each errors as error}

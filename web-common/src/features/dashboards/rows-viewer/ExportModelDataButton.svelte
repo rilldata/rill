@@ -2,26 +2,23 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
-    createQueryServiceExport,
     V1ExportFormat,
+    createQueryServiceExport,
   } from "@rilldata/web-common/runtime-client";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import exportMetrics from "./export-metrics";
 
-  export let metricViewName;
   let exportMenuOpen = false;
 
-  const timeControlStore = useTimeControlStore(getStateManagers());
+  const ctx = getStateManagers();
 
   const exportDash = createQueryServiceExport();
   const handleExportMetrics = async (format: V1ExportFormat) => {
     exportMetrics({
-      metricViewName,
+      ctx,
       query: exportDash,
       format,
-      timeControlStore,
     });
   };
 </script>
@@ -36,19 +33,20 @@
 >
   <button
     aria-label="Export model data"
+    class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700"
     on:click={(evt) => {
       evt.stopPropagation();
       toggleFloatingElement();
     }}
-    class="h-6 px-1.5 py-px flex items-center gap-[3px] rounded-sm hover:bg-gray-200 text-gray-700"
   >
     Export
     <CaretDownIcon
-      size="10px"
       className="transition-transform {exportMenuOpen && '-rotate-180'}"
+      size="10px"
     />
   </button>
   <Menu
+    let:toggleFloatingElement
     minWidth=""
     on:click-outside={toggleFloatingElement}
     on:escape={toggleFloatingElement}

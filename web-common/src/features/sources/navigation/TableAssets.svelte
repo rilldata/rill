@@ -38,23 +38,22 @@
       BehaviourEventAction.SourceAdd,
       BehaviourEventMedium.Button,
       $appScreen,
-      MetricsEventSpace.LeftPanel
+      MetricsEventSpace.LeftPanel,
     );
   };
 
   const queryHandler = async (tableName: string) => {
     await createModelFromSource(
       $runtime.instanceId,
-      $modelNames.data,
+      $modelNames?.data ?? [],
       tableName,
-      tableName
+      tableName,
     );
     // TODO: fire telemetry
   };
 
   let showRenameTableModal = false;
-  let renameTableName = null;
-
+  let renameTableName: null | string = null;
   const openRenameTableModal = (tableName: string) => {
     showRenameTableModal = true;
     renameTableName = tableName;
@@ -68,12 +67,12 @@
 >
 
 {#if showTables}
-  <div class="pb-3" transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+  <div class="pb-3" transition:slide={{ duration: LIST_SLIDE_DURATION }}>
     {#if $sourceNames?.data}
       {#each $sourceNames.data as sourceName (sourceName)}
         <div
           animate:flip={{ duration: 200 }}
-          out:slide={{ duration: LIST_SLIDE_DURATION }}
+          out:slide|global={{ duration: LIST_SLIDE_DURATION }}
         >
           <NavigationEntry
             name={sourceName}
@@ -83,7 +82,7 @@
             on:command-click={() => queryHandler(sourceName)}
           >
             <svelte:fragment slot="more">
-              <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+              <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
                 <ColumnProfile indentLevel={1} objectName={sourceName} />
               </div>
             </svelte:fragment>
@@ -118,7 +117,7 @@
   on:close={() => (showAddSourceModal = false)}
   open={showAddSourceModal}
 />
-{#if showRenameTableModal}
+{#if showRenameTableModal && renameTableName !== null}
   <RenameAssetModal
     entityType={EntityType.Table}
     closeModal={() => (showRenameTableModal = false)}

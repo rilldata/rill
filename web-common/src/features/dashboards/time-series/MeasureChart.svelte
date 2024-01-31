@@ -56,7 +56,7 @@
   export let labelAccessor = "label";
   export let yAccessor = "value";
   export let mouseoverValue;
-  export let hovered = false;
+  export let validPercTotal: number | null = null;
 
   // control point for scrub functionality.
   export let isScrubbing = false;
@@ -66,13 +66,13 @@
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
     v.toString();
 
-  $: mouseoverFormat = createMeasureValueFormatter(measure);
+  $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
   $: numberKind = numberKindForMeasure(measure);
 
-  export let tweenProps = { duration: 400, easing: cubicOut };
-
+  const tweenProps = { duration: 400, easing: cubicOut };
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
 
+  let hovered: boolean | undefined = false;
   let scrub;
   let cursorClass;
   let preventScrubReset;
@@ -97,7 +97,7 @@
     isOverEnd = Math.abs(mouseOverCords - scrubEndCords) <= 5;
 
     isInsideScrub = Boolean(
-      mouseOverCords > min + 5 && mouseOverCords < max - 5
+      mouseOverCords > min + 5 && mouseOverCords < max - 5,
     );
   }
 
@@ -125,20 +125,20 @@
   // Move to utils
   $: if (isComparingDimension) {
     let dimExtents = dimensionData.map((d) =>
-      extent(d?.data || [], (datum) => datum[yAccessor])
+      extent(d?.data || [], (datum) => datum[yAccessor]),
     );
 
     yExtentMin = dimExtents
       .map((e) => e[0])
       .reduce(
         (min, curr) => Math.min(min, isNaN(curr) ? Infinity : curr),
-        Infinity
+        Infinity,
       );
     yExtentMax = dimExtents
       .map((e) => e[1])
       .reduce(
         (max, curr) => Math.max(max, isNaN(curr) ? -Infinity : curr),
-        -Infinity
+        -Infinity,
       );
 
     isFetchingDimensions = dimensionData.some((d) => d?.isFetching);
@@ -149,7 +149,7 @@
       yMin !== undefined ? yMin : yExtentMin,
       yMax !== undefined ? yMax : yExtentMax,
     ],
-    6 / 5
+    6 / 5,
   );
 
   $: internalXMin = xMin || xExtentMin;
@@ -231,8 +231,8 @@
       <ChartBody
         {data}
         {dimensionData}
-        isHovering={hoveredTime}
         dimensionValue={$tableInteractionStore?.dimensionValue}
+        isHovering={hoveredTime}
         {scrubEnd}
         {scrubStart}
         {showComparison}
@@ -243,7 +243,7 @@
         {yExtentMax}
       />
       <line
-        class="stroke-blue-200"
+        class="stroke-primary-200"
         x1={config.plotLeft}
         x2={config.plotLeft + config.plotRight}
         y1={yScale(0)}
@@ -264,7 +264,7 @@
           let:point
         >
           {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
-            <g transition:fly|local={{ duration: 100, x: -4 }}>
+            <g transition:fly={{ duration: 100, x: -4 }}>
               <text
                 class="fill-gray-600"
                 style:paint-order="stroke"
@@ -288,7 +288,7 @@
                 </text>
               {/if}
             </g>
-            <g transition:fly|local={{ duration: 100, x: -4 }}>
+            <g transition:fly={{ duration: 100, x: -4 }}>
               {#if isComparingDimension}
                 <DimensionValueMouseover
                   {point}
@@ -296,7 +296,9 @@
                   {yAccessor}
                   {dimensionData}
                   dimensionValue={$tableInteractionStore?.dimensionValue}
+                  {validPercTotal}
                   {mouseoverFormat}
+                  {hovered}
                 />
               {:else}
                 <MeasureValueMouseover

@@ -3,7 +3,7 @@
 
   export let organization: string;
 
-  const addUserCommand = `rill user add --org ${organization} --role viewer`;
+  $: addUserCommand = `rill user add --org ${organization} --role viewer`;
 </script>
 
 <div class="flex flex-col">

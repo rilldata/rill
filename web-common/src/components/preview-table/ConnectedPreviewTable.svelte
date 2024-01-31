@@ -8,25 +8,26 @@
   import { onMount } from "svelte";
   import { runtime } from "../../runtime-client/runtime-store";
 
-  export let objectName: string;
+  export let objectName: string | undefined;
   export let limit = 150;
   export let loading = false;
 
-  $: profileColumnsQuery = createQueryServiceTableColumns(
-    $runtime?.instanceId,
-    objectName,
-    {}
-  );
-  $: profileColumns =
-    $profileColumnsQuery?.data?.profileColumns ?? profileColumns; // Retain old profileColumns
+  $: profileColumnsQuery =
+    objectName === undefined
+      ? undefined
+      : createQueryServiceTableColumns($runtime?.instanceId, objectName, {});
 
-  $: tableQuery = createQueryServiceTableRows(
-    $runtime?.instanceId,
-    objectName,
-    {
-      limit,
-    }
-  );
+  $: profileColumns =
+    profileColumnsQuery === undefined
+      ? undefined
+      : $profileColumnsQuery?.data?.profileColumns ?? profileColumns; // Retain old profileColumns
+
+  $: tableQuery =
+    objectName === undefined
+      ? undefined
+      : createQueryServiceTableRows($runtime?.instanceId, objectName, {
+          limit,
+        });
 
   $: rows = $tableQuery?.data?.data ?? rows; // Retain old rows
 

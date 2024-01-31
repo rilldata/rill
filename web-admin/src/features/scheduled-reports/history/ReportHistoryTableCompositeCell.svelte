@@ -6,6 +6,7 @@
 
   export let reportTime: string;
   export let timeZone: string;
+  export let adhoc: boolean;
   export let errorMessage: string;
 </script>
 
@@ -16,10 +17,18 @@
   {#if errorMessage === ""}
     <Tag color="blue">Email sent</Tag>
   {:else}
-    <Tooltip>
+    <Tooltip distance={8}>
       <Tag color="red">Failed</Tag>
       <TooltipContent slot="tooltip-content">
         {errorMessage}
+      </TooltipContent>
+    </Tooltip>
+  {/if}
+  {#if adhoc}
+    <Tooltip distance={8}>
+      <Tag>Ad-hoc</Tag>
+      <TooltipContent slot="tooltip-content">
+        This report was run manually off-schedule.
       </TooltipContent>
     </Tooltip>
   {/if}

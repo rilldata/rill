@@ -1,4 +1,5 @@
 ---
+note: GENERATED. DO NOT EDIT.
 title: CLI usage
 sidebar_position: 15
 ---
@@ -24,7 +25,8 @@ Rill CLI
 * [rill org](org/org.md)	 - Manage organisations
 * [rill project](project/project.md)	 - Manage projects
 * [rill start](start.md)	 - Build project and start web app
+* [rill upgrade](upgrade.md)	 - Upgrade Rill to the latest version
 * [rill user](user/user.md)	 - Manage users
-* [rill version](version.md)	 - Show rill version
+* [rill version](version.md)	 - Show Rill version
 * [rill whoami](whoami.md)	 - Show current user
 

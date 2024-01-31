@@ -26,12 +26,14 @@ A container GraphicContext for the time series in a metrics dashboard.
     right={50}
     fontSize={11}
     top={4}
-    width={(enableFullWidth
-      ? workspaceWidth - paddingForFullWidth
-      : workspaceWidth >= MEASURE_CONFIG.breakpoint
-      ? MEASURE_CONFIG.container.width.full
-      : MEASURE_CONFIG.container.width.breakpoint) -
-      MEASURE_CONFIG.bigNumber.widthWithChart}
+    width={Math.max(
+      enableFullWidth
+        ? workspaceWidth - paddingForFullWidth
+        : workspaceWidth >= MEASURE_CONFIG.breakpoint
+          ? MEASURE_CONFIG.container.width.full
+          : MEASURE_CONFIG.container.width.breakpoint,
+      400,
+    ) - MEASURE_CONFIG.bigNumber.widthWithChart}
     xMax={end}
     xMaxTweenProps={{ duration: 400 }}
     xMin={start}

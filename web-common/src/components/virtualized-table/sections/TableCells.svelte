@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { VirtualItem } from "@tanstack/svelte-virtual";
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
+  import type { VirtualizedTableColumns } from "../types";
   import Cell from "../core/Cell.svelte";
   import Row from "../core/Row.svelte";
 
@@ -18,8 +18,6 @@
 
   const getCellProps = (virtRow: VirtualItem, virtCol: VirtualItem) => {
     const column = columns[virtCol.index];
-    if (!column) return;
-
     const columnName = column.name;
     const value = rows[virtRow.index][columnName];
     return {

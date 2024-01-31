@@ -19,7 +19,9 @@
 
   const dark = getContext("rill:menu:dark");
   const onSelect: () => void = getContext("rill:menu:onSelect");
-  const menuItems: Writable<any> = getContext("rill:menu:menuItems");
+  const menuItems: Writable<{ id: number; disabled: boolean }[]> = getContext(
+    "rill:menu:menuItems",
+  );
   const currentItem: Writable<any> = getContext("rill:menu:currentItem");
 
   let itemID;
@@ -75,6 +77,7 @@
     if (!disabled) {
       hovered = true;
     }
+    dispatch("hover");
   }
 
   function onFocus() {
@@ -82,6 +85,7 @@
       $currentItem = itemID;
       hovered = true;
     }
+    dispatch("focus");
   }
 
   function onBlur() {
@@ -108,7 +112,7 @@
         if (propogateSelect) onSelect();
         justClicked = false;
       },
-      animateSelect ? 150 : 0
+      animateSelect ? 150 : 0,
     );
   }
 

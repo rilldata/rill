@@ -1,19 +1,23 @@
 import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
-  useFilteredResources,
   useFilteredResourceNames,
+  useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
-  createQueryServiceTableColumns,
+  V1ListFilesResponse,
   createRuntimeServiceGetFile,
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
-  V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/query-core";
-import { TIMESTAMPS } from "../../lib/duckdb-data-types";
+import type { Readable } from "svelte/motion";
+import { derived } from "svelte/store";
+import {
+  createTableColumnsWithName,
+  type TableColumnsWithName,
+} from "../sources/selectors";
 
 export function useModels(instanceId: string) {
   return useFilteredResources(instanceId, ResourceKind.Model);
@@ -31,9 +35,29 @@ export function useModel(instanceId: string, name: string) {
   return useResource(instanceId, name, ResourceKind.Model);
 }
 
+export function useAllModelColumns(
+  queryClient: QueryClient,
+  instanceId: string,
+): Readable<Array<TableColumnsWithName>> {
+  return derived([useModels(instanceId)], ([allModels], set) => {
+    if (!allModels.data?.length) {
+      set([]);
+      return;
+    }
+
+    derived(
+      allModels.data.map((r) =>
+        createTableColumnsWithName(queryClient, instanceId, r.meta.name.name),
+      ),
+      (modelColumnResponses) =>
+        modelColumnResponses.filter((res) => !!res.data).map((res) => res.data),
+    ).subscribe(set);
+  });
+}
+
 export async function getModelNames(
   queryClient: QueryClient,
-  instanceId: string
+  instanceId: string,
 ) {
   const files = await queryClient.fetchQuery<V1ListFilesResponse>({
     queryKey: getRuntimeServiceListFilesQueryKey(instanceId, {
@@ -61,23 +85,4 @@ export function useModelFileIsEmpty(instanceId, modelName) {
       },
     },
   });
-}
-
-export function useModelTimestampColumns(
-  instanceId: string,
-  modelName: string
-) {
-  return createQueryServiceTableColumns(
-    instanceId,
-    modelName,
-    {},
-    {
-      query: {
-        select: (data) =>
-          data.profileColumns
-            ?.filter((c) => TIMESTAMPS.has(c.type))
-            .map((c) => c.name) ?? [],
-      },
-    }
-  );
 }

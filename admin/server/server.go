@@ -27,8 +27,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -50,8 +50,8 @@ type Options struct {
 	GRPCPort               int
 	ExternalURL            string
 	FrontendURL            string
-	SessionKeyPairs        [][]byte
 	AllowedOrigins         []string
+	SessionKeyPairs        [][]byte
 	ServePrometheus        bool
 	AuthDomain             string
 	AuthClientID           string
@@ -122,7 +122,6 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
-			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
 			errorMappingStreamServerInterceptor(),
 			grpc_auth.StreamServerInterceptor(checkUserAgent),
@@ -132,7 +131,6 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
-			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
 			errorMappingUnaryServerInterceptor(),
 			grpc_auth.UnaryServerInterceptor(checkUserAgent),
@@ -140,6 +138,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			s.authenticator.UnaryServerInterceptor(),
 			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
 		),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
 
 	adminv1.RegisterAdminServiceServer(server, s)
@@ -298,15 +297,6 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
-}
-
-func (s *Server) Telemetry(ctx context.Context, req *adminv1.TelemetryRequest) (*adminv1.TelemetryResponse, error) {
-	dims := make([]attribute.KeyValue, 0)
-	for k, v := range req.Event {
-		dims = append(dims, attribute.String(k, v))
-	}
-	s.uiActivity.Emit(ctx, "cloud-ui-telemetry", 1, dims...)
-	return &adminv1.TelemetryResponse{}, nil
 }
 
 func timeoutSelector(fullMethodName string) time.Duration {

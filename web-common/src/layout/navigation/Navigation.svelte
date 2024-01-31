@@ -1,7 +1,7 @@
 <script lang="ts">
+  import Portal from "@rilldata/web-common/components/Portal.svelte";
   import HideLeftSidebar from "@rilldata/web-common/components/icons/HideLeftSidebar.svelte";
   import SurfaceViewIcon from "@rilldata/web-common/components/icons/SurfaceView.svelte";
-  import Portal from "@rilldata/web-common/components/Portal.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { ModelAssets } from "@rilldata/web-common/features/models";
   import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
@@ -31,8 +31,28 @@
     (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
     tweened(0, { duration: 50 });
 
-  $: isModelerEnabled = $featureFlags.readOnly === false;
+  const { readOnly } = featureFlags;
+
+  let previousWidth: number;
+
+  $: isModelerEnabled = $readOnly === false;
+
+  function handleResize(
+    e: UIEvent & {
+      currentTarget: EventTarget & Window;
+    },
+  ) {
+    const currentWidth = e.currentTarget.innerWidth;
+
+    if (currentWidth < previousWidth && currentWidth < 768) {
+      $navigationLayout.visible = false;
+    }
+
+    previousWidth = currentWidth;
+  }
 </script>
+
+<svelte:window on:resize={handleResize} />
 
 <div
   aria-hidden={!$navigationLayout?.visible}
@@ -58,6 +78,7 @@
     {#if $navigationLayout?.visible}
       <Portal>
         <div
+          role="separator"
           on:dblclick={() => {
             navigationLayout.update((state) => {
               state.value = DEFAULT_NAV_WIDTH;
@@ -69,7 +90,6 @@
           use:drag={{
             minSize: DEFAULT_NAV_WIDTH,
             maxSize: 440,
-            side: "assetsWidth",
             store: navigationLayout,
           }}
         />
@@ -111,6 +131,13 @@
     <SurfaceViewIcon size="16px" mode={"hamburger"} />
   {/if}
   <svelte:fragment slot="tooltip-content">
-    {#if $navVisibilityTween === 0} Close {:else} Show {/if} sidebar
+    {#if $navVisibilityTween === 0}
+      Close
+    {:else}
+      Show
+    {/if} sidebar
   </svelte:fragment>
 </SurfaceControlButton>
+
+<style>
+</style>

@@ -1,4 +1,5 @@
 ---
+note: GENERATED. DO NOT EDIT.
 title: rill env set
 ---
 ## rill env set

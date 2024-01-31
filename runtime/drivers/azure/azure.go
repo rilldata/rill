@@ -258,7 +258,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		var respErr *azcore.ResponseError
 		if gcerrors.Code(err) == gcerrors.Unknown ||
 			(errors.As(err, &respErr) && respErr.RawResponse.StatusCode == http.StatusForbidden && (respErr.ErrorCode == "AuthorizationPermissionMismatch" || respErr.ErrorCode == "AuthenticationFailed")) {
-			c.logger.Named("Console").Warn("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.")
+			c.logger.Warn("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.")
 
 			client, err = c.createAnonymousClient(ctx, conf)
 			if err != nil {

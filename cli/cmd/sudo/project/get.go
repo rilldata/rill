@@ -2,21 +2,22 @@ package project
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func GetCmd(cfg *config.Config) *cobra.Command {
+func GetCmd(ch *cmdutil.Helper) *cobra.Command {
 	getCmd := &cobra.Command{
 		Use:   "get",
 		Args:  cobra.ExactArgs(2),
 		Short: "Get project details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			cfg := ch.Config
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -29,6 +30,11 @@ func GetCmd(cfg *config.Config) *cobra.Command {
 			})
 			if err != nil {
 				return err
+			}
+
+			annotations := make([]string, 0, len(res.Project.Annotations))
+			for k, v := range res.Project.Annotations {
+				annotations = append(annotations, fmt.Sprintf("%s=%s", k, v))
 			}
 
 			project := res.Project
@@ -45,6 +51,7 @@ func GetCmd(cfg *config.Config) *cobra.Command {
 			fmt.Printf("Prod slots: %d\n", project.ProdSlots)
 			fmt.Printf("Prod deployment ID: %s\n", project.ProdDeploymentId)
 			fmt.Printf("Prod hibernation TTL: %s\n", time.Duration(project.ProdTtlSeconds)*time.Second)
+			fmt.Printf("Annotations: %s\n", strings.Join(annotations, "; "))
 
 			return nil
 		},

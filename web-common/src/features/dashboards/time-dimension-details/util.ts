@@ -12,28 +12,12 @@ export function transposeArray(arr, rowCount, columnCount) {
   return columnarBody;
 }
 
-/**
- * This formatter is less strict and
- * returns undefined if the input is undefined
- * */
-export function safeFormatter(formatter) {
-  return (value) => {
-    if (value === undefined) {
-      return undefined;
-    } else if (value === null) {
-      return null;
-    } else {
-      return formatter(value);
-    }
-  };
-}
-
 export function getClassForCell(
   palette: "fixed" | "scrubbed" | "default",
   highlightedRow,
   highlightedCol,
   rowIdx,
-  colIdx
+  colIdx,
 ) {
   const bgColors = {
     fixed: {
@@ -42,9 +26,9 @@ export function getClassForCell(
       doubleHighlighted: "bg-slate-200",
     },
     scrubbed: {
-      base: "bg-blue-50",
-      highlighted: "bg-blue-100",
-      doubleHighlighted: "bg-blue-200",
+      base: "bg-primary-50",
+      highlighted: "bg-primary-100",
+      doubleHighlighted: "bg-primary-200",
     },
     default: {
       base: "bg-white",

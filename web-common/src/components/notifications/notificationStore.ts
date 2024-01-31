@@ -3,16 +3,22 @@ import { derived, writable } from "svelte/store";
 
 const NOTIFICATION_TIMEOUT = 2000;
 
-interface NotificationStore extends Readable<object> {
+interface NotificationStore extends Readable<NotificationMessage> {
   timeoutID: ReturnType<typeof setTimeout>;
   send: (args: NotificationMessageArguments) => void;
   clear: () => void;
+}
+
+export interface Link {
+  text: string;
+  href: string;
 }
 
 interface NotificationMessageArguments {
   message: string;
   type?: string;
   detail?: string;
+  link?: Link;
   options?: NotificationOptions;
 }
 
@@ -21,23 +27,25 @@ interface NotificationMessage {
   type?: string;
   message: string;
   detail?: string;
+  link?: Link;
   options?: NotificationOptions;
 }
 
-// No need to export after we deprecate the Node backend
-export interface NotificationOptions {
+interface NotificationOptions {
   width?: number;
   persisted?: boolean;
+  persistedLink?: boolean;
 }
 
 function createNotificationStore(): NotificationStore {
   const _notification = writable({} as NotificationMessage);
-  let timeout: ReturnType<typeof setTimeout>;
+  let timeout: ReturnType<typeof setTimeout> | undefined = undefined;
 
   function send({
     message,
     type = "default",
     detail,
+    link,
     options = {},
   }: NotificationMessageArguments): void {
     const notificationMessage: NotificationMessage = {
@@ -45,6 +53,7 @@ function createNotificationStore(): NotificationStore {
       message,
       type,
       detail,
+      link,
       options,
     };
     _notification.set(notificationMessage);
@@ -62,10 +71,14 @@ function createNotificationStore(): NotificationStore {
       clearTimeout(timeout);
       set($notification);
       // if this is not the reset message, set the timer.
-      if ($notification.id && !$notification.options?.persisted) {
+      if (
+        $notification.id &&
+        !$notification.options?.persisted &&
+        !$notification.options?.persistedLink
+      ) {
         timeout = setTimeout(clear, NOTIFICATION_TIMEOUT);
       }
-    }
+    },
   );
   const { subscribe } = notifications;
 

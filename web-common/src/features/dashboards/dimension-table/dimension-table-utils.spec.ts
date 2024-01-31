@@ -1,3 +1,8 @@
+import {
+  createAndExpression,
+  createInExpression,
+  createLikeExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import {
   computePercentOfTotal,
@@ -5,34 +10,29 @@ import {
 } from "./dimension-table-utils";
 import { describe, it, expect } from "vitest";
 
-const emptyFilter = {
-  include: [],
-  exclude: [],
-};
-
-const filterWithDimension = {
-  include: [{ name: "fruit", in: ["banana", "grapes"] }],
-  exclude: [],
-};
-
 describe("updateFilterOnSearch", () => {
   it("should return the filter set with search text for an empty filter", () => {
-    const updatedfilter = updateFilterOnSearch(emptyFilter, "apple", "fruit");
-    expect(updatedfilter).toEqual({
-      include: [{ name: "fruit", in: [], like: ["%apple%"] }],
-      exclude: [],
-    });
+    const updatedfilter = updateFilterOnSearch(
+      createAndExpression([]),
+      "apple",
+      "fruit",
+    );
+    expect(updatedfilter).toEqual(
+      createAndExpression([createLikeExpression("fruit", "%apple%")]),
+    );
   });
   it("should return the filter set with search text for an existing filter", () => {
     const updatedfilter = updateFilterOnSearch(
-      filterWithDimension,
+      createAndExpression([createInExpression("fruit", ["banana", "grapes"])]),
       "apple",
-      "fruit"
+      "fruit",
     );
-    expect(updatedfilter).toEqual({
-      include: [{ name: "fruit", in: ["banana", "grapes"], like: ["%apple%"] }],
-      exclude: [],
-    });
+    expect(updatedfilter).toEqual(
+      createAndExpression([
+        createLikeExpression("fruit", "%apple%"),
+        createInExpression("fruit", ["banana", "grapes"]),
+      ]),
+    );
   });
 });
 

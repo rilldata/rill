@@ -17,12 +17,13 @@
   import ModelTooltip from "./ModelTooltip.svelte";
 
   $: sourceNames = useSourceFileNames($runtime.instanceId);
-  $: modelNames = useModelFileNames($runtime.instanceId);
+  $: useModelNames = useModelFileNames($runtime.instanceId);
 
+  $: modelNames = $useModelNames?.data ?? [];
   let showModels = true;
 
   async function handleAddModel() {
-    await createModel($runtime.instanceId, getName("model", $modelNames.data));
+    await createModel($runtime.instanceId, getName("model", modelNames));
     // if the models are not visible in the assets list, show them.
     if (!showModels) {
       showModels = true;
@@ -31,14 +32,16 @@
 
   /** rename the model */
   let showRenameModelModal = false;
-  let renameModelName = null;
+  let renameModelName: string | null = null;
   const openRenameModelModal = (modelName: string) => {
     showRenameModelModal = true;
     renameModelName = modelName;
   };
 
   $: hasSourceButNoModels =
-    $sourceNames?.data?.length > 0 && $modelNames?.data?.length === 0;
+    $sourceNames?.data?.length !== undefined &&
+    $sourceNames?.data?.length > 0 &&
+    modelNames.length === 0;
 </script>
 
 <NavigationHeader bind:show={showModels} toggleText="models"
@@ -48,38 +51,37 @@
 {#if showModels}
   <div
     class="pb-3 justify-self-end"
-    transition:slide={{ duration: LIST_SLIDE_DURATION }}
+    transition:slide|global={{ duration: LIST_SLIDE_DURATION }}
     id="assets-model-list"
   >
-    {#if $modelNames?.data}
-      {#each $modelNames.data as modelName (modelName)}
-        <NavigationEntry
-          name={modelName}
-          href={`/model/${modelName}`}
-          open={$page.url.pathname === `/model/${modelName}`}
-        >
-          <svelte:fragment slot="more">
-            <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
-              <ColumnProfile indentLevel={1} objectName={modelName} />
-            </div>
-          </svelte:fragment>
+    {#each modelNames as modelName (modelName)}
+      <NavigationEntry
+        name={modelName}
+        href={`/model/${modelName}`}
+        open={$page.url.pathname === `/model/${modelName}`}
+      >
+        <svelte:fragment slot="more">
+          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
+            <ColumnProfile indentLevel={1} objectName={modelName} />
+          </div>
+        </svelte:fragment>
 
-          <svelte:fragment slot="tooltip-content">
-            <ModelTooltip {modelName} />
-          </svelte:fragment>
+        <svelte:fragment slot="tooltip-content">
+          <ModelTooltip {modelName} />
+        </svelte:fragment>
 
-          <svelte:fragment slot="menu-items" let:toggleMenu>
-            <ModelMenuItems
-              {modelName}
-              {toggleMenu}
-              on:rename-asset={() => {
-                openRenameModelModal(modelName);
-              }}
-            />
-          </svelte:fragment>
-        </NavigationEntry>
-      {/each}
-    {/if}
+        <svelte:fragment slot="menu-items" let:toggleMenu>
+          <ModelMenuItems
+            {modelName}
+            {toggleMenu}
+            on:rename-asset={() => {
+              openRenameModelModal(modelName);
+            }}
+          />
+        </svelte:fragment>
+      </NavigationEntry>
+    {/each}
+
     <AddAssetButton
       id="create-model-button"
       label="Add model"
@@ -89,7 +91,7 @@
   </div>
 {/if}
 
-{#if showRenameModelModal}
+{#if showRenameModelModal && renameModelName !== null}
   <RenameAssetModal
     entityType={EntityType.Model}
     closeModal={() => (showRenameModelModal = false)}

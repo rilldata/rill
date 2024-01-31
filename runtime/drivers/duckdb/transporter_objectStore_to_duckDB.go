@@ -37,7 +37,9 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		return err
 	}
 
-	t.logger.Info("source properties", zap.Any("srcProps", srcProps))
+	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
+
+	t.logger.Debug("source properties", zap.Any("srcProps", srcProps))
 	srcCfg, err := parseFileSourceProperties(srcProps)
 	if err != nil {
 		return err
@@ -93,7 +95,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		}
 
 		st := time.Now()
-		t.logger.Info("ingesting files", zap.Strings("files", files), observability.ZapCtx(ctx))
+		t.logger.Debug("ingesting files", zap.Strings("files", files), observability.ZapCtx(ctx))
 		if appendToTable {
 			if err := a.appendData(ctx, files); err != nil {
 				return err
@@ -111,17 +113,14 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 		}
 
 		size := fileSize(files)
-		t.logger.Info("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
+		t.logger.Debug("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
 		opts.Progress.Observe(size, drivers.ProgressUnitByte)
 		appendToTable = true
 	}
 	// convert to enum
-	for _, col := range srcCfg.CastToENUM {
+	if len(srcCfg.CastToENUM) > 0 {
 		conn, _ := t.to.(*connection)
-		err = conn.convertToEnum(ctx, sinkCfg.Table, col)
-		if err != nil {
-			return err
-		}
+		return conn.convertToEnum(ctx, sinkCfg.Table, srcCfg.CastToENUM)
 	}
 	return nil
 }
@@ -160,7 +159,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 		}
 
 		st := time.Now()
-		t.logger.Info("ingesting files", zap.Strings("files", files), observability.ZapCtx(ctx))
+		t.logger.Debug("ingesting files", zap.Strings("files", files), observability.ZapCtx(ctx))
 		if appendToTable {
 			if err := a.appendData(ctx, files); err != nil {
 				return err
@@ -178,17 +177,14 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 		}
 
 		size := fileSize(files)
-		t.logger.Info("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
+		t.logger.Debug("ingested files", zap.Strings("files", files), zap.Int64("bytes_ingested", size), zap.Duration("duration", time.Since(st)), observability.ZapCtx(ctx))
 		opts.Progress.Observe(size, drivers.ProgressUnitByte)
 		appendToTable = true
 	}
 	// convert to enum
-	for _, col := range srcCfg.CastToENUM {
+	if len(srcCfg.CastToENUM) > 0 {
 		conn, _ := t.to.(*connection)
-		err = conn.convertToEnum(ctx, dbSink.Table, col)
-		if err != nil {
-			return err
-		}
+		return conn.convertToEnum(ctx, dbSink.Table, srcCfg.CastToENUM)
 	}
 	return nil
 }

@@ -1,47 +1,64 @@
 <script lang="ts">
+  import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import {
-    metricsExplorerStore,
-    useDashboardStore,
-  } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+    SortDirection,
+    SortType,
+  } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { timeFormat } from "d3-time-format";
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import {
     chartInteractionColumn,
     tableInteractionStore,
     useTimeDimensionDataStore,
   } from "./time-dimension-data-store";
-  import {
-    SortDirection,
-    SortType,
-  } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-  import { createTimeFormat } from "@rilldata/web-common/components/data-graphic/utils";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
   import type { TDDComparison, TableData } from "./types";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let metricViewName;
 
   const queryClient = useQueryClient();
 
-  const timeDimensionDataStore = useTimeDimensionDataStore(getStateManagers());
+  const stateManagers = getStateManagers();
+  const {
+    dashboardStore,
+    selectors: {
+      dimensionFilters: { unselectedDimensionValues },
+    },
+    actions: {
+      dimensionsFilter: {
+        toggleDimensionValueSelection,
+        selectItemsInFilter,
+        deselectItemsInFilter,
+      },
+    },
+  } = getStateManagers();
 
-  $: metaQuery = useMetaQuery(getStateManagers());
-  $: dashboardStore = useDashboardStore(metricViewName);
+  const timeDimensionDataStore = useTimeDimensionDataStore(stateManagers);
+  const timeControlStore = useTimeControlStore(stateManagers);
+
+  $: metricsView = useMetricsView(stateManagers);
   $: dimensionName = $dashboardStore?.selectedComparisonDimension ?? "";
+
+  $: timeGrain = $timeControlStore.selectedTimeRange?.interval;
 
   // Get labels for table headers
   $: measureLabel =
-    $metaQuery?.data?.measures?.find(
-      (m) => m.name === $dashboardStore?.expandedMeasureName
+    $metricsView?.data?.measures?.find(
+      (m) => m.name === $dashboardStore?.expandedMeasureName,
     )?.label ?? "";
 
   let dimensionLabel = "";
   $: if ($timeDimensionDataStore?.comparing === "dimension") {
     dimensionLabel =
-      $metaQuery?.data?.dimensions?.find((d) => d.name === dimensionName)
+      $metricsView?.data?.dimensions?.find((d) => d.name === dimensionName)
         ?.label ?? "";
   } else if ($timeDimensionDataStore?.comparing === "time") {
     dimensionLabel = "Time";
@@ -68,20 +85,15 @@
     formattedData?.rowHeaderData?.slice(1)?.map((row) => row[0]?.value) ?? [];
 
   $: areAllTableRowsSelected = rowHeaderLabels?.every((val) =>
-    formattedData?.selectedValues?.includes(val)
+    formattedData?.selectedValues?.includes(val),
   );
 
   $: columnHeaders = formattedData?.columnHeaderData?.flat();
 
   // Create a time formatter for the column headers
-  $: timeFormatter = (columnHeaders?.length &&
-    createTimeFormat(
-      [
-        new Date(columnHeaders[0]?.value),
-        new Date(columnHeaders[columnHeaders?.length - 1]?.value),
-      ],
-      columnHeaders?.length
-    )[0]) as (d: Date) => string;
+  $: timeFormatter = timeFormat(
+    timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
+  ) as (d: Date) => string;
 
   function highlightCell(e) {
     const { x, y } = e.detail;
@@ -99,25 +111,26 @@
   }
 
   function toggleFilter(e) {
-    cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilter(metricViewName, dimensionName, e.detail);
+    toggleDimensionValueSelection(dimensionName, e.detail);
   }
 
   function toggleAllSearchItems() {
-    cancelDashboardQueries(queryClient, metricViewName);
     if (areAllTableRowsSelected) {
-      metricsExplorerStore.deselectItemsInFilter(
-        metricViewName,
-        dimensionName,
-        rowHeaderLabels
-      );
+      deselectItemsInFilter(dimensionName, rowHeaderLabels);
+
+      notifications.send({
+        message: `Removed ${rowHeaderLabels.length} items from filter`,
+      });
       return;
     } else {
-      metricsExplorerStore.selectItemsInFilter(
-        metricViewName,
+      const newValuesSelected = $unselectedDimensionValues(
         dimensionName,
-        rowHeaderLabels
+        rowHeaderLabels,
       );
+      selectItemsInFilter(dimensionName, rowHeaderLabels);
+      notifications.send({
+        message: `Added ${newValuesSelected.length} items to filter`,
+      });
     }
   }
 
@@ -137,15 +150,26 @@
     }
     metricsExplorerStore.setPinIndex(metricViewName, newPinIndex);
   }
+
+  function handleKeyDown(e) {
+    if (comparisonCopy !== "dimension") return;
+    // Select all items on Meta+A
+    if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+      if (e.target.tagName === "INPUT") return;
+      e.preventDefault();
+      if (areAllTableRowsSelected) return;
+      toggleAllSearchItems();
+    }
+  }
 </script>
 
 <TDDHeader
-  {dimensionName}
-  {metricViewName}
-  isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
-  comparing={$timeDimensionDataStore?.comparing}
   {areAllTableRowsSelected}
+  comparing={$timeDimensionDataStore?.comparing}
+  {dimensionName}
+  isFetching={!$timeDimensionDataStore?.data?.columnHeaderData}
   isRowsEmpty={!rowHeaderLabels.length}
+  {metricViewName}
   on:search={(e) => {
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setSearchText(metricViewName, e.detail);
@@ -175,7 +199,7 @@
       cancelDashboardQueries(queryClient, metricViewName);
       metricsExplorerStore.toggleSort(
         metricViewName,
-        e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE
+        e.detail === "dimension" ? SortType.DIMENSION : SortType.VALUE,
       );
     }}
     on:highlight={highlightCell}
@@ -196,3 +220,5 @@
     </div>
   </div>
 {/if}
+
+<svelte:window on:keydown={handleKeyDown} />

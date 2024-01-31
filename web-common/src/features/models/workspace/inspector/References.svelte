@@ -12,27 +12,34 @@
     createQueryServiceTableCardinality,
     createRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
-  import * as classes from "@rilldata/web-local/lib/util/component-classes";
+
   import { getContext } from "svelte";
-  import { derived, writable } from "svelte/store";
+  import { Writable, derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import { getTableReferences } from "../../utils/get-table-references";
   import { getMatchingReferencesAndEntries } from "./utils";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
+  import type { QueryHighlightState } from "../../query-highlight-store";
 
   export let modelName: string;
 
   let showSourceTables = true;
   let modelHasError = false;
 
-  const queryHighlight = getContext("rill:app:query-highlight");
+  /** classes for elements that trigger the highlight in a model query */
+  export const query_reference_trigger =
+    "hover:bg-yellow-200 hover:cursor-pointer";
+
+  const queryHighlight: Writable<QueryHighlightState | undefined> = getContext(
+    "rill:app:query-highlight",
+  );
 
   $: getModelFile = createRuntimeServiceGetFile(
     $runtime?.instanceId,
-    getFilePathFromNameAndType(modelName, EntityType.Model)
+    getFilePathFromNameAndType(modelName, EntityType.Model),
   );
-  $: references = getTableReferences($getModelFile?.data.blob ?? "");
+  $: references = getTableReferences($getModelFile?.data?.blob ?? "");
 
   $: getAllSources = useSources($runtime?.instanceId);
 
@@ -53,17 +60,17 @@
           writable(ref),
           createQueryServiceTableCardinality(
             $runtime?.instanceId,
-            resource.meta.name.name
+            resource?.meta?.name?.name ?? "",
           ),
         ],
         ([resource, ref, cardinality]) => ({
           resource,
           reference: ref,
-          totalRows: +cardinality?.data?.cardinality,
-        })
+          totalRows: +(cardinality?.data?.cardinality ?? 0),
+        }),
       );
     }),
-    (referencedThings) => referencedThings
+    (referencedThings) => referencedThings,
   );
 
   function focus(reference) {
@@ -90,10 +97,7 @@
     </div>
 
     {#if showSourceTables}
-      <div
-        transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
-        class="mt-2"
-      >
+      <div transition:slide={{ duration: LIST_SLIDE_DURATION }} class="mt-2">
         {#each $referencedWithMetadata as reference}
           <div>
             <WithModelResultTooltip {modelHasError}>
@@ -101,7 +105,7 @@
                 href="/{reference?.resource?.source
                   ? 'source'
                   : 'model'}/{reference?.resource?.meta?.name?.name}"
-                class="ui-copy-muted grid justify-between gap-x-2 {classes.QUERY_REFERENCE_TRIGGER} pl-4 pr-4"
+                class="ui-copy-muted grid justify-between gap-x-2 {query_reference_trigger} pl-4 pr-4"
                 style:grid-template-columns="auto max-content"
                 on:focus={focus(reference.reference)}
                 on:mouseover={focus(reference.reference)}

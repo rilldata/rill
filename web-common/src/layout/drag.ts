@@ -1,4 +1,15 @@
-export function drag(node, params) {
+import type { Writable } from "svelte/store";
+import type { LayoutElement } from "./workspace/types";
+
+interface DragParams {
+  store: Writable<LayoutElement>;
+  minSize?: number;
+  maxSize?: number;
+  reverse?: boolean;
+  orientation?: "horizontal" | "vertical";
+}
+
+export function drag(node, params: DragParams) {
   const underlyingStore = params.store;
   const minSize_ = params?.minSize || 300;
   const maxSize_ = params?.maxSize || 440;
@@ -15,7 +26,9 @@ export function drag(node, params) {
     moving = true;
   }
 
-  function mousemove(e) {
+  function mousemove(e: MouseEvent) {
+    e.preventDefault();
+
     if (moving) {
       let size;
       if (orientation_ === "horizontal") {
@@ -29,6 +42,7 @@ export function drag(node, params) {
       /** update the store passed in as a parameter */
       underlyingStore.update((state) => {
         state.value = space;
+        return state;
       });
     }
   }

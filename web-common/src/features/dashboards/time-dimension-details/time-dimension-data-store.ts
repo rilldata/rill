@@ -1,32 +1,33 @@
-import { derived, writable, type Readable } from "svelte/store";
-import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
-import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { createSparkline } from "@rilldata/web-common/components/data-graphic/marks/sparkline";
-import { safeFormatter, transposeArray } from "./util";
-import {
-  DEFAULT_TIME_RANGES,
-  TIME_COMPARISON,
-} from "@rilldata/web-common/lib/time/config";
-import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
+import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   getDimensionValueTimeSeries,
   type DimensionDataItem,
 } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
+import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
+import {
+  DEFAULT_TIME_RANGES,
+  TIME_COMPARISON,
+} from "@rilldata/web-common/lib/time/config";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+import { derived, writable, type Readable } from "svelte/store";
+import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import type {
   ChartInteractionColumns,
   HighlightedCell,
+  TDDComparison,
   TableData,
   TablePosition,
-  TDDComparison,
 } from "./types";
-import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
-import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+import { transposeArray } from "./util";
 
 export type TimeDimensionDataState = {
   isFetching: boolean;
@@ -42,7 +43,7 @@ function getHeaderDataForRow(
   measureName: string,
   formatter: (v: number | undefined | null) => string,
   validPercentOfTotal: boolean,
-  unfilteredTotal: number
+  unfilteredTotal: number,
 ) {
   const rowData = isAllTime ? row?.data?.slice(1) : row?.data?.slice(1, -1);
   const dataRow = [
@@ -76,12 +77,12 @@ function prepareDimensionData(
   measure: MetricsViewSpecMeasureV2 | undefined,
   selectedValues: string[],
   isAllTime: boolean,
-  pinIndex: number
+  pinIndex: number,
 ): TableData {
   if (!data || !totalsData || !measure || data?.length < selectedValues.length)
     return;
 
-  const formatter = safeFormatter(createMeasureValueFormatter(measure));
+  const formatter = createMeasureValueFormatter<null | undefined>(measure);
   const measureName = measure?.name as string;
   const validPercentOfTotal = measure?.validPercentOfTotal as boolean;
 
@@ -108,11 +109,11 @@ function prepareDimensionData(
     orderedData = orderedData.concat(
       selectedValuesIndex?.map((i) => {
         return data[i];
-      })
+      }),
     );
 
     orderedData = orderedData.concat(
-      data?.filter((_, i) => !selectedValuesIndex.includes(i))
+      data?.filter((_, i) => !selectedValuesIndex.includes(i)),
     );
   } else {
     orderedData = data;
@@ -149,9 +150,9 @@ function prepareDimensionData(
         measureName,
         formatter,
         validPercentOfTotal,
-        unfilteredTotal
+        unfilteredTotal,
       );
-    })
+    }),
   );
 
   let body = [totalsTableData?.map((v) => formatter(v[measureName])) || []];
@@ -161,7 +162,7 @@ function prepareDimensionData(
       if (v?.isFetching) return new Array(columnCount).fill(undefined);
       const dimData = isAllTime ? v?.data?.slice(1) : v?.data?.slice(1, -1);
       return dimData?.map((v) => formatter(v[measureName]));
-    })
+    }),
   );
   /* 
     Important: regular-table expects body data in columnar format,
@@ -194,11 +195,11 @@ function prepareTimeData(
   comparisonLabel: string,
   measure: MetricsViewSpecMeasureV2 | undefined,
   hasTimeComparison,
-  isAllTime: boolean
+  isAllTime: boolean,
 ): TableData {
   if (!data || !measure) return;
 
-  const formatter = safeFormatter(createMeasureValueFormatter(measure));
+  const formatter = createMeasureValueFormatter<null | undefined>(measure);
   const measureName = measure?.name ?? "";
 
   /** Strip out data points out of chart view */
@@ -233,7 +234,7 @@ function prepareTimeData(
           value: formatter(comparisonTotal),
           spark: createSparkline(
             tableData,
-            (v) => v[`comparison.${measureName}`]
+            (v) => v[`comparison.${measureName}`],
           ),
         },
       ],
@@ -247,7 +248,7 @@ function prepareTimeData(
         if (v[measureName] === null && v[`comparison.${measureName}`] === null)
           return null;
         return formatter(v[measureName] + v[`comparison.${measureName}`]);
-      })
+      }),
     );
 
     // Push current range
@@ -266,9 +267,9 @@ function prepareTimeData(
             : null;
         if (comparisonPercChange === null) return null;
         return numberPartsToString(
-          formatMeasurePercentageDifference(comparisonPercChange)
+          formatMeasurePercentageDifference(comparisonPercChange),
         );
-      })
+      }),
     );
 
     // Push absolute change
@@ -283,7 +284,7 @@ function prepareTimeData(
 
         if (change === null) return null;
         return formatter(change);
-      })
+      }),
     );
   } else {
     body.push(tableData?.map((v) => formatter(v[measureName])));
@@ -304,13 +305,13 @@ function prepareTimeData(
 }
 
 function createDimensionTableData(
-  ctx: StateManagers
+  ctx: StateManagers,
 ): Readable<DimensionDataItem[]> {
   return derived(ctx.dashboardStore, (dashboardStore, set) => {
     const measureName = dashboardStore?.expandedMeasureName;
     return derived(
       getDimensionValueTimeSeries(ctx, [measureName], "table"),
-      (data) => data
+      (data) => data,
     ).subscribe(set);
   });
 }
@@ -326,7 +327,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
   return derived(
     [
       ctx.dashboardStore,
-      useMetaQuery(ctx),
+      useMetricsView(ctx),
       useTimeControlStore(ctx),
       useTimeSeriesDataStore(ctx),
       useDimensionTableData(ctx),
@@ -357,7 +358,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
         timeControls?.selectedTimeRange?.name === TimeRangePreset.ALL_TIME;
 
       const measure = metricsView?.data?.measures?.find(
-        (m) => m.name === measureName
+        (m) => m.name === measureName,
       );
 
       let comparing;
@@ -366,17 +367,9 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
       if (dimensionName) {
         comparing = "dimension";
 
-        const excludeMode =
-          dashboardStore?.dimensionFilterExcludeMode.get(dimensionName) ??
-          false;
-        const selectedValues =
-          ((excludeMode
-            ? dashboardStore?.filters.exclude.find(
-                (d) => d.name === dimensionName
-              )?.in
-            : dashboardStore?.filters.include.find(
-                (d) => d.name === dimensionName
-              )?.in) as string[]) ?? [];
+        const selectedValues = selectedDimensionValues({
+          dashboard: dashboardStore,
+        })(dimensionName);
 
         data = prepareDimensionData(
           timeSeries?.timeSeriesData,
@@ -386,7 +379,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
           measure,
           selectedValues,
           isAllTime,
-          pinIndex
+          pinIndex,
         );
       } else {
         comparing = timeControls.showComparison ? "time" : "none";
@@ -410,12 +403,12 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
           comparisonLabel,
           measure,
           comparing === "time",
-          isAllTime
+          isAllTime,
         );
       }
 
       return { isFetching: false, comparing, data };
-    }
+    },
   ) as TimeSeriesDataStore;
 }
 
@@ -424,7 +417,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
  */
 export const useTimeDimensionDataStore =
   memoizeMetricsStore<TimeSeriesDataStore>((ctx: StateManagers) =>
-    createTimeDimensionDataStore(ctx)
+    createTimeDimensionDataStore(ctx),
   );
 
 /**

@@ -1,3 +1,5 @@
+import { filterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/filters";
+import { measureFilterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/measure-filters";
 import { sortActions } from "./sorting";
 import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
@@ -37,7 +39,7 @@ type DashboardConnectedMutators = {
 };
 
 export const createStateManagerActions = (
-  actionArgs: DashboardConnectedMutators
+  actionArgs: DashboardConnectedMutators,
 ) => {
   return {
     /**
@@ -61,17 +63,27 @@ export const createStateManagerActions = (
     dimensions: createDashboardUpdaters(actionArgs, dimensionActions),
 
     /**
+     * Common filter actions
+     */
+    filters: createDashboardUpdaters(actionArgs, filterActions),
+
+    /**
      * Actions related to dimensions filters
      */
     dimensionsFilter: createDashboardUpdaters(
       actionArgs,
-      dimensionFilterActions
+      dimensionFilterActions,
     ),
 
     /**
      * Actions related to the dimension table.
      */
     dimensionTable: createDashboardUpdaters(actionArgs, dimensionTableActions),
+
+    /**
+     * Actions related to measure filters
+     */
+    measuresFilter: createDashboardUpdaters(actionArgs, measureFilterActions),
 
     // Note: for now, some core actions are kept in the root of the
     // actions object. Can revisit that later if we want to move them.
@@ -80,7 +92,7 @@ export const createStateManagerActions = (
      */
     setLeaderboardMeasureName: dashboardMutatorToUpdater(
       actionArgs,
-      setLeaderboardMeasureName
+      setLeaderboardMeasureName,
     ),
   };
 };
@@ -92,13 +104,13 @@ export const createStateManagerActions = (
  **/
 function dashboardMutatorToUpdater<T extends unknown[]>(
   connectedMutators: DashboardConnectedMutators,
-  mutator: DashboardMutatorFn<T>
+  mutator: DashboardMutatorFn<T>,
 ): (...params: T) => void {
   return (...x) => {
     const callback = (dash: MetricsExplorerEntity) =>
       mutator(
         { dashboard: dash, cancelQueries: connectedMutators.cancelQueries },
-        ...x
+        ...x,
       );
     connectedMutators.updateDashboard(callback);
   };
@@ -110,12 +122,12 @@ function dashboardMutatorToUpdater<T extends unknown[]>(
  */
 function createDashboardUpdaters<T extends DashboardMutatorFns>(
   connectedMutators: DashboardConnectedMutators,
-  mutators: T
+  mutators: T,
 ): DashboardUpdaters<T> {
   return Object.fromEntries(
     Object.entries(mutators).map(([key, mutator]) => [
       key,
       dashboardMutatorToUpdater(connectedMutators, mutator),
-    ])
+    ]),
   ) as DashboardUpdaters<T>;
 }

@@ -8,7 +8,7 @@
   import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { createCommandClickAction } from "@rilldata/web-local/lib/util/command-click-action";
+  import { createCommandClickAction } from "../../lib/actions/command-click-action";
   import { createShiftClickAction } from "../../lib/actions/shift-click-action";
   import { emitNavigationTelemetry } from "./navigation-utils";
   import { currentHref } from "./stores";
@@ -17,8 +17,8 @@
   export let href: string;
   export let open = false;
   export let expandable = true;
-  export let tooltipMaxWidth: string = undefined;
-  export let maxMenuWidth: string = undefined;
+  export let tooltipMaxWidth: string | undefined = undefined;
+  export let maxMenuWidth: string | undefined = undefined;
   export let showContextMenu = true;
   // We set `immediatelyNavigate` to false for Sources because we want to confirm with the user before navigating away from an Unsaved Source.
   export let immediatelyNavigate = true;
@@ -64,6 +64,7 @@
   distance={16}
   suppress={contextMenuHovered || contextMenuOpen || seeMoreHovered}
 >
+  <!-- @ts-ignore -->
   <a
     {href}
     on:click={() => {
@@ -174,6 +175,7 @@
           on:escape={toggleFloatingElement}
           on:item-select={toggleFloatingElement}
           slot="floating-element"
+          let:toggleFloatingElement
         >
           <slot name="menu-items" toggleMenu={toggleFloatingElement} />
         </Menu>

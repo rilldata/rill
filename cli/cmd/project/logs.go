@@ -3,9 +3,9 @@ package project
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
@@ -13,16 +13,18 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func LogsCmd(cfg *config.Config) *cobra.Command {
+func LogsCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, path string
 	var follow bool
 	var tail int
+	var level string
 
 	logsCmd := &cobra.Command{
 		Use:   "logs [<project-name>]",
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Show project logs",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -54,7 +56,7 @@ func LogsCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
-				cmdutil.PrintlnWarn(fmt.Sprintf("Deployment status not OK: %s", depl.Status.String()))
+				ch.Printer.PrintlnWarn(fmt.Sprintf("Deployment status not OK: %s", depl.Status.String()))
 				return nil
 			}
 
@@ -63,8 +65,13 @@ func LogsCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("failed to connect to runtime: %w", err)
 			}
 
+			lvl := toRuntimeLogLevel(level)
+			if lvl == runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED {
+				return fmt.Errorf("invalid log level: %s", level)
+			}
+
 			if follow {
-				logClient, err := rt.WatchLogs(context.Background(), &runtimev1.WatchLogsRequest{InstanceId: depl.RuntimeInstanceId, Replay: true, ReplayLimit: int32(tail)})
+				logClient, err := rt.WatchLogs(context.Background(), &runtimev1.WatchLogsRequest{InstanceId: depl.RuntimeInstanceId, Replay: true, ReplayLimit: int32(tail), Level: lvl})
 				if err != nil {
 					return fmt.Errorf("failed to watch logs: %w", err)
 				}
@@ -89,7 +96,7 @@ func LogsCmd(cfg *config.Config) *cobra.Command {
 				return nil
 			}
 
-			res, err := rt.GetLogs(context.Background(), &runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail)})
+			res, err := rt.GetLogs(context.Background(), &runtimev1.GetLogsRequest{InstanceId: depl.RuntimeInstanceId, Ascending: true, Limit: int32(tail), Level: lvl})
 			if err != nil {
 				return fmt.Errorf("failed to get logs: %w", err)
 			}
@@ -106,6 +113,7 @@ func LogsCmd(cfg *config.Config) *cobra.Command {
 	logsCmd.Flags().StringVar(&path, "path", ".", "Project directory")
 	logsCmd.Flags().BoolVarP(&follow, "follow", "f", false, "Follow logs")
 	logsCmd.Flags().IntVarP(&tail, "tail", "t", -1, "Number of lines to show from the end of the logs, use -1 for all logs")
+	logsCmd.Flags().StringVar(&level, "level", "INFO", "Minimum log level to show (DEBUG, INFO, WARN, ERROR, FATAL)")
 
 	return logsCmd
 }
@@ -128,7 +136,26 @@ func printLogLevel(logLevel runtimev1.LogLevel) string {
 		return "WARN"
 	case runtimev1.LogLevel_LOG_LEVEL_ERROR:
 		return "ERROR"
+	case runtimev1.LogLevel_LOG_LEVEL_FATAL:
+		return "FATAL"
 	default:
 		return "UNKNOWN"
+	}
+}
+
+func toRuntimeLogLevel(lvl string) runtimev1.LogLevel {
+	switch strings.ToUpper(lvl) {
+	case "DEBUG":
+		return runtimev1.LogLevel_LOG_LEVEL_DEBUG
+	case "INFO":
+		return runtimev1.LogLevel_LOG_LEVEL_INFO
+	case "WARN":
+		return runtimev1.LogLevel_LOG_LEVEL_WARN
+	case "ERROR":
+		return runtimev1.LogLevel_LOG_LEVEL_ERROR
+	case "FATAL":
+		return runtimev1.LogLevel_LOG_LEVEL_FATAL
+	default:
+		return runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED
 	}
 }

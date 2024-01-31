@@ -2,21 +2,20 @@ package token
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func TokenCmd(cfg *config.Config) *cobra.Command {
+func TokenCmd(ch *cmdutil.Helper) *cobra.Command {
 	tokenCmd := &cobra.Command{
 		Use:               "token",
 		Short:             "Manage service tokens",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch.Config), cmdutil.CheckOrganization(ch.Config)),
 	}
 
-	tokenCmd.AddCommand(ListCmd(cfg))
-	tokenCmd.AddCommand(IssueCmd(cfg))
-	tokenCmd.AddCommand(RevokeCmd(cfg))
+	tokenCmd.AddCommand(ListCmd(ch))
+	tokenCmd.AddCommand(IssueCmd(ch))
+	tokenCmd.AddCommand(RevokeCmd(ch))
 
 	return tokenCmd
 }

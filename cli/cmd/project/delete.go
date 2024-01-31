@@ -5,12 +5,11 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func DeleteCmd(cfg *config.Config) *cobra.Command {
+func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, path string
 	var force bool
 
@@ -19,6 +18,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Delete the project",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -41,7 +41,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if !force {
-				fmt.Printf("Warn: Deleting the project %q will remove all metadata associated with the project\n", name)
+				ch.Printer.PrintlnWarn(fmt.Sprintf("Warn: Deleting the project %q will remove all metadata associated with the project", name))
 
 				msg := fmt.Sprintf("Type %q to confirm deletion", name)
 				project, err := cmdutil.InputPrompt(msg, "")
@@ -62,7 +62,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess(fmt.Sprintf("Deleted project: %v", name))
+			ch.Printer.PrintlnSuccess(fmt.Sprintf("Deleted project: %v", name))
 			return nil
 		},
 	}

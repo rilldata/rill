@@ -9,6 +9,7 @@
   import {
     copyToClipboard,
     createShiftClickAction,
+    isClipboardApiSupported,
   } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { isNested } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
@@ -22,11 +23,11 @@
   import { slide } from "svelte/transition";
   import TopKListItem from "./TopKListItem.svelte";
 
-  export let colorClass = "bg-blue-200";
+  export let colorClass = "bg-primary-200";
 
   const { shiftClickAction } = createShiftClickAction();
 
-  export let topK: TopKEntry[];
+  export let topK: TopKEntry[] | undefined;
   export let totalRows: number;
   export let k = 15;
   export let type: string;
@@ -35,14 +36,16 @@
 
   $: smallestPercentage =
     topK && topK.length
-      ? Math.min(...topK.slice(0, 5).map((entry) => entry.count / totalRows))
+      ? Math.min(
+          ...topK.slice(0, 5).map((entry) => (entry?.count ?? 0) / totalRows),
+        )
       : undefined;
   $: formatPercentage =
-    smallestPercentage < 0.01
+    smallestPercentage && smallestPercentage < 0.01
       ? format("0.2%")
       : smallestPercentage
-      ? format("0.1%")
-      : () => "";
+        ? format("0.1%")
+        : () => "";
 
   // We need this to get transition working properly.
   // Since the topk query is in a reactive statement with `enable`, `topK` can be undefined.
@@ -73,7 +76,7 @@
 </script>
 
 {#if topKCopy && totalRows}
-  <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+  <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
     {#each topKCopy.slice(0, k) as item (item.value)}
       {@const negligiblePercentage = item.count / totalRows < 0.0002}
       {@const percentage = negligiblePercentage
@@ -86,7 +89,7 @@
         on:blur={handleBlur(item)}
       >
         <svelte:fragment slot="title">
-          <Tooltip {...tooltipProps}>
+          <Tooltip {...tooltipProps} suppress={!isClipboardApiSupported()}>
             <div
               style:font-size="12px"
               class="text-ellipsis overflow-hidden whitespace-nowrap"
@@ -98,7 +101,7 @@
                     item.value === null
                       ? "NULL"
                       : getCopyValue(type, item.value)
-                  }" to clipboard`
+                  }" to clipboard`,
                 )}
             >
               {formatDataType(item.value, type)}
@@ -124,13 +127,13 @@
           </Tooltip>
         </svelte:fragment>
         <svelte:fragment slot="right">
-          <Tooltip {...tooltipProps}>
+          <Tooltip {...tooltipProps} suppress={!isClipboardApiSupported()}>
             <div
               use:shiftClickAction
               on:shift-click={() =>
                 copyToClipboard(
                   item.count,
-                  `copied ${item.count} to clipboard`
+                  `copied ${item.count} to clipboard`,
                 )}
             >
               {formatInteger(item.count)}

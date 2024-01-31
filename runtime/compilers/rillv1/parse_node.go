@@ -42,6 +42,8 @@ func (p *Parser) parseNode(ctx context.Context, node *Node) error {
 		return p.parseMigration(ctx, node)
 	case ResourceKindReport:
 		return p.parseReport(ctx, node)
+	case ResourceKindTheme:
+		return p.parseTheme(ctx, node)
 	default:
 		panic(fmt.Errorf("unexpected resource kind: %s", node.Kind.String()))
 	}

@@ -1,6 +1,6 @@
-<script context="module">
+<script lang="ts" context="module">
   // only one at a time
-  const globalActiveMenu = writable(undefined);
+  const globalActiveMenu = writable<string | undefined>(undefined);
 </script>
 
 <script lang="ts">
@@ -15,11 +15,11 @@
   import { clickOutside } from "../../../lib/actions/click-outside";
   import { guidGenerator } from "../../../lib/guid";
 
-  export let dark: boolean = undefined;
-  export let maxWidth: string = undefined;
+  export let dark: boolean | undefined = undefined;
+  export let maxWidth: string | undefined = undefined;
   export let minWidth = "300px";
-  export let minHeight: string = undefined;
-  export let maxHeight: string = undefined;
+  export let minHeight: string | undefined = undefined;
+  export let maxHeight: string | undefined = undefined;
   export let paddingTop = 2;
   export let paddingBottom = 2;
   export let rounded = true;
@@ -87,8 +87,8 @@
     dispatch("item-select");
   }
 
-  const menuItems = writable([]);
-  const currentItem = writable(undefined);
+  const menuItems = writable<{ id: number; disabled: boolean }[]>([]);
+  const currentItem = writable<number | undefined>(undefined);
 
   setContext("rill:menu:onSelect", onSelect);
   setContext("rill:menu:menuItems", menuItems);
@@ -128,11 +128,13 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div
+  role="menu"
+  tabindex="0"
   style:max-width={maxWidth}
   style:min-height={minHeight}
   style:max-height={maxHeight}
   style:min-width={minWidth}
-  transition:fade|local={{ duration: 50 }}
+  transition:fade={{ duration: 50 }}
   on:mouseleave={() => {
     $currentItem = undefined;
   }}

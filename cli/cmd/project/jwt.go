@@ -2,16 +2,15 @@ package project
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func JwtCmd(cfg *config.Config) *cobra.Command {
+func JwtCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name string
+	cfg := ch.Config
 
 	jwtCmd := &cobra.Command{
 		Use:    "jwt [<project-name>]",
@@ -48,14 +47,14 @@ func JwtCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 			if res.ProdDeployment == nil {
-				cmdutil.PrintlnWarn("Project does not have a production deployment")
+				ch.Printer.PrintlnWarn("Project does not have a production deployment")
 				return nil
 			}
 
-			cmdutil.PrintlnSuccess("Runtime info")
-			fmt.Printf("  Host: %s\n", res.ProdDeployment.RuntimeHost)
-			fmt.Printf("  Instance: %s\n", res.ProdDeployment.RuntimeInstanceId)
-			fmt.Printf("  JWT: %s\n", res.Jwt)
+			ch.Printer.PrintlnSuccess("Runtime info")
+			ch.Printer.Printf("  Host: %s\n", res.ProdDeployment.RuntimeHost)
+			ch.Printer.Printf("  Instance: %s\n", res.ProdDeployment.RuntimeInstanceId)
+			ch.Printer.Printf("  JWT: %s\n", res.Jwt)
 
 			return nil
 		},

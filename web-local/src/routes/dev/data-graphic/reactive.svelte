@@ -81,7 +81,6 @@
       top={$margin}
       bottom={$margin}
       bodyBuffer={$bodyBuffer}
-      let:config
     >
       <SimpleDataGraphic
         right={$margin}
@@ -117,7 +116,7 @@
               <g
                 transform="translate({Math.min(
                   output,
-                  config.width - Math.max(50, $width / 4)
+                  config.width - Math.max(50, $width / 4),
                 )} {$margin + $bodyBuffer})"
               >
                 <WithSimpleLinearScale

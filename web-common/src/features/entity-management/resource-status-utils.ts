@@ -12,6 +12,7 @@ import {
   V1ReconcileStatus,
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
+import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { derived, Readable, Unsubscriber } from "svelte/store";
 
@@ -23,7 +24,7 @@ export enum ResourceStatus {
 
 export type ResourceStatusState = {
   status: ResourceStatus;
-  error?: unknown;
+  error?: ErrorType<unknown>;
   resource?: V1Resource;
 };
 
@@ -33,7 +34,7 @@ export type ResourceStatusState = {
 export function initialResourceStatusStore(
   queryClient: QueryClient,
   instanceId: string,
-  filePath: string
+  filePath: string,
 ): Readable<ResourceStatus> {
   return derived(
     [
@@ -43,22 +44,22 @@ export function initialResourceStatusStore(
     ([resourceName, projectParserResp]) => {
       if (
         !projectParserResp.data ||
-        projectParserResp.data.projectParser.state.parseErrors.filter(
-          (s) => s.filePath === filePath
-        ).length > 0
+        (projectParserResp?.data?.projectParser?.state?.parseErrors?.filter(
+          (s) => s.filePath === filePath,
+        ).length ?? 0) > 0
       ) {
         return ResourceStatus.Errored;
       }
 
       return !resourceName ? ResourceStatus.Busy : ResourceStatus.Idle;
-    }
+    },
   );
 }
 
 export function waitForResource(
   queryClient: QueryClient,
   instanceId: string,
-  filePath: string
+  filePath: string,
 ) {
   return new Promise<void>((resolve) => {
     let unsub: Unsubscriber;
@@ -66,7 +67,7 @@ export function waitForResource(
     unsub = initialResourceStatusStore(
       queryClient,
       instanceId,
-      filePath
+      filePath,
     ).subscribe((status) => {
       if (status === ResourceStatus.Busy) return;
       unsub?.();
@@ -83,7 +84,7 @@ export function resourceStatusStore(
   instanceId: string,
   filePath: string,
   kind: ResourceKind,
-  name: string
+  name: string,
 ) {
   const lastUpdatedOn = getLastStateUpdatedOnByKindAndName(kind, name);
   return derived(
@@ -105,14 +106,19 @@ export function resourceStatusStore(
       )
         return { status: ResourceStatus.Busy };
 
+      const changed =
+        !lastUpdatedOn ||
+        (res.data?.meta?.stateUpdatedOn !== undefined
+          ? res.data?.meta?.stateUpdatedOn > lastUpdatedOn
+          : false);
+
       return {
         status: !res.data?.meta?.reconcileError
           ? ResourceStatus.Idle
           : ResourceStatus.Errored,
-        changed:
-          !lastUpdatedOn || res.data?.meta?.stateUpdatedOn > lastUpdatedOn,
+        changed,
       };
-    }
+    },
   );
 }
 
@@ -121,7 +127,7 @@ export function waitForResourceUpdate(
   instanceId: string,
   filePath: string,
   kind: ResourceKind,
-  name: string
+  name: string,
 ) {
   return new Promise<boolean>((resolve) => {
     let timer;
@@ -138,18 +144,23 @@ export function waitForResourceUpdate(
       instanceId,
       filePath,
       kind,
-      name
+      name,
     ).subscribe((status) => {
       if (status.status === ResourceStatus.Busy) return;
       if (timer) clearTimeout(timer);
 
+      const do_end =
+        status.status === ResourceStatus.Idle &&
+        status.changed !== undefined &&
+        status.changed;
+
       if (idled) {
-        end(status.status === ResourceStatus.Idle && status.changed);
+        end(do_end);
         return;
       } else {
         idled = true;
         timer = setTimeout(() => {
-          end(status.status === ResourceStatus.Idle && status.changed);
+          end(do_end);
         }, 500);
       }
     });
@@ -163,7 +174,7 @@ export function getResourceStatusStore(
   queryClient: QueryClient,
   instanceId: string,
   filePath: string,
-  validator?: (res: V1Resource) => boolean
+  validator?: (res: V1Resource) => boolean,
 ): Readable<ResourceStatusState> {
   return derived(
     [
@@ -204,6 +215,6 @@ export function getResourceStatusStore(
         status: isBusy ? ResourceStatus.Busy : ResourceStatus.Idle,
         resource: resourceResp.data,
       };
-    }
+    },
   );
 }

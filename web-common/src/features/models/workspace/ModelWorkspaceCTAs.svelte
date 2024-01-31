@@ -68,6 +68,7 @@
       on:click-outside={toggleFloatingElement}
       on:escape={toggleFloatingElement}
       slot="floating-element"
+      let:toggleFloatingElement
     >
       <MenuItem
         on:select={() => {
@@ -109,7 +110,9 @@
   <Tooltip distance={8} alignment="end">
     <Button
       on:click={() => {
-        goto(`/dashboard/${availableDashboards[0].meta.name.name}`);
+        if (availableDashboards[0]?.meta?.name?.name) {
+          goto(`/dashboard/${availableDashboards[0].meta.name.name}`);
+        }
       }}
     >
       <IconSpaceFixer pullLeft pullRight={collapse}>
@@ -137,17 +140,20 @@
       <Menu
         dark
         slot="floating-element"
+        let:toggleFloatingElement
         on:escape={toggleFloatingElement}
         on:click-outside={toggleFloatingElement}
       >
         {#each availableDashboards as resource}
           <MenuItem
             on:select={() => {
-              goto(`/dashboard/${resource.meta.name.name}`);
-              toggleFloatingElement();
+              if (resource?.meta?.name?.name) {
+                goto(`/dashboard/${resource.meta.name.name}`);
+                toggleFloatingElement();
+              }
             }}
           >
-            {resource.meta.name.name}
+            {resource?.meta?.name?.name ?? "Loading..."}
           </MenuItem>
         {/each}
       </Menu>

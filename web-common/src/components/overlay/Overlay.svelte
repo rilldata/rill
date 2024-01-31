@@ -25,12 +25,12 @@
 <Portal>
   {#key bg}
     <div
-      transition:fade={{ duration: 200 }}
+      transition:fade|global={{ duration: 200 }}
       style:background={bg}
       class={classes}
     />
   {/key}
-  <div transition:fade={{ duration: 300 }} class={classes}>
+  <div transition:fade|global={{ duration: 300 }} class={classes}>
     <slot />
   </div>
 </Portal>

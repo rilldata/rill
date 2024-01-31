@@ -19,7 +19,13 @@ To add a new data model using the UI, click "+" by Models in the left hand navig
 ### Using code
 When you add a data model using the UI, a code definition will automatically be created as a `<model_name>.sql` file in the `models` folder in your Rill project.
 
-In addition, you can create a model outside of the application and add it to Rill by placing a `<model_name>.sql` file in the `models` directory containing a DuckDB SQL `SELECT` statement. Rill will automatically detect and parse the model next time you run `rill start`.
+You can also create a model outside of the application and add it to Rill by placing a `<model_name>.sql` file in the `models` directory containing a DuckDB SQL `SELECT` statement. Rill will automatically detect and parse the model next time you run `rill start`.
+
+:::tip
+
+See also our [Model YAML](../reference/project-files/models) reference page.
+
+:::
 
 ## How to use data models
 

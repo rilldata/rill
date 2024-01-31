@@ -35,6 +35,7 @@ type Resource struct {
 	MetricsViewSpec *runtimev1.MetricsViewSpec
 	MigrationSpec   *runtimev1.MigrationSpec
 	ReportSpec      *runtimev1.ReportSpec
+	ThemeSpec       *runtimev1.ThemeSpec
 }
 
 // ResourceName is a unique identifier for a resource
@@ -64,6 +65,7 @@ const (
 	ResourceKindMetricsView
 	ResourceKindMigration
 	ResourceKindReport
+	ResourceKindTheme
 )
 
 // ParseResourceKind maps a string to a ResourceKind.
@@ -82,6 +84,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindMigration, nil
 	case "report":
 		return ResourceKindReport, nil
+	case "theme":
+		return ResourceKindTheme, nil
 	default:
 		return ResourceKindUnspecified, fmt.Errorf("invalid resource kind %q", kind)
 	}
@@ -101,6 +105,8 @@ func (k ResourceKind) String() string {
 		return "Migration"
 	case ResourceKindReport:
 		return "Report"
+	case ResourceKindTheme:
+		return "Theme"
 	default:
 		panic(fmt.Sprintf("unexpected resource kind: %d", k))
 	}
@@ -208,6 +214,12 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	return p.reparseExceptRillYAML(ctx, paths)
 }
 
+// IsIgnored returns true if the path will be ignored by Reparse.
+// It's useful for callers to avoid triggering a reparse when they know the path is not relevant.
+func (p *Parser) IsIgnored(path string) bool {
+	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
+}
+
 // reload resets the parser's state and then parses the entire project.
 func (p *Parser) reload(ctx context.Context) error {
 	// Reset state
@@ -222,7 +234,7 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.deletedResources = nil
 
 	// Load entire repo
-	paths, err := p.Repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
+	paths, err := p.Repo.ListRecursive(ctx, "**/*.{env,sql,yaml,yml}")
 	if err != nil {
 		return fmt.Errorf("could not list project files: %w", err)
 	}
@@ -284,8 +296,8 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		seenPaths[path] = true
 
 		// Skip files that aren't SQL or YAML or .env file
-		isSQL := strings.HasSuffix(path, ".sql")
-		isYAML := strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
+		isSQL := pathIsSQL(path)
+		isYAML := pathIsYAML(path)
 		isDotEnv := pathIsDotEnv(path)
 		if !isSQL && !isYAML && !isDotEnv {
 			continue
@@ -696,6 +708,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.MigrationSpec = &runtimev1.MigrationSpec{}
 	case ResourceKindReport:
 		r.ReportSpec = &runtimev1.ReportSpec{}
+	case ResourceKindTheme:
+		r.ThemeSpec = &runtimev1.ThemeSpec{}
 	default:
 		panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
 	}
@@ -807,6 +821,16 @@ func (p *Parser) addParseError(path string, err error, external bool) {
 		StartLocation: loc,
 		External:      external,
 	})
+}
+
+// pathIsSQL returns true if the path is a SQL file
+func pathIsSQL(path string) bool {
+	return strings.HasSuffix(path, ".sql")
+}
+
+// pathIsYAML returns true if the path is a YAML file
+func pathIsYAML(path string) bool {
+	return strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
 }
 
 // pathIsRillYAML returns true if the path is rill.yaml

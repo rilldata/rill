@@ -1,10 +1,12 @@
 package local
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path"
@@ -24,16 +26,17 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeserver "github.com/rilldata/rill/runtime/server"
 	"go.uber.org/zap"
+	"go.uber.org/zap/buffer"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"moul.io/zapfilter"
 )
 
 type LogFormat string
@@ -64,13 +67,14 @@ type App struct {
 	BaseLogger            *zap.Logger
 	Version               config.Version
 	Verbose               bool
+	Debug                 bool
 	ProjectPath           string
 	observabilityShutdown observability.ShutdownFunc
 	loggerCleanUp         func()
 	activity              activity.Client
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
 	// Setup logger
 	logger, cleanupFn := initLogger(verbose, logFormat)
 	sugarLogger := logger.Sugar()
@@ -103,7 +107,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	if err == nil { // a old stage.db file exists
 		_ = os.Remove(filepath.Join(projectPath, "stage.db"))
 		_ = os.Remove(filepath.Join(projectPath, "stage.db.wal"))
-		logger.Named("console").Info("Dropping old stage.db file and rebuilding project")
+		logger.Info("Dropping old stage.db file and rebuilding project")
 	}
 
 	parsedVariables, err := variable.Parse(variables)
@@ -155,6 +159,10 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 			return nil, fmt.Errorf("failed to clean OLAP: %w", err)
 		}
 		_ = os.RemoveAll(dbDirPath)
+		err = os.MkdirAll(dbDirPath, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Set default DuckDB pool size to 4
@@ -169,7 +177,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 	// Print start status – need to do it before creating the instance, since doing so immediately starts the controller
 	isInit := IsProjectInit(projectPath)
 	if isInit {
-		sugarLogger.Named("console").Infof("Hydrating project '%s'", projectPath)
+		sugarLogger.Infof("Hydrating project '%s'", projectPath)
 	}
 
 	// Create instance with its repo set to the project directory
@@ -215,6 +223,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, reset bool, olapDr
 		BaseLogger:            logger,
 		Version:               ver,
 		Verbose:               verbose,
+		Debug:                 debug,
 		ProjectPath:           projectPath,
 		observabilityShutdown: shutdown,
 		loggerCleanUp:         cleanupFn,
@@ -230,14 +239,14 @@ func (a *App) Close() error {
 
 	err := a.observabilityShutdown(ctx)
 	if err != nil {
-		a.Logger.Named("console").Error("Observability shutdown failed", zap.Error(err))
+		a.Logger.Error("Observability shutdown failed", zap.Error(err))
 	}
 
 	err = a.Runtime.Close()
 	if err != nil {
-		a.Logger.Named("console").Error("Graceful shutdown failed", zap.Error(err))
+		a.Logger.Error("Graceful shutdown failed", zap.Error(err))
 	} else {
-		a.Logger.Named("console").Info("Rill shutdown gracefully")
+		a.Logger.Info("Rill shutdown gracefully")
 	}
 
 	a.loggerCleanUp()
@@ -248,7 +257,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	// Get analytics info
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
-		a.Logger.Named("console").Warnf("error finding install ID: %v", err)
+		a.Logger.Warnf("error finding install ID: %v", err)
 	}
 
 	// Build local info for frontend
@@ -266,13 +275,12 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		Readonly:         readonly,
 	}
 
-	// Create server logger.
+	// Create server logger
+	serverLogger := a.BaseLogger
 	// It only logs error messages when !verbose to prevent lots of req/res info messages.
-	lvl := zap.ErrorLevel
-	if a.Verbose {
-		lvl = zap.DebugLevel
+	if !a.Verbose {
+		serverLogger = a.BaseLogger.WithOptions(zap.IncreaseLevel(zap.ErrorLevel))
 	}
-	serverLogger := a.BaseLogger.WithOptions(zap.IncreaseLevel(lvl))
 
 	// Prepare errgroup and context with graceful shutdown
 	gctx := graceful.WithCancelOnTerminate(a.Context)
@@ -307,6 +315,11 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 			mux.Handle("/local/track", a.trackingHandler(inf))
 		})
 	})
+
+	// Start debug server on port 6060
+	if a.Debug {
+		group.Go(func() error { return debugserver.ServeHTTP(ctx, 6060) })
+	}
 
 	// Open the browser when health check succeeds
 	go a.pollServer(ctx, httpPort, enableUI && openBrowser)
@@ -344,7 +357,7 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy bool) 
 	}
 
 	// Health check succeeded
-	a.Logger.Named("console").Infof("Serving Rill on: %s", uri)
+	a.Logger.Infof("Serving Rill on: %s", uri)
 	if openOnHealthy {
 		err := browser.Open(uri)
 		if err != nil {
@@ -390,7 +403,7 @@ func (a *App) versionHandler() http.Handler {
 		// Get the latest version available
 		latestVersion, err := update.LatestVersion(r.Context())
 		if err != nil {
-			a.Logger.Named("console").Warnf("error finding latest version: %v", err)
+			a.Logger.Warnf("error finding latest version: %v", err)
 		}
 
 		inf := &versionInfo{
@@ -425,8 +438,16 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 			return
 		}
 
+		// Read entire body up front (since it may be closed before the request is sent in the goroutine below)
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			a.BaseLogger.Info("failed to read telemetry request", zap.Error(err))
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		// Proxy request to rill intake
-		proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", r.Body)
+		proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", bytes.NewReader(body))
 		if err != nil {
 			a.BaseLogger.Info("failed to create telemetry request", zap.Error(err))
 			w.WriteHeader(http.StatusOK)
@@ -438,14 +459,18 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 			"Authorization": r.Header["Authorization"],
 		}
 
-		// Send proxied request
-		resp, err := http.DefaultClient.Do(proxyReq)
-		if err != nil {
-			a.BaseLogger.Info("failed to send telemetry", zap.Error(err))
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		defer resp.Body.Close()
+		// Send event in the background to avoid blocking the frontend.
+		// NOTE: If we stay with this telemetry approach, we should refactor and use ./cli/pkg/telemetry for batching and flushing events.
+		go func() {
+			// Send proxied request
+			resp, err := http.DefaultClient.Do(proxyReq)
+			if err != nil {
+				a.BaseLogger.Info("failed to send telemetry", zap.Error(err))
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			resp.Body.Close()
+		}()
 
 		// Done
 		w.WriteHeader(http.StatusOK)
@@ -514,10 +539,17 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 		consoleEncoder = zapcore.NewConsoleEncoder(encCfg)
 	}
 
+	// if it's not verbose, skip instance_id field
+	if !isVerbose {
+		consoleEncoder = skipFieldZapEncoder{
+			Encoder: consoleEncoder,
+			fields:  []string{"instance_id"},
+		}
+	}
+
 	core := zapcore.NewTee(
 		fileCore,
-		// send all error logs and logs matching console namespace to stdout
-		zapfilter.NewFilteringCore(zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel), zapfilter.MustParseRules("error:* *:console")),
+		zapcore.NewCore(consoleEncoder, zapcore.Lock(os.Stdout), logLevel),
 	)
 
 	return zap.New(core, opts...), func() {
@@ -526,10 +558,54 @@ func initLogger(isVerbose bool, logFormat LogFormat) (logger *zap.Logger, cleanu
 	}
 }
 
+// skipFieldZapEncoder skips fields with the given keys. only string fields are supported.
+type skipFieldZapEncoder struct {
+	zapcore.Encoder
+	fields []string
+}
+
+func (s skipFieldZapEncoder) EncodeEntry(entry zapcore.Entry, fields []zapcore.Field) (*buffer.Buffer, error) {
+	res := make([]zapcore.Field, 0, len(fields))
+	for _, field := range fields {
+		skip := false
+		for _, skipField := range s.fields {
+			if field.Key == skipField {
+				skip = true
+				break
+			}
+		}
+		if !skip {
+			res = append(res, field)
+		}
+	}
+	return s.Encoder.EncodeEntry(entry, res)
+}
+
+func (s skipFieldZapEncoder) Clone() zapcore.Encoder {
+	return skipFieldZapEncoder{
+		Encoder: s.Encoder.Clone(),
+		fields:  s.fields,
+	}
+}
+
+func (s skipFieldZapEncoder) AddString(key, val string) {
+	skip := false
+	for _, skipField := range s.fields {
+		if key == skipField {
+			skip = true
+			break
+		}
+	}
+	if !skip {
+		s.Encoder.AddString(key, val)
+	}
+}
+
+// isExternalStorageEnabled checks if external storage is enabled for an existing project.
+// we can't always enable `external_table_storage` if the project dir already has a db file
+// it could have been created with older logic where every source was a table in the main db
+// if its not a fresh project we need a way to detect if `external_table_storage` was enabled before
 func isExternalStorageEnabled(dbPath string, variables map[string]string) (bool, error) {
-	// we can't always enable `external_table_storage` if the project dir already has a db file
-	// it could have been created with older logic where every source was a table in the main db
-	// if its not a fresh project we need a way to detect if `external_table_storage` was enabled before
 	_, err := os.Stat(filepath.Join(dbPath, DefaultOLAPDSN))
 	if err != nil {
 		// fresh project

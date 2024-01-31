@@ -34,7 +34,7 @@
   $: expandedMeasureName = $metricsExplorer?.expandedMeasureName;
   $: metricTimeSeries = useModelHasTimeSeries(
     $runtime.instanceId,
-    metricViewName
+    metricViewName,
   );
   $: hasTimeSeries = $metricTimeSeries.data;
 
@@ -45,8 +45,10 @@
   // to animate the extra padding that needs to be added to the
   // dashboard container when the navigation pane is collapsed
   const navigationVisibilityTween = getContext(
-    "rill:app:navigation-visibility-tween"
+    "rill:app:navigation-visibility-tween",
   ) as Tweened<number>;
+
+  const { readOnly } = featureFlags;
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
@@ -57,7 +59,7 @@
     ? leftMargin
     : `calc(${$navigationVisibilityTween * 24}px + 1.25rem)`;
 
-  $: isRillDeveloper = $featureFlags.readOnly === false;
+  $: isRillDeveloper = $readOnly === false;
 
   // Check if the mock user (if selected) has access to the dashboard
   $: dashboard = useDashboard($runtime.instanceId, metricViewName);
@@ -66,11 +68,11 @@
 </script>
 
 <section
-  class="flex flex-col gap-y-1 h-full overflow-x-auto overflow-y-hidden"
+  class="flex flex-col gap-y-1 h-full overflow-x-auto overflow-y-hidden dashboard-theme-boundary"
   use:listenToNodeResize
 >
   <div
-    class="border-b mb-3 w-full flex flex-col"
+    class="border-b mb-3 w-full flex flex-col bg-slate-50"
     id="header"
     style:padding-left={leftSide}
   >

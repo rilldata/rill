@@ -64,8 +64,9 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
+	query := q.buildTableHeadSQL()
 	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:            fmt.Sprintf("SELECT * FROM %s LIMIT %d", safeName(q.TableName), q.Limit),
+		Query:            query,
 		Priority:         priority,
 		ExecutionTimeout: defaultExecutionTimeout,
 	})
@@ -95,17 +96,7 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 	case drivers.DialectDuckDB:
 		if opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_CSV || opts.Format == runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET {
 			filename := q.TableName
-
-			limitClause := ""
-			if q.Limit > 0 {
-				limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
-			}
-
-			sql := fmt.Sprintf(
-				`SELECT * FROM %s%s`,
-				safeName(q.TableName),
-				limitClause,
-			)
+			sql := q.buildTableHeadSQL()
 			args := []interface{}{}
 			if err := duckDBCopyExport(ctx, w, opts, sql, args, filename, olap, opts.Format); err != nil {
 				return err
@@ -153,4 +144,18 @@ func (q *TableHead) generalExport(ctx context.Context, rt *runtime.Runtime, inst
 	}
 
 	return nil
+}
+
+func (q *TableHead) buildTableHeadSQL() string {
+	limitClause := ""
+	if q.Limit > 0 {
+		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
+	}
+
+	sql := fmt.Sprintf(
+		`SELECT * FROM %s%s`,
+		safeName(q.TableName),
+		limitClause,
+	)
+	return sql
 }

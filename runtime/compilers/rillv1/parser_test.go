@@ -89,6 +89,7 @@ materialize: true
 model: m2
 dimensions:
   - name: a
+    column: a
 measures:
   - name: b
     expression: count(*)
@@ -174,7 +175,7 @@ SELECT * FROM {{ ref "m2" }}
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Table: "m2",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a"},
+					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
@@ -841,6 +842,7 @@ dashboards:
 table: t1
 dimensions:
   - name: a
+    column: a
 measures:
   - name: b
     expression: count(*)
@@ -850,6 +852,7 @@ measures:
 table: t2
 dimensions:
   - name: a
+    column: a
 measures:
   - name: b
     expression: count(*)
@@ -868,7 +871,7 @@ security:
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Table: "t1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a"},
+					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
@@ -887,7 +890,7 @@ security:
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Table: "t2",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a"},
+					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
@@ -971,6 +974,7 @@ func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
 model: d1
 dimensions:
   - name: a
+    column: a
 measures:
   - name: b
     expression: count(*)
@@ -985,10 +989,49 @@ measures:
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
 				Table: "d1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a"},
+					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestTheme(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`themes/t1.yaml`: `
+kind: theme
+
+colors:
+  primary: red
+  secondary: grey
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindTheme, Name: "t1"},
+			Paths: []string{"/themes/t1.yaml"},
+			ThemeSpec: &runtimev1.ThemeSpec{
+				PrimaryColor: &runtimev1.Color{
+					Red:   1,
+					Green: 0,
+					Blue:  0,
+					Alpha: 1,
+				},
+				SecondaryColor: &runtimev1.Color{
+					Red:   0.5019608,
+					Green: 0.5019608,
+					Blue:  0.5019608,
+					Alpha: 1,
 				},
 			},
 		},
@@ -1013,6 +1056,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.ModelSpec, got.ModelSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
+				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
 
 				delete(gotResources, got.Name)
 				found = true

@@ -9,6 +9,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -26,7 +27,6 @@ type Options struct {
 	ControllerLogBufferCapacity  int
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
-	SafeSourceRefresh            bool
 }
 
 type Runtime struct {
@@ -36,7 +36,7 @@ type Runtime struct {
 	activity       activity.Client
 	metastore      drivers.Handle
 	registryCache  *registryCache
-	connCache      *connectionCache
+	connCache      conncache.Cache
 	queryCache     *queryCache
 	securityEngine *securityEngine
 }
@@ -55,7 +55,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac activity.Cli
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
 	}
 
-	rt.connCache = newConnectionCache(opts.ConnectionCacheSize, logger, rt, ac)
+	rt.connCache = rt.newConnectionCache()
 
 	store, _, err := rt.AcquireSystemHandle(ctx, opts.MetastoreConnector)
 	if err != nil {
@@ -88,7 +88,7 @@ func (r *Runtime) Close() error {
 	defer cancel()
 	err1 := r.registryCache.close(ctx)
 	err2 := r.queryCache.close()
-	err3 := r.connCache.Close() // Also closes metastore // TODO: Propagate ctx cancellation
+	err3 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation
 	return errors.Join(err1, err2, err3)
 }
 

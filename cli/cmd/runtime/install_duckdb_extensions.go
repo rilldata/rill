@@ -3,7 +3,7 @@ package runtime
 import (
 	"fmt"
 
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/spf13/cobra"
@@ -12,7 +12,7 @@ import (
 
 // InstallDuckDBExtensionsCmd adds a CLI command that forces DuckDB to install all required extensions.
 // It's used to pre-hydrate the extensions cache in Docker images.
-func InstallDuckDBExtensionsCmd(cfg *config.Config) *cobra.Command {
+func InstallDuckDBExtensionsCmd(ch *cmdutil.Helper) *cobra.Command {
 	installCmd := &cobra.Command{
 		Use: "install-duckdb-extensions",
 		RunE: func(cmd *cobra.Command, args []string) error {

@@ -26,7 +26,7 @@
     inspector ? $inspectorLayout?.value || DEFAULT_INSPECTOR_WIDTH : 0,
     {
       duration: 50,
-    }
+    },
   );
   inspectorLayout.subscribe((state) => {
     inspectorWidth.set(state.value);
@@ -55,7 +55,7 @@
     inspector ? $outputLayout?.value || DEFAULT_PREVIEW_TABLE_HEIGHT : 0,
     {
       duration: 50,
-    }
+    },
   );
 
   outputLayout.subscribe((state) => {
@@ -67,7 +67,7 @@
     {
       duration: SURFACE_SLIDE_DURATION,
       easing: SURFACE_SLIDE_EASING,
-    }
+    },
   );
 
   outputLayout.subscribe((state) => {
@@ -79,10 +79,10 @@
   setContext("rill:app:output-visibility-tween", outputVisibilityTween);
 
   const navigationWidth = getContext(
-    "rill:app:navigation-width-tween"
+    "rill:app:navigation-width-tween",
   ) as Writable<number>;
   const navVisibilityTween = getContext(
-    "rill:app:navigation-visibility-tween"
+    "rill:app:navigation-visibility-tween",
   ) as Writable<number>;
 
   let hasNoError = 1;

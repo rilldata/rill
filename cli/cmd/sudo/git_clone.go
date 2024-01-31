@@ -5,18 +5,18 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func gitCloneCmd(cfg *config.Config) *cobra.Command {
+func gitCloneCmd(ch *cmdutil.Helper) *cobra.Command {
 	gitCloneCmd := &cobra.Command{
 		Use:   "git-clone <org> <project>",
 		Args:  cobra.ExactArgs(2),
 		Short: "Create git clone token",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			cfg := ch.Config
 
 			client, err := cmdutil.Client(cfg)
 			if err != nil {

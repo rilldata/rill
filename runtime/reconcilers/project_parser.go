@@ -11,7 +11,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
-	"golang.org/x/exp/slog"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -119,7 +119,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	hash, err := repo.CommitHash(ctx)
 	if err != nil {
 		// Not worth failing the reconcile for this. On error, it'll just set CurrentCommitSha to "".
-		r.C.Logger.Error("failed to get commit hash", slog.String("err", err.Error()))
+		r.C.Logger.Error("failed to get commit hash", zap.String("error", err.Error()))
 	}
 	if pp.State.CurrentCommitSha != hash {
 		pp.State.CurrentCommitSha = hash
@@ -168,7 +168,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 	defer func() {
 		pp.State.Watching = false
 		if err = r.C.UpdateState(ctx, n, self); err != nil {
-			r.C.Logger.Error("failed to update watch state", slog.Any("error", err))
+			r.C.Logger.Error("failed to update watch state", zap.Any("error", err))
 		}
 	}()
 
@@ -184,7 +184,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 			if e.Dir {
 				continue
 			}
-			if strings.HasSuffix(e.Path, ".db") || strings.HasSuffix(e.Path, ".wal") {
+			if parser.IsIgnored(e.Path) {
 				continue
 			}
 			changedPaths = append(changedPaths, e.Path)
@@ -201,8 +201,10 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 			err = r.reconcileParser(ctx, inst, self, parser, diff, changedPaths)
 		}
 		if err != nil && !errors.Is(err, ErrParserHasParseErrors) {
-			reparseErr = err
-			cancel()
+			if reparseErr == nil { // In case a callback is somehow invoked after cancel() is called in a previous callback
+				reparseErr = err
+				cancel()
+			}
 			return
 		}
 	})
@@ -218,7 +220,7 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 
 	// If the watch failed, we return without rescheduling.
 	// TODO: Should we have some kind of retry?
-	r.C.Logger.Error("Stopped watching for file changes", slog.String("err", err.Error()))
+	r.C.Logger.Error("Stopped watching for file changes", zap.String("error", err.Error()))
 	return runtime.ReconcileResult{Err: err}
 }
 
@@ -244,14 +246,14 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 			if skipRillYAMLErr && e.FilePath == "/rill.yaml" {
 				continue
 			}
-			r.C.Logger.Error("Parser error", slog.String("path", e.FilePath), slog.String("err", e.Message))
+			r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message))
 		}
 	} else if diff.Skipped {
-		r.C.Logger.Error("Not parsing changed paths due to broken rill.yaml")
+		r.C.Logger.Warn("Not parsing changed paths due to missing or broken rill.yaml")
 	} else {
 		for _, e := range parser.Errors {
 			if slices.Contains(changedPaths, e.FilePath) {
-				r.C.Logger.Error("Parser error", slog.String("path", e.FilePath), slog.String("err", e.Message))
+				r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message))
 			}
 		}
 	}
@@ -530,6 +532,10 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 		if existing == nil || !equalReportSpec(existing.GetReport().Spec, def.ReportSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Report{Report: &runtimev1.Report{Spec: def.ReportSpec}}}
 		}
+	case compilerv1.ResourceKindTheme:
+		if existing == nil || !equalThemeSpec(existing.GetTheme().Spec, def.ThemeSpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Theme{Theme: &runtimev1.Theme{Spec: def.ThemeSpec}}}
+		}
 	default:
 		panic(fmt.Errorf("unknown resource kind %q", def.Name.Kind))
 	}
@@ -663,6 +669,8 @@ func resourceNameFromCompiler(name compilerv1.ResourceName) *runtimev1.ResourceN
 		return &runtimev1.ResourceName{Kind: runtime.ResourceKindMigration, Name: name.Name}
 	case compilerv1.ResourceKindReport:
 		return &runtimev1.ResourceName{Kind: runtime.ResourceKindReport, Name: name.Name}
+	case compilerv1.ResourceKindTheme:
+		return &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: name.Name}
 	default:
 		panic(fmt.Errorf("unknown resource kind %q", name.Kind))
 	}
@@ -680,6 +688,8 @@ func resourceNameToCompiler(name *runtimev1.ResourceName) compilerv1.ResourceNam
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindMigration, Name: name.Name}
 	case runtime.ResourceKindReport:
 		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindReport, Name: name.Name}
+	case runtime.ResourceKindTheme:
+		return compilerv1.ResourceName{Kind: compilerv1.ResourceKindTheme, Name: name.Name}
 	default:
 		panic(fmt.Errorf("unknown resource kind %q", name.Kind))
 	}
@@ -718,5 +728,9 @@ func equalMigrationSpec(a, b *runtimev1.MigrationSpec) bool {
 }
 
 func equalReportSpec(a, b *runtimev1.ReportSpec) bool {
+	return proto.Equal(a, b)
+}
+
+func equalThemeSpec(a, b *runtimev1.ThemeSpec) bool {
 	return proto.Equal(a, b)
 }

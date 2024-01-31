@@ -35,7 +35,7 @@
   $: runtimeInstanceId = $runtime.instanceId;
 
   $: sourceQuery = useSource(runtimeInstanceId, sourceName);
-  let source: V1SourceV2;
+  let source: V1SourceV2 | undefined;
   $: source = $sourceQuery.data?.source;
 
   let showColumns = true;
@@ -47,14 +47,14 @@
   /** source summary information */
   let rowCount;
   let columnCount;
-  let nullPercentage;
+  let nullPercentage: number | undefined;
 
-  $: connectorType = formatConnectorType(source);
-  $: fileExtension = getFileExtension(source);
+  $: connectorType = source && formatConnectorType(source);
+  $: fileExtension = source && getFileExtension(source);
 
   $: cardinalityQuery = createQueryServiceTableCardinality(
     $runtime.instanceId,
-    sourceName
+    sourceName,
   );
   $: cardinality = $cardinalityQuery?.data?.cardinality
     ? Number($cardinalityQuery?.data?.cardinality)
@@ -64,7 +64,7 @@
     $runtime?.instanceId,
     sourceName,
     {},
-    { query: { keepPreviousData: true } }
+    { query: { keepPreviousData: true } },
   );
   $: profileColumnsCount = $profileColumns?.data?.profileColumns?.length ?? 0;
 
@@ -87,17 +87,20 @@
     summaries = getSummaries(sourceName, $runtime?.instanceId, $profileColumns);
   }
 
-  let totalNulls = undefined;
+  let totalNulls: number | undefined = undefined;
 
   $: if (summaries) {
     totalNulls = $summaries.reduce(
-      (total, column) => total + (+column.nullCount || 0),
-      0
+      (total, column) => total + (column?.nullCount ?? 0),
+      0,
     );
   }
   $: {
     const totalCells = profileColumnsCount * cardinality;
-    nullPercentage = formatBigNumberPercentage(totalNulls / totalCells);
+    nullPercentage =
+      totalNulls !== undefined
+        ? formatBigNumberPercentage(totalNulls / totalCells)
+        : undefined;
   }
 
   const sourceStore = useSourceStore(sourceName);
@@ -105,7 +108,7 @@
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
     sourceName,
-    $sourceStore.clientYAML
+    $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 </script>
@@ -129,12 +132,12 @@
 
         <Tooltip location="left" alignment="start" distance={24}>
           <GridCell side="left" classes="text-gray-600">
-            {#if totalNulls !== undefined}
+            {#if nullPercentage !== undefined}
               {nullPercentage} null
             {/if}
           </GridCell>
           <TooltipContent slot="tooltip-content">
-            {#if totalNulls !== undefined}
+            {#if nullPercentage !== undefined}
               {nullPercentage} of table values are null
             {:else}
               awaiting calculation of total null table values
@@ -159,8 +162,8 @@
         </CollapsibleSectionTitle>
       </div>
 
-      {#if showColumns}
-        <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+      {#if showColumns && source?.state?.table}
+        <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
           <ColumnProfile objectName={source?.state?.table} indentLevel={0} />
         </div>
       {/if}

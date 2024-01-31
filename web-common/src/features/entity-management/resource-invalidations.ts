@@ -31,12 +31,13 @@ const UsedResourceKinds: {
   [kind in ResourceKind]?: true;
 } = {
   [ResourceKind.ProjectParser]: true,
+  [ResourceKind.Theme]: true,
   ...MainResourceKinds,
 };
 
 export function invalidateResourceResponse(
   queryClient: QueryClient,
-  res: V1WatchResourcesResponse
+  res: V1WatchResourcesResponse,
 ) {
   // only process for the `ResourceKind` present in `UsedResourceKinds`
   if (!UsedResourceKinds[res.name.kind]) return;
@@ -70,14 +71,14 @@ export function invalidateResourceResponse(
     // we only use individual kind's queries
     getRuntimeServiceListResourcesQueryKey(instanceId, {
       kind: res.name.kind,
-    })
+    }),
   );
 }
 
 async function invalidateResource(
   queryClient: QueryClient,
   instanceId: string,
-  resource: V1Resource
+  resource: V1Resource,
 ) {
   refreshResource(queryClient, instanceId, resource);
 
@@ -103,19 +104,30 @@ async function invalidateResource(
 
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
-    // eslint-disable-next-line no-fallthrough
+      if (resource.source?.state?.table)
+        // make sure table is populated
+        return invalidateProfilingQueries(
+          queryClient,
+          resource.meta.name.name,
+          failed,
+        );
+      break;
+
     case ResourceKind.Model:
-      return invalidateProfilingQueries(
-        queryClient,
-        resource.meta.name.name,
-        failed
-      );
+      if (resource.model?.state?.table)
+        // make sure table is populated
+        return invalidateProfilingQueries(
+          queryClient,
+          resource.meta.name.name,
+          failed,
+        );
+      break;
 
     case ResourceKind.MetricsView:
       return invalidateMetricsViewData(
         queryClient,
         resource.meta.name.name,
-        failed
+        failed,
       );
   }
 }
@@ -123,25 +135,27 @@ async function invalidateResource(
 async function invalidateRemovedResource(
   queryClient: QueryClient,
   instanceId: string,
-  resource: V1Resource
+  resource: V1Resource,
 ) {
   queryClient.removeQueries(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.name": resource.meta.name.name,
       "name.kind": resource.meta.name.kind,
-    })
+    }),
   );
   resourcesStore.deleteResource(resource);
+  // cancel queries to make sure any pending requests are cancelled.
+  // There could still be some errors because of the race condition between a view/table deleted and we getting the event
   switch (resource.meta.name.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:
-      queryClient.removeQueries({
+      queryClient.cancelQueries({
         predicate: (query) => isProfilingQuery(query, resource.meta.name.name),
       });
       break;
 
     case ResourceKind.MetricsView:
-      queryClient.removeQueries({
+      queryClient.cancelQueries({
         predicate: (query) =>
           invalidationForMetricsViewData(query, resource.meta.name.name),
       });
@@ -153,7 +167,7 @@ async function invalidateRemovedResource(
 function shouldSkipResource(
   queryClient: QueryClient,
   instanceId: string,
-  res: V1Resource
+  res: V1Resource,
 ) {
   switch (res.meta.reconcileStatus) {
     case V1ReconcileStatus.RECONCILE_STATUS_UNSPECIFIED:
@@ -175,13 +189,13 @@ function shouldSkipResource(
 export function refreshResource(
   queryClient: QueryClient,
   instanceId: string,
-  res: V1Resource
+  res: V1Resource,
 ) {
   return queryClient.resetQueries(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.name": res.meta.name.name,
       "name.kind": res.meta.name.kind,
-    })
+    }),
   );
 }
 

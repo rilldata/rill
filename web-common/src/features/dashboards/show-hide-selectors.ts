@@ -11,7 +11,7 @@ import type {
   V1MetricsView,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
-import { derived, get, Readable } from "svelte/store";
+import { Readable, derived, get } from "svelte/store";
 
 export type ShowHideSelectorState = {
   selectableItems: Array<SearchableFilterSelectableItem>;
@@ -28,7 +28,7 @@ export type ShowHideSelectorStore = Readable<ShowHideSelectorState> &
 
 function createShowHideStore<Item>(
   metricsViewName: string,
-  metaQuery: CreateQueryResult<V1MetricsView, RpcStatus>,
+  metricsView: CreateQueryResult<V1MetricsView, RpcStatus>,
   fieldInMeta: keyof Pick<V1MetricsView, "dimensions" | "measures">,
   visibleFieldInStore: keyof Pick<
     MetricsExplorerEntity,
@@ -38,10 +38,10 @@ function createShowHideStore<Item>(
     MetricsExplorerEntity,
     "allMeasuresVisible" | "allDimensionsVisible"
   >,
-  labelSelector: (i: Item) => string
+  labelSelector: (i: Item) => string,
 ) {
   const derivedStore = derived(
-    [metaQuery, useDashboardStore(metricsViewName)],
+    [metricsView, useDashboardStore(metricsViewName)],
     ([meta, metricsExplorer]) => {
       if (
         !meta?.data ||
@@ -61,7 +61,7 @@ function createShowHideStore<Item>(
         (i) => ({
           name: i.name,
           label: labelSelector(i),
-        })
+        }),
       );
       const availableKeys = items.map((i) => i.name);
       const visibleKeysSet = metricsExplorer[visibleFieldInStore];
@@ -71,13 +71,13 @@ function createShowHideStore<Item>(
         selectedItems: availableKeys.map((k) => visibleKeysSet.has(k)),
         availableKeys,
       };
-    }
+    },
   ) as ShowHideSelectorStore;
 
   derivedStore.setAllToVisible = () => {
     updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
       metricsExplorer[visibleFieldInStore] = new Set(
-        get(derivedStore).availableKeys
+        get(derivedStore).availableKeys,
       );
       metricsExplorer[allVisibleFieldInStore] = true;
     });
@@ -114,7 +114,7 @@ function createShowHideStore<Item>(
            * non-visible ones from the available keys
            */
           const firstVisible = get(derivedStore).availableKeys.find((key) =>
-            metricsExplorer[visibleFieldInStore].has(key)
+            metricsExplorer[visibleFieldInStore].has(key),
           );
 
           metricsExplorer.leaderboardMeasureName = firstVisible;
@@ -133,11 +133,11 @@ function createShowHideStore<Item>(
 
 export function createShowHideMeasuresStore(
   metricsViewName: string,
-  metaQuery: CreateQueryResult<V1MetricsView, RpcStatus>
+  metricsView: CreateQueryResult<V1MetricsView, RpcStatus>,
 ) {
   return createShowHideStore<MetricsViewSpecMeasureV2>(
     metricsViewName,
-    metaQuery,
+    metricsView,
     "measures",
     "visibleMeasureKeys",
     "allMeasuresVisible",
@@ -146,17 +146,17 @@ export function createShowHideMeasuresStore(
      * using the "label" if available but falling back to the expression
      * if needed.
      */
-    (m) => m.label || m.expression
+    (m) => m.label || m.expression,
   );
 }
 
 export function createShowHideDimensionsStore(
   metricsViewName: string,
-  metaQuery: CreateQueryResult<V1MetricsView, RpcStatus>
+  metricsView: CreateQueryResult<V1MetricsView, RpcStatus>,
 ) {
   return createShowHideStore<MetricsViewDimension>(
     metricsViewName,
-    metaQuery,
+    metricsView,
     "dimensions",
     "visibleDimensionKeys",
     "allDimensionsVisible",
@@ -165,6 +165,6 @@ export function createShowHideDimensionsStore(
      * using the "label" if available but falling back to the name of
      * the categorical column (which must be present) if needed
      */
-    (d) => d.label || d.name
+    (d) => d.label || d.name,
   );
 }

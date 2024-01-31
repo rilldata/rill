@@ -1,14 +1,30 @@
 <script lang="ts">
+  import { builderActions, getAttrs, type Builder } from "bits-ui";
   import { createEventDispatcher } from "svelte";
 
-  export let type: "primary" | "secondary" | "highlighted" | "text" | "dashed" =
-    "primary";
+  type ButtonType =
+    | "primary"
+    | "secondary"
+    | "highlighted"
+    | "text"
+    | "link"
+    | "brand";
+
+  export let type: ButtonType = "primary";
   export let status: "info" | "error" = "info";
   export let disabled = false;
   export let compact = false;
   export let submitForm = false;
   export let form = "";
   export let label: string | undefined = undefined;
+  export let square = false;
+  export let circle = false;
+  export let selected = false;
+  export let large = false;
+  export let small = false;
+  export let noStroke = false;
+  export let dashed = false;
+  export let builders: Builder[] = [];
 
   const dispatch = createEventDispatcher();
 
@@ -17,60 +33,192 @@
       dispatch("click", event);
     }
   };
-
-  const disabledClasses = `disabled:cursor-not-allowed disabled:text-gray-700 disabled:bg-gray-200 disabled:border disabled:border-gray-400 disabled:opacity-50`;
-  export const levels = {
-    info: {
-      primary: `bg-gray-800 text-white border rounded-sm border-gray-800 hover:bg-gray-700 hover:border-gray-700 focus:ring-blue-300`,
-      secondary:
-        "text-gray-800 border rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-gray-700 hover:border-gray-300 focus:ring-blue-300",
-      highlighted:
-        "text-gray-500 border border-gray-200 hover:bg-gray-200 hover:text-gray-600 hover:border-gray-200 focus:ring-blue-300 shadow-lg rounded-sm h-8 ",
-      text: "text-gray-900 hover:bg-gray-300 focus:ring-blue-300",
-      dashed:
-        "text-gray-800 border border-dashed rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-gray-700 hover:border-gray-300 focus:ring-blue-300 ",
-    },
-    error: {
-      primary:
-        "bg-red-200 border border-red-200 hover:bg-red-300 hover:border-red-300 text-red-800 active:ring-red-600 focus:ring-red-400",
-      secondary:
-        "border border-red-500 hover:bg-red-100 hover:border-red-600  focus:ring-red-400",
-      text: "text-red-400 hover:bg-red-200  focus:ring-red-400",
-    },
-  };
-
-  export function buttonClasses({
-    /** one of four: primary, secondary, highlighted, text */
-    type = "primary",
-    compact = false,
-    status = "info",
-    /** if you want to define a custom button style, use this string */
-    customClasses = undefined,
-  }) {
-    return `
-  ${compact ? "px-2" : "px-3"} py-0.5 text-xs font-normal leading-snug
- flex flex-row gap-x-2 min-w-fit items-center justify-center transition-transform duration-100
-  focus:outline-none focus:ring-2
-  ${customClasses ? customClasses : levels[status][type]}
-  ${disabledClasses}
-  ${
-    type === "highlighted"
-      ? "min-h-[32px]"
-      : compact
-      ? "h-auto"
-      : "min-h-[28px]"
-  }
-  `;
-  }
 </script>
 
 <button
+  class="{$$props.class} {type}"
   {disabled}
-  class={buttonClasses({ type, compact, status })}
-  on:click={handleClick}
+  class:square
+  class:circle
+  class:selected
+  class:large
+  class:small
+  class:dashed
+  class:compact
+  class:danger={status === "error"}
+  class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}
   form={submitForm ? form : undefined}
   aria-label={label}
+  {...getAttrs(builders)}
+  use:builderActions={{ builders }}
+  on:click={handleClick}
 >
   <slot />
 </button>
+
+<style lang="postcss">
+  button {
+    @apply flex text-center items-center justify-center;
+    @apply text-xs leading-snug font-normal;
+    @apply gap-x-2 min-w-fit;
+    @apply rounded-[2px];
+    @apply px-3 h-7 min-h-[28px];
+  }
+
+  button:focus {
+    @apply outline-none ring-2 ring-slate-800;
+  }
+
+  button:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* PRIMARY STYLES */
+
+  .primary {
+    @apply bg-slate-800 text-white;
+  }
+
+  .primary:hover,
+  .primary.selected {
+    @apply bg-slate-700;
+  }
+
+  .primary:active {
+    @apply bg-slate-900;
+  }
+
+  /* SECONDARY STYLES */
+
+  .secondary {
+    @apply bg-white text-slate-600;
+    @apply px-3 h-7 border border-slate-300;
+  }
+
+  .secondary:hover,
+  .secondary:disabled,
+  .secondary.selected {
+    @apply bg-slate-100;
+  }
+
+  .secondary:active {
+    @apply bg-slate-200;
+  }
+
+  /* HIGHLGHTED STYLES (REMOVE) */
+
+  .highlighted {
+    @apply bg-white text-slate-700;
+    @apply border border-slate-100;
+    @apply shadow-md;
+  }
+
+  .highlighted:hover,
+  .highlighted.selected {
+    @apply bg-slate-50;
+  }
+
+  .highlighted:active {
+    @apply bg-slate-200;
+  }
+
+  /* LINK STYLES */
+
+  .link {
+    @apply text-blue-500;
+  }
+
+  .link:hover,
+  .link.selected {
+    @apply text-blue-600;
+  }
+
+  .link:active {
+    @apply text-blue-700;
+  }
+
+  .link:disabled {
+    @apply text-slate-400;
+  }
+
+  /* SHAPE STYLES */
+
+  .square,
+  .circle {
+    @apply p-0 aspect-square;
+    @apply text-ellipsis overflow-hidden whitespace-nowrap flex-grow-0 flex-shrink-0;
+  }
+
+  .circle {
+    @apply rounded-full;
+  }
+
+  /* DANGER STYLES */
+
+  .danger {
+    @apply bg-red-500 text-white;
+  }
+
+  .danger:hover,
+  .danger.selected {
+    @apply bg-red-600;
+  }
+
+  .danger:active {
+    @apply bg-red-700;
+  }
+
+  .danger.secondary {
+    @apply bg-white;
+    @apply text-red-500;
+    @apply border-red-500;
+  }
+
+  .danger:disabled {
+    @apply text-slate-400;
+    @apply bg-slate-50;
+    @apply border-slate-300;
+  }
+
+  /* BRAND STYLES */
+
+  .brand {
+    @apply bg-blue-600 text-white;
+  }
+
+  .brand:hover {
+    @apply bg-blue-500;
+  }
+
+  .brand:active {
+    @apply bg-blue-700;
+  }
+
+  /* TWEAKS */
+
+  .small {
+    @apply h-6 text-[11px];
+  }
+
+  .large {
+    @apply h-9 text-sm;
+  }
+
+  .large.square,
+  .large.circle {
+    @apply h-10;
+  }
+
+  .compact {
+    @apply px-2;
+  }
+
+  .no-stroke {
+    @apply border-none;
+  }
+
+  .dashed {
+    @apply border border-dashed;
+  }
+</style>

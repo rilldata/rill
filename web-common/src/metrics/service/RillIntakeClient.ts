@@ -4,7 +4,11 @@ const RillIntakeUser = "data-modeler";
 const RillIntakePassword =
   "lkh8T90ozWJP/KxWnQ81PexRzpdghPdzuB0ly2/86TeUU8q/bKiVug==";
 
-export class RillIntakeClient {
+export interface TelemetryClient {
+  fireEvent(event: MetricsEvent): Promise<void>;
+}
+
+export class RillIntakeClient implements TelemetryClient {
   private readonly authHeader: string;
 
   public constructor() {

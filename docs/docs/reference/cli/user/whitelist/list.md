@@ -1,4 +1,5 @@
 ---
+note: GENERATED. DO NOT EDIT.
 title: rill user whitelist list
 ---
 ## rill user whitelist list

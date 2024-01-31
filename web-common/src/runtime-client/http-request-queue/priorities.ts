@@ -16,6 +16,7 @@ export const QueryPriorities = {
   topk: 10,
   "rug-histogram": 10,
   "descriptive-statistics": 10,
+  totals: 30,
 };
 
 export function getPriority(type: string): number {

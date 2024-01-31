@@ -2,19 +2,19 @@ package env
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 // RmCmd is sub command for env. Removes the variable for a project
-func RmCmd(cfg *config.Config) *cobra.Command {
+func RmCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	rmCmd := &cobra.Command{
 		Use:   "rm <key>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Remove variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			key := args[0]
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
@@ -45,7 +45,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Updated project")
+			ch.Printer.PrintlnSuccess("Updated project")
 			return nil
 		},
 	}

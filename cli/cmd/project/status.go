@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -14,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func StatusCmd(cfg *config.Config) *cobra.Command {
+func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, path string
 
 	statusCmd := &cobra.Command{
@@ -22,6 +21,7 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Project deployment status",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			client, err := cmdutil.Client(cfg)
 			if err != nil {
 				return err
@@ -48,8 +48,13 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// 1. Print project info
-			cmdutil.PrintlnSuccess("Project info\n")
-			cmdutil.TablePrinter(toRow(proj.Project))
+			ch.Printer.PrintlnSuccess("Project info\n")
+			fmt.Printf("  Name: %s\n", proj.Project.Name)
+			fmt.Printf("  Organization: %v\n", proj.Project.OrgName)
+			fmt.Printf("  Public: %v\n", proj.Project.Public)
+			fmt.Printf("  Github: %v\n", proj.Project.GithubUrl)
+			fmt.Printf("  Created: %s\n", proj.Project.CreatedOn.AsTime().Local().Format(time.RFC3339))
+			fmt.Printf("  Updated: %s\n", proj.Project.UpdatedOn.AsTime().Local().Format(time.RFC3339))
 
 			depl := proj.ProdDeployment
 			if depl == nil {
@@ -57,12 +62,19 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// 2. Print deployment info
-			cmdutil.PrintlnSuccess("\nDeployment info\n")
+			ch.Printer.PrintlnSuccess("\nDeployment info\n")
 			fmt.Printf("  Web: %s\n", proj.Project.FrontendUrl)
 			fmt.Printf("  Runtime: %s\n", depl.RuntimeHost)
 			fmt.Printf("  Instance: %s\n", depl.RuntimeInstanceId)
+			fmt.Printf("  Driver: %s\n", proj.Project.ProdOlapDriver)
+			if proj.Project.ProdOlapDsn != "" {
+				fmt.Printf("  OLAP DSN: %s\n", proj.Project.ProdOlapDsn)
+			}
 			fmt.Printf("  Slots: %d\n", depl.Slots)
 			fmt.Printf("  Branch: %s\n", depl.Branch)
+			if proj.Project.Subpath != "" {
+				fmt.Printf("  Subpath: %s\n", proj.Project.Subpath)
+			}
 			fmt.Printf("  Created: %s\n", depl.CreatedOn.AsTime().Local().Format(time.RFC3339))
 			fmt.Printf("  Updated: %s\n", depl.UpdatedOn.AsTime().Local().Format(time.RFC3339))
 			if depl.Status != adminv1.DeploymentStatus_DEPLOYMENT_STATUS_OK {
@@ -98,8 +110,11 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 				table = append(table, newResourceTableRow(r))
 			}
 
-			cmdutil.PrintlnSuccess("\nResources\n")
-			cmdutil.TablePrinter(table)
+			ch.Printer.PrintlnSuccess("\nResources\n")
+			err = ch.Printer.PrintResource(table)
+			if err != nil {
+				return err
+			}
 
 			if parser.State != nil && len(parser.State.ParseErrors) != 0 {
 				var table []*parseErrorTableRow
@@ -107,8 +122,11 @@ func StatusCmd(cfg *config.Config) *cobra.Command {
 					table = append(table, newParseErrorTableRow(e))
 				}
 
-				cmdutil.PrintlnSuccess("\nParse errors\n")
-				cmdutil.TablePrinter(table)
+				ch.Printer.PrintlnSuccess("\nParse errors\n")
+				err = ch.Printer.PrintResource(table)
+				if err != nil {
+					return err
+				}
 			}
 
 			return nil

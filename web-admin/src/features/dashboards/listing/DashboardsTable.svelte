@@ -4,12 +4,12 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender } from "@tanstack/svelte-table";
   import Table from "../../../components/table/Table.svelte";
-  import { DashboardResource, useDashboardsV2 } from "./dashboards";
   import DashboardsError from "./DashboardsError.svelte";
   import DashboardsTableCompositeCell from "./DashboardsTableCompositeCell.svelte";
   import DashboardsTableEmpty from "./DashboardsTableEmpty.svelte";
   import DashboardsTableHeader from "./DashboardsTableHeader.svelte";
   import NoDashboardsCTA from "./NoDashboardsCTA.svelte";
+  import { DashboardResource, useDashboardsV2 } from "./selectors";
 
   export let organization: string;
   export let project: string;

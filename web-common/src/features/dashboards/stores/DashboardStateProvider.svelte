@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     createTimeRangeSummary,
-    useMetaQuery,
+    useMetricsView,
     useModelHasTimeSeries,
   } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -14,24 +14,24 @@
 
   $: initLocalUserPreferenceStore(metricViewName);
   const stateManagers = getStateManagers();
-  const metaQuery = useMetaQuery(stateManagers);
+  const metricsView = useMetricsView(stateManagers);
   const hasTimeSeries = useModelHasTimeSeries(stateManagers);
   const timeRangeQuery = createTimeRangeSummary(stateManagers);
 
   function syncDashboardState() {
-    if (!$metaQuery.data) return;
+    if (!$metricsView.data) return;
     if (metricViewName in $metricsExplorerStore.entities) {
-      metricsExplorerStore.sync(metricViewName, $metaQuery.data);
+      metricsExplorerStore.sync(metricViewName, $metricsView.data);
     } else {
       metricsExplorerStore.init(
         metricViewName,
-        $metaQuery.data,
-        $timeRangeQuery.data
+        $metricsView.data,
+        $timeRangeQuery.data,
       );
     }
   }
 
-  $: if ($metaQuery.data && ($timeRangeQuery.data || !$hasTimeSeries.data)) {
+  $: if ($metricsView.data && ($timeRangeQuery.data || !$hasTimeSeries.data)) {
     syncDashboardState();
   }
 

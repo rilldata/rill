@@ -11,8 +11,8 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import {
-    createRuntimeServiceGetFile,
     V1Resource,
+    createRuntimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
@@ -25,7 +25,7 @@
 
   $: fileQuery = createRuntimeServiceGetFile(
     $runtime.instanceId,
-    getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition)
+    getFilePathFromNameAndType(metricsDefName, EntityType.MetricsDefinition),
   );
   $: yaml = $fileQuery.data?.blob || "";
 
@@ -40,7 +40,7 @@
   let isValidModel = false;
   $: if ($allModels?.data?.entries) {
     isValidModel = $allModels?.data.some(
-      (model) => model.meta.name.name === modelName
+      (model) => model?.meta?.name?.name === modelName,
     );
   }
 
@@ -66,7 +66,7 @@
           </CollapsibleSectionTitle>
         </div>
         {#if showModelInformation}
-          <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
             <ModelInspectorHeader
               {modelName}
               containerWidth={$observedNode?.clientWidth}
@@ -87,8 +87,8 @@
           </CollapsibleSectionTitle>
         </div>
 
-        {#if showColumns}
-          <div transition:slide|local={{ duration: LIST_SLIDE_DURATION }}>
+        {#if showColumns && entry?.meta?.name?.name}
+          <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
             <ColumnProfile
               objectName={entry?.meta?.name?.name}
               indentLevel={0}

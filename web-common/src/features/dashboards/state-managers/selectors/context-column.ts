@@ -1,18 +1,13 @@
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import type { DashboardDataSources } from "./types";
 
-const contextColumnWidth = (contextType: LeaderboardContextColumn): string => {
-  switch (contextType) {
-    case LeaderboardContextColumn.DELTA_ABSOLUTE:
-    case LeaderboardContextColumn.DELTA_PERCENT:
-      return "56px";
-    case LeaderboardContextColumn.PERCENT:
-      return "44px";
-    case LeaderboardContextColumn.HIDDEN:
-      return "0px";
-    default:
-      throw new Error("Invalid context column, all cases must be handled");
+const contextColumnWidth = ({ dashboard }: DashboardDataSources): string => {
+  const contextType = dashboard.leaderboardContextColumn;
+  const width = dashboard.contextColumnWidths[contextType];
+  if (typeof width === "number") {
+    return width + "px";
   }
+  return "0px";
 };
 
 export const contextColSelectors = {
@@ -61,6 +56,5 @@ export const contextColSelectors = {
    * returns a css style string specifying the width of the context
    * column in the leaderboards.
    */
-  widthPx: ({ dashboard }: DashboardDataSources) =>
-    contextColumnWidth(dashboard.leaderboardContextColumn),
+  widthPx: contextColumnWidth,
 };

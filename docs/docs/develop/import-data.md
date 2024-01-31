@@ -24,7 +24,7 @@ To import a file using the UI, click "+" by Sources in the left hand navigation 
 ### Using code
 When you add a source using the UI, a code definition will automatically be created as a `.yaml` file in your Rill project in the `sources` directory. However, you can also create sources more directly by creating the artifact.
 
-In your Rill project directory, create a `source_name.yaml` file in the `sources` directory with the following contents:
+In your Rill project directory, create a `source_name.yaml` file in the `sources` directory with the following content:
 
 ```yaml
 type: local_file
@@ -33,7 +33,28 @@ path: /path/to/data.csv
 
 Rill will ingest the data next time you run `rill start`.
 
-Note that if you provide a relative path, the path should be relative to your Rill project root (where your `rill.yaml` file is located), not relative to the `sources` directory.
+Note that if you provide a relative path, _the path should be relative to your Rill project root_ (where your `rill.yaml` file is located), **not** relative to the `sources` directory.
+
+:::tip Source Properties
+
+For more details about available configurations and properties, check our [Source YAML](../reference/project-files/sources) reference page.
+
+:::
+
+### Google Sheets
+
+Rill is very flexible and can read from any http(s) URL endpoint that produces a valid data file in a supported format. For example, to bring in data from Google Sheets as a CSV file directly into Rill as a source ([leveraging the direct download link syntax](https://www.highviewapps.com/blog/how-to-create-a-csv-or-excel-direct-download-link-in-google-sheets/)), you can create a `source_name.yaml` file in the `sources` directory of your Rill project directory with the following content:
+
+```yaml
+type: "duckdb"
+path: "select * from read_csv_auto('https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/export?format=csv&gid=<SHEET_ID>', normalize_names=True)"
+```
+
+:::note Updating the URL
+
+Make sure to replace `SPREADSHEET_ID` and `SHEET_ID` with the ID of your spreadsheet and tab respectively (which you can obtain from looking at the URL when Google Sheets is open).
+
+:::
 
 ## Adding a remote source
 
@@ -57,7 +78,11 @@ You can also push filters to your source definition using inline editing. Common
 - Push transformations for key fields to source (particularly casting time fields, data types)
 - Resolve ingestion issues by declaring types (examples: STRUCT with different values to VARCHAR, fields mixed with INT and VARCHAR values)
 
-For details about all available properties for all remote connectors, see the syntax [reference](../reference/project-files/sources).
+:::tip Source Properties
+
+For more details about available configurations and properties, check our [Source YAML](../reference/project-files/sources) reference page.
+
+:::
 
 ## Authenticating remote sources
 

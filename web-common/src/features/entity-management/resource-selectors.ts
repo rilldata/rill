@@ -15,15 +15,21 @@ export enum ResourceKind {
   Model = "rill.runtime.v1.Model",
   MetricsView = "rill.runtime.v1.MetricsView",
   Report = "rill.runtime.v1.Report",
+  Theme = "rill.runtime.v1.Theme",
 }
 export const SingletonProjectParserName = "parser";
+
+// In the UI, we shouldn't show the `rill.runtime.v1` prefix
+export function prettyResourceKind(kind: string) {
+  return kind.replace(/^rill\.runtime\.v1\./, "");
+}
 
 export function useResource<T = V1Resource>(
   instanceId: string,
   name: string,
   kind: ResourceKind,
   selector?: (data: V1Resource) => T,
-  queryClient?: QueryClient
+  queryClient?: QueryClient,
 ) {
   return createRuntimeServiceGetResource(
     instanceId,
@@ -38,7 +44,7 @@ export function useResource<T = V1Resource>(
         enabled: !!instanceId && !!name && !!kind,
         queryClient,
       },
-    }
+    },
   );
 }
 
@@ -48,14 +54,15 @@ export function useProjectParser(queryClient: QueryClient, instanceId: string) {
     SingletonProjectParserName,
     ResourceKind.ProjectParser,
     undefined,
-    queryClient
+    queryClient,
   );
 }
 
 export function useFilteredResources<T = Array<V1Resource>>(
   instanceId: string,
   kind: ResourceKind,
-  selector: (data: V1ListResourcesResponse) => T = (data) => data.resources as T
+  selector: (data: V1ListResourcesResponse) => T = (data) =>
+    data.resources as T,
 ) {
   return createRuntimeServiceListResources(
     instanceId,
@@ -66,28 +73,35 @@ export function useFilteredResources<T = Array<V1Resource>>(
       query: {
         select: selector,
       },
-    }
+    },
   );
 }
 
 export function useFilteredResourceNames(
   instanceId: string,
-  kind: ResourceKind
+  kind: ResourceKind,
 ) {
   return useFilteredResources<Array<string>>(instanceId, kind, (data) =>
-    data.resources.map((res) => res.meta.name.name)
+    data.resources.map((res) => res.meta.name.name),
   );
 }
 
 export function useAllNames(instanceId: string) {
+  const select = (data: V1ListResourcesResponse) =>
+    // CAST SAFETY: must be a string[], because we filter
+    // out undefined values
+    (data?.resources
+      ?.map((res) => res?.meta?.name?.name)
+      .filter((name) => name !== undefined) ?? []) as string[];
+
   return createRuntimeServiceListResources(
     instanceId,
     {},
     {
       query: {
-        select: (data) => data.resources.map((res) => res.meta.name.name),
+        select,
       },
-    }
+    },
   );
 }
 
@@ -95,7 +109,7 @@ export function createSchemaForTable(
   instanceId: string,
   resourceName: string,
   resourceKind: ResourceKind,
-  queryClient?: QueryClient
+  queryClient?: QueryClient,
 ) {
   return derived(
     useResource(instanceId, resourceName, resourceKind, undefined, queryClient),
@@ -112,13 +126,13 @@ export function createSchemaForTable(
             enabled: !!tableSpec?.state?.table && !!tableSpec?.state?.connector,
             queryClient,
           },
-        }
+        },
       ).subscribe(set);
-    }
+    },
   ) as ReturnType<typeof createConnectorServiceOLAPGetTable>;
 }
 
-export function resourceIsLoading(resource: V1Resource) {
+export function resourceIsLoading(resource?: V1Resource) {
   return (
     !!resource &&
     resource.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE

@@ -12,7 +12,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
-	"golang.org/x/exp/slog"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -115,7 +115,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			model.State.RefreshedOn = nil
 			subErr := r.C.UpdateState(ctx, self.Meta.Name, self)
 			if subErr != nil {
-				r.C.Logger.Error("refs check: failed to update state", slog.Any("err", subErr))
+				r.C.Logger.Error("refs check: failed to update state", zap.Any("error", subErr))
 			}
 		}
 		return runtime.ReconcileResult{Err: err}
@@ -205,10 +205,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Log delayed materialization info
 	if delayingMaterialize {
 		delay := time.Duration(model.Spec.MaterializeDelaySeconds) * time.Second
-		r.C.Logger.Info("Delaying model materialization", slog.String("name", n.Name), slog.String("delay", delay.String()))
+		r.C.Logger.Info("Delaying model materialization", zap.String("name", n.Name), zap.String("delay", delay.String()))
 	}
 	if delayedMaterialize {
-		r.C.Logger.Info("Materializing model", slog.String("name", n.Name))
+		r.C.Logger.Info("Materializing model", zap.String("name", n.Name))
 	}
 
 	// Drop the staging table if it exists
@@ -222,6 +222,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	if createErr != nil {
 		createErr = fmt.Errorf("failed to create model: %w", createErr)
 	}
+
 	if createErr == nil && stage {
 		// Rename the staging table to main view/table
 		err = olapForceRenameTable(ctx, r.C, connector, stagingTableName, !materialize, tableName)

@@ -35,18 +35,18 @@
           console.error(e);
         }
       },
-    }
+    },
   );
 </script>
 
 <div class="flex flex-col">
   <form on:submit|preventDefault={handleSubmit} id="request-connector-form">
-    <span>
-      Don't see the connector you're looking for? Let us know what we're
+    <span class="text-slate-500 pb-4 text-sm">
+      Don’t see the connector you’re looking for? Let us know what we’re
       missing!
     </span>
 
-    <div class="pt-2 pb-4">
+    <div class="pt-4 pb-5 text-slate-800">
       <Input
         id="request"
         label="Connector"

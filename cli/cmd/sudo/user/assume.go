@@ -3,19 +3,19 @@ package user
 import (
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func AssumeCmd(cfg *config.Config) *cobra.Command {
+func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 	var ttlMinutes int
 	assumeCmd := &cobra.Command{
 		Use:   "assume <email>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Temporarily act as another user",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			ctx := cmd.Context()
 
 			client, err := cmdutil.Client(cfg)
@@ -58,7 +58,7 @@ func AssumeCmd(cfg *config.Config) *cobra.Command {
 			cfg.AdminTokenDefault = res.Token
 
 			// Select org for new user
-			err = auth.SelectOrgFlow(ctx, cfg)
+			err = auth.SelectOrgFlow(ctx, ch, true)
 			if err != nil {
 				return err
 			}

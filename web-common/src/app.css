@@ -88,11 +88,11 @@
   }
 
   .ui-measure-bar-included {
-    @apply bg-blue-100 dark:bg-blue-700;
+    @apply bg-primary-100 dark:bg-primary-700;
   }
 
   .ui-measure-bar-included-selected {
-    @apply bg-blue-200 dark:bg-blue-600;
+    @apply bg-primary-200 dark:bg-primary-600;
   }
 
   .ui-measure-bar-excluded {
@@ -115,6 +115,68 @@
 @layer base {
   :root {
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
+
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+  
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+  
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+  
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+  
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+
+    /* 
+    FIXME: 
+    We need to overhaul these ShadCN vars to use the new
+    palette as the source of truth, and remove these manual
+    translations/approximations in HSL, but this is fine for
+     the initial roll out
+     */
+    
+    /* 
+    `246, 57%, 20%` approximates primary color 
+    from our new palette vs previous color:
+    `--primary: 222.2 47.4% 11.2%
+    */
+    --primary: 246 57% 20%;
+    /* 
+    `227, 100%, 96%` approximates primary color 
+    from our new palette vs previous color:
+    `--primary-foreground: 210 40% 98%;`
+    */
+    --primary-foreground: 227 100% 96%;
+  
+    /* 
+    `202, 100%, 94%` approximates secondary color 
+    from our new palette vs previous color:
+    `--secondary: 210 40% 96.1%;`
+    */
+    --secondary: 202 100% 94%;
+    /* 
+    `202, 90%, 16%` approximates secondary color 
+    from our new palette vs previous color:
+    `--secondary-foreground: 222.2 47.4% 11.2%;`
+    Note that this one in particular is a poor approximation,
+    because the darkest color in the new palette is much
+    lighter than the previous --secondary-foreground color.
+    */
+    --secondary-foreground: 202 90% 16%;
+  
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+  
+    --destructive: 0 72.2% 50.6%;
+    --destructive-foreground: 210 40% 98%;
+  
+    --ring: 222.2 84% 4.9%;
+  
+    --radius: 0.5rem;
   }
 
   h1,
@@ -135,6 +197,7 @@ button {
 }
 
 body {
+  background-color: white;
   font-family: "Inter";
   font-size: 12px;
 
@@ -160,13 +223,10 @@ body {
   --error-bg: hsl(1, 60%, 90%);
   --error-text: hsl(1, 60%, 30%);
 
-  overscroll-behavior: none;
-
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 a {
-  @apply text-blue-500 hover:text-blue-600 font-medium;
+  @apply text-primary-500 hover:text-primary-600 font-medium;
 }
-

@@ -23,7 +23,7 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
-  let rpcError: RpcStatus = null;
+  let rpcError: RpcStatus | null = null;
 
   const { form, touched, errors, handleChange, handleSubmit, isSubmitting } =
     createForm({
@@ -34,6 +34,9 @@
       onSubmit: async (values) => {
         overlay.set({ title: `Importing ${values.sourceName}` });
         try {
+          // the following error provides type narrowing for `connector.name`
+          if (connector.name === undefined)
+            throw new Error("connector name is undefined");
           await submitRemoteSourceForm(queryClient, connector.name, values);
           goto(`/source/${values.sourceName}`);
           dispatch("close");
@@ -46,7 +49,7 @@
 
   // Place the "Source name" field directly under the "Path" field, which is the first property for each connector (s3, gcs, https).
   const connectorProperties = [
-    ...connector.properties.slice(0, 1),
+    ...(connector.properties?.slice(0, 1) ?? []),
     {
       key: "sourceName",
       displayName: "Source name",
@@ -55,7 +58,7 @@
       type: ConnectorSpecPropertyType.TYPE_STRING,
       nullable: false,
     },
-    ...connector.properties.slice(1),
+    ...(connector.properties?.slice(1) ?? []),
   ];
 
   function onStringInputChange(event: Event) {
@@ -72,11 +75,11 @@
 
 <div class="h-full w-full flex flex-col">
   <form
-    class="pb-2 flex-grow overflow-y-auto"
+    class="pb-5 flex-grow overflow-y-auto"
     id="remote-source-{connector.name}-form"
     on:submit|preventDefault={handleSubmit}
   >
-    <div class="pb-2">
+    <div class="pb-2 text-slate-500">
       Need help? Refer to our
       <a
         href="https://docs.rilldata.com/develop/import-data"
@@ -89,7 +92,7 @@
         message={humanReadableErrorMessage(
           connector.name,
           rpcError.code,
-          rpcError.message
+          rpcError.message,
         )}
       />
     {/if}
@@ -97,8 +100,8 @@
     {#each connectorProperties as property}
       {@const label =
         property.displayName + (property.nullable ? " (optional)" : "")}
-      <div class="py-2">
-        {#if property.type === ConnectorSpecPropertyType.TYPE_STRING}
+      <div class="py-1.5">
+        {#if property.type === ConnectorSpecPropertyType.TYPE_STRING && property.key !== undefined}
           <Input
             id={toYupFriendlyKey(property.key)}
             {label}
@@ -109,7 +112,7 @@
             on:input={onStringInputChange}
             on:change={handleChange}
           />
-        {:else if property.type === ConnectorSpecPropertyType.TYPE_BOOLEAN}
+        {:else if property.type === ConnectorSpecPropertyType.TYPE_BOOLEAN && property.key !== undefined}
           <label for={property.key} class="flex items-center">
             <input
               id={property.key}

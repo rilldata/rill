@@ -5,9 +5,13 @@ import {
   transformDate,
 } from "@rilldata/web-common/lib/time/transforms";
 import {
+  RangePresetType,
+  ReferencePoint,
   RelativeTimeTransformation,
+  TimeComparisonOption,
   TimeOffsetType,
   TimeRange,
+  TimeRangeMeta,
   TimeRangePreset,
   TimeTruncationType,
 } from "@rilldata/web-common/lib/time/types";
@@ -21,17 +25,17 @@ import { Duration } from "luxon";
 export function isoDurationToTimeRange(
   isoDuration: string,
   anchor: Date,
-  zone = "Etc/UTC"
+  zone = "Etc/UTC",
 ) {
   const startTime = transformDate(
     anchor,
     getStartTimeTransformations(isoDuration),
-    zone
+    zone,
   );
   const endTime = transformDate(
     anchor,
     getEndTimeTransformations(isoDuration),
-    zone
+    zone,
   );
   return {
     startTime,
@@ -48,10 +52,10 @@ for (const preset in TimeRangePreset) {
 }
 
 export function isoDurationToFullTimeRange(
-  isoDuration: string,
+  isoDuration: string | undefined,
   start: Date,
   end: Date,
-  zone = "Etc/UTC"
+  zone = "Etc/UTC",
 ): TimeRange {
   if (!isoDuration) {
     return convertTimeRangePreset(TimeRangePreset.ALL_TIME, start, end, zone);
@@ -61,7 +65,7 @@ export function isoDurationToFullTimeRange(
       isoDuration as TimeRangePreset,
       start,
       end,
-      zone
+      zone,
     );
   }
 
@@ -97,8 +101,27 @@ export function getSmallestTimeGrain(isoDuration: string) {
   return undefined;
 }
 
+export function isoDurationToTimeRangeMeta(
+  isoDuration: string,
+  defaultComparison: TimeComparisonOption,
+): TimeRangeMeta {
+  return {
+    label: `Last ${humaniseISODuration(isoDuration)}`,
+    defaultComparison,
+    rangePreset: RangePresetType.OFFSET_ANCHORED,
+    start: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: getStartTimeTransformations(isoDuration),
+    },
+    end: {
+      reference: ReferencePoint.LATEST_DATA,
+      transformation: getEndTimeTransformations(isoDuration),
+    },
+  };
+}
+
 function getStartTimeTransformations(
-  isoDuration: string
+  isoDuration: string,
 ): Array<RelativeTimeTransformation> {
   const duration = Duration.fromISO(isoDuration);
   const period = getSmallestUnit(duration);
@@ -118,7 +141,7 @@ function getStartTimeTransformations(
 }
 
 function getEndTimeTransformations(
-  isoDuration: string
+  isoDuration: string,
 ): Array<RelativeTimeTransformation> {
   const duration = Duration.fromISO(isoDuration);
   const period = getSmallestUnit(duration);

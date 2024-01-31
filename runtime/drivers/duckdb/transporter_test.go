@@ -190,10 +190,10 @@ mum,8.2`)
 			for rows.Next() {
 				colCount++
 			}
+			require.NoError(t, rows.Close())
 			require.Equal(t, test.colCount, colCount)
 		})
 	}
-
 }
 
 func TestIterativeCSVIngestionWithVariableSchemaError(t *testing.T) {
@@ -319,7 +319,6 @@ mum,8.2`)
 			}
 		})
 	}
-
 }
 
 func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
@@ -434,6 +433,7 @@ func TestIterativeParquetIngestionWithVariableSchema(t *testing.T) {
 			for rows.Next() {
 				colCount++
 			}
+			require.NoError(t, rows.Close())
 			require.Equal(t, test.colCount, colCount)
 		})
 	}
@@ -581,6 +581,7 @@ func TestIterativeJSONIngestionWithVariableSchema(t *testing.T) {
 			for rows.Next() {
 				colCount++
 			}
+			require.NoError(t, rows.Close())
 			require.Equal(t, test.colCount, colCount)
 		})
 	}

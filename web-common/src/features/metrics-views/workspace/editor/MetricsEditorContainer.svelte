@@ -10,7 +10,7 @@ It will show an error message if passed in.
   import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
   import { slide } from "svelte/transition";
 
-  export let error: LineStatus | V1ReconcileError = undefined;
+  export let error: LineStatus | V1ReconcileError | undefined = undefined;
   export let height = "calc(100vh - var(--header-height))";
 </script>
 
@@ -27,7 +27,7 @@ It will show an error message if passed in.
   {#if error}
     <div
       role="status"
-      transition:slide|local={{ duration: LIST_SLIDE_DURATION }}
+      transition:slide={{ duration: LIST_SLIDE_DURATION }}
       class="editor-error ui-editor-text-error ui-editor-bg-error border border-red-500 border-l-4 px-2 py-5 max-h-72 overflow-auto"
     >
       <div class="flex gap-x-2 items-center">

@@ -253,10 +253,18 @@ service AdminService {
     option (google.api.http) = {get: "/v1/superuser/members"};
   }
 
-  // GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+  // GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
   rpc GetDeploymentCredentials(GetDeploymentCredentialsRequest) returns (GetDeploymentCredentialsResponse) {
     option (google.api.http) = {
       post: "/v1/organizations/{organization}/projects/{project}/credentials",
+      body: "*"
+    };
+  }
+
+  // GetIFrame returns the iframe URL for the given project
+  rpc GetIFrame(GetIFrameRequest) returns (GetIFrameResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/iframe",
       body: "*"
     };
   }
@@ -286,6 +294,14 @@ service AdminService {
   rpc SudoUpdateOrganizationQuotas(SudoUpdateOrganizationQuotasRequest) returns (SudoUpdateOrganizationQuotasResponse) {
     option (google.api.http) = {
       patch: "/v1/superuser/quotas/organization",
+      body: "*"
+    };
+  }
+
+  // SudoUpdateAnnotations endpoint for superusers to update project annotations
+  rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/projects/annotations",
       body: "*"
     };
   }
@@ -508,6 +524,7 @@ message GetProjectResponse {
 
 message SearchProjectNamesRequest {
   string name_pattern = 1;
+  map<string, string> annotations = 5;
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
@@ -543,16 +560,43 @@ message GetDeploymentCredentialsRequest {
   string organization = 1;
   string project = 2;
   string branch = 3;
+  uint32 ttl_seconds = 7;
   oneof for {
     string user_id = 4;
-    google.protobuf.Struct attrs = 5;
+    string user_email = 6 [(validate.rules).string.email = true];
+    google.protobuf.Struct attributes = 5;
   }
 }
 
 message GetDeploymentCredentialsResponse {
   string runtime_host = 1;
-  string runtime_instance_id = 2;
-  string jwt = 3;
+  string instance_id = 2;
+  string access_token = 3;
+  uint32 ttl_seconds = 4;
+}
+
+message GetIFrameRequest {
+  string organization = 1;
+  string project = 2;
+  string branch = 3;
+  string kind = 4;
+  string resource = 5;
+  uint32 ttl_seconds = 6;
+  string state = 7;
+  map<string, string> query = 8;
+  oneof for {
+    string user_id = 9;
+    string user_email = 10 [(validate.rules).string.email = true];
+    google.protobuf.Struct attributes = 11;
+  }
+}
+
+message GetIFrameResponse {
+  string iframe_src = 1;
+  string runtime_host = 2;
+  string instance_id = 3;
+  string access_token = 4;
+  uint32 ttl_seconds = 5;
 }
 
 message ListServicesRequest {
@@ -774,6 +818,16 @@ message SudoUpdateUserQuotasRequest {
 
 message SudoUpdateUserQuotasResponse {
   User user = 1;
+}
+
+message SudoUpdateAnnotationsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  map<string, string> annotations = 3;
+}
+
+message SudoUpdateAnnotationsResponse {
+  Project project = 1;
 }
 
 message ListProjectMembersRequest {
@@ -1076,7 +1130,12 @@ message GenerateReportYAMLResponse {
 }
 
 message TelemetryRequest {
-  map<string, string> event = 1;
+  // Name passed to activity module's name arg
+  string name = 1;
+  // Value passed to activity module's value arg
+  float value = 2;
+  // Free form struct of the actual event
+  google.protobuf.Struct event = 3;
 }
 
 message TelemetryResponse {}
@@ -1138,6 +1197,7 @@ message Project {
   string prod_deployment_id = 13;
   string frontend_url = 16;
   int64 prod_ttl_seconds = 18;
+  map<string, string> annotations = 20;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }

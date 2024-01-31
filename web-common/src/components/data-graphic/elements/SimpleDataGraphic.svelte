@@ -2,27 +2,28 @@
 A simple composable container for SVG-based data graphics.
 -->
 <script lang="ts">
+  import type { DomainCoordinates } from "../constants/types";
   import { GraphicContext, SimpleSVGContainer } from "./index";
 
-  export let top = undefined;
-  export let bottom = undefined;
-  export let left = undefined;
-  export let right = undefined;
-  export let bodyBuffer = undefined;
-  export let marginBuffer = undefined;
-  export let width = undefined;
-  export let height = undefined;
-  export let fontSize = undefined;
-  export let textGap = undefined;
-  export let xType = undefined;
-  export let yType = undefined;
+  export let top: number | undefined = undefined;
+  export let bottom: number | undefined = undefined;
+  export let left: number | undefined = undefined;
+  export let right: number | undefined = undefined;
+  export let bodyBuffer: number | undefined = undefined;
+  export let marginBuffer: number | undefined = undefined;
+  export let width: number | undefined = undefined;
+  export let height: number | undefined = undefined;
+  export let fontSize: number | undefined = undefined;
+  export let textGap: number | undefined = undefined;
+  export let xType: string | undefined = undefined;
+  export let yType: string | undefined = undefined;
 
   export let overflowHidden = true;
 
-  export let xMin = undefined;
-  export let xMax = undefined;
-  export let yMin = undefined;
-  export let yMax = undefined;
+  export let xMin: number | undefined = undefined;
+  export let xMax: number | undefined = undefined;
+  export let yMin: number | undefined = undefined;
+  export let yMax: number | undefined = undefined;
 
   export let xMinTweenProps = { duration: 0 };
   export let xMaxTweenProps = { duration: 0 };
@@ -32,13 +33,12 @@ A simple composable container for SVG-based data graphics.
   export let shareXScale = true;
   export let shareYScale = true;
 
-  export let mouseoverValue = undefined;
+  export let mouseoverValue: DomainCoordinates | undefined = undefined;
   export let hovered = undefined;
 
   /** this makes a wide variety of normal events, such as on:click, available
    * to the consumer
    */
-  // const forwardAll = forwardEvents(getComponent(), []);
 </script>
 
 <GraphicContext

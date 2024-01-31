@@ -29,7 +29,7 @@ export function useReportDashboardName(instanceId: string, name: string) {
       query: {
         select: (data) => {
           const queryArgsJson = JSON.parse(
-            data.resource.report.spec.queryArgsJson
+            data.resource.report.spec.queryArgsJson,
           );
 
           return (
@@ -39,14 +39,14 @@ export function useReportDashboardName(instanceId: string, name: string) {
           );
         },
       },
-    }
+    },
   );
 }
 
 export function useReportOwnerName(
   organization: string,
   project: string,
-  ownerId: string
+  ownerId: string,
 ) {
   return createAdminServiceSearchProjectUsers(
     organization,
@@ -60,6 +60,22 @@ export function useReportOwnerName(
       query: {
         select: (data) => data.users.find((u) => u.id === ownerId)?.displayName,
       },
-    }
+    },
+  );
+}
+
+export function useIsReportCreatedByCode(instanceId: string, name: string) {
+  return createRuntimeServiceGetResource(
+    instanceId,
+    {
+      "name.name": name,
+      "name.kind": ResourceKind.Report,
+    },
+    {
+      query: {
+        select: (data) =>
+          !data.resource.report.spec.annotations["admin_owner_user_id"],
+      },
+    },
   );
 }

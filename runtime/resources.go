@@ -11,4 +11,5 @@ const (
 	ResourceKindPullTrigger    string = "rill.runtime.v1.PullTrigger"
 	ResourceKindRefreshTrigger string = "rill.runtime.v1.RefreshTrigger"
 	ResourceKindBucketPlanner  string = "rill.runtime.v1.BucketPlanner"
+	ResourceKindTheme          string = "rill.runtime.v1.Theme"
 )

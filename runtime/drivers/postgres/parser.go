@@ -11,42 +11,42 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
-var oidToMapperMap = make(map[string]mapper)
-
 type mapper interface {
 	runtimeType() *runtimev1.Type
 	value(pgxVal any) (any, error)
 }
 
-func register(typ string, m mapper) {
+func register(oidToMapperMap map[string]mapper, typ string, m mapper) {
 	oidToMapperMap[typ] = m
 	// array of base type
 	oidToMapperMap[fmt.Sprintf("_%s", typ)] = &arrayMapper{baseMapper: m}
 }
 
 // refer https://github.com/jackc/pgx/blob/master/pgtype/pgtype_default.go for base types
-func init() {
-	register("bit", &bitMapper{})
-	register("bool", &boolMapper{})
-	register("bpchar", &charMapper{})
-	register("bytea", &byteMapper{})
-	register("char", &charMapper{})
-	register("date", &dateMapper{})
-	register("float4", &float32Mapper{})
-	register("float8", &float64Mapper{})
-	register("int2", &int16Mapper{})
-	register("int4", &int32Mapper{})
-	register("int8", &int64Mapper{})
-	register("numeric", &numericMapper{})
-	register("text", &charMapper{})
-	register("time", &timeMapper{})
-	register("timestamp", &timeStampMapper{})
-	register("timestamptz", &timeStampMapper{})
-	register("uuid", &uuidMapper{})
-	register("varbit", &bitMapper{})
-	register("varchar", &charMapper{})
-	register("json", &jsonMapper{})
-	register("jsonb", &jsonMapper{})
+func getOidToMapperMap() map[string]mapper {
+	m := make(map[string]mapper)
+	register(m, "bit", &bitMapper{})
+	register(m, "bool", &boolMapper{})
+	register(m, "bpchar", &charMapper{})
+	register(m, "bytea", &byteMapper{})
+	register(m, "char", &charMapper{})
+	register(m, "date", &dateMapper{})
+	register(m, "float4", &float32Mapper{})
+	register(m, "float8", &float64Mapper{})
+	register(m, "int2", &int16Mapper{})
+	register(m, "int4", &int32Mapper{})
+	register(m, "int8", &int64Mapper{})
+	register(m, "numeric", &numericMapper{})
+	register(m, "text", &charMapper{})
+	register(m, "time", &timeMapper{})
+	register(m, "timestamp", &timeStampMapper{})
+	register(m, "timestamptz", &timeStampMapper{})
+	register(m, "uuid", &uuidMapper{})
+	register(m, "varbit", &bitMapper{})
+	register(m, "varchar", &charMapper{})
+	register(m, "json", &jsonMapper{})
+	register(m, "jsonb", &jsonMapper{})
+	return m
 }
 
 type bitMapper struct{}

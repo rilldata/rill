@@ -19,9 +19,9 @@ The `rill.yaml` file contains metadata about your project.
 
 In `rill.yaml`, you can specify project-wide defaults that will be applied for all resources within a project.  
 
-Individual resources will inherit any defaults that have been specified in `rill.yaml`. If the same property is set in both `rill.yaml` and a specific project file, the local setting in the project file takes precedence. See the documentation for each individual project file for available properties.
+Individual resources will inherit any defaults that have been specified in `rill.yaml`. If the same property is set in both `rill.yaml` and a specific project file, the local setting in the project file takes precedence. See the documentation for each individual resources -- [sources](sources.md), [models](models.md), and [dashboards](dashboards.md) -- for available properties.
 
-The top level property is the resource type in pluralis, such as `sources`, `models`, and `dashboards`.
+The top level property is the resource type in plural, such as `sources`, `models`, and `dashboards`.
 
 Example:
 ```
@@ -31,5 +31,8 @@ models:
 dashboards:
   first_day_of_week: 7
   available_time_zones:
+    - America/Los_Angeles
     - America/New_York
+    - Europe/London
+    - Asia/Kolkata
 ```

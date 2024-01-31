@@ -1,10 +1,14 @@
 package server
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/base64"
+	"encoding/gob"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"reflect"
 	"time"
@@ -28,6 +32,11 @@ func BakeQuery(qry *runtimev1.Query) (string, error) {
 		return "", err
 	}
 
+	data, err = gzipCompress(data)
+	if err != nil {
+		return "", err
+	}
+
 	return base64.URLEncoding.EncodeToString(data), nil
 }
 
@@ -37,8 +46,14 @@ func UnbakeQuery(bakedQry string) (*runtimev1.Query, error) {
 		return nil, err
 	}
 
+	uncompressed, err := gzipDecompress(data)
+	if err != nil {
+		// NOTE (2023-11-29): Backwards compatibility for when we didn't gzip baked queries. We can remove this in a few months.
+		uncompressed = data
+	}
+
 	qry := &runtimev1.Query{}
-	if err := proto.Unmarshal(data, qry); err != nil {
+	if err := proto.Unmarshal(uncompressed, qry); err != nil {
 		return nil, err
 	}
 
@@ -137,11 +152,13 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			Measures:           r.Measures,
 			Sort:               r.Sort,
 			TimeRange:          tr,
-			Filter:             r.Filter,
+			Where:              r.Where,
+			Having:             r.Having,
 			Limit:              limitPtr,
 			Offset:             r.Offset,
 			MetricsView:        mv,
 			ResolvedMVSecurity: security,
+			PivotOn:            r.PivotOn,
 		}
 	case *runtimev1.Query_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest
@@ -188,7 +205,8 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			TimeStart:          r.TimeStart,
 			TimeEnd:            r.TimeEnd,
 			Sort:               r.Sort,
-			Filter:             r.Filter,
+			Where:              r.Where,
+			Having:             r.Having,
 			Limit:              limitPtr,
 			MetricsView:        mv,
 			ResolvedMVSecurity: security,
@@ -216,6 +234,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			TimeStart:          r.TimeStart,
 			TimeEnd:            r.TimeEnd,
 			Filter:             r.Filter,
+			Where:              r.Where,
 			Sort:               r.Sort,
 			Limit:              limitPtr,
 			TimeZone:           r.TimeZone,
@@ -248,7 +267,8 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			TimeStart:          r.TimeStart,
 			TimeEnd:            r.TimeEnd,
 			TimeGranularity:    r.TimeGranularity,
-			Filter:             r.Filter,
+			Where:              r.Where,
+			Having:             r.Having,
 			TimeZone:           r.TimeZone,
 			MetricsView:        mv,
 			ResolvedMVSecurity: security,
@@ -283,12 +303,15 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			MetricsViewName:     r.MetricsViewName,
 			DimensionName:       r.Dimension.Name,
 			Measures:            r.Measures,
+			ComparisonMeasures:  r.ComparisonMeasures,
 			TimeRange:           r.TimeRange,
 			ComparisonTimeRange: r.ComparisonTimeRange,
 			Limit:               s.resolveExportLimit(request.Limit, r.Limit),
 			Offset:              r.Offset,
 			Sort:                r.Sort,
 			Filter:              r.Filter,
+			Where:               r.Where,
+			Having:              r.Having,
 			MetricsView:         mv,
 			ResolvedMVSecurity:  security,
 		}
@@ -355,11 +378,16 @@ func (s *Server) resolveExportLimit(base, override int64) int64 {
 // downloadTokenTTL determines how long a download token is valid.
 const downloadTokenTTL = 1 * time.Hour
 
-// downloadTokenJSON is the non-encrypted JSON representation of a download token.
-type downloadTokenJSON struct {
+// downloadToken is the non-encrypted representation of a download token.
+type downloadToken struct {
 	Request    []byte         `json:"req"`
 	Attributes map[string]any `json:"attrs"`
 	ExpiresOn  time.Time      `json:"exp"`
+}
+
+// register downloadToken for gob encoding
+func init() {
+	gob.Register(downloadToken{})
 }
 
 // generateDownloadToken generates and encrypts a download token for the given request and attributes.
@@ -369,13 +397,18 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, attrs map[s
 		return "", err
 	}
 
-	tknJSON := downloadTokenJSON{
+	r, err = gzipCompress(r)
+	if err != nil {
+		return "", err
+	}
+
+	tkn := downloadToken{
 		Request:    r,
 		Attributes: attrs,
 		ExpiresOn:  time.Now().Add(downloadTokenTTL),
 	}
 
-	res, err := s.codec.Encode(tknJSON)
+	res, err := s.codec.Encode(tkn)
 	if err != nil {
 		return "", err
 	}
@@ -384,22 +417,53 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, attrs map[s
 }
 
 // parseDownloadToken decrypts and parses a download token and returns the request and attributes.
-func (s *Server) parseDownloadToken(tkn string) (*runtimev1.ExportRequest, map[string]any, error) {
-	tknJSON := downloadTokenJSON{}
-	err := s.codec.Decode(tkn, &tknJSON)
+func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.ExportRequest, map[string]any, error) {
+	tkn := downloadToken{}
+	err := s.codec.Decode(tknStr, &tkn)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if tknJSON.ExpiresOn.Before(time.Now()) {
+	if tkn.ExpiresOn.Before(time.Now()) {
 		return nil, nil, fmt.Errorf("download token expired")
 	}
 
-	req := &runtimev1.ExportRequest{}
-	err = proto.Unmarshal(tknJSON.Request, req)
+	r, err := gzipDecompress(tkn.Request)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return req, tknJSON.Attributes, nil
+	req := &runtimev1.ExportRequest{}
+	err = proto.Unmarshal(r, req)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return req, tkn.Attributes, nil
+}
+
+// gzipCompress compress the input bytes using gzip.
+func gzipCompress(v []byte) ([]byte, error) {
+	var b bytes.Buffer
+	w := gzip.NewWriter(&b)
+	_, err := w.Write(v)
+	if err != nil {
+		_ = w.Close()
+		return nil, err
+	}
+	err = w.Close()
+	if err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
+}
+
+// gzipDecompress decompresses the input bytes using gzip.
+func gzipDecompress(v []byte) ([]byte, error) {
+	r, err := gzip.NewReader(bytes.NewReader(v))
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+	return io.ReadAll(r)
 }

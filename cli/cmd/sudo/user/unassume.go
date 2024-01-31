@@ -5,18 +5,18 @@ import (
 
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func UnassumeCmd(cfg *config.Config) *cobra.Command {
+func UnassumeCmd(ch *cmdutil.Helper) *cobra.Command {
 	unassumeCmd := &cobra.Command{
 		Use:   "unassume",
 		Args:  cobra.NoArgs,
 		Short: "Revert a call to `assume`",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			ctx := cmd.Context()
 
 			client, err := cmdutil.Client(cfg)
@@ -59,7 +59,7 @@ func UnassumeCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Select org again for original user
-			err = auth.SelectOrgFlow(ctx, cfg)
+			err = auth.SelectOrgFlow(ctx, ch, true)
 			if err != nil {
 				return err
 			}

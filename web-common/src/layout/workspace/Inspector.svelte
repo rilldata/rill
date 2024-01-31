@@ -8,15 +8,15 @@
 
   /** the core inspector width element is stored in localStorage. */
   const inspectorLayout = getContext(
-    "rill:app:inspector-layout"
+    "rill:app:inspector-layout",
   ) as Writable<LayoutElement>;
 
   const inspectorWidth = getContext(
-    "rill:app:inspector-width-tween"
+    "rill:app:inspector-width-tween",
   ) as Writable<number>;
 
   const visibilityTween = getContext(
-    "rill:app:inspector-visibility-tween"
+    "rill:app:inspector-visibility-tween",
   ) as Writable<number>;
 </script>
 
@@ -44,6 +44,7 @@
     {#if $inspectorLayout.visible}
       <Portal>
         <div
+          role="separator"
           class="fixed drawer-handler w-4 hover:cursor-col-resize translate-x-2 h-screen"
           style:right="{$visibilityTween * $inspectorWidth}px"
           style:top="var(--header-height)"

@@ -1,4 +1,7 @@
-import type { FetchWrapperOptions } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import type {
+  FetchWrapperOptions,
+  HTTPError,
+} from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { get } from "svelte/store";
 import { HttpRequestQueue } from "./http-request-queue/HttpRequestQueue";
 import { runtime } from "./runtime-store";
@@ -15,7 +18,7 @@ import { runtime } from "./runtime-store";
 export const httpRequestQueue = new HttpRequestQueue();
 
 export const httpClient = async <T>(
-  config: FetchWrapperOptions
+  config: FetchWrapperOptions,
 ): Promise<T> => {
   // naive request interceptors
 
@@ -36,3 +39,7 @@ export const httpClient = async <T>(
 };
 
 export default httpClient;
+
+// This overrides Orval's generated error type. (Orval expects this to be a generic.)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export type ErrorType<Error> = HTTPError;

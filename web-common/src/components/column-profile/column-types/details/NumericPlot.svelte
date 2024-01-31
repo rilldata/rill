@@ -35,10 +35,11 @@ Otherwise, the page will jump around as the data is fetched.
   import { fade, fly } from "svelte/transition";
   import SummaryNumberPlot from "./SummaryNumberPlot.svelte";
   import TopK from "./TopK.svelte";
+  import type { NumericPlotPoint } from "@rilldata/web-common/components/data-graphic/functional-components/types";
 
   export let data: NumericHistogramBinsBin[];
   export let rug: NumericOutliersOutlier[];
-  export let summary: V1NumericStatistics;
+  export let summary: V1NumericStatistics | undefined;
   export let topK: TopKEntry[];
   export let totalRows: number;
   export let type: string;
@@ -53,12 +54,13 @@ Otherwise, the page will jump around as the data is fetched.
   // the data has been fetched.
   let rowHeight = 24;
 
-  let focusPoint = undefined;
+  let focusPoint: NumericPlotPoint | undefined = undefined;
   // reset focus point once the mode changes.
   $: if (summaryMode !== "summary") focusPoint = undefined;
 </script>
 
 <div
+  role="group"
   on:mouseleave={() => {
     focusPoint = undefined;
   }}
@@ -145,7 +147,7 @@ Otherwise, the page will jump around as the data is fetched.
             <!-- show mouseover support shapes -->
             {#if point}
               <g
-                transition:fade={{ duration: 50 }}
+                transition:fade|global={{ duration: 50 }}
                 shape-rendering="crispEdges"
               >
                 <rect
@@ -201,8 +203,8 @@ Otherwise, the page will jump around as the data is fetched.
             <!-- mouseovers -->
             {#if point?.low !== undefined}
               <g
-                in:fly={{ duration: 200, x: -16 }}
-                out:fly={{ duration: 200, x: -16 }}
+                in:fly|global={{ duration: 200, x: -16 }}
+                out:fly|global={{ duration: 200, x: -16 }}
                 font-size={config.fontSize}
                 style:user-select={"none"}
               >
@@ -213,8 +215,8 @@ Otherwise, the page will jump around as the data is fetched.
                   class="fill-gray-500"
                   opacity={0.8}
                   >({justEnoughPrecision(point?.low)}, {justEnoughPrecision(
-                    point?.high
-                  )}{point?.high === data.at(-1).high ? ")" : "]"}</text
+                    point?.high,
+                  )}{point?.high === data.at(-1)?.high ? ")" : "]"}</text
                 >
                 <text
                   use:outline
@@ -231,7 +233,7 @@ Otherwise, the page will jump around as the data is fetched.
 
             <!-- support topK mouseover effect on graphs -->
             {#if focusPoint && topK && summaryMode === "topk"}
-              <g transition:fade|local={{ duration: 200 }}>
+              <g transition:fade={{ duration: 200 }}>
                 <WithTween
                   value={[xScale(+focusPoint.value), yScale(focusPoint.count)]}
                   let:output
@@ -276,16 +278,7 @@ Otherwise, the page will jump around as the data is fetched.
         {#if summaryMode === "summary" && summary}
           {@const rowHeight = 24}
           <div class="pt-1">
-            <SummaryNumberPlot
-              {rowHeight}
-              min={summary?.min}
-              max={summary?.max}
-              mean={summary?.mean}
-              q25={summary?.q25}
-              q50={summary?.q50}
-              q75={summary?.q75}
-              {type}
-            />
+            <SummaryNumberPlot {rowHeight} {summary} {type} />
           </div>
         {:else if topK && summaryMode === "topk"}
           <div class="pt-1 px-1">

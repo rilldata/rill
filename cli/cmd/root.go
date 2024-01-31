@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/deploy"
+	"github.com/rilldata/rill/cli/cmd/devtool"
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/cmd/org"
@@ -24,6 +25,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/status"
@@ -76,10 +78,19 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		Version: ver,
 	}
 
+	format := printer.Human
+	p := printer.NewPrinter(&format)
+
+	// Create cmdutil Helper
+	ch := &cmdutil.Helper{
+		Config:  cfg,
+		Printer: p,
+	}
+
 	// Check version
 	err := update.CheckVersion(ctx, cfg.Version.Number)
 	if err != nil {
-		fmt.Printf("Warning: version check failed: %v\n", err)
+		p.PrintlnWarn(fmt.Sprintf("Warning: version check failed: %v\n", err))
 	}
 
 	// Print warning if currently acting as an assumed user
@@ -88,7 +99,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 		fmt.Printf("could not parse representing user email\n")
 	}
 	if representingUser != "" {
-		cmdutil.PrintlnWarn(fmt.Sprintf("Warning: Running action as %q\n", representingUser))
+		p.PrintlnWarn(fmt.Sprintf("Warning: Running action as %q\n", representingUser))
 	}
 
 	// Load admin token from .rill (may later be overridden by flag --api-token)
@@ -126,28 +137,29 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.Flags().BoolP("version", "v", false, "Show rill version") // Adds option to get version by passing --version or -v
 
 	// Add sub-commands
-	rootCmd.AddCommand(start.StartCmd(cfg))
-	rootCmd.AddCommand(admin.AdminCmd(cfg))
-	rootCmd.AddCommand(runtime.RuntimeCmd(cfg))
-	rootCmd.AddCommand(docs.DocsCmd(cfg, rootCmd))
+	rootCmd.AddCommand(start.StartCmd(ch))
+	rootCmd.AddCommand(admin.AdminCmd(ch))
+	rootCmd.AddCommand(runtime.RuntimeCmd(ch))
+	rootCmd.AddCommand(docs.DocsCmd(ch, rootCmd))
 	rootCmd.AddCommand(completionCmd)
-	rootCmd.AddCommand(verifyInstallCmd(cfg))
+	rootCmd.AddCommand(verifyInstallCmd(ch))
 	rootCmd.AddCommand(versioncmd.VersionCmd())
-	rootCmd.AddCommand(upgrade.UpgradeCmd(cfg))
-	rootCmd.AddCommand(whoami.WhoamiCmd(cfg))
+	rootCmd.AddCommand(upgrade.UpgradeCmd(ch))
+	rootCmd.AddCommand(whoami.WhoamiCmd(ch))
+	rootCmd.AddCommand(devtool.DevtoolCmd(ch))
 
 	// Add sub-commands for admin
 	// (This allows us to add persistent flags that apply only to the admin-related commands.)
 	adminCmds := []*cobra.Command{
-		org.OrgCmd(cfg),
-		project.ProjectCmd(cfg),
-		deploy.DeployCmd(cfg),
-		user.UserCmd(cfg),
-		env.EnvCmd(cfg),
-		auth.LoginCmd(cfg),
-		auth.LogoutCmd(cfg),
-		sudo.SudoCmd(cfg),
-		service.ServiceCmd(cfg),
+		org.OrgCmd(ch),
+		project.ProjectCmd(ch),
+		deploy.DeployCmd(ch),
+		user.UserCmd(ch),
+		env.EnvCmd(ch),
+		auth.LoginCmd(ch),
+		auth.LogoutCmd(ch),
+		sudo.SudoCmd(ch),
+		service.ServiceCmd(ch),
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")

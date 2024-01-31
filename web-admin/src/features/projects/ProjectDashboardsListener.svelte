@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { listenAndInvalidateDashboards } from "@rilldata/web-admin/features/dashboards/listing/dashboards";
+  import { listenAndInvalidateDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { onDestroy } from "svelte";
@@ -12,7 +12,7 @@
     unsubscribe?.();
     unsubscribe = listenAndInvalidateDashboards(
       queryClient,
-      $runtime?.instanceId
+      $runtime?.instanceId,
     );
   }
 

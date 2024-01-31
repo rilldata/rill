@@ -211,7 +211,7 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+	if !claims.Superuser(ctx) && !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
 	}
 
@@ -338,6 +338,9 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 			RoleID:    role.ID,
 		})
 		if err != nil {
+			if errors.Is(err, database.ErrNotUnique) {
+				return nil, status.Error(codes.AlreadyExists, err.Error())
+			}
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 

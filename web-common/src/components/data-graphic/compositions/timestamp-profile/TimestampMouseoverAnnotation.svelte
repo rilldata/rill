@@ -13,13 +13,13 @@
   import type { PlotConfig } from "../../utils";
 
   const X: Writable<ScaleLinear<number, number>> = getContext(
-    "rill:data-graphic:X"
+    "rill:data-graphic:X",
   );
   const Y: Writable<ScaleLinear<number, number>> = getContext(
-    "rill:data-graphic:Y"
+    "rill:data-graphic:Y",
   );
   const config: Writable<PlotConfig> = getContext(
-    "rill:data-graphic:plot-config"
+    "rill:data-graphic:plot-config",
   );
 
   export let point;
@@ -44,8 +44,8 @@
     {/if}
   {/each}
   <g
-    in:fly={{ duration: 200, x: -16 }}
-    out:fly={{ duration: 200, x: -16 }}
+    in:fly|global={{ duration: 200, x: -16 }}
+    out:fly|global={{ duration: 200, x: -16 }}
     font-size={$config.fontSize}
     style:user-select={"none"}
   >

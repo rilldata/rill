@@ -1,30 +1,33 @@
 <script lang="ts">
-  import { Button, Switch } from "@rilldata/web-common/components/button";
+  import { Switch } from "@rilldata/web-common/components/button";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
-  import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
-  import Row from "@rilldata/web-common/components/icons/Row.svelte";
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
+  import Row from "@rilldata/web-common/components/icons/Row.svelte";
+  import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
   import { Search } from "@rilldata/web-common/components/search";
+  import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-  import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { createEventDispatcher } from "svelte";
-  import { fly } from "svelte/transition";
+  import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import SearchableFilterChip from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterChip.svelte";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { slideRight } from "@rilldata/web-common/lib/transitions";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { createEventDispatcher } from "svelte";
+  import { fly } from "svelte/transition";
+  import { featureFlags } from "../../feature-flags";
+  import TDDExportButton from "./TDDExportButton.svelte";
   import type { TDDComparison } from "./types";
 
   export let metricViewName: string;
@@ -37,11 +40,17 @@
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
-  $: metaQuery = useMetaQuery(getStateManagers());
+  const {
+    actions: {
+      dimensionsFilter: { toggleDimensionFilterMode },
+    },
+  } = getStateManagers();
+
+  $: metricsView = useMetricsView(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
 
   $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
-  $: allMeasures = $metaQuery?.data?.measures ?? [];
+  $: allMeasures = $metricsView?.data?.measures ?? [];
 
   $: selectableMeasures = allMeasures
     ?.filter((m) => m.name !== undefined || m.label !== undefined)
@@ -51,7 +60,7 @@
       ({
         name: m.name ?? "",
         label: m.label ?? "",
-      })
+      }),
     );
 
   $: selectedItems = allMeasures?.map((m) => m.name === expandedMeasureName);
@@ -76,13 +85,20 @@
 
   function closeSearchBar() {
     searchText = "";
-    searchToggle = !searchToggle;
-    onSearch();
+    searchToggle = false;
+    dispatch("search", searchText);
+  }
+
+  function onSubmit() {
+    if (!areAllTableRowsSelected) {
+      dispatch("toggle-all-search-items");
+      closeSearchBar();
+    }
   }
 
   function toggleFilterMode() {
     cancelDashboardQueries(queryClient, metricViewName);
-    metricsExplorerStore.toggleFilterMode(metricViewName, dimensionName);
+    toggleDimensionFilterMode(dimensionName);
   }
 
   function switchMeasure(event) {
@@ -100,7 +116,7 @@
         <Row size="16px" /> Rows
       </div>
 
-      <ComparisonSelector {metricViewName} chipStyle />
+      <ComparisonSelector chipStyle {metricViewName} />
     </div>
 
     <div class="flex items-center gap-x-2 pl-2">
@@ -129,20 +145,14 @@
 
   {#if comparing === "dimension"}
     <div class="flex items-center mr-4 gap-x-3" style:cursor="pointer">
-      {#if searchText && !isRowsEmpty}
-        <Button
-          type="secondary"
-          compact={true}
-          on:click={() => dispatch("toggle-all-search-items")}
-        >
-          {areAllTableRowsSelected ? "Deselect all" : "Select all"}
-        </Button>
+      {#if !isRowsEmpty}
+        <SelectAllButton {areAllTableRowsSelected} on:toggle-all-search-items />
       {/if}
 
       {#if !searchToggle}
         <button
           class="flex items-center ui-copy-icon"
-          in:fly={{ x: 10, duration: 300 }}
+          in:fly|global={{ x: 10, duration: 300 }}
           style:grid-column-gap=".2rem"
           on:click={() => (searchToggle = !searchToggle)}
         >
@@ -151,10 +161,14 @@
         </button>
       {:else}
         <div
-          transition:slideRight|local={{ leftOffset: 8 }}
+          transition:slideRight={{ leftOffset: 8 }}
           class="flex items-center gap-x-1"
         >
-          <Search bind:value={searchText} on:input={onSearch} />
+          <Search
+            bind:value={searchText}
+            on:input={onSearch}
+            on:submit={onSubmit}
+          />
           <button
             class="ui-copy-icon"
             style:cursor="pointer"
@@ -166,7 +180,7 @@
       {/if}
 
       <Tooltip distance={16} location="left">
-        <div class="mr-3 ui-copy-icon" style:grid-column-gap=".4rem">
+        <div class="ui-copy-icon" style:grid-column-gap=".4rem">
           <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
             Exclude
           </Switch>
@@ -183,6 +197,11 @@
           </TooltipShortcutContainer>
         </TooltipContent>
       </Tooltip>
+
+      <TDDExportButton
+        {metricViewName}
+        includeScheduledReport={$featureFlags.adminServer}
+      />
     </div>
   {/if}
 </div>

@@ -60,10 +60,12 @@ const (
 	AdminService_SearchProjectUsers_FullMethodName           = "/rill.admin.v1.AdminService/SearchProjectUsers"
 	AdminService_ListSuperusers_FullMethodName               = "/rill.admin.v1.AdminService/ListSuperusers"
 	AdminService_GetDeploymentCredentials_FullMethodName     = "/rill.admin.v1.AdminService/GetDeploymentCredentials"
+	AdminService_GetIFrame_FullMethodName                    = "/rill.admin.v1.AdminService/GetIFrame"
 	AdminService_SetSuperuser_FullMethodName                 = "/rill.admin.v1.AdminService/SetSuperuser"
 	AdminService_SudoGetResource_FullMethodName              = "/rill.admin.v1.AdminService/SudoGetResource"
 	AdminService_SudoUpdateUserQuotas_FullMethodName         = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
+	AdminService_SudoUpdateAnnotations_FullMethodName        = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
 	AdminService_ListServices_FullMethodName                 = "/rill.admin.v1.AdminService/ListServices"
 	AdminService_CreateService_FullMethodName                = "/rill.admin.v1.AdminService/CreateService"
 	AdminService_UpdateService_FullMethodName                = "/rill.admin.v1.AdminService/UpdateService"
@@ -173,8 +175,10 @@ type AdminServiceClient interface {
 	SearchProjectUsers(ctx context.Context, in *SearchProjectUsersRequest, opts ...grpc.CallOption) (*SearchProjectUsersResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(ctx context.Context, in *ListSuperusersRequest, opts ...grpc.CallOption) (*ListSuperusersResponse, error)
-	// GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	// GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
 	GetDeploymentCredentials(ctx context.Context, in *GetDeploymentCredentialsRequest, opts ...grpc.CallOption) (*GetDeploymentCredentialsResponse, error)
+	// GetIFrame returns the iframe URL for the given project
+	GetIFrame(ctx context.Context, in *GetIFrameRequest, opts ...grpc.CallOption) (*GetIFrameResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -183,6 +187,8 @@ type AdminServiceClient interface {
 	SudoUpdateUserQuotas(ctx context.Context, in *SudoUpdateUserQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateUserQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
+	// SudoUpdateAnnotations endpoint for superusers to update project annotations
+	SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
 	// CreateService creates a new service per organization
@@ -605,6 +611,15 @@ func (c *adminServiceClient) GetDeploymentCredentials(ctx context.Context, in *G
 	return out, nil
 }
 
+func (c *adminServiceClient) GetIFrame(ctx context.Context, in *GetIFrameRequest, opts ...grpc.CallOption) (*GetIFrameResponse, error) {
+	out := new(GetIFrameResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetIFrame_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error) {
 	out := new(SetSuperuserResponse)
 	err := c.cc.Invoke(ctx, AdminService_SetSuperuser_FullMethodName, in, out, opts...)
@@ -635,6 +650,15 @@ func (c *adminServiceClient) SudoUpdateUserQuotas(ctx context.Context, in *SudoU
 func (c *adminServiceClient) SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error) {
 	out := new(SudoUpdateOrganizationQuotasResponse)
 	err := c.cc.Invoke(ctx, AdminService_SudoUpdateOrganizationQuotas_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error) {
+	out := new(SudoUpdateAnnotationsResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoUpdateAnnotations_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -924,8 +948,10 @@ type AdminServiceServer interface {
 	SearchProjectUsers(context.Context, *SearchProjectUsersRequest) (*SearchProjectUsersResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(context.Context, *ListSuperusersRequest) (*ListSuperusersResponse, error)
-	// GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	// GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
 	GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error)
+	// GetIFrame returns the iframe URL for the given project
+	GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -934,6 +960,8 @@ type AdminServiceServer interface {
 	SudoUpdateUserQuotas(context.Context, *SudoUpdateUserQuotasRequest) (*SudoUpdateUserQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
+	// SudoUpdateAnnotations endpoint for superusers to update project annotations
+	SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
 	// CreateService creates a new service per organization
@@ -1107,6 +1135,9 @@ func (UnimplementedAdminServiceServer) ListSuperusers(context.Context, *ListSupe
 func (UnimplementedAdminServiceServer) GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDeploymentCredentials not implemented")
 }
+func (UnimplementedAdminServiceServer) GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetIFrame not implemented")
+}
 func (UnimplementedAdminServiceServer) SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSuperuser not implemented")
 }
@@ -1118,6 +1149,9 @@ func (UnimplementedAdminServiceServer) SudoUpdateUserQuotas(context.Context, *Su
 }
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationQuotas not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateAnnotations not implemented")
 }
 func (UnimplementedAdminServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListServices not implemented")
@@ -1936,6 +1970,24 @@ func _AdminService_GetDeploymentCredentials_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetIFrame_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetIFrameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetIFrame(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetIFrame_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetIFrame(ctx, req.(*GetIFrameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SetSuperuser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetSuperuserRequest)
 	if err := dec(in); err != nil {
@@ -2004,6 +2056,24 @@ func _AdminService_SudoUpdateOrganizationQuotas_Handler(srv interface{}, ctx con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).SudoUpdateOrganizationQuotas(ctx, req.(*SudoUpdateOrganizationQuotasRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SudoUpdateAnnotations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoUpdateAnnotationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoUpdateAnnotations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoUpdateAnnotations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoUpdateAnnotations(ctx, req.(*SudoUpdateAnnotationsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2576,6 +2646,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetDeploymentCredentials_Handler,
 		},
 		{
+			MethodName: "GetIFrame",
+			Handler:    _AdminService_GetIFrame_Handler,
+		},
+		{
 			MethodName: "SetSuperuser",
 			Handler:    _AdminService_SetSuperuser_Handler,
 		},
@@ -2590,6 +2664,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoUpdateOrganizationQuotas",
 			Handler:    _AdminService_SudoUpdateOrganizationQuotas_Handler,
+		},
+		{
+			MethodName: "SudoUpdateAnnotations",
+			Handler:    _AdminService_SudoUpdateAnnotations_Handler,
 		},
 		{
 			MethodName: "ListServices",

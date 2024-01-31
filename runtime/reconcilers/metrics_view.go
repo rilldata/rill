@@ -126,8 +126,9 @@ func (r *MetricsViewReconciler) validate(ctx context.Context, mv *runtimev1.Metr
 
 	// Check dimension columns exist
 	for _, d := range mv.Dimensions {
-		if _, ok := fields[strings.ToLower(d.Column)]; !ok {
-			errs = append(errs, fmt.Errorf("dimension column %q not found in table %q", d.Column, mv.Table))
+		err = validateDimension(ctx, olap, t, d, fields)
+		if err != nil {
+			errs = append(errs, err)
 		}
 	}
 
@@ -139,7 +140,35 @@ func (r *MetricsViewReconciler) validate(ctx context.Context, mv *runtimev1.Metr
 		}
 	}
 
+	if mv.DefaultTheme != "" {
+		_, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: mv.DefaultTheme}, false)
+		if err != nil {
+			if errors.Is(err, drivers.ErrNotFound) {
+				return fmt.Errorf("theme %q does not exist", mv.DefaultTheme)
+			}
+			return fmt.Errorf("could not find theme %q: %w", mv.DefaultTheme, err)
+		}
+	}
+
 	return errors.Join(errs...)
+}
+
+func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, d *runtimev1.MetricsViewSpec_DimensionV2, fields map[string]*runtimev1.StructType_Field) error {
+	if d.Column != "" {
+		if _, isColumn := fields[strings.ToLower(d.Column)]; !isColumn {
+			return fmt.Errorf("failed to validate dimension %q: column %q not found in table", d.Name, d.Column)
+		}
+		return nil
+	}
+
+	err := olap.Exec(ctx, &drivers.Statement{
+		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", d.Expression, safeSQLName(t.Name)),
+		DryRun: true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to validate expression for dimension %q: %w", d.Name, err)
+	}
+	return nil
 }
 
 func validateMeasure(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, m *runtimev1.MetricsViewSpec_MeasureV2) error {

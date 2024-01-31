@@ -21,8 +21,8 @@ it to do any automatic binning of data, which is done server-side.
   export let yAccessor;
   export let inferXExtent = true;
   export let inferYExtent = true;
-  export let xMin: number = undefined;
-  export let xMax: number = undefined;
+  export let xMin: number | undefined = undefined;
+  export let xMax: number | undefined = undefined;
   export let yMin = undefined;
   export let yMax = undefined;
   export let lineThickness = 1;
@@ -42,7 +42,7 @@ it to do any automatic binning of data, which is done server-side.
   // get extents
   $: xMinValue = min(data, (d) => d[xLowAccessor]);
   $: xMaxValue = max(data, (d) => d[xHighAccessor]);
-  $: [yMinValue, yMaxValue] = extent(data, (d) => d[yAccessor]);
+  $: [, yMaxValue] = extent(data, (d) => d[yAccessor]);
   // set your extrema here
   $: if (inferXExtent) xMinStore.setWithKey(markID, xMin || xMinValue);
   $: if (inferXExtent) xMaxStore.setWithKey(markID, xMax || xMaxValue);
@@ -73,7 +73,7 @@ it to do any automatic binning of data, which is done server-side.
     $yScale,
     separator,
     closeBottom,
-    $inflator
+    $inflator,
   );
 </script>
 

@@ -47,5 +47,6 @@ func Test_sqliteToDuckDB_Transfer(t *testing.T) {
 	var count int
 	err = res.Scan(&count)
 	require.NoError(t, err)
+	require.NoError(t, res.Close())
 	require.Equal(t, 2, count)
 }

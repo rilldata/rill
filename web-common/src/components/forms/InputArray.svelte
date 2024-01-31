@@ -45,7 +45,7 @@
   <div
     class="flex flex-col gap-y-4 max-h-[200px] pl-1 pr-4 py-1 overflow-y-auto"
   >
-    {#each values as value, i}
+    {#each values as _, i}
       <div class="flex flex-col gap-y-2">
         <div class="flex gap-x-2 items-center">
           <input
@@ -53,7 +53,7 @@
             id="{id}.{i}.{accessorKey}"
             autocomplete="off"
             {placeholder}
-            class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {errors[
+            class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-primary-500 w-full text-xs {errors[
               i
             ]?.accessorKey && 'border-red-500'}"
             on:keydown={handleKeyDown}
@@ -68,16 +68,13 @@
           </IconButton>
         </div>
         {#if errors[i]?.[accessorKey]}
-          <div
-            in:slide|local={{ duration: 200 }}
-            class="text-red-500 text-sm py-px"
-          >
+          <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
             {errors[i][accessorKey]}
           </div>
         {/if}
       </div>
     {/each}
-    <Button on:click={() => dispatch("add-item")} type="dashed">
+    <Button on:click={() => dispatch("add-item")} type="secondary" dashed>
       <div class="flex gap-x-2">
         <Add className="text-gray-700" />
         {addItemLabel}

@@ -50,7 +50,7 @@ export function useIsSourceUnsaved(
   instanceId: string,
   sourceName: string,
   // Include clientYAML in the function call to force the selector to recompute when it changes
-  clientYAML: string
+  clientYAML: string,
 ) {
   return createRuntimeServiceGetFile(
     instanceId,
@@ -62,7 +62,7 @@ export function useIsSourceUnsaved(
           return clientYAML !== serverYAML;
         },
       },
-    }
+    },
   );
 }
 /**
@@ -70,7 +70,7 @@ export function useIsSourceUnsaved(
  */
 export function useIsLocalFileConnector(
   instanceId: string,
-  sourceName: string
+  sourceName: string,
 ) {
   return createRuntimeServiceGetFile(
     instanceId,
@@ -84,18 +84,18 @@ export function useIsLocalFileConnector(
           return yaml?.type === "duckdb" && yaml?.sql?.includes("'data/");
         },
       },
-    }
+    },
   );
 }
 
-type TableColumnsWithName = {
+export type TableColumnsWithName = {
   tableName: string;
   profileColumns: Array<V1ProfileColumn>;
 };
 
 export function useAllSourceColumns(
   queryClient: QueryClient,
-  instanceId: string
+  instanceId: string,
 ): Readable<Array<TableColumnsWithName>> {
   return derived([useSources(instanceId)], ([allSources], set) => {
     if (!allSources.data?.length) {
@@ -105,10 +105,12 @@ export function useAllSourceColumns(
 
     derived(
       allSources.data.map((r) =>
-        createTableColumnsWithName(queryClient, instanceId, r.meta.name.name)
+        createTableColumnsWithName(queryClient, instanceId, r.meta.name.name),
       ),
       (sourceColumnResponses) =>
-        sourceColumnResponses.filter((res) => !!res.data).map((res) => res.data)
+        sourceColumnResponses
+          .filter((res) => !!res.data)
+          .map((res) => res.data),
     ).subscribe(set);
   });
 }
@@ -116,10 +118,10 @@ export function useAllSourceColumns(
 /**
  * Fetches columns and adds the table name. By using the selector the results will be cached.
  */
-function createTableColumnsWithName(
+export function createTableColumnsWithName(
   queryClient: QueryClient,
   instanceId: string,
-  tableName: string
+  tableName: string,
 ): CreateQueryResult<TableColumnsWithName> {
   return createQueryServiceTableColumns(
     instanceId,
@@ -135,6 +137,6 @@ function createTableColumnsWithName(
         },
         queryClient,
       },
-    }
+    },
   );
 }

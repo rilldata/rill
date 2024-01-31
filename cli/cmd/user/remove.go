@@ -4,15 +4,15 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func RemoveCmd(cfg *config.Config) *cobra.Command {
+func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var email string
 	var keepProjectRoles bool
+	cfg := ch.Config
 
 	removeCmd := &cobra.Command{
 		Use:   "remove",
@@ -36,7 +36,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 
-				cmdutil.PrintlnSuccess(fmt.Sprintf("Removed user %q from project \"%s/%s\"", email, cfg.Org, projectName))
+				ch.Printer.PrintlnSuccess(fmt.Sprintf("Removed user %q from project \"%s/%s\"", email, cfg.Org, projectName))
 			} else {
 				_, err = client.RemoveOrganizationMember(cmd.Context(), &adminv1.RemoveOrganizationMemberRequest{
 					Organization:     cfg.Org,
@@ -46,7 +46,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				cmdutil.PrintlnSuccess(fmt.Sprintf("Removed user %q from organization %q", email, cfg.Org))
+				ch.Printer.PrintlnSuccess(fmt.Sprintf("Removed user %q from organization %q", email, cfg.Org))
 			}
 
 			return nil

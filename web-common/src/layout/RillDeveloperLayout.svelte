@@ -11,7 +11,7 @@
   } from "@rilldata/web-common/features/sources/sources-store";
   import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
-  import type { ApplicationBuildMetadata } from "@rilldata/web-local/lib/application-state-stores/build-metadata";
+  import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
   import PreparingImport from "../features/sources/modal/PreparingImport.svelte";
@@ -27,10 +27,8 @@
     const config = await runtimeServiceGetConfig();
     initMetrics(config);
 
-    featureFlags.set({
-      adminServer: false,
-      readOnly: config.readonly,
-    });
+    featureFlags.set(false, "adminServer");
+    featureFlags.set(config.readonly, "readOnly");
 
     appBuildMetaStore.set({
       version: config.version,
@@ -40,20 +38,7 @@
     return resourcesStore.init(config.instance_id);
   });
 
-  let dbRunState = "disconnected";
-  let runstateTimer;
-
-  function debounceRunstate(state) {
-    if (runstateTimer) clearTimeout(runstateTimer);
-    setTimeout(() => {
-      dbRunState = state;
-    }, 500);
-  }
-
   let showDropOverlay = false;
-
-  // TODO: add new global run state
-  $: debounceRunstate("disconnected");
 
   function isEventWithFiles(event: DragEvent) {
     let types = event?.dataTransfer?.types;
@@ -85,6 +70,7 @@
   <SourceImportedModal open={!!$sourceImportedName} />
 
   <div
+    role="application"
     class="index-body absolute w-screen h-screen"
     on:dragenter|preventDefault|stopPropagation
     on:dragleave|preventDefault|stopPropagation
@@ -103,3 +89,10 @@
 </div>
 
 <NotificationCenter />
+
+<style>
+  /* Prevent trackpad navigation (like other code editors, like vscode.dev). */
+  :global(body) {
+    overscroll-behavior: none;
+  }
+</style>

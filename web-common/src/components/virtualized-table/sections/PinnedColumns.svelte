@@ -1,10 +1,9 @@
 <script lang="ts">
-  import type { VirtualizedTableColumns } from "../../../types";
   import { createEventDispatcher } from "svelte";
   import Cell from "../core/Cell.svelte";
   import ColumnHeader from "../core/ColumnHeader.svelte";
   import Row from "../core/Row.svelte";
-  import type { PinnedColumnSide } from "../types";
+  import type { PinnedColumnSide, VirtualizedTableColumns } from "../types";
 
   const dispatch = createEventDispatcher();
 
@@ -18,12 +17,12 @@
 
   function reconcileVirtualColumns(
     virtualColumns,
-    pinnedColumns: VirtualizedTableColumns[]
+    pinnedColumns: VirtualizedTableColumns[],
   ) {
     // for each pinned column, we need to add size + start (based on 0);
     let virtualColumnSet = pinnedColumns.map((columnProfile) => {
       let virtualColumn = virtualColumns.find(
-        (column) => column.key === columnProfile.name
+        (column) => column.key === columnProfile.name,
       );
       return {
         virtualColumn: { ...virtualColumn },
@@ -41,7 +40,7 @@
 
   $: reconciledColumns = reconcileVirtualColumns(
     virtualColumnItems,
-    pinnedColumns
+    pinnedColumns,
   );
 
   $: totalWidth = reconciledColumns.reduce((total, column) => {
@@ -57,7 +56,7 @@
   style:width="{totalWidth}px"
 >
   <div class="w-full sticky relative top-0 z-10">
-    {#each reconciledColumns as { columnProfile, virtualColumn }, i (columnProfile.name + "-pinned")}
+    {#each reconciledColumns as { columnProfile, virtualColumn } (columnProfile.name + "-pinned")}
       <ColumnHeader
         header={{
           start: virtualColumn.start,

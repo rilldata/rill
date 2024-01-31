@@ -29,10 +29,12 @@ type MetricsViewYAML struct {
 	AvailableTimeZones []string         `yaml:"available_time_zones"`
 	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
+	DefaultTheme       string           `yaml:"default_theme"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string
 		Column      string
+		Expression  string
 		Property    string // For backwards compatibility
 		Description string
 		Ignore      bool `yaml:"ignore"`
@@ -198,7 +200,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	if tmp.DefaultTimeRange != "" {
-		_, err := duration.ParseISO8601(tmp.DefaultTimeRange)
+		_, err := parseISO8601(tmp.DefaultTimeRange)
 		if err != nil {
 			return fmt.Errorf(`invalid "default_time_range": %w`, err)
 		}
@@ -212,7 +214,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	names := make(map[string]bool)
-	columns := make(map[string]bool)
+
 	for i, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
 			continue
@@ -232,17 +234,15 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			}
 		}
 
+		if (dim.Column == "" && dim.Expression == "") || (dim.Column != "" && dim.Expression != "") {
+			return fmt.Errorf("exactly one of column or expression should be set for dimension: %q", dim.Name)
+		}
+
 		lower := strings.ToLower(dim.Name)
 		if ok := names[lower]; ok {
 			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
 		}
 		names[lower] = true
-
-		lower = strings.ToLower(dim.Column)
-		if ok := columns[lower]; ok {
-			return fmt.Errorf("found duplicate dimension column name %q", dim.Column)
-		}
-		columns[lower] = true
 	}
 
 	measureCount := 0
@@ -264,10 +264,6 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		}
 		names[lower] = true
 
-		if ok := columns[lower]; ok {
-			return fmt.Errorf("measure name %q coincides with a dimension column name", measure.Name)
-		}
-
 		if measure.FormatPreset != "" && measure.FormatD3 != "" {
 			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)
 		}
@@ -288,19 +284,19 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 	if tmp.AvailableTimeRanges != nil {
 		for _, r := range tmp.AvailableTimeRanges {
-			_, err := duration.ParseISO8601(r.Range)
+			_, err := parseISO8601(r.Range)
 			if err != nil {
 				return fmt.Errorf("invalid range in available_time_ranges: %w", err)
 			}
 
 			for _, o := range r.ComparisonOffsets {
-				_, err := duration.ParseISO8601(o.Offset)
+				_, err := parseISO8601(o.Offset)
 				if err != nil {
 					return fmt.Errorf("invalid offset in comparison_offsets: %w", err)
 				}
 
 				if o.Range != "" {
-					_, err := duration.ParseISO8601(o.Range)
+					_, err := parseISO8601(o.Range)
 					if err != nil {
 						return fmt.Errorf("invalid range in comparison_offsets: %w", err)
 					}
@@ -392,6 +388,9 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	node.Refs = append(node.Refs, ResourceName{Name: table})
+	if tmp.DefaultTheme != "" {
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
+	}
 
 	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -410,6 +409,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.AvailableTimeZones = tmp.AvailableTimeZones
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
+	spec.DefaultTheme = tmp.DefaultTheme
 
 	for _, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
@@ -419,6 +419,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dim.Name,
 			Column:      dim.Column,
+			Expression:  dim.Expression,
 			Label:       dim.Label,
 			Description: dim.Description,
 			Unnest:      dim.Unnest,
@@ -518,4 +519,20 @@ func parseTimeGrain(s string) (runtimev1.TimeGrain, error) {
 	default:
 		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, fmt.Errorf("invalid time grain %q", s)
 	}
+}
+
+// parseISO8601 is a wrapper around duration.ParseISO8601 that disallows grains < minute
+func parseISO8601(isoDuration string) (duration.Duration, error) {
+	d, err := duration.ParseISO8601(isoDuration)
+	if err != nil {
+		return d, err
+	}
+
+	if sd, ok := d.(duration.StandardDuration); ok {
+		if sd.Second != 0 {
+			return sd, fmt.Errorf("durations with seconds is not supported")
+		}
+	}
+
+	return d, nil
 }

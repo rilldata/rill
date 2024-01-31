@@ -2,19 +2,19 @@ package env
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 // SetCmd is sub command for env. Sets the variable for a project
-func SetCmd(cfg *config.Config) *cobra.Command {
+func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	setCmd := &cobra.Command{
 		Use:   "set <key> <value>",
 		Args:  cobra.ExactArgs(2),
 		Short: "Set variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ch.Config
 			key := args[0]
 			value := args[1]
 			client, err := cmdutil.Client(cfg)
@@ -49,7 +49,7 @@ func SetCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Updated project variables")
+			ch.Printer.PrintlnSuccess("Updated project variables")
 			return nil
 		},
 	}

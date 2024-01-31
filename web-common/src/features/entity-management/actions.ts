@@ -20,7 +20,7 @@ export async function renameFileArtifact(
   instanceId: string,
   fromName: string,
   toName: string,
-  type: EntityType
+  type: EntityType,
 ) {
   await runtimeServiceRenameFile(instanceId, {
     fromPath: getFileAPIPathFromNameAndType(fromName, type),
@@ -38,7 +38,7 @@ export async function deleteFileArtifact(
   name: string,
   type: EntityType,
   names: Array<string>,
-  showNotification = true
+  showNotification = true,
 ) {
   const path = getFileAPIPathFromNameAndType(name, type);
   try {

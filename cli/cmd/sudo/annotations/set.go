@@ -1,0 +1,48 @@
+package annotations
+
+import (
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/spf13/cobra"
+)
+
+func SetCmd(ch *cmdutil.Helper) *cobra.Command {
+	var annotations map[string]string
+
+	setCmd := &cobra.Command{
+		Use:   "set <organization> <project>",
+		Args:  cobra.ExactArgs(2),
+		Short: "Set annotations for a project",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			cfg := ch.Config
+
+			client, err := cmdutil.Client(cfg)
+			if err != nil {
+				return err
+			}
+			defer client.Close()
+
+			if len(annotations) == 0 {
+				ch.Printer.PrintlnWarn("Setting an empty annotation list will remove all annotations from the project")
+				if !cmdutil.ConfirmPrompt("Do you want to continue?", "", false) {
+					return nil
+				}
+			}
+
+			_, err = client.SudoUpdateAnnotations(ctx, &adminv1.SudoUpdateAnnotationsRequest{
+				Organization: args[0],
+				Project:      args[1],
+				Annotations:  annotations,
+			})
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+	setCmd.Flags().StringToStringVar(&annotations, "annotation", nil, "Annotation(s) to set on project")
+
+	return setCmd
+}

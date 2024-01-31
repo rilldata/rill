@@ -1,10 +1,7 @@
 <script lang="ts">
   import { ConnectedPreviewTable } from "@rilldata/web-common/components/preview-table";
   import { resourceIsLoading } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import {
-    getAllErrorsForFile,
-    useResourceForFile,
-  } from "@rilldata/web-common/features/entity-management/resources-store";
+  import { getAllErrorsForFile } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
@@ -33,24 +30,20 @@
 
   $: yaml = $file.data?.blob || "";
 
-  // Get only reconcile errors here. File parse errors are shown inline
-  $: source = useResourceForFile(queryClient, $runtime.instanceId, filePath);
-  $: reconcileError = $source.data?.meta?.reconcileError;
-
   $: allErrors = getAllErrorsForFile(
     queryClient,
     $runtime.instanceId,
-    filePath
+    filePath,
   );
 
   $: sourceQuery = useSource($runtime.instanceId, sourceName);
 
   // Layout state
   const outputPosition = getContext(
-    "rill:app:output-height-tween"
+    "rill:app:output-height-tween",
   ) as Writable<number>;
   const outputVisibilityTween = getContext(
-    "rill:app:output-visibility-tween"
+    "rill:app:output-visibility-tween",
   ) as Writable<number>;
   // track innerHeight to calculate the size of the editor element.
   let innerHeight: number;
@@ -58,7 +51,7 @@
   $: isSourceUnsavedQuery = useIsSourceUnsaved(
     $runtime.instanceId,
     sourceName,
-    $sourceStore.clientYAML
+    $sourceStore.clientYAML,
   );
   $: isSourceUnsaved = $isSourceUnsavedQuery.data;
 </script>
@@ -73,7 +66,7 @@
   >
     <SourceEditor {sourceName} {yaml} />
   </div>
-  <HorizontalSplitter />
+  <HorizontalSplitter className="px-5" />
   <div class="p-5" style:height="{$outputPosition}px">
     <div
       class="h-full border border-gray-300 rounded overflow-auto {isSourceUnsaved &&
@@ -86,7 +79,7 @@
             loading={resourceIsLoading($sourceQuery?.data)}
           />
         {/key}
-      {:else}
+      {:else if $allErrors[0].message}
         <ErrorPane {sourceName} errorMessage={$allErrors[0].message} />
       {/if}
     </div>

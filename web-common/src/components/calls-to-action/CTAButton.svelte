@@ -7,9 +7,9 @@
   function getVariantClass(variant: string) {
     switch (variant) {
       case "primary":
-        return "border-blue-600 bg-blue-600 text-white hover:bg-blue-500 hover:border-blue-500";
+        return "border-primary-600 bg-primary-600 text-white hover:bg-primary-500 hover:border-primary-500";
       case "primary-outline":
-        return "border-blue-300 text-blue-600 hover:bg-slate-100 hover:border-gray-100";
+        return "border-primary-300 text-primary-600 hover:bg-slate-100 hover:border-gray-100";
       case "secondary":
         return "text-slate-600 border-slate-300 hover:bg-slate-100";
     }
@@ -28,7 +28,7 @@
 
 <button
   class="text-sm font-medium w-full max-w-[400px] h-10 border rounded-sm {getVariantClass(
-    variant
+    variant,
   )} {disabled && disabledClasses}"
   on:click={handleClick}
   {disabled}

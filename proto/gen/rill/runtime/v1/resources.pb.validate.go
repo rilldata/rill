@@ -456,6 +456,47 @@ func (m *Resource) validate(all bool) error {
 			}
 		}
 
+	case *Resource_Theme:
+		if v == nil {
+			err := ResourceValidationError{
+				field:  "Resource",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetTheme()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Theme",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ResourceValidationError{
+						field:  "Theme",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetTheme()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ResourceValidationError{
+					field:  "Theme",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -2657,6 +2698,8 @@ func (m *MetricsViewSpec) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for DefaultTheme
 
 	if len(errors) > 0 {
 		return MetricsViewSpecMultiError(errors)
@@ -5170,6 +5213,426 @@ var _ interface {
 	ErrorName() string
 } = BucketExtractPolicyValidationError{}
 
+// Validate checks the field values on Theme with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *Theme) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on Theme with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in ThemeMultiError, or nil if none found.
+func (m *Theme) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *Theme) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if all {
+		switch v := interface{}(m.GetSpec()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeValidationError{
+					field:  "Spec",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetSpec()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeValidationError{
+				field:  "Spec",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetState()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ThemeValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ThemeValidationError{
+					field:  "State",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ThemeValidationError{
+				field:  "State",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return ThemeMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeMultiError is an error wrapping multiple validation errors returned by
+// Theme.ValidateAll() if the designated constraints aren't met.
+type ThemeMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeMultiError) AllErrors() []error { return m }
+
+// ThemeValidationError is the validation error returned by Theme.Validate if
+// the designated constraints aren't met.
+type ThemeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeValidationError) ErrorName() string { return "ThemeValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTheme.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeValidationError{}
+
+// Validate checks the field values on ThemeSpec with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ThemeSpec) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeSpec with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ThemeSpecMultiError, or nil
+// if none found.
+func (m *ThemeSpec) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeSpec) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if m.PrimaryColor != nil {
+
+		if all {
+			switch v := interface{}(m.GetPrimaryColor()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ThemeSpecValidationError{
+						field:  "PrimaryColor",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ThemeSpecValidationError{
+						field:  "PrimaryColor",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetPrimaryColor()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ThemeSpecValidationError{
+					field:  "PrimaryColor",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if m.SecondaryColor != nil {
+
+		if all {
+			switch v := interface{}(m.GetSecondaryColor()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ThemeSpecValidationError{
+						field:  "SecondaryColor",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ThemeSpecValidationError{
+						field:  "SecondaryColor",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetSecondaryColor()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ThemeSpecValidationError{
+					field:  "SecondaryColor",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ThemeSpecMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeSpecMultiError is an error wrapping multiple validation errors returned
+// by ThemeSpec.ValidateAll() if the designated constraints aren't met.
+type ThemeSpecMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeSpecMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeSpecMultiError) AllErrors() []error { return m }
+
+// ThemeSpecValidationError is the validation error returned by
+// ThemeSpec.Validate if the designated constraints aren't met.
+type ThemeSpecValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeSpecValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeSpecValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeSpecValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeSpecValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeSpecValidationError) ErrorName() string { return "ThemeSpecValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeSpecValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeSpec.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeSpecValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeSpecValidationError{}
+
+// Validate checks the field values on ThemeState with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *ThemeState) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ThemeState with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in ThemeStateMultiError, or
+// nil if none found.
+func (m *ThemeState) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ThemeState) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ThemeStateMultiError(errors)
+	}
+
+	return nil
+}
+
+// ThemeStateMultiError is an error wrapping multiple validation errors
+// returned by ThemeState.ValidateAll() if the designated constraints aren't met.
+type ThemeStateMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ThemeStateMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ThemeStateMultiError) AllErrors() []error { return m }
+
+// ThemeStateValidationError is the validation error returned by
+// ThemeState.Validate if the designated constraints aren't met.
+type ThemeStateValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ThemeStateValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ThemeStateValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ThemeStateValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ThemeStateValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ThemeStateValidationError) ErrorName() string { return "ThemeStateValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ThemeStateValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sThemeState.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ThemeStateValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ThemeStateValidationError{}
+
 // Validate checks the field values on Schedule with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -5843,6 +6306,8 @@ func (m *MetricsViewSpec_DimensionV2) validate(all bool) error {
 	// no validation rules for Name
 
 	// no validation rules for Column
+
+	// no validation rules for Expression
 
 	// no validation rules for Label
 

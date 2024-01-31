@@ -6,13 +6,13 @@ import (
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func ProjectCmd(cfg *config.Config) *cobra.Command {
+func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
+	cfg := ch.Config
 	projectCmd := &cobra.Command{
 		Use:               "project",
 		Short:             "Manage projects",
@@ -20,18 +20,19 @@ func ProjectCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	projectCmd.PersistentFlags().StringVar(&cfg.Org, "org", cfg.Org, "Organization Name")
-	projectCmd.AddCommand(ShowCmd(cfg))
-	projectCmd.AddCommand(StatusCmd(cfg))
-	projectCmd.AddCommand(DescribeCmd(cfg))
-	projectCmd.AddCommand(EditCmd(cfg))
-	projectCmd.AddCommand(DeleteCmd(cfg))
-	projectCmd.AddCommand(ListCmd(cfg))
-	projectCmd.AddCommand(ReconcileCmd(cfg))
-	projectCmd.AddCommand(RefreshCmd(cfg))
-	projectCmd.AddCommand(ResetCmd(cfg))
-	projectCmd.AddCommand(JwtCmd(cfg))
-	projectCmd.AddCommand(RenameCmd(cfg))
-	projectCmd.AddCommand(LogsCmd(cfg))
+	projectCmd.AddCommand(ShowCmd(ch))
+	projectCmd.AddCommand(StatusCmd(ch))
+	projectCmd.AddCommand(DescribeCmd(ch))
+	projectCmd.AddCommand(EditCmd(ch))
+	projectCmd.AddCommand(DeleteCmd(ch))
+	projectCmd.AddCommand(ListCmd(ch))
+	projectCmd.AddCommand(ReconcileCmd(ch))
+	projectCmd.AddCommand(RefreshCmd(ch))
+	projectCmd.AddCommand(ResetCmd(ch))
+	projectCmd.AddCommand(JwtCmd(ch))
+	projectCmd.AddCommand(RenameCmd(ch))
+	projectCmd.AddCommand(LogsCmd(ch))
+
 	return projectCmd
 }
 

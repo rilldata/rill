@@ -34,14 +34,14 @@
     $runtime?.instanceId,
     objectName,
     columnName,
-    enableProfiling
+    enableProfiling,
   );
 
   $: columnCardinality = getCountDistinct(
     $runtime?.instanceId,
     objectName,
     columnName,
-    enableProfiling
+    enableProfiling,
   );
 
   $: topK = getTopK(
@@ -49,7 +49,7 @@
     objectName,
     columnName,
     enableProfiling,
-    active
+    active,
   );
 
   function toggleColumnProfile() {
@@ -92,7 +92,10 @@
   <div
     class="pl-10 pr-4 py-4"
     slot="details"
-    style:min-height="{Math.min(topKLimit, $columnCardinality?.cardinality) *
+    style:min-height="{Math.min(
+      topKLimit,
+      $columnCardinality?.cardinality ?? Infinity,
+    ) *
       18 +
       42 || 250}px"
   >

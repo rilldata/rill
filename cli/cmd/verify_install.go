@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/telemetry"
 	"github.com/spf13/cobra"
 )
 
-func verifyInstallCmd(cfg *config.Config) *cobra.Command {
+func verifyInstallCmd(ch *cmdutil.Helper) *cobra.Command {
+	cfg := ch.Config
+
 	cmd := &cobra.Command{
 		Use:    "verify-install",
 		Short:  "Verify installation (called by install script)",

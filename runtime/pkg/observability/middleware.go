@@ -10,7 +10,6 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -26,16 +25,6 @@ import (
 // Middleware is HTTP middleware that combines all observability-related middlewares.
 func Middleware(serviceName string, logger *zap.Logger, next http.Handler) http.Handler {
 	return TracingMiddleware(LoggingMiddleware(logger, next), serviceName)
-}
-
-// TracingUnaryServerInterceptor is a gRPC unary interceptor that adds tracing to the request.
-func TracingUnaryServerInterceptor() grpc.UnaryServerInterceptor {
-	return otelgrpc.UnaryServerInterceptor()
-}
-
-// TracingStreamServerInterceptor is the streaming equivalent of TracingUnaryServerInterceptor
-func TracingStreamServerInterceptor() grpc.StreamServerInterceptor {
-	return otelgrpc.StreamServerInterceptor()
 }
 
 // TracingMiddleware is HTTP middleware that adds tracing to the request.
@@ -246,14 +235,14 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 				zap.Int("http.status", httpStatus),
 				zap.Duration("duration", time.Since(start)),
 			)
-			logger.Info("http request finished", fields...)
+			logger.Debug("http request finished", fields...)
 		}()
 
 		// Add log fields to context
 		r = r.WithContext(contextWithLogFields(r.Context(), &fields))
 
 		// Print start message
-		logger.Info("http request started", fields...)
+		logger.Debug("http request started", fields...)
 
 		next.ServeHTTP(&wrapped, r)
 	})

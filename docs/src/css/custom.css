@@ -68,3 +68,7 @@
   border-radius: var(--ifm-global-radius);
   padding: 0px 20px 20px 20px;
 }
+
+.hidden {
+  display: none !important;
+}

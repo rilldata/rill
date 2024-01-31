@@ -12,6 +12,7 @@
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
+  import { isClipboardApiSupported } from "../../../../lib/actions/shift-click-action";
   import TimestampSpark from "./TimestampSpark.svelte";
 
   export let xAccessor: string;
@@ -31,8 +32,8 @@
   // this determines the "shake" of the pan label when panning.
   export let tooltipPanShakeAmount = 0;
   // the window bounds for the spark within the zoom row of the tooltip.
-  export let zoomWindowXMin: Date = undefined;
-  export let zoomWindowXMax: Date = undefined;
+  export let zoomWindowXMin: Date | undefined = undefined;
+  export let zoomWindowXMax: Date | undefined = undefined;
 </script>
 
 <TooltipContent>
@@ -55,17 +56,19 @@
     {/if}
   </div>
   <TooltipShortcutContainer>
-    <div>
-      <StackingWord key="shift">Copy</StackingWord> to clipboard
-    </div>
-    <Shortcut>
-      <span
-        style="
+    {#if isClipboardApiSupported()}
+      <div>
+        <StackingWord key="shift">Copy</StackingWord> to clipboard
+      </div>
+      <Shortcut>
+        <span
+          style="
           font-family: var(--system); 
           font-size: 11.5px;
         ">⇧</span
-      > + Click
-    </Shortcut>
+        > + Click
+      </Shortcut>
+    {/if}
     <div>
       <div style:transform="translateX({tooltipPanShakeAmount}px)">Pan</div>
     </div>
@@ -74,14 +77,11 @@
       Zoom
       <div style:display="inline-grid">
         <TimestampSpark
-          area
-          tweenIn
           {data}
           {xAccessor}
           {yAccessor}
           {width}
           {height}
-          buffer={0}
           left={0}
           right={0}
           top={0}

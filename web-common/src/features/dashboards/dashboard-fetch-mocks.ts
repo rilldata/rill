@@ -4,8 +4,8 @@ import type {
   V1MetricsViewSpec,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
-import { wait } from "@testing-library/user-event/dist/utils";
 import { afterAll, beforeAll, vi } from "vitest";
+import { asyncWait } from "../../lib/waitUtils";
 
 export class DashboardFetchMocks {
   private responses = new Map<string, any>();
@@ -43,15 +43,14 @@ export class DashboardFetchMocks {
   }
 
   public mockTimeRangeSummary(
-    tableName: string,
-    columnName: string,
-    resp: V1TimeRangeSummary
+    metricsViewName: string,
+    resp: V1TimeRangeSummary,
   ) {
     this.responses.set(
-      `queries__time-range-summary__${tableName}__${columnName}`,
+      `queries__metrics-views__time-range-summary__${metricsViewName}`,
       {
         timeRangeSummary: resp,
-      }
+      },
     );
   }
 
@@ -70,14 +69,7 @@ export class DashboardFetchMocks {
         break;
 
       case "queries":
-        key =
-          type +
-          "__" +
-          parts[0] +
-          "__" +
-          parts[2] +
-          "__" +
-          (u.searchParams.get("columnName") ?? "");
+        key = type + "__" + parts[0] + "__" + parts[2] + "__" + parts[1];
         break;
 
       case "metrics-views":
@@ -89,7 +81,8 @@ export class DashboardFetchMocks {
         break;
     }
 
-    await wait(1);
+    // wait a tick
+    await asyncWait(1);
 
     return {
       ready: true,

@@ -1,11 +1,17 @@
 <script lang="ts">
-  import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
-  import { createEventDispatcher, getContext } from "svelte";
-  import type { PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
-  import type { Writable } from "svelte/store";
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
+  import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
+  import type { PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
+  import {
+    ScrubArea0Color,
+    ScrubArea1Color,
+    ScrubArea2Color,
+    ScrubBoxColor,
+  } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { getBisectedTimeFromCordinates } from "@rilldata/web-common/features/dashboards/time-series/utils";
+  import { createEventDispatcher, getContext } from "svelte";
+  import type { Writable } from "svelte/store";
 
   export let start;
   export let stop;
@@ -44,10 +50,10 @@
   $: cursorClass = isMovingScrub
     ? "cursor-grabbing"
     : isInsideScrub
-    ? "cursor-grab"
-    : isScrubbing || isOverStart || isOverEnd
-    ? "cursor-ew-resize"
-    : "";
+      ? "cursor-grab"
+      : isScrubbing || isOverStart || isOverEnd
+        ? "cursor-ew-resize"
+        : "";
 
   export let preventScrubReset;
   $: preventScrubReset = justCreatedScrub || isScrubbing || isResizing;
@@ -82,7 +88,7 @@
       $xScale,
       labelAccessor,
       data,
-      timeGrainLabel
+      timeGrainLabel,
     );
 
     let stopX = event.detail?.stop?.x;
@@ -91,7 +97,7 @@
       $xScale,
       labelAccessor,
       data,
-      timeGrainLabel
+      timeGrainLabel,
     );
 
     if (hasSubrangeSelected && (isResizing || isMovingScrub)) {
@@ -126,7 +132,7 @@
           $xScale,
           labelAccessor,
           data,
-          timeGrainLabel
+          timeGrainLabel,
         );
 
         const newEnd = getBisectedTimeFromCordinates(
@@ -134,7 +140,7 @@
           $xScale,
           labelAccessor,
           data,
-          timeGrainLabel
+          timeGrainLabel,
         );
 
         const insideBounds = $xScale(newStart) >= 0 && $xScale(newEnd) >= 0;
@@ -205,7 +211,7 @@
 </script>
 
 {#if start && stop}
-  <WithGraphicContexts let:xScale let:yScale>
+  <WithGraphicContexts let:xScale>
     {@const xStart = xScale(Math.min(start, stop))}
     {@const xEnd = xScale(Math.max(start, stop))}
     <g>
@@ -218,7 +224,7 @@
           cy={y1}
           r={3}
           paint-order="stroke"
-          class="fill-blue-700"
+          class="fill-primary-700"
           stroke="white"
           stroke-width="3"
         />
@@ -230,7 +236,7 @@
           cy={y1}
           r={3}
           paint-order="stroke"
-          class="fill-blue-700"
+          class="fill-primary-700"
           stroke="white"
           stroke-width="3"
         />
@@ -240,7 +246,7 @@
         x2={xStart}
         {y1}
         {y2}
-        stroke="#60A5FA"
+        stroke={ScrubBoxColor}
         stroke-width={strokeWidth}
       />
       <line
@@ -248,11 +254,15 @@
         x2={xEnd}
         {y1}
         {y2}
-        stroke="#60A5FA"
+        stroke={ScrubBoxColor}
         stroke-width={strokeWidth}
       />
     </g>
-    <g on:mouseup={() => onMouseUp()} opacity={isScrubbing ? "0.4" : "0.2"}>
+    <g
+      role="presentation"
+      opacity={isScrubbing ? "0.4" : "0.2"}
+      on:mouseup={() => onMouseUp()}
+    >
       <rect
         class:rect-shadow={isScrubbing}
         x={Math.min(xStart, xEnd)}
@@ -266,10 +276,10 @@
 {/if}
 
 <defs>
-  <linearGradient id="scrubbing-gradient" gradientUnits="userSpaceOnUse">
-    <stop stop-color="#558AFF" />
-    <stop offset="0.36" stop-color="#4881FF" />
-    <stop offset="1" stop-color="#2563EB" />
+  <linearGradient gradientUnits="userSpaceOnUse" id="scrubbing-gradient">
+    <stop stop-color={ScrubArea0Color} />
+    <stop offset="0.36" stop-color={ScrubArea1Color} />
+    <stop offset="1" stop-color={ScrubArea2Color} />
   </linearGradient>
 </defs>
 
