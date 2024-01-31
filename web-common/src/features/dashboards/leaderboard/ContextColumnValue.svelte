@@ -45,19 +45,12 @@
         if (!element) return;
         const width = element.getBoundingClientRect().width;
 
-        // // Conditional, separate store for widths
         if (
           width > $contextColumnWidths[$contextColumn] &&
           width < CONTEXT_COL_MAX_WIDTH
         ) {
           $contextColumnWidths[$contextColumn] = width;
         }
-
-        // NOT conditional, separate store for widths
-        // $contextColumnWidths[$contextColumn] = Math.min(
-        //   Math.max(width, $contextColumnWidths[$contextColumn]),
-        //   CONTEXT_COL_MAX_WIDTH,
-        // );
       }, 17);
     }
   }
