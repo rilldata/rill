@@ -148,6 +148,17 @@ export function getFormattedHeaderValues(
   };
 }
 
+export function getMeasureCountInColumn(
+  pivot: PivotState,
+  allMeasures: MetricsViewSpecMeasureV2[],
+) {
+  const { columns } = pivot;
+
+  return columns.filter(
+    (rowName) => allMeasures.findIndex((m) => m?.name === rowName) > -1,
+  ).length;
+}
+
 /**
  * Returns a sorted data array by appending the missing values in
  * sorted row axes data

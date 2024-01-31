@@ -59,6 +59,7 @@
   .header {
     @apply flex flex-col;
     border-bottom: 1px solid #ddd;
+    @apply bg-white;
   }
   .header-row {
     @apply flex items-center gap-x-2 px-2 py-1;

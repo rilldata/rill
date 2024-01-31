@@ -45,7 +45,7 @@
 </script>
 
 <div
-  class={listClasses}
+  class="{listClasses} rounded-sm"
   use:dndzone={{ items, flipDurationMs }}
   on:consider={handleConsider}
   on:finalize={handleFinalize}
@@ -73,5 +73,9 @@
 <style type="postcss">
   .item {
     @apply text-center h-6;
+  }
+
+  div {
+    outline: none !important;
   }
 </style>
