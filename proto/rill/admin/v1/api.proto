@@ -1066,6 +1066,7 @@ message GetReportMetaRequest {
   string branch = 2;
   string report = 3;
   map<string, string> annotations = 4;
+  google.protobuf.Timestamp execution_time = 5;
 }
 
 message GetReportMetaResponse {

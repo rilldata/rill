@@ -33,6 +33,7 @@ export type AdminServiceGetReportMetaParams = {
   branch?: string;
   report?: string;
   annotations?: string;
+  executionTime?: string;
 };
 
 export type AdminServicePullVirtualRepoParams = {
