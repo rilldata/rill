@@ -74,4 +74,8 @@
   .item {
     @apply text-center h-6;
   }
+
+  div {
+    outline: none !important;
+  }
 </style>
