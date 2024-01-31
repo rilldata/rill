@@ -65,7 +65,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		olapConfig["memory_limit_gb"] = strconv.Itoa(alloc.MemoryGB)
 		olapConfig["storage_limit_bytes"] = strconv.FormatInt(alloc.StorageBytes, 10)
 		embedCatalog = false
-	case "duckdb":
+	case "duckdb", "duckdb-ext-storage": // duckdb-ext-storage is for bwd compatibility
 		if opts.ProdOLAPDSN != "" {
 			return nil, fmt.Errorf("passing a DSN is not allowed for driver 'duckdb'")
 		}
