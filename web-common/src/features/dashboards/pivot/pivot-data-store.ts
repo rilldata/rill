@@ -152,8 +152,7 @@ export function createTableCellQuery(
     ctx,
     config.measureNames,
     dimensionBody,
-    filterForInitialTable,
-    config.whereFilter,
+    filterForInitialTable, // TODO: merge with global filter
     sortBy,
     "10000",
   );
@@ -222,7 +221,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
       ctx,
       config,
       colDimensionNames,
-      config.filters,
+      config.whereFilter,
     );
 
     return derived(
@@ -239,7 +238,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         }
         const anchorDimension = rowDimensionNames[0];
 
-        const { filters, sortPivotBy, timeRange } = getSortForAccessor(
+        const { where, sortPivotBy, timeRange } = getSortForAccessor(
           anchorDimension,
           config,
           columnDimensionAxes?.data,
@@ -251,7 +250,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           ctx,
           config,
           rowDimensionNames.slice(0, 1),
-          filters,
+          where,
           sortPivotBy,
           timeRange,
         );
@@ -264,7 +263,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           ctx,
           config,
           rowDimensionNames.slice(0, 1),
-          config.filters,
+          config.whereFilter,
         );
 
         /**
@@ -373,7 +372,6 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   ctx,
                   config.measureNames,
                   [],
-                  config.filters,
                   config.whereFilter,
                   [],
                   "10000", // Using 10000 for cache hit

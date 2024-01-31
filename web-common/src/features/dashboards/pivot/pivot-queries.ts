@@ -3,6 +3,7 @@ import type {
   PivotDataStoreConfig,
 } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
@@ -10,7 +11,6 @@ import {
   V1MetricsViewAggregationDimension,
   V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewAggregationSort,
-  V1MetricsViewFilter,
   createQueryServiceMetricsViewAggregation,
   type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
@@ -24,7 +24,6 @@ export function createPivotAggregationRowQuery(
   ctx: StateManagers,
   measures: string[],
   dimensions: V1MetricsViewAggregationDimension[],
-  filters: V1MetricsViewFilter,
   whereFilter: V1Expression,
   sort: V1MetricsViewAggregationSort[] = [],
   limit = "100",
@@ -49,7 +48,8 @@ export function createPivotAggregationRowQuery(
         {
           measures: measures.map((measure) => ({ name: measure })),
           dimensions,
-          filter: filters,
+          where: sanitiseExpression(whereFilter),
+          // TODO: having filter
           timeStart: timeRange?.start
             ? timeRange.start
             : timeControls.timeStart,
@@ -57,7 +57,6 @@ export function createPivotAggregationRowQuery(
           sort,
           limit,
           offset,
-          // where: whereFilter,
         },
         {
           query: {
@@ -77,7 +76,7 @@ export function getAxisForDimensions(
   ctx: StateManagers,
   config: PivotDataStoreConfig,
   dimensions: string[],
-  filters: V1MetricsViewFilter,
+  whereFilter: V1Expression,
   sortBy: V1MetricsViewAggregationSort[] = [],
   timeRange: TimeRangeString | undefined = undefined,
 ): Readable<PivotAxesData | null> {
@@ -111,8 +110,7 @@ export function getAxisForDimensions(
         ctx,
         measures,
         [dimension],
-        filters,
-        config.whereFilter,
+        whereFilter, // TODO: merge with global
         sortBy,
         "100",
         "0",

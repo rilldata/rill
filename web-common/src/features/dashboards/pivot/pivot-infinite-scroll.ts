@@ -1,4 +1,5 @@
-import type { MetricsViewFilterCond } from "@rilldata/web-common/runtime-client";
+import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 const NUM_COLUMNS_PER_PAGE = 50;
 
@@ -98,7 +99,7 @@ export function getColumnFiltersForPage(
   colDimensionAxes: Record<string, string[]> = {},
   colDimensionPageNumber: number,
   numMeasures: number,
-) {
+): V1Expression[] {
   if (!colDimensionNames.length || numMeasures == 0) return [];
 
   const effectiveColumnsPerPage = Math.floor(
@@ -115,14 +116,10 @@ export function getColumnFiltersForPage(
     effectiveColumnsPerPage,
   );
 
-  const colFilters: MetricsViewFilterCond[] = [];
-
-  Object.entries(pageGroups).forEach(([colDimensionName, values]) => {
-    colFilters.push({
-      name: colDimensionNames[parseInt(colDimensionName)],
-      in: Array.from(values),
-    });
-  });
-
-  return colFilters;
+  return Object.entries(pageGroups).map(([colDimensionId, values]) =>
+    createInExpression(
+      colDimensionNames[parseInt(colDimensionId)],
+      Array.from(values),
+    ),
+  );
 }
