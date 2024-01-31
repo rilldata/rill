@@ -172,7 +172,7 @@ export function queryExpandedRowMeasureValues(
 
       const filterForRowDimensionAxes = createAndExpression(rowNestFilters);
 
-      const { where, sortPivotBy } = getSortForAccessor(
+      const { sortPivotBy } = getSortForAccessor(
         anchorDimension,
         config,
         columnDimensionAxesData,
@@ -183,13 +183,15 @@ export function queryExpandedRowMeasureValues(
         timeFilters,
       );
 
-      const mergeRowAndSortFilters = mergeFilters(
-        filterForRowDimensionAxes,
-        where,
-      );
+      // TODO: Not merging sort now as would lead to empty data
+      // on expansion for parent rows with no data for the sorted column
+      // const mergeRowAndSortFilters = mergeFilters(
+      //   filterForRowDimensionAxes,
+      //   sortWhere,
+      // );
 
       const allMergedFilters = mergeFilters(
-        mergeRowAndSortFilters,
+        filterForRowDimensionAxes,
         config.whereFilter,
       );
 

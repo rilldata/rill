@@ -49,7 +49,12 @@ export function mergeFilters(
       return;
     if (!inExprMap.has(ident)) return;
 
-    // take intersection of IN expressions
+    /**
+     * We take an intersection of the values in the IN expressions.
+     * This is to make sure sorting, row expansion filter all work as
+     * expected along with global filters. Otherwise, we would get data
+     * for a larger subset than intended
+     */
     const inExpr = inExprMap.get(ident);
     const inExprVals = inExpr?.cond?.exprs?.slice(1) ?? [];
     const exprVals = e.cond?.exprs?.slice(1) ?? [];
