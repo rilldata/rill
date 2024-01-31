@@ -274,18 +274,29 @@ message QueryResult {
 message MetricsViewAggregationRequest {
   string instance_id = 1;
   string metrics_view = 2 [(validate.rules).string.min_len = 1];
+  // Required
   repeated MetricsViewAggregationDimension dimensions = 3;
+  // Required
   repeated MetricsViewAggregationMeasure measures = 4;
+  // Optional
   repeated MetricsViewAggregationSort sort = 5;
+  // Optional
   TimeRange time_range = 12;
   google.protobuf.Timestamp time_start = 6; // Deprecated in favor of time_range
   google.protobuf.Timestamp time_end = 7; // Deprecated in favor of time_range
+  // Optional. List of dimensions/measures
   repeated string pivot_on = 15;
+  // Optional
   Expression where = 8;
+  // Optional
   Expression having = 13;
+  // Optional
   int64 limit = 9 [(validate.rules).int64.gte = 0];
+  // Optional
   int64 offset = 10 [(validate.rules).int64.gte = 0];
+  // Optional
   int32 priority = 11;
+  // Optional
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
 }
 
@@ -295,19 +306,27 @@ message MetricsViewAggregationResponse {
 }
 
 message MetricsViewAggregationDimension {
+  // Required
   string name = 1;
+  // Optional
   TimeGrain time_grain = 2;
+  // Optional. Defaults to UTC
   string time_zone = 3;
 }
 
 message MetricsViewAggregationMeasure {
+  // Required
   string name = 1;
+  // Optional
   BuiltinMeasure builtin_measure = 2;
+  // Required if BUILTIN_MEASURE_COUNT_DISTINCT
   repeated google.protobuf.Value builtin_measure_args = 3;
 }
 
 message MetricsViewAggregationSort {
+  // Required. Dimension or measure name
   string name = 1;
+  // Optional
   bool desc = 2;
 }
 
@@ -343,19 +362,32 @@ message MetricsViewToplistResponse {
 message MetricsViewComparisonRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
-  MetricsViewAggregationDimension dimension = 3;
-  repeated MetricsViewAggregationMeasure measures = 4;
+  // Required
+  MetricsViewAggregationDimension dimension = 3 [(validate.rules).repeated.min_items = 1];
+  // Required
+  repeated MetricsViewAggregationMeasure measures = 4 [(validate.rules).repeated.min_items = 1];
+  // Required
   repeated string comparison_measures = 16;
-  repeated MetricsViewComparisonSort sort = 5;
+  repeated MetricsViewComparisonSort sort = 5 [(validate.rules).repeated.min_items = 1];
+  // Optional
   TimeRange time_range = 6;
+  // Optional, if omitted than the request does the toplist without a comparison
   TimeRange comparison_time_range = 7;
+  // Optional
   Expression where = 8;
+  // Optional
   Expression having = 12;
+  // Optional
   repeated MetricsViewComparisonMeasureAlias aliases = 15;
+  // Optional
   int64 limit = 9 [(validate.rules).int64.gte = 0];
+  // Optional
   int64 offset = 10 [(validate.rules).int64.gte = 0];
+  // Optional
   int32 priority = 11;
+  // Optional, defaults to false
   bool exact = 13;
+  // Optional
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
 }
 
@@ -364,12 +396,18 @@ message MetricsViewComparisonResponse {
   repeated MetricsViewComparisonRow rows = 1;
 }
 
+// 2 of the (start, end, iso_duration) should be set
 message TimeRange {
+  // Optional. Defaults to min
   google.protobuf.Timestamp start = 1;
+  // Optional. Defaults to max
   google.protobuf.Timestamp end = 2;
+  // Optional, ie PT1M
   string iso_duration = 3;
+  // Optional, ie PT1M
   string iso_offset = 4;
   TimeGrain round_to_grain = 5;
+  // Optional. Defaults to UTC
   string time_zone = 6;
 }
 
@@ -391,7 +429,9 @@ enum MetricsViewComparisonMeasureType {
 }
 
 message MetricsViewComparisonSort {
+  // Required
   string name = 1 [(validate.rules).string.min_len = 1];
+  // Optional, defaults to false
   bool desc = 2;
   MetricsViewComparisonSortType type = 3; // Deprecated. Present for backwards compatibility for older reports
   MetricsViewComparisonMeasureType sort_type = 4;
@@ -419,15 +459,22 @@ message MetricsViewComparisonMeasureAlias {
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  // Required either measure_names or inline_measures
   repeated string measure_names = 3 [(validate.rules).repeated.min_items = 1];
   repeated InlineMeasure inline_measures = 9;
+  // Optional. Defaults to min
   google.protobuf.Timestamp time_start = 4;
+  // Optional. Defaults to max
   google.protobuf.Timestamp time_end = 5;
+  // Required
   TimeGrain time_granularity = 6 [(validate.rules).enum = {
     not_in: [0]
   }];
+  // Optional
   Expression where = 7;
+  // Optional
   Expression having = 11;
+  // Optional. Defaults to UTC
   string time_zone = 10;
   int32 priority = 8;
   MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
@@ -441,10 +488,14 @@ message MetricsViewTimeSeriesResponse {
 message MetricsViewTotalsRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  // Required either measure_names or inline_measures
   repeated string measure_names = 3 [(validate.rules).repeated.min_items = 1];
   repeated InlineMeasure inline_measures = 9;
+  // Optional. Defaults to min
   google.protobuf.Timestamp time_start = 4;
+  // Optional. Defaults to max
   google.protobuf.Timestamp time_end = 5;
+  // Optional
   Expression where = 7;
   int32 priority = 8;
   MetricsViewFilter filter = 10; // Deprecated. should be removed once UI is moved to use new filters
@@ -458,14 +509,22 @@ message MetricsViewTotalsResponse {
 message MetricsViewRowsRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  // Optional, defaults to min
   google.protobuf.Timestamp time_start = 3;
+  // Optional, defaults to max
   google.protobuf.Timestamp time_end = 4;
+  // Optional, doesn't prepend the timestamp rollup column if ommitted
   TimeGrain time_granularity = 10;
+  // Optional
   Expression where = 5;
+  // Optional
   repeated MetricsViewSort sort = 6;
+  // Optional
   int32 limit = 7 [(validate.rules).int32.gte = 0];
+  // Optional
   int64 offset = 8 [(validate.rules).int64.gte = 0];
   int32 priority = 9;
+  // Optional, defaults to UTC
   string time_zone = 11;
   MetricsViewFilter filter = 12; // Deprecated. should be removed once UI is moved to use new filters
 }
@@ -476,7 +535,9 @@ message MetricsViewRowsResponse {
 }
 
 message MetricsViewSort {
+  // Required
   string name = 1 [(validate.rules).string.min_len = 1];
+  // Optional, defaults to false
   bool ascending = 2;
 }
 
@@ -517,20 +578,27 @@ message MetricsViewTimeRangeResponse {
 
 message ColumnRollupIntervalRequest {
   string instance_id = 1;
+  // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
+  // Required
   string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
 
 message ColumnRollupIntervalResponse {
+  // Minimum timestamp
   google.protobuf.Timestamp start = 1;
+  // Maximum timestamp
   google.protobuf.Timestamp end = 2;
+  // Human friendly time grain that is still bounded by (min, max), ie 'minute' time grain for an hour time range
   TimeGrain interval = 3;
 }
 
 message ColumnTopKRequest {
   string instance_id = 1;
+  // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
+  // Required
   string column_name = 3 [(validate.rules).string.min_len = 1];
   string agg = 4; // default is count(*)
   int32 k = 5; // default is 50
@@ -558,7 +626,9 @@ message TopK {
 
 message ColumnNullCountRequest {
   string instance_id = 1;
+  // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
+  // Required
   string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
@@ -569,7 +639,9 @@ message ColumnNullCountResponse {
 
 message ColumnDescriptiveStatisticsRequest {
   string instance_id = 1;
+  // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
+  // Required
   string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
@@ -620,7 +692,9 @@ message NumericOutliers {
 
 message ColumnTimeGrainRequest {
   string instance_id = 1;
+  // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
+  // Required
   string column_name = 3 [(validate.rules).string.min_len = 1];
   int32 priority = 4;
 }
@@ -693,19 +767,27 @@ message ColumnCardinalityResponse {
 
 message ColumnTimeSeriesRequest {
   string instance_id = 1;
+  // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
+  // Optional. Defaults to [count(*)]
   repeated BasicMeasure measures = 3 [(validate.rules).repeated.min_items = 1];
+  // Required
   string timestamp_column_name = 4 [(validate.rules).string.min_len = 1];
+  // Optional. Defaults to [min, max)
   TimeSeriesTimeRange time_range = 5;
+  // Optional. Spark is not calculated if ommitted. See http://www.vldb.org/pvldb/vol7/p797-jugel.pdf
   int32 pixels = 7 [(validate.rules).int32.gte = 0];
+  // Unused
   int32 sample_size = 8 [(validate.rules).int32.gte = 0];
   int32 priority = 9;
+  // Optional. Defaults to UTC
   string time_zone = 10;
   message BasicMeasure {
+    // Unused
     string id = 1;
-    // mandatory user defined metadata
+    // Required. IE 'count(*)'
     string expression = 2 [(validate.rules).string.min_len = 1];
-    // optional user defined metadata
+    // Optional. Defaults to 'measure_{i}', ie measure_0
     string sql_name = 3;
   }
 }
@@ -714,9 +796,13 @@ message ColumnTimeSeriesResponse {
   TimeSeriesResponse rollup = 1;
 }
 
+// Either [start, end] or interval should be specified
 message TimeSeriesTimeRange {
+  // Optional. Defaults to min
   google.protobuf.Timestamp start = 2;
+  // Optional. Defaults to max
   google.protobuf.Timestamp end = 3;
+  // Optional. Defaults to the most human friendly for [min, max) range, ie 'minute' for hour range
   TimeGrain interval = 4 [(validate.rules).enum.defined_only = true];
 }
 
