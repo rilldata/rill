@@ -212,12 +212,17 @@ export function reconcileMissingDimensionValues(
  * in the cache
  */
 export function getPivotConfigKey(config: PivotDataStoreConfig) {
-  const { colDimensionNames, rowDimensionNames, measureNames, filters, pivot } =
-    config;
+  const {
+    colDimensionNames,
+    rowDimensionNames,
+    measureNames,
+    whereFilter,
+    pivot,
+  } = config;
 
   const { sorting } = pivot;
   const sortingKey = JSON.stringify(sorting);
-  const filterKey = JSON.stringify(filters);
+  const filterKey = JSON.stringify(whereFilter);
   const dimsAndMeasures = rowDimensionNames
     .concat(measureNames, colDimensionNames)
     .join("_");
