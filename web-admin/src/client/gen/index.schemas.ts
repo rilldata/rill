@@ -187,6 +187,10 @@ export type AdminServiceCreateReportBodyBody = {
   options?: V1ReportOptions;
 };
 
+export type AdminServiceCreateAlertBodyBody = {
+  options?: V1AlertOptions;
+};
+
 export type AdminServiceAddOrganizationMemberBodyBody = {
   email?: string;
   role?: string;
@@ -263,6 +267,10 @@ export interface V1UpdateOrganizationResponse {
 }
 
 export interface V1UnsubscribeReportResponse {
+  [key: string]: any;
+}
+
+export interface V1UnsubscribeAlertResponse {
   [key: string]: any;
 }
 
@@ -445,6 +453,8 @@ export interface V1ProjectPermissions {
   manageProjectMembers?: boolean;
   createReports?: boolean;
   manageReports?: boolean;
+  createAlerts?: boolean;
+  manageAlerts?: boolean;
 }
 
 export type V1ProjectAnnotations = { [key: string]: string };
@@ -651,6 +661,10 @@ export interface V1GetBookmarkResponse {
   bookmark?: V1Bookmark;
 }
 
+export interface V1GetAlertYAMLResponse {
+  yaml?: string;
+}
+
 export type V1GetAlertMetaResponseQueryForAttributes = { [key: string]: any };
 
 export interface V1GetAlertMetaResponse {
@@ -660,6 +674,10 @@ export interface V1GetAlertMetaResponse {
 }
 
 export interface V1GenerateReportYAMLResponse {
+  yaml?: string;
+}
+
+export interface V1GenerateAlertYAMLResponse {
   yaml?: string;
 }
 
@@ -675,6 +693,10 @@ export const V1ExportFormat = {
 } as const;
 
 export interface V1EditReportResponse {
+  [key: string]: any;
+}
+
+export interface V1EditAlertResponse {
   [key: string]: any;
 }
 
@@ -718,6 +740,10 @@ export interface V1DeleteOrganizationResponse {
   [key: string]: any;
 }
 
+export interface V1DeleteAlertResponse {
+  [key: string]: any;
+}
+
 export interface V1CreateWhitelistedDomainResponse {
   [key: string]: any;
 }
@@ -754,6 +780,10 @@ export interface V1CreateBookmarkRequest {
   projectId?: string;
 }
 
+export interface V1CreateAlertResponse {
+  name?: string;
+}
+
 export interface V1Bookmark {
   id?: string;
   displayName?: string;
@@ -763,6 +793,16 @@ export interface V1Bookmark {
   userId?: string;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1AlertOptions {
+  title?: string;
+  intervalDuration?: string;
+  queryName?: string;
+  queryArgsJson?: string;
+  recipients?: string[];
+  emailRenotify?: boolean;
+  emailRenotifyAfterSeconds?: number;
 }
 
 export interface V1AddProjectMemberResponse {
