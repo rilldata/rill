@@ -2,7 +2,7 @@ import type { CompoundQueryResult } from "@rilldata/web-common/features/compound
 import { getSortType } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
@@ -104,7 +104,7 @@ export function getDashboardStateForReport(
 
   return derived(
     [
-      useMetaQuery(get(runtime).instanceId, metricsViewName),
+      useMetricsView(get(runtime).instanceId, metricsViewName),
       // TODO: handle non-timestamp dashboards
       createQueryServiceMetricsViewTimeRange(
         get(runtime).instanceId,

@@ -37,12 +37,7 @@
   <CtaContentContainer>
     {#if $dashboardStateForReport.isFetching}
       <div class="h-36 mt-10">
-        <Spinner
-          bg="linear-gradient(90deg, #22D3EE -0.5%, #6366F1 98.5%)"
-          status={EntityStatus.Running}
-          size="7rem"
-          duration={725}
-        />
+        <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
       </div>
     {:else if $dashboardStateForReport.error}
       <div class="flex flex-col gap-y-2">
