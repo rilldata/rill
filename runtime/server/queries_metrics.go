@@ -173,22 +173,6 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		return nil, ErrForbidden
 	}
 
-	mv, security, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
-	if err != nil {
-		return nil, err
-	}
-
-	if !checkFieldAccess(req.Dimension.Name, security) {
-		return nil, ErrForbidden
-	}
-
-	// validate measures access
-	for _, m := range req.Measures {
-		if !checkFieldAccess(m.Name, security) {
-			return nil, ErrForbidden
-		}
-	}
-
 	if req.Limit == 0 {
 		req.Limit = 100
 	}
@@ -205,12 +189,11 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		Sort:                req.Sort,
 		Where:               req.Where,
 		Having:              req.Having,
-		MetricsView:         mv,
-		ResolvedMVSecurity:  security,
 		Exact:               req.Exact,
 		Filter:              req.Filter,
+		SecurityAttributes:  auth.GetClaims(ctx).Attributes(),
 	}
-	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}

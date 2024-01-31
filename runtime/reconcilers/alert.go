@@ -715,18 +715,57 @@ func buildRuntimeQuery(q *runtimev1.Query, attrs map[string]any) (runtime.Query,
 			PivotOn:            req.PivotOn,
 			SecurityAttributes: attrs,
 		}, nil
+	case *runtimev1.Query_MetricsViewComparisonRequest:
+		req := r.MetricsViewComparisonRequest
+		return &queries.MetricsViewComparison{
+			MetricsViewName:     req.MetricsViewName,
+			DimensionName:       req.Dimension.Name,
+			Measures:            req.Measures,
+			ComparisonMeasures:  req.ComparisonMeasures,
+			TimeRange:           req.TimeRange,
+			ComparisonTimeRange: req.ComparisonTimeRange,
+			Limit:               req.Limit,
+			Offset:              req.Offset,
+			Sort:                req.Sort,
+			Where:               req.Where,
+			Having:              req.Having,
+			Filter:              req.Filter,
+			Exact:               req.Exact,
+			SecurityAttributes:  attrs,
+		}, nil
 	default:
 		return nil, fmt.Errorf("query type %T not supported for alerts", r)
 	}
 }
 
 // extractQueryResultFirstRow extracts the first row from a query result.
+// TODO: This should function more like an export, i.e. use dimension/measure labels instead of names.
 func extractQueryResultFirstRow(q runtime.Query) (map[string]any, bool, error) {
 	switch q := q.(type) {
 	case *queries.MetricsViewAggregation:
 		if q.Result != nil && len(q.Result.Data) > 0 {
 			row := q.Result.Data[0]
 			return row.AsMap(), true, nil
+		}
+		return nil, false, nil
+	case *queries.MetricsViewComparison:
+		if q.Result != nil && len(q.Result.Rows) > 0 {
+			row := q.Result.Rows[0]
+			res := make(map[string]any)
+			res[q.DimensionName] = row.DimensionValue
+			for _, v := range row.MeasureValues {
+				res[v.MeasureName] = v.BaseValue.AsInterface()
+				if v.ComparisonValue != nil {
+					res[v.MeasureName+" (prev)"] = v.ComparisonValue.AsInterface()
+				}
+				if v.DeltaAbs != nil {
+					res[v.MeasureName+" (Δ)"] = v.DeltaAbs.AsInterface()
+				}
+				if v.DeltaRel != nil {
+					res[v.MeasureName+" (Δ%)"] = v.DeltaRel.AsInterface()
+				}
+			}
+			return res, true, nil
 		}
 		return nil, false, nil
 	default:

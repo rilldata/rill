@@ -249,30 +249,6 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 	case *runtimev1.Query_MetricsViewComparisonRequest:
 		r := v.MetricsViewComparisonRequest
-
-		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs)
-		if err != nil {
-			if errors.Is(err, ErrForbidden) {
-				http.Error(w, "action not allowed", http.StatusUnauthorized)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		if !checkFieldAccess(r.Dimension.Name, security) {
-			http.Error(w, "action not allowed", http.StatusUnauthorized)
-			return
-		}
-
-		// validate measures access
-		for _, m := range r.Measures {
-			if !checkFieldAccess(m.Name, security) {
-				http.Error(w, "action not allowed", http.StatusUnauthorized)
-				return
-			}
-		}
-
 		q = &queries.MetricsViewComparison{
 			MetricsViewName:     r.MetricsViewName,
 			DimensionName:       r.Dimension.Name,
@@ -286,8 +262,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			Filter:              r.Filter,
 			Where:               r.Where,
 			Having:              r.Having,
-			MetricsView:         mv,
-			ResolvedMVSecurity:  security,
+			SecurityAttributes:  attrs,
 		}
 	case *runtimev1.Query_TableRowsRequest:
 		r := v.TableRowsRequest
