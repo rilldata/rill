@@ -365,25 +365,39 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   pivotData,
                   columnDimensionAxes?.data,
                 );
-                /** In some cases the totals query would be the same query as that
-                 * for the initial table cell data. With svelte query cache we would not hit the
-                 * API twice
-                 */
-                const globalTotalsQuery = createPivotAggregationRowQuery(
-                  ctx,
-                  config.measureNames,
-                  [],
-                  config.whereFilter,
-                  [],
-                  "10000", // Using 10000 for cache hit
-                );
-                const totalsRowQuery = createTableCellQuery(
-                  ctx,
-                  config,
-                  undefined,
-                  columnDimensionAxes?.data,
-                  [],
-                );
+                let globalTotalsQuery:
+                  | Readable<null>
+                  | CreateQueryResult<
+                      V1MetricsViewAggregationResponse,
+                      unknown
+                    > = readable(null);
+                let totalsRowQuery:
+                  | Readable<null>
+                  | CreateQueryResult<
+                      V1MetricsViewAggregationResponse,
+                      unknown
+                    > = readable(null);
+                if (rowDimensionNames.length) {
+                  /** In some cases the totals query would be the same query as that
+                   * for the initial table cell data. With svelte query cache we would not hit the
+                   * API twice
+                   */
+                  globalTotalsQuery = createPivotAggregationRowQuery(
+                    ctx,
+                    config.measureNames,
+                    [],
+                    config.whereFilter,
+                    [],
+                    "10000", // Using 10000 for cache hit
+                  );
+                  totalsRowQuery = createTableCellQuery(
+                    ctx,
+                    config,
+                    undefined,
+                    columnDimensionAxes?.data,
+                    [],
+                  );
+                }
 
                 /**
                  * Derive a store based on expanded rows and totals
@@ -418,7 +432,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     lastPivotColumnDef = columnDef;
 
                     let assembledTableData = tableDataExpanded;
-                    if (config.rowDimensionNames.length) {
+                    if (rowDimensionNames.length) {
                       const totalsRowData = totalsRowResponse?.data?.data;
 
                       const globalTotalsData =
