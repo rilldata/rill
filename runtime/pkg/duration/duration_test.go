@@ -105,6 +105,22 @@ func TestTruncate(t *testing.T) {
 			expectedTime:     time.Date(2022, 7, 15, 10, 0, 0, 0, time.UTC),
 		},
 		{
+			name:             "Truncate to start of hour with spring DST",
+			duration:         StandardDuration{Hour: 1},
+			inputTime:        time.Date(2023, 3, 26, 3, 15, 0, 0, must(time.LoadLocation("Europe/Copenhagen"))),
+			firstDayOfWeek:   1,
+			firstMonthOfYear: 1,
+			expectedTime:     time.Date(2023, 3, 26, 3, 0, 0, 0, must(time.LoadLocation("Europe/Copenhagen"))),
+		},
+		{
+			name:             "Truncate to start of hour with fall DST",
+			duration:         StandardDuration{Hour: 1},
+			inputTime:        time.Date(2023, 10, 29, 2, 15, 0, 0, must(time.LoadLocation("Europe/Copenhagen"))),
+			firstDayOfWeek:   1,
+			firstMonthOfYear: 1,
+			expectedTime:     time.Date(2023, 10, 29, 2, 0, 0, 0, must(time.LoadLocation("Europe/Copenhagen"))),
+		},
+		{
 			name:             "Truncate to start of same minute",
 			duration:         StandardDuration{Minute: 1},
 			inputTime:        time.Date(2022, 7, 15, 10, 30, 45, 0, time.UTC),
@@ -161,4 +177,11 @@ func TestTruncate(t *testing.T) {
 			require.Equal(t, tc.expectedTime, actualTime)
 		})
 	}
+}
+
+func must[T any](t T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return t
 }

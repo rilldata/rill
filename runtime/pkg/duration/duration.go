@@ -143,28 +143,24 @@ func (d StandardDuration) EstimateNative() (time.Duration, bool) {
 	return res, true
 }
 
-// Truncate truncates a timestamp to the duration.
-// TODO: Handle if multiple parts are set
-// TODO: Check DST
-// TODO: Merge with timeutil.TruncateTime
+// Truncate truncates a timestamp to the duration. It keeps the timezone of the timestamp.
+// It only partially supports durations with multiple components (e.g. P1Y3M): it will truncate by the first component only.
+// TODO: Is there a well-defined way to truncate by multiple components?
+// TODO: Can this be merged with timeutil.TruncateTime? timeutil returns UTC values, whereas this returns in the same tz as the input time.
 func (d StandardDuration) Truncate(t time.Time, firstDayOfWeek, firstMonthOfYear int) time.Time {
-	if d.Second != 0 {
-		n := t.Second() % d.Second
-		return t.Truncate(time.Second).Add(-time.Duration(n) * time.Second)
+	if d.Year != 0 {
+		n := t.Year()
+		if int(t.Month()) < firstMonthOfYear {
+			n--
+		}
+		n -= n % d.Year
+		return time.Date(n, time.Month(firstMonthOfYear), 1, 0, 0, 0, 0, t.Location())
 	}
-	if d.Minute != 0 {
-		n := t.Minute() % d.Minute
-		return t.Truncate(time.Minute).Add(-time.Duration(n) * time.Minute)
-	}
-	if d.Hour != 0 {
-		n := t.Hour() % d.Hour
-		return t.Truncate(time.Hour).Add(-time.Duration(n) * time.Hour)
-	}
-	if d.Day != 0 {
-		n := t.Day() - 1 // Day is 1-indexed
-		n -= n % d.Day
+	if d.Month != 0 {
+		n := int(t.Month()) - 1 // Month is 1-indexed
+		n -= n % d.Month
 		n++ // Correct back for 1-indexing
-		return time.Date(t.Year(), t.Month(), n, 0, 0, 0, 0, t.Location())
+		return time.Date(t.Year(), time.Month(n), 1, 0, 0, 0, 0, t.Location())
 	}
 	if d.Week != 0 {
 		if firstDayOfWeek < 1 {
@@ -192,19 +188,23 @@ func (d StandardDuration) Truncate(t time.Time, firstDayOfWeek, firstMonthOfYear
 
 		return time.Date(t.Year(), t.Month(), t.Day()-daysToSubstract, 0, 0, 0, 0, t.Location())
 	}
-	if d.Month != 0 {
-		n := int(t.Month()) - 1 // Month is 1-indexed
-		n -= n % d.Month
+	if d.Day != 0 {
+		n := t.Day() - 1 // Day is 1-indexed
+		n -= n % d.Day
 		n++ // Correct back for 1-indexing
-		return time.Date(t.Year(), time.Month(n), 1, 0, 0, 0, 0, t.Location())
+		return time.Date(t.Year(), t.Month(), n, 0, 0, 0, 0, t.Location())
 	}
-	if d.Year != 0 {
-		n := t.Year()
-		if int(t.Month()) < firstMonthOfYear {
-			n--
-		}
-		n -= n % d.Year
-		return time.Date(n, time.Month(firstMonthOfYear), 1, 0, 0, 0, 0, t.Location())
+	if d.Hour != 0 {
+		n := t.Hour() % d.Hour
+		return t.Truncate(time.Hour).Add(-time.Duration(n) * time.Hour)
+	}
+	if d.Minute != 0 {
+		n := t.Minute() % d.Minute
+		return t.Truncate(time.Minute).Add(-time.Duration(n) * time.Minute)
+	}
+	if d.Second != 0 {
+		n := t.Second() % d.Second
+		return t.Truncate(time.Second).Add(-time.Duration(n) * time.Second)
 	}
 	return t
 }

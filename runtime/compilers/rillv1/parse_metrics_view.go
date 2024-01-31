@@ -201,7 +201,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	if tmp.DefaultTimeRange != "" {
-		err := validateISO8601(tmp.DefaultTimeRange, false)
+		err := validateISO8601(tmp.DefaultTimeRange, false, false)
 		if err != nil {
 			return fmt.Errorf(`invalid "default_time_range": %w`, err)
 		}
@@ -285,19 +285,19 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 	if tmp.AvailableTimeRanges != nil {
 		for _, r := range tmp.AvailableTimeRanges {
-			err := validateISO8601(r.Range, false)
+			err := validateISO8601(r.Range, false, false)
 			if err != nil {
 				return fmt.Errorf("invalid range in available_time_ranges: %w", err)
 			}
 
 			for _, o := range r.ComparisonOffsets {
-				err := validateISO8601(o.Offset, false)
+				err := validateISO8601(o.Offset, false, false)
 				if err != nil {
 					return fmt.Errorf("invalid offset in comparison_offsets: %w", err)
 				}
 
 				if o.Range != "" {
-					err := validateISO8601(o.Range, false)
+					err := validateISO8601(o.Range, false, false)
 					if err != nil {
 						return fmt.Errorf("invalid range in comparison_offsets: %w", err)
 					}
@@ -526,7 +526,8 @@ func parseTimeGrain(s string) (runtimev1.TimeGrain, error) {
 // validateISO8601 is a wrapper around duration.ParseISO8601 with additional validation:
 // a) that the duration does not have seconds granularity,
 // b) if onlyStandard is true, that the duration does not use any of the Rill-specific extensions (such as year-to-date).
-func validateISO8601(isoDuration string, onlyStandard bool) error {
+// c) if onlySingular is true, that the duration does not consist of more than one component (e.g. P2Y is valid, P2Y3M is not).
+func validateISO8601(isoDuration string, onlyStandard, onlyOneComponent bool) error {
 	d, err := duration.ParseISO8601(isoDuration)
 	if err != nil {
 		return err
@@ -542,6 +543,34 @@ func validateISO8601(isoDuration string, onlyStandard bool) error {
 
 	if sd.Second != 0 {
 		return fmt.Errorf("durations with seconds are not allowed")
+	}
+
+	if onlyOneComponent {
+		n := 0
+		if sd.Year != 0 {
+			n++
+		}
+		if sd.Month != 0 {
+			n++
+		}
+		if sd.Week != 0 {
+			n++
+		}
+		if sd.Day != 0 {
+			n++
+		}
+		if sd.Hour != 0 {
+			n++
+		}
+		if sd.Minute != 0 {
+			n++
+		}
+		if sd.Second != 0 {
+			n++
+		}
+		if n > 1 {
+			return fmt.Errorf("only one component is allowed")
+		}
 	}
 
 	return nil

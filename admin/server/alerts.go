@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -47,28 +46,14 @@ func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequ
 
 	var attr map[string]any
 	if req.QueryFor != nil {
-		// TODO: This logic is duplicated in GetDeploymentCredentials. We should extract to a single implementation.
 		switch forVal := req.QueryFor.(type) {
 		case *adminv1.GetAlertMetaRequest_QueryForUserId:
-			attr, err = s.getAttributesFor(ctx, forVal.QueryForUserId, proj.OrganizationID, proj.ID)
+			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.QueryForUserId, "")
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 		case *adminv1.GetAlertMetaRequest_QueryForUserEmail:
-			user, err := s.admin.DB.FindUserByEmail(ctx, forVal.QueryForUserEmail)
-			// if email is not found in the database, we assume it is a non-admin user
-			if errors.Is(err, database.ErrNotFound) {
-				attr = map[string]any{
-					"email":  forVal.QueryForUserEmail,
-					"domain": forVal.QueryForUserEmail[strings.LastIndex(forVal.QueryForUserEmail, "@")+1:],
-					"admin":  false,
-				}
-				break
-			}
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			attr, err = s.getAttributesFor(ctx, user.ID, proj.OrganizationID, proj.ID)
+			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.QueryForUserEmail)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
