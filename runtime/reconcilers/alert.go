@@ -508,7 +508,7 @@ func (r *AlertReconciler) checkAlert(ctx context.Context, self *runtimev1.Resour
 	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
 
 	// Build query proto
-	qpb, err := buildProtoQuery(a.Spec.QueryName, a.Spec.QueryArgsJson, executionTime)
+	qpb, err := queries.ProtoFromJSON(a.Spec.QueryName, a.Spec.QueryArgsJson, &executionTime)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to parse query: %w", err)
 	}
@@ -540,7 +540,7 @@ func (r *AlertReconciler) checkAlert(ctx context.Context, self *runtimev1.Resour
 	}
 
 	// Create and execute query
-	q, err := buildRuntimeQuery(qpb, queryForAttrs)
+	q, err := queries.ProtoToQuery(qpb, queryForAttrs)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to build query: %w", err)
 	}
@@ -682,60 +682,6 @@ func calculateExecutionTimes(self *runtimev1.Resource, a *runtimev1.Alert, water
 	slices.Reverse(ts)
 
 	return ts, nil
-}
-
-// buildRuntimeQuery builds a runtime query from a proto query and security attributes.
-func buildRuntimeQuery(q *runtimev1.Query, attrs map[string]any) (runtime.Query, error) {
-	one := int64(1)
-
-	// NOTE: Pending refactors, this implementation is replicated from handlers in runtime/server.
-	switch r := q.Query.(type) {
-	case *runtimev1.Query_MetricsViewAggregationRequest:
-		req := r.MetricsViewAggregationRequest
-
-		tr := req.TimeRange
-		if req.TimeStart != nil || req.TimeEnd != nil {
-			tr = &runtimev1.TimeRange{
-				Start: req.TimeStart,
-				End:   req.TimeEnd,
-			}
-		}
-
-		return &queries.MetricsViewAggregation{
-			MetricsViewName:    req.MetricsView,
-			Dimensions:         req.Dimensions,
-			Measures:           req.Measures,
-			Sort:               req.Sort,
-			TimeRange:          tr,
-			Where:              req.Where,
-			Having:             req.Having,
-			Filter:             req.Filter,
-			Limit:              &one, // Alerts never inspect more than one row // TODO: Maybe put higher limit and return the minimum number of matching rows?
-			Offset:             req.Offset,
-			PivotOn:            req.PivotOn,
-			SecurityAttributes: attrs,
-		}, nil
-	case *runtimev1.Query_MetricsViewComparisonRequest:
-		req := r.MetricsViewComparisonRequest
-		return &queries.MetricsViewComparison{
-			MetricsViewName:     req.MetricsViewName,
-			DimensionName:       req.Dimension.Name,
-			Measures:            req.Measures,
-			ComparisonMeasures:  req.ComparisonMeasures,
-			TimeRange:           req.TimeRange,
-			ComparisonTimeRange: req.ComparisonTimeRange,
-			Limit:               req.Limit,
-			Offset:              req.Offset,
-			Sort:                req.Sort,
-			Where:               req.Where,
-			Having:              req.Having,
-			Filter:              req.Filter,
-			Exact:               req.Exact,
-			SecurityAttributes:  attrs,
-		}, nil
-	default:
-		return nil, fmt.Errorf("query type %T not supported for alerts", r)
-	}
 }
 
 // extractQueryResultFirstRow extracts the first row from a query result.
