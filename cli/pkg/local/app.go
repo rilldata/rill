@@ -1,16 +1,20 @@
 package local
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/config"
@@ -162,9 +166,16 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 
 	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
 	defaultOLAP := false
+	olapCfg := make(map[string]string)
 	if olapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
 		defaultOLAP = true
 		olapDSN = path.Join(dbDirPath, olapDSN)
+		val, err := isExternalStorageEnabled(dbDirPath, parsedVariables)
+		if err != nil {
+			return nil, err
+		}
+
+		olapCfg["external_table_storage"] = strconv.FormatBool(val)
 	}
 
 	if reset {
@@ -180,7 +191,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 	}
 
 	// Set default DuckDB pool size to 4
-	olapCfg := map[string]string{"dsn": olapDSN}
+	olapCfg["dsn"] = olapDSN
 	if olapDriver == "duckdb" {
 		olapCfg["pool_size"] = "4"
 		if !defaultOLAP {
@@ -452,8 +463,16 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 			return
 		}
 
+		// Read entire body up front (since it may be closed before the request is sent in the goroutine below)
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			a.BaseLogger.Info("failed to read telemetry request", zap.Error(err))
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		// Proxy request to rill intake
-		proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", r.Body)
+		proxyReq, err := http.NewRequest(r.Method, "https://intake.rilldata.io/events/data-modeler-metrics", bytes.NewReader(body))
 		if err != nil {
 			a.BaseLogger.Info("failed to create telemetry request", zap.Error(err))
 			w.WriteHeader(http.StatusOK)
@@ -465,14 +484,18 @@ func (a *App) trackingHandler(info *localInfo) http.Handler {
 			"Authorization": r.Header["Authorization"],
 		}
 
-		// Send proxied request
-		resp, err := http.DefaultClient.Do(proxyReq)
-		if err != nil {
-			a.BaseLogger.Info("failed to send telemetry", zap.Error(err))
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		defer resp.Body.Close()
+		// Send event in the background to avoid blocking the frontend.
+		// NOTE: If we stay with this telemetry approach, we should refactor and use ./cli/pkg/telemetry for batching and flushing events.
+		go func() {
+			// Send proxied request
+			resp, err := http.DefaultClient.Do(proxyReq)
+			if err != nil {
+				a.BaseLogger.Info("failed to send telemetry", zap.Error(err))
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+			resp.Body.Close()
+		}()
 
 		// Done
 		w.WriteHeader(http.StatusOK)
@@ -601,4 +624,30 @@ func (s skipFieldZapEncoder) AddString(key, val string) {
 	if !skip {
 		s.Encoder.AddString(key, val)
 	}
+}
+
+// isExternalStorageEnabled determines if external storage can be enabled.
+// we can't always enable `external_table_storage` if the project dir already has a db file
+// it could have been created with older logic where every source was a table in the main db
+func isExternalStorageEnabled(dbPath string, variables map[string]string) (bool, error) {
+	_, err := os.Stat(filepath.Join(dbPath, DefaultOLAPDSN))
+	if err != nil {
+		// fresh project
+		// check if flag explicitly passed
+		val, ok := variables["connector.duckdb.external_table_storage"]
+		if !ok {
+			// mark enabled by default
+			return true, nil
+		}
+		return strconv.ParseBool(val)
+	}
+
+	fsRoot := os.DirFS(dbPath)
+	glob := path.Clean(path.Join("./", filepath.Join("*", "version.txt")))
+
+	matches, err := doublestar.Glob(fsRoot, glob)
+	if err != nil {
+		return false, err
+	}
+	return len(matches) > 0, nil
 }

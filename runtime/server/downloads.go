@@ -277,6 +277,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			MetricsViewName:     r.MetricsViewName,
 			DimensionName:       r.Dimension.Name,
 			Measures:            r.Measures,
+			ComparisonMeasures:  r.ComparisonMeasures,
 			TimeRange:           r.TimeRange,
 			ComparisonTimeRange: r.ComparisonTimeRange,
 			Limit:               s.resolveExportLimit(request.Limit, r.Limit),

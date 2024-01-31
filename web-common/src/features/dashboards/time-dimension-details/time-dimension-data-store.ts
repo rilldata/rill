@@ -1,33 +1,33 @@
-import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
-import { derived, writable, type Readable } from "svelte/store";
-import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
-import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
 import { createSparkline } from "@rilldata/web-common/components/data-graphic/marks/sparkline";
-import { transposeArray } from "./util";
-import {
-  DEFAULT_TIME_RANGES,
-  TIME_COMPARISON,
-} from "@rilldata/web-common/lib/time/config";
-import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
+import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   getDimensionValueTimeSeries,
   type DimensionDataItem,
 } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+import { useTimeSeriesDataStore } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
+import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
+import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
+import {
+  DEFAULT_TIME_RANGES,
+  TIME_COMPARISON,
+} from "@rilldata/web-common/lib/time/config";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+import { derived, writable, type Readable } from "svelte/store";
+import { memoizeMetricsStore } from "../state-managers/memoize-metrics-store";
 import type {
   ChartInteractionColumns,
   HighlightedCell,
+  TDDComparison,
   TableData,
   TablePosition,
-  TDDComparison,
 } from "./types";
-import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
-import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+import { transposeArray } from "./util";
 
 export type TimeDimensionDataState = {
   isFetching: boolean;
@@ -327,7 +327,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
   return derived(
     [
       ctx.dashboardStore,
-      useMetaQuery(ctx),
+      useMetricsView(ctx),
       useTimeControlStore(ctx),
       useTimeSeriesDataStore(ctx),
       useDimensionTableData(ctx),

@@ -1,17 +1,17 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { setTheme } from "@rilldata/web-common/features/themes/actions";
   import { useTheme } from "@rilldata/web-common/features/themes/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
 
-  const metaQuery = useMetaQuery(getStateManagers());
+  const metricsView = useMetricsView(getStateManagers());
   $: themeFromUrl = $page.url.searchParams.get("theme");
 
   let theme: ReturnType<typeof useTheme>;
-  $: themeName = themeFromUrl ?? $metaQuery.data?.defaultTheme;
+  $: themeName = themeFromUrl ?? $metricsView.data?.defaultTheme;
   $: if (themeName) theme = useTheme($runtime.instanceId, themeName);
 
   $: if ($theme?.data?.theme) {

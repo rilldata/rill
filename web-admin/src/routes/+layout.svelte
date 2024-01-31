@@ -35,12 +35,9 @@
   queryClient.getQueryCache().config.onError =
     createGlobalErrorCallback(queryClient);
 
-  featureFlags.set({
-    // The admin server enables some dashboard features like scheduled reports and alerts
-    adminServer: true,
-    // Set read-only mode so that the user can't edit the dashboard
-    readOnly: true,
-  });
+  // The admin server enables some dashboard features like scheduled reports and alerts
+  // Set read-only mode so that the user can't edit the dashboard
+  featureFlags.set(true, "adminServer", "readOnly");
 
   beforeNavigate(retainFeaturesFlags);
   clearViewedAsUserAfterNavigate(queryClient);
@@ -63,19 +60,13 @@
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <main class="flex flex-col {onDashboardPage && 'h-screen'}">
+    <main class="flex flex-col min-h-screen {onDashboardPage && 'h-screen'}">
       {#if !isEmbed}
         <TopNavigationBar />
       {/if}
-      <div
-        class="flex-grow {onDashboardPage
-          ? 'overflow-hidden'
-          : 'overflow-auto'}"
-      >
-        <ErrorBoundary>
-          <slot />
-        </ErrorBoundary>
-      </div>
+      <ErrorBoundary>
+        <slot />
+      </ErrorBoundary>
     </main>
   </QueryClientProvider>
 

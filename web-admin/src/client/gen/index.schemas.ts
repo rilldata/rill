@@ -37,6 +37,7 @@ export type AdminServiceGetReportMetaBody = {
   branch?: string;
   report?: string;
   annotations?: AdminServiceGetReportMetaBodyAnnotations;
+  executionTime?: string;
 };
 
 export type AdminServicePullVirtualRepoParams = {

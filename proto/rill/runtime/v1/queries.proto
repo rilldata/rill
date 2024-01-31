@@ -345,6 +345,7 @@ message MetricsViewComparisonRequest {
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   MetricsViewAggregationDimension dimension = 3;
   repeated MetricsViewAggregationMeasure measures = 4;
+  repeated string comparison_measures = 16;
   repeated MetricsViewComparisonSort sort = 5;
   TimeRange time_range = 6;
   TimeRange comparison_time_range = 7;

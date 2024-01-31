@@ -270,7 +270,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 	}
 	defer release()
 
-	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec.Annotations)
+	meta, err := admin.GetReportMetadata(ctx, self.Meta.Name.Name, rep.Spec.Annotations, t)
 	if err != nil {
 		return false, fmt.Errorf("failed to get report metadata: %w", err)
 	}

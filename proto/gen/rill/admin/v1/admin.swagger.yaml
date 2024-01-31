@@ -1489,6 +1489,9 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
+              executionTime:
+                type: string
+                format: date-time
       tags:
         - AdminService
   /v1/services/tokens/{tokenId}:
