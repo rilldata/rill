@@ -117,7 +117,7 @@
 </script>
 
 <div
-  class="overflow-scroll h-full border rounded-md bg-white"
+  class="overflow-scroll h-fit max-h-full border rounded-md bg-white"
   bind:this={containerRefElement}
   on:scroll={() => handleScroll(containerRefElement)}
 >
