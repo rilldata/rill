@@ -72,10 +72,16 @@ export function mergeFilters(
 
   // add the remaining in expressions
   inExprMap.forEach((ie) => {
+    if (!filter2.cond?.exprs) {
+      filter2.cond!.exprs = [copyFilterExpression(ie)];
+    }
     filter2.cond?.exprs?.push(copyFilterExpression(ie));
   });
   // add all like expressions
   likeExprMap.forEach((ie) => {
+    if (!filter2.cond?.exprs) {
+      filter2.cond!.exprs = [copyFilterExpression(ie)];
+    }
     filter2.cond?.exprs?.push(copyFilterExpression(ie));
   });
 
