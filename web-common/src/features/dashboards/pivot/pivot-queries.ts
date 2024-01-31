@@ -83,6 +83,9 @@ export function getAxisForDimensions(
   if (!dimensions.length) return readable(null);
 
   const measures = config.measureNames;
+  const { time } = config;
+
+  let timeDimensionSortBy: V1MetricsViewAggregationSort[] = [];
 
   if (!sortBy.length) {
     sortBy = [
@@ -91,9 +94,15 @@ export function getAxisForDimensions(
         name: measures[0] || dimensions?.[0],
       },
     ];
+
+    timeDimensionSortBy = [
+      {
+        desc: false,
+        name: time.timeDimension,
+      },
+    ];
   }
 
-  const { time } = config;
   const dimensionBody = dimensions.map((d) => {
     if (d === time.timeDimension) {
       return {
@@ -105,18 +114,24 @@ export function getAxisForDimensions(
   });
 
   return derived(
-    dimensionBody.map((dimension) =>
-      createPivotAggregationRowQuery(
+    dimensionBody.map((dimension) => {
+      let sortByForDimension = sortBy;
+      if (dimension.name === time.timeDimension) {
+        sortByForDimension = timeDimensionSortBy.length
+          ? timeDimensionSortBy
+          : sortBy;
+      }
+      return createPivotAggregationRowQuery(
         ctx,
         measures,
         [dimension],
-        whereFilter, // TODO: merge with global
-        sortBy,
+        whereFilter,
+        sortByForDimension,
         "100",
         "0",
         timeRange,
-      ),
-    ),
+      );
+    }),
     (data) => {
       const axesMap: Record<string, string[]> = {};
       const totalsMap: Record<
