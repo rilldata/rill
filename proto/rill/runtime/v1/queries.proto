@@ -54,6 +54,22 @@ service QueryService {
     };
   }
 
+  // MetricsViewComparison returns a toplist containing comparison data of another toplist (same dimension/measure but a different time range).
+  // Returns a toplist without comparison data if comparison time range is omitted.
+  //
+  // ie. comparsion toplist:
+  // | measure1_base | measure1_previous   | measure1__delta_abs | measure__delta_rel | dimension |
+  // |---------------|---------------------|---------------------|--------------------|-----------|
+  // | 2             | 2                   | 0                   | 0                  | Safari    |
+  // | 1             | 0                   | 1                   | N/A                | Chrome    |
+  // | 0             | 4                   | -4                  | -1.0               | Firefox   |
+  //
+  // ie. toplist:
+  // | measure1 | measure2 | dimension |
+  // |----------|----------|-----------|
+  // | 2        | 45       | Safari    |
+  // | 1        | 350      | Chrome    |
+  // | 0        | 25       | Firefox   |
   rpc MetricsViewComparison(MetricsViewComparisonRequest) returns (MetricsViewComparisonResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/compare-toplist",
@@ -273,26 +289,27 @@ message QueryResult {
 
 message MetricsViewAggregationRequest {
   string instance_id = 1;
+  // Required
   string metrics_view = 2 [(validate.rules).string.min_len = 1];
   // Required
   repeated MetricsViewAggregationDimension dimensions = 3;
   // Required
   repeated MetricsViewAggregationMeasure measures = 4;
-  // Optional
+  // Optional. Defaults to unsorted
   repeated MetricsViewAggregationSort sort = 5;
-  // Optional
+  // Optional. Defaults to unbounded
   TimeRange time_range = 12;
   google.protobuf.Timestamp time_start = 6; // Deprecated in favor of time_range
   google.protobuf.Timestamp time_end = 7; // Deprecated in favor of time_range
-  // Optional. List of dimensions/measures
+  // Optional. List of dimensions/measures. No pivot is done if ommitted
   repeated string pivot_on = 15;
   // Optional
   Expression where = 8;
   // Optional
   Expression having = 13;
-  // Optional
+  // Optional. Defaults to unlimited. Set to 0 to allow the server to pick an appropriate limit
   int64 limit = 9 [(validate.rules).int64.gte = 0];
-  // Optional
+  // Optional. Defaults to 0
   int64 offset = 10 [(validate.rules).int64.gte = 0];
   // Optional
   int32 priority = 11;
