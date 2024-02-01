@@ -66,7 +66,7 @@
     bind:this={inputElement}
     bind:value
   />
-  {#if error && value && !focus}
+  {#if error && !focus && value}
     <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
       {error}
     </div>
@@ -77,7 +77,7 @@
   input {
     @apply w-full h-8 rounded-sm;
     @apply px-3 py-[5px];
-    @apply cursor-pointer text-xs;
+    @apply text-xs;
     @apply bg-white border border-gray-300;
   }
 
