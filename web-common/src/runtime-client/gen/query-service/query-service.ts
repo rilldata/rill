@@ -555,6 +555,19 @@ export const createQueryServiceMetricsViewComparison = <
 };
 
 /**
+ * ie. without granularity
+| column1 | column2 | dimension |
+|---------|---------|-----------|
+| 2       | 2       | Safari    |
+| 1       | 0       | Chrome    |
+| 0       | 4       | Firefox   |
+
+ie. with granularity
+| timestamp__day0      | column1 | column2 | dimension |
+|----------------------|---------|---------|-----------|
+| 2022-01-01T00:00:00Z | 2       | 2       | Safari    |
+| 2022-01-01T00:00:00Z | 1       | 0       | Chrome    |
+| 2022-01-01T00:00:00Z | 0       | 4       | Firefox   |
  * @summary MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
  */
 export const queryServiceMetricsViewRows = (
@@ -817,7 +830,8 @@ export const createQueryServiceMetricsViewTimeSeries = <
 };
 
 /**
- * @summary MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
+ * @summary Deprecated - use MetricsViewComparison instead.
+MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 It's a convenience API for querying a metrics view.
  */
 export const queryServiceMetricsViewToplist = (

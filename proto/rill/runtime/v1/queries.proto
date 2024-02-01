@@ -45,8 +45,11 @@ service QueryService {
     };
   }
 
-  // MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
-  // It's a convenience API for querying a metrics view.
+  /*
+     Deprecated - use MetricsViewComparison instead.
+     MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
+     It's a convenience API for querying a metrics view.
+  */
   rpc MetricsViewToplist(MetricsViewToplistRequest) returns (MetricsViewToplistResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/toplist",
@@ -54,22 +57,24 @@ service QueryService {
     };
   }
 
-  // MetricsViewComparison returns a toplist containing comparison data of another toplist (same dimension/measure but a different time range).
-  // Returns a toplist without comparison data if comparison time range is omitted.
-  //
-  // ie. comparsion toplist:
-  // | measure1_base | measure1_previous   | measure1__delta_abs | measure1__delta_rel | dimension |
-  // |---------------|---------------------|---------------------|--------------------|-----------|
-  // | 2             | 2                   | 0                   | 0                  | Safari    |
-  // | 1             | 0                   | 1                   | N/A                | Chrome    |
-  // | 0             | 4                   | -4                  | -1.0               | Firefox   |
-  //
-  // ie. toplist:
-  // | measure1 | measure2 | dimension |
-  // |----------|----------|-----------|
-  // | 2        | 45       | Safari    |
-  // | 1        | 350      | Chrome    |
-  // | 0        | 25       | Firefox   |
+  /*
+     MetricsViewComparison returns a toplist containing comparison data of another toplist (same dimension/measure but a different time range).
+     Returns a toplist without comparison data if comparison time range is omitted.
+
+     ie. comparsion toplist:
+      | measure1_base | measure1_previous   | measure1__delta_abs | measure1__delta_rel | dimension |
+      |---------------|---------------------|---------------------|--------------------|-----------|
+      | 2             | 2                   | 0                   | 0                  | Safari    |
+      | 1             | 0                   | 1                   | N/A                | Chrome    |
+      | 0             | 4                   | -4                  | -1.0               | Firefox   |
+
+     ie. toplist:
+      | measure1 | measure2 | dimension |
+      |----------|----------|-----------|
+      | 2        | 45       | Safari    |
+      | 1        | 350      | Chrome    |
+      | 0        | 25       | Firefox   |
+  */
   rpc MetricsViewComparison(MetricsViewComparisonRequest) returns (MetricsViewComparisonResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/compare-toplist",
@@ -95,7 +100,23 @@ service QueryService {
     };
   }
 
-  // MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+  /*
+     MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
+
+     ie. without granularity
+      | column1 | column2 | dimension |
+      |---------|---------|-----------|
+      | 2       | 2       | Safari    |
+      | 1       | 0       | Chrome    |
+      | 0       | 4       | Firefox   |
+
+     ie. with granularity
+      | timestamp__day0      | column1 | column2 | dimension |
+      |----------------------|---------|---------|-----------|
+      | 2022-01-01T00:00:00Z | 2       | 2       | Safari    |
+      | 2022-01-01T00:00:00Z | 1       | 0       | Chrome    |
+      | 2022-01-01T00:00:00Z | 0       | 4       | Firefox   |
+  */
   rpc MetricsViewRows(MetricsViewRowsRequest) returns (MetricsViewRowsResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/rows",
