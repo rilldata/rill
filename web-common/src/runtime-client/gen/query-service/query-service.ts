@@ -29,6 +29,8 @@ import type {
   QueryServiceMetricsViewComparisonBody,
   V1MetricsViewRowsResponse,
   QueryServiceMetricsViewRowsBody,
+  V1MetricsViewSchemaResponse,
+  QueryServiceMetricsViewSchemaParams,
   V1MetricsViewTimeRangeResponse,
   QueryServiceMetricsViewTimeRangeBody,
   V1MetricsViewTimeSeriesResponse,
@@ -608,6 +610,87 @@ export const createQueryServiceMetricsViewRows = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof queryServiceMetricsViewRows>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && metricsViewName),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary MetricsViewSchema Get the data types of measures and dimensions
+ */
+export const queryServiceMetricsViewSchema = (
+  instanceId: string,
+  metricsViewName: string,
+  params?: QueryServiceMetricsViewSchemaParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1MetricsViewSchemaResponse>({
+    url: `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/schema`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getQueryServiceMetricsViewSchemaQueryKey = (
+  instanceId: string,
+  metricsViewName: string,
+  params?: QueryServiceMetricsViewSchemaParams,
+) => [
+  `/v1/instances/${instanceId}/queries/metrics-views/${metricsViewName}/schema`,
+  ...(params ? [params] : []),
+];
+
+export type QueryServiceMetricsViewSchemaQueryResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceMetricsViewSchema>>
+>;
+export type QueryServiceMetricsViewSchemaQueryError = ErrorType<RpcStatus>;
+
+export const createQueryServiceMetricsViewSchema = <
+  TData = Awaited<ReturnType<typeof queryServiceMetricsViewSchema>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  metricsViewName: string,
+  params?: QueryServiceMetricsViewSchemaParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceMetricsViewSchema>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceMetricsViewSchemaQueryKey(
+      instanceId,
+      metricsViewName,
+      params,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceMetricsViewSchema>>
+  > = ({ signal }) =>
+    queryServiceMetricsViewSchema(instanceId, metricsViewName, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof queryServiceMetricsViewSchema>>,
     TError,
     TData
   >({
