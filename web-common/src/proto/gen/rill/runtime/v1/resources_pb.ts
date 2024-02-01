@@ -1987,9 +1987,9 @@ export class AlertSpec extends Message<AlertSpec> {
   emailRecipients: string[] = [];
 
   /**
-   * @generated from field: bool email_on_pass = 15;
+   * @generated from field: bool email_on_recover = 15;
    */
-  emailOnPass = false;
+  emailOnRecover = false;
 
   /**
    * @generated from field: bool email_on_fail = 16;
@@ -2038,7 +2038,7 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
     { no: 14, name: "email_recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 15, name: "email_on_pass", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 15, name: "email_on_recover", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 16, name: "email_on_fail", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 17, name: "email_on_error", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 18, name: "email_renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -2145,17 +2145,22 @@ export class AlertExecution extends Message<AlertExecution> {
   result?: AssertionResult;
 
   /**
-   * @generated from field: google.protobuf.Timestamp execution_time = 3;
+   * @generated from field: bool sent_emails = 3;
+   */
+  sentEmails = false;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp execution_time = 4;
    */
   executionTime?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp started_on = 4;
+   * @generated from field: google.protobuf.Timestamp started_on = 5;
    */
   startedOn?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp finished_on = 5;
+   * @generated from field: google.protobuf.Timestamp finished_on = 6;
    */
   finishedOn?: Timestamp;
 
@@ -2169,9 +2174,10 @@ export class AlertExecution extends Message<AlertExecution> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "adhoc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "result", kind: "message", T: AssertionResult },
-    { no: 3, name: "execution_time", kind: "message", T: Timestamp },
-    { no: 4, name: "started_on", kind: "message", T: Timestamp },
-    { no: 5, name: "finished_on", kind: "message", T: Timestamp },
+    { no: 3, name: "sent_emails", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "execution_time", kind: "message", T: Timestamp },
+    { no: 5, name: "started_on", kind: "message", T: Timestamp },
+    { no: 6, name: "finished_on", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertExecution {

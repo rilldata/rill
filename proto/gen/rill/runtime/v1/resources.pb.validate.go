@@ -4225,7 +4225,7 @@ func (m *AlertSpec) validate(all bool) error {
 
 	// no validation rules for QueryArgsJson
 
-	// no validation rules for EmailOnPass
+	// no validation rules for EmailOnRecover
 
 	// no validation rules for EmailOnFail
 
@@ -4633,6 +4633,8 @@ func (m *AlertExecution) validate(all bool) error {
 			}
 		}
 	}
+
+	// no validation rules for SentEmails
 
 	if all {
 		switch v := interface{}(m.GetExecutionTime()).(type) {

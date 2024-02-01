@@ -1018,7 +1018,7 @@ query:
     user_email: benjamin@example.com
 
 email:
-  on_pass: true
+  on_recover: true
   renotify: true
   renotify_after: 24h
   recipients:
@@ -1055,7 +1055,7 @@ annotations:
 				QueryArgsJson:             `{"metrics_view":"mv1"}`,
 				QueryFor:                  &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
 				EmailRecipients:           []string{"jane@example.com"},
-				EmailOnPass:               true,
+				EmailOnRecover:            true,
 				EmailOnFail:               true,
 				EmailOnError:              false,
 				EmailRenotify:             true,

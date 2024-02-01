@@ -1922,7 +1922,7 @@ export interface V1AlertSpec {
   queryForUserEmail?: string;
   queryForAttributes?: V1AlertSpecQueryForAttributes;
   emailRecipients?: string[];
-  emailOnPass?: boolean;
+  emailOnRecover?: boolean;
   emailOnFail?: boolean;
   emailOnError?: boolean;
   emailRenotify?: boolean;
@@ -1933,6 +1933,7 @@ export interface V1AlertSpec {
 export interface V1AlertExecution {
   adhoc?: boolean;
   result?: V1AssertionResult;
+  sentEmails?: boolean;
   executionTime?: string;
   startedOn?: string;
   finishedOn?: string;
