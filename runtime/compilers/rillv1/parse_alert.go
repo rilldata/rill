@@ -87,9 +87,9 @@ func (p *Parser) parseAlert(ctx context.Context, node *Node) error {
 		}
 	}
 
-	// Validate the interval duration as a standard ISO8601 duration (without Rill extensions)
+	// Validate the interval duration as a standard ISO8601 duration (without Rill extensions) with only one component
 	if tmp.Intervals.Duration != "" {
-		err := validateISO8601(tmp.Intervals.Duration, true)
+		err := validateISO8601(tmp.Intervals.Duration, true, true)
 		if err != nil {
 			return fmt.Errorf(`invalid value %q for property "intervals.duration"`, tmp.Intervals.Duration)
 		}

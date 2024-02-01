@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
@@ -102,7 +103,9 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{}
 	}
 
-	// TODO: Comment
+	// Unlike other resources, alerts have different hashes for the spec and the refs' state.
+	// This enables differentiating behavior between changes to the spec and changes to the refs.
+	// When the spec changes, we clear all alert state. When the refs change, we just use it to trigger the alert ()
 	specHash, err := r.executionSpecHash(ctx, a.Spec, self.Meta.Refs)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
@@ -115,9 +118,9 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Determine whether to trigger
 	adhocTrigger := a.Spec.Trigger
 	specHashTrigger := a.State.SpecHash != specHash
-	refsHashTrigger := a.State.RefsHash != refsHash
+	refsTrigger := a.State.RefsHash != refsHash && a.Spec.RefreshSchedule != nil && a.Spec.RefreshSchedule.RefUpdate
 	scheduleTrigger := a.State.NextRunOn != nil && !a.State.NextRunOn.AsTime().After(time.Now())
-	trigger := adhocTrigger || specHashTrigger || refsHashTrigger || scheduleTrigger
+	trigger := adhocTrigger || specHashTrigger || refsTrigger || scheduleTrigger
 
 	// If not triggering now, update NextRunOn and retrigger when it falls due
 	if !trigger {
@@ -148,7 +151,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Evaluate the trigger time of the alert. If triggered by schedule, we use the "clean" scheduled time.
 	// Note: Correction for watermarks and intervals is done in checkAlert.
 	var triggerTime time.Time
-	if scheduleTrigger && !adhocTrigger && !specHashTrigger && !refsHashTrigger {
+	if scheduleTrigger && !adhocTrigger && !specHashTrigger && !refsTrigger {
 		triggerTime = a.State.NextRunOn.AsTime()
 	} else {
 		triggerTime = time.Now()
@@ -178,7 +181,7 @@ func (r *AlertReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Update refs hash
-	if refsHashTrigger {
+	if refsTrigger {
 		a.State.RefsHash = refsHash
 		err = r.C.UpdateState(ctx, self.Meta.Name, self)
 		if err != nil {
@@ -252,7 +255,13 @@ func (r *AlertReconciler) executionSpecHash(ctx context.Context, spec *runtimev1
 		return "", err
 	}
 
-	// TODO: Add spec.QueryForAttributes
+	if spec.GetQueryForAttributes() != nil {
+		v := structpb.NewStructValue(spec.GetQueryForAttributes())
+		err = pbutil.WriteHash(v, hash)
+		if err != nil {
+			return "", err
+		}
+	}
 
 	err = binary.Write(hash, binary.BigEndian, spec.TimeoutSeconds)
 	if err != nil {
@@ -405,8 +414,7 @@ func (r *AlertReconciler) executeAlert(ctx context.Context, self *runtimev1.Reso
 		}
 
 		if len(ts) == 0 {
-			// TODO: Debug log
-			r.C.Logger.Info("Skipped alert check because watermark has not advanced by a full interval", zap.String("name", self.Meta.Name.Name), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", a.Spec.IntervalsIsoDuration))
+			r.C.Logger.Debug("Skipped alert check because watermark has not advanced by a full interval", zap.String("name", self.Meta.Name.Name), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", a.Spec.IntervalsIsoDuration))
 		}
 
 		for _, t := range ts {
@@ -504,8 +512,7 @@ func (r *AlertReconciler) executeSingleAlert(ctx context.Context, self *runtimev
 // It returns true if an error occurred after some or all emails were sent.
 func (r *AlertReconciler) checkAlert(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, executionTime time.Time) (*runtimev1.AssertionResult, bool, error) {
 	// Log
-	// TODO: Turn into debug log
-	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+	r.C.Logger.Debug("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
 
 	// Build query proto
 	qpb, err := queries.ProtoFromJSON(a.Spec.QueryName, a.Spec.QueryArgsJson, &executionTime)
@@ -638,7 +645,7 @@ func calculateExecutionTimes(self *runtimev1.Resource, a *runtimev1.Alert, water
 	}
 
 	// Compute the last end time (rounded to the interval duration)
-	// TODO: Find a way to incorporate first day of week and first month of year?
+	// NOTE: Hardcoding firstDayOfWeek and firstMonthOfYear. We might consider inferring these from the underlying metrics view (or just customizing in the `intervals:` clause) in the future.
 	end := watermark.In(tz)
 	if a.Spec.IntervalsCheckUnclosed {
 		// Ceil
