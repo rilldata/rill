@@ -181,8 +181,6 @@ export function createScrubAction({
       function onScrub(event: MouseEvent) {
         event.preventDefault();
 
-        const isCurrentlyScrubbing = get(isScrubbing);
-        if (!isCurrentlyScrubbing) return;
         if (!(movePredicate === undefined || movePredicate(event))) {
           reset();
           return;
