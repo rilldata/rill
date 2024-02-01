@@ -2,11 +2,12 @@
   = left (icon) – used primarily for icons, action buttons, and small images
   - center (text) – used primarily for label information
 -->
-<script>
+<script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { slideRight } from "../../../lib/transitions";
   import { defaultChipColors } from "../chip-types";
   import RemoveChipButton from "./RemoveChipButton.svelte";
+  import { builderActions, getAttrs, type Builder } from "bits-ui";
 
   export let removable = false;
   export let active = false;
@@ -29,7 +30,9 @@
   export let removeButtonTooltipAlignment = "start";
   export let removeButtonTooltipDistance = 12;
 
-  export let label = undefined;
+  export let label: string | undefined = undefined;
+
+  export let builders: Builder[] = [];
 
   /** the maximum width for the tooltip of the main chip */
 
@@ -53,6 +56,8 @@
       : ""}
     {$$slots.body ? "max-content" : ""}"
     aria-label={label}
+    {...getAttrs(builders)}
+    use:builderActions={{ builders }}
   >
     <!-- a cancelable element, e.g. filter buttons -->
     {#if removable}
