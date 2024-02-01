@@ -2,6 +2,7 @@ import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { FromProtoOperationMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
+import { forEachIdentifier } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   DashboardTimeControls,
@@ -62,6 +63,12 @@ export function getDashboardStateFromProto(
     entity.whereFilter = convertFilterToExpression(dashboard.filters);
   } else if (dashboard.where) {
     entity.whereFilter = fromExpressionProto(dashboard.where);
+  }
+  if (entity.whereFilter) {
+    forEachIdentifier(entity.whereFilter, (e, ident) => {
+      const dim = metricsView.dimensions?.find((d) => d.name === ident);
+      if (!dim) return;
+    });
   }
   if (dashboard.having) {
     entity.dimensionThresholdFilters = dashboard.having.map((h) => ({

@@ -437,6 +437,39 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 	return q.Result, nil
 }
 
+func (s *Server) MetricsViewDataTypes(ctx context.Context, req *runtimev1.MetricsViewDataTypesRequest) (*runtimev1.MetricsViewDataTypesResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsViewName),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	mv, security, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
+
+	q := &queries.MetricsViewDataTypes{
+		MetricsViewName:    req.MetricsViewName,
+		MetricsView:        mv,
+		ResolvedMVSecurity: security,
+	}
+	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
+
+	return &runtimev1.MetricsViewDataTypesResponse{
+		DataTypes: q.Result,
+	}, nil
+}
+
 // inlineMeasureRegexp is used by validateInlineMeasures.
 var inlineMeasureRegexp = regexp.MustCompile(`(?i)^COUNT\((DISTINCT)? *.+\)$`)
 

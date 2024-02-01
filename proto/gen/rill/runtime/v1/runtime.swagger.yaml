@@ -1170,6 +1170,35 @@ paths:
             title: Request message for QueryService.MetricsViewComparison
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/data-types:
+    get:
+      summary: MetricsViewDataTypes Get the data types of measures and dimensions
+      operationId: QueryService_MetricsViewDataTypes
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewDataTypesResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/rows:
     post:
       summary: MetricsViewRows returns the underlying model rows matching a metrics view time range and filter(s).
@@ -3647,6 +3676,21 @@ definitions:
       comparisonValue: {}
       deltaAbs: {}
       deltaRel: {}
+  v1MetricsViewDataType:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+  v1MetricsViewDataTypesResponse:
+    type: object
+    properties:
+      dataTypes:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewDataType'
   v1MetricsViewFilter:
     type: object
     properties:

@@ -46,4 +46,14 @@ describe("toProto/fromProto", () => {
     );
     expect(newState.selectedTimeRange?.name).toEqual("PT6H");
   });
+
+  it("backwards compatibility for dimension values", () => {
+    const newState = getDashboardStateFromUrl(
+      decodeURIComponent(
+        "CgUKA1A0VxgFIgkKB3JpbGwtUFAqEnA5MF9kZXRlY3Rpb25fdGltZTgAQhJwOTBfZGV0ZWN0aW9uX3RpbWVSGGlzX2RldGVjdGVkX3VuZGVyX2Ffd2Vla1IqaGFzX3NlY29uZF9zY3JhcGluZ19zZXNzaW9uX2FmdGVyX29jY3VycmVkUiJldmVudF9vY2N1cnJlZF9kYXRlX2lzX2FwcHJveGltYXRlUgpldmVudF90eXBlUgxldmVudF9zb3VyY2VgBGoHRXRjL1VUQ3gCgAEBmAH%252F%252F%252F%252F%252F%252F%252F%252F%252F%252F%252F8BogFxGm8ICBJrGmkIBxIsGioICRIaChhpc19kZXRlY3RlZF91bmRlcl9hX3dlZWsSChIIGgYidHJ1ZSISNxo1CAkSJAoiZXZlbnRfb2NjdXJyZWRfZGF0ZV9pc19hcHByb3hpbWF0ZRILEgkaByJmYWxzZSI%253D",
+      ),
+      AD_BIDS_INIT_WITH_TIME,
+    );
+    console.log(newState);
+  });
 });
