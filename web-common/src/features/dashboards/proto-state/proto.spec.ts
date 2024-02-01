@@ -47,7 +47,7 @@ describe("toProto/fromProto", () => {
     const newState = getDashboardStateFromUrl(
       getProtoFromDashboardState(metricsExplorer),
       AD_BIDS_INIT_WITH_TIME,
-      [],
+      AD_BIDS_SCHEMA,
     );
     expect(newState.selectedTimeRange?.name).toEqual("PT6H");
   });
