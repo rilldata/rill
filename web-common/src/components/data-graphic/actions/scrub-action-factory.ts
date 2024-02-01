@@ -155,12 +155,12 @@ export function createScrubAction({
       }
 
       function onScrubStart(event: MouseEvent) {
-        event.preventDefault();
         // Check for the main button press
         if (event.button !== 0) return;
         if (!(startPredicate === undefined || startPredicate(event))) {
           return;
         }
+        node.addEventListener(moveEvent, onScrub);
         coordinates.set({
           start: setCoordinateBounds(event),
           stop: DEFAULT_COORDINATES,
@@ -180,6 +180,7 @@ export function createScrubAction({
 
       function onScrub(event: MouseEvent) {
         event.preventDefault();
+
         const isCurrentlyScrubbing = get(isScrubbing);
         if (!isCurrentlyScrubbing) return;
         if (!(movePredicate === undefined || movePredicate(event))) {
@@ -208,6 +209,7 @@ export function createScrubAction({
 
       function onScrubEnd(event: MouseEvent) {
         event.preventDefault();
+        node.removeEventListener(moveEvent, onScrub);
         if (!(endPredicate === undefined || endPredicate(event))) {
           reset();
           return;
@@ -227,7 +229,6 @@ export function createScrubAction({
       }
 
       node.addEventListener(startEvent, onScrubStart);
-      node.addEventListener(moveEvent, onScrub);
       window.addEventListener(endEvent, onScrubEnd);
       window.addEventListener(endEvent, reset);
       return {
