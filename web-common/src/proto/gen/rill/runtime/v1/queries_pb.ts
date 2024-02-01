@@ -2436,9 +2436,9 @@ export class MetricsViewTimeRangeResponse extends Message<MetricsViewTimeRangeRe
 }
 
 /**
- * @generated from message rill.runtime.v1.MetricsViewDataTypesRequest
+ * @generated from message rill.runtime.v1.MetricsViewSchemaRequest
  */
-export class MetricsViewDataTypesRequest extends Message<MetricsViewDataTypesRequest> {
+export class MetricsViewSchemaRequest extends Message<MetricsViewSchemaRequest> {
   /**
    * @generated from field: string instance_id = 1;
    */
@@ -2454,113 +2454,70 @@ export class MetricsViewDataTypesRequest extends Message<MetricsViewDataTypesReq
    */
   priority = 0;
 
-  constructor(data?: PartialMessage<MetricsViewDataTypesRequest>) {
+  constructor(data?: PartialMessage<MetricsViewSchemaRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewDataTypesRequest";
+  static readonly typeName = "rill.runtime.v1.MetricsViewSchemaRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "priority", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewDataTypesRequest {
-    return new MetricsViewDataTypesRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSchemaRequest {
+    return new MetricsViewSchemaRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewDataTypesRequest {
-    return new MetricsViewDataTypesRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSchemaRequest {
+    return new MetricsViewSchemaRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewDataTypesRequest {
-    return new MetricsViewDataTypesRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSchemaRequest {
+    return new MetricsViewSchemaRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: MetricsViewDataTypesRequest | PlainMessage<MetricsViewDataTypesRequest> | undefined, b: MetricsViewDataTypesRequest | PlainMessage<MetricsViewDataTypesRequest> | undefined): boolean {
-    return proto3.util.equals(MetricsViewDataTypesRequest, a, b);
+  static equals(a: MetricsViewSchemaRequest | PlainMessage<MetricsViewSchemaRequest> | undefined, b: MetricsViewSchemaRequest | PlainMessage<MetricsViewSchemaRequest> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSchemaRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.runtime.v1.MetricsViewDataTypesResponse
+ * @generated from message rill.runtime.v1.MetricsViewSchemaResponse
  */
-export class MetricsViewDataTypesResponse extends Message<MetricsViewDataTypesResponse> {
+export class MetricsViewSchemaResponse extends Message<MetricsViewSchemaResponse> {
   /**
-   * @generated from field: repeated rill.runtime.v1.MetricsViewDataType data_types = 1;
+   * @generated from field: rill.runtime.v1.StructType schema = 1;
    */
-  dataTypes: MetricsViewDataType[] = [];
+  schema?: StructType;
 
-  constructor(data?: PartialMessage<MetricsViewDataTypesResponse>) {
+  constructor(data?: PartialMessage<MetricsViewSchemaResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewDataTypesResponse";
+  static readonly typeName = "rill.runtime.v1.MetricsViewSchemaResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "data_types", kind: "message", T: MetricsViewDataType, repeated: true },
+    { no: 1, name: "schema", kind: "message", T: StructType },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewDataTypesResponse {
-    return new MetricsViewDataTypesResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSchemaResponse {
+    return new MetricsViewSchemaResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewDataTypesResponse {
-    return new MetricsViewDataTypesResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSchemaResponse {
+    return new MetricsViewSchemaResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewDataTypesResponse {
-    return new MetricsViewDataTypesResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSchemaResponse {
+    return new MetricsViewSchemaResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: MetricsViewDataTypesResponse | PlainMessage<MetricsViewDataTypesResponse> | undefined, b: MetricsViewDataTypesResponse | PlainMessage<MetricsViewDataTypesResponse> | undefined): boolean {
-    return proto3.util.equals(MetricsViewDataTypesResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.MetricsViewDataType
- */
-export class MetricsViewDataType extends Message<MetricsViewDataType> {
-  /**
-   * @generated from field: string name = 1;
-   */
-  name = "";
-
-  /**
-   * @generated from field: string type = 2;
-   */
-  type = "";
-
-  constructor(data?: PartialMessage<MetricsViewDataType>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewDataType";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewDataType {
-    return new MetricsViewDataType().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewDataType {
-    return new MetricsViewDataType().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewDataType {
-    return new MetricsViewDataType().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MetricsViewDataType | PlainMessage<MetricsViewDataType> | undefined, b: MetricsViewDataType | PlainMessage<MetricsViewDataType> | undefined): boolean {
-    return proto3.util.equals(MetricsViewDataType, a, b);
+  static equals(a: MetricsViewSchemaResponse | PlainMessage<MetricsViewSchemaResponse> | undefined, b: MetricsViewSchemaResponse | PlainMessage<MetricsViewSchemaResponse> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSchemaResponse, a, b);
   }
 }
 

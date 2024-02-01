@@ -202,6 +202,25 @@ export function copyFilterExpression(expr: V1Expression) {
   return filterExpressions(expr, () => true) ?? createAndExpression([]);
 }
 
+export function filterIdentifiers(
+  expr: V1Expression,
+  cb: (e: V1Expression, ident: string) => boolean,
+) {
+  return filterExpressions(expr, (e) => {
+    if (
+      e.cond?.op !== V1Operation.OPERATION_IN &&
+      e.cond?.op !== V1Operation.OPERATION_NIN
+    ) {
+      return true;
+    }
+    const ident = e.cond?.exprs?.[0].ident;
+    if (ident === undefined) {
+      return true;
+    }
+    return cb(e, ident);
+  });
+}
+
 export function getValueIndexInExpression(expr: V1Expression, value: string) {
   return expr.cond?.exprs?.findIndex((e, i) => i > 0 && e.val === value);
 }

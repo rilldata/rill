@@ -2,8 +2,16 @@ import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { FromProtoOperationMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
-import { forEachIdentifier } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  filterIdentifiers,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  BOOLEANS,
+  INTEGERS,
+  isFloat,
+} from "@rilldata/web-common/lib/duckdb-data-types";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -20,8 +28,12 @@ import {
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
+  type MetricsViewSpecDimensionV2,
+  type StructTypeField,
   V1Expression,
   V1MetricsView,
+  type V1MetricsViewSpec,
+  type V1StructType,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 
@@ -45,16 +57,19 @@ const LeaderboardContextColumnReverseMap: Record<
 export function getDashboardStateFromUrl(
   urlState: string,
   metricsView: V1MetricsView,
+  schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   return getDashboardStateFromProto(
     base64ToProto(decodeURIComponent(urlState)),
     metricsView,
+    schema,
   );
 }
 
 export function getDashboardStateFromProto(
   binary: Uint8Array,
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
+  schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
   const entity: Partial<MetricsExplorerEntity> = {};
@@ -65,10 +80,12 @@ export function getDashboardStateFromProto(
     entity.whereFilter = fromExpressionProto(dashboard.where);
   }
   if (entity.whereFilter) {
-    forEachIdentifier(entity.whereFilter, (e, ident) => {
-      const dim = metricsView.dimensions?.find((d) => d.name === ident);
-      if (!dim) return;
-    });
+    entity.whereFilter =
+      correctFilterValues(
+        entity.whereFilter,
+        metricsView.dimensions ?? [],
+        schema,
+      ) ?? createAndExpression([]);
   }
   if (dashboard.having) {
     entity.dimensionThresholdFilters = dashboard.having.map((h) => ({
@@ -189,6 +206,58 @@ function fromExpressionProto(expression: Expression): V1Expression | undefined {
             .filter((e): e is V1Expression => e !== undefined),
         },
       };
+  }
+}
+
+function correctFilterValues(
+  filter: V1Expression,
+  dimensions: MetricsViewSpecDimensionV2[],
+  schema: V1StructType,
+) {
+  return filterIdentifiers(filter, (e, ident) => {
+    const dim = dimensions?.find((d) => d.name === ident);
+    if (!dim) return false;
+    const field = schema.fields?.find((f) => f.name === ident);
+    if (!field) return false;
+
+    if (e.cond?.exprs) {
+      e.cond.exprs =
+        e.cond.exprs.map((e, i) => {
+          if (i === 0) return e;
+          return correctFilterValue(e, field);
+        }) ?? [];
+    }
+    return true;
+  });
+}
+
+function correctFilterValue(
+  valueExpr: V1Expression,
+  field: StructTypeField,
+): V1Expression {
+  if (valueExpr.val === null) {
+    return valueExpr;
+  }
+  if (typeof valueExpr.val === "string") {
+    return {
+      val: correctStringFilterValue(valueExpr.val, field),
+    };
+  }
+  return valueExpr;
+}
+
+function correctStringFilterValue(val: string, field: StructTypeField) {
+  if (!field.type?.code) return val;
+
+  if (INTEGERS.has(field.type?.code)) {
+    return Number.parseInt(val);
+  } else if (isFloat(field.type?.code)) {
+    return Number.parseFloat(val);
+  } else if (BOOLEANS.has(field.type?.code)) {
+    return val === "true";
+  } else {
+    // TODO: other types
+    return val;
   }
 }
 
