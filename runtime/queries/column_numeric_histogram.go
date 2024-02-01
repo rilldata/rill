@@ -2,7 +2,6 @@ package queries
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 	"math"
@@ -77,32 +76,24 @@ func (q *ColumnNumericHistogram) Export(ctx context.Context, rt *runtime.Runtime
 
 func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap drivers.OLAPStore, instanceID string, priority int) (float64, error) {
 	sanitizedColumnName := safeName(q.ColumnName)
-	var querySQL string
+
+	var qryString string
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		querySQL = fmt.Sprintf(
-			"SELECT (approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25))::DOUBLE AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s",
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
-			safeName(q.TableName),
-		)
+		qryString = "SELECT (approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25))::DOUBLE AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s"
 	case drivers.DialectClickHouse:
-		// assumes that column exists otherwise cast to double fails in clickhouse
-		querySQL = fmt.Sprintf(
-			"SELECT (quantileTDigest(0.75)(%s)-quantileTDigest(0.25)(%s))::DOUBLE AS iqr, uniq(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s",
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
-			safeName(q.TableName),
-		)
+		qryString = "SELECT (quantileTDigest(0.75)(%s)-quantileTDigest(0.25)(%s))::Nullable(DOUBLE) AS iqr, uniq(%s) AS count, (max(%s) - min(%s))::Nullable(DOUBLE) AS range FROM %s"
 	default:
 		return 0, fmt.Errorf("unsupported dialect %v", olap.Dialect())
 	}
+	querySQL := fmt.Sprintf(qryString,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		sanitizedColumnName,
+		safeName(q.TableName),
+	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            querySQL,
@@ -114,7 +105,7 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 	}
 	defer rows.Close()
 
-	var iqr, rangeVal sql.NullFloat64
+	var iqr, rangeVal *float64
 	var count float64
 	if rows.Next() {
 		err = rows.Scan(&iqr, &count, &rangeVal)
@@ -128,7 +119,7 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 		return 0, err
 	}
 
-	if !iqr.Valid || !rangeVal.Valid || rangeVal.Float64 == 0.0 {
+	if iqr == nil || rangeVal == nil || *rangeVal == 0.0 {
 		return 0, nil
 	}
 
@@ -138,8 +129,8 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 		bucketSize = count
 	} else {
 		// Use Freedman–Diaconis rule for calculating number of bins
-		bucketWidth := (2 * iqr.Float64) / math.Cbrt(count)
-		FDEstimatorBucketSize := math.Ceil(rangeVal.Float64 / bucketWidth)
+		bucketWidth := (2 * *iqr) / math.Cbrt(count)
+		FDEstimatorBucketSize := math.Ceil(*rangeVal / bucketWidth)
 		bucketSize = math.Min(40, FDEstimatorBucketSize)
 	}
 	return bucketSize, nil
@@ -238,23 +229,23 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 		histogramSQL = fmt.Sprintf(
 			`
 			  WITH data_table AS (
-				SELECT %[1]s as %[2]s 
+				SELECT %[1]s AS %[2]s 
 				FROM %[3]s
 				WHERE %[2]s IS NOT NULL
 			  ), values AS (
-				SELECT %[2]s as value from data_table
+				SELECT %[2]s AS value from data_table
 				WHERE %[2]s IS NOT NULL
 			  ), buckets AS (
 				SELECT
-				  number::DOUBLE as bucket,
-				  ((number) * (%[7]v) / %[4]v + (%[5]v))::DOUBLE as low,
-				  ((number + 1) * (%[7]v) / %[4]v + (%[5]v))::DOUBLE as high
+				  number::DOUBLE AS bucket,
+				  ((number) * (%[7]v) / %[4]v + (%[5]v))::DOUBLE AS low,
+				  ((number + 1) * (%[7]v) / %[4]v + (%[5]v))::DOUBLE AS high
 				FROM numbers(%[4]v)
 			  ),
 			  -- bin the values
 			  binned_data AS (
 				SELECT 
-				  FLOOR((value - (%[5]v)) / (%[7]v) * %[4]v) as bucket
+				  FLOOR((value - (%[5]v)) / (%[7]v) * %[4]v) AS bucket
 				from values
 			  ),
 			  -- join the bucket set with the binned values to generate the histogram
@@ -263,7 +254,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 				  buckets.bucket,
 				  low,
 				  high,
-				  SUM(CASE WHEN binned_data.bucket = buckets.bucket THEN 1 ELSE 0 END) as count
+				  SUM(CASE WHEN binned_data.bucket = buckets.bucket THEN 1 ELSE 0 END) AS count
 				FROM buckets
 				LEFT JOIN binned_data ON binned_data.bucket = buckets.bucket
 				GROUP BY buckets.bucket, low, high
@@ -272,16 +263,16 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 			  -- calculate the right edge, sine in histogram_stage we don't look at the values that
 			  -- might be the largest.
 			  right_edge AS (
-				SELECT count(*) as c from values WHERE value = %[6]v
+				SELECT count(*) AS c FROM values WHERE value = %[6]v
 			  )
 			  SELECT 
-			  	ifNull(bucket, 0)::Float64 as bucket,
-				ifNull(low, 0)::Float64 as low,
-				ifNull(high, 0)::Float64 as high,
+			  	ifNull(bucket, 0)::Float64 AS bucket,
+				ifNull(low, 0)::Float64 AS low,
+				ifNull(high, 0)::Float64 AS high,
 				-- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
-				ifNull(CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END, 0)::Float64 AS count
+				ifNull(CASE WHEN high = (SELECT max(high) FROM histogram_stage) THEN count + (SELECT c FROM right_edge) ELSE count END, 0)::Float64 AS count
 				FROM histogram_stage
-				ORDER BY bucket
+				ORDER BY bucket SETTINGS join_use_nulls=1
 			  `,
 			selectColumn,
 			sanitizedColumnName,
@@ -522,7 +513,7 @@ func histogramDiagnosticMethodSQL(ctx context.Context, olap drivers.OLAPStore, c
 			-- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
 				ifNull(CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END, 0) AS count
 			FROM histogram_stage
-		ORDER BY bucket
+		ORDER BY bucket SETTINGS join_use_nulls=1
 			`,
 			selectColumn,
 			sanitizedColumnName,

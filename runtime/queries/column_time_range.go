@@ -15,6 +15,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const hourInDay = 24
+
 type ColumnTimeRange struct {
 	TableName  string
 	ColumnName string
@@ -253,10 +255,15 @@ func (q *ColumnTimeRange) resolveClickHouse(ctx context.Context, olap drivers.OL
 		summary.Max = timestamppb.New(*maxTime)
 	}
 	if minTime != nil && maxTime != nil {
-		summary.Interval = &runtimev1.TimeRangeSummary_Interval{
-			Micros: maxTime.Sub(*minTime).Microseconds(),
+		summary.Interval = &runtimev1.TimeRangeSummary_Interval{}
+		duration := maxTime.Sub(*minTime)
+		hours := duration.Hours()
+		if hours >= hourInDay {
+			summary.Interval.Days = int32(hours / hourInDay)
 		}
+		summary.Interval.Micros = duration.Microseconds() - hourInDay*time.Hour.Microseconds()*int64(summary.Interval.Days)
 	}
+
 	q.Result = summary
 
 	return nil

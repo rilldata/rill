@@ -232,7 +232,7 @@ func rugSQL(ctx context.Context, olap drivers.OLAPStore, q *ColumnRugHistogram, 
 		CASE WHEN count>0 THEN true ELSE false END AS present,
 		ifNull(count, 0)
 	  FROM histrogram_with_edge
-	  WHERE present=true
+	  WHERE present=true SETTINGS join_use_nulls=1
 `,
 			selectColumn,
 			sanitizedColumnName,

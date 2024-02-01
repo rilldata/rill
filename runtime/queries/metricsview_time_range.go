@@ -238,7 +238,7 @@ func (q *MetricsViewTimeRange) resolveClickHouse(ctx context.Context, olap drive
 	}
 
 	rangeSQL := fmt.Sprintf(
-		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", max(%[1]s) - min(%[1]s) as \"interval\" FROM %[2]s %[3]s",
+		"SELECT min(%[1]s) AS \"min\", max(%[1]s) AS \"max\" FROM %[2]s %[3]s",
 		safeName(timeDim),
 		safeName(tableName),
 		filter,
@@ -256,23 +256,24 @@ func (q *MetricsViewTimeRange) resolveClickHouse(ctx context.Context, olap drive
 
 	if rows.Next() {
 		summary := &runtimev1.TimeRangeSummary{}
-		rowMap := make(map[string]any)
-		err = rows.MapScan(rowMap)
+		var min, max *time.Time
+		err = rows.Scan(&min, &max)
 		if err != nil {
 			return err
 		}
-		if v := rowMap["min"]; v != nil {
-			minTime, ok := v.(time.Time)
-			if !ok {
-				return fmt.Errorf("not a timestamp column")
-			}
-			maxTime := rowMap["max"].(time.Time)
-			summary.Min = timestamppb.New(minTime)
-			summary.Max = timestamppb.New(maxTime)
+
+		if min != nil {
+			summary.Min = timestamppb.New(*min)
+		}
+		if max != nil {
+			summary.Max = timestamppb.New(*max)
+		}
+		if min != nil && max != nil {
 			summary.Interval = &runtimev1.TimeRangeSummary_Interval{
-				Micros: maxTime.Sub(minTime).Microseconds(),
+				Micros: max.Sub(*min).Microseconds(),
 			}
 		}
+
 		q.Result = &runtimev1.MetricsViewTimeRangeResponse{
 			TimeRangeSummary: summary,
 		}

@@ -684,7 +684,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	if dialect != drivers.DialectDruid {
 		var joinOnClause string
 		if dialect == drivers.DialectClickHouse {
-			joinOnClause = fmt.Sprintf("base.%[1]s = comparison.%[1]s", colName)
+			joinOnClause = fmt.Sprintf("isNotDistinctFrom(base.%[1]s, comparison.%[1]s)", colName)
 		} else {
 			joinOnClause = fmt.Sprintf("base.%[1]s = comparison.%[1]s OR (base.%[1]s is null and comparison.%[1]s is null)", colName)
 		}

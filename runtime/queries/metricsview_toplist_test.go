@@ -2,6 +2,7 @@ package queries_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -9,9 +10,39 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+func TestMetricsViewsToplistAgainstClickHouse(t *testing.T) {
+	if testing.Short() {
+		t.Skip("clickhouse: skipping test in short mode")
+	}
+
+	ctx := context.Background()
+	clickHouseContainer, err := clickhouse.RunContainer(ctx,
+		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
+		clickhouse.WithUsername("clickhouse"),
+		clickhouse.WithPassword("clickhouse"),
+		clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := clickHouseContainer.Terminate(ctx)
+		require.NoError(t, err)
+	})
+
+	host, err := clickHouseContainer.Host(ctx)
+	require.NoError(t, err)
+	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
+	require.NoError(t, err)
+
+	t.Setenv("OLAP_DRIVER", "clickhouse")
+	t.Setenv("OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
+	t.Run("TestMetricsViewsToplist_measure_filters", func(t *testing.T) { TestMetricsViewsToplist_measure_filters(t) })
+}
 
 func TestMetricsViewsToplist_measure_filters(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")

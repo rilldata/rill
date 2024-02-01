@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"reflect"
 	"time"
 	"unicode/utf8"
 
@@ -107,7 +108,9 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 				return structpb.NewStringValue(uid.String()), nil
 			}
 		}
-		return structpb.NewValue(v)
+		if t.Code != runtimev1.Type_CODE_ARRAY { // not a byte array but array of uint8
+			return structpb.NewValue(v)
+		}
 	// pointers to base types
 	case *bool:
 		return structpb.NewBoolValue(*v), nil
@@ -200,9 +203,23 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		}
 		return structpb.NewStructValue(x), nil
 	default:
-		// Default handling for basic types (ints, string, etc.)
-		return structpb.NewValue(v)
 	}
+	if t.ArrayElementType != nil {
+		v2, err := ToListValueUnknown(v, t)
+		if err != nil {
+			return nil, err
+		}
+		return structpb.NewListValue(v2), nil
+	}
+	if t.MapType != nil {
+		v2, err := ToStructCoerceKeysUnknown(v, t.MapType)
+		if err != nil {
+			return nil, err
+		}
+		return structpb.NewStructValue(v2), nil
+	}
+	// Default handling for basic types (ints, string, etc.)
+	return structpb.NewValue(v)
 }
 
 // ToStruct converts a map to a google.protobuf.Struct. It's similar to
@@ -294,6 +311,66 @@ func ToListValue(v []interface{}, t *runtimev1.Type) (*structpb.ListValue, error
 	for i, v := range v {
 		var err error
 		x.Values[i], err = ToValue(v, elemType)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return x, nil
+}
+
+// ToListValueUnknown converts a list google.protobuf.List similar to ToListValue but when the type of list is list of unknown type.
+// It uses reflection so should not be used when ToListValue can be used.
+func ToListValueUnknown(s any, t *runtimev1.Type) (*structpb.ListValue, error) {
+	var elemType *runtimev1.Type
+	if t != nil {
+		elemType = t.ArrayElementType
+	}
+	v := reflect.ValueOf(s)
+	x := &structpb.ListValue{Values: make([]*structpb.Value, v.Len())}
+	for i := 0; i < v.Len(); i++ {
+		var err error
+		x.Values[i], err = ToValue(v.Index(i).Interface(), elemType)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return x, nil
+}
+
+// ToStructCoerceKeysUnknown is similar to ToStructCoerceKeys but when type of map is unknown.
+// It uses reflection so should not be used when ToStructCoerceKeys can be used.
+func ToStructCoerceKeysUnknown(s any, t *runtimev1.MapType) (*structpb.Struct, error) {
+	var keyType, valType *runtimev1.Type
+	if t != nil {
+		keyType = t.KeyType
+		valType = t.ValueType
+	}
+	v := reflect.ValueOf(s)
+
+	x := &structpb.Struct{Fields: make(map[string]*structpb.Value, v.Len())}
+	iter := v.MapRange()
+	for iter.Next() {
+		k1 := iter.Key()
+		k2, ok := k1.Interface().(string)
+		if !ok {
+			// Encode k1 using ToValue (to correctly coerce time, big numbers, etc.) and then to JSON.
+			// This yields more idiomatic/consistent strings than using fmt.Sprintf("%v", k1).
+			val, err := ToValue(k1, keyType)
+			if err != nil {
+				return nil, err
+			}
+
+			data, err := val.MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+
+			// Remove surrounding quotes returned by MarshalJSON for strings
+			k2 = trimQuotes(string(data))
+		}
+
+		var err error
+		x.Fields[k2], err = ToValue(iter.Value().Interface(), valType)
 		if err != nil {
 			return nil, err
 		}

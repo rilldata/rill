@@ -3,6 +3,7 @@ package queries_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"github.com/xuri/excelize/v2"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -18,6 +21,42 @@ import (
 	// Register drivers
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 )
+
+func TestMetricsViewsComparisonAgainstClickHouse(t *testing.T) {
+	if testing.Short() {
+		t.Skip("clickhouse: skipping test in short mode")
+	}
+
+	ctx := context.Background()
+	clickHouseContainer, err := clickhouse.RunContainer(ctx,
+		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
+		clickhouse.WithUsername("clickhouse"),
+		clickhouse.WithPassword("clickhouse"),
+		clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := clickHouseContainer.Terminate(ctx)
+		require.NoError(t, err)
+	})
+
+	host, err := clickHouseContainer.Host(ctx)
+	require.NoError(t, err)
+	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
+	require.NoError(t, err)
+
+	t.Setenv("OLAP_DRIVER", "clickhouse")
+	t.Setenv("OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
+	t.Run("TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist", func(t *testing.T) { TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(t) })
+	t.Run("TestMetricsViewsComparison_dim_order", func(t *testing.T) { TestMetricsViewsComparison_dim_order(t) })
+	t.Run("TestMetricsViewsComparison_measure_order", func(t *testing.T) { TestMetricsViewsComparison_measure_order(t) })
+	t.Run("TestMetricsViewsComparison_measure_filters", func(t *testing.T) { TestMetricsViewsComparison_measure_filters(t) })
+	t.Run("TestMetricsViewsComparison_measure_filters_with_compare_no_alias", func(t *testing.T) { TestMetricsViewsComparison_measure_filters_with_compare_no_alias(t) })
+	t.Run("TestMetricsViewsComparison_measure_filters_with_compare_base_measure", func(t *testing.T) { TestMetricsViewsComparison_measure_filters_with_compare_base_measure(t) })
+	t.Run("TestMetricsViewsComparison_measure_filters_with_compare_aliases", func(t *testing.T) { TestMetricsViewsComparison_measure_filters_with_compare_aliases(t) })
+	t.Run("TestMetricsViewsComparison_export_xlsx", func(t *testing.T) { TestMetricsViewsComparison_export_xlsx(t) })
+	t.Run("TestServer_MetricsViewTimeseries_export_csv", func(t *testing.T) { TestServer_MetricsViewTimeseries_export_csv(t) })
+}
 
 func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")

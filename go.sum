@@ -2053,6 +2053,8 @@ github.com/tchap/go-patricia v2.2.6+incompatible/go.mod h1:bmLyhP68RS6kStMGxByiQ
 github.com/testcontainers/testcontainers-go v0.14.0/go.mod h1:hSRGJ1G8Q5Bw2gXgPulJOLlEBaYJHeBSOkQM5JLG+JQ=
 github.com/testcontainers/testcontainers-go v0.27.0 h1:IeIrJN4twonTDuMuBNQdKZ+K97yd7VrmNGu+lDpYcDk=
 github.com/testcontainers/testcontainers-go v0.27.0/go.mod h1:+HgYZcd17GshBUZv9b+jKFJ198heWPQq3KQIp2+N+7U=
+github.com/testcontainers/testcontainers-go/modules/clickhouse v0.27.0 h1:WrSrIoswIPEVSzF/yYSMHnbHiaA59X9PT0v0m8DYLa8=
+github.com/testcontainers/testcontainers-go/modules/clickhouse v0.27.0/go.mod h1:G+K/zpmRDkp0OFgyOOuRj96YMtHSeUwKK3hGgK4YY9Y=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/tklauser/go-sysconf v0.3.12 h1:0QaGUFOdQaIVdPgfITYzaTegZvdCjmYO52cSFAEVmqU=
 github.com/tklauser/go-sysconf v0.3.12/go.mod h1:Ho14jnntGE1fpdOqQEEaiKRpvIavV0hSfmBq8nJbHYI=

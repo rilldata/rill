@@ -2,7 +2,8 @@ package queries_test
 
 import (
 	"context"
-	// "fmt"
+	"fmt"
+
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -11,8 +12,53 @@ import (
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"google.golang.org/protobuf/types/known/structpb"
 )
+
+func TestMetricsViewsTimeseriesAgainstClickHouse(t *testing.T) {
+	if testing.Short() {
+		t.Skip("clickhouse: skipping test in short mode")
+	}
+
+	ctx := context.Background()
+	clickHouseContainer, err := clickhouse.RunContainer(ctx,
+		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
+		clickhouse.WithUsername("clickhouse"),
+		clickhouse.WithPassword("clickhouse"),
+		clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := clickHouseContainer.Terminate(ctx)
+		require.NoError(t, err)
+	})
+
+	host, err := clickHouseContainer.Host(ctx)
+	require.NoError(t, err)
+	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
+	require.NoError(t, err)
+
+	t.Setenv("OLAP_DRIVER", "clickhouse")
+	t.Setenv("OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
+	t.Run("TestMetricsViewsTimeseries_month_grain", func(t *testing.T) { TestMetricsViewsTimeseries_month_grain(t) })
+	t.Run("TestMetricsViewsTimeseries_month_grain_IST", func(t *testing.T) { TestMetricsViewsTimeseries_month_grain_IST(t) })
+	t.Run("TestMetricsViewsTimeseries_quarter_grain_IST", func(t *testing.T) { TestMetricsViewsTimeseries_quarter_grain_IST(t) })
+	t.Run("TestMetricsViewsTimeseries_year_grain_IST", func(t *testing.T) { TestMetricsViewsTimeseries_year_grain_IST(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Weekly", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Weekly(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_WeeklyOnSaturday", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_WeeklyOnSaturday(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Daily", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Daily(t) })
+	t.Run("TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily", func(t *testing.T) { TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t) })
+	t.Run("TestMetricsViewTimeSeries_having_clause", func(t *testing.T) { TestMetricsViewTimeSeries_having_clause(t) })
+}
 
 func TestMetricsViewsTimeseries_month_grain(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "timeseries")

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -19,7 +18,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var colDataTypePattern = regexp.MustCompile(`Nullable\(([^)]+)\)`)
+var useCache = false
 
 // Create instruments
 var (
@@ -95,6 +94,11 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 
 		_, err = conn.ExecContext(context.Background(), fmt.Sprintf("DROP VIEW %q", name))
 		return nil, err
+	}
+
+	stmt.Query += "\n SETTINGS cast_keep_nullable = 1"
+	if useCache {
+		stmt.Query += ", use_query_cache = 1"
 	}
 
 	// Gather metrics only for actual queries
@@ -364,6 +368,8 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 			nullable = true
 		}
 
+		ct.ScanType()
+
 		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
 		if err != nil {
 			return nil, err
@@ -379,13 +385,13 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 }
 
 func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
-	// for nullable the datatype is Nullable(X)
-	match := colDataTypePattern.FindStringSubmatch(dbt)
-	if len(match) >= 2 {
-		dbt = match[1]
-	}
-
 	dbt = strings.ToUpper(dbt)
+	// for nullable the datatype is Nullable(X)
+	if strings.HasPrefix(dbt, "NULLABLE(") {
+		dbt = dbt[9 : len(dbt)-1]
+		nullable = true
+	}
+	match := true
 	t := &runtimev1.Type{Nullable: nullable}
 	// int256 and uint256
 	switch dbt {
@@ -435,11 +441,75 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_UUID
 	case "OTHER":
 		t.Code = runtimev1.Type_CODE_JSON
+	default:
+		match = false
+	}
+	if match {
+		return t, nil
 	}
 
-	if strings.Contains(dbt, "DATETIME") {
+	// All other complex types have details in parentheses after the type name.
+	base, args, ok := splitBaseAndArgs(dbt)
+	if !ok {
+		return nil, fmt.Errorf("encountered unsupported clickhouse type '%s'", dbt)
+	}
+
+	switch base {
+	case "DATETIME":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
+	// Example: "DECIMAL(10,20)"
+	case "DECIMAL":
+		t.Code = runtimev1.Type_CODE_DECIMAL
+	case "ARRAY":
+		t.Code = runtimev1.Type_CODE_ARRAY
+		var err error
+		t.ArrayElementType, err = databaseTypeToPB(dbt[6:len(dbt)-1], true)
+		if err != nil {
+			return nil, err
+		}
+	// Example: "MAP(VARCHAR, INT)"
+	case "MAP":
+		fieldStrs := strings.Split(args, ",")
+		if len(fieldStrs) != 2 {
+			return nil, fmt.Errorf("encountered unsupported clickhouse type '%s'", dbt)
+		}
+
+		keyType, err := databaseTypeToPB(strings.TrimSpace(fieldStrs[0]), true)
+		if err != nil {
+			return nil, err
+		}
+
+		valType, err := databaseTypeToPB(strings.TrimSpace(fieldStrs[1]), true)
+		if err != nil {
+			return nil, err
+		}
+
+		t.Code = runtimev1.Type_CODE_MAP
+		t.MapType = &runtimev1.MapType{
+			KeyType:   keyType,
+			ValueType: valType,
+		}
+	case "ENUM":
+		t.Code = runtimev1.Type_CODE_STRING // representing enums as strings for now
+	default:
+		return nil, fmt.Errorf("encountered unsupported duckdb type '%s'", dbt)
 	}
 
 	return t, nil
+}
+
+// Splits a type with args in parentheses, for example:
+//
+//	`STRUCT("a" INT, "b" INT)` -> (`STRUCT`, `"a" INT, "b" INT`, true)
+func splitBaseAndArgs(s string) (string, string, bool) {
+	// Split on opening parenthesis
+	base, rest, found := strings.Cut(s, "(")
+	if !found {
+		return "", "", false
+	}
+
+	// Remove closing parenthesis
+	rest = rest[0 : len(rest)-1]
+
+	return base, rest, true
 }

@@ -609,7 +609,7 @@ func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAg
 		if dim.TimeZone == "" || dim.TimeZone == "UTC" {
 			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
 		}
-		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMPTZ, ?)), ?)", convertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
+		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, ?)), ?)", convertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", dialect)
 	}
