@@ -16,7 +16,8 @@
 
   const dispatch = createEventDispatcher();
 
-  let inputElement;
+  let inputElement: HTMLInputElement;
+  let focus = false;
 
   if (claimFocusOnMount) {
     onMount(() => {
@@ -27,6 +28,7 @@
   function handleKeyDown(event: KeyboardEvent) {
     if (event.key === "Enter") {
       event.preventDefault();
+      inputElement.blur();
       dispatch("enter-pressed");
     }
   }
@@ -50,22 +52,39 @@
     {/if}
   </div>
   <input
-    autocomplete="off"
-    bind:this={inputElement}
-    bind:value
-    class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-primary-500 w-full text-xs {error &&
-      'border-red-500'}"
     {id}
+    type="text"
+    {placeholder}
     name={id}
+    autocomplete="off"
+    class:error={error && value}
     on:change
     on:input
     on:keydown={handleKeyDown}
-    {placeholder}
-    type="text"
+    on:focus={() => (focus = true)}
+    on:blur={() => (focus = false)}
+    bind:this={inputElement}
+    bind:value
   />
-  {#if error}
+  {#if error && value && !focus}
     <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
       {error}
     </div>
   {/if}
 </div>
+
+<style lang="postcss">
+  input {
+    @apply w-full h-8 rounded-sm;
+    @apply px-3 py-[5px];
+    @apply cursor-pointer text-xs;
+    @apply bg-white border border-gray-300;
+  }
+
+  input:focus {
+    @apply outline-primary-500;
+  }
+  .error:not(:focus) {
+    @apply border-red-500;
+  }
+</style>
