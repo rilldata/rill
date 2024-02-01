@@ -7609,22 +7609,22 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewTimeRangeResponseValidationError{}
 
-// Validate checks the field values on MetricsViewDataTypesRequest with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on MetricsViewSchemaRequest with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *MetricsViewDataTypesRequest) Validate() error {
+func (m *MetricsViewSchemaRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsViewDataTypesRequest with the
+// ValidateAll checks the field values on MetricsViewSchemaRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// MetricsViewDataTypesRequestMultiError, or nil if none found.
-func (m *MetricsViewDataTypesRequest) ValidateAll() error {
+// MetricsViewSchemaRequestMultiError, or nil if none found.
+func (m *MetricsViewSchemaRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsViewDataTypesRequest) validate(all bool) error {
+func (m *MetricsViewSchemaRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -7634,7 +7634,7 @@ func (m *MetricsViewDataTypesRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
-		err := MetricsViewDataTypesRequestValidationError{
+		err := MetricsViewSchemaRequestValidationError{
 			field:  "MetricsViewName",
 			reason: "value length must be at least 1 runes",
 		}
@@ -7647,19 +7647,19 @@ func (m *MetricsViewDataTypesRequest) validate(all bool) error {
 	// no validation rules for Priority
 
 	if len(errors) > 0 {
-		return MetricsViewDataTypesRequestMultiError(errors)
+		return MetricsViewSchemaRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsViewDataTypesRequestMultiError is an error wrapping multiple
-// validation errors returned by MetricsViewDataTypesRequest.ValidateAll() if
-// the designated constraints aren't met.
-type MetricsViewDataTypesRequestMultiError []error
+// MetricsViewSchemaRequestMultiError is an error wrapping multiple validation
+// errors returned by MetricsViewSchemaRequest.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewSchemaRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewDataTypesRequestMultiError) Error() string {
+func (m MetricsViewSchemaRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7668,12 +7668,11 @@ func (m MetricsViewDataTypesRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsViewDataTypesRequestMultiError) AllErrors() []error { return m }
+func (m MetricsViewSchemaRequestMultiError) AllErrors() []error { return m }
 
-// MetricsViewDataTypesRequestValidationError is the validation error returned
-// by MetricsViewDataTypesRequest.Validate if the designated constraints
-// aren't met.
-type MetricsViewDataTypesRequestValidationError struct {
+// MetricsViewSchemaRequestValidationError is the validation error returned by
+// MetricsViewSchemaRequest.Validate if the designated constraints aren't met.
+type MetricsViewSchemaRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7681,24 +7680,24 @@ type MetricsViewDataTypesRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsViewDataTypesRequestValidationError) Field() string { return e.field }
+func (e MetricsViewSchemaRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsViewDataTypesRequestValidationError) Reason() string { return e.reason }
+func (e MetricsViewSchemaRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsViewDataTypesRequestValidationError) Cause() error { return e.cause }
+func (e MetricsViewSchemaRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsViewDataTypesRequestValidationError) Key() bool { return e.key }
+func (e MetricsViewSchemaRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsViewDataTypesRequestValidationError) ErrorName() string {
-	return "MetricsViewDataTypesRequestValidationError"
+func (e MetricsViewSchemaRequestValidationError) ErrorName() string {
+	return "MetricsViewSchemaRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsViewDataTypesRequestValidationError) Error() string {
+func (e MetricsViewSchemaRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -7710,14 +7709,14 @@ func (e MetricsViewDataTypesRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsViewDataTypesRequest.%s: %s%s",
+		"invalid %sMetricsViewSchemaRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsViewDataTypesRequestValidationError{}
+var _ error = MetricsViewSchemaRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -7725,78 +7724,73 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsViewDataTypesRequestValidationError{}
+} = MetricsViewSchemaRequestValidationError{}
 
-// Validate checks the field values on MetricsViewDataTypesResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on MetricsViewSchemaResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *MetricsViewDataTypesResponse) Validate() error {
+func (m *MetricsViewSchemaResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on MetricsViewDataTypesResponse with the
+// ValidateAll checks the field values on MetricsViewSchemaResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// MetricsViewDataTypesResponseMultiError, or nil if none found.
-func (m *MetricsViewDataTypesResponse) ValidateAll() error {
+// MetricsViewSchemaResponseMultiError, or nil if none found.
+func (m *MetricsViewSchemaResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *MetricsViewDataTypesResponse) validate(all bool) error {
+func (m *MetricsViewSchemaResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	for idx, item := range m.GetDataTypes() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewDataTypesResponseValidationError{
-						field:  fmt.Sprintf("DataTypes[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewDataTypesResponseValidationError{
-						field:  fmt.Sprintf("DataTypes[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return MetricsViewDataTypesResponseValidationError{
-					field:  fmt.Sprintf("DataTypes[%v]", idx),
+	if all {
+		switch v := interface{}(m.GetSchema()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSchemaResponseValidationError{
+					field:  "Schema",
 					reason: "embedded message failed validation",
 					cause:  err,
-				}
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSchemaResponseValidationError{
+					field:  "Schema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
 			}
 		}
-
+	} else if v, ok := interface{}(m.GetSchema()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSchemaResponseValidationError{
+				field:  "Schema",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
 	}
 
 	if len(errors) > 0 {
-		return MetricsViewDataTypesResponseMultiError(errors)
+		return MetricsViewSchemaResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// MetricsViewDataTypesResponseMultiError is an error wrapping multiple
-// validation errors returned by MetricsViewDataTypesResponse.ValidateAll() if
-// the designated constraints aren't met.
-type MetricsViewDataTypesResponseMultiError []error
+// MetricsViewSchemaResponseMultiError is an error wrapping multiple validation
+// errors returned by MetricsViewSchemaResponse.ValidateAll() if the
+// designated constraints aren't met.
+type MetricsViewSchemaResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewDataTypesResponseMultiError) Error() string {
+func (m MetricsViewSchemaResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -7805,12 +7799,11 @@ func (m MetricsViewDataTypesResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m MetricsViewDataTypesResponseMultiError) AllErrors() []error { return m }
+func (m MetricsViewSchemaResponseMultiError) AllErrors() []error { return m }
 
-// MetricsViewDataTypesResponseValidationError is the validation error returned
-// by MetricsViewDataTypesResponse.Validate if the designated constraints
-// aren't met.
-type MetricsViewDataTypesResponseValidationError struct {
+// MetricsViewSchemaResponseValidationError is the validation error returned by
+// MetricsViewSchemaResponse.Validate if the designated constraints aren't met.
+type MetricsViewSchemaResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -7818,24 +7811,24 @@ type MetricsViewDataTypesResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e MetricsViewDataTypesResponseValidationError) Field() string { return e.field }
+func (e MetricsViewSchemaResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e MetricsViewDataTypesResponseValidationError) Reason() string { return e.reason }
+func (e MetricsViewSchemaResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e MetricsViewDataTypesResponseValidationError) Cause() error { return e.cause }
+func (e MetricsViewSchemaResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e MetricsViewDataTypesResponseValidationError) Key() bool { return e.key }
+func (e MetricsViewSchemaResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e MetricsViewDataTypesResponseValidationError) ErrorName() string {
-	return "MetricsViewDataTypesResponseValidationError"
+func (e MetricsViewSchemaResponseValidationError) ErrorName() string {
+	return "MetricsViewSchemaResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e MetricsViewDataTypesResponseValidationError) Error() string {
+func (e MetricsViewSchemaResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -7847,14 +7840,14 @@ func (e MetricsViewDataTypesResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sMetricsViewDataTypesResponse.%s: %s%s",
+		"invalid %sMetricsViewSchemaResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = MetricsViewDataTypesResponseValidationError{}
+var _ error = MetricsViewSchemaResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -7862,113 +7855,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = MetricsViewDataTypesResponseValidationError{}
-
-// Validate checks the field values on MetricsViewDataType with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *MetricsViewDataType) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on MetricsViewDataType with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// MetricsViewDataTypeMultiError, or nil if none found.
-func (m *MetricsViewDataType) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *MetricsViewDataType) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Name
-
-	// no validation rules for Type
-
-	if len(errors) > 0 {
-		return MetricsViewDataTypeMultiError(errors)
-	}
-
-	return nil
-}
-
-// MetricsViewDataTypeMultiError is an error wrapping multiple validation
-// errors returned by MetricsViewDataType.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsViewDataTypeMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewDataTypeMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m MetricsViewDataTypeMultiError) AllErrors() []error { return m }
-
-// MetricsViewDataTypeValidationError is the validation error returned by
-// MetricsViewDataType.Validate if the designated constraints aren't met.
-type MetricsViewDataTypeValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e MetricsViewDataTypeValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e MetricsViewDataTypeValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e MetricsViewDataTypeValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e MetricsViewDataTypeValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e MetricsViewDataTypeValidationError) ErrorName() string {
-	return "MetricsViewDataTypeValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e MetricsViewDataTypeValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sMetricsViewDataType.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = MetricsViewDataTypeValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = MetricsViewDataTypeValidationError{}
+} = MetricsViewSchemaResponseValidationError{}
 
 // Validate checks the field values on ColumnRollupIntervalRequest with the
 // rules defined in the proto definition for this message. If any rules are

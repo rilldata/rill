@@ -95,10 +95,10 @@ service QueryService {
     };
   }
 
-  // MetricsViewDataTypes Get the data types of measures and dimensions
-  rpc MetricsViewDataTypes(MetricsViewDataTypesRequest) returns (MetricsViewDataTypesResponse) {
+  // MetricsViewSchema Get the data types of measures and dimensions
+  rpc MetricsViewSchema(MetricsViewSchemaRequest) returns (MetricsViewSchemaResponse) {
     option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/data-types",
+      get: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/schema",
     };
   }
 
@@ -518,19 +518,14 @@ message MetricsViewTimeRangeResponse {
   TimeRangeSummary time_range_summary = 1;
 }
 
-message MetricsViewDataTypesRequest {
+message MetricsViewSchemaRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
 }
 
-message MetricsViewDataTypesResponse {
-  repeated MetricsViewDataType data_types = 1;
-}
-
-message MetricsViewDataType {
-  string name = 1;
-  string type = 2;
+message MetricsViewSchemaResponse {
+  StructType schema = 1;
 }
 
 // **********

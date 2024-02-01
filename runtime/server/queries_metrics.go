@@ -437,7 +437,7 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 	return q.Result, nil
 }
 
-func (s *Server) MetricsViewDataTypes(ctx context.Context, req *runtimev1.MetricsViewDataTypesRequest) (*runtimev1.MetricsViewDataTypesResponse, error) {
+func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsViewSchemaRequest) (*runtimev1.MetricsViewSchemaResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
 		attribute.String("args.metric_view", req.MetricsViewName),
@@ -450,24 +450,23 @@ func (s *Server) MetricsViewDataTypes(ctx context.Context, req *runtimev1.Metric
 		return nil, ErrForbidden
 	}
 
-	mv, security, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	mv, _, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
 	if err != nil {
 		return nil, err
 	}
 
-	q := &queries.MetricsViewDataTypes{
-		MetricsViewName:    req.MetricsViewName,
-		MetricsView:        mv,
-		ResolvedMVSecurity: security,
+	q := &queries.MetricsViewSchema{
+		MetricsViewName: req.MetricsViewName,
+		TableName:       mv.Table,
+		Measures:        mv.Measures,
+		Dimensions:      mv.Dimensions,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
 		return nil, err
 	}
 
-	return &runtimev1.MetricsViewDataTypesResponse{
-		DataTypes: q.Result,
-	}, nil
+	return q.Result, nil
 }
 
 // inlineMeasureRegexp is used by validateInlineMeasures.
