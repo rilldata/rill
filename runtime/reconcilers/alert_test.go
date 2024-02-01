@@ -151,6 +151,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 					"measure_0": 4,
 				})),
 			},
+			SentEmails:    true,
 			ExecutionTime: timestamppb.New(time.Date(2024, 1, 4, 0, 0, 0, 0, time.UTC)),
 		},
 	)

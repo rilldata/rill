@@ -520,7 +520,10 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	}
 
 	// Evaluate query attributes
-	queryForAttrs := adminMeta.QueryForAttributes
+	var queryForAttrs map[string]any
+	if adminMeta != nil {
+		queryForAttrs = adminMeta.QueryForAttributes
+	}
 	if a.Spec.GetQueryForAttributes() != nil { // Explicit attributes take precedence
 		queryForAttrs = a.Spec.GetQueryForAttributes().AsMap()
 	}
@@ -639,8 +642,6 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				ExecutionTime: executionTime,
 				Status:        current.Result.Status,
 				IsRecover:     true,
-				OpenLink:      adminMeta.OpenURL,
-				EditLink:      adminMeta.EditURL,
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
 			if !a.Spec.EmailOnFail {
@@ -652,8 +653,6 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				ExecutionTime: executionTime,
 				Status:        current.Result.Status,
 				FailRow:       current.Result.FailRow.AsMap(),
-				OpenLink:      adminMeta.OpenURL,
-				EditLink:      adminMeta.EditURL,
 			}
 		case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
 			if !a.Spec.EmailOnError {
@@ -665,8 +664,6 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 				ExecutionTime:  executionTime,
 				Status:         current.Result.Status,
 				ExecutionError: current.Result.ErrorMessage,
-				OpenLink:       adminMeta.OpenURL,
-				EditLink:       adminMeta.EditURL,
 			}
 		default:
 			return fmt.Errorf("unexpected assertion result status: %v", current.Result.Status)
@@ -677,6 +674,12 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 	var emailErr error
 	var sentEmails bool
 	if msg != nil {
+		if adminMeta != nil {
+			// Note: adminMeta may not always be available (if outside of cloud). In those cases, we leave the links blank (no clickthrough available).
+			msg.OpenLink = adminMeta.OpenURL
+			msg.EditLink = adminMeta.EditURL
+		}
+
 		for _, recipient := range a.Spec.EmailRecipients {
 			msg.ToEmail = recipient
 			err := r.C.Runtime.Email.SendAlertStatus(msg)
