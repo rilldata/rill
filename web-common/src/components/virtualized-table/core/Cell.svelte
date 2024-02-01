@@ -120,7 +120,7 @@
       z-9
       text-ellipsis
       whitespace-nowrap
-      {isDimensionTable ? 'pr-5' : 'border-r border-b'}
+      {isDimensionTable ? 'pr-2' : 'border-r border-b'}
       {activityStatus}
       "
     on:blur={onBlur}

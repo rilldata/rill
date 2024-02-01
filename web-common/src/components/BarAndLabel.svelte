@@ -40,11 +40,7 @@
   style:flex="1"
 >
   <div
-    class:pl-2={!compact}
-    class:pr-2={!compact}
-    class:pr-1={compact}
-    class:pl-1={compact}
-    class="text-right overflow-hidden"
+    class="text-right overflow-hidden pl-1"
     style="position: relative;"
   >
     <slot />
