@@ -72,17 +72,17 @@ const config = {
       },
       metadata: [
         {
-          property: 'og:image', content: 'https://images.ctfassets.net/ve6smfzbifwz/5MvW4kOHMbGBIIAI7hWe65/a9418adf8f96ee0d3a3ca1341f368e67/Rill_Data.png'
+          property: 'og:image', content: 'https://cdn.rilldata.com/email-transactional/rill-preview.jpg'
         },
         {
-          name: 'twitter:image', content: 'https://images.ctfassets.net/ve6smfzbifwz/5MvW4kOHMbGBIIAI7hWe65/a9418adf8f96ee0d3a3ca1341f368e67/Rill_Data.png'
+          name: 'twitter:image', content: 'https://cdn.rilldata.com/email-transactional/rill-preview.jpg'
         },
       ],
       navbar: {
         logo: {
           alt: "Rill Logo",
-          src: "img/rill-logo-light.svg",
-          srcDark: "img/rill-logo-dark.svg",
+          src: "img/rill-logo-light.png",
+          srcDark: "img/rill-logo-dark.png",
           href: "https://www.rilldata.com",
           target: "_self",
         },
