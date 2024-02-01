@@ -8,7 +8,7 @@ sidebar_position: 1
 Rill is the fastest path from data lake to dashboard. Download Rill to start modeling data and create fast, exploratory dashboards.
 
 ```
-curl -s https://cdn.rilldata.com/install.sh | bash
+curl https://rill.sh | sh
 rill start my-rill-project
 ```
 

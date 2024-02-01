@@ -12,7 +12,7 @@ import TabItem from '@theme/TabItem';
 You can install `rill` using our installation script:
 
 ```bash
-curl -s https://cdn.rilldata.com/install.sh | bash
+curl https://rill.sh | sh
 ```
 
 Verify that the installation succeeded:
@@ -24,7 +24,7 @@ rill --help
 
 On both macOS and Linux, you can install the latest nightly build using the installation script:
 ```bash
-curl -s https://cdn.rilldata.com/install.sh | bash -s -- --nightly
+curl -s https://rill.sh | sh -s -- --nightly
 ```
 
 Note for macOS users: If you previously installed Rill using `brew`, the brew-managed binary will take precedent. You can remove it by running `brew uninstall rill`.
@@ -46,7 +46,7 @@ sudo apt-get install unzip
 
 With `unzip` installed, you're ready to install Rill. Just run:
 ```bash
-curl -s <https://cdn.rilldata.com/install.sh> | bash
+curl -s <https://rill.sh> | sh
 ```
 
 ## Alternative Install Options
