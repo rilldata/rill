@@ -1300,6 +1300,20 @@ func (c *connection) FindVirtualFiles(ctx context.Context, projectID, branch str
 	return res, nil
 }
 
+func (c *connection) FindVirtualFile(ctx context.Context, projectID, branch, path string) (*database.VirtualFile, error) {
+	res := &database.VirtualFile{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT path, data, deleted, updated_on
+		FROM virtual_files
+		WHERE project_id=$1 AND branch=$2 AND path=$2
+		ORDER BY updated_on, path LIMIT $5
+	`, projectID, branch, path).StructScan(&res)
+	if err != nil {
+		return nil, parseErr("virtual files", err)
+	}
+	return res, nil
+}
+
 func (c *connection) UpsertVirtualFile(ctx context.Context, opts *database.InsertVirtualFileOptions) error {
 	if err := database.Validate(opts); err != nil {
 		return err

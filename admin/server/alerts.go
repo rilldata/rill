@@ -427,37 +427,16 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-
-	spec, err := s.admin.LookupAlert(ctx, depl, req.Name)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get alert: %s", err.Error())
-	}
-	annotations := parseAlertAnnotations(spec.Annotations)
-
-	if !annotations.AdminManaged {
-		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
-	}
-
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.PermissionDenied, "only users can view the alert yaml")
-	}
-
-	opts, err := recreateAlertOptionsFromSpec(spec)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to recreate alert options: %s", err.Error())
-	}
-
-	data, err := s.yamlForCommittedAlert(opts)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
+	if vf == nil {
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("failed to find file for alert %s", req.Name))
 	}
 
 	return &adminv1.GetAlertYAMLResponse{
-		Yaml: string(data),
+		Yaml: string(vf.Data),
 	}, nil
 }
 

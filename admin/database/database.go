@@ -187,6 +187,7 @@ type DB interface {
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 
 	FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
+	FindVirtualFile(ctx context.Context, projectID, branch, path string) (*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
