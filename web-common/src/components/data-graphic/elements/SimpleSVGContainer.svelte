@@ -53,6 +53,7 @@ to the props.
   role="button"
   tabindex="0"
   style="overflow: {overflowHidden ? 'hidden' : 'visible'}"
+  style:outline="none"
   use:scrub
   on:scrub-start
   on:scrub-end
