@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"reflect"
 	"slices"
 	"strconv"
@@ -450,14 +451,18 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 
 	defer rows.Close()
 
-	toTSV := func(ts int64, value sql.NullFloat64, bin float64) *runtimev1.TimeSeriesValue {
+	toTSV := func(ts int64, value sql.NullFloat64, bin sql.NullFloat64) *runtimev1.TimeSeriesValue {
 		tsv := &runtimev1.TimeSeriesValue{
 			Records: &structpb.Struct{
 				Fields: make(map[string]*structpb.Value),
 			},
 		}
 		tsv.Ts = timestamppb.New(time.UnixMilli(ts))
-		tsv.Bin = bin
+
+		tsv.Bin = bin.Float64
+		if !bin.Valid {
+			tsv.Bin = math.NaN()
+		}
 		if value.Valid {
 			tsv.Records.Fields["count"] = structpb.NewNumberValue(value.Float64)
 		} else {
@@ -471,7 +476,7 @@ func (q *ColumnTimeseries) CreateTimestampRollupReduction(
 		var minT, maxT int64
 		var argminVT, argmaxVT sql.NullInt64
 		var argminTV, argmaxTV, minV, maxV sql.NullFloat64
-		var bin float64
+		var bin sql.NullFloat64
 		err = rows.Scan(&minT, &argminTV, &maxT, &argmaxTV, &minV, &argminVT, &maxV, &argmaxVT, &bin)
 		if err != nil {
 			return nil, err

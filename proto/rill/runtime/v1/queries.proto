@@ -37,7 +37,7 @@ service QueryService {
 
   // Explore APIs
 
-  // MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+  // MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
   rpc MetricsViewAggregation(MetricsViewAggregationRequest) returns (MetricsViewAggregationResponse) {
     option (google.api.http) = {
       post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view}/aggregation",
@@ -58,7 +58,7 @@ service QueryService {
   // Returns a toplist without comparison data if comparison time range is omitted.
   //
   // ie. comparsion toplist:
-  // | measure1_base | measure1_previous   | measure1__delta_abs | measure__delta_rel | dimension |
+  // | measure1_base | measure1_previous   | measure1__delta_abs | measure1__delta_rel | dimension |
   // |---------------|---------------------|---------------------|--------------------|-----------|
   // | 2             | 2                   | 0                   | 0                  | Safari    |
   // | 1             | 0                   | 1                   | N/A                | Chrome    |
@@ -318,7 +318,9 @@ message MetricsViewAggregationRequest {
 }
 
 message MetricsViewAggregationResponse {
+  // Not null
   StructType schema = 1;
+  // Not null
   repeated google.protobuf.Struct data = 2;
 }
 
@@ -372,7 +374,9 @@ message MetricsViewToplistRequest {
 }
 
 message MetricsViewToplistResponse {
+  // Not null
   repeated MetricsViewColumn meta = 1;
+  // Not null
   repeated google.protobuf.Struct data = 2;
 }
 
@@ -413,6 +417,7 @@ message MetricsViewComparisonRequest {
 
 // Response message for QueryService.MetricsViewComparison
 message MetricsViewComparisonResponse {
+  // Not null
   repeated MetricsViewComparisonRow rows = 1;
 }
 
@@ -458,15 +463,22 @@ message MetricsViewComparisonSort {
 }
 
 message MetricsViewComparisonRow {
+  // Not null
   google.protobuf.Value dimension_value = 1;
+  // Not null
   repeated MetricsViewComparisonValue measure_values = 2;
 }
 
 message MetricsViewComparisonValue {
+  // Not null
   string measure_name = 1;
+  // Can be null
   google.protobuf.Value base_value = 2;
+  // Can be null
   google.protobuf.Value comparison_value = 3;
+  // Can be null
   google.protobuf.Value delta_abs = 4;
+  // Can be null
   google.protobuf.Value delta_rel = 5;
 }
 
@@ -501,7 +513,9 @@ message MetricsViewTimeSeriesRequest {
 }
 
 message MetricsViewTimeSeriesResponse {
+  // Not null
   repeated MetricsViewColumn meta = 1;
+  // Not null
   repeated TimeSeriesValue data = 2;
 }
 
@@ -522,7 +536,9 @@ message MetricsViewTotalsRequest {
 }
 
 message MetricsViewTotalsResponse {
+  // Not null
   repeated MetricsViewColumn meta = 1;
+  // Not null
   google.protobuf.Struct data = 2;
 }
 
@@ -550,7 +566,9 @@ message MetricsViewRowsRequest {
 }
 
 message MetricsViewRowsResponse {
+  // Not null
   repeated MetricsViewColumn meta = 1;
+  // Not null
   repeated google.protobuf.Struct data = 2;
 }
 
@@ -572,13 +590,18 @@ message MetricsViewFilter {
 }
 
 message MetricsViewColumn {
+  // Not null
   string name = 1;
+  // Not null
   string type = 2;
+  // Not null
   bool nullable = 3;
 }
 
 message InlineMeasure {
+  // Required
   string name = 1 [(validate.rules).string.min_len = 1];
+  // Required, ie 'count(*)'
   string expression = 2 [(validate.rules).string.min_len = 1];
 }
 
@@ -589,6 +612,7 @@ message MetricsViewTimeRangeRequest {
 }
 
 message MetricsViewTimeRangeResponse {
+  // Not null
   TimeRangeSummary time_range_summary = 1;
 }
 
@@ -637,9 +661,12 @@ message CategoricalSummary {
 }
 
 message TopK {
+  // Not null
   repeated Entry entries = 1;
   message Entry {
+    // Not null
     google.protobuf.Value value = 1;
+    // Not null
     double count = 2;
   }
 }
@@ -654,6 +681,7 @@ message ColumnNullCountRequest {
 }
 
 message ColumnNullCountResponse {
+  // Not null
   double count = 1;
 }
 
@@ -678,6 +706,7 @@ message NumericSummary {
   }
 }
 
+// All fields are not null
 message NumericHistogramBins {
   message Bin {
     int32 bucket = 1;
@@ -689,6 +718,7 @@ message NumericHistogramBins {
   repeated Bin bins = 1;
 }
 
+// All fields are not null
 message NumericStatistics {
   double min = 1;
   double max = 2;
@@ -699,6 +729,7 @@ message NumericStatistics {
   double sd = 7;
 }
 
+// All fields are not null
 message NumericOutliers {
   message Outlier {
     int32 bucket = 1;
@@ -764,13 +795,16 @@ message ColumnTimeRangeResponse {
 }
 
 message TimeRangeSummary {
+  // Not null
   google.protobuf.Timestamp min = 1;
+  // Not null
   google.protobuf.Timestamp max = 2;
   message Interval {
     int32 months = 1;
     int32 days = 2;
     int64 micros = 3;
   }
+  // Not null
   Interval interval = 3;
 }
 
@@ -831,14 +865,20 @@ message TimeSeriesTimeRange {
 }
 
 message TimeSeriesResponse {
+  // Not null
   repeated TimeSeriesValue results = 1;
+  // Not null, empty if 'pixels' is not specified
   repeated TimeSeriesValue spark = 2;
+  // Not null, unused
   int32 sample_size = 4;
 }
 
 message TimeSeriesValue {
+  // Not null
   google.protobuf.Timestamp ts = 1;
+  // 0-based. Can be NaN if timestamps are the same. (Used for spark data only.)
   double bin = 2;
+  // Not null
   google.protobuf.Struct records = 3;
 }
 
@@ -848,11 +888,13 @@ message TimeSeriesValue {
 
 message TableCardinalityRequest {
   string instance_id = 1;
+  // Required
   string table_name = 2 [(validate.rules).string.min_len = 1];
   int32 priority = 3;
 }
 
 message TableCardinalityResponse {
+  // Not null
   int64 cardinality = 1;
 }
 
@@ -867,8 +909,11 @@ message TableColumnsResponse {
 }
 
 message ProfileColumn {
+  // Not null
   string name = 1;
+  // Not null
   string type = 2;
+  // Unused
   int32 largest_string_length = 3;
 }
 

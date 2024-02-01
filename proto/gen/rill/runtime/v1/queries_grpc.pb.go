@@ -54,11 +54,27 @@ type QueryServiceClient interface {
 	QueryBatch(ctx context.Context, in *QueryBatchRequest, opts ...grpc.CallOption) (QueryService_QueryBatchClient, error)
 	// Export builds a URL to download the results of a query as a file.
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
-	// MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+	// MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
 	MetricsViewAggregation(ctx context.Context, in *MetricsViewAggregationRequest, opts ...grpc.CallOption) (*MetricsViewAggregationResponse, error)
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(ctx context.Context, in *MetricsViewToplistRequest, opts ...grpc.CallOption) (*MetricsViewToplistResponse, error)
+	// MetricsViewComparison returns a toplist containing comparison data of another toplist (same dimension/measure but a different time range).
+	// Returns a toplist without comparison data if comparison time range is omitted.
+	//
+	// ie. comparsion toplist:
+	// | measure1_base | measure1_previous   | measure1__delta_abs | measure1__delta_rel | dimension |
+	// |---------------|---------------------|---------------------|--------------------|-----------|
+	// | 2             | 2                   | 0                   | 0                  | Safari    |
+	// | 1             | 0                   | 1                   | N/A                | Chrome    |
+	// | 0             | 4                   | -4                  | -1.0               | Firefox   |
+	//
+	// ie. toplist:
+	// | measure1 | measure2 | dimension |
+	// |----------|----------|-----------|
+	// | 2        | 45       | Safari    |
+	// | 1        | 350      | Chrome    |
+	// | 0        | 25       | Firefox   |
 	MetricsViewComparison(ctx context.Context, in *MetricsViewComparisonRequest, opts ...grpc.CallOption) (*MetricsViewComparisonResponse, error)
 	// MetricsViewTimeSeries returns time series for the measures in the metrics view.
 	// It's a convenience API for querying a metrics view.
@@ -347,11 +363,27 @@ type QueryServiceServer interface {
 	QueryBatch(*QueryBatchRequest, QueryService_QueryBatchServer) error
 	// Export builds a URL to download the results of a query as a file.
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
-	// MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+	// MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
 	MetricsViewAggregation(context.Context, *MetricsViewAggregationRequest) (*MetricsViewAggregationResponse, error)
 	// MetricsViewToplist returns the top dimension values of a metrics view sorted by one or more measures.
 	// It's a convenience API for querying a metrics view.
 	MetricsViewToplist(context.Context, *MetricsViewToplistRequest) (*MetricsViewToplistResponse, error)
+	// MetricsViewComparison returns a toplist containing comparison data of another toplist (same dimension/measure but a different time range).
+	// Returns a toplist without comparison data if comparison time range is omitted.
+	//
+	// ie. comparsion toplist:
+	// | measure1_base | measure1_previous   | measure1__delta_abs | measure1__delta_rel | dimension |
+	// |---------------|---------------------|---------------------|--------------------|-----------|
+	// | 2             | 2                   | 0                   | 0                  | Safari    |
+	// | 1             | 0                   | 1                   | N/A                | Chrome    |
+	// | 0             | 4                   | -4                  | -1.0               | Firefox   |
+	//
+	// ie. toplist:
+	// | measure1 | measure2 | dimension |
+	// |----------|----------|-----------|
+	// | 2        | 45       | Safari    |
+	// | 1        | 350      | Chrome    |
+	// | 0        | 25       | Firefox   |
 	MetricsViewComparison(context.Context, *MetricsViewComparisonRequest) (*MetricsViewComparisonResponse, error)
 	// MetricsViewTimeSeries returns time series for the measures in the metrics view.
 	// It's a convenience API for querying a metrics view.

@@ -367,7 +367,7 @@ export const createQueryServiceExport = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary MetricsViewAggregation is a generic API for running group-by queries against a metrics view.
+ * @summary MetricsViewAggregation is a generic API for running group-by/pivot queries against a metrics view.
  */
 export const queryServiceMetricsViewAggregation = (
   instanceId: string,
@@ -453,6 +453,23 @@ export const createQueryServiceMetricsViewAggregation = <
   return query;
 };
 
+/**
+ * ie. comparsion toplist:
+| measure1_base | measure1_previous   | measure1__delta_abs | measure1__delta_rel | dimension |
+|---------------|---------------------|---------------------|--------------------|-----------|
+| 2             | 2                   | 0                   | 0                  | Safari    |
+| 1             | 0                   | 1                   | N/A                | Chrome    |
+| 0             | 4                   | -4                  | -1.0               | Firefox   |
+
+ie. toplist:
+| measure1 | measure2 | dimension |
+|----------|----------|-----------|
+| 2        | 45       | Safari    |
+| 1        | 350      | Chrome    |
+| 0        | 25       | Firefox   |
+ * @summary MetricsViewComparison returns a toplist containing comparison data of another toplist (same dimension/measure but a different time range).
+Returns a toplist without comparison data if comparison time range is omitted.
+ */
 export const queryServiceMetricsViewComparison = (
   instanceId: string,
   metricsViewName: string,
