@@ -109,9 +109,9 @@ func (q *MetricsViewSchema) buildMetricsViewDataTypesSQL(dialect drivers.Dialect
 	}
 
 	return fmt.Sprintf(
-		`SELECT %[1]s FROM "%[2]s" %[3]s %[4]s LIMIT 1`,
+		`SELECT %[1]s FROM %[2]s %[3]s %[4]s LIMIT 0`,
 		columns,                         // 1
-		q.TableName,                     // 2
+		safeName(q.TableName),           // 2
 		strings.Join(unnestClauses, ""), // 3
 		groupBy,                         // 4
 	)
