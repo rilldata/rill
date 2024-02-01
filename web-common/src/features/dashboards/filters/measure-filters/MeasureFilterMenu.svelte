@@ -1,7 +1,7 @@
 <script lang="ts">
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import { Menu } from "@rilldata/web-common/components/menu";
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import { MeasureFilterOptions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -20,6 +20,7 @@
   export let dimensionName: string;
   export let name: string;
   export let expr: V1Expression | undefined;
+  export let open: boolean;
 
   const dispatch = createEventDispatcher();
 
@@ -29,141 +30,132 @@
     },
   } = getStateManagers();
 
+  const initialValues = {
+    dimension: dimensionName,
+    operation: expr?.cond?.op ?? MeasureFilterOptions[0].value,
+    value1:
+      (expr?.cond?.exprs?.[0].cond?.exprs?.[1]?.val as string) ??
+      expr?.cond?.exprs?.[1]?.val ??
+      "",
+    value2: (expr?.cond?.exprs?.[1].cond?.exprs?.[1]?.val as string) ?? "",
+  };
+
+  const validationSchema = yup.object().shape({
+    dimension: yup.string().required("Required"),
+    operation: yup.string().required("Required"),
+    value1: yup.number().required("Required"),
+    value2: yup.number().when("operation", {
+      is: (val: V1Operation) => expressionIsBetween(val),
+      then: (schema) => schema.required("Required"),
+      otherwise: (schema) => schema.optional(),
+    }),
+  });
+
+  const { form, errors, handleSubmit, updateField, updateValidateField } =
+    createForm({
+      initialValues,
+      validationSchema,
+      onSubmit: (values) => {
+        let newExpr: V1Expression;
+
+        if (expressionIsBetween(values.operation)) {
+          newExpr = createBetweenExpression(
+            name,
+            Number(values.value1),
+            Number(values.value2),
+            values.operation === V1Operation.OPERATION_OR,
+          );
+        } else {
+          newExpr = createBinaryExpression(
+            name,
+            values.operation as V1Operation,
+            Number(values.value1),
+          );
+        }
+
+        lastValidState = { ...values };
+
+        dispatch("apply", {
+          dimension: values.dimension,
+          oldDimension: dimensionName,
+          expr: newExpr,
+        });
+      },
+    });
+
+  let lastValidState = { ...initialValues };
+
+  $: if (!open) {
+    Object.entries(lastValidState).forEach(
+      ([key, value]: [keyof typeof initialValues, string]) => {
+        updateValidateField(key, value);
+      },
+    );
+  }
+
+  $: selectedOperation = $form.operation;
+
+  $: isBetweenExpression = expressionIsBetween(selectedOperation);
+
   $: dimensionOptions =
     $allDimensions?.map((d) => ({
       value: d.name as string,
       label: getDimensionDisplayName(d),
     })) ?? [];
 
-  let operation: string = MeasureFilterOptions[0].value;
-  let value1;
-  let value2;
-  if (!expr?.cond?.op) {
-    operation = MeasureFilterOptions[0].value;
-    value1 = undefined;
-    value2 = undefined;
-  } else {
-    if (expr?.cond?.op === V1Operation.OPERATION_AND) {
-      operation = "b";
-      value1 = expr?.cond?.exprs?.[0].cond?.exprs?.[1]?.val as string;
-      value2 = expr?.cond?.exprs?.[1].cond?.exprs?.[1]?.val as string;
-    } else if (expr?.cond?.op === V1Operation.OPERATION_OR) {
-      operation = "nb";
-      value1 = expr?.cond?.exprs?.[0].cond?.exprs?.[1]?.val as string;
-      value2 = expr?.cond?.exprs?.[1].cond?.exprs?.[1]?.val as string;
-    } else {
-      operation = expr?.cond?.op;
-      value1 = expr?.cond?.exprs?.[1]?.val as string;
-    }
+  $: if (!isBetweenExpression) updateField("value2", undefined);
+
+  function expressionIsBetween(op: V1Operation | "" | undefined) {
+    return op === V1Operation.OPERATION_OR || op === V1Operation.OPERATION_AND;
   }
-
-  const formState = createForm({
-    initialValues: {
-      dimension: dimensionName,
-      operation,
-      value1,
-      value2,
-    },
-    validationSchema: yup.object({
-      dimension: yup.string().required("Required"),
-      operation: yup.string().required("Required"),
-      value1: yup.number().required("Required"),
-      value2: yup.number(),
-    }),
-    onSubmit: (values) => {
-      let newExpr: V1Expression;
-      if (values.operation === "b" || values.operation === "nb") {
-        if (values.value2 === undefined) {
-          return;
-        }
-        newExpr = createBetweenExpression(
-          name,
-          Number(values.value1),
-          Number(values.value2),
-          values.operation === "nb",
-        );
-      } else {
-        newExpr = createBinaryExpression(
-          name,
-          values.operation as V1Operation,
-          Number(values.value1),
-        );
-      }
-      dispatch("apply", {
-        dimension: values.dimension,
-        oldDimension: dimensionName,
-        expr: newExpr,
-      });
-    },
-  });
-
-  const { form, errors, handleSubmit } = formState;
-
-  $: isBetweenExpression =
-    $form["operation"] === "b" || $form["operation"] === "nb";
 </script>
 
-<Menu
-  focusOnMount={false}
-  maxHeight="900px"
-  maxWidth="480px"
-  minHeight="150px"
-  on:click-outside
-  on:escape
-  paddingBottom={0}
-  paddingTop={1}
-  rounded={false}
->
-  <div class="p-4">
-    <form
-      autocomplete="off"
-      class="flex flex-col gap-y-3"
-      id="measure"
-      on:submit|preventDefault={handleSubmit}
-    >
-      <Select
-        bind:value={$form["dimension"]}
-        detach
-        id="dimension"
-        itemsClass="absolute left-4.5"
-        label="By Dimension"
-        on:change={handleSubmit}
-        options={dimensionOptions}
-        placeholder="Select dimension to split by"
-      />
-      <Select
-        bind:value={$form["operation"]}
-        detach
-        id="operation"
-        itemsClass="absolute left-4.5"
-        label="Threshold"
-        on:change={handleSubmit}
-        options={MeasureFilterOptions}
-      />
+<DropdownMenu.Content class="p-2 px-3 w-[250px]" align="start">
+  <form
+    autocomplete="off"
+    class="flex flex-col gap-y-3"
+    id="measure"
+    on:submit|preventDefault={handleSubmit}
+  >
+    <Select
+      bind:value={$form["dimension"]}
+      detach
+      id="dimension"
+      itemsClass="absolute left-4.5"
+      label="By Dimension"
+      on:change={handleSubmit}
+      options={dimensionOptions}
+      placeholder="Select dimension to split by"
+    />
+    <Select
+      bind:value={$form["operation"]}
+      detach
+      id="operation"
+      itemsClass="absolute left-4.5"
+      label="Threshold"
+      on:change={handleSubmit}
+      options={MeasureFilterOptions}
+    />
+    <InputV2
+      bind:value={$form["value1"]}
+      error={$errors["value1"]}
+      id="value1"
+      on:change={(e) => {
+        console.log("trigger", e);
+        handleSubmit(e);
+      }}
+      on:enter-pressed={handleSubmit}
+      placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
+    />
+    {#if isBetweenExpression}
       <InputV2
-        bind:value={$form["value1"]}
-        error={$errors["value1"]}
-        id="value1"
+        bind:value={$form["value2"]}
+        error={$errors["value2"]}
+        id="value2"
+        placeholder="Higher Value"
         on:change={handleSubmit}
-        on:enter-pressed={(e) => {
-          if (isBetweenExpression) {
-            document.getElementById("value2")?.focus();
-          } else {
-            handleSubmit(e);
-          }
-        }}
-        placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
+        on:enter-pressed={handleSubmit}
       />
-      {#if isBetweenExpression}
-        <InputV2
-          bind:value={$form["value2"]}
-          error={$errors["value2"]}
-          id="value2"
-          placeholder="Higher Value"
-          on:change={handleSubmit}
-          on:enter-pressed={handleSubmit}
-        />
-      {/if}
-    </form>
-  </div>
-</Menu>
+    {/if}
+  </form>
+</DropdownMenu.Content>
