@@ -75,17 +75,18 @@ export function getDashboardStateFromProto(
   const entity: Partial<MetricsExplorerEntity> = {};
 
   if (dashboard.filters) {
+    // backwards compatibility for our older filter format
     entity.whereFilter = convertFilterToExpression(dashboard.filters);
-  } else if (dashboard.where) {
-    entity.whereFilter = fromExpressionProto(dashboard.where);
-  }
-  if (entity.whereFilter) {
+    // older values could be strings for non-string values,
+    // so we correct them using metrics view schema
     entity.whereFilter =
       correctFilterValues(
         entity.whereFilter,
         metricsView.dimensions ?? [],
         schema,
       ) ?? createAndExpression([]);
+  } else if (dashboard.where) {
+    entity.whereFilter = fromExpressionProto(dashboard.where);
   }
   if (dashboard.having) {
     entity.dimensionThresholdFilters = dashboard.having.map((h) => ({
@@ -216,14 +217,16 @@ function correctFilterValues(
 ) {
   return filterIdentifiers(filter, (e, ident) => {
     const dim = dimensions?.find((d) => d.name === ident);
+    // ignore if dimension is not present anymore
     if (!dim) return false;
     const field = schema.fields?.find((f) => f.name === ident);
+    // ignore if field is not found
     if (!field) return false;
 
     if (e.cond?.exprs) {
       e.cond.exprs =
         e.cond.exprs.map((e, i) => {
-          if (i === 0) return e;
+          if (i === 0) return e; // 1st expr is always the identifier
           return correctFilterValue(e, field);
         }) ?? [];
     }
@@ -239,6 +242,7 @@ function correctFilterValue(
     return valueExpr;
   }
   if (typeof valueExpr.val === "string") {
+    // older filters were storing everything as strings
     return {
       val: correctStringFilterValue(valueExpr.val, field),
     };
