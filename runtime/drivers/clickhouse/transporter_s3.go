@@ -3,8 +3,6 @@ package clickhouse
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -20,8 +18,7 @@ type s3transporter struct {
 var _ drivers.Transporter = &s3transporter{}
 
 type sourceProperties struct {
-	URI       string `mapstructure:"uri"`
-	AWSRegion string `mapstructure:"region"`
+	URI string `mapstructure:"uri"`
 }
 
 func NewS3Transporter(from drivers.Handle, olap drivers.OLAPStore, logger *zap.Logger) drivers.Transporter {
@@ -45,35 +42,17 @@ func (t *s3transporter) Transfer(ctx context.Context, srcProps, sinkProps map[st
 		return err
 	}
 
-	config := t.from.Config()
-	var useEnvCreds string
-	if v, ok := config["allow_host_access"].(bool); ok {
-		useEnvCreds = strconv.FormatBool(v)
-	}
-	settings := fmt.Sprintf("url='%s', use_environment_credentials=%s", conf.URI, useEnvCreds)
-	if conf.AWSRegion != "" {
-		settings += fmt.Sprintf(", region='%s'", conf.AWSRegion)
-	}
-	if v, ok := config["aws_access_key_id"].(string); ok && v != "" {
-		settings += fmt.Sprintf(", access_key_id='%s'", v)
-	}
-	if v, ok := config["aws_secret_access_key"].(string); ok && v != "" {
-		settings += fmt.Sprintf(", secret_access_key='%s'", v)
-	}
-	if v, ok := config["aws_access_token"].(string); ok && v != "" {
-		settings += fmt.Sprintf(", session_token='%s'", v)
-	}
-
-	collectionName := fmt.Sprintf("s3_%v", time.Now().UnixNano())
-	if err := t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE NAMED COLLECTION %v AS %v", collectionName, settings)}); err != nil {
-		return fmt.Errorf("failed to create named collection %q: %w", collectionName, err)
+	// credentials are expected to be added to clickhouse server
+	tableName := fmt.Sprintf("s3_engine_%s_table", safeSQLName(sinkCfg.Table))
+	if err := t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE TABLE %s ENGINE=S3('%s')", safeSQLName(tableName), conf.URI)}); err != nil {
+		return fmt.Errorf("failed to create table %q with http engine: %w", tableName, err)
 	}
 
 	defer func() {
-		if err := t.to.Exec(context.Background(), &drivers.Statement{Query: fmt.Sprintf("DROP NAMED COLLECTION %v", collectionName)}); err != nil {
-			t.logger.Info("failed to drop named collection", zap.String("collection", collectionName), zap.Error(err))
+		if err := t.to.DropTable(ctx, tableName, false); err != nil {
+			t.logger.Error("failed to drop table", zap.String("name", tableName), zap.Error(err))
 		}
 	}()
 
-	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM s3(%v)", collectionName))
+	return t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", safeSQLName(tableName)))
 }

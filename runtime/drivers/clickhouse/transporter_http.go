@@ -3,7 +3,6 @@ package clickhouse
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -43,7 +42,7 @@ func (t *httpTransporter) Transfer(ctx context.Context, srcProps, sinkProps map[
 		return err
 	}
 
-	tableName := fmt.Sprintf("http_%v", time.Now().UnixNano())
+	tableName := fmt.Sprintf("http_engine_%s_table", safeSQLName(sinkCfg.Table))
 	if err := t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE TABLE %s ENGINE=URL('%s')", safeSQLName(tableName), conf.URI)}); err != nil {
 		return fmt.Errorf("failed to create table %q with http engine: %w", tableName, err)
 	}
