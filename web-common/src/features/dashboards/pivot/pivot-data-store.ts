@@ -4,9 +4,10 @@ import { useMetricsView } from "@rilldata/web-common/features/dashboards/selecto
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import type {
-  V1MetricsViewAggregationResponse,
-  V1MetricsViewAggregationResponseDataItem,
+import {
+  V1TimeGrain,
+  type V1MetricsViewAggregationResponse,
+  type V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query/build/lib/types";
 import type { ColumnDef } from "@tanstack/svelte-table";
@@ -38,7 +39,9 @@ import type {
   PivotDataRow,
   PivotDataStore,
   PivotDataStoreConfig,
+  PivotTimeConfig,
 } from "./types";
+import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
 
 /**
  * Extract out config relevant to pivot from dashboard and meta store
@@ -49,13 +52,24 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
     ([metricsView, dashboardStore, timeControls]) => {
       const { rows, columns } = dashboardStore.pivot;
 
-      const time = {
+      let interval: AvailableTimeGrain = "TIME_GRAIN_HOUR";
+      const existingTimeGrain = timeControls?.selectedTimeRange?.interval;
+
+      if (existingTimeGrain) {
+        if (
+          existingTimeGrain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED &&
+          existingTimeGrain !== V1TimeGrain.TIME_GRAIN_MILLISECOND &&
+          existingTimeGrain !== V1TimeGrain.TIME_GRAIN_SECOND
+        )
+          interval = existingTimeGrain;
+      }
+
+      const time: PivotTimeConfig = {
         timeStart: timeControls.timeStart,
         timeEnd: timeControls.timeEnd,
         timeZone: dashboardStore?.selectedTimezone || "UTC",
         timeDimension: metricsView?.data?.timeDimension || "",
-        interval:
-          timeControls?.selectedTimeRange?.interval || "TIME_GRAIN_HOUR",
+        interval,
       };
 
       if (
