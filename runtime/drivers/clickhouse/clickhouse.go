@@ -150,8 +150,11 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	olap, _ := to.(*connection)
 	if c == to {
-		if from.Driver() == "s3" {
+		switch from.Driver() {
+		case "s3":
 			return NewS3Transporter(from, olap, c.logger), true
+		case "https":
+			return NewHTTPTransporter(from, olap, c.logger), true
 		}
 	}
 	return nil, false
