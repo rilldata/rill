@@ -457,6 +457,8 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	switch base {
 	case "DATETIME":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
+	case "DATETIME64":
+		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	// Example: "DECIMAL(10,20)"
 	case "DECIMAL":
 		t.Code = runtimev1.Type_CODE_DECIMAL
@@ -492,7 +494,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	case "ENUM":
 		t.Code = runtimev1.Type_CODE_STRING // representing enums as strings for now
 	default:
-		return nil, fmt.Errorf("encountered unsupported duckdb type '%s'", dbt)
+		return nil, fmt.Errorf("encountered unsupported clickhouse type '%s'", dbt)
 	}
 
 	return t, nil

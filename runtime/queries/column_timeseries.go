@@ -250,7 +250,7 @@ func timeSeriesClickHouseSQL(timeRange *runtimev1.TimeSeriesTimeRange, q *Column
 	args = append(args, offset, dateTruncSpecifier, offset, timeRange.Start.AsTime(), timezone) // compute start
 	args = append(args, offset, dateTruncSpecifier, offset, timeRange.End.AsTime(), timezone)   // compute end
 	args = append(args, offset, dateTruncSpecifier, offset, timeRange.Start.AsTime(), timezone) // compute start again to generate series
-	args = append(args, offset, dateTruncSpecifier, offset, timezone, args, timezone)           // convert column
+	args = append(args, offset, dateTruncSpecifier, offset, timezone)           // convert column
 	args = append(args, timezone)
 
 	return `CREATE TEMPORARY TABLE ` + temporaryTableName + ` AS (

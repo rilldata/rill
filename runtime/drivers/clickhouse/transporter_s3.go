@@ -64,7 +64,7 @@ func (t *s3transporter) Transfer(ctx context.Context, srcProps, sinkProps map[st
 		settings += fmt.Sprintf(", session_token='%s'", v)
 	}
 
-	collectionName := fmt.Sprintf("s3_%v", time.Now().Unix())
+	collectionName := fmt.Sprintf("s3_%v", time.Now().UnixNano())
 	if err := t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE NAMED COLLECTION %v AS %v", collectionName, settings)}); err != nil {
 		return fmt.Errorf("failed to create named collection %q: %w", collectionName, err)
 	}

@@ -165,6 +165,10 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		switch v := rowMap[tsAlias].(type) {
 		case time.Time:
 			t = v
+		case *time.Time:
+			if v != nil {
+				t = *v
+			}
 		default:
 			panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
 		}
