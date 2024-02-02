@@ -24,7 +24,7 @@ rill --help
 
 On both macOS and Linux, you can install the latest nightly build using the installation script:
 ```bash
-curl -s https://rill.sh | sh -s -- --nightly
+curl https://rill.sh | sh -s -- --nightly
 ```
 
 Note for macOS users: If you previously installed Rill using `brew`, the brew-managed binary will take precedent. You can remove it by running `brew uninstall rill`.
@@ -46,7 +46,7 @@ sudo apt-get install unzip
 
 With `unzip` installed, you're ready to install Rill. Just run:
 ```bash
-curl -s <https://rill.sh> | sh
+curl https://rill.sh | sh
 ```
 
 ## Alternative Install Options
