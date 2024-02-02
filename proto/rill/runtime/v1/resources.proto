@@ -286,7 +286,7 @@ message AlertSpec {
     google.protobuf.Struct query_for_attributes = 13;
   }
   repeated string email_recipients = 14;
-  bool email_on_pass = 15;
+  bool email_on_recover = 15;
   bool email_on_fail = 16;
   bool email_on_error = 17;
   bool email_renotify = 18;
@@ -306,9 +306,10 @@ message AlertState {
 message AlertExecution {
   bool adhoc = 1;
   AssertionResult result = 2;
-  google.protobuf.Timestamp execution_time = 3;
-  google.protobuf.Timestamp started_on = 4;
-  google.protobuf.Timestamp finished_on = 5;
+  bool sent_emails = 3;
+  google.protobuf.Timestamp execution_time = 4;
+  google.protobuf.Timestamp started_on = 5;
+  google.protobuf.Timestamp finished_on = 6;
 }
 
 message AssertionResult {

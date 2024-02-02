@@ -2666,6 +2666,8 @@ definitions:
         type: boolean
       result:
         $ref: '#/definitions/v1AssertionResult'
+      sentEmails:
+        type: boolean
       executionTime:
         type: string
         format: date-time
@@ -2711,7 +2713,7 @@ definitions:
         type: array
         items:
           type: string
-      emailOnPass:
+      emailOnRecover:
         type: boolean
       emailOnFail:
         type: boolean

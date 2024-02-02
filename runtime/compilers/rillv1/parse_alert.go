@@ -38,7 +38,7 @@ type AlertYAML struct {
 	} `yaml:"query"`
 	Email struct {
 		Recipients    []string `yaml:"recipients"`
-		OnPass        *bool    `yaml:"on_pass"`
+		OnRecover     *bool    `yaml:"on_recover"`
 		OnFail        *bool    `yaml:"on_fail"`
 		OnError       *bool    `yaml:"on_error"`
 		Renotify      *bool    `yaml:"renotify"`
@@ -204,14 +204,14 @@ func (p *Parser) parseAlert(ctx context.Context, node *Node) error {
 	r.AlertSpec.EmailRecipients = tmp.Email.Recipients
 
 	// Email notification default settings
-	r.AlertSpec.EmailOnPass = false
+	r.AlertSpec.EmailOnRecover = false
 	r.AlertSpec.EmailOnFail = true
 	r.AlertSpec.EmailOnError = false
 	r.AlertSpec.EmailRenotify = false
 
 	// Override email notification defaults
-	if tmp.Email.OnPass != nil {
-		r.AlertSpec.EmailOnPass = *tmp.Email.OnPass
+	if tmp.Email.OnRecover != nil {
+		r.AlertSpec.EmailOnRecover = *tmp.Email.OnRecover
 	}
 	if tmp.Email.OnFail != nil {
 		r.AlertSpec.EmailOnFail = *tmp.Email.OnFail

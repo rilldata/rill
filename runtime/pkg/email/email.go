@@ -7,6 +7,8 @@ import (
 	"html/template"
 	"net/url"
 	"time"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
 //go:embed templates/gen/*
@@ -69,17 +71,53 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
 }
 
-type Alert struct {
-	ToEmail       string
-	ToName        string
-	Title         string
-	ExecutionTime time.Time
-	FailRow       map[string]any
-	OpenLink      string
-	EditLink      string
+type AlertStatus struct {
+	ToEmail        string
+	ToName         string
+	Title          string
+	ExecutionTime  time.Time
+	Status         runtimev1.AssertionStatus
+	IsRecover      bool
+	FailRow        map[string]any
+	ExecutionError string
+	OpenLink       string
+	EditLink       string
 }
 
-type alertData struct {
+func (c *Client) SendAlertStatus(opts *AlertStatus) error {
+	switch opts.Status {
+	case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
+		return c.sendAlertStatus(opts, &alertStatusData{
+			Title:               opts.Title,
+			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
+			IsPass:              true,
+			IsRecover:           opts.IsRecover,
+			OpenLink:            template.URL(opts.OpenLink),
+			EditLink:            template.URL(opts.EditLink),
+		})
+	case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
+		return c.sendAlertFail(opts, &alertFailData{
+			Title:               opts.Title,
+			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
+			FailRow:             opts.FailRow,
+			OpenLink:            template.URL(opts.OpenLink),
+			EditLink:            template.URL(opts.EditLink),
+		})
+	case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
+		return c.sendAlertStatus(opts, &alertStatusData{
+			Title:               opts.Title,
+			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
+			IsError:             true,
+			ErrorMessage:        opts.ExecutionError,
+			OpenLink:            template.URL(opts.EditLink), // NOTE: Using edit link here since for errors, we don't want to open a dashboard, but rather the alert itself
+			EditLink:            template.URL(opts.EditLink),
+		})
+	default:
+		return fmt.Errorf("unknown assertion status: %v", opts.Status)
+	}
+}
+
+type alertFailData struct {
 	Title               string
 	ExecutionTimeString string // Will be inferred from ExecutionTime
 	FailRow             map[string]any
@@ -87,22 +125,38 @@ type alertData struct {
 	EditLink            template.URL
 }
 
-func (c *Client) SendAlert(opts *Alert) error {
-	// Build template data
-	data := &alertData{
-		Title:               opts.Title,
-		ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
-		FailRow:             opts.FailRow,
-		OpenLink:            template.URL(opts.OpenLink),
-		EditLink:            template.URL(opts.EditLink),
+func (c *Client) sendAlertFail(opts *AlertStatus, data *alertFailData) error {
+	subject := fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
+
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("alert_fail.html").Execute(buf, data)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+}
+
+type alertStatusData struct {
+	Title               string
+	ExecutionTimeString string // Will be inferred from ExecutionTime
+	IsPass              bool
+	IsRecover           bool
+	IsError             bool
+	ErrorMessage        string
+	OpenLink            template.URL
+	EditLink            template.URL
+}
+
+func (c *Client) sendAlertStatus(opts *AlertStatus, data *alertStatusData) error {
+	subject := fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
+	if data.IsRecover {
+		subject = fmt.Sprintf("Recovered: %s", subject)
 	}
 
-	// Build subject
-	subject := fmt.Sprintf("%s (%s)", opts.Title, data.ExecutionTimeString)
-
-	// Resolve template
 	buf := new(bytes.Buffer)
-	err := c.templates.Lookup("alert.html").Execute(buf, data)
+	err := c.templates.Lookup("alert_status.html").Execute(buf, data)
 	if err != nil {
 		return fmt.Errorf("email template error: %w", err)
 	}
