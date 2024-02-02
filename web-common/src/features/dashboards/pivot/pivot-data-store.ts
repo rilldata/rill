@@ -209,7 +209,10 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
   return derived(getPivotConfig(ctx), (config, configSet) => {
     const { rowDimensionNames, colDimensionNames, measureNames } = config;
 
-    if (!rowDimensionNames.length && !measureNames.length) {
+    if (
+      (!rowDimensionNames.length && !measureNames.length) ||
+      (colDimensionNames.length && !measureNames.length)
+    ) {
       return configSet({
         isFetching: false,
         data: [],
@@ -377,7 +380,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                       V1MetricsViewAggregationResponse,
                       unknown
                     > = readable(null);
-                if (rowDimensionNames.length) {
+                if (rowDimensionNames.length && measureNames.length) {
                   /** In some cases the totals query would be the same query as that
                    * for the initial table cell data. With svelte query cache we would not hit the
                    * API twice
@@ -432,7 +435,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     lastPivotColumnDef = columnDef;
 
                     let assembledTableData = tableDataExpanded;
-                    if (rowDimensionNames.length) {
+                    if (rowDimensionNames.length && measureNames.length) {
                       const totalsRowData = totalsRowResponse?.data?.data;
 
                       const globalTotalsData =
