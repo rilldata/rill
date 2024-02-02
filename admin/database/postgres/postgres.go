@@ -1305,9 +1305,8 @@ func (c *connection) FindVirtualFile(ctx context.Context, projectID, branch, pat
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		SELECT path, data, deleted, updated_on
 		FROM virtual_files
-		WHERE project_id=$1 AND branch=$2 AND path=$2
-		ORDER BY updated_on, path LIMIT $5
-	`, projectID, branch, path).StructScan(&res)
+		WHERE project_id=$1 AND branch=$2 AND path=$3
+	`, projectID, branch, path).StructScan(res)
 	if err != nil {
 		return nil, parseErr("virtual files", err)
 	}
