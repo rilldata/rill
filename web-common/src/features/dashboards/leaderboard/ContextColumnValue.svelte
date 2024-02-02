@@ -5,6 +5,8 @@
   import type { LeaderboardItemData } from "./leaderboard-utils";
   import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+  import { CONTEXT_COL_MAX_WIDTH } from "../state-managers/actions/context-columns";
+  import { LeaderboardContextColumn } from "../leaderboard-context-column";
 
   export let itemData: LeaderboardItemData;
 
@@ -12,7 +14,6 @@
     selectors: {
       contextColumn: {
         contextColumn,
-        widthPx,
         isDeltaAbsolute,
         isDeltaPercent,
         isPercentOfTotal,
@@ -20,11 +21,14 @@
       },
       numberFormat: { activeMeasureFormatter },
     },
-    actions: {
-      contextCol: { observeContextColumnWidth },
-    },
+    contextColumnWidths,
   } = getStateManagers();
 
+  let widthPx = "0px";
+  $: widthPx =
+    $contextColumn !== LeaderboardContextColumn.HIDDEN
+      ? $contextColumnWidths[$contextColumn] + "px"
+      : "0px";
   $: negativeChange = itemData.deltaAbs !== null && itemData.deltaAbs < 0;
   $: noChangeData = itemData.deltaRel === null;
 
@@ -38,17 +42,21 @@
         // the element may be gone by the time we get here,
         // if so, don't try to observe it
         if (!element) return;
-        observeContextColumnWidth(
-          $contextColumn,
-          element.getBoundingClientRect().width,
-        );
+        const width = element.getBoundingClientRect().width;
+
+        if (
+          width > $contextColumnWidths[$contextColumn] &&
+          width < CONTEXT_COL_MAX_WIDTH
+        ) {
+          $contextColumnWidths[$contextColumn] = width;
+        }
       }, 17);
     }
   }
 </script>
 
 {#if !$isHidden}
-  <div style:width={$widthPx} class="overflow-hidden">
+  <div style:width={widthPx} class="overflow-hidden">
     <div class="inline-block" bind:this={element}>
       {#if $isPercentOfTotal}
         <PercentageChange

@@ -65,7 +65,7 @@
       name={id}
       {placeholder}
       type="text"
-      class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {error &&
+      class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-primary-500 w-full text-xs {error &&
         'border-red-500'}"
       bind:value={inputValue}
       on:input={() => {

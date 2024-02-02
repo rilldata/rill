@@ -27,6 +27,8 @@
 
   const dispatch = createEventDispatcher();
 
+  const { adminServer } = featureFlags;
+
   const stateManagers = getStateManagers();
   const {
     selectors: {
@@ -43,7 +45,6 @@
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
     },
-    metricsViewName,
   } = stateManagers;
 
   $: excludeMode = $isFilterExcludeMode(dimensionName);
@@ -149,9 +150,6 @@
       </TooltipContent>
     </Tooltip>
 
-    <ExportDimensionTableDataButton
-      includeScheduledReport={$featureFlags.adminServer}
-      metricViewName={$metricsViewName}
-    />
+    <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
   </div>
 </div>

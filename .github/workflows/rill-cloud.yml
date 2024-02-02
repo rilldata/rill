@@ -30,7 +30,7 @@ jobs:
           go-version: 1.21
 
       - name: Authenticate GCloud
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
 
@@ -44,7 +44,7 @@ jobs:
             git fetch --all --tags;
           fi
 
-          go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(git describe --tags `git rev-list --tags --max-count=1`)-headless -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
+          go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(git describe --tags `git rev-list --tags --max-count=1`) -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
 
           gcloud auth configure-docker
 

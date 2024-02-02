@@ -2,7 +2,16 @@ import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { FromProtoOperationMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
+import {
+  createAndExpression,
+  filterIdentifiers,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  BOOLEANS,
+  INTEGERS,
+  isFloat,
+} from "@rilldata/web-common/lib/duckdb-data-types";
 import type {
   DashboardTimeControls,
   ScrubRange,
@@ -19,8 +28,12 @@ import {
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
+  type MetricsViewSpecDimensionV2,
+  type StructTypeField,
   V1Expression,
   V1MetricsView,
+  type V1MetricsViewSpec,
+  type V1StructType,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 
@@ -44,32 +57,42 @@ const LeaderboardContextColumnReverseMap: Record<
 export function getDashboardStateFromUrl(
   urlState: string,
   metricsView: V1MetricsView,
+  schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   return getDashboardStateFromProto(
     base64ToProto(decodeURIComponent(urlState)),
     metricsView,
+    schema,
   );
 }
 
 export function getDashboardStateFromProto(
   binary: Uint8Array,
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
+  schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
   const dashboard = DashboardState.fromBinary(binary);
-  const entity: Partial<MetricsExplorerEntity> = {
-    filters: {
-      include: [],
-      exclude: [],
-    },
-  };
+  const entity: Partial<MetricsExplorerEntity> = {};
 
   if (dashboard.filters) {
+    // backwards compatibility for our older filter format
     entity.whereFilter = convertFilterToExpression(dashboard.filters);
+    // older values could be strings for non-string values,
+    // so we correct them using metrics view schema
+    entity.whereFilter =
+      correctFilterValues(
+        entity.whereFilter,
+        metricsView.dimensions ?? [],
+        schema,
+      ) ?? createAndExpression([]);
   } else if (dashboard.where) {
     entity.whereFilter = fromExpressionProto(dashboard.where);
   }
   if (dashboard.having) {
-    entity.havingFilter = fromExpressionProto(dashboard.having);
+    entity.dimensionThresholdFilters = dashboard.having.map((h) => ({
+      name: h.name,
+      filter: fromExpressionProto(h.filter as Expression) as V1Expression,
+    }));
   }
   if (dashboard.compareTimeRange) {
     entity.selectedComparisonTimeRange = fromTimeRangeProto(
@@ -181,9 +204,64 @@ function fromExpressionProto(expression: Expression): V1Expression | undefined {
           op: FromProtoOperationMap[expression.expression.value.op],
           exprs: expression.expression.value.exprs
             .map((e) => fromExpressionProto(e))
-            .filter((e) => e !== undefined) as V1Expression[],
+            .filter((e): e is V1Expression => e !== undefined),
         },
       };
+  }
+}
+
+function correctFilterValues(
+  filter: V1Expression,
+  dimensions: MetricsViewSpecDimensionV2[],
+  schema: V1StructType,
+) {
+  return filterIdentifiers(filter, (e, ident) => {
+    const dim = dimensions?.find((d) => d.name === ident);
+    // ignore if dimension is not present anymore
+    if (!dim) return false;
+    const field = schema.fields?.find((f) => f.name === ident);
+    // ignore if field is not found
+    if (!field) return false;
+
+    if (e.cond?.exprs) {
+      e.cond.exprs =
+        e.cond.exprs.map((e, i) => {
+          if (i === 0) return e; // 1st expr is always the identifier
+          return correctFilterValue(e, field);
+        }) ?? [];
+    }
+    return true;
+  });
+}
+
+function correctFilterValue(
+  valueExpr: V1Expression,
+  field: StructTypeField,
+): V1Expression {
+  if (valueExpr.val === null) {
+    return valueExpr;
+  }
+  if (typeof valueExpr.val === "string") {
+    // older filters were storing everything as strings
+    return {
+      val: correctStringFilterValue(valueExpr.val, field),
+    };
+  }
+  return valueExpr;
+}
+
+function correctStringFilterValue(val: string, field: StructTypeField) {
+  if (!field.type?.code) return val;
+
+  if (INTEGERS.has(field.type?.code)) {
+    return Number.parseInt(val);
+  } else if (isFloat(field.type?.code)) {
+    return Number.parseFloat(val);
+  } else if (BOOLEANS.has(field.type?.code)) {
+    return val === "true";
+  } else {
+    // TODO: other types
+    return val;
   }
 }
 

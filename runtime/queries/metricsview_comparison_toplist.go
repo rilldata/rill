@@ -21,6 +21,7 @@ type MetricsViewComparison struct {
 	MetricsViewName     string                                         `json:"metrics_view_name,omitempty"`
 	DimensionName       string                                         `json:"dimension_name,omitempty"`
 	Measures            []*runtimev1.MetricsViewAggregationMeasure     `json:"measures,omitempty"`
+	ComparisonMeasures  []string                                       `json:"comparison_measures,omitempty"`
 	TimeRange           *runtimev1.TimeRange                           `json:"base_time_range,omitempty"`
 	ComparisonTimeRange *runtimev1.TimeRange                           `json:"comparison_time_range,omitempty"`
 	Limit               int64                                          `json:"limit,omitempty"`
@@ -36,7 +37,16 @@ type MetricsViewComparison struct {
 	// backwards compatibility
 	Filter *runtimev1.MetricsViewFilter `json:"filter"`
 
+	// internal use
+	measuresMeta map[string]metricsViewMeasureMeta `json:"-"` // ignore this field when marshaling
+
 	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
+}
+
+type metricsViewMeasureMeta struct {
+	innerIndex int  // relative position of the measure in the inner query, 1 based
+	outerIndex int  // relative position of the measure in the outer query, this different from innerIndex as there may be derived measures like comparison, delta etc in the outer query after each base measure, 1 based
+	expand     bool // whether the measure has derived measures like comparison, delta etc
 }
 
 var _ runtime.Query = &MetricsViewComparison{}
@@ -86,11 +96,6 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	err = validateSort(q.Sort)
-	if err != nil {
-		return err
-	}
-
 	// backwards compatibility
 	if q.Filter != nil {
 		if q.Where != nil {
@@ -99,11 +104,76 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 		q.Where = convertFilterToExpression(q.Filter)
 	}
 
+	err = q.calculateMeasuresMeta()
+	if err != nil {
+		return err
+	}
+
 	if !isTimeRangeNil(q.ComparisonTimeRange) {
 		return q.executeComparisonToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
 	}
 
 	return q.executeToplist(ctx, olap, q.MetricsView, priority, q.ResolvedMVSecurity)
+}
+
+func (q *MetricsViewComparison) calculateMeasuresMeta() error {
+	compare := !isTimeRangeNil(q.ComparisonTimeRange)
+
+	if !compare && len(q.ComparisonMeasures) > 0 {
+		return fmt.Errorf("comparison measures are provided but comparison time range is not")
+	}
+
+	if len(q.ComparisonMeasures) == 0 && compare {
+		// backwards compatibility
+		q.ComparisonMeasures = make([]string, len(q.Measures))
+		for i, m := range q.Measures {
+			q.ComparisonMeasures[i] = m.Name
+		}
+	}
+
+	q.measuresMeta = make(map[string]metricsViewMeasureMeta, len(q.Measures))
+
+	inner := 1
+	outer := 1
+	for _, m := range q.Measures {
+		expand := false
+		for _, cm := range q.ComparisonMeasures {
+			if m.Name == cm {
+				expand = true
+				break
+			}
+		}
+		q.measuresMeta[m.Name] = metricsViewMeasureMeta{
+			innerIndex: inner,
+			outerIndex: outer,
+			expand:     expand,
+		}
+		if expand {
+			outer += 4
+		} else {
+			outer++
+		}
+		inner++
+	}
+
+	// check all comparison measures are present in the measures list
+	for _, cm := range q.ComparisonMeasures {
+		if _, ok := q.measuresMeta[cm]; !ok {
+			return fmt.Errorf("comparison measure '%s' is not present in the measures list", cm)
+		}
+	}
+
+	err := validateSort(q.Sort, q.measuresMeta, compare)
+	if err != nil {
+		return err
+	}
+
+	err = validateMeasureAliases(q.Aliases, q.measuresMeta, compare)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (q *MetricsViewComparison) executeToplist(ctx context.Context, olap drivers.OLAPStore, mv *runtimev1.MetricsViewSpec, priority int, policy *runtime.ResolvedMetricsViewSecurity) error {
@@ -182,36 +252,50 @@ func (q *MetricsViewComparison) executeComparisonToplist(ctx context.Context, ol
 		if err != nil {
 			return err
 		}
-		measureValues := []*runtimev1.MetricsViewComparisonValue{}
+		var measureValues []*runtimev1.MetricsViewComparisonValue
 
-		for i, m := range q.Measures {
-			bv, err := pbutil.ToValue(values[1+i*4], safeFieldType(rows.Schema, 1+i*4))
-			if err != nil {
-				return err
+		for _, m := range q.Measures {
+			measureMeta := q.measuresMeta[m.Name]
+			index := measureMeta.outerIndex
+			if measureMeta.expand {
+				bv, err := pbutil.ToValue(values[index], safeFieldType(rows.Schema, index))
+				if err != nil {
+					return err
+				}
+
+				cv, err := pbutil.ToValue(values[1+index], safeFieldType(rows.Schema, 1+index))
+				if err != nil {
+					return err
+				}
+
+				da, err := pbutil.ToValue(values[2+index], safeFieldType(rows.Schema, 2+index))
+				if err != nil {
+					return err
+				}
+
+				dr, err := pbutil.ToValue(values[3+index], safeFieldType(rows.Schema, 3+index))
+				if err != nil {
+					return err
+				}
+
+				measureValues = append(measureValues, &runtimev1.MetricsViewComparisonValue{
+					MeasureName:     m.Name,
+					BaseValue:       bv,
+					ComparisonValue: cv,
+					DeltaAbs:        da,
+					DeltaRel:        dr,
+				})
+			} else {
+				v, err := pbutil.ToValue(values[index], safeFieldType(rows.Schema, index))
+				if err != nil {
+					return err
+				}
+
+				measureValues = append(measureValues, &runtimev1.MetricsViewComparisonValue{
+					MeasureName: m.Name,
+					BaseValue:   v,
+				})
 			}
-
-			cv, err := pbutil.ToValue(values[2+i*4], safeFieldType(rows.Schema, 2+i*4))
-			if err != nil {
-				return err
-			}
-
-			da, err := pbutil.ToValue(values[3+i*4], safeFieldType(rows.Schema, 3+i*4))
-			if err != nil {
-				return err
-			}
-
-			dr, err := pbutil.ToValue(values[4+i*4], safeFieldType(rows.Schema, 4+i*4))
-			if err != nil {
-				return err
-			}
-
-			measureValues = append(measureValues, &runtimev1.MetricsViewComparisonValue{
-				MeasureName:     m.Name,
-				BaseValue:       bv,
-				ComparisonValue: cv,
-				DeltaAbs:        da,
-				DeltaRel:        dr,
-			})
 		}
 
 		dv, err := pbutil.ToValue(values[0], safeFieldType(rows.Schema, 0))
@@ -253,7 +337,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 	if dim.Label != "" {
 		dimLabel = safeName(dim.Label)
 	}
-	dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
+	dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
 	selectCols = append(selectCols, dimSel)
 	labelCols = []string{fmt.Sprintf("%s as %s", safeName(dim.Name), dimLabel)}
 
@@ -284,13 +368,6 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 		}
 	}
 
-	if q.Aliases != nil {
-		err = validateMeasureAliases(q.Aliases, false)
-		if err != nil {
-			return "", nil, err
-		}
-	}
-
 	selectClause := strings.Join(selectCols, ", ")
 	baseWhereClause := "1=1"
 
@@ -309,7 +386,7 @@ func (q *MetricsViewComparison) buildMetricsTopListSQL(mv *runtimev1.MetricsView
 			return "", nil, err
 		}
 		if strings.TrimSpace(clause) != "" {
-			baseWhereClause += " AND " + clause
+			baseWhereClause += fmt.Sprintf(" AND (%s)", clause)
 		}
 
 		args = append(args, clauseArgs...)
@@ -414,8 +491,10 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	}
 
 	var selectCols []string
-	dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
+	var comparisonSelectCols []string
+	dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
 	selectCols = append(selectCols, dimSel)
+	comparisonSelectCols = append(comparisonSelectCols, dimSel)
 
 	for _, m := range q.Measures {
 		switch m.BuiltinMeasure {
@@ -425,8 +504,14 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				return "", nil, err
 			}
 			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+			if q.measuresMeta[m.Name].expand {
+				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+			}
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
 			selectCols = append(selectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
+			if q.measuresMeta[m.Name].expand {
+				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
+			}
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
 			if len(m.BuiltinMeasureArgs) != 1 {
 				return "", nil, fmt.Errorf("builtin measure '%s' expects 1 argument", m.BuiltinMeasure.String())
@@ -436,50 +521,61 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				return "", nil, fmt.Errorf("builtin measure '%s' expects non-empty string argument, got '%v'", m.BuiltinMeasure.String(), m.BuiltinMeasureArgs[0])
 			}
 			selectCols = append(selectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
+			if q.measuresMeta[m.Name].expand {
+				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
+			}
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
 	}
 
-	finalSelectCols := []string{}
-	labelCols := []string{}
-	measureMap := make(map[string]int)
-	for i, m := range q.Measures {
-		measureMap[m.Name] = i
+	var finalSelectCols []string
+	var labelCols []string
+	for _, m := range q.Measures {
 		var columnsTuple string
 		var labelTuple string
 		if dialect != drivers.DialectDruid {
-			columnsTuple = fmt.Sprintf(
-				"base.%[1]s AS %[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
-				safeName(m.Name),
-				safeName(m.Name+"__previous"),
-				safeName(m.Name+"__delta_abs"),
-				safeName(m.Name+"__delta_rel"),
-			)
-			labelTuple = fmt.Sprintf(
-				"base.%[1]s AS %[5]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
-				safeName(m.Name),
-				safeName(labelMap[m.Name]+" (prev)"),
-				safeName(labelMap[m.Name]+" (Δ)"),
-				safeName(labelMap[m.Name]+" (Δ%)"),
-				safeName(labelMap[m.Name]),
-			)
+			if q.measuresMeta[m.Name].expand {
+				columnsTuple = fmt.Sprintf(
+					"base.%[1]s AS %[1]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
+					safeName(m.Name),
+					safeName(m.Name+"__previous"),
+					safeName(m.Name+"__delta_abs"),
+					safeName(m.Name+"__delta_rel"),
+				)
+				labelTuple = fmt.Sprintf(
+					"base.%[1]s AS %[5]s, comparison.%[1]s AS %[2]s, base.%[1]s - comparison.%[1]s AS %[3]s, (base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[4]s",
+					safeName(m.Name),
+					safeName(labelMap[m.Name]+" (prev)"),
+					safeName(labelMap[m.Name]+" (Δ)"),
+					safeName(labelMap[m.Name]+" (Δ%)"),
+					safeName(labelMap[m.Name]),
+				)
+			} else {
+				columnsTuple = fmt.Sprintf("base.%[1]s AS %[1]s", safeName(m.Name))
+				labelTuple = fmt.Sprintf("base.%[1]s AS %[2]s", safeName(m.Name), safeName(labelMap[m.Name]))
+			}
 		} else {
-			columnsTuple = fmt.Sprintf(
-				"ANY_VALUE(base.%[1]s) AS %[1]s, ANY_VALUE(comparison.%[1]s) AS %[2]s, ANY_VALUE(base.%[1]s - comparison.%[1]s) AS %[3]s, ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[4]s",
-				safeName(m.Name),
-				safeName(m.Name+"__previous"),
-				safeName(m.Name+"__delta_abs"),
-				safeName(m.Name+"__delta_rel"),
-			)
-			labelTuple = fmt.Sprintf(
-				"ANY_VALUE(base.%[1]s) AS %[2]s, ANY_VALUE(comparison.%[1]s) AS %[3]s, ANY_VALUE(base.%[1]s - comparison.%[1]s) AS %[4]s, ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[5]s",
-				safeName(m.Name),
-				safeName(labelMap[m.Name]),
-				safeName(labelMap[m.Name]+" (prev)"),
-				safeName(labelMap[m.Name]+" (Δ)"),
-				safeName(labelMap[m.Name]+" (Δ%)"),
-			)
+			if q.measuresMeta[m.Name].expand {
+				columnsTuple = fmt.Sprintf(
+					"ANY_VALUE(base.%[1]s) AS %[1]s, ANY_VALUE(comparison.%[1]s) AS %[2]s, ANY_VALUE(base.%[1]s - comparison.%[1]s) AS %[3]s, ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[4]s",
+					safeName(m.Name),
+					safeName(m.Name+"__previous"),
+					safeName(m.Name+"__delta_abs"),
+					safeName(m.Name+"__delta_rel"),
+				)
+				labelTuple = fmt.Sprintf(
+					"ANY_VALUE(base.%[1]s) AS %[2]s, ANY_VALUE(comparison.%[1]s) AS %[3]s, ANY_VALUE(base.%[1]s - comparison.%[1]s) AS %[4]s, ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[5]s",
+					safeName(m.Name),
+					safeName(labelMap[m.Name]),
+					safeName(labelMap[m.Name]+" (prev)"),
+					safeName(labelMap[m.Name]+" (Δ)"),
+					safeName(labelMap[m.Name]+" (Δ%)"),
+				)
+			} else {
+				columnsTuple = fmt.Sprintf("ANY_VALUE(base.%[1]s) AS %[1]s", safeName(m.Name))
+				labelTuple = fmt.Sprintf("ANY_VALUE(base.%[1]s) AS %[2]s", safeName(m.Name), safeName(labelMap[m.Name]))
+			}
 		}
 		finalSelectCols = append(
 			finalSelectCols,
@@ -488,14 +584,8 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		labelCols = append(labelCols, labelTuple)
 	}
 
-	if q.Aliases != nil {
-		err = validateMeasureAliases(q.Aliases, true)
-		if err != nil {
-			return "", nil, err
-		}
-	}
-
 	subSelectClause := strings.Join(selectCols, ", ")
+	subComparisonSelectClause := strings.Join(comparisonSelectCols, ", ")
 	finalSelectClause := strings.Join(finalSelectCols, ", ")
 	labelSelectClause := strings.Join(labelCols, ", ")
 	if export {
@@ -505,7 +595,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	baseWhereClause := "1=1"
 	comparisonWhereClause := "1=1"
 
-	args := []any{}
+	var args []any
 	if mv.TimeDimension == "" {
 		return "", nil, fmt.Errorf("metrics view '%s' doesn't have time dimension", q.MetricsViewName)
 	}
@@ -524,7 +614,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	baseWhereClause += trc
 
 	if whereClause != "" {
-		baseWhereClause += " AND " + whereClause
+		baseWhereClause += fmt.Sprintf(" AND (%s)", whereClause)
 		args = append(args, whereClauseArgs...)
 	}
 
@@ -535,7 +625,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 	comparisonWhereClause += trc
 
 	if whereClause != "" {
-		comparisonWhereClause += " AND " + whereClause
+		comparisonWhereClause += fmt.Sprintf(" AND (%s)", whereClause)
 		args = append(args, whereClauseArgs...)
 	}
 
@@ -554,13 +644,6 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		args = append(args, havingClauseArgs...)
 	}
 
-	err = validateSort(q.Sort)
-	if err != nil {
-		return "", nil, err
-	}
-
-	// Update sort to make sure it is backwards compatible
-	updateComparisonSort(q.Sort)
 	var orderClauses []string
 	var subQueryOrderClauses []string
 	for _, s := range q.Sort {
@@ -580,7 +663,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			subQueryOrderClauses = append(subQueryOrderClauses, subQueryClause)
 			break
 		}
-		i, ok := measureMap[s.Name]
+		measureMeta, ok := q.measuresMeta[s.Name]
 		if !ok {
 			return "", nil, fmt.Errorf("metrics view '%s' doesn't contain '%s' sort column", q.MetricsViewName, s.Name)
 		}
@@ -588,18 +671,18 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		var pos int
 		switch s.SortType {
 		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
-			pos = 2 + i*4
+			pos = 1 + measureMeta.outerIndex
 		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
-			pos = 3 + i*4
+			pos = 2 + measureMeta.outerIndex
 		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
-			pos = 4 + i*4
+			pos = 3 + measureMeta.outerIndex
 		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
-			pos = 5 + i*4
+			pos = 4 + measureMeta.outerIndex
 		default:
 			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.Name)
 		}
 		orderClause := fmt.Sprint(pos)
-		subQueryOrderClause := fmt.Sprint(i + 2) // 1-based + skip the first dim column
+		subQueryOrderClause := fmt.Sprint(measureMeta.innerIndex + 1) // 1-based + skip the first dim column
 		ending := ""
 		if s.Desc {
 			ending += " DESC"
@@ -700,32 +783,33 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			) base
 		%[11]s JOIN
 			(
-				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
+				SELECT %[16]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
 			) comparison
 		ON
-				%[16]s
+				%[17]s
 		%[6]s
 		%[7]s
 		OFFSET
 			%[8]d
   ) WHERE %[15]s 
 		`,
-				subSelectClause,       // 1
-				colName,               // 2
-				safeName(mv.Table),    // 3
-				baseWhereClause,       // 4
-				comparisonWhereClause, // 5
-				orderByClause,         // 6
-				limitClause,           // 7
-				q.Offset,              // 8
-				finalSelectClause,     // 9
-				finalDimName,          // 10
-				joinType,              // 11
-				baseLimitClause,       // 12
-				comparisonLimitClause, // 13
-				unnestClause,          // 14
-				havingClause,          // 15
-				joinOnClause,          // 16
+				subSelectClause,           // 1
+				colName,                   // 2
+				safeName(mv.Table),        // 3
+				baseWhereClause,           // 4
+				comparisonWhereClause,     // 5
+				orderByClause,             // 6
+				limitClause,               // 7
+				q.Offset,                  // 8
+				finalSelectClause,         // 9
+				finalDimName,              // 10
+				joinType,                  // 11
+				baseLimitClause,           // 12
+				comparisonLimitClause,     // 13
+				unnestClause,              // 14
+				havingClause,              // 15
+				subComparisonSelectClause, // 16
+				joinOnClause,              // 17
 			)
 		} else {
 			sql = fmt.Sprintf(`
@@ -735,30 +819,31 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			) base
 		%[11]s JOIN
 			(
-				SELECT %[1]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
+				SELECT %[15]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY 1 %[13]s 
 			) comparison
 		ON
-				%[15]s)
+				%[16]s)
 		%[6]s
 		%[7]s
 		OFFSET
 			%[8]d
 		`,
-				subSelectClause,       // 1
-				colName,               // 2
-				safeName(mv.Table),    // 3
-				baseWhereClause,       // 4
-				comparisonWhereClause, // 5
-				orderByClause,         // 6
-				limitClause,           // 7
-				q.Offset,              // 8
-				finalSelectClause,     // 9
-				finalDimName,          // 10
-				joinType,              // 11
-				baseLimitClause,       // 12
-				comparisonLimitClause, // 13
-				unnestClause,          // 14
-				joinOnClause,          // 15
+				subSelectClause,           // 1
+				colName,                   // 2
+				safeName(mv.Table),        // 3
+				baseWhereClause,           // 4
+				comparisonWhereClause,     // 5
+				orderByClause,             // 6
+				limitClause,               // 7
+				q.Offset,                  // 8
+				finalSelectClause,         // 9
+				finalDimName,              // 10
+				joinType,                  // 11
+				baseLimitClause,           // 12
+				comparisonLimitClause,     // 13
+				unnestClause,              // 14
+				subComparisonSelectClause, // 15
+				joinOnClause,              // 16
 			)
 		}
 	} else {
@@ -767,7 +852,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 				WITH base AS (
 				  SELECT (replace("channel", 'a', 'b')) as "b",
-					count(*) as "total_records"
+					count(*) as "total_records", sum("added") as "sum"
 					FROM "wikipedia"
 					WHERE 1=1 AND "__time" >= '2016-06-27T02:00:00.000Z' AND "__time" < '2016-06-27T03:00:00.000Z'
 					GROUP BY 1 -- Druid does not support group by aliases
@@ -786,11 +871,12 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 					ANY_VALUE(base."total_records") AS "total_records",
 					ANY_VALUE(comparison."total_records") AS "total_records__previous",
 					ANY_VALUE(base."total_records" - comparison."total_records") AS "total_records__delta_abs",
-					ANY_VALUE(SAFE_DIVIDE(base."total_records" - comparison."total_records", CAST(comparison."total_records" AS DOUBLE))) AS "total_records__delta_rel"
+					ANY_VALUE(SAFE_DIVIDE(base."total_records" - comparison."total_records", CAST(comparison."total_records" AS DOUBLE))) AS "total_records__delta_rel",
+					ANY_VALUE(base."sum") AS "sum",
 				FROM base LEFT JOIN comparison ON base."b" = comparison."c"
 				GROUP BY 1 -- Druid does not support group by aliases
 				HAVING 1=1
-				ORDER BY 2 DESC
+				ORDER BY 2 DESC -- order by without group by is not supported by Druid
 				 LIMIT 250
 				OFFSET 0
 
@@ -812,7 +898,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 				WITH %[11]s AS (
 					SELECT %[1]s FROM %[3]s WHERE %[4]s GROUP BY 1 %[13]s %[10]s OFFSET %[8]d
 				), %[12]s AS (
-					SELECT %[1]s FROM %[3]s WHERE %[5]s AND %[16]s IN (SELECT %[2]s FROM %[11]s) GROUP BY 1 %[10]s
+					SELECT %[17]s FROM %[3]s WHERE %[5]s AND %[16]s IN (SELECT %[2]s FROM %[11]s) GROUP BY 1 %[10]s
 				)
 				SELECT %[11]s.%[2]s AS %[14]s, %[9]s FROM %[11]s LEFT JOIN %[12]s ON base.%[2]s = comparison.%[2]s
 				GROUP BY 1
@@ -837,6 +923,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			finalDimName,                        // 14
 			havingClause,                        // 15
 			metricsViewDimensionExpression(dim), // 16
+			subComparisonSelectClause,           // 17
 		)
 	}
 
@@ -861,6 +948,10 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 				q.Where = convertFilterToExpression(q.Filter)
 			}
 
+			err := q.calculateMeasuresMeta()
+			if err != nil {
+				return err
+			}
 			var sql string
 			var args []any
 			if !isTimeRangeNil(q.ComparisonTimeRange) {
@@ -920,12 +1011,14 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 		}
 	}
 	var metaLen int
-	comparison := !isTimeRangeNil(q.ComparisonTimeRange)
-	if comparison {
-		metaLen = len(q.Result.Rows[0].MeasureValues) * 4
-	} else {
-		metaLen = len(q.Result.Rows[0].MeasureValues)
+	for _, m := range q.Result.Rows[0].MeasureValues {
+		if q.measuresMeta[m.MeasureName].expand {
+			metaLen += 4
+		} else {
+			metaLen++
+		}
 	}
+
 	meta := make([]*runtimev1.MetricsViewColumn, metaLen+1)
 	dimName := q.DimensionName
 	for _, d := range mv.Dimensions {
@@ -937,31 +1030,28 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 		Name: dimName,
 		Type: runtimev1.Type_CODE_STRING.String(),
 	}
-	if comparison {
-		for i, m := range q.Result.Rows[0].MeasureValues {
-			meta[1+i*4] = &runtimev1.MetricsViewColumn{
-				Name: labelMap[m.MeasureName],
-				Type: runtimev1.Type_CODE_FLOAT64.String(),
-			}
-			meta[2+i*4] = &runtimev1.MetricsViewColumn{
+
+	i := 1
+	for _, m := range q.Result.Rows[0].MeasureValues {
+		meta[i] = &runtimev1.MetricsViewColumn{
+			Name: labelMap[m.MeasureName],
+			Type: runtimev1.Type_CODE_FLOAT64.String(),
+		}
+		i++
+		if q.measuresMeta[m.MeasureName].expand {
+			meta[i] = &runtimev1.MetricsViewColumn{
 				Name: fmt.Sprintf("%s (prev)", labelMap[m.MeasureName]),
 				Type: runtimev1.Type_CODE_FLOAT64.String(),
 			}
-			meta[3+i*4] = &runtimev1.MetricsViewColumn{
+			meta[i+1] = &runtimev1.MetricsViewColumn{
 				Name: fmt.Sprintf("%s (Δ)", labelMap[m.MeasureName]),
 				Type: runtimev1.Type_CODE_FLOAT64.String(),
 			}
-			meta[4+i*4] = &runtimev1.MetricsViewColumn{
+			meta[i+2] = &runtimev1.MetricsViewColumn{
 				Name: fmt.Sprintf("%s (Δ%%)", labelMap[m.MeasureName]),
 				Type: runtimev1.Type_CODE_FLOAT64.String(),
 			}
-		}
-	} else {
-		for i, m := range q.Result.Rows[0].MeasureValues {
-			meta[1+i] = &runtimev1.MetricsViewColumn{
-				Name: labelMap[m.MeasureName],
-				Type: runtimev1.Type_CODE_FLOAT64.String(),
-			}
+			i += 3
 		}
 	}
 
@@ -977,12 +1067,12 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 			},
 		}
 		for _, m := range row.MeasureValues {
-			if comparison {
-				data[i].Fields[labelMap[m.MeasureName]] = &structpb.Value{
-					Kind: &structpb.Value_NumberValue{
-						NumberValue: m.BaseValue.GetNumberValue(),
-					},
-				}
+			data[i].Fields[labelMap[m.MeasureName]] = &structpb.Value{
+				Kind: &structpb.Value_NumberValue{
+					NumberValue: m.BaseValue.GetNumberValue(),
+				},
+			}
+			if q.measuresMeta[m.MeasureName].expand {
 				data[i].Fields[fmt.Sprintf("%s (prev)", labelMap[m.MeasureName])] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.ComparisonValue.GetNumberValue(),
@@ -996,12 +1086,6 @@ func (q *MetricsViewComparison) generalExport(ctx context.Context, rt *runtime.R
 				data[i].Fields[fmt.Sprintf("%s (Δ%%)", labelMap[m.MeasureName])] = &structpb.Value{
 					Kind: &structpb.Value_NumberValue{
 						NumberValue: m.DeltaRel.GetNumberValue(),
-					},
-				}
-			} else {
-				data[i].Fields[labelMap[m.MeasureName]] = &structpb.Value{
-					Kind: &structpb.Value_NumberValue{
-						NumberValue: m.BaseValue.GetNumberValue(),
 					},
 				}
 			}
@@ -1057,7 +1141,7 @@ func timeRangeClause(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec, dia
 	return clause, nil
 }
 
-func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {
+func validateSort(sorts []*runtimev1.MetricsViewComparisonSort, measuresMeta map[string]metricsViewMeasureMeta, hasComparison bool) error {
 	if len(sorts) == 0 {
 		return fmt.Errorf("sorting is required")
 	}
@@ -1065,7 +1149,47 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {
 
 	for _, s := range sorts {
 		if firstSort != s.Type {
-			return fmt.Errorf("diffirent sort types are not supported in a single query")
+			return fmt.Errorf("different sort types are not supported in a single query")
+		}
+		// Update sort to make sure it is backwards compatible
+		if s.SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED && s.Type != runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED {
+			switch s.Type {
+			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
+				s.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
+			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
+				s.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE
+			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA:
+				s.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA
+			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA:
+				s.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
+			}
+		}
+
+		if hasComparison {
+			// check if sorting measure is a derived measure, if it is then it should be present in comparison measures list
+			// don't do this check for non comparison query for backward compatibility, UI uses the old state while switching from compare to no comparison
+			// in that case just sort the measure by base value
+			if s.SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE ||
+				s.SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA ||
+				s.SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA {
+				if !measuresMeta[s.Name].expand {
+					return fmt.Errorf("comparison not enabled for sort measure '%s'", s.Name)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func validateMeasureAliases(aliases []*runtimev1.MetricsViewComparisonMeasureAlias, measuresMeta map[string]metricsViewMeasureMeta, hasComparison bool) error {
+	for _, alias := range aliases {
+		switch alias.Type {
+		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
+			runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+			runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
+			if !hasComparison || !measuresMeta[alias.Name].expand {
+				return fmt.Errorf("comparison not enabled for alias %s", alias.Alias)
+			}
 		}
 	}
 	return nil
@@ -1073,35 +1197,4 @@ func validateSort(sorts []*runtimev1.MetricsViewComparisonSort) error {
 
 func isTimeRangeNil(tr *runtimev1.TimeRange) bool {
 	return tr == nil || (tr.Start == nil && tr.End == nil)
-}
-
-func updateComparisonSort(sort []*runtimev1.MetricsViewComparisonSort) {
-	for _, comparisonSort := range sort {
-		if comparisonSort.SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED && comparisonSort.Type != runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_UNSPECIFIED {
-			switch comparisonSort.Type {
-			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_BASE_VALUE:
-				comparisonSort.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
-			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_COMPARISON_VALUE:
-				comparisonSort.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE
-			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_ABS_DELTA:
-				comparisonSort.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA
-			case runtimev1.MetricsViewComparisonSortType_METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA:
-				comparisonSort.SortType = runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
-			}
-		}
-	}
-}
-
-func validateMeasureAliases(aliases []*runtimev1.MetricsViewComparisonMeasureAlias, hasComparison bool) error {
-	for _, alias := range aliases {
-		switch alias.Type {
-		case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE,
-			runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
-			runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
-			if !hasComparison {
-				return fmt.Errorf("comparison not enabled for alias %s", alias.Alias)
-			}
-		}
-	}
-	return nil
 }

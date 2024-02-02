@@ -1,19 +1,20 @@
-<script context="module" lang="ts">
+<script lang="ts">
   import { getStateManagers } from "../state-managers/state-managers";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import SearchableFilterDropdown from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterDropdown.svelte";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import { getDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+  import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
-</script>
+  import { getMeasureDisplayName } from "./getDisplayName";
 
-<script lang="ts">
   const {
     selectors: {
       dimensions: { allDimensions },
       dimensionFilters: { dimensionHasFilter },
+      measures: { allMeasures },
+      measureFilters: { measureHasFilter },
     },
     actions: {
       filters: { setTemporaryFilterName },
@@ -22,11 +23,22 @@
 
   $: selectableGroups = [
     <SearchableFilterSelectableGroup>{
+      name: "MEASURES",
+      items:
+        $allMeasures
+          ?.map((m) => ({
+            name: m.name as string,
+            label: getMeasureDisplayName(m),
+          }))
+          .filter((m) => !$measureHasFilter(m.name)) ?? [],
+    },
+    <SearchableFilterSelectableGroup>{
+      name: "DIMENSIONS",
       items:
         $allDimensions
           ?.map((d) => ({
             name: d.name as string,
-            label: getDisplayName(d),
+            label: getDimensionDisplayName(d),
           }))
           .filter((d) => !$dimensionHasFilter(d.name)) ?? [],
     },
@@ -68,6 +80,7 @@
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
     @apply border border-dashed border-slate-300;
+    @apply bg-white;
   }
 
   button:hover {

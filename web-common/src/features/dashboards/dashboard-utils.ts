@@ -36,12 +36,20 @@ export function prepareSortedQueryBody(
   sortMeasureName: string | null,
   sortType: SortType,
   sortAscending: boolean,
-  filterForDimension: V1Expression,
+  whereFilterForDimension: V1Expression,
+  havingFilterForDimension: V1Expression | undefined,
 ): QueryServiceMetricsViewComparisonBody {
   let comparisonTimeRange = {
     start: timeControls.comparisonTimeStart,
     end: timeControls.comparisonTimeEnd,
   };
+
+  // api now expects measure names for which comparison are calculated
+  // to keep current behaviour add sort measure name to comparison measures
+  let comparisonMeasures: string[] = [];
+  if (comparisonTimeRange.start && comparisonTimeRange.end && sortMeasureName) {
+    comparisonMeasures = [sortMeasureName];
+  }
 
   // FIXME: As a temporary way of enabling sorting by dimension values,
   // Benjamin and Egor put in a patch that will allow us to use the
@@ -52,6 +60,8 @@ export function prepareSortedQueryBody(
     // note also that we need to remove the comparison time range
     // when sorting by dimension values, or the query errors
     comparisonTimeRange = undefined;
+    // and we need to remove the comparison measures
+    comparisonMeasures = [];
   }
 
   const querySortType = getQuerySortType(sortType);
@@ -66,6 +76,7 @@ export function prepareSortedQueryBody(
           name: n,
         },
     ),
+    comparisonMeasures: comparisonMeasures,
     timeRange: {
       start: timeControls.timeStart,
       end: timeControls.timeEnd,
@@ -78,7 +89,10 @@ export function prepareSortedQueryBody(
         sortType: querySortType,
       },
     ],
-    where: sanitiseExpression(filterForDimension),
+    where: sanitiseExpression(
+      whereFilterForDimension,
+      havingFilterForDimension,
+    ),
     limit: "250",
     offset: "0",
   };
