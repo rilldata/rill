@@ -68,7 +68,7 @@
         <!-- remove button tooltip -->
         <svelte:fragment slot="remove-tooltip">
           <slot name="remove-tooltip-content">
-            remove {label}
+            Remove {label}
           </slot>
         </svelte:fragment>
         <!-- body -->
@@ -81,7 +81,7 @@
             <svelte:fragment slot="description">{label || ""}</svelte:fragment>
           </TooltipTitle>
           {#if $$slots["body-tooltip-content"]}
-            <slot name="body-tooltip-content">click to edit the values</slot>
+            <slot name="body-tooltip-content">Click to edit the values</slot>
           {/if}
         </TooltipContent>
       </div>
