@@ -175,6 +175,7 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		attribute.String("args.metric_view", req.MetricsViewName),
 		attribute.String("args.dimension", req.Dimension.Name),
 		attribute.StringSlice("args.measures", measureNames),
+		attribute.StringSlice("args.comparison_measures", req.ComparisonMeasures),
 		attribute.StringSlice("args.sort.names", marshalMetricsViewComparisonSort(req.Sort)),
 		attribute.Int("args.filter_count", filterCount(req.Where)),
 		attribute.Int64("args.limit", req.Limit),
@@ -221,6 +222,7 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		MetricsViewName:     req.MetricsViewName,
 		DimensionName:       req.Dimension.Name,
 		Measures:            req.Measures,
+		ComparisonMeasures:  req.ComparisonMeasures,
 		TimeRange:           req.TimeRange,
 		ComparisonTimeRange: req.ComparisonTimeRange,
 		Limit:               req.Limit,
@@ -426,6 +428,38 @@ func (s *Server) MetricsViewTimeRange(ctx context.Context, req *runtimev1.Metric
 		MetricsViewName:    req.MetricsViewName,
 		MetricsView:        mv,
 		ResolvedMVSecurity: security,
+	}
+	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
+
+	return q.Result, nil
+}
+
+func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsViewSchemaRequest) (*runtimev1.MetricsViewSchemaResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsViewName),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	mv, _, err := resolveMVAndSecurity(ctx, s.runtime, req.InstanceId, req.MetricsViewName)
+	if err != nil {
+		return nil, err
+	}
+
+	q := &queries.MetricsViewSchema{
+		MetricsViewName: req.MetricsViewName,
+		TableName:       mv.Table,
+		Measures:        mv.Measures,
+		Dimensions:      mv.Dimensions,
 	}
 	err = s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

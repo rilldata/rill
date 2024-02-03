@@ -10,6 +10,7 @@ import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/d
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { getUrlForPath } from "@rilldata/web-common/lib/url-utils";
+import type { V1StructType } from "@rilldata/web-common/runtime-client";
 import { Readable, derived, get } from "svelte/store";
 
 export type DashboardUrlState = {
@@ -72,7 +73,7 @@ export function useDashboardUrlState(ctx: StateManagers): DashboardUrlStore {
  * 4. This triggers a sync of state in the url to the dashboard store.
  * 5. After updating the store proto in the state will be the same as `lastKnownProto`. No navigations happen.
  */
-export function useDashboardUrlSync(ctx: StateManagers) {
+export function useDashboardUrlSync(ctx: StateManagers, schema: V1StructType) {
   const dashboardUrlState = useDashboardUrlState(ctx);
   const metricsView = useMetricsView(ctx);
 
@@ -105,6 +106,7 @@ export function useDashboardUrlSync(ctx: StateManagers) {
         metricViewName,
         state.urlProto,
         get(metricsView).data,
+        schema,
       );
       lastKnownProto = state.urlProto;
     }

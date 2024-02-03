@@ -19,9 +19,9 @@
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import { TIME_GRAIN } from "../../../lib/time/config";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
@@ -277,7 +277,7 @@
       <div style:height="125px">
         {#if $timeSeriesDataStore?.isError}
           <div class="p-5"><CrossIcon /></div>
-        {:else if formattedData}
+        {:else if formattedData && interval}
           <MeasureChart
             bind:mouseoverValue
             {measure}
