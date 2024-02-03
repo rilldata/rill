@@ -133,7 +133,7 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 			uniq(toHour(cd)) as hour,
 			uniq(toMinute(cd)) as minute,
 			uniq(toSecond(cd)) as second,
-			uniq(toUnixTimestamp64Milli(cd::DATETIME64) - toUnixTimestamp64Milli(date_trunc('second', cd)::DATETIME64)) as ms
+			uniq(toUnixTimestamp64Milli(cd::DATETIME64) - toUnixTimestamp64Milli(toStartOfSecond(cd::DATETIME64)) as ms
 		FROM cleaned_column
 		)
 		SELECT 
