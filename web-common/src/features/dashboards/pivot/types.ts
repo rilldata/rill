@@ -1,3 +1,4 @@
+import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -47,7 +48,7 @@ export interface PivotTimeConfig {
   timeEnd: string | undefined;
   timeZone: string;
   timeDimension: string;
-  interval: V1TimeGrain;
+  interval: AvailableTimeGrain;
 }
 
 /**

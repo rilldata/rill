@@ -36,6 +36,7 @@
     "@tanstack/svelte-table": "^8.9.5",
     "@tanstack/svelte-virtual": "^3.0.1",
     "@testing-library/svelte": "^4.0.0",
+    "@types/d3-time-format": "^4.0.3",
     "@vitest/coverage-c8": "^0.31.0",
     "autoprefixer": "^10.4.13",
     "bits-ui": "^0.11.8",

@@ -68,7 +68,7 @@ function createColumnDefinitionForDimensions(
           timeConfig?.timeZone,
         );
         const timeFormatter = timeFormat(
-          timeGrain ? TIME_GRAIN[timeGrain]?.d3format : "%H:%M",
+          timeGrain ? TIME_GRAIN[timeGrain].d3format : "%H:%M",
         ) as (d: Date) => string;
 
         displayValue = timeFormatter(dt);
