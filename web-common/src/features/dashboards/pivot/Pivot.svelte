@@ -1,8 +1,8 @@
 <script lang="ts">
   import "regular-table";
-  import "./regular-table-style.css";
   import type { RegularTableElement } from "regular-table";
   import { createEventDispatcher, onMount } from "svelte";
+  import "./regular-table-style.css";
   import type { PivotPos, PivotRenderCallback } from "./types";
   import { isEmptyPos, range } from "./util";
 
@@ -256,6 +256,7 @@
   let lastColumnSizer: null | ((x: number) => number | void) = null;
   let lastRowHeaderSizer: null | ((x: number) => number | void) = null;
   function styleListener() {
+    if (!table) return;
     for (const td of Array.from(table.querySelectorAll("tbody td"))) {
       style_td(td as HTMLTableCellElement);
     }

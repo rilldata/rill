@@ -25,7 +25,6 @@ import {
   V1Expression,
   V1TimeSeriesValue,
   createQueryServiceMetricsViewAggregation,
-  createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
 import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
 
@@ -217,82 +216,153 @@ export function getDimensionValueTimeSeries(
 
       const start = timeStore?.adjustedStart;
       const end = timeStore?.adjustedEnd;
-      const interval =
+      const timeGrain =
         timeStore?.selectedTimeRange?.interval ?? timeStore?.minTimeGrain;
-      const zone = dashboardStore?.selectedTimezone;
-
+      const timeZone = dashboardStore?.selectedTimezone;
+      const timeDimension = timeStore?.timeDimension;
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
       if (!isValidMeasureList || !dimensionName) return;
       if (dashboardStore?.selectedScrubRange?.isScrubbing) return;
 
-      return derived(
-        (dimensionValues?.values ?? [])?.map((value, i) => {
-          // create a copy
-          const updatedFilter =
-            filterExpressions(dimensionValues?.filter, () => true) ??
-            createAndExpression([]);
-          // add the value to "in" expression
-          updatedFilter.cond?.exprs?.push(
-            createInExpression(dimensionName, [value]),
-          );
+      const topListValues: string[] = dimensionValues?.values;
+      // create a copy
+      const updatedFilter =
+        filterExpressions(dimensionValues?.filter, () => true) ??
+        createAndExpression([]);
+      // add the value to "in" expression
+      updatedFilter.cond?.exprs?.push(
+        createInExpression(dimensionName, topListValues),
+      );
 
-          return derived(
-            [
-              writable(value),
-              createQueryServiceMetricsViewTimeSeries(
-                runtime.instanceId,
-                metricViewName,
-                {
-                  measureNames: measures,
-                  where: sanitiseExpression(updatedFilter, undefined),
-                  timeStart: start,
-                  timeEnd: end,
-                  timeGranularity: interval,
-                  timeZone: zone,
-                },
-                {
-                  query: {
-                    enabled: !!timeStore.ready && !!ctx.dashboardStore,
-                    queryClient: ctx.queryClient,
-                  },
-                },
-              ),
-            ],
-            ([value, timeseries]) => {
-              let prepData = timeseries?.data?.data;
-              if (!timeseries?.isFetching) {
-                prepData = prepareTimeSeries(
-                  timeseries?.data?.data,
-                  undefined,
-                  TIME_GRAIN[interval]?.duration,
-                  zone,
-                );
-              }
-
-              let total;
-              if (surface === "table") {
-                total = dimensionValues?.totals[i];
-              }
-              return {
-                value,
-                total,
-                strokeClass: "stroke-" + LINE_COLORS[i],
-                fillClass: CHECKMARK_COLORS[i]
-                  ? "fill-" + CHECKMARK_COLORS[i]
-                  : "",
-                data: prepData,
-                isFetching: timeseries.isFetching,
-              };
-            },
-          );
-        }),
-
-        (combos) => {
-          return combos;
+      const aggQueryForTopList = createQueryServiceMetricsViewAggregation(
+        runtime.instanceId,
+        metricViewName,
+        {
+          measures: measures.map((measure) => ({ name: measure })),
+          dimensions: [
+            { name: dimensionName },
+            { name: timeDimension, timeGrain, timeZone },
+          ],
+          where: sanitiseExpression(updatedFilter, undefined),
+          timeStart: start,
+          timeEnd: end,
+          sort: [
+            { desc: false, name: dimensionName },
+            { desc: false, name: timeDimension },
+          ],
+          limit: "10000",
+          offset: "0",
         },
-      ).subscribe(set);
+        {
+          query: {
+            enabled: !!timeStore.ready && !!ctx.dashboardStore,
+            keepPreviousData: true,
+            queryClient: ctx.queryClient,
+          },
+        },
+      );
+
+      console.log(dimensionValues);
+
+      return derived(aggQueryForTopList, (topListData) => {
+        if (topListData?.isFetching) {
+          return topListValues?.map((value) => {
+            return {
+              value,
+              isFetching: true,
+              strokeClass: "stroke-" + LINE_COLORS[0],
+              fillClass: CHECKMARK_COLORS[0]
+                ? "fill-" + CHECKMARK_COLORS[0]
+                : "",
+              data: [],
+            };
+          });
+        }
+
+        console.log("topListData", topListData?.data?.data);
+
+        return topListValues?.map((value, i) => {
+          const prepData = prepareTimeSeries(
+            topListData?.data?.data,
+            value,
+            TIME_GRAIN[timeGrain]?.duration,
+            timeZone,
+          );
+
+          let total;
+          if (surface === "table") {
+            total = dimensionValues?.totals?.[i];
+          }
+
+          return {
+            value,
+            total,
+            strokeClass: "stroke-" + LINE_COLORS[i],
+            fillClass: CHECKMARK_COLORS[i] ? "fill-" + CHECKMARK_COLORS[i] : "",
+            data: prepData,
+            isFetching: topListData.isFetching,
+          };
+        });
+      }).subscribe(set);
+      // return derived(
+      //   (dimensionValues?.values ?? [])?.map((value, i) => {
+      //     return derived(
+      //       [
+      //         writable(value),
+      //         createQueryServiceMetricsViewTimeSeries(
+      //           runtime.instanceId,
+      //           metricViewName,
+      //           {
+      //             measureNames: measures,
+      //             where: sanitiseExpression(updatedFilter, undefined),
+      //             timeStart: start,
+      //             timeEnd: end,
+      //             timeGranularity: interval,
+      //             timeZone: zone,
+      //           },
+      //           {
+      //             query: {
+      //               enabled: !!timeStore.ready && !!ctx.dashboardStore,
+      //               queryClient: ctx.queryClient,
+      //             },
+      //           },
+      //         ),
+      //       ],
+      //       ([value, timeseries]) => {
+      //         let prepData = timeseries?.data?.data;
+      //         if (!timeseries?.isFetching) {
+      //           prepData = prepareTimeSeries(
+      //             timeseries?.data?.data,
+      //             undefined,
+      //             TIME_GRAIN[interval]?.duration,
+      //             zone,
+      //           );
+      //         }
+
+      //         let total;
+      //         if (surface === "table") {
+      //           total = dimensionValues?.totals[i];
+      //         }
+      //         return {
+      //           value,
+      //           total,
+      //           strokeClass: "stroke-" + LINE_COLORS[i],
+      //           fillClass: CHECKMARK_COLORS[i]
+      //             ? "fill-" + CHECKMARK_COLORS[i]
+      //             : "",
+      //           data: prepData,
+      //           isFetching: timeseries.isFetching,
+      //         };
+      //       },
+      //     );
+      //   }),
+
+      //   (combos) => {
+      //     return combos;
+      //   },
+      // ).subscribe(set);
     },
   );
 }

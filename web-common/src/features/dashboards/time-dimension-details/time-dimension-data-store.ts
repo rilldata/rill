@@ -346,6 +346,7 @@ export function createTimeDimensionDataStore(ctx: StateManagers) {
       )
         return { isFetching: true };
 
+      console.log(tableDimensionData);
       const measureName = dashboardStore?.expandedMeasureName;
       const pinIndex = dashboardStore?.pinIndex;
       const dimensionName = dashboardStore?.selectedComparisonDimension;
