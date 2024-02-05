@@ -1,9 +1,9 @@
 <script lang="ts">
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import FormSection from "../../components/forms/FormSection.svelte";
-  import InputV2 from "../../components/forms/InputV2.svelte";
-  import Select from "../../components/forms/Select.svelte";
-  import Filters from "../dashboards/filters/Filters.svelte";
+  import FormSection from "../../../components/forms/FormSection.svelte";
+  import InputV2 from "../../../components/forms/InputV2.svelte";
+  import Select from "../../../components/forms/Select.svelte";
+  import Filters from "../../dashboards/filters/Filters.svelte";
   import DataPreview from "./DataPreview.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState

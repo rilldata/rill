@@ -7,12 +7,12 @@
   import { V1Operation } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
+  import AlertDialogCriteriaTab from "web-common/src/features/alerts/criteria-tab/AlertDialogCriteriaTab.svelte";
+  import AlertDialogDeliveryTab from "web-common/src/features/alerts/delivery-tab/AlertDialogDeliveryTab.svelte";
   import * as yup from "yup";
   import { Button } from "../../components/button";
   import Dialog from "../../components/dialog-v2/Dialog.svelte";
-  import AlertDialogCriteriaTab from "web-common/src/features/alerts/criteria-tab/AlertDialogCriteriaTab.svelte";
-  import AlertDialogDataTab from "./AlertDialogDataTab.svelte";
-  import AlertDialogDeliveryTab from "web-common/src/features/alerts/delivery-tab/AlertDialogDeliveryTab.svelte";
+  import AlertDialogDataTab from "./data-tab/AlertDialogDataTab.svelte";
 
   export let open: boolean;
 
