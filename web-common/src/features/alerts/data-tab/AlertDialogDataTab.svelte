@@ -4,7 +4,7 @@
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
   import Filters from "../../dashboards/filters/Filters.svelte";
-  import DataPreview from "./DataPreview.svelte";
+  import DataPreview from "./../DataPreview.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState
 
@@ -56,13 +56,15 @@
     <Select
       bind:value={$form["measure"]}
       id="measure"
-      label="Choose a measure"
+      label="Measure"
+      placeholder="Select a measure"
       options={measureOptions}
     />
     <Select
       bind:value={$form["splitByDimension"]}
       id="splitByDimension"
       label="Split by dimension"
+      placeholder="Select a dimension"
       options={dimensionOptions}
     />
     <!-- TODO -->
