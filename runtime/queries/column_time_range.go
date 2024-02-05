@@ -17,6 +17,8 @@ import (
 
 const hourInDay = 24
 
+var microsInDay = hourInDay * time.Hour.Microseconds()
+
 type ColumnTimeRange struct {
 	TableName  string
 	ColumnName string
@@ -255,13 +257,14 @@ func (q *ColumnTimeRange) resolveClickHouse(ctx context.Context, olap drivers.OL
 		summary.Max = timestamppb.New(*maxTime)
 	}
 	if minTime != nil && maxTime != nil {
+		// ignoring months for now since its hard to compute and anyways not being used
 		summary.Interval = &runtimev1.TimeRangeSummary_Interval{}
 		duration := maxTime.Sub(*minTime)
 		hours := duration.Hours()
 		if hours >= hourInDay {
 			summary.Interval.Days = int32(hours / hourInDay)
 		}
-		summary.Interval.Micros = duration.Microseconds() - hourInDay*time.Hour.Microseconds()*int64(summary.Interval.Days)
+		summary.Interval.Micros = duration.Microseconds() - microsInDay*int64(summary.Interval.Days)
 	}
 
 	q.Result = summary

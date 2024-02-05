@@ -1,10 +1,10 @@
 package pbutil
 
 import (
-	"encoding/base64"
 	"fmt"
 	"math"
 	"math/big"
+	"net"
 	"reflect"
 	"time"
 	"unicode/utf8"
@@ -69,6 +69,13 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			return structpb.NewNullValue(), nil
 		}
 		return structpb.NewNumberValue(v), nil
+	case big.Int:
+		// Evil cast to float until frontend can deal with bigs:
+		v2, _ := new(big.Float).SetInt(&v).Float64()
+		return structpb.NewNumberValue(v2), nil
+		// This is what we should do when frontend supports it:
+		// s := v.String()
+		// return structpb.NewStringValue(s), nil
 	case *big.Int:
 		// Evil cast to float until frontend can deal with bigs:
 		v2, _ := new(big.Float).SetInt(v).Float64()
@@ -111,6 +118,8 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		if t.Code != runtimev1.Type_CODE_ARRAY { // not a byte array but array of uint8
 			return structpb.NewValue(v)
 		}
+	case net.IP:
+		return structpb.NewStringValue(v.String()), nil
 	// pointers to base types
 	case *bool:
 		return structpb.NewBoolValue(*v), nil
@@ -131,25 +140,6 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			return nil, fmt.Errorf("invalid UTF-8 in string: %q", *v)
 		}
 		return structpb.NewStringValue(*v), nil
-	case *[]byte:
-		s := base64.StdEncoding.EncodeToString(*v)
-		return structpb.NewStringValue(s), nil
-	case *map[string]any:
-		var t2 *runtimev1.StructType
-		if t != nil {
-			t2 = t.StructType
-		}
-		v2, err := ToStruct(*v, t2)
-		if err != nil {
-			return nil, err
-		}
-		return structpb.NewStructValue(v2), nil
-	case *[]any:
-		v2, err := ToListValue(*v, t)
-		if err != nil {
-			return nil, err
-		}
-		return structpb.NewListValue(v2), nil
 	case *int8:
 		return structpb.NewNumberValue(float64(*v)), nil
 	case *int16:
@@ -179,29 +169,8 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			return structpb.NewNullValue(), nil
 		}
 		return structpb.NewNumberValue(*v), nil
-	case *map[any]any:
-		var t2 *runtimev1.MapType
-		if t != nil {
-			t2 = t.MapType
-		}
-		v2, err := ToStructCoerceKeys(*v, t2)
-		if err != nil {
-			return nil, err
-		}
-		return structpb.NewStructValue(v2), nil
-	case map[string]*string:
-		x := &structpb.Struct{Fields: make(map[string]*structpb.Value, len(v))}
-		for k, v := range v {
-			if !utf8.ValidString(k) {
-				return nil, fmt.Errorf("invalid UTF-8 in string: %q", k)
-			}
-			var err error
-			x.Fields[k], err = ToValue(v, nil)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return structpb.NewStructValue(x), nil
+	case *net.IP:
+		return structpb.NewStringValue(v.String()), nil
 	default:
 	}
 	if t.ArrayElementType != nil {

@@ -30,6 +30,8 @@ message Type {
     CODE_DECIMAL = 22;
     CODE_JSON = 23;
     CODE_UUID = 24;
+    CODE_INT256 = 25;
+    CODE_UINT256 = 26;
   }
   // Code designates the type
   Code code = 1;

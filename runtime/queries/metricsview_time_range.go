@@ -269,9 +269,14 @@ func (q *MetricsViewTimeRange) resolveClickHouse(ctx context.Context, olap drive
 			summary.Max = timestamppb.New(*max)
 		}
 		if min != nil && max != nil {
-			summary.Interval = &runtimev1.TimeRangeSummary_Interval{
-				Micros: max.Sub(*min).Microseconds(),
+			// ignoring months for now since its hard to compute and anyways not being used
+			summary.Interval = &runtimev1.TimeRangeSummary_Interval{}
+			duration := max.Sub(*min)
+			hours := duration.Hours()
+			if hours >= hourInDay {
+				summary.Interval.Days = int32(hours / hourInDay)
 			}
+			summary.Interval.Micros = duration.Microseconds() - microsInDay*int64(summary.Interval.Days)
 		}
 
 		q.Result = &runtimev1.MetricsViewTimeRangeResponse{

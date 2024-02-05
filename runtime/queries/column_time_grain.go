@@ -130,10 +130,10 @@ func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 			min(cd = toLastDayOfMonth(cd)) = TRUE as lastdayofmonth,
 			uniq(toISOWeek(cd)) as weekofyear,
 			uniq(toDayOfWeek(cd)) as dayofweek,
-			uniq(toHour(cd)) as hour,
-			uniq(toMinute(cd)) as minute,
-			uniq(toSecond(cd)) as second,
-			uniq(toUnixTimestamp64Milli(cd::DATETIME64) - toUnixTimestamp64Milli(toStartOfSecond(cd::DATETIME64)) as ms
+			uniq(toHour(cd::DATETIME64)) as hour,
+			uniq(toMinute(cd::DATETIME64)) as minute,
+			uniq(toSecond(cd::DATETIME64)) as second,
+			uniq(toUnixTimestamp64Milli(cd::DATETIME64) - toUnixTimestamp64Milli(toStartOfSecond(cd::DATETIME64))) as ms
 		FROM cleaned_column
 		)
 		SELECT 

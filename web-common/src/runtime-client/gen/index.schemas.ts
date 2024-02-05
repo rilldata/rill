@@ -488,6 +488,8 @@ export const V1TypeCode = {
   CODE_DECIMAL: "CODE_DECIMAL",
   CODE_JSON: "CODE_JSON",
   CODE_UUID: "CODE_UUID",
+  CODE_INT256: "CODE_INT256",
+  CODE_UINT256: "CODE_UINT256",
 } as const;
 
 export interface V1TriggerRefreshResponse {

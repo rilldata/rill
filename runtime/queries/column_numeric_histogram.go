@@ -82,7 +82,7 @@ func (q *ColumnNumericHistogram) calculateBucketSize(ctx context.Context, olap d
 	case drivers.DialectDuckDB:
 		qryString = "SELECT (approx_quantile(%s, 0.75)-approx_quantile(%s, 0.25))::DOUBLE AS iqr, approx_count_distinct(%s) AS count, (max(%s) - min(%s))::DOUBLE AS range FROM %s"
 	case drivers.DialectClickHouse:
-		qryString = "SELECT (quantileTDigest(0.75)(%s)-quantileTDigest(0.25)(%s))::Nullable(DOUBLE) AS iqr, uniq(%s) AS count, (max(%s) - min(%s))::Nullable(DOUBLE) AS range FROM %s"
+		qryString = "SELECT (quantileTDigest(0.75)(%s)-quantileTDigest(0.25)(%s)) AS iqr, uniq(%s) AS count, (max(%s) - min(%s)) AS range FROM %s"
 	default:
 		return 0, fmt.Errorf("unsupported dialect %v", olap.Dialect())
 	}
@@ -266,11 +266,11 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 				SELECT count(*) AS c FROM values WHERE value = %[6]v
 			  )
 			  SELECT 
-			  	ifNull(bucket, 0)::Float64 AS bucket,
-				ifNull(low, 0)::Float64 AS low,
-				ifNull(high, 0)::Float64 AS high,
+			  	ifNull(bucket, 0) AS bucket,
+				ifNull(low, 0) AS low,
+				ifNull(high, 0) AS high,
 				-- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
-				ifNull(CASE WHEN high = (SELECT max(high) FROM histogram_stage) THEN count + (SELECT c FROM right_edge) ELSE count END, 0)::Float64 AS count
+				ifNull(CASE WHEN high = (SELECT max(high) FROM histogram_stage) THEN count + (SELECT c FROM right_edge) ELSE count END, 0) AS count
 				FROM histogram_stage
 				ORDER BY bucket SETTINGS join_use_nulls=1
 			  `,

@@ -384,6 +384,9 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
+// databaseTypeToPB converts clikchouse types to rill internal types
+// refer the list of types here : https://clickhouse.com/docs/en/sql-reference/data-types
+// excludes mapping for Aggregation function types, Nested data structures, Tuples, Geo types, Special data types
 func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	dbt = strings.ToUpper(dbt)
 	// for nullable the datatype is Nullable(X)
@@ -397,7 +400,6 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	}
 	match := true
 	t := &runtimev1.Type{Nullable: nullable}
-	// int256 and uint256
 	switch dbt {
 	case "BOOL":
 		t.Code = runtimev1.Type_CODE_BOOL
@@ -411,6 +413,8 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_INT64
 	case "INT128":
 		t.Code = runtimev1.Type_CODE_INT128
+	case "INT256":
+		t.Code = runtimev1.Type_CODE_INT256
 	case "UINT8":
 		t.Code = runtimev1.Type_CODE_UINT8
 	case "UINT16":
@@ -421,14 +425,15 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_UINT64
 	case "UINT128":
 		t.Code = runtimev1.Type_CODE_UINT128
+	case "UINT256":
+		t.Code = runtimev1.Type_CODE_UINT256
 	case "FLOAT32":
 		t.Code = runtimev1.Type_CODE_FLOAT32
 	case "FLOAT64":
 		t.Code = runtimev1.Type_CODE_FLOAT64
-	case "DECIMAL": // todo :: check decimal
+	// can be DECIMAL or DECIMAL(...) which is covered below
+	case "DECIMAL":
 		t.Code = runtimev1.Type_CODE_FLOAT64
-	case "FIXEDSTRING":
-		t.Code = runtimev1.Type_CODE_STRING
 	case "STRING":
 		t.Code = runtimev1.Type_CODE_STRING
 	case "DATE":
@@ -443,6 +448,10 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_JSON
 	case "UUID":
 		t.Code = runtimev1.Type_CODE_UUID
+	case "IPV4":
+		t.Code = runtimev1.Type_CODE_STRING
+	case "IPV6":
+		t.Code = runtimev1.Type_CODE_STRING
 	case "OTHER":
 		t.Code = runtimev1.Type_CODE_JSON
 	default:
@@ -463,9 +472,19 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
 	case "DATETIME64":
 		t.Code = runtimev1.Type_CODE_TIMESTAMP
-	// Example: "DECIMAL(10,20)"
+	// Example: "DECIMAL(10,20)", "DECIMAL(10)"
 	case "DECIMAL":
 		t.Code = runtimev1.Type_CODE_DECIMAL
+	case "DECIMAL32":
+		t.Code = runtimev1.Type_CODE_DECIMAL
+	case "DECIMAL64":
+		t.Code = runtimev1.Type_CODE_DECIMAL
+	case "DECIMAL128":
+		t.Code = runtimev1.Type_CODE_DECIMAL
+	case "DECIMAL256":
+		t.Code = runtimev1.Type_CODE_DECIMAL
+	case "FIXEDSTRING":
+		t.Code = runtimev1.Type_CODE_STRING
 	case "ARRAY":
 		t.Code = runtimev1.Type_CODE_ARRAY
 		var err error
