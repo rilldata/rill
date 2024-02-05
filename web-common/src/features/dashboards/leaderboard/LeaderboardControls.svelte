@@ -11,9 +11,9 @@
   import Spinner from "../../entity-management/Spinner.svelte";
 
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { useMetaQuery } from "../selectors";
-  import LeaderboardContextColumnMenu from "./LeaderboardContextColumnMenu.svelte";
+  import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
+  import LeaderboardContextColumnMenu from "./LeaderboardContextColumnMenu.svelte";
 
   export let metricViewName;
 
@@ -24,9 +24,9 @@
     },
   } = getStateManagers();
 
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
-  $: measures = $metaQuery.data?.measures;
+  $: measures = $metricsView.data?.measures;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
@@ -103,7 +103,7 @@
 
   $: showHideDimensions = createShowHideDimensionsStore(
     metricViewName,
-    metaQuery,
+    metricsView,
   );
 
   const toggleDimensionVisibility = (e) => {

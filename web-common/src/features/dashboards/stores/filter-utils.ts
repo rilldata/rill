@@ -115,7 +115,7 @@ export function negateExpression(expr: V1Expression): V1Expression {
 
 export function forEachExpression(
   expr: V1Expression,
-  cb: (e: V1Expression, depth?: number) => void,
+  cb: (e: V1Expression, depth: number) => void,
   depth = 0,
 ) {
   if (!expr.cond?.exprs) {
@@ -146,6 +146,17 @@ export function forEachIdentifier(
     }
     cb(e, ident);
   });
+}
+
+export function getAllIdentifiers(expr: V1Expression | undefined): string[] {
+  if (!expr) return [];
+  const idents = new Set<string>();
+  forEachExpression(expr, (e) => {
+    if (e.ident) {
+      idents.add(e.ident);
+    }
+  });
+  return [...idents];
 }
 
 /**
@@ -191,6 +202,25 @@ export function copyFilterExpression(expr: V1Expression) {
   return filterExpressions(expr, () => true) ?? createAndExpression([]);
 }
 
+export function filterIdentifiers(
+  expr: V1Expression,
+  cb: (e: V1Expression, ident: string) => boolean,
+) {
+  return filterExpressions(expr, (e) => {
+    if (
+      e.cond?.op !== V1Operation.OPERATION_IN &&
+      e.cond?.op !== V1Operation.OPERATION_NIN
+    ) {
+      return true;
+    }
+    const ident = e.cond?.exprs?.[0].ident;
+    if (ident === undefined) {
+      return true;
+    }
+    return cb(e, ident);
+  });
+}
+
 export function getValueIndexInExpression(expr: V1Expression, value: string) {
   return expr.cond?.exprs?.findIndex((e, i) => i > 0 && e.val === value);
 }
@@ -203,7 +233,22 @@ export const matchExpressionByName = (e: V1Expression, name: string) => {
   return e.cond?.exprs?.[0].ident === name;
 };
 
-export const sanitiseExpression = (e: V1Expression | undefined) => {
-  if (!e?.cond?.exprs?.length) return undefined;
-  return e;
+export const sanitiseExpression = (
+  where: V1Expression | undefined,
+  having: V1Expression | undefined,
+) => {
+  if (!having) {
+    if (!where?.cond?.exprs?.length) return undefined;
+    return where;
+  }
+  if (!where?.cond?.exprs?.length) {
+    where = having;
+  } else {
+    // make sure to create a copy and not update the original "where" filter
+    where = createAndExpression([
+      ...where.cond.exprs,
+      ...(having.cond?.exprs ?? []),
+    ]);
+  }
+  return where;
 };

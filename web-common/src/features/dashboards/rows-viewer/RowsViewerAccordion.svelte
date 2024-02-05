@@ -72,7 +72,7 @@
       ],
       timeStart: $timeControlsStore.timeStart,
       timeEnd,
-      where: sanitiseExpression($dashboardStore?.whereFilter),
+      where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
     },
     {
       query: {
@@ -82,7 +82,7 @@
           {
             timeStart: $timeControlsStore.timeStart,
             timeEnd,
-            where: sanitiseExpression($dashboardStore?.whereFilter),
+            where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
           },
         ],
         enabled: $timeControlsStore.ready && !!$dashboardStore?.whereFilter,
@@ -135,7 +135,7 @@
       {label}
     </button>
     <div class="ml-auto">
-      {#if isLocal}<ExportModelDataButton {metricViewName} />{/if}
+      {#if isLocal}<ExportModelDataButton />{/if}
     </div>
   </div>
 

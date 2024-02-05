@@ -24,6 +24,7 @@ import {
   TimeGrain as TimeGrainProto,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
+  DashboardDimensionFilter,
   DashboardState,
   DashboardState_LeaderboardContextColumn,
   DashboardTimeRange,
@@ -56,8 +57,14 @@ export function getProtoFromDashboardState(
   if (metrics.whereFilter) {
     state.where = toExpressionProto(metrics.whereFilter);
   }
-  if (metrics.havingFilter) {
-    state.having = toExpressionProto(metrics.havingFilter);
+  if (metrics.dimensionThresholdFilters.length) {
+    state.having = metrics.dimensionThresholdFilters.map(
+      ({ name, filter }) =>
+        new DashboardDimensionFilter({
+          name,
+          filter: toExpressionProto(filter),
+        }),
+    );
   }
   if (metrics.selectedTimeRange) {
     state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
@@ -181,7 +188,9 @@ function toTimeGrainProto(timeGrain: V1TimeGrain) {
   }
 }
 
-function toExpressionProto(expression: V1Expression | undefined) {
+function toExpressionProto(
+  expression: V1Expression | undefined,
+): Expression | undefined {
   if (!expression) return undefined;
   if ("ident" in expression) {
     return new Expression({

@@ -45,7 +45,6 @@
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
     },
-    metricsViewName,
   } = stateManagers;
 
   $: excludeMode = $isFilterExcludeMode(dimensionName);
@@ -151,9 +150,6 @@
       </TooltipContent>
     </Tooltip>
 
-    <ExportDimensionTableDataButton
-      includeScheduledReport={$adminServer}
-      metricViewName={$metricsViewName}
-    />
+    <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
   </div>
 </div>

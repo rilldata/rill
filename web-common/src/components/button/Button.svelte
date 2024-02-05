@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import { builderActions, getAttrs, type Builder } from "bits-ui";
+  import { createEventDispatcher } from "svelte";
 
   type ButtonType =
     | "primary"
@@ -63,7 +63,7 @@
     @apply text-xs leading-snug font-normal;
     @apply gap-x-2 min-w-fit;
     @apply rounded-[2px];
-    @apply px-3 h-7;
+    @apply px-3 h-7 min-h-[28px];
   }
 
   button:focus {

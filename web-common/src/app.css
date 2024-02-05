@@ -36,6 +36,10 @@
     @apply text-gray-600 dark:text-gray-200;
   }
 
+  .ui-copy-primary {
+    @apply text-primary-700 dark:text-primary-200;
+  }
+
   .ui-copy-strong {
     @apply text-gray-900 dark:text-white font-semibold;
   }
@@ -115,9 +119,6 @@
 @layer base {
   :root {
     --ui-editor-error-foreground: hsl(0, 75%, 45%);
-
-    --color-secondary-gradient-max-hue: 300;
-    --color-secondary-gradient-min-hue: 1;
 
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;

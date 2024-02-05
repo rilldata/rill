@@ -1,7 +1,7 @@
 import type { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
   createAndExpression,
   createInExpression,
@@ -24,7 +24,9 @@ import {
   RpcStatus,
   V1Expression,
   V1MetricsViewSpec,
+  type V1StructType,
   V1TimeGrain,
+  V1TypeCode,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/query-core";
 import { QueryClient } from "@tanstack/svelte-query";
@@ -42,6 +44,7 @@ export const AD_BIDS_PUBLISHER_COUNT_MEASURE = "publisher_count";
 export const AD_BIDS_PUBLISHER_DIMENSION = "publisher";
 export const AD_BIDS_DOMAIN_DIMENSION = "domain";
 export const AD_BIDS_COUNTRY_DIMENSION = "country";
+export const AD_BIDS_PUBLISHER_IS_NULL_DOMAIN = "publisher_is_null";
 export const AD_BIDS_TIMESTAMP_DIMENSION = "timestamp";
 
 export const AD_BIDS_INIT_MEASURES = [
@@ -157,6 +160,59 @@ export const AD_BIDS_WITH_THREE_DIMENSIONS: V1MetricsViewSpec = {
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: AD_BIDS_THREE_DIMENSIONS,
 };
+export const AD_BIDS_WITH_BOOL_DIMENSION: V1MetricsViewSpec = {
+  title: "AdBids",
+  table: "AdBids_Source",
+  measures: AD_BIDS_INIT_MEASURES,
+  dimensions: [
+    ...AD_BIDS_INIT_DIMENSIONS,
+    {
+      name: AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
+      expression: "case when publisher is null then true else false end",
+    },
+  ],
+};
+
+export const AD_BIDS_SCHEMA: V1StructType = {
+  fields: [
+    {
+      name: AD_BIDS_PUBLISHER_DIMENSION,
+      type: {
+        code: V1TypeCode.CODE_STRING,
+      },
+    },
+    {
+      name: AD_BIDS_DOMAIN_DIMENSION,
+      type: {
+        code: V1TypeCode.CODE_STRING,
+      },
+    },
+    {
+      name: AD_BIDS_COUNTRY_DIMENSION,
+      type: {
+        code: V1TypeCode.CODE_STRING,
+      },
+    },
+    {
+      name: AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
+      type: {
+        code: V1TypeCode.CODE_BOOL,
+      },
+    },
+    {
+      name: AD_BIDS_IMPRESSIONS_MEASURE,
+      type: {
+        code: V1TypeCode.CODE_INT64,
+      },
+    },
+    {
+      name: AD_BIDS_BID_PRICE_MEASURE,
+      type: {
+        code: V1TypeCode.CODE_FLOAT64,
+      },
+    },
+  ],
+};
 
 export function resetDashboardStore() {
   metricsExplorerStore.remove(AD_BIDS_NAME);
@@ -197,28 +253,10 @@ export function createDashboardState(
   whereFilter: V1Expression = createAndExpression([]),
   timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
 ): MetricsExplorerEntity {
-  return {
-    name,
-
-    visibleDimensionKeys: new Set(
-      metrics.dimensions?.map((d) => d.name as string),
-    ),
-    allDimensionsVisible: true,
-    visibleMeasureKeys: new Set(metrics.measures?.map((m) => m.name as string)),
-    allMeasuresVisible: true,
-
-    whereFilter,
-    havingFilter: createAndExpression([]),
-    dimensionFilterExcludeMode: new Map(),
-
-    leaderboardMeasureName: metrics.measures?.[0]?.name ?? "",
-    leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
-
-    selectedTimeRange: timeRange,
-
-    dashboardSortType: undefined,
-    sortDirection: undefined,
-  };
+  const explorer = getDefaultMetricsExplorerEntity(name, metrics, undefined);
+  explorer.whereFilter = whereFilter;
+  explorer.selectedTimeRange = timeRange;
+  return explorer;
 }
 
 export function createAdBidsMirrorInStore(metrics: V1MetricsViewSpec) {
@@ -228,6 +266,7 @@ export function createAdBidsMirrorInStore(metrics: V1MetricsViewSpec) {
     AD_BIDS_MIRROR_NAME,
     proto,
     metrics ?? { measures: [], dimensions: [] },
+    AD_BIDS_SCHEMA,
   );
 }
 

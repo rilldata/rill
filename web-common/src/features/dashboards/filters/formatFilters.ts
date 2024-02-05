@@ -1,6 +1,6 @@
 import type { MetricsViewFilterCond } from "@rilldata/web-common/runtime-client";
 import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
-import { getDisplayName } from "./getDisplayName";
+import { getDimensionDisplayName } from "./getDisplayName";
 
 export type DimensionFilter = {
   name: string;
@@ -21,7 +21,7 @@ export function formatFilters(
 
     const formatted = {
       name,
-      label: getDisplayName(dimensionIdMap.get(name)),
+      label: getDimensionDisplayName(dimensionIdMap.get(name)),
       selectedValues: selectedValues as string[],
     };
 
