@@ -227,34 +227,46 @@ export function getComparisonDefaultSelection(
     .slice(0, 3);
 }
 
+const QuerySortTypeMap: Record<SortType, ApiSortType> = {
+  [SortType.VALUE]: ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+
+  [SortType.DELTA_ABSOLUTE]:
+    ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
+
+  [SortType.DELTA_PERCENT]:
+    ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA,
+
+  // NOTE: sorting by percent-of-total has the same effect
+  // as sorting by base value
+  [SortType.PERCENT]:
+    ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+
+  // NOTE: UNSPECIFIED is not actually a valid sort type,
+  // but it is required by protobuf serialization
+  [SortType.UNSPECIFIED]:
+    ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+
+  // FIXME: sort by dimension value is not yet implemented,
+  // for now fall back to sorting by base value
+  [SortType.DIMENSION]:
+    ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+};
 export function getQuerySortType(sortType: SortType) {
   return (
-    {
-      [SortType.VALUE]:
-        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
-
-      [SortType.DELTA_ABSOLUTE]:
-        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
-
-      [SortType.DELTA_PERCENT]:
-        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA,
-
-      // NOTE: sorting by percent-of-total has the same effect
-      // as sorting by base value
-      [SortType.PERCENT]:
-        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
-
-      // NOTE: UNSPECIFIED is not actually a valid sort type,
-      // but it is required by protobuf serialization
-      [SortType.UNSPECIFIED]:
-        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
-
-      // FIXME: sort by dimension value is not yet implemented,
-      // for now fall back to sorting by base value
-      [SortType.DIMENSION]:
-        ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
-    }[sortType] || ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
+    QuerySortTypeMap[sortType] ||
+    ApiSortType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
   );
+}
+
+const QuerySortTypeReverseMap: Record<ApiSortType, SortType> = {} as Record<
+  ApiSortType,
+  SortType
+>;
+for (const k in QuerySortTypeMap) {
+  QuerySortTypeReverseMap[QuerySortTypeMap[k]] = Number(k);
+}
+export function getSortType(apiSortType: ApiSortType) {
+  return QuerySortTypeReverseMap[apiSortType] || SortType.VALUE;
 }
 
 // Backwards compatibility fix for older filters that converted all non-null values to string

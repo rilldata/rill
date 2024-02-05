@@ -18,7 +18,7 @@ import type {
 import { Readable, derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
 
-export const useMetaQuery = <T = V1MetricsViewSpec>(
+export const useMetricsView = <T = V1MetricsViewSpec>(
   ctx: StateManagers,
   selector?: (meta: V1MetricsViewSpec) => T,
 ): Readable<QueryObserverResult<T | V1MetricsViewSpec, RpcStatus>> => {
@@ -40,7 +40,7 @@ export const useMetaQuery = <T = V1MetricsViewSpec>(
 };
 
 export const useModelHasTimeSeries = (ctx: StateManagers) =>
-  useMetaQuery(
+  useMetricsView(
     ctx,
     (meta) => !!meta?.timeDimension,
   ) as CreateQueryResult<boolean>;
@@ -102,8 +102,8 @@ export function createTimeRangeSummary(
   ctx: StateManagers,
 ): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
   return derived(
-    [ctx.runtime, ctx.metricsViewName],
-    ([runtime, metricsViewName], set) =>
+    [ctx.runtime, ctx.metricsViewName, useMetricsView(ctx)],
+    ([runtime, metricsViewName, metricsView], set) =>
       createQueryServiceMetricsViewTimeRange(
         runtime.instanceId,
         metricsViewName,
@@ -111,6 +111,7 @@ export function createTimeRangeSummary(
         {
           query: {
             queryClient: ctx.queryClient,
+            enabled: !!metricsView.data?.timeDimension,
           },
         },
       ).subscribe(set),

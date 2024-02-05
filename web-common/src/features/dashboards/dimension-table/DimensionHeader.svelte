@@ -44,7 +44,6 @@
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
     },
-    metricsViewName,
   } = stateManagers;
 
   $: excludeMode = $isFilterExcludeMode(dimensionName);
@@ -152,9 +151,7 @@
 
     <ExportDimensionTableDataButton
       includeScheduledReport={!!$featureFlags.adminServer}
-      metricViewName={$metricsViewName}
     />
-
     {#if $featureFlags.adminServer && $featureFlags.alerts}
       <CreateAlertButton />
     {/if}

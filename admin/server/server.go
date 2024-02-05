@@ -398,10 +398,10 @@ func newURLRegistry(opts *Options) *externalURLs {
 	}
 }
 
-func (u *externalURLs) reportOpen(org, project, projectSubpath string) string {
-	res := urlutil.MustJoinURL(u.frontend, org, project)
-	res += projectSubpath // Need to do an unsafe concat to provide flexibility, e.g. to avoid escaping '?'
-	return res
+func (u *externalURLs) reportOpen(org, project, report string, executionTime time.Time) string {
+	reportURL := urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report, "open")
+	reportURL += fmt.Sprintf("?execution_time=%s", executionTime.UTC().Format(time.RFC3339))
+	return reportURL
 }
 
 func (u *externalURLs) reportExport(org, project, report string) string {

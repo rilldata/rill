@@ -1,18 +1,17 @@
 <script lang="ts">
-  import { runtime } from "../../../runtime-client/runtime-store";
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { chartInteractionColumn } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import BackToOverview from "@rilldata/web-common/features/dashboards/time-series/BackToOverview.svelte";
@@ -20,15 +19,16 @@
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import { TIME_GRAIN } from "../../../lib/time/config";
+  import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
   import MeasureBigNumber from "../big-number/MeasureBigNumber.svelte";
   import MeasureChart from "./MeasureChart.svelte";
   import MeasureZoom from "./MeasureZoom.svelte";
-  import type { DimensionDataItem } from "./multiple-dimension-queries";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
+  import type { DimensionDataItem } from "./multiple-dimension-queries";
 
   export let metricViewName;
   export let workspaceWidth: number;
@@ -37,7 +37,7 @@
   $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
-  $: metaQuery = useMetaQuery(instanceId, metricViewName);
+  $: metricsView = useMetricsView(instanceId, metricViewName);
 
   const {
     selectors: {
@@ -46,7 +46,10 @@
     },
   } = getStateManagers();
 
-  $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
+  $: showHideMeasures = createShowHideMeasuresStore(
+    metricViewName,
+    metricsView,
+  );
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
   const timeSeriesDataStore = useTimeSeriesDataStore(getStateManagers());
@@ -70,11 +73,11 @@
   let renderedMeasures = [];
   $: {
     if (expandedMeasureName) {
-      renderedMeasures = $metaQuery.data?.measures.filter(
+      renderedMeasures = $metricsView.data?.measures.filter(
         (measure) => measure.name === expandedMeasureName,
       );
     } else {
-      renderedMeasures = $metaQuery.data?.measures.filter(
+      renderedMeasures = $metricsView.data?.measures.filter(
         (_, i) => $showHideMeasures.selectedItems[i],
       );
     }
@@ -153,7 +156,7 @@
       $dashboardStore?.selectedTimezone,
       interval,
       $timeControlsStore.selectedTimeRange?.name,
-      $metaQuery.data.defaultTimeRange,
+      $metricsView.data.defaultTimeRange,
     );
 
     startValue = adjustedChartValue?.start;
@@ -274,7 +277,7 @@
       <div style:height="125px">
         {#if $timeSeriesDataStore?.isError}
           <div class="p-5"><CrossIcon /></div>
-        {:else if formattedData}
+        {:else if formattedData && interval}
           <MeasureChart
             bind:mouseoverValue
             {measure}

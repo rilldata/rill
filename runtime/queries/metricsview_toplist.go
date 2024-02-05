@@ -196,7 +196,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 	}
 
 	var selectCols []string
-	dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
+	dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
 	selectCols = append(selectCols, dimSel)
 
 	for _, m := range ms {
@@ -223,7 +223,7 @@ func (q *MetricsViewToplist) buildMetricsTopListSQL(mv *runtimev1.MetricsViewSpe
 			return "", nil, err
 		}
 		if strings.TrimSpace(clause) != "" {
-			whereClause += " AND " + clause
+			whereClause += fmt.Sprintf(" AND (%s)", clause)
 		}
 		args = append(args, clauseArgs...)
 	}

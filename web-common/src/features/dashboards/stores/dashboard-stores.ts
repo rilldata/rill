@@ -15,7 +15,10 @@ import type {
   ScrubRange,
   TimeRange,
 } from "@rilldata/web-common/lib/time/types";
-import { V1Operation } from "@rilldata/web-common/runtime-client";
+import {
+  V1Operation,
+  type V1StructType,
+} from "@rilldata/web-common/runtime-client";
 import type {
   V1Expression,
   V1MetricsView,
@@ -182,11 +185,16 @@ const metricViewReducers = {
     });
   },
 
-  syncFromUrl(name: string, urlState: string, metricsView: V1MetricsView) {
+  syncFromUrl(
+    name: string,
+    urlState: string,
+    metricsView: V1MetricsView,
+    schema: V1StructType,
+  ) {
     if (!urlState || !metricsView) return;
     // not all data for MetricsExplorerEntity will be filled out here.
     // Hence, it is a Partial<MetricsExplorerEntity>
-    const partial = getDashboardStateFromUrl(urlState, metricsView);
+    const partial = getDashboardStateFromUrl(urlState, metricsView, schema);
     if (!partial) return;
 
     updateMetricsExplorerByName(name, (metricsExplorer) => {

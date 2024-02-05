@@ -71,7 +71,5 @@ measures:
   # Add more measures here
 ```
 
-Rill will ingest the dashboard definition next time you run `rill start`. 
-
 For details about all available properties, see the syntax [reference](../reference/project-files/dashboards).
 

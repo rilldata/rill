@@ -13,7 +13,7 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     metricsExplorerStore,
@@ -46,11 +46,11 @@
     },
   } = getStateManagers();
 
-  $: metaQuery = useMetaQuery(getStateManagers());
+  $: metricsView = useMetricsView(getStateManagers());
   $: dashboardStore = useDashboardStore(metricViewName);
 
   $: expandedMeasureName = $dashboardStore?.expandedMeasureName;
-  $: allMeasures = $metaQuery?.data?.measures ?? [];
+  $: allMeasures = $metricsView?.data?.measures ?? [];
 
   $: selectableMeasures = allMeasures
     ?.filter((m) => m.name !== undefined || m.label !== undefined)
