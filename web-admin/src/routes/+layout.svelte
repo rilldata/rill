@@ -35,14 +35,14 @@
   queryClient.getQueryCache().config.onError =
     createGlobalErrorCallback(queryClient);
 
-  featureFlags.set({
-    // The admin server enables some dashboard features like scheduled reports and alerts
-    adminServer: true,
-    // Set read-only mode so that the user can't edit the dashboard
-    readOnly: true,
-    // Temporary flag to show/hide the WIP alerts feature
-    alerts: localStorage.getItem("alerts") === "true",
-  });
+  // The admin server enables some dashboard features like scheduled reports and alerts
+  // Set read-only mode so that the user can't edit the dashboard
+  featureFlags.set(true, "adminServer", "readOnly");
+
+  // Temporary flag to show/hide the WIP alerts feature
+  if (localStorage.getItem("alerts") === "true") {
+    featureFlags.set(true, "alerts");
+  }
 
   beforeNavigate(retainFeaturesFlags);
   clearViewedAsUserAfterNavigate(queryClient);
