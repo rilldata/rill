@@ -262,6 +262,20 @@ const metricViewReducers = {
     });
   },
 
+  createPivot(name: string, rows: string[], columns: string[]) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        active: true,
+        rows,
+        columns,
+        expanded: {},
+        sorting: [],
+        columnPage: 1,
+      };
+    });
+  },
+
   /**
    * DEPRECATED!!!
    * use setLeaderboardMeasureName via:

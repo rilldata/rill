@@ -1,9 +1,9 @@
-import { sliceColumnAxesDataForDef } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
 import {
   V1TimeGrain,
   type V1MetricsViewAggregationResponse,
@@ -17,6 +17,7 @@ import {
   addExpandedDataToPivot,
   queryExpandedRowMeasureValues,
 } from "./pivot-expansion";
+import { sliceColumnAxesDataForDef } from "./pivot-infinite-scroll";
 import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,
@@ -41,7 +42,6 @@ import type {
   PivotDataStoreConfig,
   PivotTimeConfig,
 } from "./types";
-import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
 
 /**
  * Extract out config relevant to pivot from dashboard and meta store

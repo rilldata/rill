@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Switch } from "@rilldata/web-common/components/button";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
@@ -105,6 +106,16 @@
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setExpandedMeasureName(metricViewName, event.detail);
   }
+
+  function startPivotForTDD() {
+    const timeDimension = $metricsView?.data?.timeDimension;
+    if (!timeDimension || !expandedMeasureName) return;
+    const rowDimensions = dimensionName ? [dimensionName] : [];
+    metricsExplorerStore.createPivot(metricViewName, rowDimensions, [
+      timeDimension,
+      expandedMeasureName,
+    ]);
+  }
 </script>
 
 <div
@@ -202,6 +213,16 @@
         {metricViewName}
         includeScheduledReport={$featureFlags.adminServer}
       />
+
+      <Button
+        compact
+        type="text"
+        on:click={() => {
+          startPivotForTDD();
+        }}
+      >
+        Start Pivot
+      </Button>
     </div>
   {/if}
 </div>
