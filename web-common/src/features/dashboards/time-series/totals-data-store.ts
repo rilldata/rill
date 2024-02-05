@@ -1,4 +1,6 @@
+import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   createQueryServiceMetricsViewAggregation,
@@ -9,7 +11,7 @@ import { derived } from "svelte/store";
 
 export function createTotalsForMeasure(
   ctx: StateManagers,
-  measures,
+  measures: string[],
   isComparison = false,
   noFilter = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse> {
@@ -19,14 +21,29 @@ export function createTotalsForMeasure(
       ctx.metricsViewName,
       useTimeControlStore(ctx),
       ctx.dashboardStore,
+      measureFilterResolutionsStore(ctx),
     ],
-    ([runtime, metricsViewName, timeControls, dashboard], set) =>
+    (
+      [
+        runtime,
+        metricsViewName,
+        timeControls,
+        dashboard,
+        measureFilterResolution,
+      ],
+      set,
+    ) =>
       createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         metricsViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),
-          filter: noFilter ? { include: [], exclude: [] } : dashboard?.filters,
+          where: noFilter
+            ? undefined
+            : sanitiseExpression(
+                dashboard.whereFilter,
+                measureFilterResolution.filter,
+              ),
           timeStart: isComparison
             ? timeControls?.comparisonTimeStart
             : timeControls.timeStart,
@@ -36,7 +53,10 @@ export function createTotalsForMeasure(
         },
         {
           query: {
-            enabled: !!timeControls.ready && !!ctx.dashboardStore,
+            enabled:
+              !!timeControls.ready &&
+              !!ctx.dashboardStore &&
+              measureFilterResolution.ready,
             queryClient: ctx.queryClient,
           },
         },

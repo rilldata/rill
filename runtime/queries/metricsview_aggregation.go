@@ -414,7 +414,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	groupCols := make([]string, 0, len(q.Dimensions))
 	unnestClauses := make([]string, 0)
-	args := []any{}
+	var args []any
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -422,12 +422,12 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if err != nil {
 				return "", nil, err
 			}
-			dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
+			dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
 			selectCols = append(selectCols, dimSel)
 			if unnestClause != "" {
 				unnestClauses = append(unnestClauses, unnestClause)
 			}
-			groupCols = append(groupCols, safeName(d.Name))
+			groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)))
 			continue
 		}
 
@@ -437,7 +437,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			return "", nil, err
 		}
 		selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(d.Name)))
-		groupCols = append(groupCols, expr)
+		// Using expr was causing issues with query arg expansion in duckdb.
+		// Using column name is not possible either since it will take the original column name instead of the aliased column name
+		// But using numbered group we can exactly target the correct selected column.
+		// Note that the non-timestamp columns also use the numbered group-by for constancy.
+		groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)))
 		args = append(args, exprArgs...)
 	}
 
@@ -486,7 +490,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			return "", nil, err
 		}
 		if strings.TrimSpace(clause) != "" {
-			whereClause += " AND " + clause
+			whereClause += fmt.Sprintf(" AND (%s)", clause)
 		}
 		args = append(args, clauseArgs...)
 	}
@@ -535,13 +539,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
 
-	if q.PivotOn != nil {
+	var sql string
+	if len(q.PivotOn) > 0 {
 		l := maxPivotCells / q.cols()
 		limitClause = fmt.Sprintf("LIMIT %d", l+1)
-	}
 
-	var sql string
-	if q.PivotOn != nil {
 		if q.Offset != 0 {
 			return "", nil, fmt.Errorf("offset not supported for pivot queries")
 		}

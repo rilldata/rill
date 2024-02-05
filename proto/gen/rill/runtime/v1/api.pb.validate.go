@@ -4315,6 +4315,8 @@ func (m *GetLogsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Level
+
 	if len(errors) > 0 {
 		return GetLogsRequestMultiError(errors)
 	}
@@ -4563,6 +4565,8 @@ func (m *WatchLogsRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
+
+	// no validation rules for Level
 
 	if len(errors) > 0 {
 		return WatchLogsRequestMultiError(errors)
@@ -5042,6 +5046,8 @@ func (m *WatchResourcesRequest) validate(all bool) error {
 	// no validation rules for Kind
 
 	// no validation rules for Replay
+
+	// no validation rules for Level
 
 	if len(errors) > 0 {
 		return WatchResourcesRequestMultiError(errors)

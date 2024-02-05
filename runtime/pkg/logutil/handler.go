@@ -1,45 +1,80 @@
 package logutil
 
 import (
-	"context"
-
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/logbuffer"
-	"go.uber.org/zap/exp/zapslog"
-	"golang.org/x/exp/slog"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-type DuplicatingHandler struct {
-	zapHandler *zapslog.Handler
-	logs       *logbuffer.Buffer
+type BufferedZapCore struct {
+	fields []zapcore.Field
+	logs   *logbuffer.Buffer
+	enc    zapcore.Encoder
 }
 
-func NewDuplicatingHandler(zapHandler *zapslog.Handler, logs *logbuffer.Buffer) *DuplicatingHandler {
-	return &DuplicatingHandler{
-		zapHandler: zapHandler,
-		logs:       logs,
+func NewBufferedZapCore(logs *logbuffer.Buffer) *BufferedZapCore {
+	encCfg := zap.NewDevelopmentEncoderConfig()
+	encCfg.NameKey = zapcore.OmitKey
+	encCfg.LevelKey = zapcore.OmitKey
+	encCfg.TimeKey = zapcore.OmitKey
+	encCfg.MessageKey = zapcore.OmitKey
+	encCfg.SkipLineEnding = true
+	fieldsOnlyEncoder := zapcore.NewJSONEncoder(encCfg)
+
+	return &BufferedZapCore{
+		logs: logs,
+		enc:  fieldsOnlyEncoder,
 	}
 }
 
-func (d *DuplicatingHandler) Enabled(ctx context.Context, level slog.Level) bool {
-	return d.zapHandler.Enabled(ctx, level)
+func (d *BufferedZapCore) Enabled(level zapcore.Level) bool {
+	return true
 }
 
-func (d *DuplicatingHandler) Handle(ctx context.Context, record slog.Record) error {
-	err := d.zapHandler.Handle(ctx, record)
+func (d *BufferedZapCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
+	fields = append(fields, d.fields...)
+	// encode fields using zapcore.Encoder, send empty entry as we want to store the message separately
+	fieldsBuf, err := d.enc.EncodeEntry(zapcore.Entry{}, fields)
 	if err != nil {
 		return err
 	}
-	return d.logs.Add(record)
+	defer fieldsBuf.Free()
+	payload := fieldsBuf.String()
+
+	return d.logs.AddEntry(zapLevelToPBLevel(entry.Level), entry.Time, entry.Message, payload)
 }
 
-func (d *DuplicatingHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	newHandler := *d
-	newHandler.zapHandler = d.zapHandler.WithAttrs(attrs).(*zapslog.Handler)
-	return &newHandler
+func (d *BufferedZapCore) With(fields []zapcore.Field) zapcore.Core {
+	clone := *d
+	clone.fields = make([]zapcore.Field, len(d.fields)+len(fields))
+	copy(clone.fields, d.fields)
+	copy(clone.fields[len(d.fields):], fields)
+	return &clone
 }
 
-func (d *DuplicatingHandler) WithGroup(name string) slog.Handler {
-	newHandler := *d
-	newHandler.zapHandler = d.zapHandler.WithGroup(name).(*zapslog.Handler)
-	return &newHandler
+func (d *BufferedZapCore) Check(entry zapcore.Entry, checkedEntry *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	checkedEntry = checkedEntry.AddCore(entry, d)
+	return checkedEntry
+}
+
+func (d *BufferedZapCore) Sync() error {
+	return nil
+}
+
+func zapLevelToPBLevel(level zapcore.Level) runtimev1.LogLevel {
+	switch level {
+	case zapcore.DebugLevel:
+		return runtimev1.LogLevel_LOG_LEVEL_DEBUG
+	case zapcore.InfoLevel:
+		return runtimev1.LogLevel_LOG_LEVEL_INFO
+	case zapcore.WarnLevel:
+		return runtimev1.LogLevel_LOG_LEVEL_WARN
+	case zapcore.ErrorLevel:
+		return runtimev1.LogLevel_LOG_LEVEL_ERROR
+	case zapcore.DPanicLevel, zapcore.PanicLevel, zapcore.FatalLevel:
+		return runtimev1.LogLevel_LOG_LEVEL_FATAL
+	default:
+		return runtimev1.LogLevel_LOG_LEVEL_UNSPECIFIED
+	}
 }

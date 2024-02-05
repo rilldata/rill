@@ -6,7 +6,7 @@ import {
 } from "../../stores/metrics-explorer-entity";
 import type { DashboardMutables } from "./types";
 
-const CONTEXT_COL_MAX_WIDTH = 100;
+export const CONTEXT_COL_MAX_WIDTH = 100;
 
 export const setContextColumn = (
   { dashboard }: DashboardMutables,

@@ -33,7 +33,6 @@
     createRuntimeServicePutFile,
     runtimeServiceGetFile,
   } from "@rilldata/web-common/runtime-client";
-  import { MetricsSourceSelectionError } from "@rilldata/web-local/lib/temp/errors/ErrorMessages.js";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../layout/config";
   import NavigationEntry from "../../layout/navigation/NavigationEntry.svelte";
@@ -42,6 +41,7 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import AddAssetButton from "../entity-management/AddAssetButton.svelte";
   import RenameAssetModal from "../entity-management/RenameAssetModal.svelte";
+  import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
 
   $: instanceId = $runtime.instanceId;
 
@@ -49,7 +49,17 @@
   $: modelNames = useModelFileNames(instanceId);
   $: dashboardNames = useDashboardFileNames(instanceId);
 
+  const MetricsSourceSelectionError = (
+    errors: Array<V1ReconcileError> | undefined,
+  ): string => {
+    return (
+      errors?.find((error) => error?.propertyPath?.length === 0)?.message ?? ""
+    );
+  };
+
   const createDashboard = createRuntimeServicePutFile();
+
+  const { readOnly } = featureFlags;
 
   let showMetricsDefs = true;
 
@@ -172,7 +182,7 @@
     return entities[dashboardPath];
   };
 
-  $: canAddDashboard = $featureFlags.readOnly === false;
+  $: canAddDashboard = $readOnly === false;
 
   $: hasSourceAndModelButNoDashboards =
     $sourceNames?.data &&
@@ -198,7 +208,7 @@
         dashboardName,
       )}
       <NavigationEntry
-        showContextMenu={!$featureFlags.readOnly}
+        showContextMenu={!$readOnly}
         expandable={false}
         name={dashboardName}
         href={`/dashboard/${dashboardName}`}

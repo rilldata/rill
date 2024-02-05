@@ -831,6 +831,18 @@ paths:
           required: false
           type: integer
           format: int32
+        - name: level
+          in: query
+          required: false
+          type: string
+          enum:
+            - LOG_LEVEL_UNSPECIFIED
+            - LOG_LEVEL_DEBUG
+            - LOG_LEVEL_INFO
+            - LOG_LEVEL_WARN
+            - LOG_LEVEL_ERROR
+            - LOG_LEVEL_FATAL
+          default: LOG_LEVEL_UNSPECIFIED
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/logs/watch:
@@ -866,6 +878,18 @@ paths:
           required: false
           type: integer
           format: int32
+        - name: level
+          in: query
+          required: false
+          type: string
+          enum:
+            - LOG_LEVEL_UNSPECIFIED
+            - LOG_LEVEL_DEBUG
+            - LOG_LEVEL_INFO
+            - LOG_LEVEL_WARN
+            - LOG_LEVEL_ERROR
+            - LOG_LEVEL_FATAL
+          default: LOG_LEVEL_UNSPECIFIED
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
@@ -1107,6 +1131,10 @@ paths:
                 items:
                   type: object
                   $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+              comparisonMeasures:
+                type: array
+                items:
+                  type: string
               sort:
                 type: array
                 items:
@@ -1199,6 +1227,35 @@ paths:
               filter:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 title: Deprecated. should be removed once UI is moved to use new filters
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/schema:
+    get:
+      summary: MetricsViewSchema Get the data types of measures and dimensions
+      operationId: QueryService_MetricsViewSchema
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewSchemaResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
@@ -2001,6 +2058,10 @@ paths:
           in: query
           required: false
           type: boolean
+        - name: level
+          in: query
+          required: false
+          type: string
       tags:
         - RuntimeService
   /v1/instances/{instanceId}/trigger:
@@ -3340,6 +3401,7 @@ definitions:
       - LOG_LEVEL_INFO
       - LOG_LEVEL_WARN
       - LOG_LEVEL_ERROR
+      - LOG_LEVEL_FATAL
     default: LOG_LEVEL_UNSPECIFIED
   v1MapType:
     type: object
@@ -3528,6 +3590,10 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MetricsViewAggregationMeasure'
+      comparisonMeasures:
+        type: array
+        items:
+          type: string
       sort:
         type: array
         items:
@@ -3671,6 +3737,11 @@ definitions:
         type: array
         items:
           type: object
+  v1MetricsViewSchemaResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
   v1MetricsViewSort:
     type: object
     properties:

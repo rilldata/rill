@@ -31,7 +31,7 @@
       style:font-size="48px"
     >
       <div class="on" style="--length: {2000 + Math.random() * 5000}ms;">
-        <Spinner {status} bg="white" duration={300 + Math.random() * 200} />
+        <Spinner {status} duration={300 + Math.random() * 200} />
       </div>
     </div>
     <div class=" pt-3"><slot name="title" /></div>

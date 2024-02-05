@@ -223,13 +223,19 @@ func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern,
 	return res, nil
 }
 
-// FindProjectPathsByPatternAndTags returns project paths that match the pattern and have tags in the given list.
-func (c *connection) FindProjectPathsByPatternAndTags(ctx context.Context, namePattern, afterName string, tags []string, limit int) ([]string, error) {
+func (c *connection) FindProjectPathsByPatternAndAnnotations(ctx context.Context, namePattern, afterName string, annotationKeys []string, annotationPairs map[string]string, limit int) ([]string, error) {
+	if annotationKeys == nil {
+		annotationKeys = []string{}
+	}
+	if annotationPairs == nil {
+		annotationPairs = map[string]string{}
+	}
+
 	var res []string
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT concat(o.name,'/',p.name) as project_name FROM projects p JOIN orgs o ON p.org_id = o.id 
-	WHERE concat(o.name,'/',p.name) ilike $1 AND concat(o.name,'/',p.name) > $2 AND p.tags @> $3
+	WHERE concat(o.name,'/',p.name) ilike $1 AND concat(o.name,'/',p.name) > $2 AND p.annotations ?& $3 AND p.annotations @> $4
 	ORDER BY project_name 
-	LIMIT $4`, namePattern, afterName, tags, limit)
+	LIMIT $5`, namePattern, afterName, annotationKeys, annotationPairs, limit)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
@@ -356,15 +362,15 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
-	if opts.Tags == nil {
-		opts.Tags = make([]string, 0)
+	if opts.Annotations == nil {
+		opts.Annotations = make(map[string]string, 0)
 	}
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, region=$9, prod_slots=$10, prod_ttl_seconds=$11, tags=$12, updated_on=now()
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, region=$9, prod_slots=$10, prod_ttl_seconds=$11, annotations=$12, updated_on=now()
 		WHERE id=$13 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Region, opts.ProdSlots, opts.ProdTTLSeconds, opts.Tags, id,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Region, opts.ProdSlots, opts.ProdTTLSeconds, opts.Annotations, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -1331,8 +1337,8 @@ func (c *connection) DeleteExpiredVirtualFiles(ctx context.Context, retention ti
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project
-	ProdVariables pgtype.JSON      `db:"prod_variables"`
-	Tags          pgtype.TextArray `db:"tags"`
+	ProdVariables pgtype.JSON `db:"prod_variables"`
+	Annotations   pgtype.JSON `db:"annotations"`
 }
 
 func (p *projectDTO) AsProject() (*database.Project, error) {
@@ -1341,7 +1347,7 @@ func (p *projectDTO) AsProject() (*database.Project, error) {
 		return nil, err
 	}
 
-	err = p.Tags.AssignTo(&p.Project.Tags)
+	err = p.Annotations.AssignTo(&p.Project.Annotations)
 	if err != nil {
 		return nil, err
 	}

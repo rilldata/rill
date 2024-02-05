@@ -15,10 +15,10 @@ import type {
   CreateQueryResult,
   QueryObserverResult,
 } from "@tanstack/svelte-query";
-import { Readable, derived, get } from "svelte/store";
+import { Readable, derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
 
-export const useMetaQuery = <T = V1MetricsViewSpec>(
+export const useMetricsView = <T = V1MetricsViewSpec>(
   ctx: StateManagers,
   selector?: (meta: V1MetricsViewSpec) => T,
 ): Readable<QueryObserverResult<T | V1MetricsViewSpec, RpcStatus>> => {
@@ -40,7 +40,7 @@ export const useMetaQuery = <T = V1MetricsViewSpec>(
 };
 
 export const useModelHasTimeSeries = (ctx: StateManagers) =>
-  useMetaQuery(
+  useMetricsView(
     ctx,
     (meta) => !!meta?.timeDimension,
   ) as CreateQueryResult<boolean>;
@@ -101,14 +101,19 @@ export const getFilterSearchList = (
 export function createTimeRangeSummary(
   ctx: StateManagers,
 ): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
-  return createQueryServiceMetricsViewTimeRange(
-    get(ctx.runtime).instanceId,
-    get(ctx.metricsViewName),
-    {},
-    {
-      query: {
-        queryClient: ctx.queryClient,
-      },
-    },
+  return derived(
+    [ctx.runtime, ctx.metricsViewName, useMetricsView(ctx)],
+    ([runtime, metricsViewName, metricsView], set) =>
+      createQueryServiceMetricsViewTimeRange(
+        runtime.instanceId,
+        metricsViewName,
+        {},
+        {
+          query: {
+            queryClient: ctx.queryClient,
+            enabled: !!metricsView.data?.timeDimension,
+          },
+        },
+      ).subscribe(set),
   );
 }

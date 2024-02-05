@@ -10,7 +10,7 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
     DATES,
     TIMESTAMPS,
   } from "@rilldata/web-common/lib/duckdb-data-types";
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
+
   import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { setContext } from "svelte";
   import { tweened } from "svelte/motion";
@@ -18,7 +18,10 @@ PinnedColumns – any reference columns pinned on the right side of the overall 
   import PinnedColumns from "../virtualized-table/sections/PinnedColumns.svelte";
   import RowHeaders from "../virtualized-table/sections/RowHeaders.svelte";
   import TableCells from "../virtualized-table/sections/TableCells.svelte";
-  import type { VirtualizedTableConfig } from "../virtualized-table/types";
+  import type {
+    VirtualizedTableColumns,
+    VirtualizedTableConfig,
+  } from "../virtualized-table/types";
   import { config as defaultConfig } from "./config";
 
   export let rows;

@@ -1,7 +1,11 @@
 import type { DashboardFetchMocks } from "@rilldata/web-common/features/dashboards/dashboard-fetch-mocks";
 import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import {
+  createAndExpression,
+  createInExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import {
@@ -18,9 +22,11 @@ import {
   MetricsViewDimension,
   MetricsViewSpecMeasureV2,
   RpcStatus,
-  V1MetricsViewFilter,
+  V1Expression,
   V1MetricsViewSpec,
+  type V1StructType,
   V1TimeGrain,
+  V1TypeCode,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/query-core";
 import { QueryClient } from "@tanstack/svelte-query";
@@ -38,6 +44,7 @@ export const AD_BIDS_PUBLISHER_COUNT_MEASURE = "publisher_count";
 export const AD_BIDS_PUBLISHER_DIMENSION = "publisher";
 export const AD_BIDS_DOMAIN_DIMENSION = "domain";
 export const AD_BIDS_COUNTRY_DIMENSION = "country";
+export const AD_BIDS_PUBLISHER_IS_NULL_DOMAIN = "publisher_is_null";
 export const AD_BIDS_TIMESTAMP_DIMENSION = "timestamp";
 
 export const AD_BIDS_INIT_MEASURES = [
@@ -153,6 +160,59 @@ export const AD_BIDS_WITH_THREE_DIMENSIONS: V1MetricsViewSpec = {
   measures: AD_BIDS_INIT_MEASURES,
   dimensions: AD_BIDS_THREE_DIMENSIONS,
 };
+export const AD_BIDS_WITH_BOOL_DIMENSION: V1MetricsViewSpec = {
+  title: "AdBids",
+  table: "AdBids_Source",
+  measures: AD_BIDS_INIT_MEASURES,
+  dimensions: [
+    ...AD_BIDS_INIT_DIMENSIONS,
+    {
+      name: AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
+      expression: "case when publisher is null then true else false end",
+    },
+  ],
+};
+
+export const AD_BIDS_SCHEMA: V1StructType = {
+  fields: [
+    {
+      name: AD_BIDS_PUBLISHER_DIMENSION,
+      type: {
+        code: V1TypeCode.CODE_STRING,
+      },
+    },
+    {
+      name: AD_BIDS_DOMAIN_DIMENSION,
+      type: {
+        code: V1TypeCode.CODE_STRING,
+      },
+    },
+    {
+      name: AD_BIDS_COUNTRY_DIMENSION,
+      type: {
+        code: V1TypeCode.CODE_STRING,
+      },
+    },
+    {
+      name: AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
+      type: {
+        code: V1TypeCode.CODE_BOOL,
+      },
+    },
+    {
+      name: AD_BIDS_IMPRESSIONS_MEASURE,
+      type: {
+        code: V1TypeCode.CODE_INT64,
+      },
+    },
+    {
+      name: AD_BIDS_BID_PRICE_MEASURE,
+      type: {
+        code: V1TypeCode.CODE_FLOAT64,
+      },
+    },
+  ],
+};
 
 export function resetDashboardStore() {
   metricsExplorerStore.remove(AD_BIDS_NAME);
@@ -190,40 +250,23 @@ export function initAdBidsMirrorInStore() {
 export function createDashboardState(
   name: string,
   metrics: V1MetricsViewSpec,
-  filters: V1MetricsViewFilter = {
-    include: [],
-    exclude: [],
-  },
+  whereFilter: V1Expression = createAndExpression([]),
   timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
 ): MetricsExplorerEntity {
-  return {
-    name,
-
-    visibleDimensionKeys: new Set(metrics.dimensions.map((d) => d.name)),
-    allDimensionsVisible: true,
-    visibleMeasureKeys: new Set(metrics.measures.map((m) => m.name)),
-    allMeasuresVisible: true,
-
-    filters,
-    dimensionFilterExcludeMode: new Map(),
-
-    leaderboardMeasureName: metrics.measures[0]?.name,
-    leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
-
-    selectedTimeRange: timeRange,
-
-    dashboardSortType: undefined,
-    sortDirection: undefined,
-  };
+  const explorer = getDefaultMetricsExplorerEntity(name, metrics, undefined);
+  explorer.whereFilter = whereFilter;
+  explorer.selectedTimeRange = timeRange;
+  return explorer;
 }
 
 export function createAdBidsMirrorInStore(metrics: V1MetricsViewSpec) {
-  const proto = get(metricsExplorerStore).entities[AD_BIDS_NAME].proto;
+  const proto = get(metricsExplorerStore).entities[AD_BIDS_NAME].proto ?? "";
   // actual url is not relevant here
   metricsExplorerStore.syncFromUrl(
     AD_BIDS_MIRROR_NAME,
     proto,
     metrics ?? { measures: [], dimensions: [] },
+    AD_BIDS_SCHEMA,
   );
 }
 
@@ -276,10 +319,7 @@ export function createMetricsMetaQueryMock(
 // Wrapper function to simplify assert call
 export function assertMetricsView(
   name: string,
-  filters: V1MetricsViewFilter = {
-    include: [],
-    exclude: [],
-  },
+  filters: V1Expression = createAndExpression([]),
   timeRange: DashboardTimeControls = AD_BIDS_DEFAULT_TIME_RANGE,
   selectedMeasure = AD_BIDS_IMPRESSIONS_MEASURE,
 ) {
@@ -290,12 +330,12 @@ export function assertMetricsView(
 // TODO: find a better solution that this hack
 export function assertMetricsViewRaw(
   name: string,
-  filters: V1MetricsViewFilter,
+  filters: V1Expression,
   timeRange: DashboardTimeControls,
   selectedMeasure: string,
 ) {
   const metricsView = get(metricsExplorerStore).entities[name];
-  expect(metricsView.filters).toEqual(filters);
+  expect(metricsView.whereFilter).toEqual(filters);
   expect(metricsView.selectedTimeRange).toEqual(timeRange);
   expect(metricsView.leaderboardMeasureName).toEqual(selectedMeasure);
 }
@@ -324,11 +364,12 @@ export function getOffsetByHour(time: Date) {
 }
 
 export function initStateManagers(
-  dashboardFetchMocks: DashboardFetchMocks,
-  resp: V1MetricsViewSpec,
+  dashboardFetchMocks?: DashboardFetchMocks,
+  resp?: V1MetricsViewSpec,
 ) {
   initAdBidsInStore();
-  dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, resp);
+  if (dashboardFetchMocks && resp)
+    dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, resp);
 
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -349,44 +390,19 @@ export function initStateManagers(
   return { stateManagers, queryClient };
 }
 
-export const AD_BIDS_BASE_FILTER = {
-  include: [
-    {
-      name: AD_BIDS_PUBLISHER_DIMENSION,
-      in: ["Google", "Facebook"],
-    },
-    {
-      name: AD_BIDS_DOMAIN_DIMENSION,
-      in: ["google.com"],
-    },
-  ],
-  exclude: [],
-};
+export const AD_BIDS_BASE_FILTER = createAndExpression([
+  createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google", "Facebook"]),
+  createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+]);
 
-export const AD_BIDS_EXCLUDE_FILTER = {
-  include: [
-    {
-      name: AD_BIDS_DOMAIN_DIMENSION,
-      in: ["google.com"],
-    },
-  ],
-  exclude: [
-    {
-      name: AD_BIDS_PUBLISHER_DIMENSION,
-      in: ["Google", "Facebook"],
-    },
-  ],
-};
+export const AD_BIDS_EXCLUDE_FILTER = createAndExpression([
+  createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google", "Facebook"], true),
+  createInExpression(AD_BIDS_DOMAIN_DIMENSION, ["google.com"]),
+]);
 
-export const AD_BIDS_CLEARED_FILTER = {
-  include: [],
-  exclude: [
-    {
-      name: AD_BIDS_PUBLISHER_DIMENSION,
-      in: ["Google", "Facebook"],
-    },
-  ],
-};
+export const AD_BIDS_CLEARED_FILTER = createAndExpression([
+  createInExpression(AD_BIDS_PUBLISHER_DIMENSION, ["Google", "Facebook"], true),
+]);
 
 // parsed time controls won't have start & end
 export const ALL_TIME_PARSED_TEST_CONTROLS = {

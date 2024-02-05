@@ -1,7 +1,8 @@
 <script lang="ts">
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
@@ -43,12 +44,12 @@
   $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
-  $: metaQuery = useMetaQuery(instanceId, metricViewName);
+  $: metricsView = useMetricsView(instanceId, metricViewName);
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
   const { observedNode, listenToNodeResize } =
     createResizeListenerActionFactory();
-  $: metricsContainerHeight = ($observedNode?.offsetHeight as number) || 0;
+  $: metricsContainerHeight = $observedNode?.offsetHeight || 0;
 
   let measuresWrapper;
   let measuresHeight: number[] = [];
@@ -131,14 +132,14 @@
     metricViewName,
     {
       measureNames: $selectedMeasureNames,
-      filter: $dashboardStore?.filters,
+      where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
     },
     {
       query: {
         enabled:
           $selectedMeasureNames?.length > 0 &&
           $timeControlsStore.ready &&
-          !!$dashboardStore?.filters,
+          !!$dashboardStore?.whereFilter,
       },
     },
   );
@@ -149,7 +150,10 @@
     calculateGridColumns();
   }
 
-  $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
+  $: showHideMeasures = createShowHideMeasuresStore(
+    metricViewName,
+    metricsView,
+  );
 
   const toggleMeasureVisibility = (e) => {
     showHideMeasures.toggleVisibility(e.detail.name);
@@ -184,8 +188,8 @@
         tooltipText="Choose measures to display"
       />
     </div>
-    {#if $metaQuery.data?.measures}
-      {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
+    {#if $metricsView.data?.measures}
+      {#each $metricsView.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
         <div
           bind:this={measureNodes[index]}
           style:width="{MEASURE_WIDTH}px"

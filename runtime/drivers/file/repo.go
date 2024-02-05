@@ -14,7 +14,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-var limit = 500
+var limit = 1000
 
 // Driver implements drivers.RepoStore.
 func (c *connection) Driver() string {

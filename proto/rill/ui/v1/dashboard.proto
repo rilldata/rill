@@ -60,7 +60,7 @@ message DashboardState {
   // Expression format for dimension filters
   rill.runtime.v1.Expression where = 20;
   // Expression format for measure filters
-  rill.runtime.v1.Expression having = 21;
+  repeated DashboardDimensionFilter having = 21;
   // Selected time granularity
   rill.runtime.v1.TimeGrain time_grain = 3;
 
@@ -102,4 +102,9 @@ message DashboardTimeRange {
   optional string name = 1;
   optional google.protobuf.Timestamp time_start = 2;
   optional google.protobuf.Timestamp time_end = 3;
+}
+
+message DashboardDimensionFilter {
+  string name = 1;
+  rill.runtime.v1.Expression filter = 2;
 }

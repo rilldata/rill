@@ -1,5 +1,4 @@
 <script lang="ts">
-  import VerticalScrollContainer from "@rilldata/web-common/layout/VerticalScrollContainer.svelte";
   import { createAdminServiceGetCurrentUser } from "../client";
   import AuthRedirect from "../features/authentication/AuthRedirect.svelte";
   import WelcomeMessage from "../features/home/WelcomeMessage.svelte";
@@ -18,15 +17,13 @@
 
 <AuthRedirect>
   <OrganizationRedirect>
-    <VerticalScrollContainer>
-      <section
-        class="flex flex-col mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto"
-      >
-        <h1 class="text-4xl leading-10 font-light mb-2">
-          Hi {getFirstNameFromDisplayName($user.data.user.displayName)}!
-        </h1>
-        <WelcomeMessage />
-      </section>
-    </VerticalScrollContainer>
+    <section
+      class="flex flex-col mx-8 my-8 sm:my-16 sm:mx-16 lg:mx-32 lg:my-24 2xl:mx-64 mx-auto"
+    >
+      <h1 class="text-4xl leading-10 font-light mb-2">
+        Hi {getFirstNameFromDisplayName($user.data.user.displayName)}!
+      </h1>
+      <WelcomeMessage />
+    </section>
   </OrganizationRedirect>
 </AuthRedirect>

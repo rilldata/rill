@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
-  import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { Button } from "../../../components/button";
@@ -48,7 +47,7 @@
   let showDeployDashboardModal = false;
 </script>
 
-<PanelCTA side="right">
+<div class="flex gap-2 flex-shrink-0">
   {#if $dashboardPolicyCheck.data}
     <ViewAsButton />
   {/if}
@@ -78,7 +77,7 @@
       </TooltipContent>
     </Tooltip>
   {/if}
-</PanelCTA>
+</div>
 
 <DeployDashboardCta
   on:close={() => (showDeployDashboardModal = false)}

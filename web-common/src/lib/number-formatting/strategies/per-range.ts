@@ -52,18 +52,7 @@ export class PerRangeFormatter implements Formatter {
   options: FormatterOptionsCommon & FormatterRangeSpecsStrategy;
   initialSample: number[];
 
-  // FIXME: we can add this back in if we want to implement
-  // alignment. If we decide that we don't want to pursue that,
-  // we can remove this commented code
-  // largestPossibleNumberStringParts: NumberParts;
-  // maxPxWidthsSampledSoFar: FormatterWidths;
-  // maxCharWidthsSampledSoFar: FormatterWidths;
-  // largestPossibleNumberStringParts: NumberParts;
-
-  constructor(
-    sample: number[],
-    options: FormatterRangeSpecsStrategy & FormatterOptionsCommon,
-  ) {
+  constructor(options: FormatterRangeSpecsStrategy & FormatterOptionsCommon) {
     this.options = options;
 
     // sort ranges from small to large by lower bound
@@ -101,7 +90,6 @@ export class PerRangeFormatter implements Formatter {
         );
       }
     }
-    this.initialSample = sample;
   }
 
   stringFormat(x: number): string {
@@ -169,7 +157,9 @@ export class PerRangeFormatter implements Formatter {
       numParts.suffix = numParts.suffix.replace("E", "e");
     }
     if (this.options.numberKind === NumberKind.DOLLAR) {
-      numParts.dollar = "$";
+      numParts.currencySymbol = "$";
+    } else if (this.options.numberKind === NumberKind.EURO) {
+      numParts.currencySymbol = "€";
     }
     if (this.options.numberKind === NumberKind.PERCENT) {
       numParts.percent = "%";

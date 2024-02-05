@@ -7,7 +7,12 @@ import type {
   DashboardTimeControls,
   ScrubRange,
 } from "@rilldata/web-common/lib/time/types";
-import type { V1MetricsViewFilter } from "@rilldata/web-common/runtime-client";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
+
+export interface DimensionThresholdFilter {
+  name: string;
+  filter: V1Expression;
+}
 
 export interface MetricsExplorerEntity {
   name: string;
@@ -77,13 +82,21 @@ export interface MetricsExplorerEntity {
    */
   sortDirection: SortDirection;
 
-  filters: V1MetricsViewFilter;
+  whereFilter: V1Expression;
+  havingFilter: V1Expression;
+  dimensionThresholdFilters: Array<DimensionThresholdFilter>;
 
   /**
    * stores whether a dimension is in include/exclude filter mode
    * false/absence = include, true = exclude
    */
   dimensionFilterExcludeMode: Map<string, boolean>;
+
+  /**
+   * Used to add a dropdown for newly added dimension/measure filters.
+   * Such filter will not have an entry in where/having expression objects.
+   */
+  temporaryFilterName: string | null;
 
   /**
    * user selected time range

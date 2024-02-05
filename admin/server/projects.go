@@ -101,8 +101,16 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		permissions.ReadProject = true
 		permissions.ReadProd = true
 	}
+	if claims.Superuser(ctx) {
+		permissions.ReadProject = true
+		permissions.ReadProd = true
+		permissions.ReadProdStatus = true
+		permissions.ReadDev = true
+		permissions.ReadDevStatus = true
+		permissions.ReadProjectMembers = true
+	}
 
-	if !permissions.ReadProject && !claims.Superuser(ctx) {
+	if !permissions.ReadProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
@@ -162,7 +170,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProjectNamesRequest) (*adminv1.SearchProjectNamesResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.pattern", req.NamePattern),
-		attribute.StringSlice("args.tags", req.Tags),
+		attribute.Int("args.annotations", len(req.Annotations)),
 	)
 
 	claims := auth.GetClaims(ctx)
@@ -177,8 +185,17 @@ func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProj
 	pageSize := validPageSize(req.PageSize)
 
 	var projectNames []string
-	if req.Tags != nil && len(req.Tags) > 0 {
-		projectNames, err = s.admin.DB.FindProjectPathsByPatternAndTags(ctx, req.NamePattern, token.Val, req.Tags, pageSize)
+	if req.Annotations != nil && len(req.Annotations) > 0 {
+		// If an annotation is set to "*", we just check for key presence (instead of exact key-value match)
+		var annotationKeys []string
+		for k, v := range req.Annotations {
+			if v == "*" {
+				annotationKeys = append(annotationKeys, k)
+				delete(req.Annotations, k)
+			}
+		}
+
+		projectNames, err = s.admin.DB.FindProjectPathsByPatternAndAnnotations(ctx, req.NamePattern, token.Val, annotationKeys, req.Annotations, pageSize)
 	} else {
 		projectNames, err = s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
 	}
@@ -396,7 +413,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
 		Region:               valOrDefault(req.Region, proj.Region),
-		Tags:                 proj.Tags,
+		Annotations:          proj.Annotations,
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
@@ -455,7 +472,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		Region:               proj.Region,
-		Tags:                 proj.Tags,
+		Annotations:          proj.Annotations,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
@@ -788,22 +805,17 @@ func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, githubURL,
 }
 
 // SudoUpdateTags updates the tags for a project in organization for superusers
-func (s *Server) SudoUpdateTags(ctx context.Context, req *adminv1.SudoUpdateTagsRequest) (*adminv1.SudoUpdateTagsResponse, error) {
+func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpdateAnnotationsRequest) (*adminv1.SudoUpdateAnnotationsResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
-		attribute.StringSlice("args.tags", req.Tags),
+		attribute.Int("args.annotations", len(req.Annotations)),
 	)
-
-	// if tags is nil, set it to empty slice
-	if req.Tags == nil {
-		req.Tags = []string{}
-	}
 
 	// Check the request is made by a superuser
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "not authorized to update Tags")
+		return nil, status.Error(codes.PermissionDenied, "not authorized to update annotations")
 	}
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
@@ -811,7 +823,7 @@ func (s *Server) SudoUpdateTags(ctx context.Context, req *adminv1.SudoUpdateTags
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	proj, err = s.admin.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+	proj, err = s.admin.UpdateProject(ctx, proj, &database.UpdateProjectOptions{
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
@@ -823,13 +835,13 @@ func (s *Server) SudoUpdateTags(ctx context.Context, req *adminv1.SudoUpdateTags
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		Region:               proj.Region,
-		Tags:                 req.Tags,
+		Annotations:          req.Annotations,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.SudoUpdateTagsResponse{
+	return &adminv1.SudoUpdateAnnotationsResponse{
 		Project: s.projToDTO(proj, req.Organization),
 	}, nil
 }
@@ -854,7 +866,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
 		FrontendUrl:      frontendURL,
-		Tags:             p.Tags,
+		Annotations:      p.Annotations,
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),
 	}

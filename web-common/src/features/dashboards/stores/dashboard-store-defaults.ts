@@ -3,6 +3,7 @@ import {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   contextColWidthDefaults,
   type MetricsExplorerEntity,
@@ -60,8 +61,6 @@ function setDefaultComparison(
         metricsView.dimensions?.[0]?.name;
       break;
 
-    // if default_comparison is not specified it defaults to time comparison
-    case MetricsViewSpecComparisonMode.COMPARISON_MODE_UNSPECIFIED:
     case MetricsViewSpecComparisonMode.COMPARISON_MODE_TIME:
       setDefaultComparisonTimeRange(
         metricsView,
@@ -69,6 +68,9 @@ function setDefaultComparison(
         fullTimeRange,
       );
       break;
+
+    // if default_comparison is not specified it defaults to no comparison
+    case MetricsViewSpecComparisonMode.COMPARISON_MODE_UNSPECIFIED:
   }
 }
 
@@ -78,6 +80,7 @@ function setDefaultComparisonTimeRange(
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   if (!fullTimeRange) return;
+  metricsExplorer.showTimeComparison = true;
 
   const preset = ISODurationToTimePreset(metricsView.defaultTimeRange, true);
   const comparisonOption = DEFAULT_TIME_RANGES[preset]
@@ -100,7 +103,6 @@ function setDefaultComparisonTimeRange(
     start: comparisonRange.start,
     end: comparisonRange.end,
   };
-  metricsExplorer.showTimeComparison = true;
   metricsExplorer.leaderboardContextColumn =
     LeaderboardContextColumn.DELTA_PERCENT;
 }
@@ -129,10 +131,9 @@ export function getDefaultMetricsExplorerEntity(
     visibleDimensionKeys: new Set(defaultDimNames),
     allDimensionsVisible: true,
     leaderboardMeasureName: defaultMeasureNames[0],
-    filters: {
-      include: [],
-      exclude: [],
-    },
+    whereFilter: createAndExpression([]),
+    havingFilter: createAndExpression([]),
+    dimensionThresholdFilters: [],
     dimensionFilterExcludeMode: new Map(),
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
     dashboardSortType: SortType.VALUE,
@@ -140,6 +141,7 @@ export function getDefaultMetricsExplorerEntity(
 
     showTimeComparison: false,
     dimensionSearchText: "",
+    temporaryFilterName: null,
     pinIndex: -1,
     contextColumnWidths: { ...contextColWidthDefaults },
   };

@@ -1,19 +1,31 @@
 import DeltaChange from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChange.svelte";
 import DeltaChangePercentage from "@rilldata/web-common/features/dashboards/dimension-table/DeltaChangePercentage.svelte";
+import {
+  createInExpression,
+  createLikeExpression,
+  createOrExpression,
+  matchExpressionByName,
+  filterExpressions,
+  createAndExpression,
+  copyFilterExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { V1Operation } from "../../../runtime-client";
 import PercentOfTotal from "./PercentOfTotal.svelte";
 
 import { PERC_DIFF } from "../../../components/data-types/type-utils";
 import type {
   MetricsViewDimension,
   MetricsViewSpecMeasureV2,
+  V1Expression,
   V1MetricsViewComparisonRow,
   V1MetricsViewComparisonValue,
-  V1MetricsViewFilter,
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
 
-import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
-import type { VirtualizedTableConfig } from "@rilldata/web-common/components/virtualized-table/types";
+import type {
+  VirtualizedTableColumns,
+  VirtualizedTableConfig,
+} from "@rilldata/web-common/components/virtualized-table/types";
 
 import type { SvelteComponent } from "svelte";
 import { getDimensionColumn } from "../dashboard-utils";
@@ -27,48 +39,55 @@ import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/numb
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
-  filterForDimension: V1MetricsViewFilter,
+  filterForDimension: V1Expression | undefined,
   searchText: string,
   dimensionName: string,
-): V1MetricsViewFilter {
-  const filterSet = JSON.parse(JSON.stringify(filterForDimension));
+): V1Expression | undefined {
+  if (!filterForDimension) return undefined;
+  // create a copy
   const addNull = "null".includes(searchText);
   if (searchText !== "") {
-    let foundDimension = false;
+    let cond: V1Expression;
+    if (addNull) {
+      cond = createOrExpression([
+        // TODO: do we need a `IS NULL` expression?
+        createInExpression(dimensionName, [null]),
+        createLikeExpression(dimensionName, `%${searchText}%`),
+      ]);
+    } else {
+      cond = createLikeExpression(dimensionName, `%${searchText}%`);
+    }
 
-    filterSet["include"].forEach((filter) => {
-      if (filter.name === dimensionName) {
-        filter.like = [`%${searchText}%`];
-        foundDimension = true;
-        if (addNull) filter.in.push(null);
-      }
-    });
-
-    if (!foundDimension) {
-      filterSet["include"].push({
-        name: dimensionName,
-        in: addNull ? [null] : [],
-        like: [`%${searchText}%`],
-      });
+    filterForDimension = copyFilterExpression(filterForDimension);
+    const filterIdx = filterForDimension.cond?.exprs?.findIndex((e) =>
+      matchExpressionByName(e, dimensionName),
+    );
+    if (filterIdx === undefined || filterIdx === -1) {
+      filterForDimension.cond?.exprs?.push(cond);
+    } else {
+      filterForDimension.cond?.exprs?.splice(filterIdx, 0, cond);
     }
   } else {
-    filterSet["include"] = filterSet["include"].filter((f) => f.in.length);
-    filterSet["include"].forEach((f) => {
-      delete f.like;
-    });
+    filterForDimension =
+      filterExpressions(
+        filterForDimension,
+        (e) =>
+          e.cond?.op !== V1Operation.OPERATION_LIKE &&
+          e.cond?.op !== V1Operation.OPERATION_NLIKE,
+      ) ?? createAndExpression([]);
   }
-  return filterSet;
+  return filterForDimension;
 }
 
 export function getDimensionFilterWithSearch(
-  filters: V1MetricsViewFilter,
+  filters: V1Expression,
   searchText: string,
   dimensionName: string,
 ) {
-  const filterForDimension = getFiltersForOtherDimensions(
-    filters,
-    dimensionName,
-  );
+  let filterForDimension = getFiltersForOtherDimensions(filters, dimensionName);
+  if (filters && !filterForDimension) {
+    filterForDimension = createAndExpression([]); // create an empty query for consistency
+  }
 
   return updateFilterOnSearch(filterForDimension, searchText, dimensionName);
 }
@@ -489,23 +508,4 @@ export function prepareDimensionTableRows(
       return rowOut;
     });
   return tableRows;
-}
-
-export function getSelectedRowIndicesFromFilters(
-  rows: DimensionTableRow[],
-  filters: V1MetricsViewFilter,
-  dimensionName: string,
-  excludeMode: boolean,
-): number[] {
-  const selectedDimValues =
-    ((excludeMode
-      ? filters?.exclude?.find((d) => d.name === dimensionName)?.in
-      : filters?.include?.find((d) => d.name === dimensionName)
-          ?.in) as string[]) ?? [];
-
-  return selectedDimValues
-    .map((label) => {
-      return rows.findIndex((row) => row[dimensionName] === label);
-    })
-    .filter((i) => i >= 0);
 }

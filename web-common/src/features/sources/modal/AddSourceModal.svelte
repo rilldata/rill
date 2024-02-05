@@ -1,6 +1,7 @@
 <script lang="ts">
   import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
   import AmazonAthena from "@rilldata/web-common/components/icons/connectors/AmazonAthena.svelte";
+  import MySQL from "@rilldata/web-common/components/icons/connectors/MySQL.svelte";
   import {
     createRuntimeServiceListConnectors,
     V1ConnectorSpec,
@@ -14,6 +15,7 @@
   import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
   import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
   import Postgres from "../../../components/icons/connectors/Postgres.svelte";
+  import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
   import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
   import SQLite from "../../../components/icons/connectors/SQLite.svelte";
   import { appScreen } from "../../../layout/app-store";
@@ -42,8 +44,10 @@
     "athena",
     "duckdb",
     "postgres",
+    "mysql",
     "sqlite",
     "snowflake",
+    "salesforce",
     "local_file",
     "https",
   ];
@@ -57,8 +61,10 @@
     athena: AmazonAthena,
     duckdb: DuckDB,
     postgres: Postgres,
+    mysql: MySQL,
     sqlite: SQLite,
     snowflake: Snowflake,
+    salesforce: Salesforce,
     local_file: LocalFile,
     https: Https,
   };
@@ -158,7 +164,7 @@
       <div class="text-slate-500">
         Don't see what you're looking for? <button
           on:click={goToRequestConnector}
-          class="text-blue-500 hover:text-blue-600 font-medium"
+          class="text-primary-500 hover:text-primary-600 font-medium"
           >Request a new connector</button
         >
       </div>

@@ -1,20 +1,27 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
-  getMapFromArray,
-  removeIfExists,
-} from "@rilldata/web-common/lib/arrayUtils";
+  createAndExpression,
+  filterExpressions,
+  forEachIdentifier,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
   DashboardTimeControls,
   ScrubRange,
   TimeRange,
 } from "@rilldata/web-common/lib/time/types";
+import {
+  V1Operation,
+  type V1StructType,
+} from "@rilldata/web-common/runtime-client";
 import type {
+  V1Expression,
   V1MetricsView,
-  V1MetricsViewFilter,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
@@ -52,9 +59,14 @@ export const updateMetricsExplorerByName = (
   });
 };
 
-function includeExcludeModeFromFilters(filters: V1MetricsViewFilter) {
+function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
   const map = new Map<string, boolean>();
-  filters?.exclude.forEach((cond) => map.set(cond.name, true));
+  if (!filters) return map;
+  forEachIdentifier(filters, (e, ident) => {
+    if (e.cond?.op === V1Operation.OPERATION_NIN) {
+      map.set(ident, true);
+    }
+  });
   return map;
 }
 
@@ -125,12 +137,11 @@ function syncDimensions(
     metricsView.dimensions,
     (dimension) => dimension.name,
   );
-  metricsExplorer.filters.include = metricsExplorer.filters.include.filter(
-    (filter) => dimensionsMap.has(filter.name),
-  );
-  metricsExplorer.filters.exclude = metricsExplorer.filters.exclude.filter(
-    (filter) => dimensionsMap.has(filter.name),
-  );
+  metricsExplorer.whereFilter =
+    filterExpressions(metricsExplorer.whereFilter, (e) => {
+      if (!e.cond?.exprs?.length) return true;
+      return dimensionsMap.has(e.cond.exprs[0].ident);
+    }) ?? createAndExpression([]);
 
   if (
     metricsExplorer.selectedDimensionName &&
@@ -174,11 +185,16 @@ const metricViewReducers = {
     });
   },
 
-  syncFromUrl(name: string, urlState: string, metricsView: V1MetricsView) {
+  syncFromUrl(
+    name: string,
+    urlState: string,
+    metricsView: V1MetricsView,
+    schema: V1StructType,
+  ) {
     if (!urlState || !metricsView) return;
     // not all data for MetricsExplorerEntity will be filled out here.
     // Hence, it is a Partial<MetricsExplorerEntity>
-    const partial = getDashboardStateFromUrl(urlState, metricsView);
+    const partial = getDashboardStateFromUrl(urlState, metricsView, schema);
     if (!partial) return;
 
     updateMetricsExplorerByName(name, (metricsExplorer) => {
@@ -191,7 +207,7 @@ const metricViewReducers = {
         metricsExplorer.showTimeComparison = false;
       }
       metricsExplorer.dimensionFilterExcludeMode =
-        includeExcludeModeFromFilters(partial.filters);
+        includeExcludeModeFromFilters(partial.whereFilter);
     });
   },
 
@@ -414,188 +430,6 @@ const metricViewReducers = {
     });
   },
 
-  selectItemsInFilter(
-    name: string,
-    dimensionName: string,
-    values: string[],
-  ): number {
-    let newValuesSelected = 0;
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-        dimensionName,
-      )
-        ? "exclude"
-        : "include";
-
-      const filters = metricsExplorer?.filters[relevantFilterKey];
-      // if there are no filters, or if the dimension name is not defined,
-      // there we cannot update anything.
-      if (filters === undefined || dimensionName === undefined) {
-        return;
-      }
-
-      const dimensionEntryIndex = filters?.findIndex(
-        (filter) => filter.name === dimensionName,
-      );
-
-      if (dimensionEntryIndex >= 0) {
-        // preserve old selections and add only new ones
-        const oldValues = filters[dimensionEntryIndex].in as string[];
-        const newValues = values.filter((v) => !oldValues.includes(v));
-        newValuesSelected = newValues.length;
-        filters[dimensionEntryIndex].in?.push(...newValues);
-      } else {
-        newValuesSelected = values.length;
-        filters?.push({
-          name: dimensionName,
-          in: values,
-        });
-      }
-    });
-    return newValuesSelected;
-  },
-
-  deselectItemsInFilter(name: string, dimensionName: string, values: string[]) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-        dimensionName,
-      )
-        ? "exclude"
-        : "include";
-
-      const filters = metricsExplorer?.filters[relevantFilterKey];
-      // if there are no filters, or if the dimension name is not defined,
-      // there we cannot update anything.
-      if (filters === undefined || dimensionName === undefined) {
-        return;
-      }
-
-      const dimensionEntryIndex = filters.findIndex(
-        (filter) => filter.name === dimensionName,
-      );
-
-      if (dimensionEntryIndex >= 0) {
-        // remove only deselected values
-        const oldValues = filters[dimensionEntryIndex].in as string[];
-        const newValues = oldValues.filter((v) => !values.includes(v));
-
-        if (newValues.length) {
-          filters[dimensionEntryIndex].in = newValues;
-        } else {
-          filters.splice(dimensionEntryIndex, 1);
-        }
-      }
-    });
-  },
-
-  toggleFilter(
-    name: string,
-    dimensionName: string | undefined,
-    dimensionValue: string,
-  ) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-        dimensionName ?? "",
-      )
-        ? "exclude"
-        : "include";
-
-      const filters = metricsExplorer?.filters[relevantFilterKey];
-      // if there are no filters, or if the dimension name is not defined,
-      // there we cannot update anything.
-      if (filters === undefined || dimensionName === undefined) {
-        return;
-      }
-
-      const dimensionEntryIndex =
-        filters.findIndex((filter) => filter.name === dimensionName) ?? -1;
-
-      if (dimensionEntryIndex >= 0) {
-        const filtersIn = filters[dimensionEntryIndex].in;
-        if (filtersIn === undefined) return;
-
-        const index = filtersIn?.findIndex((value) => value === dimensionValue);
-        if (index >= 0) {
-          filtersIn?.splice(index, 1);
-          if (filtersIn.length === 0) {
-            filters.splice(dimensionEntryIndex, 1);
-          }
-
-          // Only decrement pinIndex if the removed value was before the pinned value
-          if (metricsExplorer.pinIndex >= index) {
-            metricsExplorer.pinIndex--;
-          }
-          return;
-        }
-        filtersIn.push(dimensionValue);
-      } else {
-        filters.push({
-          name: dimensionName,
-          in: [dimensionValue],
-        });
-      }
-    });
-  },
-
-  clearFilters(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.filters.include = [];
-      metricsExplorer.filters.exclude = [];
-      metricsExplorer.dimensionFilterExcludeMode.clear();
-      metricsExplorer.pinIndex = -1;
-    });
-  },
-
-  clearFilterForDimension(
-    name: string,
-    dimensionName: string,
-    include: boolean,
-  ) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      if (include) {
-        removeIfExists(
-          metricsExplorer.filters.include,
-          (dimensionValues) => dimensionValues.name === dimensionName,
-        );
-      } else {
-        removeIfExists(
-          metricsExplorer.filters.exclude,
-          (dimensionValues) => dimensionValues.name === dimensionName,
-        );
-      }
-    });
-  },
-
-  /**
-   * Toggle a dimension filter between include/exclude modes
-   */
-  toggleFilterMode(name: string, dimensionName: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      const exclude =
-        metricsExplorer.dimensionFilterExcludeMode.get(dimensionName);
-      metricsExplorer.dimensionFilterExcludeMode.set(dimensionName, !exclude);
-
-      const relevantFilterKey = exclude ? "exclude" : "include";
-      const otherFilterKey = exclude ? "include" : "exclude";
-
-      const otherFilterEntryIndex = metricsExplorer.filters[
-        relevantFilterKey
-      ].findIndex((filter) => filter.name === dimensionName);
-      // if relevant filter is not present then return
-      if (otherFilterEntryIndex === -1) return;
-
-      // push relevant filters to other filter
-      metricsExplorer.filters[otherFilterKey].push(
-        metricsExplorer.filters[relevantFilterKey][otherFilterEntryIndex],
-      );
-      // remove entry from relevant filter
-      metricsExplorer.filters[relevantFilterKey].splice(
-        otherFilterEntryIndex,
-        1,
-      );
-    });
-  },
-
   remove(name: string) {
     update((state) => {
       delete state.entities[name];
@@ -623,6 +457,9 @@ export function setDisplayComparison(
   showTimeComparison: boolean,
 ) {
   metricsExplorer.showTimeComparison = showTimeComparison;
+  if (showTimeComparison && !metricsExplorer.selectedComparisonTimeRange) {
+    metricsExplorer.selectedComparisonTimeRange = {} as any;
+  }
 
   if (showTimeComparison) {
     metricsExplorer.selectedComparisonDimension = undefined;
@@ -686,22 +523,16 @@ function getPinIndexForDimension(
   metricsExplorer: MetricsExplorerEntity,
   dimensionName: string,
 ) {
-  const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-    dimensionName,
-  )
-    ? "exclude"
-    : "include";
+  const dimensionEntryIndex = getWhereFilterExpressionIndex({
+    dashboard: metricsExplorer,
+  })(dimensionName);
+  if (dimensionEntryIndex === undefined || dimensionEntryIndex === -1)
+    return -1;
 
-  const dimensionEntryIndex = metricsExplorer.filters[
-    relevantFilterKey
-  ].findIndex((filter) => filter.name === dimensionName);
+  const dimExpr =
+    metricsExplorer.whereFilter.cond?.exprs?.[dimensionEntryIndex];
+  if (!dimExpr?.cond?.exprs?.length) return -1;
 
-  if (dimensionEntryIndex >= 0) {
-    return (
-      metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex]?.in
-        ?.length - 1
-    );
-  }
-
-  return -1;
+  // 1st entry in the expression is the identifier. hence the -2 here.
+  return dimExpr.cond.exprs.length - 2;
 }

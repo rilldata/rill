@@ -15,8 +15,8 @@
   export let delay;
   export let duration;
 
-  export let lineColor = "hsla(217,60%, 55%, 1)";
-  export let areaColor = "hsla(217,70%, 80%, .4)";
+  export let lineColor: string;
+  export let areaGradientColors: [string, string];
 
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
 </script>
@@ -35,7 +35,7 @@
   <g clip-path="url(#clip)">
     <ChunkedLine
       {lineColor}
-      {areaColor}
+      {areaGradientColors}
       {delay}
       {duration}
       {data}

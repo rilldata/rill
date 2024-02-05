@@ -1,43 +1,46 @@
-<script context="module" lang="ts">
+<script lang="ts">
   import { getStateManagers } from "../state-managers/state-managers";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import Add from "@rilldata/web-common/components/icons/Add.svelte";
   import SearchableFilterDropdown from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterDropdown.svelte";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
-  import { potentialFilterName } from "./Filters.svelte";
-</script>
-
-<script lang="ts">
+  import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import type { SearchableFilterSelectableGroup } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
+  import { getMeasureDisplayName } from "./getDisplayName";
 
   const {
     selectors: {
       dimensions: { allDimensions },
-      dimensionFilters: { getAllFilters, isFilterExcludeMode },
+      dimensionFilters: { dimensionHasFilter },
+      measures: { allMeasures },
+      measureFilters: { measureHasFilter },
+    },
+    actions: {
+      filters: { setTemporaryFilterName },
     },
   } = getStateManagers();
 
-  function filterExists(name: string, exclude: boolean): boolean {
-    const selected = exclude
-      ? $getAllFilters?.exclude
-      : $getAllFilters?.include;
-
-    return selected?.find((f) => f.name === name) !== undefined;
-  }
-
   $: selectableGroups = [
     <SearchableFilterSelectableGroup>{
+      name: "MEASURES",
+      items:
+        $allMeasures
+          ?.map((m) => ({
+            name: m.name as string,
+            label: getMeasureDisplayName(m),
+          }))
+          .filter((m) => !$measureHasFilter(m.name)) ?? [],
+    },
+    <SearchableFilterSelectableGroup>{
+      name: "DIMENSIONS",
       items:
         $allDimensions
           ?.map((d) => ({
             name: d.name as string,
-            label: d.label as string,
+            label: getDimensionDisplayName(d),
           }))
-          .filter((d) => {
-            const exclude = $isFilterExcludeMode(d.name);
-            return !filterExists(d.name, exclude);
-          }) ?? [],
+          .filter((d) => !$dimensionHasFilter(d.name)) ?? [],
     },
   ];
 </script>
@@ -64,7 +67,7 @@
     on:hover
     on:item-clicked={(e) => {
       toggleFloatingElement();
-      $potentialFilterName = e.detail.name;
+      setTemporaryFilterName(e.detail.name);
     }}
     {selectableGroups}
     selectedItems={[]}
@@ -77,6 +80,7 @@
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
     @apply border border-dashed border-slate-300;
+    @apply bg-white;
   }
 
   button:hover {

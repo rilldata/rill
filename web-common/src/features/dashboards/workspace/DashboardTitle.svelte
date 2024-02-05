@@ -1,15 +1,20 @@
 <script lang="ts">
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { useMetaQuery } from "../selectors";
+  import { useMetricsView } from "../selectors";
 
   export let metricViewName: string;
 
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
-  $: displayName = $metaQuery.data?.title;
+  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
+  $: displayName = $metricsView.data?.title;
 </script>
 
-<h1 style:line-height="1.1" style:margin-top="-1px">
-  <div class="ui-copy-dashboard-header">
-    {displayName || metricViewName}
-  </div>
+<h1 class="ui-copy-dashboard-header">
+  {displayName || metricViewName}
 </h1>
+
+<style lang="postcss">
+  h1 {
+    @apply overflow-hidden whitespace-nowrap text-ellipsis;
+    @apply mr-2 mt-[-1px] leading-5;
+  }
+</style>

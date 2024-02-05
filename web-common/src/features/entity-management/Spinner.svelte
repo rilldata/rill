@@ -3,20 +3,19 @@
 
   export let size = "1em";
   export let status: EntityStatus = EntityStatus.Idle;
-  export let bg =
-    "linear-gradient(to left, hsla(var(--color-secondary-gradient-max-hue), 100%, 50%, .5), hsla(var(--color-secondary-gradient-min-hue), 100%, 50%, .5))";
+
   export let duration = 500;
 </script>
 
 <div
-  class="status"
+  class="status bg-gradient-to-b from-primary-500 to-secondary-500"
   class:running={status === EntityStatus.Running}
   class:idle={status === EntityStatus.Idle}
   style="
-		--status-transition: {duration}ms;
-		--background: {bg};
-		--size: {size};
-		width: {size}; height: {size};"
+    --status-transition: {duration}ms;
+    --size: {size};
+    width: {size};
+    height: {size};"
 />
 
 <style>
@@ -25,7 +24,6 @@
     transition:
       border-radius var(--status-transition),
       border-color var(--status-transition);
-    border: 0.125rem solid rgba(0, 0, 0, 0);
     animation: spin calc(var(--status-transition) * 2) infinite;
     background-color: transparent;
   }

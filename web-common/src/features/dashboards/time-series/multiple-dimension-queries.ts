@@ -1,24 +1,33 @@
+import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import {
+  createAndExpression,
+  createInExpression,
+  filterExpressions,
+  matchExpressionByName,
+  sanitiseExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { Readable, derived, writable } from "svelte/store";
 
 import {
-  V1MetricsViewFilter,
+  CHECKMARK_COLORS,
+  LINE_COLORS,
+} from "@rilldata/web-common/features/dashboards/config";
+import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
+import {
+  SortDirection,
+  SortType,
+} from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+import {
+  V1Expression,
   V1TimeSeriesValue,
   createQueryServiceMetricsViewAggregation,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
 import { getFilterForComparedDimension, prepareTimeSeries } from "./utils";
-import {
-  CHECKMARK_COLORS,
-  LINE_COLORS,
-} from "@rilldata/web-common/features/dashboards/config";
-import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import {
-  SortDirection,
-  SortType,
-} from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 
 export interface DimensionDataItem {
   value: string;
@@ -44,11 +53,11 @@ export interface DimensionDataItem {
 
 export function getDimensionValuesForComparison(
   ctx: StateManagers,
-  measures,
+  measures: string[],
   surface: "chart" | "table",
 ): Readable<{
   values: string[];
-  filter: V1MetricsViewFilter;
+  filter: V1Expression;
   totals?: number[];
 }> {
   return derived(
@@ -57,8 +66,12 @@ export function getDimensionValuesForComparison(
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
+      measureFilterResolutionsStore(ctx),
     ],
-    ([runtime, name, dashboardStore, timeControls], set) => {
+    (
+      [runtime, name, dashboardStore, timeControls, measureFilterResolution],
+      set,
+    ) => {
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
@@ -69,19 +82,31 @@ export function getDimensionValuesForComparison(
 
       // Values to be compared
       let comparisonValues: string[] = [];
-      const dimensionFilters = dashboardStore?.filters?.include?.filter(
-        (filter) => filter.name === dimensionName,
-      );
       if (surface === "chart") {
-        if (dimensionFilters?.length) {
+        let dimensionValues = selectedDimensionValues({
+          dashboard: dashboardStore,
+        })(dimensionName);
+        if (measureFilterResolution.filter) {
+          // if there is a measure filter for this dimension. remove values not in that filter
+          const dimVals = measureFilterResolution.filter.cond?.exprs?.find(
+            (e) => matchExpressionByName(e, dimensionName),
+          )?.cond?.exprs;
+          if (dimVals?.length) {
+            dimensionValues = dimensionValues.filter(
+              (d) => dimVals.findIndex((dimVal) => dimVal.val === d) >= 0,
+            );
+          }
+        }
+
+        if (dimensionValues?.length) {
           // For TDD view max 11 allowed, for overview max 7 allowed
-          comparisonValues = dimensionFilters[0]?.in.slice(
+          comparisonValues = dimensionValues.slice(
             0,
             isInTimeDimensionView ? 11 : 7,
           );
         }
         return derived(
-          [writable(comparisonValues), writable(dashboardStore?.filters)],
+          [writable(comparisonValues), writable(dashboardStore?.whereFilter)],
           ([values, filter]) => {
             return {
               values,
@@ -104,10 +129,13 @@ export function getDimensionValuesForComparison(
             {
               measures: measures.map((measure) => ({ name: measure })),
               dimensions: [{ name: dimensionName }],
-              filter: getDimensionFilterWithSearch(
-                dashboardStore?.filters,
-                dashboardStore?.dimensionSearchText,
-                dimensionName,
+              where: sanitiseExpression(
+                getDimensionFilterWithSearch(
+                  dashboardStore?.whereFilter,
+                  dashboardStore?.dimensionSearchText ?? "",
+                  dimensionName,
+                ),
+                measureFilterResolution.filter,
               ),
               timeStart: timeControls.timeStart,
               timeEnd: timeControls.timeEnd,
@@ -125,7 +153,8 @@ export function getDimensionValuesForComparison(
               query: {
                 enabled:
                   timeControls.ready &&
-                  !!dashboardStore?.selectedComparisonDimension,
+                  !!dashboardStore?.selectedComparisonDimension &&
+                  measureFilterResolution.ready,
                 queryClient: ctx.queryClient,
               },
             },
@@ -134,7 +163,7 @@ export function getDimensionValuesForComparison(
             if (topListData?.isFetching || !dimensionName)
               return {
                 values: [],
-                filter: dashboardStore?.filters,
+                filter: dashboardStore?.whereFilter,
               };
             const columnName =
               topListData?.data?.schema?.fields?.[0]?.name || dimensionName;
@@ -147,7 +176,7 @@ export function getDimensionValuesForComparison(
 
             const computedFilter = getFilterForComparedDimension(
               dimensionName,
-              dashboardStore?.filters,
+              dashboardStore?.whereFilter,
               topListValues,
             );
 
@@ -199,22 +228,15 @@ export function getDimensionValueTimeSeries(
       if (dashboardStore?.selectedScrubRange?.isScrubbing) return;
 
       return derived(
-        dimensionValues?.values?.map((value, i) => {
-          const updatedIncludeFilter = dimensionValues?.filter.include.map(
-            (filter) => {
-              if (filter.name === dimensionName)
-                return { name: dimensionName, in: [value] };
-              else return filter;
-            },
+        (dimensionValues?.values ?? [])?.map((value, i) => {
+          // create a copy
+          const updatedFilter =
+            filterExpressions(dimensionValues?.filter, () => true) ??
+            createAndExpression([]);
+          // add the value to "in" expression
+          updatedFilter.cond?.exprs?.push(
+            createInExpression(dimensionName, [value]),
           );
-          // remove excluded values
-          const updatedExcludeFilter = dimensionValues?.filter.exclude.filter(
-            (filter) => filter.name !== dimensionName,
-          );
-          const updatedFilter = {
-            exclude: updatedExcludeFilter,
-            include: updatedIncludeFilter,
-          };
 
           return derived(
             [
@@ -224,7 +246,7 @@ export function getDimensionValueTimeSeries(
                 metricViewName,
                 {
                   measureNames: measures,
-                  filter: updatedFilter,
+                  where: sanitiseExpression(updatedFilter, undefined),
                   timeStart: start,
                   timeEnd: end,
                   timeGranularity: interval,

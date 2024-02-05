@@ -186,7 +186,10 @@ export function getValidComparisonOption(
   prevComparisonOption: TimeComparisonOption | undefined,
   allTimeRange: TimeRange,
 ) {
-  if (!metricsView.availableTimeRanges?.length) return undefined;
+  if (!metricsView.availableTimeRanges?.length) {
+    return DEFAULT_TIME_RANGES[selectedTimeRange.name as TimeRangePreset]
+      ?.defaultComparison as TimeComparisonOption;
+  }
 
   const timeRange = metricsView.availableTimeRanges.find(
     (tr) => tr.range === selectedTimeRange.name,
