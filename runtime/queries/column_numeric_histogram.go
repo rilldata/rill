@@ -272,7 +272,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 				-- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
 				ifNull(CASE WHEN high = (SELECT max(high) FROM histogram_stage) THEN count + (SELECT c FROM right_edge) ELSE count END, 0) AS count
 				FROM histogram_stage
-				ORDER BY bucket SETTINGS join_use_nulls=1
+				ORDER BY bucket 
 			  `,
 			selectColumn,
 			sanitizedColumnName,
@@ -513,7 +513,7 @@ func histogramDiagnosticMethodSQL(ctx context.Context, olap drivers.OLAPStore, c
 			-- fill in the case where we've filtered out the highest value and need to recompute it, otherwise use count.
 				ifNull(CASE WHEN high = (SELECT max(high) from histogram_stage) THEN count + (select c from right_edge) ELSE count END, 0) AS count
 			FROM histogram_stage
-		ORDER BY bucket SETTINGS join_use_nulls=1
+		ORDER BY bucket
 			`,
 			selectColumn,
 			sanitizedColumnName,

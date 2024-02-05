@@ -173,14 +173,14 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewStringValue(v.String()), nil
 	default:
 	}
-	if t.ArrayElementType != nil {
+	if t != nil && t.ArrayElementType != nil {
 		v2, err := ToListValueUnknown(v, t)
 		if err != nil {
 			return nil, err
 		}
 		return structpb.NewListValue(v2), nil
 	}
-	if t.MapType != nil {
+	if t != nil && t.MapType != nil {
 		v2, err := ToStructCoerceKeysUnknown(v, t.MapType)
 		if err != nil {
 			return nil, err
