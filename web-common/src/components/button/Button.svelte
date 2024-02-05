@@ -1,15 +1,22 @@
+<script context="module" lang="ts">
+  export type ButtonType =
+    | "brand"
+    | "primary"
+    | "secondary"
+    | "noStroke"
+    | "dashed"
+    | "link"
+    | "text"
+    // NOTE: this is deprecated in the new design system
+    | "highlighted";
+
+  export type ButtonShape = "normal" | "square" | "circle";
+  export type ButtonSize = "medium" | "large" | "small";
+</script>
+
 <script lang="ts">
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import { createEventDispatcher } from "svelte";
-
-  type ButtonType =
-    | "primary"
-    | "secondary"
-    | "highlighted"
-    | "text"
-    | "link"
-    | "brand";
-
   export let type: ButtonType = "primary";
   export let status: "info" | "error" = "info";
   export let disabled = false;
@@ -17,14 +24,27 @@
   export let submitForm = false;
   export let form = "";
   export let label: string | undefined = undefined;
-  export let square = false;
-  export let circle = false;
+  export let shape: ButtonShape = "normal";
   export let selected = false;
-  export let large = false;
-  export let small = false;
-  export let noStroke = false;
-  export let dashed = false;
+  export let size: ButtonSize = "medium";
   export let builders: Builder[] = [];
+
+  $: circle = shape === "circle";
+  $: square = shape === "square";
+
+  $: small = size === "small";
+  $: large = size === "large";
+
+  $: noStroke = type === "noStroke";
+  $: dashed = type === "dashed";
+
+  $: danger = status === "error";
+
+  if (noStroke && danger) {
+    console.warn(
+      `Button cannot be both "No Stroke" and "dangerous", falling back to "Text" and "dangerous"`,
+    );
+  }
 
   const dispatch = createEventDispatcher();
 
@@ -45,7 +65,7 @@
   class:small
   class:dashed
   class:compact
-  class:danger={status === "error"}
+  class:danger
   class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}
   form={submitForm ? form : undefined}
@@ -60,6 +80,7 @@
 <style lang="postcss">
   button {
     @apply flex text-center items-center justify-center;
+    @apply text-ellipsis overflow-hidden whitespace-nowrap;
     @apply text-xs leading-snug font-normal;
     @apply gap-x-2 min-w-fit;
     @apply rounded-[2px];
@@ -71,22 +92,43 @@
   }
 
   button:disabled {
-    @apply opacity-50 cursor-not-allowed;
+    @apply cursor-not-allowed;
+  }
+
+  /* BRAND STYLES */
+
+  .brand {
+    @apply bg-primary-600 text-white;
+
+    &:hover,
+    &.selected {
+      @apply bg-primary-700;
+    }
+    &:active {
+      @apply bg-primary-800;
+    }
+    &:disabled {
+      @apply bg-primary-600;
+      @apply opacity-50;
+    }
   }
 
   /* PRIMARY STYLES */
 
   .primary {
-    @apply bg-slate-800 text-white;
-  }
+    @apply bg-primary-600 text-white;
 
-  .primary:hover,
-  .primary.selected {
-    @apply bg-slate-700;
-  }
-
-  .primary:active {
-    @apply bg-slate-900;
+    &:hover,
+    &.selected {
+      @apply bg-slate-800;
+    }
+    &:active {
+      @apply bg-slate-900;
+    }
+    &:disabled {
+      @apply bg-slate-700;
+      @apply opacity-50;
+    }
   }
 
   /* SECONDARY STYLES */
@@ -94,16 +136,18 @@
   .secondary {
     @apply bg-white text-slate-600;
     @apply px-3 h-7 border border-slate-300;
-  }
 
-  .secondary:hover,
-  .secondary:disabled,
-  .secondary.selected {
-    @apply bg-slate-100;
-  }
-
-  .secondary:active {
-    @apply bg-slate-200;
+    &:hover,
+    &.selected {
+      @apply bg-slate-100;
+    }
+    &:active {
+      @apply bg-slate-200;
+    }
+    &:disabled {
+      @apply text-slate-400;
+      @apply bg-slate-50;
+    }
   }
 
   /* HIGHLGHTED STYLES (REMOVE) */
@@ -126,20 +170,18 @@
   /* LINK STYLES */
 
   .link {
-    @apply text-blue-500;
-  }
+    @apply text-primary-600;
 
-  .link:hover,
-  .link.selected {
-    @apply text-blue-600;
-  }
-
-  .link:active {
-    @apply text-blue-700;
-  }
-
-  .link:disabled {
-    @apply text-slate-400;
+    &:hover,
+    &.selected {
+      @apply text-primary-800;
+    }
+    &:active {
+      @apply text-primary-700;
+    }
+    &:disabled {
+      @apply text-primary-300;
+    }
   }
 
   /* SHAPE STYLES */
@@ -147,7 +189,7 @@
   .square,
   .circle {
     @apply p-0 aspect-square;
-    @apply text-ellipsis overflow-hidden whitespace-nowrap flex-grow-0 flex-shrink-0;
+    @apply flex-grow-0 flex-shrink-0;
   }
 
   .circle {
@@ -179,20 +221,6 @@
     @apply text-slate-400;
     @apply bg-slate-50;
     @apply border-slate-300;
-  }
-
-  /* BRAND STYLES */
-
-  .brand {
-    @apply bg-blue-600 text-white;
-  }
-
-  .brand:hover {
-    @apply bg-blue-500;
-  }
-
-  .brand:active {
-    @apply bg-blue-700;
   }
 
   /* TWEAKS */
