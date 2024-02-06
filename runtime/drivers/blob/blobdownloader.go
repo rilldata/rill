@@ -261,7 +261,7 @@ func (it *blobIterator) plan() ([]*objectWithPlan, error) {
 		attr, err := it.bucket.Attributes(it.ctx, it.opts.GlobPattern)
 		if err != nil {
 			// can fail due to permission not available
-			it.logger.Error("failed to fetch attributes of the object", zap.Error(err))
+			it.logger.Debug("failed to fetch attributes of the object", zap.Error(err))
 		} else {
 			size = attr.Size
 		}
