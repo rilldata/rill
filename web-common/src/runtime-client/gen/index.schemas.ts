@@ -1359,6 +1359,7 @@ export interface V1MetricsViewAggregationMeasure {
   name?: string;
   builtinMeasure?: V1BuiltinMeasure;
   builtinMeasureArgs?: unknown[];
+  filter?: V1Condition;
 }
 
 export interface V1MetricsViewAggregationDimension {
