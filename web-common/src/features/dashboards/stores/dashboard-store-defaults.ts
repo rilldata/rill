@@ -8,7 +8,10 @@ import {
   contextColWidthDefaults,
   type MetricsExplorerEntity,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
+import {
+  getLocalUserPreferences,
+  getLocalUserPreferencesState,
+} from "@rilldata/web-common/features/dashboards/user-preferences";
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
@@ -149,4 +152,25 @@ export function getDefaultMetricsExplorerEntity(
   setDefaultTimeRange(metricsView, metricsExplorer, fullTimeRange);
   setDefaultComparison(metricsView, metricsExplorer, fullTimeRange);
   return metricsExplorer;
+}
+
+export function mergeDashboardWithLocalPreferences(
+  metricsExplorer: MetricsExplorerEntity,
+) {
+  const defaults = getLocalUserPreferencesState();
+  if (defaults.visibleMeasures) {
+    metricsExplorer.allMeasuresVisible =
+      defaults.visibleMeasures.length ===
+      metricsExplorer.visibleMeasureKeys.size; // TODO: check values
+    metricsExplorer.visibleMeasureKeys = new Set(defaults.visibleMeasures);
+  }
+  if (defaults.visibleDimensions) {
+    metricsExplorer.allDimensionsVisible =
+      defaults.visibleDimensions.length ===
+      metricsExplorer.visibleDimensionKeys.size; // TODO: check values
+    metricsExplorer.visibleDimensionKeys = new Set(defaults.visibleDimensions);
+  }
+  if (defaults.leaderboardMeasureName) {
+    metricsExplorer.leaderboardMeasureName = defaults.leaderboardMeasureName;
+  }
 }

@@ -4,6 +4,7 @@ import {
   useDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import type {
   MetricsViewDimension,
   MetricsViewSpecMeasureV2,
@@ -73,6 +74,10 @@ function createShowHideStore<Item>(
       };
     },
   ) as ShowHideSelectorStore;
+  const updateMethod = `updateVisible${fieldInMeta.replace(/\w/, (s) =>
+    s.toUpperCase(),
+  )}` as "updateVisibleMeasures" | "updateVisibleDimensions";
+  const localUserPreferences = getLocalUserPreferences();
 
   derivedStore.setAllToVisible = () => {
     updateMetricsExplorerByName(metricsViewName, (metricsExplorer) => {
@@ -80,6 +85,9 @@ function createShowHideStore<Item>(
         get(derivedStore).availableKeys,
       );
       metricsExplorer[allVisibleFieldInStore] = true;
+      localUserPreferences[updateMethod]([
+        ...metricsExplorer[visibleFieldInStore].keys(),
+      ]);
     });
   };
 
@@ -88,9 +96,15 @@ function createShowHideStore<Item>(
       // Remove all keys except for the first one
       const firstKey = get(derivedStore).availableKeys.slice(0, 1);
       metricsExplorer[visibleFieldInStore] = new Set(firstKey);
+      localUserPreferences[updateMethod]([
+        ...metricsExplorer[visibleFieldInStore].keys(),
+      ]);
 
       if (fieldInMeta === "measures") {
         metricsExplorer.leaderboardMeasureName = firstKey[0];
+        localUserPreferences.updateLeaderboardMeasureName(
+          metricsExplorer.leaderboardMeasureName,
+        );
       }
       metricsExplorer[allVisibleFieldInStore] = false;
     });
@@ -118,6 +132,9 @@ function createShowHideStore<Item>(
           );
 
           metricsExplorer.leaderboardMeasureName = firstVisible;
+          localUserPreferences.updateLeaderboardMeasureName(
+            metricsExplorer.leaderboardMeasureName,
+          );
         }
       } else {
         metricsExplorer[visibleFieldInStore].add(key);
@@ -125,6 +142,9 @@ function createShowHideStore<Item>(
       metricsExplorer[allVisibleFieldInStore] =
         metricsExplorer[visibleFieldInStore].size ===
         get(derivedStore).availableKeys.length;
+      localUserPreferences[updateMethod]([
+        ...metricsExplorer[visibleFieldInStore].keys(),
+      ]);
     });
   };
 

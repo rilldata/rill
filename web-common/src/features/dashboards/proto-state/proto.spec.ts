@@ -33,9 +33,7 @@ describe("toProto/fromProto", () => {
   });
 
   beforeEach(() => {
-    getLocalUserPreferences().set({
-      timeZone: "UTC",
-    });
+    getLocalUserPreferences().updateTimeZone("UTC");
   });
 
   it("backwards compatibility for time controls", () => {

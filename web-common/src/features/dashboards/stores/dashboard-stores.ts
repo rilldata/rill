@@ -2,13 +2,17 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
-import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import {
+  getDefaultMetricsExplorerEntity,
+  mergeDashboardWithLocalPreferences,
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
   createAndExpression,
   filterExpressions,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getLocalUserPreferencesState } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
   DashboardTimeControls,
@@ -179,8 +183,10 @@ const metricViewReducers = {
         metricsView,
         fullTimeRange,
       );
-
       updateMetricsExplorerProto(state.entities[name]);
+
+      // add local preferences after default proto is calculated
+      mergeDashboardWithLocalPreferences(state.entities[name]);
       return state;
     });
   },

@@ -1,6 +1,6 @@
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
-import type { Writable } from "svelte/store";
+import { get, type Readable, type Writable } from "svelte/store";
 
 /**
  *  TODO: We should create a single user preference store for all dashboards
@@ -10,6 +10,10 @@ import type { Writable } from "svelte/store";
  */
 export interface LocalUserPreferences {
   timeZone?: string;
+  visibleMeasures?: string[];
+  visibleDimensions?: string[];
+  leaderboardMeasureName?: string;
+  // TODO: sort
 }
 let localUserPreferences: Writable<LocalUserPreferences>;
 
@@ -24,6 +28,34 @@ export function initLocalUserPreferenceStore(metricViewName: string) {
   return localUserPreferences;
 }
 
-export function getLocalUserPreferences() {
-  return localUserPreferences;
+function localUserPreferencesActions() {
+  function updateKey<K extends keyof LocalUserPreferences>(key: K) {
+    return (val: LocalUserPreferences[K]) => {
+      if (!localUserPreferences) return;
+      localUserPreferences.update((up) => {
+        up[key] = val;
+        return up;
+      });
+    };
+  }
+
+  return {
+    updateTimeZone: updateKey("timeZone"),
+    updateVisibleMeasures: updateKey("visibleMeasures"),
+    updateVisibleDimensions: updateKey("visibleDimensions"),
+    updateLeaderboardMeasureName: updateKey("leaderboardMeasureName"),
+  };
+}
+
+export function getLocalUserPreferences(): Readable<LocalUserPreferences> &
+  ReturnType<typeof localUserPreferencesActions> {
+  return {
+    subscribe: localUserPreferences.subscribe,
+    ...localUserPreferencesActions(),
+  };
+}
+
+export function getLocalUserPreferencesState(): LocalUserPreferences {
+  if (!localUserPreferences) return {};
+  return get(localUserPreferences);
 }
