@@ -1172,7 +1172,9 @@ export interface V1MetricsViewSpec {
   description?: string;
   timeDimension?: string;
   dimensions?: MetricsViewSpecDimensionV2[];
+  defaultSelectedDimensions?: string[];
   measures?: MetricsViewSpecMeasureV2[];
+  defaultSelectedMeasures?: string[];
   smallestTimeGrain?: V1TimeGrain;
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
