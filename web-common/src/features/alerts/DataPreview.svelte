@@ -8,12 +8,16 @@
     V1Expression,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { getStateManagers } from "../dashboards/state-managers/state-managers";
+  import { getLabelForFieldName } from "./utils";
 
   export let metricsView: string;
   export let measure: string;
   export let dimension: string;
   export let filter: V1Expression;
   export let criteria: V1Expression | undefined = undefined;
+
+  const ctx = getStateManagers();
 
   $: aggregation = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
@@ -27,23 +31,20 @@
     {
       query: {
         enabled: !!measure,
+        select: (data) => {
+          const rows = data.data;
+          const schema = data.schema?.fields?.map((field) => {
+            return {
+              name: field.name,
+              type: field.type?.code,
+              label: getLabelForFieldName(ctx, field.name as string),
+            };
+          }) as VirtualizedTableColumns[];
+          return { rows, schema };
+        },
       },
     },
   );
-
-  let rows: any;
-  let tableColumns: VirtualizedTableColumns[];
-  $: {
-    if ($aggregation.isSuccess) {
-      rows = $aggregation.data.data;
-      tableColumns = $aggregation.data.schema?.fields?.map((field) => {
-        return {
-          name: field.name,
-          type: field.type?.code,
-        };
-      }) as VirtualizedTableColumns[];
-    }
-  }
 
   // TODO: throttle fetches
 </script>
@@ -59,5 +60,8 @@
     </div>
   </div>
 {:else}
-  <PreviewTable {rows} columnNames={tableColumns} />
+  <PreviewTable
+    rows={$aggregation.data.rows}
+    columnNames={$aggregation.data.schema}
+  />
 {/if}
