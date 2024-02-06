@@ -1,5 +1,6 @@
 <script lang="ts">
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+  import { get } from "svelte/store";
   import TableIcon from "../../components/icons/TableIcon.svelte";
   import PreviewTable from "../../components/preview-table/PreviewTable.svelte";
   import type { VirtualizedTableColumns } from "../../components/virtualized-table/types";
@@ -18,6 +19,7 @@
   export let criteria: V1Expression | undefined = undefined;
 
   const ctx = getStateManagers();
+  const timeControls = get(ctx.selectors.timeRangeSelectors.timeControlsState);
 
   $: aggregation = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
@@ -27,6 +29,10 @@
       dimensions: dimension ? [{ name: dimension }] : [],
       where: sanitiseExpression(filter),
       having: sanitiseExpression(criteria),
+      timeRange: {
+        start: timeControls.timeStart,
+        end: timeControls.timeEnd,
+      },
     },
     {
       query: {
