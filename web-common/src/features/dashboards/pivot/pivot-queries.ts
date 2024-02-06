@@ -50,10 +50,10 @@ export function createPivotAggregationRowQuery(
           dimensions,
           where: sanitiseExpression(whereFilter, undefined),
           // TODO: having filter
-          timeStart: timeRange?.start
-            ? timeRange.start
-            : timeControls.timeStart,
-          timeEnd: timeRange?.end ? timeRange.end : timeControls.timeEnd,
+          timeRange: {
+            start: timeRange?.start ? timeRange.start : timeControls.timeStart,
+            end: timeRange?.end ? timeRange.end : timeControls.timeEnd,
+          },
           sort,
           limit,
           offset,
