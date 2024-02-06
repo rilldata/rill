@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { PivotDataRow } from "./types";
-  import type { Row } from "@tanstack/svelte-table";
   import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
+  import type { Row } from "@tanstack/svelte-table";
+  import type { PivotDataRow } from "./types";
 
   export let row: Row<PivotDataRow>;
   export let value: string;
@@ -15,7 +15,7 @@
 >
   {#if value === "LOADING_CELL"}
     <span class="loading-cell" />
-  {:else if row.getCanExpand()}
+  {:else if assembled && row.getCanExpand()}
     <button on:click={row.getToggleExpandedHandler()} class="cursor-pointer">
       <div class:rotate={row.getIsExpanded()} class="transition-transform">
         <ChevronRight />
