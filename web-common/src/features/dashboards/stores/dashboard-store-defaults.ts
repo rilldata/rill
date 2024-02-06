@@ -173,4 +173,10 @@ export function mergeDashboardWithLocalPreferences(
   if (defaults.leaderboardMeasureName) {
     metricsExplorer.leaderboardMeasureName = defaults.leaderboardMeasureName;
   }
+  if (defaults.dashboardSortType) {
+    metricsExplorer.dashboardSortType = defaults.dashboardSortType;
+  }
+  if (defaults.sortDirection) {
+    metricsExplorer.sortDirection = defaults.sortDirection;
+  }
 }

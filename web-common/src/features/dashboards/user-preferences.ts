@@ -1,3 +1,7 @@
+import type {
+  SortDirection,
+  SortType,
+} from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
 import { get, type Readable, type Writable } from "svelte/store";
@@ -10,10 +14,13 @@ import { get, type Readable, type Writable } from "svelte/store";
  */
 export interface LocalUserPreferences {
   timeZone?: string;
+
   visibleMeasures?: string[];
   visibleDimensions?: string[];
   leaderboardMeasureName?: string;
-  // TODO: sort
+
+  dashboardSortType?: SortType;
+  sortDirection?: SortDirection;
 }
 let localUserPreferences: Writable<LocalUserPreferences>;
 
@@ -44,6 +51,8 @@ function localUserPreferencesActions() {
     updateVisibleMeasures: updateKey("visibleMeasures"),
     updateVisibleDimensions: updateKey("visibleDimensions"),
     updateLeaderboardMeasureName: updateKey("leaderboardMeasureName"),
+    updateDashboardSortType: updateKey("dashboardSortType"),
+    updateSortDirection: updateKey("sortDirection"),
   };
 }
 

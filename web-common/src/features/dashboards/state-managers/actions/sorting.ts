@@ -1,3 +1,4 @@
+import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { LeaderboardContextColumn } from "../../leaderboard-context-column";
 import { SortDirection, SortType } from "../../proto-state/derived-types";
 import type { DashboardMutables } from "./types";
@@ -19,8 +20,10 @@ export const toggleSort = (
     //  then update the sort type and set the sort direction
     // to descending
     dashboard.dashboardSortType = sortType;
+    getLocalUserPreferences().updateDashboardSortType(sortType);
     dashboard.sortDirection = SortDirection.DESCENDING;
   }
+  getLocalUserPreferences().updateSortDirection(dashboard.sortDirection);
 };
 
 const contextColumnToSortType = {
@@ -59,5 +62,6 @@ export const sortActions = {
    */
   setSortDescending: ({ dashboard }: DashboardMutables) => {
     dashboard.sortDirection = SortDirection.DESCENDING;
+    getLocalUserPreferences().updateSortDirection(dashboard.sortDirection);
   },
 };

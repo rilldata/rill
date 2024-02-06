@@ -30,10 +30,7 @@ import type {
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
 import { Readable, derived, writable } from "svelte/store";
-import {
-  SortDirection,
-  SortType,
-} from "web-common/src/features/dashboards/proto-state/derived-types";
+import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
@@ -262,47 +259,6 @@ const metricViewReducers = {
   setPinIndex(name: string, index: number) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pinIndex = index;
-    });
-  },
-
-  setSortDescending(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection = SortDirection.DESCENDING;
-    });
-  },
-
-  setSortAscending(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection = SortDirection.ASCENDING;
-    });
-  },
-
-  toggleSort(name: string, sortType?: SortType) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      // if sortType is not provided,  or if it is provided
-      // and is the same as the current sort type,
-      // then just toggle the current sort direction
-      if (
-        sortType === undefined ||
-        metricsExplorer.dashboardSortType === sortType
-      ) {
-        metricsExplorer.sortDirection =
-          metricsExplorer.sortDirection === SortDirection.ASCENDING
-            ? SortDirection.DESCENDING
-            : SortDirection.ASCENDING;
-      } else {
-        // if the sortType is different from the current sort type,
-        //  then update the sort type and set the sort direction
-        // to descending
-        metricsExplorer.dashboardSortType = sortType;
-        metricsExplorer.sortDirection = SortDirection.DESCENDING;
-      }
-    });
-  },
-
-  setSortDirection(name: string, direction: SortDirection) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection = direction;
     });
   },
 
