@@ -106,6 +106,7 @@ The main feature-set component for dashboard filters
             {label}
             {selectedValues}
             column={dimension.column}
+            {readOnly}
             on:remove={() => removeDimensionFilter(name)}
             on:apply={(event) =>
               toggleDimensionValueSelection(name, event.detail, true)}
@@ -140,7 +141,7 @@ The main feature-set component for dashboard filters
           bgHoverClass="hover:bg-gray-100 hover:dark:bg-gray-700"
           textClass="ui-copy-disabled-faint hover:text-gray-500 dark:text-gray-500"
           bgActiveClass="bg-gray-200 dark:bg-gray-600"
-          outlineClass="outline-gray-400"
+          outlineBaseClass="outline-gray-400"
           on:click={clearAllFilters}
         >
           <span slot="icon" class="ui-copy-disabled-faint">

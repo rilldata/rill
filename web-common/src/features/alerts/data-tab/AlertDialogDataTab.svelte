@@ -3,7 +3,7 @@
   import FormSection from "../../../components/forms/FormSection.svelte";
   import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
-  import Filters from "../../dashboards/filters/Filters.svelte";
+  import FilterChips from "../../dashboards/filters/FilterChips.svelte";
   import DataPreview from "./../DataPreview.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState
@@ -46,8 +46,7 @@
     description="These are inherited from the underlying dashboard view."
     title="Filters"
   >
-    <!-- TODO: make these filters read-only -->
-    <Filters readonly />
+    <FilterChips readOnly />
   </FormSection>
   <FormSection
     description="Select the measures you want to monitor."
