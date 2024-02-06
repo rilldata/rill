@@ -121,10 +121,9 @@ The main feature-set component for dashboard filters
           {label}
           {dimensionName}
           {expr}
-          on:remove={() =>
-            !readOnly && removeMeasureFilter(dimensionName, name)}
+          {readOnly}
+          on:remove={() => removeMeasureFilter(dimensionName, name)}
           on:apply={({ detail: { dimension, oldDimension, expr } }) =>
-            !readOnly &&
             handleMeasureFilterApply(dimension, name, oldDimension, expr)}
         />
       </div>
