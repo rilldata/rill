@@ -132,6 +132,7 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.SilenceUsage = true
 	// we want to override some error messages
 	rootCmd.SilenceErrors = true
+	rootCmd.PersistentFlags().Var(printer.NewFormatValue(printer.Human, &format), "format", "Output format. Possible values: [human, json, csv, tsv]")
 	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
 	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
 	rootCmd.Flags().BoolP("version", "v", false, "Show rill version") // Adds option to get version by passing --version or -v

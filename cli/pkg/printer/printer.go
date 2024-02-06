@@ -1,6 +1,7 @@
 package printer
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/gocarina/gocsv"
 	"github.com/lensesio/tableprinter"
 )
 
@@ -23,6 +25,8 @@ type Format int
 const (
 	Human Format = iota
 	JSON
+	CSV
+	TSV
 )
 
 func NewFormatValue(val Format, p *Format) *Format {
@@ -32,6 +36,39 @@ func NewFormatValue(val Format, p *Format) *Format {
 
 func (f *Format) Type() string {
 	return "string"
+}
+
+func (f *Format) String() string {
+	switch *f {
+	case Human:
+		return "human"
+	case JSON:
+		return "json"
+	case CSV:
+		return "csv"
+	case TSV:
+		return "tsv"
+	}
+	return "unknown format"
+}
+
+func (f *Format) Set(s string) error {
+	var v Format
+	switch s {
+	case "human":
+		v = Human
+	case "json":
+		v = JSON
+	case "csv":
+		v = CSV
+	case "tsv":
+		v = TSV
+	default:
+		return fmt.Errorf("failed to parse Format: %q. Valid values: %+v",
+			s, []string{"human", "json", "csv", "tsv"})
+	}
+	*f = v
+	return nil
 }
 
 func NewPrinter(format *Format) *Printer {
@@ -71,8 +108,62 @@ func (p *Printer) PrintResource(v interface{}) error {
 		return nil
 	case JSON:
 		return p.PrintJSON(v)
+	case CSV:
+		return p.PrintCSV(v)
+	case TSV:
+		return p.PrintTSV(v)
 	}
 	return fmt.Errorf("unknown printer.Format: %T", *p.format)
+}
+
+// PrintCSV prints the given data as CSV to the output.
+func (p *Printer) PrintCSV(v interface{}) error {
+	var out io.Writer = os.Stdout
+	if p.resourceOut != nil {
+		out = p.resourceOut
+	}
+
+	type csvvaluer interface {
+		MarshalCSVValue() interface{}
+	}
+	if c, ok := v.(csvvaluer); ok {
+		v = c.MarshalCSVValue()
+	}
+
+	buf, err := gocsv.MarshalString(v)
+	if err != nil {
+		return fmt.Errorf("failed to marshal CSV: %w", err)
+	}
+	fmt.Fprintln(out, buf)
+	return nil
+}
+
+// PrintTSV prints the given data as TSV to the output.
+func (p *Printer) PrintTSV(v interface{}) error {
+	var out io.Writer = os.Stdout
+	if p.resourceOut != nil {
+		out = p.resourceOut
+	}
+
+	type csvvaluer interface {
+		MarshalCSVValue() interface{}
+	}
+	if c, ok := v.(csvvaluer); ok {
+		v = c.MarshalCSVValue()
+	}
+
+	gocsv.SetCSVWriter(func(out io.Writer) *gocsv.SafeCSVWriter {
+		writer := csv.NewWriter(out)
+		writer.Comma = '\t'
+		return gocsv.NewSafeCSVWriter(writer)
+	})
+
+	buf, err := gocsv.MarshalString(v)
+	if err != nil {
+		return fmt.Errorf("failed to marshal TSV: %w", err)
+	}
+	fmt.Fprintln(out, buf)
+	return nil
 }
 
 func (p *Printer) PrintJSON(v interface{}) error {
