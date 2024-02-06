@@ -5,6 +5,7 @@
   import Select from "../../../components/forms/Select.svelte";
   import FilterChips from "../../dashboards/filters/FilterChips.svelte";
   import DataPreview from "./../DataPreview.svelte";
+  import NoFiltersSelected from "./NoFiltersSelected.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState
 
@@ -15,6 +16,8 @@
     selectors: {
       measures: { allMeasures },
       dimensions: { allDimensions },
+      measureFilters: { hasAtLeastOneMeasureFilter },
+      dimensionFilters: { hasAtLeastOneDimensionFilter },
     },
   } = getStateManagers();
 
@@ -28,6 +31,9 @@
       value: dimension.name as string,
       label: dimension.label,
     })) ?? [];
+
+  $: hasAtLeastOneFilter =
+    $hasAtLeastOneDimensionFilter || $hasAtLeastOneMeasureFilter;
 
   $: console.log($form);
 </script>
@@ -43,10 +49,16 @@
     />
   </FormSection>
   <FormSection
-    description="These are inherited from the underlying dashboard view."
+    description={hasAtLeastOneFilter
+      ? "These are inherited from the underlying dashboard view."
+      : ""}
     title="Filters"
   >
-    <FilterChips readOnly />
+    {#if hasAtLeastOneFilter}
+      <FilterChips readOnly />
+    {:else}
+      <NoFiltersSelected />
+    {/if}
   </FormSection>
   <FormSection
     description="Select the measures you want to monitor."
