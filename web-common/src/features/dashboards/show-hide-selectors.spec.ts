@@ -25,7 +25,10 @@ import {
   createMetricsMetaQueryMock,
   resetDashboardStore,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
+import {
+  getLocalUserPreferences,
+  initLocalUserPreferenceStore,
+} from "@rilldata/web-common/features/dashboards/user-preferences";
 import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -36,6 +39,8 @@ describe("Show/Hide Selectors", () => {
   });
 
   beforeEach(() => {
+    getLocalUserPreferences().updateVisibleMeasures(undefined);
+    getLocalUserPreferences().updateVisibleDimensions(undefined);
     resetDashboardStore();
   });
 
