@@ -440,17 +440,19 @@ func (da *deploymentAnnotations) toMap() map[string]string {
 	return res
 }
 
+// defaultModelMaterialize determines whether to materialize models by default for deployed projects.
+// It defaults to true, but can be overridden with the __materialize_default variable.
 func defaultModelMaterialize(vars map[string]string) (bool, error) {
 	// Temporary hack to enable configuring ModelDefaultMaterialize using a variable.
 	// Remove when we have a way to conditionally configure it using code files.
 
 	if vars == nil {
-		return false, nil
+		return true, nil
 	}
 
 	s, ok := vars["__materialize_default"]
 	if !ok {
-		return false, nil
+		return true, nil
 	}
 
 	val, err := strconv.ParseBool(s)

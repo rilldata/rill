@@ -783,10 +783,98 @@ func TestMetricsViewsAggregation_timezone(t *testing.T) {
 	require.Equal(t, "Microsoft,2022-01-01T05:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
 }
 
+func TestMetricsViewsAggregation_filter(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView().Spec
+
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name:           "measure_1",
+				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+			},
+		},
+		MetricsView: mv,
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+		},
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows := q.Result.Data
+	i := 0
+	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "Google,18763", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_1"))
+
+	q.Measures = []*runtimev1.MetricsViewAggregationMeasure{
+		{
+			Name:           "measure_1",
+			BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+			Filter: &runtimev1.Expression{
+				Expression: &runtimev1.Expression_Cond{
+					Cond: &runtimev1.Condition{
+						Op: runtimev1.Operation_OPERATION_EQ,
+						Exprs: []*runtimev1.Expression{
+							{
+								Expression: &runtimev1.Expression_Ident{
+									Ident: "dom",
+								},
+							},
+							{
+								Expression: &runtimev1.Expression_Val{
+									Val: structpb.NewStringValue("instagram.com"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows = q.Result.Data
+	i = 0
+	require.Equal(t, "Facebook,8808", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "Google,0", fieldsToString(rows[i], "pub", "measure_1"))
+	i++
+	require.Equal(t, "Microsoft,0", fieldsToString(rows[i], "pub", "measure_1"))
+}
+
 func fieldsToString(row *structpb.Struct, args ...string) string {
 	s := make([]string, 0, len(args))
 	for _, arg := range args {
-		s = append(s, row.Fields[arg].GetStringValue())
+		v := row.Fields[arg]
+		switch vv := v.GetKind().(type) {
+		case *structpb.Value_StringValue:
+			s = append(s, vv.StringValue)
+		case *structpb.Value_NumberValue:
+			s = append(s, fmt.Sprintf("%.0f", vv.NumberValue))
+		case *structpb.Value_NullValue:
+			s = append(s, fmt.Sprintf("null"))
+		}
 	}
 	return strings.Join(s, ",")
 }
