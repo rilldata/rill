@@ -82,6 +82,7 @@ export function createSubTableCellQuery(
       };
     } else return { name: dimension };
   });
+  const measureBody = config.measureNames.map((m) => ({ name: m }));
 
   const filterForSubTable = getFilterForPivotTable(
     config,
@@ -97,7 +98,7 @@ export function createSubTableCellQuery(
   ];
   return createPivotAggregationRowQuery(
     ctx,
-    config.measureNames,
+    measureBody,
     dimensionBody,
     filterForSubTable,
     sortBy,

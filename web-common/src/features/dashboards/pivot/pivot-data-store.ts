@@ -146,6 +146,7 @@ export function createTableCellQuery(
       };
     } else return { name: dimension };
   });
+  const measureBody = config.measureNames.map((m) => ({ name: m }));
 
   const filterForInitialTable = getFilterForPivotTable(
     config,
@@ -165,7 +166,7 @@ export function createTableCellQuery(
   ];
   return createPivotAggregationRowQuery(
     ctx,
-    config.measureNames,
+    measureBody,
     dimensionBody,
     mergedFilter,
     sortBy,
@@ -401,7 +402,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                    */
                   globalTotalsQuery = createPivotAggregationRowQuery(
                     ctx,
-                    config.measureNames,
+                    config.measureNames.map((m) => ({ name: m })),
                     [],
                     config.whereFilter,
                     [],

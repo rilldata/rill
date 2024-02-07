@@ -9,6 +9,7 @@ import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import {
   V1Expression,
   V1MetricsViewAggregationDimension,
+  V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewAggregationSort,
   createQueryServiceMetricsViewAggregation,
@@ -22,7 +23,7 @@ import { Readable, derived, readable } from "svelte/store";
  */
 export function createPivotAggregationRowQuery(
   ctx: StateManagers,
-  measures: string[],
+  measures: V1MetricsViewAggregationMeasure[],
   dimensions: V1MetricsViewAggregationDimension[],
   whereFilter: V1Expression,
   sort: V1MetricsViewAggregationSort[] = [],
@@ -34,7 +35,7 @@ export function createPivotAggregationRowQuery(
     sort = [
       {
         desc: false,
-        name: measures[0] || dimensions?.[0]?.name,
+        name: measures[0]?.name || dimensions?.[0]?.name,
       },
     ];
   }
@@ -46,7 +47,7 @@ export function createPivotAggregationRowQuery(
         runtime.instanceId,
         metricViewName,
         {
-          measures: measures.map((measure) => ({ name: measure })),
+          measures,
           dimensions,
           where: sanitiseExpression(whereFilter, undefined),
           // TODO: having filter
@@ -113,6 +114,8 @@ export function getAxisForDimensions(
     } else return { name: d };
   });
 
+  const measureBody = measures.map((m) => ({ name: m }));
+
   return derived(
     dimensionBody.map((dimension) => {
       let sortByForDimension = sortBy;
@@ -123,7 +126,7 @@ export function getAxisForDimensions(
       }
       return createPivotAggregationRowQuery(
         ctx,
-        measures,
+        measureBody,
         [dimension],
         whereFilter,
         sortByForDimension,
