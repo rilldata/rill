@@ -96,6 +96,14 @@
 
   let selectedTabIndex = 0;
 
+  function handleCancel() {
+    dispatch("close");
+  }
+
+  function handleBack() {
+    selectedTabIndex -= 1;
+  }
+
   function handleNextTab() {
     selectedTabIndex += 1;
   }
@@ -125,21 +133,22 @@
       </Tabs.Content>
       <div class="flex items-center gap-x-2 mt-5">
         <div class="grow" />
-        <Button on:click={() => dispatch("close")} type="secondary">
-          Cancel
+        <Button
+          on:click={selectedTabIndex === 0 ? handleCancel : handleBack}
+          type="secondary"
+        >
+          {selectedTabIndex === 0 ? "Cancel" : "Back"}
         </Button>
-        {#if selectedTabIndex !== null}
-          <Button
-            on:click={selectedTabIndex === 2 ? undefined : handleNextTab}
-            disabled={!isTabValid(selectedTabIndex, $touched, $errors) ||
-              $isSubmitting}
-            form={selectedTabIndex === 2 ? "create-alert-form" : undefined}
-            submitForm={selectedTabIndex === 2}
-            type="primary"
-          >
-            {selectedTabIndex === 2 ? "Create" : "Next"}
-          </Button>
-        {/if}
+        <Button
+          on:click={selectedTabIndex === 2 ? undefined : handleNextTab}
+          disabled={!isTabValid(selectedTabIndex, $touched, $errors) ||
+            $isSubmitting}
+          form={selectedTabIndex === 2 ? "create-alert-form" : undefined}
+          submitForm={selectedTabIndex === 2}
+          type="primary"
+        >
+          {selectedTabIndex === 2 ? "Create" : "Next"}
+        </Button>
       </div>
     </Tabs.Root>
   </div>
