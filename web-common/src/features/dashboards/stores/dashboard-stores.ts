@@ -32,6 +32,7 @@ import {
   SortDirection,
   SortType,
 } from "web-common/src/features/dashboards/proto-state/derived-types";
+import { PivotChipType, type PivotChipData } from "../pivot/types";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
@@ -229,15 +230,41 @@ const metricViewReducers = {
     });
   },
 
-  setPivotRows(name: string, values: string[]) {
+  setPivotRows(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, rows: values };
+      const dimensions: PivotChipData[] = [];
+
+      value.forEach((val) => {
+        if (val.type !== PivotChipType.Measure) {
+          dimensions.push(val);
+        }
+      });
+
+      metricsExplorer.pivot.rows = {
+        ...metricsExplorer.pivot.rows,
+        dimension: dimensions,
+      };
     });
   },
 
-  setPivotColumns(name: string, values: string[]) {
+  setPivotColumns(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, columns: values };
+      const dimensions: PivotChipData[] = [];
+      const measures: PivotChipData[] = [];
+
+      value.forEach((val) => {
+        if (val.type === PivotChipType.Measure) {
+          measures.push(val);
+        } else {
+          dimensions.push(val);
+        }
+      });
+
+      metricsExplorer.pivot.columns = {
+        ...metricsExplorer.pivot.columns,
+        dimension: dimensions,
+        measure: measures,
+      };
     });
   },
 
@@ -267,8 +294,13 @@ const metricViewReducers = {
       metricsExplorer.pivot = {
         ...metricsExplorer.pivot,
         active: true,
-        rows,
-        columns,
+        rows: {
+          dimension: [],
+        },
+        columns: {
+          dimension: [],
+          measure: [],
+        },
         expanded: {},
         sorting: [],
         columnPage: 1,
