@@ -54,6 +54,7 @@ export function createPivotAggregationRowQuery(
             start: timeRange?.start ? timeRange.start : timeControls.timeStart,
             end: timeRange?.end ? timeRange.end : timeControls.timeEnd,
           },
+
           sort,
           limit,
           offset,

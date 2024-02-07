@@ -32,6 +32,7 @@ import {
   SortDirection,
   SortType,
 } from "web-common/src/features/dashboards/proto-state/derived-types";
+import { PivotChipType, type PivotChipData } from "../pivot/types";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
@@ -229,15 +230,53 @@ const metricViewReducers = {
     });
   },
 
-  setPivotRows(name: string, values: string[]) {
+  // setPivotRows(name: string, values: string[]) {
+  //   updateMetricsExplorerByName(name, (metricsExplorer) => {
+  //     metricsExplorer.pivot = { ...metricsExplorer.pivot, rows: values };
+  //   });
+  // },
+
+  setPivotRows(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, rows: values };
+      const dimensions: PivotChipData[] = [];
+
+      value.forEach((val) => {
+        if (
+          val.type === PivotChipType.Dimension ||
+          val.type === PivotChipType.Time
+        ) {
+          dimensions.push(val);
+        }
+      });
+
+      metricsExplorer.pivot.rows = {
+        ...metricsExplorer.pivot.rows,
+        dimension: dimensions,
+      };
     });
   },
 
-  setPivotColumns(name: string, values: string[]) {
+  setPivotColumns(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, columns: values };
+      const dimensions: PivotChipData[] = [];
+      const measures: PivotChipData[] = [];
+
+      value.forEach((val) => {
+        if (
+          val.type === PivotChipType.Dimension ||
+          val.type === PivotChipType.Time
+        ) {
+          dimensions.push(val);
+        } else {
+          measures.push(val);
+        }
+      });
+
+      metricsExplorer.pivot.columns = {
+        ...metricsExplorer.pivot.columns,
+        dimension: dimensions,
+        measure: measures,
+      };
     });
   },
 
@@ -267,8 +306,13 @@ const metricViewReducers = {
       metricsExplorer.pivot = {
         ...metricsExplorer.pivot,
         active: true,
-        rows,
-        columns,
+        rows: {
+          dimension: [],
+        },
+        columns: {
+          dimension: [],
+          measure: [],
+        },
         expanded: {},
         sorting: [],
         columnPage: 1,
