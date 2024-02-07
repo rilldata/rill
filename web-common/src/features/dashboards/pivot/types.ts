@@ -30,12 +30,15 @@ export interface PivotState {
   expanded: ExpandedState;
   sorting: SortingState;
   columnPage: number;
-  rowJoinType: "flat" | "nest";
+  rowJoinType: PivotRowJoinType;
 }
 
+export type PivotRowJoinType = "flat" | "nest";
+
 export interface PivotDataRow {
-  [key: string]: string | number | PivotDataRow[] | undefined;
   subRows?: PivotDataRow[];
+
+  [key: string]: string | number | PivotDataRow[] | undefined;
 }
 
 export interface TimeFilters {

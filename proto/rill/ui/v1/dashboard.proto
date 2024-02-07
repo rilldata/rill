@@ -53,6 +53,12 @@ message DashboardState {
     LEADERBOARD_SORT_TYPE_DELTA_ABSOLUTE = 5;
   }
 
+  enum PivotRowJoinType {
+    PIVOT_ROW_JOIN_TYPE_UNSPECIFIED = 0;
+    PIVOT_ROW_JOIN_TYPE_FLAT = 1;
+    PIVOT_ROW_JOIN_TYPE_NEST = 2;
+  }
+
   // Selected time range
   DashboardTimeRange time_range = 1;
   // Dimension filters applied
@@ -96,6 +102,17 @@ message DashboardState {
   optional string expanded_measure = 18;
 
   optional int32 pin_index = 19;
+
+  /**
+   * Pivot related fields
+   */
+  optional bool pivot_is_active = 22;
+  repeated string pivot_rows = 23;
+  repeated string pivot_columns = 24;
+  map<string, bool> pivot_expanded = 25;
+  repeated PivotColumnSort pivot_sort = 26;
+  optional int32 pivot_column_page = 27;
+  optional PivotRowJoinType pivot_row_join_type = 28;
 }
 
 message DashboardTimeRange {
@@ -107,4 +124,9 @@ message DashboardTimeRange {
 message DashboardDimensionFilter {
   string name = 1;
   rill.runtime.v1.Expression filter = 2;
+}
+
+message PivotColumnSort {
+  bool desc = 1;
+  string id = 2;
 }

@@ -1,11 +1,16 @@
 import {
   NullValue,
   PartialMessage,
+  protoBase64,
   Timestamp,
   Value,
-  protoBase64,
 } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
+import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  ToProtoOperationMap,
+  ToProtoPivotRowJoinTypeMap,
+} from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   DashboardTimeControls,
@@ -27,11 +32,11 @@ import {
   DashboardDimensionFilter,
   DashboardState,
   DashboardState_LeaderboardContextColumn,
+  DashboardState_PivotRowJoinType,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import { V1Operation, V1TimeGrain } from "@rilldata/web-common/runtime-client";
-import { ToProtoOperationMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 
 // TODO: make a follow up PR to use the one from the proto directly
 const LeaderboardContextColumnMap: Record<
@@ -123,6 +128,9 @@ export function getProtoFromDashboardState(
   if (metrics.dashboardSortType) {
     state.leaderboardSortType = metrics.dashboardSortType;
   }
+
+  const pivotStates = toPivotProto(metrics.pivot);
+  Object.keys(pivotStates).forEach((pk) => (state[pk] = pivotStates[pk]));
 
   const message = new DashboardState(state);
   return protoToBase64(message.toBinary());
@@ -265,4 +273,21 @@ function toPbValue(val: unknown) {
         },
       });
   }
+}
+
+function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
+  if (!pivotState.active)
+    return {
+      pivotExpanded: {},
+      pivotRowJoinType: DashboardState_PivotRowJoinType.UNSPECIFIED,
+    };
+  return {
+    pivotIsActive: true,
+    pivotRows: pivotState.rows,
+    pivotColumns: pivotState.columns,
+    pivotExpanded: pivotState.expanded, // TODO
+    pivotSort: pivotState.sorting,
+    pivotColumnPage: pivotState.columnPage,
+    pivotRowJoinType: ToProtoPivotRowJoinTypeMap[pivotState.rowJoinType],
+  };
 }

@@ -1,6 +1,10 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-import { FromProtoOperationMap } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
+import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  FromProtoOperationMap,
+  FromProtoPivotRowJoinTypeMap,
+} from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import { convertFilterToExpression } from "@rilldata/web-common/features/dashboards/proto-state/filter-converter";
 import {
   createAndExpression,
@@ -25,6 +29,7 @@ import { TimeGrain } from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_g
 import {
   DashboardState,
   DashboardState_LeaderboardContextColumn,
+  DashboardState_PivotRowJoinType,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
@@ -176,6 +181,8 @@ export function getDashboardStateFromProto(
     entity.dashboardSortType = dashboard.leaderboardSortType;
   }
 
+  entity.pivot = fromPivotProto(dashboard);
+
   return entity;
 }
 
@@ -282,6 +289,21 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
   }
 
   return selectedTimeRange;
+}
+
+function fromPivotProto(dashboard: DashboardState): PivotState {
+  return {
+    active: dashboard.pivotIsActive ?? false,
+    rows: dashboard.pivotRows ?? [],
+    columns: dashboard.pivotColumns ?? [],
+    expanded: dashboard.pivotExpanded,
+    sorting: dashboard.pivotSort ?? [],
+    columnPage: dashboard.pivotColumnPage ?? 1,
+    rowJoinType:
+      FromProtoPivotRowJoinTypeMap[
+        dashboard.pivotRowJoinType ?? DashboardState_PivotRowJoinType.NEST
+      ],
+  };
 }
 
 function correctComparisonTimeRange(

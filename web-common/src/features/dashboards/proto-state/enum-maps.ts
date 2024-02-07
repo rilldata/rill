@@ -1,4 +1,6 @@
+import type { PivotRowJoinType } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { Operation } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
+import { DashboardState_PivotRowJoinType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 
 // This file should contain all the map from proto and API values.
@@ -23,4 +25,20 @@ export const ToProtoOperationMap: Record<V1Operation, Operation> = {
 export const FromProtoOperationMap = {} as Record<Operation, V1Operation>;
 for (const op in ToProtoOperationMap) {
   FromProtoOperationMap[ToProtoOperationMap[op]] = op;
+}
+
+export const ToProtoPivotRowJoinTypeMap: Record<
+  PivotRowJoinType,
+  DashboardState_PivotRowJoinType
+> = {
+  flat: DashboardState_PivotRowJoinType.FLAT,
+  nest: DashboardState_PivotRowJoinType.NEST,
+};
+
+export const FromProtoPivotRowJoinTypeMap = {} as Record<
+  DashboardState_PivotRowJoinType,
+  PivotRowJoinType
+>;
+for (const op in ToProtoPivotRowJoinTypeMap) {
+  FromProtoPivotRowJoinTypeMap[ToProtoPivotRowJoinTypeMap[op]] = op;
 }
