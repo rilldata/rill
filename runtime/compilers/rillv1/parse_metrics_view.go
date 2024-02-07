@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -41,8 +40,8 @@ type MetricsViewYAML struct {
 		Ignore      bool `yaml:"ignore"`
 		Unnest      bool
 	}
-	DefaultSelectedDimensions []string `yaml:"default_selected_dimensions"`
-	Measures                  []*struct {
+	DefaultDimensions []string `yaml:"default_dimensions"`
+	Measures          []*struct {
 		Name                string
 		Label               string
 		Expression          string
@@ -52,8 +51,8 @@ type MetricsViewYAML struct {
 		Ignore              bool   `yaml:"ignore"`
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
-	DefaultSelectedMeasures []string `yaml:"default_selected_measures"`
-	Security                *struct {
+	DefaultMeasures []string `yaml:"default_measures"`
+	Security        *struct {
 		Access    string `yaml:"access"`
 		RowFilter string `yaml:"row_filter"`
 		Include   []*struct {
@@ -253,7 +252,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		names[lower] = nameIsDimension
 	}
 
-	for _, dimension := range tmp.DefaultSelectedDimensions {
+	for _, dimension := range tmp.DefaultDimensions {
 		if v, ok := names[dimension]; !ok || v != nameIsDimension {
 			return fmt.Errorf("default selected dimension not found: %q", dimension)
 		}
@@ -286,7 +285,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		return fmt.Errorf("must define at least one measure")
 	}
 
-	for _, measure := range tmp.DefaultSelectedMeasures {
+	for _, measure := range tmp.DefaultMeasures {
 		if v, ok := names[measure]; !ok || v != nameIsMeasure {
 			return fmt.Errorf("default selected measure not found: %q", measure)
 		}
@@ -445,7 +444,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			Unnest:      dim.Unnest,
 		})
 	}
-	spec.DefaultSelectedDimensions = slices.Clone(tmp.DefaultSelectedDimensions)
+	spec.DefaultDimensions = tmp.DefaultDimensions
 
 	for _, measure := range tmp.Measures {
 		if measure == nil || measure.Ignore {
@@ -462,7 +461,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
 	}
-	spec.DefaultSelectedMeasures = slices.Clone(tmp.DefaultSelectedMeasures)
+	spec.DefaultMeasures = tmp.DefaultMeasures
 
 	spec.DefaultComparisonMode = comparisonModesMap[tmp.DefaultComparison.Mode]
 	if tmp.DefaultComparison.Dimension != "" {
