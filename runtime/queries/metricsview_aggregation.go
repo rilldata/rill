@@ -594,12 +594,12 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 func applyFilter(mv *runtimev1.MetricsViewSpec, expr string, filter *runtimev1.Expression, args *[]any, dialect drivers.Dialect) (string, error) {
 	if filter != nil {
-		condClause, condArgs, err := buildConditionExpression(mv, filter.GetCond(), nil, dialect)
+		exprClause, exprArgs, err := buildExpression(mv, filter, nil, dialect)
 		if err != nil {
 			return "", err
 		}
-		expr = fmt.Sprintf("%s FILTER (WHERE %s)", expr, condClause)
-		*args = append(*args, condArgs...)
+		expr = fmt.Sprintf("%s FILTER (WHERE %s)", expr, exprClause)
+		*args = append(*args, exprArgs...)
 	}
 	return expr, nil
 }
