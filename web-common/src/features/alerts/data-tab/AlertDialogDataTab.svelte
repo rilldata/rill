@@ -39,11 +39,11 @@
 <div class="flex flex-col gap-y-5">
   <FormSection title="Alert name">
     <InputV2
-      error={$errors["name"]}
       id="name"
-      on:change={handleChange}
-      placeholder="My alert"
       value={$form["name"]}
+      error={$errors["name"]}
+      placeholder="My alert"
+      on:change={handleChange}
     />
   </FormSection>
   <FormSection

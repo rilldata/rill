@@ -3,7 +3,6 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import CriteriaForm from "@rilldata/web-common/features/alerts/criteria-tab/CriteriaForm.svelte";
   import { CriteriaGroupOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
-  import { V1Operation } from "@rilldata/web-common/runtime-client";
   import { Trash2Icon } from "lucide-svelte";
 
   export let formState: any; // svelte-forms-lib's FormState

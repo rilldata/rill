@@ -7,8 +7,6 @@
   export let formState: any; // svelte-forms-lib's FormState
 
   const { form } = formState;
-
-  $: console.log($form);
 </script>
 
 <div class="flex flex-col gap-y-5 p-2.5 max-h-96 bg-gray-100 overflow-scroll">

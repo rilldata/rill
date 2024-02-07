@@ -19,7 +19,7 @@
       label: m.label?.length ? m.label : m.expression,
     })) ?? [];
 
-  const { form, errors, handleSubmit } = formState;
+  const { form, errors } = formState;
 </script>
 
 <div class="grid grid-cols-2 flex-wrap gap-2">
@@ -45,10 +45,9 @@
     value={"value"}
   />
   <InputV2
-    bind:value={$form["criteria"][index].value}
-    error={$errors["value"]}
     id="value"
-    on:change={handleSubmit}
+    bind:value={$form["criteria"][index]["value"]}
+    error={$errors["criteria"][index]["value"]}
     placeholder={"0"}
   />
 </div>
