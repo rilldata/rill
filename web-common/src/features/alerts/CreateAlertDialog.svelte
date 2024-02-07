@@ -10,6 +10,7 @@
   import Dialog from "../../components/dialog-v2/Dialog.svelte";
   import * as Tabs from "../../components/tabs";
   import AlertDialogDataTab from "./data-tab/AlertDialogDataTab.svelte";
+  import * as DialogTabs from "./dialog-tabs";
 
   export let open: boolean;
 
@@ -109,19 +110,17 @@
   }
 </script>
 
-<Dialog {open} titleMarginBottomOverride="mb-1">
+<Dialog {open} titleMarginBottomOverride="mb-1" widthOverride="600px">
   <svelte:fragment slot="title">Create alert</svelte:fragment>
   <div class="overflow-auto" slot="body">
-    <!-- TODO: match Figma mocks -->
-    <!-- TODO: tabs shouldn't be clickable -->
-    <Tabs.Root value={tabs[selectedTabIndex]}>
-      <Tabs.List>
-        {#each tabs as tab}
-          <Tabs.Trigger value={tab}>
+    <DialogTabs.Root value={tabs[selectedTabIndex]}>
+      <DialogTabs.List>
+        {#each tabs as tab, i}
+          <DialogTabs.Trigger value={tab} tabIndex={i}>
             {tab}
-          </Tabs.Trigger>
+          </DialogTabs.Trigger>
         {/each}
-      </Tabs.List>
+      </DialogTabs.List>
       <Tabs.Content value={tabs[0]}>
         <AlertDialogDataTab {formState} />
       </Tabs.Content>
@@ -150,6 +149,6 @@
           {selectedTabIndex === 2 ? "Create" : "Next"}
         </Button>
       </div>
-    </Tabs.Root>
+    </DialogTabs.Root>
   </div>
 </Dialog>
