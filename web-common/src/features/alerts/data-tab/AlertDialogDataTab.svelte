@@ -34,8 +34,6 @@
 
   $: hasAtLeastOneFilter =
     $hasAtLeastOneDimensionFilter || $hasAtLeastOneMeasureFilter;
-
-  $: console.log($form);
 </script>
 
 <div class="flex flex-col gap-y-5">

@@ -60,7 +60,7 @@
     },
   });
 
-  const { isSubmitting, errors, touched } = formState;
+  const { form, isSubmitting, errors } = formState;
 
   const tabs = ["Data", "Criteria", "Delivery"];
 
@@ -72,27 +72,27 @@
    */
   function isTabValid(
     tabIndex: number,
-    touched: Record<string, boolean>,
     errors: Record<string, string>,
   ): boolean {
-    let tabTouched: boolean;
-    let tabErrors: boolean;
+    let hasRequiredFields: boolean;
+    let hasErrors: boolean;
+
     if (tabIndex === 0) {
-      tabTouched = touched.name;
-      tabErrors = !!errors.name;
+      hasRequiredFields = $form.name !== "" && $form.measure !== "";
+      hasErrors = !!errors.name && !!errors.measure;
     } else if (tabIndex === 1) {
       // TODO
-      tabTouched = false;
-      tabErrors = true;
+      hasRequiredFields = false;
+      hasErrors = true;
     } else if (tabIndex === 2) {
       // TODO
-      tabTouched = false;
-      tabErrors = true;
+      hasRequiredFields = false;
+      hasErrors = true;
     } else {
       throw new Error(`Unexpected tabIndex: ${tabIndex}`);
     }
 
-    return tabTouched && !tabErrors;
+    return hasRequiredFields && !hasErrors;
   }
 
   let selectedTabIndex = 0;
@@ -140,8 +140,7 @@
         </Button>
         <Button
           on:click={selectedTabIndex === 2 ? undefined : handleNextTab}
-          disabled={!isTabValid(selectedTabIndex, $touched, $errors) ||
-            $isSubmitting}
+          disabled={!isTabValid(selectedTabIndex, $errors) || $isSubmitting}
           form={selectedTabIndex === 2 ? "create-alert-form" : undefined}
           submitForm={selectedTabIndex === 2}
           type="primary"
