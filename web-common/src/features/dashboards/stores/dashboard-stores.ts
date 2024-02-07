@@ -33,6 +33,7 @@ import {
   SortType,
 } from "web-common/src/features/dashboards/proto-state/derived-types";
 import { PivotChipType, type PivotChipData } from "../pivot/types";
+import type { PivotRows, PivotColumns } from "../pivot/types";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
@@ -289,18 +290,13 @@ const metricViewReducers = {
     });
   },
 
-  createPivot(name: string, rows: string[], columns: string[]) {
+  createPivot(name: string, rows: PivotRows, columns: PivotColumns) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot = {
         ...metricsExplorer.pivot,
         active: true,
-        rows: {
-          dimension: [],
-        },
-        columns: {
-          dimension: [],
-          measure: [],
-        },
+        rows,
+        columns,
         expanded: {},
         sorting: [],
         columnPage: 1,
