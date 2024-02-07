@@ -3482,7 +3482,7 @@ definitions:
         type: array
         items: {}
       filter:
-        $ref: '#/definitions/v1Condition'
+        $ref: '#/definitions/v1Expression'
   v1MetricsViewAggregationRequest:
     type: object
     properties:

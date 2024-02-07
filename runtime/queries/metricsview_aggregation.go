@@ -592,9 +592,12 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	return sql, args, nil
 }
 
-func applyFilter(mv *runtimev1.MetricsViewSpec, expr string, filter *runtimev1.Condition, args *[]any, dialect drivers.Dialect) (string, error) {
+func applyFilter(mv *runtimev1.MetricsViewSpec, expr string, filter *runtimev1.Expression, args *[]any, dialect drivers.Dialect) (string, error) {
 	if filter != nil {
-		condClause, condArgs, err := buildConditionExpression(mv, filter, nil, dialect)
+		if filter.GetIdent() != "" || filter.GetVal() != nil {
+			return "", fmt.Errorf("filter on `ident` of `val` is not supported")
+		}
+		condClause, condArgs, err := buildConditionExpression(mv, filter.GetCond(), nil, dialect)
 		if err != nil {
 			return "", err
 		}

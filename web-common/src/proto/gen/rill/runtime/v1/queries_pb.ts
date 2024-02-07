@@ -7,7 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, protoInt64, Struct, Timestamp, Value } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
-import { Condition, Expression } from "./expression_pb.js";
+import { Expression } from "./expression_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
 
 /**
@@ -1017,9 +1017,9 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
   builtinMeasureArgs: Value[] = [];
 
   /**
-   * @generated from field: rill.runtime.v1.Condition filter = 4;
+   * @generated from field: rill.runtime.v1.Expression filter = 4;
    */
-  filter?: Condition;
+  filter?: Expression;
 
   constructor(data?: PartialMessage<MetricsViewAggregationMeasure>) {
     super();
@@ -1032,7 +1032,7 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "builtin_measure", kind: "enum", T: proto3.getEnumType(BuiltinMeasure) },
     { no: 3, name: "builtin_measure_args", kind: "message", T: Value, repeated: true },
-    { no: 4, name: "filter", kind: "message", T: Condition },
+    { no: 4, name: "filter", kind: "message", T: Expression },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {

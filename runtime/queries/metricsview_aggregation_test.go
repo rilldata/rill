@@ -828,17 +828,21 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 		{
 			Name:           "measure_1",
 			BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
-			Filter: &runtimev1.Condition{
-				Op: runtimev1.Operation_OPERATION_EQ,
-				Exprs: []*runtimev1.Expression{
-					{
-						Expression: &runtimev1.Expression_Ident{
-							Ident: "dom",
-						},
-					},
-					{
-						Expression: &runtimev1.Expression_Val{
-							Val: structpb.NewStringValue("instagram.com"),
+			Filter: &runtimev1.Expression{
+				Expression: &runtimev1.Expression_Cond{
+					Cond: &runtimev1.Condition{
+						Op: runtimev1.Operation_OPERATION_EQ,
+						Exprs: []*runtimev1.Expression{
+							{
+								Expression: &runtimev1.Expression_Ident{
+									Ident: "dom",
+								},
+							},
+							{
+								Expression: &runtimev1.Expression_Val{
+									Val: structpb.NewStringValue("instagram.com"),
+								},
+							},
 						},
 					},
 				},

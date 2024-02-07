@@ -309,7 +309,7 @@ message MetricsViewAggregationMeasure {
   string name = 1;
   BuiltinMeasure builtin_measure = 2;
   repeated google.protobuf.Value builtin_measure_args = 3;
-  Condition filter = 4;
+  Expression filter = 4;
 }
 
 message MetricsViewAggregationSort {
