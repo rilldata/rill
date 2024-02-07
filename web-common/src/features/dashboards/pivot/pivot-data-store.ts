@@ -223,7 +223,6 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
    */
   return derived(getPivotConfig(ctx), (config, configSet) => {
     const { rowDimensionNames, colDimensionNames, measureNames } = config;
-    console.log({ config });
 
     if (
       (!rowDimensionNames.length && !measureNames.length) ||
