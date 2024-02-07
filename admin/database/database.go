@@ -321,6 +321,7 @@ type Deployment struct {
 	ID                string           `db:"id"`
 	ProjectID         string           `db:"project_id"`
 	Provisioner       string           `db:"provisioner"`
+	ProvisionID       string           `db:"provision_id"`
 	RuntimeVersion    string           `db:"runtime_version"`
 	Slots             int              `db:"slots"`
 	Branch            string           `db:"branch"`
@@ -337,7 +338,8 @@ type Deployment struct {
 // InsertDeploymentOptions defines options for inserting a new Deployment.
 type InsertDeploymentOptions struct {
 	ProjectID         string
-	Provisioner       string
+	Provisioner       string `validate:"required"`
+	ProvisionID       string
 	RuntimeVersion    string
 	Slots             int
 	Branch            string `validate:"required"`

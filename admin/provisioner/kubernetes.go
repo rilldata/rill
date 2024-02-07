@@ -103,7 +103,7 @@ func NewKubernetes(spec json.RawMessage) (*KubernetesProvisioner, error) {
 }
 
 func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOptions) (*Allocation, error) {
-	// Get resource names
+	// Get Kubernetes resource names
 	names := p.getResourceNames(opts.ProvisionID)
 
 	// Create unique host
@@ -152,13 +152,16 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 
 	}
 
-	// We start by deprovisioning any previous attempt, we do this to achieve idempotency
-	p.Deprovision(ctx, opts.ProvisionID)
+	// We start by deprovisioning any previous attempt, we do this as a simple way to achieve idempotency
+	err := p.Deprovision(ctx, opts.ProvisionID)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create statefulset
 	sts.ObjectMeta.Name = names.StatefulSet
 	p.addCommonLabels(opts.ProvisionID, &sts.ObjectMeta.Labels)
-	_, err := p.clientset.AppsV1().StatefulSets(p.Spec.Namespace).Create(ctx, sts, metav1.CreateOptions{})
+	_, err = p.clientset.AppsV1().StatefulSets(p.Spec.Namespace).Create(ctx, sts, metav1.CreateOptions{})
 	if err != nil {
 		err2 := p.Deprovision(ctx, opts.ProvisionID)
 		return nil, multierr.Combine(err, err2)
@@ -202,7 +205,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 }
 
 func (p *KubernetesProvisioner) Deprovision(ctx context.Context, provisionID string) error {
-	// Get resource names
+	// Get Kubernetes resource names
 	names := p.getResourceNames(provisionID)
 
 	// Common delete options
@@ -235,7 +238,7 @@ func (p *KubernetesProvisioner) Deprovision(ctx context.Context, provisionID str
 }
 
 func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID string) error {
-	// Get resource names
+	// Get Kubernetes resource names
 	names := p.getResourceNames(provisionID)
 
 	// Wait for the statefulset to be ready (with timeout)
@@ -255,11 +258,11 @@ func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID stri
 }
 
 func (p *KubernetesProvisioner) Update(ctx context.Context, provisionID string, newVersion string) error {
-	// Get resource names
+	// Get Kubernetes resource names
 	names := p.getResourceNames(provisionID)
 
-	// Update the statefulset with retry on conflict to resolve conflicting updates by other clients, more info on this best practice:
-	// https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+	// Update the statefulset with retry on conflict to resolve conflicting updates by other clients.
+	// More info on this best practice: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
 	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		// Retrieve the latest version
 		sts, err := p.clientset.AppsV1().StatefulSets(p.Spec.Namespace).Get(ctx, names.StatefulSet, metav1.GetOptions{})
@@ -277,6 +280,11 @@ func (p *KubernetesProvisioner) Update(ctx context.Context, provisionID string, 
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (p *KubernetesProvisioner) CheckCapacity(ctx context.Context) error {
+	// No-op
 	return nil
 }
 

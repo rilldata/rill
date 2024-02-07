@@ -8,6 +8,8 @@ import (
 
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 )
 
 type StaticSpec struct {
@@ -22,11 +24,12 @@ type StaticRuntimeSpec struct {
 }
 
 type StaticProvisioner struct {
-	Spec *StaticSpec
-	db   database.DB
+	Spec   *StaticSpec
+	db     database.DB
+	logger *zap.Logger
 }
 
-func NewStatic(spec json.RawMessage, db database.DB) (*StaticProvisioner, error) {
+func NewStatic(spec json.RawMessage, db database.DB, logger *zap.Logger) (*StaticProvisioner, error) {
 	sps := &StaticSpec{}
 	err := json.Unmarshal(spec, sps)
 	if err != nil {
@@ -34,8 +37,9 @@ func NewStatic(spec json.RawMessage, db database.DB) (*StaticProvisioner, error)
 	}
 
 	return &StaticProvisioner{
-		Spec: sps,
-		db:   db,
+		Spec:   sps,
+		db:     db,
+		logger: logger,
 	}, nil
 }
 
@@ -73,6 +77,44 @@ func (p *StaticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 		MemoryGB:     2 * opts.Slots,
 		StorageBytes: int64(opts.Slots) * 40 * int64(datasize.GB),
 	}, nil
+}
+
+func (p *StaticProvisioner) CheckCapacity(ctx context.Context) error {
+	slotsUsedByRuntime, err := p.db.ResolveRuntimeSlotsUsed(ctx)
+	if err != nil {
+		return err
+	}
+
+	var slotsTotal, slotsUsed int
+	minPctUsed := 1.0
+
+	for _, runtime := range p.Spec.Runtimes {
+		slotsTotal += runtime.Slots
+		for _, status := range slotsUsedByRuntime {
+			if runtime.Host == status.RuntimeHost {
+				slotsUsed += status.SlotsUsed
+				pctUsed := float64(status.SlotsUsed) / float64(runtime.Slots)
+				if pctUsed < minPctUsed {
+					minPctUsed = pctUsed
+				}
+			}
+		}
+	}
+
+	// Log info status
+	p.logger.Info(`slots check: status`, zap.Int("runtimes", len(p.Spec.Runtimes)), zap.Int("slots_total", slotsTotal), zap.Int("slots_used", slotsUsed), zap.Float64("min_pct_used", minPctUsed), observability.ZapCtx(ctx))
+
+	// Check there's at least 20% free slots
+	if float64(slotsUsed)/float64(slotsTotal) >= 0.8 {
+		p.logger.Warn(`slots check: +80% of all slots used`, zap.Int("slots_total", slotsTotal), zap.Int("slots_used", slotsUsed), zap.Float64("min_pct_used", minPctUsed), observability.ZapCtx(ctx))
+	}
+
+	// Check there's at least one runtime with at least 30% free slots
+	if slotsUsed != 0 && minPctUsed >= 0.7 {
+		p.logger.Warn(`slots check: +70% of slots used on every runtime`, zap.Int("slots_total", slotsTotal), zap.Int("slots_used", slotsUsed), zap.Float64("min_pct_used", minPctUsed), observability.ZapCtx(ctx))
+	}
+
+	return nil
 }
 
 func (p *StaticProvisioner) Deprovision(ctx context.Context, ProvisionID string) error {

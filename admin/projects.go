@@ -65,14 +65,16 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Provision prod deployment.
 	// Start using original context again since transaction in txCtx is done.
 	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
-		ProjectID:      proj.ID,
-		Region:         proj.Region,
-		ProdBranch:     proj.ProdBranch,
-		ProdVariables:  proj.ProdVariables,
-		ProdOLAPDriver: proj.ProdOLAPDriver,
-		ProdOLAPDSN:    proj.ProdOLAPDSN,
-		ProdSlots:      proj.ProdSlots,
-		Annotations:    newDeploymentAnnotations(org, proj),
+		ProjectID:          proj.ID,
+		Provisioner:        proj.Region,
+		Annotations:        newDeploymentAnnotations(org, proj),
+		VersionNumber:      s.opts.VersionNumber,
+		ProdBranch:         proj.ProdBranch,
+		ProdVariables:      proj.ProdVariables,
+		ProdOLAPDriver:     proj.ProdOLAPDriver,
+		ProdOLAPDSN:        proj.ProdOLAPDSN,
+		ProdSlots:          proj.ProdSlots,
+		ProdRuntimeVersion: proj.ProdRuntimeVersion,
 	})
 	if err != nil {
 		err2 := s.DB.DeleteProject(ctx, proj.ID)
@@ -245,14 +247,15 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 
 	// Provision new deployment
 	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
-		ProjectID:      proj.ID,
-		Region:         proj.Region,
-		ProdBranch:     proj.ProdBranch,
-		ProdVariables:  proj.ProdVariables,
-		ProdOLAPDriver: proj.ProdOLAPDriver,
-		ProdOLAPDSN:    proj.ProdOLAPDSN,
-		ProdSlots:      proj.ProdSlots,
-		Annotations:    newDeploymentAnnotations(org, proj),
+		ProjectID:          proj.ID,
+		Provisioner:        proj.Region,
+		Annotations:        newDeploymentAnnotations(org, proj),
+		ProdBranch:         proj.ProdBranch,
+		ProdVariables:      proj.ProdVariables,
+		ProdOLAPDriver:     proj.ProdOLAPDriver,
+		ProdOLAPDSN:        proj.ProdOLAPDSN,
+		ProdSlots:          proj.ProdSlots,
+		ProdRuntimeVersion: proj.ProdRuntimeVersion,
 	})
 	if err != nil {
 		return nil, err

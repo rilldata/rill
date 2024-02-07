@@ -58,7 +58,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 	}
 
 	// Create provisioner set
-	provSet, err := provisioner.NewSet(opts.ProvisionerSet, db)
+	provSet, err := provisioner.NewSet(opts.ProvisionerSet, db, logger)
 	if err != nil {
 		return nil, err
 	}

@@ -37,7 +37,9 @@ func New(logger *zap.Logger, adm *admin.Service) *Worker {
 
 func (w *Worker) Run(ctx context.Context) error {
 	group, ctx := errgroup.WithContext(ctx)
-	group.Go(func() error { return w.schedule(ctx, "check_slots", w.checkSlots, 15*time.Minute) })
+	group.Go(func() error {
+		return w.schedule(ctx, "check_provisioner_capacity", w.checkProvisionerCapacity, 15*time.Minute)
+	})
 	group.Go(func() error {
 		return w.schedule(ctx, "delete_expired_tokens", w.deleteExpiredAuthTokens, 6*time.Hour)
 	})
@@ -60,8 +62,8 @@ func (w *Worker) Run(ctx context.Context) error {
 
 func (w *Worker) RunJob(ctx context.Context, name string) error {
 	switch name {
-	case "check_slots":
-		return w.runJob(ctx, name, w.checkSlots)
+	case "check_provisioner_capacity":
+		return w.runJob(ctx, name, w.checkProvisionerCapacity)
 	case "reset_all_deployments":
 		return w.runJob(ctx, name, w.resetAllDeployments)
 	// NOTE: Add new ad-hoc jobs here

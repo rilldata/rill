@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
+	"github.com/rilldata/rill/cli/pkg/update"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/client"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -20,14 +21,16 @@ import (
 )
 
 type createDeploymentOptions struct {
-	ProjectID      string
-	Region         string
-	ProdBranch     string
-	ProdVariables  map[string]string
-	ProdOLAPDriver string
-	ProdOLAPDSN    string
-	ProdSlots      int
-	Annotations    deploymentAnnotations
+	ProjectID          string
+	Provisioner        string
+	Annotations        deploymentAnnotations
+	VersionNumber      string
+	ProdBranch         string
+	ProdVariables      map[string]string
+	ProdOLAPDriver     string
+	ProdOLAPDSN        string
+	ProdSlots          int
+	ProdRuntimeVersion string
 }
 
 func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOptions) (*database.Deployment, error) {
@@ -36,13 +39,43 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		return nil, fmt.Errorf("cannot create project without a branch")
 	}
 
+	// Get specified provisioner
+	p, ok := s.ProvisionerSet[opts.Provisioner]
+	if !ok {
+		return nil, fmt.Errorf("provisioner '%s' is not in the provisioner set", opts.Provisioner)
+	}
+
+	// Resolve runtime version
+	var runtimeVersion string
+	if opts.ProdRuntimeVersion == "latest" {
+		// Resolve latest version from config
+		if opts.VersionNumber != "" {
+			runtimeVersion = opts.VersionNumber
+		} else {
+			// Fallback to fetching it from Github (this will usually only happen during development)
+			latestVersion, err := update.LatestVersion(ctx)
+			if err != nil {
+				return nil, err
+			}
+			runtimeVersion = latestVersion
+		}
+	} else {
+		runtimeVersion = opts.ProdRuntimeVersion
+	}
+
+	// Create provision ID
+	provisionID := strings.ReplaceAll(uuid.New().String(), "-", "")
+
 	// Get a runtime with capacity for the deployment
-	alloc, err := s.Provisioner.Provision(ctx, &provisioner.ProvisionOptions{
-		OLAPDriver: opts.ProdOLAPDriver,
-		Slots:      opts.ProdSlots,
-		Region:     opts.Region,
+	alloc, err := p.Provision(ctx, &provisioner.ProvisionOptions{
+		ProvisionID:    provisionID,
+		RuntimeVersion: runtimeVersion,
+		OLAPDriver:     opts.ProdOLAPDriver,
+		Slots:          opts.ProdSlots,
+		Annotations:    opts.Annotations.toMap(),
 	})
 	if err != nil {
+		s.Logger.Error("provisioner: failed provisioning", zap.String("project_id", opts.ProjectID), zap.String("provisioner", opts.Provisioner), zap.String("provision_id", provisionID), zap.Error(err), observability.ZapCtx(ctx))
 		return nil, err
 	}
 
@@ -91,32 +124,47 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		return nil, err
 	}
 
-	// Open a runtime client
-	rt, err := s.openRuntimeClient(alloc.Host, alloc.Audience)
-	if err != nil {
-		return nil, err
-	}
-	defer rt.Close()
-
 	// Create the deployment
 	depl, err := s.DB.InsertDeployment(ctx, &database.InsertDeploymentOptions{
 		ProjectID:         opts.ProjectID,
+		Provisioner:       opts.Provisioner,
+		ProvisionID:       provisionID,
 		Branch:            opts.ProdBranch,
 		Slots:             opts.ProdSlots,
 		RuntimeHost:       alloc.Host,
 		RuntimeInstanceID: instanceID,
 		RuntimeAudience:   alloc.Audience,
+		RuntimeVersion:    runtimeVersion,
 		Status:            database.DeploymentStatusPending,
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// Wait for the runtime to be ready
+	err = p.AwaitReady(ctx, provisionID)
+	if err != nil {
+		s.Logger.Error("provisioner: failed awaiting runtime to be ready", zap.String("project_id", opts.ProjectID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
+		// Mark deployment error
+		_, err = s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
+		return nil, err
+	}
+
+	// Open a runtime client
+	rt, err := s.openRuntimeClient(alloc.Host, alloc.Audience)
+	if err != nil {
+		err2 := p.Deprovision(ctx, provisionID)
+		err3 := s.DB.DeleteDeployment(ctx, depl.ID)
+		return nil, multierr.Combine(err, err2, err3)
+	}
+	defer rt.Close()
+
 	// Create an access token the deployment can use to authenticate with the admin server.
 	dat, err := s.IssueDeploymentAuthToken(ctx, depl.ID, nil)
 	if err != nil {
-		err2 := s.DB.DeleteDeployment(ctx, depl.ID)
-		return nil, multierr.Combine(err, err2)
+		err2 := p.Deprovision(ctx, provisionID)
+		err3 := s.DB.DeleteDeployment(ctx, depl.ID)
+		return nil, multierr.Combine(err, err2, err3)
 	}
 	adminAuthToken := dat.Token().String()
 
@@ -151,8 +199,9 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		ModelDefaultMaterialize: modelDefaultMaterialize,
 	})
 	if err != nil {
-		err2 := s.DB.DeleteDeployment(ctx, depl.ID)
-		return nil, multierr.Combine(err, err2)
+		err2 := p.Deprovision(ctx, provisionID)
+		err3 := s.DB.DeleteDeployment(ctx, depl.ID)
+		return nil, multierr.Combine(err, err2, err3)
 	}
 
 	// Mark deployment ready
@@ -298,17 +347,28 @@ func (s *Service) teardownDeployment(ctx context.Context, proj *database.Project
 	}
 	defer rt.Close()
 
-	// Delete the deployment
-	err = s.DB.DeleteDeployment(ctx, depl.ID)
-	if err != nil {
-		return err
-	}
-
 	// Delete the instance
 	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
 		InstanceId: depl.RuntimeInstanceID,
 		DropDb:     strings.Contains(proj.ProdOLAPDriver, "duckdb"), // Only drop DB if it's DuckDB
 	})
+	if err != nil {
+		return err
+	}
+
+	// Get provisioner and deprovision, skip if the provisioner is no longer defined in the provisioner set
+	p, ok := s.ProvisionerSet[depl.Provisioner]
+	if ok {
+		err = p.Deprovision(ctx, depl.ProvisionID)
+		if err != nil {
+			return err
+		}
+	} else {
+		s.Logger.Warn("provisioner: deprovisioning skipped, provisioner not found", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
+	}
+
+	// Delete the deployment
+	err = s.DB.DeleteDeployment(ctx, depl.ID)
 	if err != nil {
 		return err
 	}

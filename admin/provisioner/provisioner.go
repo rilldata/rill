@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/admin/database"
+	"go.uber.org/zap"
 )
 
 type Provisioner interface {
@@ -13,6 +14,7 @@ type Provisioner interface {
 	Deprovision(ctx context.Context, provisionID string) error
 	AwaitReady(ctx context.Context, provisionID string) error
 	Update(ctx context.Context, provisionID string, newVersion string) error
+	CheckCapacity(ctx context.Context) error
 }
 
 type ProvisionOptions struct {
@@ -37,7 +39,7 @@ type ProvisionerSpec struct {
 	Spec json.RawMessage `json:"spec"`
 }
 
-func NewSet(set string, db database.DB) (map[string]Provisioner, error) {
+func NewSet(set string, db database.DB, logger *zap.Logger) (map[string]Provisioner, error) {
 	// Parse provisioner set
 	pts := map[string]ProvisionerSpec{}
 	err := json.Unmarshal([]byte(set), &pts)
@@ -50,7 +52,7 @@ func NewSet(set string, db database.DB) (map[string]Provisioner, error) {
 	for k, v := range pts {
 		switch v.Type {
 		case "static":
-			p, err := NewStatic(v.Spec, db)
+			p, err := NewStatic(v.Spec, db, logger)
 			if err != nil {
 				return nil, err
 			}
