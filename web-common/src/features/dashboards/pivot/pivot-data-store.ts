@@ -223,7 +223,6 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
    */
   return derived(getPivotConfig(ctx), (config, configSet) => {
     const { rowDimensionNames, colDimensionNames, measureNames } = config;
-
     if (
       (!rowDimensionNames.length && !measureNames.length) ||
       (colDimensionNames.length && !measureNames.length)
@@ -236,10 +235,13 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
         totalColumns: 0,
       });
     }
+    const measureBody = measureNames.map((m) => ({ name: m }));
+
     const columnDimensionAxesQuery = getAxisForDimensions(
       ctx,
       config,
       colDimensionNames,
+      measureBody,
       config.whereFilter,
     );
 
@@ -269,6 +271,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           ctx,
           config,
           rowDimensionNames.slice(0, 1),
+          measureBody,
           where,
           sortPivotBy,
           timeRange,

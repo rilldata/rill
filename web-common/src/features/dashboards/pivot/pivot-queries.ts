@@ -77,13 +77,13 @@ export function getAxisForDimensions(
   ctx: StateManagers,
   config: PivotDataStoreConfig,
   dimensions: string[],
+  measures: V1MetricsViewAggregationMeasure[],
   whereFilter: V1Expression,
   sortBy: V1MetricsViewAggregationSort[] = [],
   timeRange: TimeRangeString | undefined = undefined,
 ): Readable<PivotAxesData | null> {
   if (!dimensions.length) return readable(null);
 
-  const measures = config.measureNames;
   const { time } = config;
 
   let timeDimensionSortBy: V1MetricsViewAggregationSort[] = [];
@@ -92,7 +92,7 @@ export function getAxisForDimensions(
     sortBy = [
       {
         desc: true,
-        name: measures[0] || dimensions?.[0],
+        name: measures[0]?.name || dimensions?.[0],
       },
     ];
 
@@ -114,8 +114,6 @@ export function getAxisForDimensions(
     } else return { name: d };
   });
 
-  const measureBody = measures.map((m) => ({ name: m }));
-
   return derived(
     dimensionBody.map((dimension) => {
       let sortByForDimension = sortBy;
@@ -126,7 +124,7 @@ export function getAxisForDimensions(
       }
       return createPivotAggregationRowQuery(
         ctx,
-        measureBody,
+        measures,
         [dimension],
         whereFilter,
         sortByForDimension,
