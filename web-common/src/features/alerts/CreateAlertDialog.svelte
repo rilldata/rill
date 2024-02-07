@@ -1,9 +1,5 @@
 <script lang="ts">
-  import { TabPanel, TabPanels } from "@rgossiaux/svelte-headlessui";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
-  import Tab from "@rilldata/web-admin/components/tabs/Tab.svelte";
-  import TabGroup from "@rilldata/web-admin/components/tabs/TabGroup.svelte";
-  import TabList from "@rilldata/web-admin/components/tabs/TabList.svelte";
   import { V1Operation } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
@@ -12,6 +8,7 @@
   import * as yup from "yup";
   import { Button } from "../../components/button";
   import Dialog from "../../components/dialog-v2/Dialog.svelte";
+  import * as Tabs from "../../components/tabs";
   import AlertDialogDataTab from "./data-tab/AlertDialogDataTab.svelte";
 
   export let open: boolean;
@@ -96,6 +93,12 @@
 
     return tabTouched && !tabErrors;
   }
+
+  let selectedTabIndex = 0;
+
+  function handleNextTab() {
+    selectedTabIndex += 1;
+  }
 </script>
 
 <Dialog {open} titleMarginBottomOverride="mb-1">
@@ -103,42 +106,41 @@
   <div class="overflow-auto" slot="body">
     <!-- TODO: match Figma mocks -->
     <!-- TODO: tabs shouldn't be clickable -->
-    <TabGroup>
-      <TabList>
+    <Tabs.Root value={tabs[selectedTabIndex]}>
+      <Tabs.List>
         {#each tabs as tab}
-          <Tab>
+          <Tabs.Trigger value={tab}>
             {tab}
-          </Tab>
+          </Tabs.Trigger>
         {/each}
-      </TabList>
-      <TabPanels let:selectedIndex={selectedTabIndex}>
-        <TabPanel>
-          <AlertDialogDataTab {formState} />
-        </TabPanel>
-        <TabPanel>
-          <AlertDialogCriteriaTab {formState} />
-        </TabPanel>
-        <TabPanel>
-          <AlertDialogDeliveryTab {formState} />
-        </TabPanel>
-        <div class="flex items-center gap-x-2 mt-5">
-          <div class="grow" />
-          <Button on:click={() => dispatch("close")} type="secondary">
-            Cancel
+      </Tabs.List>
+      <Tabs.Content value={tabs[0]}>
+        <AlertDialogDataTab {formState} />
+      </Tabs.Content>
+      <Tabs.Content value={tabs[1]}>
+        <AlertDialogCriteriaTab {formState} />
+      </Tabs.Content>
+      <Tabs.Content value={tabs[2]}>
+        <AlertDialogDeliveryTab {formState} />
+      </Tabs.Content>
+      <div class="flex items-center gap-x-2 mt-5">
+        <div class="grow" />
+        <Button on:click={() => dispatch("close")} type="secondary">
+          Cancel
+        </Button>
+        {#if selectedTabIndex !== null}
+          <Button
+            on:click={selectedTabIndex === 2 ? undefined : handleNextTab}
+            disabled={!isTabValid(selectedTabIndex, $touched, $errors) ||
+              $isSubmitting}
+            form={selectedTabIndex === 2 ? "create-alert-form" : undefined}
+            submitForm={selectedTabIndex === 2}
+            type="primary"
+          >
+            {selectedTabIndex === 2 ? "Create" : "Next"}
           </Button>
-          {#if selectedTabIndex !== null}
-            <Button
-              disabled={!isTabValid(selectedTabIndex, $touched, $errors) ||
-                $isSubmitting}
-              form={selectedTabIndex === 2 ? "create-alert-form" : undefined}
-              submitForm={selectedTabIndex === 2}
-              type="primary"
-            >
-              {selectedTabIndex === 2 ? "Create" : "Next"}
-            </Button>
-          {/if}
-        </div>
-      </TabPanels>
-    </TabGroup>
+        {/if}
+      </div>
+    </Tabs.Root>
   </div>
 </Dialog>
