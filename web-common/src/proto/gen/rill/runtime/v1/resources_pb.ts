@@ -902,11 +902,25 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   dimensions: MetricsViewSpec_DimensionV2[] = [];
 
   /**
+   * List of selected dimensions by defaults
+   *
+   * @generated from field: repeated string default_dimensions = 18;
+   */
+  defaultDimensions: string[] = [];
+
+  /**
    * Measures in the metrics view
    *
    * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.MeasureV2 measures = 7;
    */
   measures: MetricsViewSpec_MeasureV2[] = [];
+
+  /**
+   * List of selected measures by defaults
+   *
+   * @generated from field: repeated string default_measures = 19;
+   */
+  defaultMeasures: string[] = [];
 
   /**
    * Smallest time grain to show in the dashboard
@@ -992,7 +1006,9 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "time_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "dimensions", kind: "message", T: MetricsViewSpec_DimensionV2, repeated: true },
+    { no: 18, name: "default_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "measures", kind: "message", T: MetricsViewSpec_MeasureV2, repeated: true },
+    { no: 19, name: "default_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 9, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },

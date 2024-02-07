@@ -3775,12 +3775,22 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewSpecDimensionV2'
         title: Dimensions in the metrics view
+      defaultDimensions:
+        type: array
+        items:
+          type: string
+        title: List of selected dimensions by defaults
       measures:
         type: array
         items:
           type: object
           $ref: '#/definitions/MetricsViewSpecMeasureV2'
         title: Measures in the metrics view
+      defaultMeasures:
+        type: array
+        items:
+          type: string
+        title: List of selected measures by defaults
       smallestTimeGrain:
         $ref: '#/definitions/v1TimeGrain'
         title: Smallest time grain to show in the dashboard
