@@ -594,9 +594,6 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 func applyFilter(mv *runtimev1.MetricsViewSpec, expr string, filter *runtimev1.Expression, args *[]any, dialect drivers.Dialect) (string, error) {
 	if filter != nil {
-		if filter.GetIdent() != "" || filter.GetVal() != nil {
-			return "", fmt.Errorf("filter on `ident` of `val` is not supported")
-		}
 		condClause, condArgs, err := buildConditionExpression(mv, filter.GetCond(), nil, dialect)
 		if err != nil {
 			return "", err
