@@ -18,6 +18,7 @@ import { dimensionSelectors } from "./dimensions";
 import { measureSelectors } from "./measures";
 import { sortingSelectors } from "./sorting";
 import { timeRangeSelectors } from "./time-range";
+import { pivotSelectors } from "./pivot";
 import type { ReadablesObj, SelectorFnsObj } from "./types";
 
 export type DashboardDataReadables = {
@@ -142,6 +143,11 @@ export const createStateManagerReadables = (
       measureSelectors,
       dashboardDataReadables,
     ),
+
+    /**
+     * Readables related to pivot state
+     */
+    pivot: createReadablesFromSelectors(pivotSelectors, dashboardDataReadables),
   };
 };
 
