@@ -10,6 +10,10 @@ declare namespace svelteHTML {
     // Used for copy action `shift-click-actions.ts`
     "on:shift-click"?: (event: CustomEvent) => void;
     "on:command-click"?: (event: CustomEvent) => void;
+
+    // Used for DragList actions
+    "on:consider"?: (event: CustomEvent) => void;
+    "on:finalize"?: (event: CustomEvent) => void;
   }
 
   interface SVGAttributes {

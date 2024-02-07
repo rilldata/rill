@@ -1,52 +1,39 @@
-import {
-  defaultPrimaryColors,
-  defaultSecondaryColors,
-  LightnessMap,
-} from "./color-config";
+import { generateColorPalette } from "@rilldata/web-common/features/themes/palette-generator";
+import { TailwindColorSpacing } from "./color-config";
 import type { V1Color, V1Theme } from "@rilldata/web-common/runtime-client";
-import Color from "colorjs.io";
+import chroma from "chroma-js";
 
 const ThemeBoundarySelector = ".dashboard-theme-boundary";
 
 export function setTheme(theme: V1Theme) {
   if (theme.spec?.primaryColor)
-    updateColorVars("primary", theme.spec?.primaryColor, defaultPrimaryColors);
+    updateColorVars("primary", theme.spec?.primaryColor);
 
   if (theme.spec?.secondaryColor)
-    updateColorVars(
-      "secondary",
-      theme.spec?.secondaryColor,
-      defaultSecondaryColors,
-    );
+    updateColorVars("secondary", theme.spec?.secondaryColor);
 }
 
 function updateColorVars(
   colorVarKind: "primary" | "secondary" | "muted",
   userThemeColor: V1Color,
-  defaultColorMap: LightnessMap,
 ) {
   const root = document.querySelector(ThemeBoundarySelector) as HTMLElement;
   if (!root) return;
 
-  // get the from the theme primary color
-  const huePrimary = new Color(
-    "srgb",
-    [
-      userThemeColor.red ?? 0,
-      userThemeColor.green ?? 0,
-      userThemeColor.blue ?? 0,
-    ],
+  console.log(userThemeColor);
+  // get the color from the theme primary color
+  const inputColor = chroma.rgb(
+    (userThemeColor.red ?? 0) * 256,
+    (userThemeColor.green ?? 0) * 256,
+    (userThemeColor.blue ?? 0) * 256,
     userThemeColor.alpha ?? 1,
-  ).lch.h;
-
+  );
+  const palette = generateColorPalette(inputColor);
   // Update CSS variables
-  Object.entries(defaultColorMap).forEach(([lightnessNum, colorCssString]) => {
-    const color = new Color(colorCssString);
-    // update the default color with the hue from the theme color
-    color.lch.h = huePrimary;
+  palette.forEach((c, i) => {
     root.style.setProperty(
-      `--color-${colorVarKind}-${lightnessNum}`,
-      color.toString({ format: "lch" }),
+      `--color-${colorVarKind}-${TailwindColorSpacing[i]}`,
+      c.css(),
     );
   });
 }

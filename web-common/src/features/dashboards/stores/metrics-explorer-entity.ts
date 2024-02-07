@@ -1,3 +1,4 @@
+import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type {
   SortDirection,
@@ -151,6 +152,8 @@ export interface MetricsExplorerEntity {
    * is not shown.
    */
   selectedDimensionName?: string;
+
+  pivot: PivotState;
 
   proto?: string;
 }

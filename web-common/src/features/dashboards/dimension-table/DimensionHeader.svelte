@@ -9,7 +9,6 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import SelectAllButton from "./SelectAllButton.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
@@ -19,6 +18,7 @@
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
   import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
+  import SelectAllButton from "./SelectAllButton.svelte";
 
   export let dimensionName: string;
   export let isFetching: boolean;

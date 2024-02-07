@@ -233,7 +233,7 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 		}
 	}
 
-	ttlDuration := time.Hour
+	ttlDuration := runtimeAccessTokenTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
 	}
@@ -350,8 +350,7 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 		}
 	}
 
-	// default here is higher than GetDeploymentCredentials as most embedders probably won't implement refresh and state management
-	ttlDuration := 24 * time.Hour
+	ttlDuration := runtimeAccessTokenTTL
 	if req.TtlSeconds > 0 {
 		ttlDuration = time.Duration(req.TtlSeconds) * time.Second
 	}
