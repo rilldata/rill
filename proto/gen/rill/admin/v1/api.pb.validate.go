@@ -4547,7 +4547,7 @@ func (m *CreateProjectRequest) validate(all bool) error {
 
 	// no validation rules for Public
 
-	// no validation rules for Region
+	// no validation rules for Provisioner
 
 	// no validation rules for ProdOlapDriver
 
@@ -4562,6 +4562,8 @@ func (m *CreateProjectRequest) validate(all bool) error {
 	// no validation rules for GithubUrl
 
 	// no validation rules for Variables
+
+	// no validation rules for ProdVersion
 
 	if len(errors) > 0 {
 		return CreateProjectRequestMultiError(errors)
@@ -5046,8 +5048,8 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for ProdSlots
 	}
 
-	if m.Region != nil {
-		// no validation rules for Region
+	if m.Provisioner != nil {
+		// no validation rules for Provisioner
 	}
 
 	if m.NewName != nil {
@@ -5056,6 +5058,10 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 
 	if m.ProdTtlSeconds != nil {
 		// no validation rules for ProdTtlSeconds
+	}
+
+	if m.ProdVersion != nil {
+		// no validation rules for ProdVersion
 	}
 
 	if len(errors) > 0 {
@@ -18520,7 +18526,7 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for Public
 
-	// no validation rules for Region
+	// no validation rules for Provisioner
 
 	// no validation rules for GithubUrl
 
@@ -18541,6 +18547,8 @@ func (m *Project) validate(all bool) error {
 	// no validation rules for ProdTtlSeconds
 
 	// no validation rules for Annotations
+
+	// no validation rules for ProdVersion
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

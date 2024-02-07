@@ -9,7 +9,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name, description, prodBranch, path, region string
+	var name, description, prodVersion, prodBranch, path, provisioner string
 	var public bool
 	var slots int
 	var prodTTL int64
@@ -55,13 +55,17 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				prodSlots := int64(slots)
 				req.ProdSlots = &prodSlots
 			}
-			if cmd.Flags().Changed("region") {
+			if cmd.Flags().Changed("provisioner") {
 				promptFlagValues = false
-				req.Region = &region
+				req.Provisioner = &provisioner
 			}
 			if cmd.Flags().Changed("description") {
 				promptFlagValues = false
 				req.Description = &description
+			}
+			if cmd.Flags().Changed("prod-version") {
+				promptFlagValues = false
+				req.ProdVersion = &prodVersion
 			}
 			if cmd.Flags().Changed("prod-branch") {
 				promptFlagValues = false
@@ -118,9 +122,10 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	editCmd.Flags().StringVar(&prodBranch, "prod-branch", "", "Production branch name")
 	editCmd.Flags().BoolVar(&public, "public", false, "Make dashboards publicly accessible")
 	editCmd.Flags().StringVar(&path, "path", ".", "Project directory")
+	editCmd.Flags().StringVar(&provisioner, "provisioner", "", "Project provisioner (default: current provisioner)")
 	editCmd.Flags().IntVar(&slots, "prod-slots", 0, "Slots to allocate for production deployments (default: current slots)")
 	editCmd.Flags().Int64Var(&prodTTL, "prod-ttl-seconds", 0, "Prod deployment TTL in seconds")
-	editCmd.Flags().StringVar(&region, "region", "", "Deployment region (default: current region)")
+	editCmd.Flags().StringVar(&prodVersion, "prod-version", "", "Rill version (default: current version)")
 	if !cfg.IsDev() {
 		if err := editCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)

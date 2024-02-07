@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-version"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/cli/pkg/update"
@@ -21,16 +22,16 @@ import (
 )
 
 type createDeploymentOptions struct {
-	ProjectID          string
-	Provisioner        string
-	Annotations        deploymentAnnotations
-	VersionNumber      string
-	ProdBranch         string
-	ProdVariables      map[string]string
-	ProdOLAPDriver     string
-	ProdOLAPDSN        string
-	ProdSlots          int
-	ProdRuntimeVersion string
+	ProjectID      string
+	Provisioner    string
+	Annotations    deploymentAnnotations
+	VersionNumber  string
+	ProdBranch     string
+	ProdVariables  map[string]string
+	ProdOLAPDriver string
+	ProdOLAPDSN    string
+	ProdSlots      int
+	ProdVersion    string
 }
 
 func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOptions) (*database.Deployment, error) {
@@ -39,7 +40,12 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		return nil, fmt.Errorf("cannot create project without a branch")
 	}
 
-	// Get specified provisioner
+	// Get default if no provisioner is specified
+	if opts.Provisioner == "" {
+		opts.Provisioner = s.opts.DefaultProvisioner
+	}
+
+	// Get provisioner from the set
 	p, ok := s.ProvisionerSet[opts.Provisioner]
 	if !ok {
 		return nil, fmt.Errorf("provisioner '%s' is not in the provisioner set", opts.Provisioner)
@@ -47,7 +53,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 
 	// Resolve runtime version
 	var runtimeVersion string
-	if opts.ProdRuntimeVersion == "latest" {
+	if opts.ProdVersion == "latest" {
 		// Resolve latest version from config
 		if opts.VersionNumber != "" {
 			runtimeVersion = opts.VersionNumber
@@ -60,7 +66,12 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 			runtimeVersion = latestVersion
 		}
 	} else {
-		runtimeVersion = opts.ProdRuntimeVersion
+		// Verify provided semVer is valid
+		_, err := version.NewVersion(opts.ProdVersion)
+		if err != nil {
+			return nil, err
+		}
+		runtimeVersion = opts.ProdVersion
 	}
 
 	// Create provision ID
@@ -319,12 +330,13 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			Name:                 proj.Name,
 			Description:          proj.Description,
 			Public:               proj.Public,
+			Provisioner:          proj.Provisioner,
 			GithubURL:            proj.GithubURL,
 			GithubInstallationID: proj.GithubInstallationID,
+			ProdVersion:          proj.ProdVersion,
 			ProdBranch:           proj.ProdBranch,
 			ProdVariables:        proj.ProdVariables,
 			ProdSlots:            proj.ProdSlots,
-			Region:               proj.Region,
 			ProdTTLSeconds:       proj.ProdTTLSeconds,
 			ProdDeploymentID:     nil,
 			Annotations:          proj.Annotations,

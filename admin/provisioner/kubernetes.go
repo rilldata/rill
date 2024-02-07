@@ -298,14 +298,6 @@ func (p *KubernetesProvisioner) getResourceNames(provisionID string) ResourceNam
 }
 
 func (p *KubernetesProvisioner) addCommonLabels(provisionID string, resourceLabels map[string]string) {
-	// Define common labels we attach to all the Kubernetes resources
-	labels := map[string]string{
-		"app.kubernetes.io/instance":   provisionID,
-		"app.kubernetes.io/managed-by": "rill-cloud-admin",
-	}
-
-	// Add all common labels to the resource labels
-	for k, v := range labels {
-		resourceLabels[k] = v
-	}
+	resourceLabels["app.kubernetes.io/instance"] = provisionID
+	resourceLabels["app.kubernetes.io/managed-by"] = "rill-cloud-admin"
 }

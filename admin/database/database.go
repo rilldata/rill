@@ -254,10 +254,11 @@ type Project struct {
 	Name                 string
 	Description          string
 	Public               bool
-	Region               string
+	Provisioner          string
 	GithubURL            *string           `db:"github_url"`
 	GithubInstallationID *int64            `db:"github_installation_id"`
 	Subpath              string            `db:"subpath"`
+	ProdVersion          string            `db:"prod_version"`
 	ProdBranch           string            `db:"prod_branch"`
 	ProdVariables        map[string]string `db:"prod_variables"`
 	ProdOLAPDriver       string            `db:"prod_olap_driver"`
@@ -265,7 +266,6 @@ type Project struct {
 	ProdSlots            int               `db:"prod_slots"`
 	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
 	ProdDeploymentID     *string           `db:"prod_deployment_id"`
-	ProdRuntimeVersion   string            `db:"prod_runtime_version"`
 	Annotations          map[string]string `db:"annotations"`
 	CreatedOn            time.Time         `db:"created_on"`
 	UpdatedOn            time.Time         `db:"updated_on"`
@@ -277,10 +277,11 @@ type InsertProjectOptions struct {
 	Name                 string `validate:"slug"`
 	Description          string
 	Public               bool
-	Region               string
+	Provisioner          string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	Subpath              string
+	ProdVersion          string
 	ProdBranch           string
 	ProdVariables        map[string]string
 	ProdOLAPDriver       string
@@ -294,14 +295,15 @@ type UpdateProjectOptions struct {
 	Name                 string `validate:"slug"`
 	Description          string
 	Public               bool
+	Provisioner          string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	ProdVersion          string
 	ProdBranch           string
 	ProdVariables        map[string]string
 	ProdDeploymentID     *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
-	Region               string
 	Annotations          map[string]string
 }
 

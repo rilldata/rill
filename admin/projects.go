@@ -65,16 +65,16 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	// Provision prod deployment.
 	// Start using original context again since transaction in txCtx is done.
 	depl, err := s.createDeployment(ctx, &createDeploymentOptions{
-		ProjectID:          proj.ID,
-		Provisioner:        proj.Region,
-		Annotations:        newDeploymentAnnotations(org, proj),
-		VersionNumber:      s.opts.VersionNumber,
-		ProdBranch:         proj.ProdBranch,
-		ProdVariables:      proj.ProdVariables,
-		ProdOLAPDriver:     proj.ProdOLAPDriver,
-		ProdOLAPDSN:        proj.ProdOLAPDSN,
-		ProdSlots:          proj.ProdSlots,
-		ProdRuntimeVersion: proj.ProdRuntimeVersion,
+		ProjectID:      proj.ID,
+		Provisioner:    proj.Provisioner,
+		Annotations:    newDeploymentAnnotations(org, proj),
+		VersionNumber:  s.opts.VersionNumber,
+		ProdBranch:     proj.ProdBranch,
+		ProdVariables:  proj.ProdVariables,
+		ProdOLAPDriver: proj.ProdOLAPDriver,
+		ProdOLAPDSN:    proj.ProdOLAPDSN,
+		ProdSlots:      proj.ProdSlots,
+		ProdVersion:    proj.ProdVersion,
 	})
 	if err != nil {
 		err2 := s.DB.DeleteProject(ctx, proj.ID)
@@ -88,10 +88,11 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Public:               proj.Public,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		Provisioner:          proj.Provisioner,
+		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        proj.ProdVariables,
 		ProdSlots:            proj.ProdSlots,
-		Region:               proj.Region,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
 		ProdDeploymentID:     &depl.ID,
 		Annotations:          proj.Annotations,
@@ -133,7 +134,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 // UpdateProject updates a project and any impacted deployments.
 // It runs a reconcile if deployment parameters (like branch or variables) have been changed and reconcileDeployment is set.
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
-	requiresReset := (proj.Region != opts.Region) || (proj.ProdSlots != opts.ProdSlots)
+	requiresReset := (proj.Provisioner != opts.Provisioner) || (proj.ProdSlots != opts.ProdSlots) || (proj.ProdVersion != opts.ProdVersion)
 
 	impactsDeployments := (requiresReset ||
 		(proj.Name != opts.Name) ||
@@ -247,15 +248,15 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 
 	// Provision new deployment
 	newDepl, err := s.createDeployment(ctx, &createDeploymentOptions{
-		ProjectID:          proj.ID,
-		Provisioner:        proj.Region,
-		Annotations:        newDeploymentAnnotations(org, proj),
-		ProdBranch:         proj.ProdBranch,
-		ProdVariables:      proj.ProdVariables,
-		ProdOLAPDriver:     proj.ProdOLAPDriver,
-		ProdOLAPDSN:        proj.ProdOLAPDSN,
-		ProdSlots:          proj.ProdSlots,
-		ProdRuntimeVersion: proj.ProdRuntimeVersion,
+		ProjectID:      proj.ID,
+		Provisioner:    proj.Provisioner,
+		Annotations:    newDeploymentAnnotations(org, proj),
+		ProdVersion:    proj.ProdVersion,
+		ProdBranch:     proj.ProdBranch,
+		ProdVariables:  proj.ProdVariables,
+		ProdOLAPDriver: proj.ProdOLAPDriver,
+		ProdOLAPDSN:    proj.ProdOLAPDSN,
+		ProdSlots:      proj.ProdSlots,
 	})
 	if err != nil {
 		return nil, err
@@ -266,14 +267,15 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		Provisioner:          proj.Provisioner,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     &newDepl.ID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
-		Region:               proj.Region,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {

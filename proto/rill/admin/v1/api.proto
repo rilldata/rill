@@ -374,7 +374,7 @@ service AdminService {
       body: "*"
     };
   }
-  
+
   // RemoveBookmark removes the bookmark for the given user for the given project
   rpc RemoveBookmark(RemoveBookmarkRequest) returns (RemoveBookmarkResponse) {
     option (google.api.http) = {delete: "/v1/users/bookmarks/{bookmark_id}"};
@@ -640,7 +640,7 @@ message CreateProjectRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
   bool public = 4;
-  string region = 5;
+  string provisioner = 5;
   string prod_olap_driver = 6;
   string prod_olap_dsn = 7;
   int64 prod_slots = 8;
@@ -648,6 +648,7 @@ message CreateProjectRequest {
   string prod_branch = 9;
   string github_url = 10;
   map<string, string> variables = 11;
+  string prod_version = 13;
 }
 
 message CreateProjectResponse {
@@ -669,9 +670,10 @@ message UpdateProjectRequest {
   optional string prod_branch = 5;
   optional string github_url = 6;
   optional int64 prod_slots = 7;
-  optional string region = 8;
+  optional string provisioner = 8;
   optional string new_name = 9;
   optional int64 prod_ttl_seconds = 10;
+  optional string prod_version = 11;
 }
 
 message UpdateProjectResponse {
@@ -1112,7 +1114,7 @@ message DeleteReportRequest {
 message DeleteReportResponse {
 }
 
-message TriggerReportRequest { 
+message TriggerReportRequest {
   string organization = 1;
   string project = 2;
   string name = 3;
@@ -1188,7 +1190,7 @@ message Project {
   string org_name = 4;
   string description = 5;
   bool public = 6;
-  string region = 7;
+  string provisioner = 7;
   string github_url = 8;
   string subpath = 17;
   string prod_branch = 9;
@@ -1199,6 +1201,7 @@ message Project {
   string frontend_url = 16;
   int64 prod_ttl_seconds = 18;
   map<string, string> annotations = 20;
+  string prod_version = 21;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }
