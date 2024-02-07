@@ -136,6 +136,11 @@ export interface TimeRange {
   end: Date;
 }
 
+export interface TimeRangeString {
+  start: string | undefined;
+  end: string | undefined;
+}
+
 export interface TimeRangeOption extends TimeRange {
   label: string;
 }

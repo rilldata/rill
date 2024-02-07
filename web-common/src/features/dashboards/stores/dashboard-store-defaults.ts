@@ -143,6 +143,15 @@ export function getDefaultMetricsExplorerEntity(
     dimensionSearchText: "",
     temporaryFilterName: null,
     pinIndex: -1,
+    pivot: {
+      active: false,
+      rows: [],
+      columns: [],
+      rowJoinType: "nest",
+      expanded: {},
+      sorting: [],
+      columnPage: 1,
+    },
     contextColumnWidths: { ...contextColWidthDefaults },
   };
   // set time range related stuff

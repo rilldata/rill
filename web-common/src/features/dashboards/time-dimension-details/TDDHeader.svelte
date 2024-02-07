@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Switch } from "@rilldata/web-common/components/button";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import Column from "@rilldata/web-common/components/icons/Column.svelte";
   import Row from "@rilldata/web-common/components/icons/Row.svelte";
@@ -13,6 +14,7 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import SelectAllButton from "@rilldata/web-common/features/dashboards/dimension-table/SelectAllButton.svelte";
+  import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
@@ -104,6 +106,27 @@
   function switchMeasure(event) {
     cancelDashboardQueries(queryClient, metricViewName);
     metricsExplorerStore.setExpandedMeasureName(metricViewName, event.detail);
+  }
+
+  let showReplacePivotModal = false;
+  function startPivotForTDD() {
+    const pivot = $dashboardStore?.pivot;
+
+    if (pivot.rows.length || pivot.columns.length) {
+      showReplacePivotModal = true;
+    } else {
+      createPivot();
+    }
+  }
+  function createPivot() {
+    showReplacePivotModal = false;
+    const timeDimension = $metricsView?.data?.timeDimension;
+    if (!timeDimension || !expandedMeasureName) return;
+    const rowDimensions = dimensionName ? [dimensionName] : [];
+    metricsExplorerStore.createPivot(metricViewName, rowDimensions, [
+      timeDimension,
+      expandedMeasureName,
+    ]);
   }
 </script>
 
@@ -202,6 +225,24 @@
         {metricViewName}
         includeScheduledReport={$featureFlags.adminServer}
       />
+
+      <Button
+        compact
+        type="text"
+        on:click={() => {
+          startPivotForTDD();
+        }}
+      >
+        Start Pivot
+      </Button>
     </div>
   {/if}
 </div>
+
+<ReplacePivotDialog
+  open={showReplacePivotModal}
+  on:close={() => {
+    showReplacePivotModal = false;
+  }}
+  on:replace={() => createPivot()}
+/>

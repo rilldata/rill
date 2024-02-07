@@ -22,6 +22,10 @@ import (
 
 const prodDeplTTL = 14 * 24 * time.Hour
 
+// runtimeAccessTokenTTL is the validity duration of JWTs issued for runtime access to users (not used for internal communication between the admin and runtime).
+// This TTL is also used for JWTs issued for embedding, and since most embedders probably won't implement refresh and state management, it can't be set to a very low value.
+const runtimeAccessTokenTTL = 24 * time.Hour
+
 func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.OrganizationName),
@@ -141,7 +145,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: depl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
-		TTL:         time.Hour,
+		TTL:         runtimeAccessTokenTTL,
 		InstancePermissions: map[string][]runtimeauth.Permission{
 			depl.RuntimeInstanceID: {
 				// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
