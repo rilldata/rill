@@ -117,7 +117,7 @@ func (p *StaticProvisioner) CheckCapacity(ctx context.Context) error {
 	return nil
 }
 
-func (p *StaticProvisioner) Deprovision(ctx context.Context, ProvisionID string) error {
+func (p *StaticProvisioner) Deprovision(ctx context.Context, provisionID string) error {
 	// No-op
 	return nil
 }
@@ -127,7 +127,7 @@ func (p *StaticProvisioner) AwaitReady(ctx context.Context, provisionID string) 
 	return nil
 }
 
-func (p *StaticProvisioner) Update(ctx context.Context, provisionID string, newVersion string) error {
+func (p *StaticProvisioner) Update(ctx context.Context, provisionID, newVersion string) error {
 	// No-op
 	return nil
 }

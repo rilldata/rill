@@ -149,7 +149,6 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 		if err != nil {
 			return nil, fmt.Errorf("kubernetes provisioner decode resource error: %w", err)
 		}
-
 	}
 
 	// We start by deprovisioning any previous attempt, we do this as a simple way to achieve idempotency
@@ -160,7 +159,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 
 	// Create statefulset
 	sts.ObjectMeta.Name = names.StatefulSet
-	p.addCommonLabels(opts.ProvisionID, &sts.ObjectMeta.Labels)
+	p.addCommonLabels(opts.ProvisionID, sts.ObjectMeta.Labels)
 	_, err = p.clientset.AppsV1().StatefulSets(p.Spec.Namespace).Create(ctx, sts, metav1.CreateOptions{})
 	if err != nil {
 		err2 := p.Deprovision(ctx, opts.ProvisionID)
@@ -169,7 +168,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 
 	// Create service
 	svc.ObjectMeta.Name = names.Service
-	p.addCommonLabels(opts.ProvisionID, &svc.ObjectMeta.Labels)
+	p.addCommonLabels(opts.ProvisionID, svc.ObjectMeta.Labels)
 	_, err = p.clientset.CoreV1().Services(p.Spec.Namespace).Create(ctx, svc, metav1.CreateOptions{})
 	if err != nil {
 		err2 := p.Deprovision(ctx, opts.ProvisionID)
@@ -178,7 +177,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 
 	// Create HTTP ingress
 	httpIng.ObjectMeta.Name = names.HTTPIngress
-	p.addCommonLabels(opts.ProvisionID, &httpIng.ObjectMeta.Labels)
+	p.addCommonLabels(opts.ProvisionID, httpIng.ObjectMeta.Labels)
 	_, err = p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Create(ctx, httpIng, metav1.CreateOptions{})
 	if err != nil {
 		err2 := p.Deprovision(ctx, opts.ProvisionID)
@@ -187,7 +186,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 
 	// Create GRPC ingress
 	grpcIng.ObjectMeta.Name = names.GRPCIngress
-	p.addCommonLabels(opts.ProvisionID, &grpcIng.ObjectMeta.Labels)
+	p.addCommonLabels(opts.ProvisionID, grpcIng.ObjectMeta.Labels)
 	_, err = p.clientset.NetworkingV1().Ingresses(p.Spec.Namespace).Create(ctx, grpcIng, metav1.CreateOptions{})
 	if err != nil {
 		err2 := p.Deprovision(ctx, opts.ProvisionID)
@@ -227,14 +226,15 @@ func (p *KubernetesProvisioner) Deprovision(ctx context.Context, provisionID str
 	err4 := p.clientset.AppsV1().StatefulSets(p.Spec.Namespace).Delete(ctx, names.StatefulSet, delOptions)
 
 	// We ignore not found errors for idempotency
-	for _, err := range []error{err1, err2, err3, err4} {
-		if k8serrs.IsNotFound(err) {
-			err = nil
+	errs := []error{err1, err2, err3, err4}
+	for i := 0; i < len(errs); i++ {
+		if k8serrs.IsNotFound(errs[i]) {
+			errs[i] = nil
 		}
 	}
 
 	// This returns 'nil' if all errors are 'nil'
-	return multierr.Combine(err1, err2, err3, err4)
+	return multierr.Combine(errs...)
 }
 
 func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID string) error {
@@ -257,7 +257,7 @@ func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID stri
 	return nil
 }
 
-func (p *KubernetesProvisioner) Update(ctx context.Context, provisionID string, newVersion string) error {
+func (p *KubernetesProvisioner) Update(ctx context.Context, provisionID, newVersion string) error {
 	// Get Kubernetes resource names
 	names := p.getResourceNames(provisionID)
 
@@ -297,7 +297,7 @@ func (p *KubernetesProvisioner) getResourceNames(provisionID string) ResourceNam
 	}
 }
 
-func (p *KubernetesProvisioner) addCommonLabels(provisionID string, resourceLabels *map[string]string) {
+func (p *KubernetesProvisioner) addCommonLabels(provisionID string, resourceLabels map[string]string) {
 	// Define common labels we attach to all the Kubernetes resources
 	labels := map[string]string{
 		"app.kubernetes.io/instance":   provisionID,
@@ -305,8 +305,7 @@ func (p *KubernetesProvisioner) addCommonLabels(provisionID string, resourceLabe
 	}
 
 	// Add all common labels to the resource labels
-	rl := *resourceLabels
 	for k, v := range labels {
-		rl[k] = v
+		resourceLabels[k] = v
 	}
 }
