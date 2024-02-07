@@ -307,14 +307,11 @@ const TailwindColorPresets: Record<string, string[]> = {
 };
 
 // Usable preset converted from the above generated one
-export const TailwindColorPresetsConverted: Color[][] = [];
-for (const colorName in TailwindColorPresets) {
-  const colors: Color[] = [];
-  for (const shade of TailwindColorPresets[colorName]) {
-    colors.push(chroma(shade));
-  }
-  TailwindColorPresetsConverted.push(colors);
-}
+export const TailwindColorPresetsConverted: Color[][] = Object.keys(
+  TailwindColorPresets,
+).map((colorName) =>
+  TailwindColorPresets[colorName].map((shade) => chroma(shade)),
+);
 
 /**
  * This type represents a color palette, where the keys are
