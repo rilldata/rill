@@ -67,10 +67,12 @@
   /**
    * Because this form's fields are spread over multiple tabs, we implement our own `isValid` logic for each tab.
    * A tab is valid (i.e. it's okay to proceed to the next tab) if:
-   * 1) The tab's required fields have been touched
+   * 1) The tab's required fields are filled out
    * 2) The tab's fields don't have errors.
    */
-  function isTabValid(
+  $: isTabValid = $form && checkIsTabValid(selectedTabIndex, $errors);
+
+  function checkIsTabValid(
     tabIndex: number,
     errors: Record<string, string>,
   ): boolean {
@@ -140,7 +142,7 @@
         </Button>
         <Button
           on:click={selectedTabIndex === 2 ? undefined : handleNextTab}
-          disabled={!isTabValid(selectedTabIndex, $errors) || $isSubmitting}
+          disabled={!isTabValid || $isSubmitting}
           form={selectedTabIndex === 2 ? "create-alert-form" : undefined}
           submitForm={selectedTabIndex === 2}
           type="primary"
