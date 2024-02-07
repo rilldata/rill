@@ -18,6 +18,16 @@ export const visibleMeasures = ({
   return measures === undefined ? [] : measures;
 };
 
+export const measureLabel = ({
+  metricsSpecQueryResult,
+}: DashboardDataSources): ((m: string) => string) => {
+  return (measureName) => {
+    const measure = metricsSpecQueryResult.data?.measures?.find(
+      (d) => d.name === measureName,
+    );
+    return measure?.label ?? measureName;
+  };
+};
 export const isMeasureValidPercentOfTotal = ({
   metricsSpecQueryResult,
 }: DashboardDataSources): ((measureName: string) => boolean) => {
@@ -38,7 +48,10 @@ export const measureSelectors = {
    * Gets all visible measures in the dashboard.
    */
   visibleMeasures,
-
+  /**
+   * Get label for a measure by name
+   */
+  measureLabel,
   /**
    * Checks if the provided measure is a valid percent of total
    */

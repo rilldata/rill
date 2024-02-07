@@ -47,7 +47,7 @@ export const getDimensionDisplayName = (
 ): ((name: string) => string) => {
   return (name: string) => {
     const dim = getDimensionByName(dashData)(name);
-    return (dim?.label?.length ? dim?.label : dim?.name) ?? "";
+    return (dim?.label?.length ? dim?.label : dim?.name) ?? name;
   };
 };
 
@@ -58,6 +58,12 @@ export const getDimensionDescription = (
     const dim = getDimensionByName(dashData)(name);
     return dim?.description || "";
   };
+};
+
+export const comparisonDimension = (dashData: DashboardDataSources) => {
+  const dimName = dashData.dashboard.selectedComparisonDimension;
+  if (!dimName) return undefined;
+  return getDimensionByName(dashData)(dimName);
 };
 
 export const dimensionSelectors = {
@@ -86,6 +92,12 @@ export const dimensionSelectors = {
    * given its "key" name. Returns an empty string if the dimension has no description.
    */
   getDimensionDescription,
+
+  /**
+   * Gets the dimension that is currently being compared.
+   * Returns undefined otherwise.
+   */
+  comparisonDimension,
 
   /**
    * Gets the name of the dimension that is currently selected in the dimension table.
