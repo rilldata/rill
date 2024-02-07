@@ -56,11 +56,11 @@
     }),
     onSubmit: async (values) => {
       console.log("submitting alerts form with these values: ", values);
-      dispatch("close");
+      // dispatch("close");
     },
   });
 
-  const { form, isSubmitting, errors } = formState;
+  const { form, isSubmitting, errors, handleSubmit } = formState;
 
   const tabs = ["Data", "Criteria", "Delivery"];
 
@@ -70,26 +70,44 @@
    * 1) The tab's required fields are filled out
    * 2) The tab's fields don't have errors.
    */
-  $: isTabValid = $form && checkIsTabValid(selectedTabIndex, $errors);
+  $: isTabValid = checkIsTabValid(selectedTabIndex, $form, $errors);
 
   function checkIsTabValid(
     tabIndex: number,
+    form: Record<string, any>,
     errors: Record<string, string>,
   ): boolean {
     let hasRequiredFields: boolean;
     let hasErrors: boolean;
 
     if (tabIndex === 0) {
-      hasRequiredFields = $form.name !== "" && $form.measure !== "";
+      hasRequiredFields = form.name !== "" && form.measure !== "";
       hasErrors = !!errors.name && !!errors.measure;
     } else if (tabIndex === 1) {
-      // TODO
-      hasRequiredFields = false;
-      hasErrors = true;
+      hasRequiredFields = true;
+      form.criteria.forEach((criteria) => {
+        if (
+          criteria.field === "" ||
+          criteria.operation === "" ||
+          criteria.value === ""
+        ) {
+          hasRequiredFields = false;
+        }
+      });
+      hasErrors = false;
+      (errors.criteria as unknown as any[]).forEach((criteriaError) => {
+        if (
+          criteriaError.field ||
+          criteriaError.operation ||
+          criteriaError.value
+        ) {
+          hasErrors = true;
+        }
+      });
     } else if (tabIndex === 2) {
-      // TODO
-      hasRequiredFields = false;
-      hasErrors = true;
+      // TODO: do better for >1 recipients
+      hasRequiredFields = form.snooze !== "" && form.recipients[0].email !== "";
+      hasErrors = !!errors.snooze || !!errors.recipients[0].email;
     } else {
       throw new Error(`Unexpected tabIndex: ${tabIndex}`);
     }
@@ -114,7 +132,12 @@
 
 <Dialog {open} titleMarginBottomOverride="mb-1" widthOverride="600px">
   <svelte:fragment slot="title">Create alert</svelte:fragment>
-  <div class="overflow-auto" slot="body">
+  <form
+    id="create-alert-form"
+    on:submit|preventDefault={handleSubmit}
+    class="overflow-auto"
+    slot="body"
+  >
     <DialogTabs.Root value={tabs[selectedTabIndex]}>
       <DialogTabs.List>
         {#each tabs as tab, i}
@@ -134,22 +157,30 @@
       </Tabs.Content>
       <div class="flex items-center gap-x-2 mt-5">
         <div class="grow" />
-        <Button
-          on:click={selectedTabIndex === 0 ? handleCancel : handleBack}
-          type="secondary"
-        >
-          {selectedTabIndex === 0 ? "Cancel" : "Back"}
-        </Button>
-        <Button
-          on:click={selectedTabIndex === 2 ? undefined : handleNextTab}
-          disabled={!isTabValid || $isSubmitting}
-          form={selectedTabIndex === 2 ? "create-alert-form" : undefined}
-          submitForm={selectedTabIndex === 2}
-          type="primary"
-        >
-          {selectedTabIndex === 2 ? "Create" : "Next"}
-        </Button>
+        {#if selectedTabIndex === 0}
+          <Button on:click={handleCancel} type="secondary">Cancel</Button>
+        {:else}
+          <Button on:click={handleBack} type="secondary">Back</Button>
+        {/if}
+        {#if selectedTabIndex !== 2}
+          <Button
+            type="primary"
+            disabled={!isTabValid}
+            on:click={handleNextTab}
+          >
+            Next
+          </Button>
+        {:else}
+          <Button
+            type="primary"
+            disabled={!isTabValid || $isSubmitting}
+            form="create-alert-form"
+            submitForm
+          >
+            Create
+          </Button>
+        {/if}
       </div>
     </DialogTabs.Root>
-  </div>
+  </form>
 </Dialog>
