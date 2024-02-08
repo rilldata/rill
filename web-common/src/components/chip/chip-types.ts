@@ -31,11 +31,30 @@ export const excludeChipColors = {
 
 // TODO: how does these colors fit into the new theme?
 export const measureChipColors = {
-  bgBaseClass: "bg-indigo-50 dark:bg-indigo-600",
-  bgHoverClass: "hover:bg-indigo-100 hover:dark:bg-indigo-800",
-  textClass: "text-indigo-800",
-  bgActiveClass: "bg-indigo-100 dark:bg-indigo-600",
+  bgBaseClass: "bg-secondary-50 dark:bg-secondary-600",
+  bgHoverClass: "hover:bg-secondary-100 hover:dark:bg-secondary-800",
+  textClass: "text-secondary-800",
+  bgActiveClass: "bg-secondary-100 dark:bg-secondary-600",
   outlineClass:
-    "outline outline-1 outline-indigo-200 dark:outline-indigo-500 hover:outline-indigo-200",
-  outlineActiveClass: "!outline-indigo-500 dark:outline-indigo-500",
+    "outline outline-1 outline-secondary-200 dark:outline-secondary-500 hover:outline-secondary-200",
+  outlineActiveClass: "!outline-secondary-500 dark:outline-secondary-500",
+};
+
+export const timeChipColors = {
+  bgBaseClass: "bg-gray-50 dark:bg-gray-700",
+  bgHoverClass: "hover:bg-gray-100 hover:dark:bg-gray-600",
+  textClass: "text-gray-600",
+  bgActiveClass: "bg-gray-100 dark:bg-gray-600",
+  outlineClass: "",
+  outlineActiveClass: "",
+};
+
+export const specialChipColors = {
+  bgBaseClass: "bg-purple-50 dark:bg-purple-600",
+  bgHoverClass: "hover:bg-purple-100 hover:dark:bg-purple-800",
+  textClass: "text-purple-800",
+  bgActiveClass: "bg-purple-100 dark:bg-purple-600",
+  outlineClass:
+    "outline outline-1 outline-purple-100 dark:outline-purple-500 hover:outline-purple-200",
+  outlineActiveClass: "!outline-purple-500 dark:outline-purple-500",
 };

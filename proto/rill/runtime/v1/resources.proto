@@ -185,8 +185,12 @@ message MetricsViewSpec {
   string time_dimension = 5;
   // Dimensions in the metrics view
   repeated DimensionV2 dimensions = 6;
+  // List of selected dimensions by defaults
+  repeated string default_dimensions = 18;
   // Measures in the metrics view
   repeated MeasureV2 measures = 7;
+  // List of selected measures by defaults
+  repeated string default_measures = 19;
   // Smallest time grain to show in the dashboard
   TimeGrain smallest_time_grain = 8;
   // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
