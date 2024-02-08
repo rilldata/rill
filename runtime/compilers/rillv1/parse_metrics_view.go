@@ -41,7 +41,8 @@ type MetricsViewYAML struct {
 		Ignore      bool `yaml:"ignore"`
 		Unnest      bool
 	}
-	Measures []*struct {
+	DefaultDimensions []string `yaml:"default_dimensions"`
+	Measures          []*struct {
 		Name                string
 		Label               string
 		Expression          string
@@ -51,7 +52,8 @@ type MetricsViewYAML struct {
 		Ignore              bool   `yaml:"ignore"`
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
-	Security *struct {
+	DefaultMeasures []string `yaml:"default_measures"`
+	Security        *struct {
 		Access    string `yaml:"access"`
 		RowFilter string `yaml:"row_filter"`
 		Include   []*struct {
@@ -160,6 +162,11 @@ var comparisonModesMap = map[string]runtimev1.MetricsViewSpec_ComparisonMode{
 }
 var validComparisonModes = []string{"none", "time", "dimension"}
 
+const (
+	nameIsMeasure   uint8 = 1
+	nameIsDimension uint8 = 2
+)
+
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	// Parse YAML
@@ -214,7 +221,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		}
 	}
 
-	names := make(map[string]bool)
+	names := make(map[string]uint8)
 
 	for i, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
@@ -240,10 +247,16 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		}
 
 		lower := strings.ToLower(dim.Name)
-		if ok := names[lower]; ok {
+		if _, ok := names[lower]; ok {
 			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
 		}
-		names[lower] = true
+		names[lower] = nameIsDimension
+	}
+
+	for _, dimension := range tmp.DefaultDimensions {
+		if v, ok := names[dimension]; !ok || v != nameIsDimension {
+			return fmt.Errorf("default selected dimension not found: %q", dimension)
+		}
 	}
 
 	measureCount := 0
@@ -260,10 +273,10 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		}
 
 		lower := strings.ToLower(measure.Name)
-		if ok := names[lower]; ok {
+		if _, ok := names[lower]; ok {
 			return fmt.Errorf("found duplicate dimension or measure name %q", measure.Name)
 		}
-		names[lower] = true
+		names[lower] = nameIsMeasure
 
 		if measure.FormatPreset != "" && measure.FormatD3 != "" {
 			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)
@@ -273,12 +286,18 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		return fmt.Errorf("must define at least one measure")
 	}
 
+	for _, measure := range tmp.DefaultMeasures {
+		if v, ok := names[measure]; !ok || v != nameIsMeasure {
+			return fmt.Errorf("default selected measure not found: %q", measure)
+		}
+	}
+
 	tmp.DefaultComparison.Mode = strings.ToLower(tmp.DefaultComparison.Mode)
 	if _, ok := comparisonModesMap[tmp.DefaultComparison.Mode]; !ok {
 		return fmt.Errorf("invalid mode: %q. allowed values: %s", tmp.DefaultComparison.Mode, strings.Join(validComparisonModes, ","))
 	}
 	if tmp.DefaultComparison.Dimension != "" {
-		if ok := names[tmp.DefaultComparison.Dimension]; !ok {
+		if v, ok := names[tmp.DefaultComparison.Dimension]; !ok && v != nameIsDimension {
 			return fmt.Errorf("default comparison dimension %q doesn't exist", tmp.DefaultComparison.Dimension)
 		}
 	}
@@ -347,7 +366,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 						return fmt.Errorf("invalid 'security': 'include' property %q is duplicated", name)
 					}
 					seen[name] = true
-					if !names[name] {
+					if _, ok := names[name]; !ok {
 						return fmt.Errorf("invalid 'security': 'include' property %q does not exists in dimensions or measures list", name)
 					}
 				}
@@ -372,7 +391,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 						return fmt.Errorf("invalid 'security': 'exclude' property %q is duplicated", name)
 					}
 					seen[name] = true
-					if !names[name] {
+					if _, ok := names[name]; !ok {
 						return fmt.Errorf("invalid 'security': 'exclude' property %q does not exists in dimensions or measures list", name)
 					}
 				}
@@ -427,6 +446,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			Unnest:      dim.Unnest,
 		})
 	}
+	spec.DefaultDimensions = tmp.DefaultDimensions
 
 	for _, measure := range tmp.Measures {
 		if measure == nil || measure.Ignore {
@@ -443,6 +463,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
 	}
+	spec.DefaultMeasures = tmp.DefaultMeasures
 
 	spec.DefaultComparisonMode = comparisonModesMap[tmp.DefaultComparison.Mode]
 	if tmp.DefaultComparison.Dimension != "" {

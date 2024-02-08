@@ -5,7 +5,7 @@
 
 
 ```
-curl -s https://cdn.rilldata.com/install.sh | bash
+curl https://rill.sh | sh
 rill start my-rill-project
 ```
 

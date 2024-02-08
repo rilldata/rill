@@ -330,6 +330,7 @@ export const DEFAULT_TIME_RANGES: TimeRangeMetaSet = {
  * e.g. "hour" or "day". The time grain is used to aggregate records
  * for the purposes of time series visualization and analysis.
  */
+
 export const TIME_GRAIN: Record<AvailableTimeGrain, TimeGrain> = {
   TIME_GRAIN_MINUTE: {
     grain: V1TimeGrain.TIME_GRAIN_MINUTE,

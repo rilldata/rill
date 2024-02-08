@@ -1229,6 +1229,35 @@ paths:
                 title: Deprecated. should be removed once UI is moved to use new filters
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/schema:
+    get:
+      summary: MetricsViewSchema Get the data types of measures and dimensions
+      operationId: QueryService_MetricsViewSchema
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewSchemaResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: priority
+          in: query
+          required: false
+          type: integer
+          format: int32
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
     post:
       summary: MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
@@ -3565,6 +3594,8 @@ definitions:
       builtinMeasureArgs:
         type: array
         items: {}
+      filter:
+        $ref: '#/definitions/v1Expression'
   v1MetricsViewAggregationRequest:
     type: object
     properties:
@@ -3821,6 +3852,11 @@ definitions:
         type: array
         items:
           type: object
+  v1MetricsViewSchemaResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
   v1MetricsViewSort:
     type: object
     properties:
@@ -3855,12 +3891,22 @@ definitions:
           type: object
           $ref: '#/definitions/MetricsViewSpecDimensionV2'
         title: Dimensions in the metrics view
+      defaultDimensions:
+        type: array
+        items:
+          type: string
+        title: List of selected dimensions by defaults
       measures:
         type: array
         items:
           type: object
           $ref: '#/definitions/MetricsViewSpecMeasureV2'
         title: Measures in the metrics view
+      defaultMeasures:
+        type: array
+        items:
+          type: string
+        title: List of selected measures by defaults
       smallestTimeGrain:
         $ref: '#/definitions/v1TimeGrain'
         title: Smallest time grain to show in the dashboard

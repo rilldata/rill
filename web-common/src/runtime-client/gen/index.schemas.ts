@@ -192,6 +192,8 @@ export type QueryServiceMetricsViewTimeRangeBody = {
   priority?: number;
 };
 
+export type QueryServiceMetricsViewSchemaParams = { priority?: number };
+
 export type QueryServiceMetricsViewRowsBody = {
   timeStart?: string;
   timeEnd?: string;
@@ -504,6 +506,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -531,12 +539,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -744,14 +746,6 @@ export interface V1Resource {
   theme?: V1Theme;
 }
 
-export interface V1ReportExecution {
-  adhoc?: boolean;
-  errorMessage?: string;
-  reportTime?: string;
-  startedOn?: string;
-  finishedOn?: string;
-}
-
 export interface V1ReportState {
   nextRunOn?: string;
   currentExecution?: V1ReportExecution;
@@ -772,6 +766,14 @@ export interface V1ReportSpec {
   exportFormat?: V1ExportFormat;
   emailRecipients?: string[];
   annotations?: V1ReportSpecAnnotations;
+}
+
+export interface V1ReportExecution {
+  adhoc?: boolean;
+  errorMessage?: string;
+  reportTime?: string;
+  startedOn?: string;
+  finishedOn?: string;
 }
 
 export interface V1Report {
@@ -1202,7 +1204,9 @@ export interface V1MetricsViewSpec {
   /** Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension). */
   watermarkExpression?: string;
   dimensions?: MetricsViewSpecDimensionV2[];
+  defaultDimensions?: string[];
   measures?: MetricsViewSpecMeasureV2[];
+  defaultMeasures?: string[];
   smallestTimeGrain?: V1TimeGrain;
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
@@ -1228,18 +1232,6 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
-export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
-
-export interface V1MetricsViewRowsResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1MetricsViewRowsResponseDataItem[];
-}
-
-export interface V1MetricsViewFilter {
-  include?: MetricsViewFilterCond[];
-  exclude?: MetricsViewFilterCond[];
-}
-
 export interface V1MetricsViewToplistRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1255,6 +1247,22 @@ export interface V1MetricsViewToplistRequest {
   having?: V1Expression;
   priority?: number;
   filter?: V1MetricsViewFilter;
+}
+
+export interface V1MetricsViewSchemaResponse {
+  schema?: V1StructType;
+}
+
+export type V1MetricsViewRowsResponseDataItem = { [key: string]: any };
+
+export interface V1MetricsViewRowsResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1MetricsViewRowsResponseDataItem[];
+}
+
+export interface V1MetricsViewFilter {
+  include?: MetricsViewFilterCond[];
+  exclude?: MetricsViewFilterCond[];
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1377,6 +1385,7 @@ export interface V1MetricsViewAggregationMeasure {
   name?: string;
   builtinMeasure?: V1BuiltinMeasure;
   builtinMeasureArgs?: unknown[];
+  filter?: V1Expression;
 }
 
 export interface V1MetricsViewAggregationDimension {
