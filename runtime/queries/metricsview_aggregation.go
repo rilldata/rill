@@ -422,7 +422,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if err != nil {
 				return "", nil, err
 			}
-			dimSel, unnestClause := dimensionSelect(mv, dim, dialect)
+			dimSel, unnestClause := dimensionSelect(mv.Table, dim, dialect)
 			selectCols = append(selectCols, dimSel)
 			if unnestClause != "" {
 				unnestClauses = append(unnestClauses, unnestClause)
@@ -453,9 +453,19 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if err != nil {
 				return "", nil, err
 			}
+
+			expr, err = applyFilter(mv, expr, m.Filter, &args, dialect)
+			if err != nil {
+				return "", nil, err
+			}
 			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, sn))
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
-			selectCols = append(selectCols, fmt.Sprintf("COUNT(*) as %s", sn))
+			expr, err := applyFilter(mv, "COUNT(*)", m.Filter, &args, dialect)
+			if err != nil {
+				return "", nil, err
+			}
+
+			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, sn))
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
 			if len(m.BuiltinMeasureArgs) != 1 {
 				return "", nil, fmt.Errorf("builtin measure '%s' expects 1 argument", m.BuiltinMeasure.String())
@@ -464,7 +474,13 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if arg == "" {
 				return "", nil, fmt.Errorf("builtin measure '%s' expects non-empty string argument, got '%v'", m.BuiltinMeasure.String(), m.BuiltinMeasureArgs[0])
 			}
-			selectCols = append(selectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), sn))
+
+			expr, err := applyFilter(mv, fmt.Sprintf("COUNT(DISTINCT %s)", safeName(arg)), m.Filter, &args, dialect)
+			if err != nil {
+				return "", nil, err
+			}
+
+			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, sn))
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
@@ -574,6 +590,18 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	}
 
 	return sql, args, nil
+}
+
+func applyFilter(mv *runtimev1.MetricsViewSpec, expr string, filter *runtimev1.Expression, args *[]any, dialect drivers.Dialect) (string, error) {
+	if filter != nil {
+		exprClause, exprArgs, err := buildExpression(mv, filter, nil, dialect)
+		if err != nil {
+			return "", err
+		}
+		expr = fmt.Sprintf("%s FILTER (WHERE %s)", expr, exprClause)
+		*args = append(*args, exprArgs...)
+	}
+	return expr, nil
 }
 
 func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAggregationDimension, dialect drivers.Dialect) (string, []any, error) {

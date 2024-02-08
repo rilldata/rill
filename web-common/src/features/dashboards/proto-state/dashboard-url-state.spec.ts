@@ -14,6 +14,7 @@ import {
   AD_BIDS_INIT_WITH_TIME,
   AD_BIDS_NAME,
   AD_BIDS_PUBLISHER_DIMENSION,
+  AD_BIDS_SCHEMA,
   AD_BIDS_TIMESTAMP_DIMENSION,
   AD_BIDS_WITH_DELETED_MEASURE,
   assertMetricsView,
@@ -174,7 +175,7 @@ describe("useDashboardUrlSync", () => {
     const defaultProtoStore = useDashboardDefaultProto(stateManagers);
     await waitUntil(() => !get(defaultProtoStore).isFetching, 1000, 5);
 
-    const unsubscribe = useDashboardUrlSync(stateManagers);
+    const unsubscribe = useDashboardUrlSync(stateManagers, AD_BIDS_SCHEMA);
     await wait();
 
     return {

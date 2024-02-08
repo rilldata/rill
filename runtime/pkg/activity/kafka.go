@@ -3,6 +3,7 @@ package activity
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -18,9 +19,10 @@ const (
 	lingerMs         = 200
 	compressionCodec = "lz4"
 	// Retry props
-	retryN          = 3
-	retryWait       = lingerMs * time.Millisecond
-	metadataTimeout = 5 * time.Second
+	retryN                       = 3
+	retryWait                    = lingerMs * time.Millisecond
+	metadataTimeout              = 5 * time.Second
+	deliveryFailuresReportPeriod = 5 * time.Minute
 )
 
 var (
@@ -77,6 +79,12 @@ func NewKafkaSink(brokers, topic string, logger *zap.Logger) (*KafkaSink, error)
 }
 
 func (s *KafkaSink) processProducerEvents(producer *kafka.Producer, logger *zap.Logger) {
+	var deliveryFailureCount int
+	var lastDeliveryError error
+
+	ticker := time.NewTicker(deliveryFailuresReportPeriod)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case e, ok := <-producer.Events():
@@ -88,14 +96,27 @@ func (s *KafkaSink) processProducerEvents(producer *kafka.Producer, logger *zap.
 				if ev.TopicPartition.Error != nil {
 					deliveryFailureCounter.Add(context.Background(), 1,
 						metric.WithAttributes(attribute.String("error", ev.TopicPartition.Error.Error())))
+					deliveryFailureCount++
+					lastDeliveryError = ev.TopicPartition.Error
 				} else {
 					deliverySuccessCounter.Add(context.Background(), 1)
 				}
 			case kafka.Error:
 				// This error might be a duplicate of what is logged by forwardKafkaLogEventToLogger
-				logger.Error("Kafka sink: producer error", zap.String("error", ev.Error()))
+				// Use warn level to focus on non-delivered events only as broker disconnects might be false-positive
+				logger.Warn("Kafka sink: producer error", zap.String("error", ev.Error()))
 			default:
 				// Ignore any other events
+			}
+
+		case <-ticker.C:
+			if deliveryFailureCount > 0 {
+				logger.Error(
+					fmt.Sprintf("Kafka sink: delivery failures in the last observed period: %d. "+
+						"Check preceding log events to investigate the issue", deliveryFailureCount),
+					zap.Error(lastDeliveryError))
+				deliveryFailureCount = 0
+				lastDeliveryError = nil
 			}
 
 		case <-s.closedCh:
