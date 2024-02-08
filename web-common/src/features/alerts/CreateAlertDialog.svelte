@@ -1,4 +1,9 @@
 <script lang="ts">
+  import {
+    Dialog,
+    DialogOverlay,
+    DialogTitle,
+  } from "@rgossiaux/svelte-headlessui";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import { V1Operation } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
@@ -7,7 +12,6 @@
   import AlertDialogDeliveryTab from "web-common/src/features/alerts/delivery-tab/AlertDialogDeliveryTab.svelte";
   import * as yup from "yup";
   import { Button } from "../../components/button";
-  import Dialog from "../../components/dialog-v2/Dialog.svelte";
   import * as Tabs from "../../components/tabs";
   import AlertDialogDataTab from "./data-tab/AlertDialogDataTab.svelte";
   import * as DialogTabs from "./dialog-tabs";
@@ -130,57 +134,66 @@
   }
 </script>
 
-<Dialog {open} titleMarginBottomOverride="mb-1" widthOverride="600px">
-  <svelte:fragment slot="title">Create alert</svelte:fragment>
+<Dialog
+  {open}
+  on:close
+  class="fixed inset-0 flex items-center justify-center z-50"
+>
+  <DialogOverlay
+    class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
+  />
+  <!-- 602px = 1px border on each side of the form + 3 tabs with a 200px fixed-width -->
   <form
+    class="transform bg-white rounded-md border border-slate-300 flex flex-col shadow-lg w-[602px]"
     id="create-alert-form"
     on:submit|preventDefault={handleSubmit}
-    class="overflow-auto"
-    slot="body"
   >
+    <DialogTitle
+      class="px-6 py-4 text-gray-900 text-lg font-semibold leading-7"
+    >
+      Create alert
+    </DialogTitle>
     <DialogTabs.Root value={tabs[selectedTabIndex]}>
-      <DialogTabs.List>
+      <DialogTabs.List class="border-t border-gray-200">
         {#each tabs as tab, i}
           <DialogTabs.Trigger value={tab} tabIndex={i}>
             {tab}
           </DialogTabs.Trigger>
         {/each}
       </DialogTabs.List>
-      <Tabs.Content value={tabs[0]}>
-        <AlertDialogDataTab {formState} />
-      </Tabs.Content>
-      <Tabs.Content value={tabs[1]}>
-        <AlertDialogCriteriaTab {formState} />
-      </Tabs.Content>
-      <Tabs.Content value={tabs[2]}>
-        <AlertDialogDeliveryTab {formState} />
-      </Tabs.Content>
-      <div class="flex items-center gap-x-2 mt-5">
-        <div class="grow" />
-        {#if selectedTabIndex === 0}
-          <Button on:click={handleCancel} type="secondary">Cancel</Button>
-        {:else}
-          <Button on:click={handleBack} type="secondary">Back</Button>
-        {/if}
-        {#if selectedTabIndex !== 2}
-          <Button
-            type="primary"
-            disabled={!isTabValid}
-            on:click={handleNextTab}
-          >
-            Next
-          </Button>
-        {:else}
-          <Button
-            type="primary"
-            disabled={!isTabValid || $isSubmitting}
-            form="create-alert-form"
-            submitForm
-          >
-            Create
-          </Button>
-        {/if}
+      <div class="p-3 bg-slate-100">
+        <Tabs.Content value={tabs[0]}>
+          <AlertDialogDataTab {formState} />
+        </Tabs.Content>
+        <Tabs.Content value={tabs[1]}>
+          <AlertDialogCriteriaTab {formState} />
+        </Tabs.Content>
+        <Tabs.Content value={tabs[2]}>
+          <AlertDialogDeliveryTab {formState} />
+        </Tabs.Content>
       </div>
     </DialogTabs.Root>
+    <div class="px-6 py-3 flex items-center gap-x-2">
+      <div class="grow" />
+      {#if selectedTabIndex === 0}
+        <Button on:click={handleCancel} type="secondary">Cancel</Button>
+      {:else}
+        <Button on:click={handleBack} type="secondary">Back</Button>
+      {/if}
+      {#if selectedTabIndex !== 2}
+        <Button type="primary" disabled={!isTabValid} on:click={handleNextTab}>
+          Next
+        </Button>
+      {:else}
+        <Button
+          type="primary"
+          disabled={!isTabValid || $isSubmitting}
+          form="create-alert-form"
+          submitForm
+        >
+          Create
+        </Button>
+      {/if}
+    </div>
   </form>
 </Dialog>

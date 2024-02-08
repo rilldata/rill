@@ -66,8 +66,10 @@
     </div>
   </div>
 {:else}
-  <PreviewTable
-    rows={$aggregation.data.rows}
-    columnNames={$aggregation.data.schema}
-  />
+  <div class="max-h-64 overflow-auto">
+    <PreviewTable
+      rows={$aggregation.data.rows}
+      columnNames={$aggregation.data.schema}
+    />
+  </div>
 {/if}
