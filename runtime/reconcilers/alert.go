@@ -285,11 +285,12 @@ func (r *AlertReconciler) refsStateHash(ctx context.Context, refs []*runtimev1.R
 			return "", err
 		}
 
-		// Note: Only writing the state version to the hash, not spec version, because it doesn't matter whether the spec/meta changes, only whether the state changes.
+		// Note: Only writing the state info to the hash, not spec version, because it doesn't matter whether the spec/meta changes, only whether the state changes.
 		r, err := r.C.Get(ctx, ref, false)
 		var stateVersion int64
 		if err == nil {
-			stateVersion = r.Meta.StateVersion
+			// Note: Using StateUpdatedOn instead of StateVersion because the state version is reset when the resource is deleted and recreated.
+			stateVersion = r.Meta.StateUpdatedOn.Seconds
 		} else {
 			stateVersion = -1
 		}
