@@ -23,7 +23,7 @@ rill start my-rill-project
   <a href="https://bit.ly/3unvA05">Community</a>
 </h3>
 
-![home-demo](https://storage.googleapis.com/prod-cdn.rilldata.com/docs/rill_hero.gif)
+![home-demo](https://storage.googleapis.com/prod-cdn.rilldata.com/docs/rill_hero_github.gif)
 
 Rill's design principles:
 - _**Feels good to use**_ – powered by Sveltekit & DuckDB = conversation-fast, not wait-ten-seconds-for-result-set fast
