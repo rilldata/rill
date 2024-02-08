@@ -9,6 +9,7 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { getContext } from "svelte";
+  import type { Tweened } from "svelte/motion";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
@@ -46,7 +47,7 @@
   // the navigationVisibilityTween is a tweened value that is used
   // to animate the extra padding that needs to be added to the
   // dashboard container when the navigation pane is collapsed
-  const navigationVisibilityTween = getContext(
+  const navigationVisibilityTween = getContext<Tweened<number>>(
     "rill:app:navigation-visibility-tween",
   );
 
