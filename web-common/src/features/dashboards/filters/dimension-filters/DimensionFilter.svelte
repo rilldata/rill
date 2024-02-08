@@ -56,7 +56,7 @@
 </script>
 
 {#if readOnly}
-  <DimensionFilterReadOnlyChip label={name} values={selectedValues} />
+  <DimensionFilterReadOnlyChip label={label ?? name} values={selectedValues} />
 {:else}
   <RemovableListChip
     on:remove
