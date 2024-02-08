@@ -180,10 +180,10 @@ const metricViewReducers = {
         metricsView,
         fullTimeRange,
       );
+      mergeDashboardWithLocalPreferences(state.entities[name]);
+
       updateMetricsExplorerProto(state.entities[name]);
 
-      // add local preferences after default proto is calculated
-      mergeDashboardWithLocalPreferences(state.entities[name]);
       return state;
     });
   },
