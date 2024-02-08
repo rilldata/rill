@@ -286,15 +286,20 @@ func (r *AlertReconciler) refsStateHash(ctx context.Context, refs []*runtimev1.R
 		}
 
 		// Note: Only writing the state info to the hash, not spec version, because it doesn't matter whether the spec/meta changes, only whether the state changes.
+		// Note: Also using StateUpdatedOn because the state version is reset when the resource is deleted and recreated.
 		r, err := r.C.Get(ctx, ref, false)
-		var stateVersion int64
+		var stateVersion, stateUpdatedOn int64
 		if err == nil {
-			// Note: Using StateUpdatedOn instead of StateVersion because the state version is reset when the resource is deleted and recreated.
-			stateVersion = r.Meta.StateUpdatedOn.Seconds
+			stateVersion = r.Meta.StateVersion
+			stateUpdatedOn = r.Meta.StateUpdatedOn.Seconds
 		} else {
 			stateVersion = -1
 		}
 		err = binary.Write(hash, binary.BigEndian, stateVersion)
+		if err != nil {
+			return "", err
+		}
+		err = binary.Write(hash, binary.BigEndian, stateUpdatedOn)
 		if err != nil {
 			return "", err
 		}
