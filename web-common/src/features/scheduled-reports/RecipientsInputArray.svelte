@@ -2,7 +2,8 @@
   import InputArray from "@rilldata/web-common/components/forms/InputArray.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState
-  export let hint: string;
+  export let showLabel = true;
+  export let hint = "";
 
   const { form, errors } = formState;
 
@@ -18,7 +19,7 @@
   bind:values={$form["recipients"]}
   {hint}
   id="recipients"
-  label="Recipients"
+  label={showLabel ? "Recipients" : ""}
   on:add-item={() => {
     $form["recipients"] = $form["recipients"].concat({ email: "" });
     recipientErrors = recipientErrors.concat({ email: "" });

@@ -2,7 +2,7 @@
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
-  import RecipientsInput from "@rilldata/web-common/features/scheduled-reports/RecipientsInput.svelte";
+  import RecipientsInputArray from "@rilldata/web-common/features/scheduled-reports/RecipientsInputArray.svelte";
 
   export let formState: any; // svelte-forms-lib's FormState
 
@@ -29,6 +29,6 @@
     description="Choose who will get notified by email for this alert. Make sure they have access to your project."
     title="Recipients"
   >
-    <RecipientsInput {formState} hint="" />
+    <RecipientsInputArray {formState} showLabel={false} />
   </FormSection>
 </div>

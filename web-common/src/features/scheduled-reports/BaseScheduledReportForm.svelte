@@ -1,8 +1,7 @@
 <script lang="ts">
   import TimePicker from "@rilldata/web-common/components/forms/TimePicker.svelte";
-  import RecipientsInput from "@rilldata/web-common/features/scheduled-reports/RecipientsInput.svelte";
+  import RecipientsInputArray from "@rilldata/web-common/features/scheduled-reports/RecipientsInputArray.svelte";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
-  import InputArray from "../../components/forms/InputArray.svelte";
   import InputV2 from "../../components/forms/InputV2.svelte";
   import Select from "../../components/forms/Select.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -89,7 +88,7 @@
     optional
     placeholder="1000"
   />
-  <RecipientsInput
+  <RecipientsInputArray
     {formState}
     hint="Recipients will receive different views based on their security policy.
         Recipients without project access can't view the report."
