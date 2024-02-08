@@ -9,7 +9,6 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { getContext } from "svelte";
-  import type { Tweened } from "svelte/motion";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import MeasuresContainer from "../big-number/MeasuresContainer.svelte";
@@ -49,7 +48,7 @@
   // dashboard container when the navigation pane is collapsed
   const navigationVisibilityTween = getContext(
     "rill:app:navigation-visibility-tween",
-  ) as Tweened<number>;
+  );
 
   const { readOnly } = featureFlags;
 
@@ -68,6 +67,8 @@
   $: dashboard = useDashboard($runtime.instanceId, metricViewName);
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
+
+  const MIN_CONTAINER_HEIGHT = "34px";
 </script>
 
 <section
@@ -99,7 +100,13 @@
         <TimeControls {metricViewName} />
         <div class="flex justify-between">
           {#key metricViewName}
-            <Filters />
+            <section
+              class="pl-2 grid gap-x-2 items-start"
+              style:grid-template-columns="max-content auto"
+              style:min-height={MIN_CONTAINER_HEIGHT}
+            >
+              <Filters />
+            </section>
             <TabBar />
           {/key}
         </div>
