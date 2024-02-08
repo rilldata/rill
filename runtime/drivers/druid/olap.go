@@ -91,7 +91,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		rows, err = c.db.QueryxContext(ctx2, stmt.Query, stmt.Args...)
 		return err
 	})
-
 	if err != nil {
 		if cancelFunc != nil {
 			cancelFunc()

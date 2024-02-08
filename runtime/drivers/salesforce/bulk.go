@@ -73,7 +73,7 @@ func (c *connection) startJob(ctx context.Context, j *bulkJob) error {
 			pkChunkHeader := "chunkSize=" + strconv.Itoa(j.pkChunkSize)
 			parent := parentObject(j.objectName)
 
-			if len(parent) > 0 {
+			if parent != "" {
 				pkChunkHeader += "; parent=" + parent
 			}
 
