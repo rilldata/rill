@@ -1,11 +1,14 @@
 <script lang="ts">
   import { Chip } from "../../../../components/chip";
   import { defaultChipColors } from "../../../../components/chip/chip-types";
+
   export let label: string;
   export let values: string[];
+
   const show = 1;
   const labelMaxWidth = "160px";
   const valueMaxWidth = "320px";
+
   $: visibleValues = values.slice(0, show);
   $: whatsLeft = values.length - show;
 </script>
