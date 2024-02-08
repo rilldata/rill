@@ -237,7 +237,7 @@ export function estimateColumnSizes(
   /* Dimension column should expand to cover whole container */
   estimatedColumnSizes[0] = Math.max(
     containerWidth - measureColumnSizeSum - config.indexWidth,
-    estimatedColumnSizes[0] ?? 0,
+    estimatedColumnSizes[0],
   );
 
   return estimatedColumnSizes;
