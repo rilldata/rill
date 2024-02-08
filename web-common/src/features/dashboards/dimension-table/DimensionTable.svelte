@@ -6,7 +6,7 @@ TableCells – the cell contents.
 <script lang="ts">
   import ColumnHeaders from "@rilldata/web-common/components/virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "@rilldata/web-common/components/virtualized-table/sections/TableCells.svelte";
-  import { createVirtualizer, VirtualItem } from "@tanstack/svelte-virtual";
+  import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";
   import type { DimensionTableRow } from "./dimension-table-types";
   import {
@@ -14,7 +14,7 @@ TableCells – the cell contents.
     estimateColumnSizes,
   } from "./dimension-table-utils";
   import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
-  import { DimensionTableConfig as config } from "./DimensionTableConfig";
+  import { DIMENSION_TABLE_CONFIG as config } from "./DimensionTableConfig";
   import DimensionValueHeader from "./DimensionValueHeader.svelte";
 
   import { getStateManagers } from "../state-managers/state-managers";
@@ -49,13 +49,10 @@ TableCells – the cell contents.
   export let rowOverscanAmount = 40;
   export let columnOverscanAmount = 5;
 
-  let rowVirtualizer;
-  let container;
-  let virtualRows;
-  let virtualColumns: VirtualItem[];
-  let virtualWidth;
-  let virtualHeight;
-  let containerWidth;
+  let container: HTMLDivElement;
+  // let virtualColumns: VirtualItem[];
+
+  let containerWidth: number;
 
   /** this is a perceived character width value, in pixels, when our monospace
    * font is 12px high. */
@@ -68,7 +65,9 @@ TableCells – the cell contents.
     })
     .filter((i) => i >= 0);
 
+  let rowScrollOffset = 0;
   $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
+  let colScrollOffset = 0;
   $: colScrollOffset = $columnVirtualizer?.scrollOffset || 0;
 
   /** if we're inferring the column widths from static-ish data, let's
@@ -91,9 +90,7 @@ TableCells – the cell contents.
   let estimateColumnSize: number[] = [];
 
   /* Separate out dimension column */
-  // SAFETY: cast should be safe because if dimensionName is undefined,
-  // we should not be in a dimension table sub-component
-  $: dimensionColumnName = $dimensionTableColumnName(dimensionName) as string;
+  $: dimensionColumnName = $dimensionTableColumnName(dimensionName);
   $: dimensionColumn = columns?.find(
     (c) => c.name == dimensionColumnName,
   ) as VirtualizedTableColumns;
@@ -104,16 +101,16 @@ TableCells – the cell contents.
 
   let manualDimensionColumnWidth: number | null = null;
 
-  $: if (rows && columns) {
-    rowVirtualizer = createVirtualizer({
-      getScrollElement: () => container,
-      count: rows.length,
-      estimateSize: () => config.rowHeight,
-      overscan: rowOverscanAmount,
-      paddingStart: config.columnHeaderHeight,
-      initialOffset: rowScrollOffset,
-    });
+  $: rowVirtualizer = createVirtualizer({
+    getScrollElement: () => container,
+    count: rows.length,
+    estimateSize: () => config.rowHeight,
+    overscan: rowOverscanAmount,
+    paddingStart: config.columnHeaderHeight,
+    initialOffset: rowScrollOffset,
+  });
 
+  $: if (rows && columns) {
     estimateColumnSize = estimateColumnSizes(
       columns,
       columnWidths,
@@ -150,14 +147,11 @@ TableCells – the cell contents.
     initialOffset: colScrollOffset,
   });
 
-  $: if (rowVirtualizer) {
-    virtualRows = $rowVirtualizer.getVirtualItems();
-    virtualHeight = $rowVirtualizer.getTotalSize();
-  }
-  $: if (columnVirtualizer) {
-    virtualColumns = $columnVirtualizer.getVirtualItems();
-    virtualWidth = $columnVirtualizer.getTotalSize();
-  }
+  $: virtualRows = $rowVirtualizer?.getVirtualItems() ?? [];
+  $: virtualWidth = $rowVirtualizer?.getTotalSize() ?? 0;
+
+  $: virtualColumns = $columnVirtualizer?.getVirtualItems() ?? [];
+  $: virtualHeight = $columnVirtualizer?.getTotalSize() ?? 0;
 
   let activeIndex;
   function setActiveIndex(event) {

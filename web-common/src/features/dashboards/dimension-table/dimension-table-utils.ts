@@ -22,10 +22,7 @@ import type {
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
 
-import type {
-  VirtualizedTableColumns,
-  VirtualizedTableConfig,
-} from "@rilldata/web-common/components/virtualized-table/types";
+import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 
 import type { SvelteComponent } from "svelte";
 import { getDimensionColumn } from "../dashboard-utils";
@@ -36,6 +33,7 @@ import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+import type { DimensionTableConfig } from "./DimensionTableConfig";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -192,57 +190,61 @@ export function estimateColumnSizes(
     [key: string]: number;
   },
   containerWidth: number,
-  config: VirtualizedTableConfig,
+  config: DimensionTableConfig,
 ): number[] {
-  const estimateColumnSize = columns.map((column, i) => {
+  const estimatedColumnSizes = columns.map((column, i) => {
     if (column.name.includes("delta")) return config.comparisonColumnWidth;
     if (i != 0) return config.defaultColumnWidth;
 
-    const largestStringLength =
-      columnWidths[column.name] * CHARACTER_WIDTH + CHARACTER_X_PAD;
-
-    /** The header width is largely a function of the total number of characters in the column.*/
+    /**
+     * The header width is largely a function of the total
+     * number of characters in the column.
+     */
     const headerWidth =
       (column.label?.length || column.name.length) * CHARACTER_WIDTH +
       HEADER_ICON_WIDTHS +
       HEADER_X_PAD +
       HEADER_FLEX_SPACING;
 
-    /** If the header is bigger than the largestStringLength and that's not at threshold, default to threshold.
-     * This will prevent the case where we have very long column names for very short column values.
+    const largestStringLength =
+      columnWidths[column.name] * CHARACTER_WIDTH + CHARACTER_X_PAD;
+
+    /** If the header is bigger than the largestStringLength
+     * and that's not at threshold, default to threshold.
+     * This will prevent the case where we have very long
+     * column names for very short column values.
      */
     const effectiveHeaderWidth =
       headerWidth > 160 && largestStringLength < 160
         ? config.minHeaderWidthWhenColumsAreSmall
         : headerWidth;
 
-    return largestStringLength
-      ? Math.min(
-          config.maxColumnWidth,
-          Math.max(
-            largestStringLength,
-            effectiveHeaderWidth,
-            /** All columns must be minColumnWidth regardless of user settings. */
-            config.minColumnWidth,
-          ),
-        )
-      : /** if there isn't a longet string length for some reason, let's go with a
-         * default column width. We should not be in this state.
-         */
-        config.defaultColumnWidth;
+    const longestStringWidth = Math.min(
+      config.maxColumnWidth,
+      Math.max(
+        largestStringLength,
+        effectiveHeaderWidth,
+        /** All columns must be minColumnWidth regardless of user settings. */
+        config.minColumnWidth,
+      ),
+    );
+    /**
+     * if there isn't a longest string length for some reason, let's go with a
+     * default column width. We should not be in this state.
+     */
+    return largestStringLength ? longestStringWidth : config.defaultColumnWidth;
   });
 
-  const measureColumnSizeSum = estimateColumnSize
-    .slice(1)
-    .reduce((a, b) => a + b, 0);
+  const measureColumnSizeSum =
+    estimatedColumnSizes.slice(1).reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? 0;
 
   /* Dimension column should expand to cover whole container */
-  estimateColumnSize[0] = Math.max(
+  estimatedColumnSizes[0] = Math.max(
     containerWidth - measureColumnSizeSum - config.indexWidth,
-    estimateColumnSize[0],
+    estimatedColumnSizes[0] ?? 0,
   );
 
-  return estimateColumnSize;
+  return estimatedColumnSizes;
 }
 
 export function prepareVirtualizedDimTableColumns(
