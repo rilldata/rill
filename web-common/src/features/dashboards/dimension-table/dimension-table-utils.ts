@@ -230,8 +230,9 @@ export function estimateColumnSizes(
         config.defaultColumnWidth;
   });
 
-  const measureColumnSizeSum =
-    estimatedColumnSizes.slice(1).reduce((a, b) => (a ?? 0) + (b ?? 0), 0) ?? 0;
+  const measureColumnSizeSum = estimatedColumnSizes
+    .slice(1)
+    .reduce((a, b) => a + b, 0);
 
   /* Dimension column should expand to cover whole container */
   estimatedColumnSizes[0] = Math.max(
