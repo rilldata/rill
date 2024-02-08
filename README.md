@@ -1,8 +1,11 @@
 # Welcome to Rill
 
-[Rill](https://docs.rilldata.com/) is the fastest path from data lake to dashboard. Download Rill to start modeling data and create fast, exploratory dashboards.
+[Rill](https://docs.rilldata.com/) is the fastest path from data lake to dashboard. 
 
+Unlike most BI tools, Rill comes with its own embedded in-memory database. Data and compute are co-located, and queries return in milliseconds.   
+So you can pivot, slice, and drill-down into your data instantly.
 
+Download Rill to start modeling data and create fast, exploratory dashboards.
 
 ```
 curl https://rill.sh | sh
@@ -20,7 +23,7 @@ rill start my-rill-project
   <a href="https://bit.ly/3unvA05">Community</a>
 </h3>
 
-![home-demo](https://github.com/rilldata/rill/assets/5587788/49d17e80-5f27-408c-bbc9-fdbff7b6b627 "829237828")
+![home-demo](https://storage.googleapis.com/prod-cdn.rilldata.com/docs/rill_hero.gif)
 
 Rill's design principles:
 - _**Feels good to use**_ – powered by Sveltekit & DuckDB = conversation-fast, not wait-ten-seconds-for-result-set fast
@@ -30,7 +33,7 @@ Rill's design principles:
 - _**Radically simple interactive dashboards**_ – thoughtful, opinionated, interactive dashboard defaults to help you quickly derive insights from your data
 - _**Dashboards as code**_ – each step from data to dashboard has versioning, Git sharing, and easy project rehydration
 
-## We want to hear from you
+## Don't be a stranger!
 
 We always appreciate hearing from our users and welcome any questions, comments, or concerns you may have. To get in touch with us, there are two options available:
 
