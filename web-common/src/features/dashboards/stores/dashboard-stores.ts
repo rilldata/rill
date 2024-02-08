@@ -18,10 +18,6 @@ import type {
   ScrubRange,
   TimeRange,
 } from "@rilldata/web-common/lib/time/types";
-import {
-  V1Operation,
-  type V1StructType,
-} from "@rilldata/web-common/runtime-client";
 import type {
   V1Expression,
   V1MetricsView,
@@ -29,6 +25,11 @@ import type {
   V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
+import {
+  V1Operation,
+  type V1StructType,
+} from "@rilldata/web-common/runtime-client";
+import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 import { Readable, derived, writable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
 
@@ -221,6 +222,59 @@ const metricViewReducers = {
 
       // remove references to non existent dimensions
       syncDimensions(metricsView, metricsExplorer);
+    });
+  },
+
+  setPivotMode(name: string, mode: boolean) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, active: mode };
+    });
+  },
+
+  setPivotRows(name: string, values: string[]) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, rows: values };
+    });
+  },
+
+  setPivotColumns(name: string, values: string[]) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, columns: values };
+    });
+  },
+
+  setPivotExpanded(name: string, expanded: ExpandedState) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, expanded };
+    });
+  },
+
+  setPivotSort(name: string, sorting: SortingState) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, sorting };
+    });
+  },
+
+  setPivotColumnPage(name: string, pageNumber: number) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        columnPage: pageNumber,
+      };
+    });
+  },
+
+  createPivot(name: string, rows: string[], columns: string[]) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        active: true,
+        rows,
+        columns,
+        expanded: {},
+        sorting: [],
+        columnPage: 1,
+      };
     });
   },
 

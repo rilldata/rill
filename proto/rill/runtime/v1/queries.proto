@@ -97,9 +97,7 @@ service QueryService {
 
   // MetricsViewSchema Get the data types of measures and dimensions
   rpc MetricsViewSchema(MetricsViewSchemaRequest) returns (MetricsViewSchemaResponse) {
-    option (google.api.http) = {
-      get: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/schema",
-    };
+    option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/schema"};
   }
 
   // Profiling APIs
@@ -311,6 +309,7 @@ message MetricsViewAggregationMeasure {
   string name = 1;
   BuiltinMeasure builtin_measure = 2;
   repeated google.protobuf.Value builtin_measure_args = 3;
+  Expression filter = 4;
 }
 
 message MetricsViewAggregationSort {

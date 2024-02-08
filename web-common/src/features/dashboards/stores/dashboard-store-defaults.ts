@@ -129,10 +129,18 @@ export function getDefaultMetricsExplorerEntity(
 
   const metricsExplorer: MetricsExplorerEntity = {
     name,
-    visibleMeasureKeys: new Set(defaultMeasureNames),
-    allMeasuresVisible: true,
-    visibleDimensionKeys: new Set(defaultDimNames),
-    allDimensionsVisible: true,
+    visibleMeasureKeys: metricsView.defaultMeasures?.length
+      ? new Set(metricsView.defaultMeasures)
+      : new Set(defaultMeasureNames),
+    allMeasuresVisible:
+      !metricsView.defaultMeasures?.length ||
+      metricsView.defaultMeasures?.length === defaultMeasureNames.length,
+    visibleDimensionKeys: metricsView.defaultDimensions?.length
+      ? new Set(metricsView.defaultDimensions)
+      : new Set(defaultDimNames),
+    allDimensionsVisible:
+      !metricsView.defaultDimensions?.length ||
+      metricsView.defaultDimensions?.length === defaultDimNames.length,
     leaderboardMeasureName: defaultMeasureNames[0],
     whereFilter: createAndExpression([]),
     havingFilter: createAndExpression([]),
@@ -146,6 +154,15 @@ export function getDefaultMetricsExplorerEntity(
     dimensionSearchText: "",
     temporaryFilterName: null,
     pinIndex: -1,
+    pivot: {
+      active: false,
+      rows: [],
+      columns: [],
+      rowJoinType: "nest",
+      expanded: {},
+      sorting: [],
+      columnPage: 1,
+    },
     contextColumnWidths: { ...contextColWidthDefaults },
   };
   // set time range related stuff

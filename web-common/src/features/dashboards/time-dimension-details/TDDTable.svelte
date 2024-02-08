@@ -1,6 +1,6 @@
 <script lang="ts">
   import { CHECKMARK_COLORS } from "@rilldata/web-common/features/dashboards/config";
-  import Pivot from "@rilldata/web-common/features/dashboards/pivot/Pivot.svelte";
+  import Pivot from "@rilldata/web-common/features/dashboards/pivot/RegularTable.svelte";
   import type {
     PivotPos,
     PivotRenderCallback,
