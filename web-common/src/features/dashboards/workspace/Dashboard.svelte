@@ -68,7 +68,7 @@
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
 
-  const MIN_CONTAINER_HEIGHT = "34px";
+  const FILTERS_MIN_CONTAINER_HEIGHT = "34px";
 </script>
 
 <section
@@ -103,7 +103,7 @@
             <section
               class="pl-2 grid gap-x-2 items-start"
               style:grid-template-columns="max-content auto"
-              style:min-height={MIN_CONTAINER_HEIGHT}
+              style:min-height={FILTERS_MIN_CONTAINER_HEIGHT}
             >
               <Filters />
             </section>
