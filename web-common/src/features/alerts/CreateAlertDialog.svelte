@@ -12,7 +12,6 @@
   import AlertDialogDeliveryTab from "web-common/src/features/alerts/delivery-tab/AlertDialogDeliveryTab.svelte";
   import * as yup from "yup";
   import { Button } from "../../components/button";
-  import * as Tabs from "../../components/tabs";
   import AlertDialogDataTab from "./data-tab/AlertDialogDataTab.svelte";
   import * as DialogTabs from "./dialog-tabs";
 
@@ -162,15 +161,15 @@
         {/each}
       </DialogTabs.List>
       <div class="p-3 bg-slate-100">
-        <Tabs.Content value={tabs[0]}>
+        <DialogTabs.Content value={tabs[0]}>
           <AlertDialogDataTab {formState} />
-        </Tabs.Content>
-        <Tabs.Content value={tabs[1]}>
+        </DialogTabs.Content>
+        <DialogTabs.Content value={tabs[1]}>
           <AlertDialogCriteriaTab {formState} />
-        </Tabs.Content>
-        <Tabs.Content value={tabs[2]}>
+        </DialogTabs.Content>
+        <DialogTabs.Content value={tabs[2]}>
           <AlertDialogDeliveryTab {formState} />
-        </Tabs.Content>
+        </DialogTabs.Content>
       </div>
     </DialogTabs.Root>
     <div class="px-6 py-3 flex items-center gap-x-2">
