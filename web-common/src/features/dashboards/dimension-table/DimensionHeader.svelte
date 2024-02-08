@@ -103,14 +103,14 @@
   </button>
 
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
-  <div class="flex items-center gap-x-5 cursor-pointer h-9">
+  <div class="flex items-center gap-x-1 cursor-pointer h-9">
     {#if !isRowsEmpty}
       <SelectAllButton {areAllTableRowsSelected} on:toggle-all-search-items />
     {/if}
     {#if searchBarOpen || (searchText && searchText !== "")}
       <div
         transition:slideRight={{ leftOffset: 8 }}
-        class="flex items-center gap-x-1"
+        class="flex items-center gap-x-2 p-1.5"
       >
         <Search
           bind:value={searchText}
@@ -123,7 +123,7 @@
       </div>
     {:else}
       <button
-        class="flex items-center gap-x-1 text-gray-700"
+        class="flex items-center gap-x-2 p-1.5 text-gray-700"
         in:fly|global={{ x: 10, duration: 300 }}
         on:click={() => (searchBarOpen = !searchBarOpen)}
       >
@@ -133,7 +133,7 @@
     {/if}
 
     <Tooltip distance={16} location="left">
-      <div class="flex items-center gap-x-1 ui-copy-icon">
+      <div class="flex items-center gap-x-1 px-1.5 ui-copy-icon">
         <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
           Exclude
         </Switch>
@@ -152,6 +152,7 @@
     </Tooltip>
 
     <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
+
     {#if $adminServer && $alerts}
       <CreateAlertButton />
     {/if}
