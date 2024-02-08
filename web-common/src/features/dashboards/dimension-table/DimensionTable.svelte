@@ -50,7 +50,6 @@ TableCells – the cell contents.
   export let columnOverscanAmount = 5;
 
   let container: HTMLDivElement;
-  // let virtualColumns: VirtualItem[];
 
   let containerWidth: number;
 

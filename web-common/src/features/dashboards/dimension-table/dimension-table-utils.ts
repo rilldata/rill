@@ -196,43 +196,38 @@ export function estimateColumnSizes(
     if (column.name.includes("delta")) return config.comparisonColumnWidth;
     if (i != 0) return config.defaultColumnWidth;
 
-    /**
-     * The header width is largely a function of the total
-     * number of characters in the column.
-     */
+    const largestStringLength =
+      columnWidths[column.name] * CHARACTER_WIDTH + CHARACTER_X_PAD;
+
+    /** The header width is largely a function of the total number of characters in the column.*/
     const headerWidth =
       (column.label?.length || column.name.length) * CHARACTER_WIDTH +
       HEADER_ICON_WIDTHS +
       HEADER_X_PAD +
       HEADER_FLEX_SPACING;
 
-    const largestStringLength =
-      columnWidths[column.name] * CHARACTER_WIDTH + CHARACTER_X_PAD;
-
-    /** If the header is bigger than the largestStringLength
-     * and that's not at threshold, default to threshold.
-     * This will prevent the case where we have very long
-     * column names for very short column values.
+    /** If the header is bigger than the largestStringLength and that's not at threshold, default to threshold.
+     * This will prevent the case where we have very long column names for very short column values.
      */
     const effectiveHeaderWidth =
       headerWidth > 160 && largestStringLength < 160
         ? config.minHeaderWidthWhenColumsAreSmall
         : headerWidth;
 
-    const longestStringWidth = Math.min(
-      config.maxColumnWidth,
-      Math.max(
-        largestStringLength,
-        effectiveHeaderWidth,
-        /** All columns must be minColumnWidth regardless of user settings. */
-        config.minColumnWidth,
-      ),
-    );
-    /**
-     * if there isn't a longest string length for some reason, let's go with a
-     * default column width. We should not be in this state.
-     */
-    return largestStringLength ? longestStringWidth : config.defaultColumnWidth;
+    return largestStringLength
+      ? Math.min(
+          config.maxColumnWidth,
+          Math.max(
+            largestStringLength,
+            effectiveHeaderWidth,
+            /** All columns must be minColumnWidth regardless of user settings. */
+            config.minColumnWidth,
+          ),
+        )
+      : /** if there isn't a longet string length for some reason, let's go with a
+         * default column width. We should not be in this state.
+         */
+        config.defaultColumnWidth;
   });
 
   const measureColumnSizeSum =
