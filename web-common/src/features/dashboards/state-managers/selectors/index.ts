@@ -1,11 +1,13 @@
+import type { ImmerLayer } from "@rilldata/web-common/features/dashboards/state-managers/immer-layer";
 import { measureFilterSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
+import { DashboardKeysUsedInTimeStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type {
   RpcStatus,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
-import { derived, type Readable } from "svelte/store";
+import { derived, get, type Readable } from "svelte/store";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 import { activeMeasureSelectors } from "./active-measure";
 import { comparisonSelectors } from "./comparisons";
@@ -30,6 +32,7 @@ export type DashboardDataReadables = {
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   >;
   queryClient: QueryClient;
+  immerLayer: ImmerLayer;
 };
 
 export type StateManagerReadables = ReturnType<
@@ -106,9 +109,14 @@ export const createStateManagerReadables = (
     /**
      * Readables related to measure filters applied to a dimension leaderboard.
      */
-    measureFilters: createReadablesFromSelectors(
+    measureFilters: createDerivedReadablesFromSelectors(
       measureFilterSelectors,
       dashboardDataReadables,
+      [
+        "dimensionThresholdFilters",
+        "leaderboardMeasureName",
+        "temporaryFilterName",
+      ],
     ),
 
     /**
@@ -131,9 +139,18 @@ export const createStateManagerReadables = (
     /**
      * Readables for query construction
      */
-    dashboardQueries: createReadablesFromSelectors(
+    dashboardQueries: createDerivedReadablesFromSelectors(
       leaderboardQuerySelectors,
       dashboardDataReadables,
+      [
+        "whereFilter",
+        "dimensionSearchText",
+        "selectedDimensionName",
+        "visibleMeasureKeys",
+        ...DashboardKeysUsedInTimeStore,
+        "dashboardSortType",
+        "sortDirection",
+      ],
     ),
 
     /**
@@ -171,6 +188,40 @@ function createReadablesFromSelectors<T extends SelectorFnsObj>(
         ([dashboard, metricsSpecQueryResult, timeRangeSummary]) =>
           selectorFn({
             dashboard,
+            metricsSpecQueryResult,
+            timeRangeSummary,
+            queryClient: readables.queryClient,
+          }),
+      ),
+    ]),
+  ) as ReadablesObj<T>;
+}
+
+function createDerivedReadablesFromSelectors<T extends SelectorFnsObj>(
+  selectors: T,
+  readables: DashboardDataReadables,
+  keys: Array<keyof MetricsExplorerEntity>,
+): ReadablesObj<T> {
+  const derivedDashStore = readables.immerLayer.wrapStore(
+    readables.dashboardStore,
+    keys,
+  );
+  return Object.fromEntries(
+    Object.entries(selectors).map(([key, selectorFn]) => [
+      key,
+      derived(
+        // Note: creating a svelte derived store from multiple stores
+        // requires supplying a tuple of stores.
+        // To simplify the selector function, we pack this into a single
+        // selectorFnArgs object.
+        [
+          derivedDashStore,
+          readables.metricsSpecQueryResultStore,
+          readables.timeRangeSummaryStore,
+        ],
+        ([dashboard, metricsSpecQueryResult, timeRangeSummary]) =>
+          selectorFn({
+            dashboard: dashboard.root,
             metricsSpecQueryResult,
             timeRangeSummary,
             queryClient: readables.queryClient,

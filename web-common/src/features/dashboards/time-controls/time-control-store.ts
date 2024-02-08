@@ -70,6 +70,15 @@ export type TimeControlState = {
   ComparisonTimeRangeState;
 export type TimeControlStore = Readable<TimeControlState>;
 
+export const DashboardKeysUsedInTimeStore: Array<keyof MetricsExplorerEntity> =
+  [
+    "selectedTimezone",
+    "selectedTimeRange",
+    "showTimeComparison",
+    "selectedComparisonTimeRange",
+    "lastDefinedScrubRange",
+  ];
+
 export const timeControlStateSelector = ([
   metricsView,
   timeRangeResponse,

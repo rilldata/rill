@@ -17,8 +17,9 @@ import { Readable, Writable, derived, get, writable } from "svelte/store";
 import {
   MetricsExplorerStoreType,
   metricsExplorerStore,
-  updateMetricsExplorerByName,
   useDashboardStore,
+  immerLayer,
+  updateMetricsExplorerByName,
 } from "web-common/src/features/dashboards/stores/dashboard-stores";
 import {
   ResourceKind,
@@ -124,6 +125,7 @@ export function createStateManagers({
     contextColWidthDefaults,
   );
 
+  immerLayer.setName(metricsViewName);
   return {
     runtime: runtime,
     metricsViewName: metricsViewNameStore,
@@ -143,6 +145,7 @@ export function createStateManagers({
       metricsSpecQueryResultStore: metricsSpecStore,
       timeRangeSummaryStore,
       queryClient,
+      immerLayer: immerLayer,
     }),
     /**
      * A collection of functions that update the dashboard data model.

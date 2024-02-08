@@ -1,5 +1,6 @@
 import { filterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/filters";
 import { measureFilterActions } from "@rilldata/web-common/features/dashboards/state-managers/actions/measure-filters";
+import type { ImmerLayer } from "@rilldata/web-common/features/dashboards/state-managers/immer-layer";
 import { sortActions } from "./sorting";
 import { contextColActions } from "./context-columns";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";

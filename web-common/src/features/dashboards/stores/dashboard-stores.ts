@@ -1,6 +1,7 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import { ImmerLayer } from "@rilldata/web-common/features/dashboards/state-managers/immer-layer";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
@@ -27,11 +28,14 @@ import {
   type V1StructType,
 } from "@rilldata/web-common/runtime-client";
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
+import { produce, enablePatches, type Patch } from "immer";
 import { Readable, derived, writable } from "svelte/store";
 import {
   SortDirection,
   SortType,
 } from "web-common/src/features/dashboards/proto-state/derived-types";
+
+enablePatches();
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
@@ -39,6 +43,7 @@ export interface MetricsExplorerStoreType {
 const { update, subscribe } = writable({
   entities: {},
 } as MetricsExplorerStoreType);
+export const immerLayer = new ImmerLayer(update);
 
 function updateMetricsExplorerProto(metricsExplorer: MetricsExplorerEntity) {
   metricsExplorer.proto = getProtoFromDashboardState(metricsExplorer);
@@ -48,16 +53,7 @@ export const updateMetricsExplorerByName = (
   name: string,
   callback: (metricsExplorer: MetricsExplorerEntity) => void,
 ) => {
-  update((state) => {
-    if (!state.entities[name]) {
-      return state;
-    }
-
-    callback(state.entities[name]);
-    // every change triggers a proto update
-    updateMetricsExplorerProto(state.entities[name]);
-    return state;
-  });
+  immerLayer.wrapAction(name, callback);
 };
 
 function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
@@ -175,14 +171,15 @@ const metricViewReducers = {
     update((state) => {
       if (state.entities[name]) return state;
 
-      state.entities[name] = getDefaultMetricsExplorerEntity(
-        name,
-        metricsView,
-        fullTimeRange,
-      );
+      return immerLayer.adhoc(state, (metricsExplorerStore) => {
+        metricsExplorerStore.entities[name] = getDefaultMetricsExplorerEntity(
+          name,
+          metricsView,
+          fullTimeRange,
+        );
 
-      updateMetricsExplorerProto(state.entities[name]);
-      return state;
+        updateMetricsExplorerProto(metricsExplorerStore.entities[name]);
+      });
     });
   },
 
