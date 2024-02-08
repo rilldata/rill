@@ -1,4 +1,3 @@
-import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   createAndExpression,
   createInExpression,
@@ -412,7 +411,7 @@ export function getSortForAccessor(
   config: PivotDataStoreConfig,
   columnDimensionAxes: Record<string, string[]> = {},
 ): {
-  where: V1Expression;
+  where?: V1Expression;
   sortPivotBy: V1MetricsViewAggregationSort[];
   timeRange: TimeRangeString;
 } {
@@ -426,7 +425,6 @@ export function getSortForAccessor(
   // Return un-changed filter if no sorting is applied
   if (config.pivot?.sorting?.length === 0) {
     return {
-      where: config.whereFilter,
       sortPivotBy,
       timeRange: defaultTimeRange,
     };
@@ -445,7 +443,6 @@ export function getSortForAccessor(
       },
     ];
     return {
-      where: config.whereFilter,
       sortPivotBy,
       timeRange: defaultTimeRange,
     };
@@ -460,7 +457,6 @@ export function getSortForAccessor(
       },
     ];
     return {
-      where: config.whereFilter,
       sortPivotBy,
       timeRange: defaultTimeRange,
     };
@@ -495,9 +491,10 @@ export function getSortForAccessor(
       });
   }
 
-  const filterForSort: V1Expression = createAndExpression(colDimensionFilters);
-  const mergedFilter = mergeFilters(config.whereFilter, filterForSort);
-
+  let filterForSort: V1Expression | undefined;
+  if (colDimensionFilters.length) {
+    filterForSort = createAndExpression(colDimensionFilters);
+  }
   const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
 
   sortPivotBy = [
@@ -508,7 +505,7 @@ export function getSortForAccessor(
   ];
 
   return {
-    where: mergedFilter,
+    where: filterForSort,
     sortPivotBy,
     timeRange,
   };
