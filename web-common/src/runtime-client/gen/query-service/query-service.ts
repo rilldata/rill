@@ -423,12 +423,14 @@ export const createQueryServiceColumnDescriptiveStatistics = <
 export const queryServiceExport = (
   instanceId: string,
   queryServiceExportBody: QueryServiceExportBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ExportResponse>({
     url: `/v1/instances/${instanceId}/queries/export`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: queryServiceExportBody,
+    signal,
   });
 };
 
@@ -2630,12 +2632,14 @@ export const createQueryServiceColumnTopK = <
 export const queryServiceQuery = (
   instanceId: string,
   queryServiceQueryBody: QueryServiceQueryBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1QueryResponse>({
     url: `/v1/instances/${instanceId}/query`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: queryServiceQueryBody,
+    signal,
   });
 };
 
@@ -2711,12 +2715,14 @@ export const createQueryServiceQuery = <
 export const queryServiceQueryBatch = (
   instanceId: string,
   queryServiceQueryBatchBody: QueryServiceQueryBatchBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<QueryServiceQueryBatch200>({
     url: `/v1/instances/${instanceId}/query/batch`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: queryServiceQueryBatchBody,
+    signal,
   });
 };
 

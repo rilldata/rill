@@ -411,3 +411,11 @@ func (u *externalURLs) reportExport(org, project, report string) string {
 func (u *externalURLs) reportEdit(org, project, report string) string {
 	return urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report)
 }
+
+func (u *externalURLs) alertOpen(org, project, alert string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
+}
+
+func (u *externalURLs) alertEdit(org, project, alert string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
+}
