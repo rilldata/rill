@@ -2,7 +2,6 @@ package queries
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"io"
 
@@ -53,28 +52,48 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	sanitizedColumnName := safeName(q.ColumnName)
+	var descriptiveStatisticsSQL string
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		descriptiveStatisticsSQL = fmt.Sprintf("SELECT "+
+			"min(%s)::DOUBLE as min, "+
+			"approx_quantile(%s, 0.25)::DOUBLE as q25, "+
+			"approx_quantile(%s, 0.5)::DOUBLE as q50, "+
+			"approx_quantile(%s, 0.75)::DOUBLE as q75, "+
+			"max(%s)::DOUBLE as max, "+
+			"avg(%s)::DOUBLE as mean, "+
+			"stddev_pop(%s)::DOUBLE as sd "+
+			"FROM %s",
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			safeName(q.TableName))
+	case drivers.DialectClickHouse:
+		descriptiveStatisticsSQL = fmt.Sprintf("SELECT "+
+			"min(%s)::DOUBLE as min, "+
+			"quantileTDigest(0.25)(%s)::DOUBLE as q25, "+
+			"quantileTDigest(0.5)(%s)::DOUBLE as q50, "+
+			"quantileTDigest(0.75)(%s)::DOUBLE as q75, "+
+			"max(%s)::DOUBLE as max, "+
+			"avg(%s)::DOUBLE as mean, "+
+			"stddevSamp(%s)::DOUBLE as sd "+
+			"FROM %s",
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			sanitizedColumnName,
+			safeName(q.TableName))
+	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
-
-	sanitizedColumnName := safeName(q.ColumnName)
-	descriptiveStatisticsSQL := fmt.Sprintf("SELECT "+
-		"min(%s)::DOUBLE as min, "+
-		"approx_quantile(%s, 0.25)::DOUBLE as q25, "+
-		"approx_quantile(%s, 0.5)::DOUBLE as q50, "+
-		"approx_quantile(%s, 0.75)::DOUBLE as q75, "+
-		"max(%s)::DOUBLE as max, "+
-		"avg(%s)::DOUBLE as mean, "+
-		"stddev_pop(%s)::DOUBLE as sd "+
-		"FROM %s",
-		sanitizedColumnName,
-		sanitizedColumnName,
-		sanitizedColumnName,
-		sanitizedColumnName,
-		sanitizedColumnName,
-		sanitizedColumnName,
-		sanitizedColumnName,
-		safeName(q.TableName))
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            descriptiveStatisticsSQL,
@@ -87,7 +106,8 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 	defer rows.Close()
 
 	stats := new(runtimev1.NumericStatistics)
-	var min, q25, q50, q75, max, mean, sd sql.NullFloat64
+	// clickhouse driver can't scan into sql.Nullx when value is not a null
+	var min, q25, q50, q75, max, mean, sd *float64
 	if rows.Next() {
 		err = rows.Scan(&min, &q25, &q50, &q75, &max, &mean, &sd)
 		if err != nil {
@@ -100,14 +120,14 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 		return err
 	}
 
-	if min.Valid {
-		stats.Min = min.Float64
-		stats.Max = max.Float64
-		stats.Q25 = q25.Float64
-		stats.Q50 = q50.Float64
-		stats.Q75 = q75.Float64
-		stats.Mean = mean.Float64
-		stats.Sd = sd.Float64
+	if min != nil {
+		stats.Min = *min
+		stats.Max = *max
+		stats.Q25 = *q25
+		stats.Q50 = *q50
+		stats.Q75 = *q75
+		stats.Mean = *mean
+		stats.Sd = *sd
 		q.Result = stats
 	}
 

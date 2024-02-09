@@ -121,6 +121,11 @@ export enum Type_Code {
   INT128 = 6,
 
   /**
+   * @generated from enum value: CODE_INT256 = 25;
+   */
+  INT256 = 25,
+
+  /**
    * @generated from enum value: CODE_UINT8 = 7;
    */
   UINT8 = 7,
@@ -144,6 +149,11 @@ export enum Type_Code {
    * @generated from enum value: CODE_UINT128 = 11;
    */
   UINT128 = 11,
+
+  /**
+   * @generated from enum value: CODE_UINT256 = 26;
+   */
+  UINT256 = 26,
 
   /**
    * @generated from enum value: CODE_FLOAT32 = 12;
@@ -219,11 +229,13 @@ proto3.util.setEnumType(Type_Code, "rill.runtime.v1.Type.Code", [
   { no: 4, name: "CODE_INT32" },
   { no: 5, name: "CODE_INT64" },
   { no: 6, name: "CODE_INT128" },
+  { no: 25, name: "CODE_INT256" },
   { no: 7, name: "CODE_UINT8" },
   { no: 8, name: "CODE_UINT16" },
   { no: 9, name: "CODE_UINT32" },
   { no: 10, name: "CODE_UINT64" },
   { no: 11, name: "CODE_UINT128" },
+  { no: 26, name: "CODE_UINT256" },
   { no: 12, name: "CODE_FLOAT32" },
   { no: 13, name: "CODE_FLOAT64" },
   { no: 14, name: "CODE_TIMESTAMP" },

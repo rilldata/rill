@@ -12,11 +12,13 @@ message Type {
     CODE_INT32 = 4;
     CODE_INT64 = 5;
     CODE_INT128 = 6;
+    CODE_INT256 = 25;
     CODE_UINT8 = 7;
     CODE_UINT16 = 8;
     CODE_UINT32 = 9;
     CODE_UINT64 = 10;
     CODE_UINT128 = 11;
+    CODE_UINT256 = 26;
     CODE_FLOAT32 = 12;
     CODE_FLOAT64 = 13;
     CODE_TIMESTAMP = 14;
