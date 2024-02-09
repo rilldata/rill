@@ -24,11 +24,14 @@
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import { featureFlags } from "../../feature-flags";
+  import { PivotChipType } from "../pivot/types";
   import TDDExportButton from "./TDDExportButton.svelte";
   import type { TDDComparison } from "./types";
 
@@ -112,21 +115,52 @@
   function startPivotForTDD() {
     const pivot = $dashboardStore?.pivot;
 
-    if (pivot.rows.length || pivot.columns.length) {
+    if (
+      pivot.rows.dimension.length ||
+      pivot.columns.measure.length ||
+      pivot.columns.dimension.length
+    ) {
       showReplacePivotModal = true;
     } else {
       createPivot();
     }
   }
+
   function createPivot() {
     showReplacePivotModal = false;
-    const timeDimension = $metricsView?.data?.timeDimension;
-    if (!timeDimension || !expandedMeasureName) return;
-    const rowDimensions = dimensionName ? [dimensionName] : [];
-    metricsExplorerStore.createPivot(metricViewName, rowDimensions, [
-      timeDimension,
-      expandedMeasureName,
-    ]);
+    const dashboardGrain = $dashboardStore?.selectedTimeRange?.interval;
+    if (!dashboardGrain || !expandedMeasureName) return;
+
+    const timeGrain: TimeGrain = TIME_GRAIN[dashboardGrain];
+    const rowDimensions = dimensionName
+      ? [
+          {
+            id: dimensionName,
+            title: dimensionName,
+            type: PivotChipType.Dimension,
+          },
+        ]
+      : [];
+    metricsExplorerStore.createPivot(
+      metricViewName,
+      { dimension: rowDimensions },
+      {
+        dimension: [
+          {
+            id: dashboardGrain,
+            title: timeGrain.label,
+            type: PivotChipType.Time,
+          },
+        ],
+        measure: [
+          {
+            id: expandedMeasureName,
+            title: expandedMeasureName,
+            type: PivotChipType.Measure,
+          },
+        ],
+      },
+    );
   }
 </script>
 
@@ -154,12 +188,6 @@
         tooltipText="Choose a measure to display"
       />
     </div>
-
-    <!-- Revisit after Pivot table lands -->
-    <!-- <span> | </span>
-    <div>Time</div>
-    <span> : </span>
-    <div>{selectedMeasureLabel}</div> -->
 
     {#if isFetching}
       <Spinner size="18px" status={EntityStatus.Running} />

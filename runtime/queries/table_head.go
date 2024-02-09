@@ -60,7 +60,7 @@ func (q *TableHead) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -107,6 +107,10 @@ func (q *TableHead) Export(ctx context.Context, rt *runtime.Runtime, instanceID 
 			}
 		}
 	case drivers.DialectDruid:
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap); err != nil {
+			return err
+		}
+	case drivers.DialectClickHouse:
 		if err := q.generalExport(ctx, rt, instanceID, w, opts, olap); err != nil {
 			return err
 		}

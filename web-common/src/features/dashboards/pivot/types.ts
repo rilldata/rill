@@ -25,17 +25,29 @@ export type PivotDataStore = Readable<PivotDataState>;
 
 export interface PivotState {
   active: boolean;
-  rows: string[];
-  columns: string[];
+  columns: PivotColumns;
+  rows: PivotRows;
   expanded: ExpandedState;
   sorting: SortingState;
   columnPage: number;
-  rowJoinType: "flat" | "nest";
+  rowJoinType: PivotRowJoinType;
 }
 
+export type PivotRowJoinType = "flat" | "nest";
+
+export type PivotColumns = {
+  measure: PivotChipData[];
+  dimension: PivotChipData[];
+};
+
+export type PivotRows = {
+  dimension: PivotChipData[];
+};
+
 export interface PivotDataRow {
-  [key: string]: string | number | PivotDataRow[] | undefined;
   subRows?: PivotDataRow[];
+
+  [key: string]: string | number | PivotDataRow[] | undefined;
 }
 
 export interface TimeFilters {
@@ -122,7 +134,7 @@ export type PivotChipData = {
 };
 
 export enum PivotChipType {
-  Time = "Time",
-  Measure = "Measure",
-  Dimension = "Dimension",
+  Time = "time",
+  Measure = "measure",
+  Dimension = "dimension",
 }

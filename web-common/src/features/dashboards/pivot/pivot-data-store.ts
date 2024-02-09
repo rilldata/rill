@@ -27,20 +27,18 @@ import {
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
 import {
-  getDimensionsInPivotColumns,
-  getDimensionsInPivotRow,
   getFilterForPivotTable,
-  getMeasuresInPivotColumns,
   getPivotConfigKey,
   getSortForAccessor,
   getTotalColumnCount,
   reconcileMissingDimensionValues,
 } from "./pivot-utils";
-import type {
-  PivotDataRow,
-  PivotDataStore,
-  PivotDataStoreConfig,
-  PivotTimeConfig,
+import {
+  PivotChipType,
+  type PivotDataRow,
+  type PivotDataStore,
+  type PivotDataStoreConfig,
+  type PivotTimeConfig,
 } from "./types";
 
 /**
@@ -50,8 +48,6 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
   return derived(
     [useMetricsView(ctx), ctx.dashboardStore, useTimeControlStore(ctx)],
     ([metricsView, dashboardStore, timeControls]) => {
-      const { rows, columns } = dashboardStore.pivot;
-
       let interval: AvailableTimeGrain = "TIME_GRAIN_HOUR";
       const existingTimeGrain = timeControls?.selectedTimeRange?.interval;
 
@@ -73,7 +69,6 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
       };
 
       if (
-        (rows.length == 0 && columns.length == 0) ||
         !metricsView.data?.measures ||
         !metricsView.data?.dimensions ||
         !timeControls.ready
@@ -89,18 +84,24 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
           time,
         };
       }
-      const measureNames = getMeasuresInPivotColumns(
-        dashboardStore.pivot,
-        metricsView.data?.measures,
+
+      const measureNames = dashboardStore.pivot.columns.measure.map(
+        (m) => m.id,
       );
-      const rowDimensionNames = getDimensionsInPivotRow(
-        dashboardStore.pivot,
-        metricsView.data?.measures,
+      const rowDimensionNames = dashboardStore.pivot.rows.dimension.map(
+        (d) => d.id,
       );
 
-      const colDimensionNames = getDimensionsInPivotColumns(
-        dashboardStore.pivot,
-        metricsView.data?.measures,
+      // This is temporary until we have a better way to handle time grains
+      const colDimensionNames = dashboardStore.pivot.columns.dimension.map(
+        (d) => {
+          if (d.type === PivotChipType.Time) {
+            time.interval = d.id as AvailableTimeGrain;
+            return time.timeDimension;
+          }
+
+          return d.id;
+        },
       );
 
       return {

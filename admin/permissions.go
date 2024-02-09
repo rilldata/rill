@@ -69,6 +69,8 @@ func (s *Service) ProjectPermissionsForUser(ctx context.Context, projectID, user
 			ManageProjectMembers: true,
 			CreateReports:        true,
 			ManageReports:        true,
+			CreateAlerts:         true,
+			ManageAlerts:         true,
 		}, nil
 	}
 
@@ -102,6 +104,8 @@ func (s *Service) ProjectPermissionsForService(ctx context.Context, projectID, s
 			ManageProjectMembers: true,
 			CreateReports:        true,
 			ManageReports:        true,
+			CreateAlerts:         true,
+			ManageAlerts:         true,
 		}, nil
 	}
 
@@ -131,6 +135,8 @@ func (s *Service) ProjectPermissionsForDeployment(ctx context.Context, projectID
 			ManageProjectMembers: false,
 			CreateReports:        false,
 			ManageReports:        false,
+			CreateAlerts:         false,
+			ManageAlerts:         false,
 		}, nil
 	}
 
@@ -163,5 +169,7 @@ func unionProjectRoles(a *adminv1.ProjectPermissions, b *database.ProjectRole) *
 		ManageProjectMembers: a.ManageProjectMembers || b.ManageProjectMembers,
 		CreateReports:        a.CreateReports || b.CreateReports,
 		ManageReports:        a.ManageReports || b.ManageReports,
+		CreateAlerts:         a.CreateAlerts || b.CreateAlerts,
+		ManageAlerts:         a.ManageAlerts || b.ManageAlerts,
 	}
 }

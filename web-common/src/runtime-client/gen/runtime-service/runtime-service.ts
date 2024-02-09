@@ -155,12 +155,14 @@ export const createRuntimeServiceListConnectors = <
  */
 export const runtimeServiceDeleteFileAndReconcile = (
   v1DeleteFileAndReconcileRequest: V1DeleteFileAndReconcileRequest,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1DeleteFileAndReconcileResponse>({
     url: `/v1/delete-and-reconcile`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: v1DeleteFileAndReconcileRequest,
+    signal,
   });
 };
 
@@ -463,12 +465,14 @@ export const createRuntimeServiceListInstances = <
  */
 export const runtimeServiceCreateInstance = (
   v1CreateInstanceRequest: V1CreateInstanceRequest,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1CreateInstanceResponse>({
     url: `/v1/instances`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: v1CreateInstanceRequest,
+    signal,
   });
 };
 
@@ -621,12 +625,14 @@ export const createRuntimeServiceGetInstance = <
 export const runtimeServiceDeleteInstance = (
   instanceId: string,
   runtimeServiceDeleteInstanceBody: RuntimeServiceDeleteInstanceBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1DeleteInstanceResponse>({
     url: `/v1/instances/${instanceId}`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: runtimeServiceDeleteInstanceBody,
+    signal,
   });
 };
 
@@ -692,12 +698,14 @@ export const createRuntimeServiceDeleteInstance = <
 export const runtimeServiceEditInstance = (
   instanceId: string,
   runtimeServiceEditInstanceBody: RuntimeServiceEditInstanceBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1EditInstanceResponse>({
     url: `/v1/instances/${instanceId}`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     data: runtimeServiceEditInstanceBody,
+    signal,
   });
 };
 
@@ -961,10 +969,12 @@ It does not respond until the refresh has completed (will move to async jobs whe
 export const runtimeServiceTriggerRefresh = (
   instanceId: string,
   name: string,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1TriggerRefreshResponse>({
     url: `/v1/instances/${instanceId}/catalog/${name}/refresh`,
     method: "POST",
+    signal,
   });
 };
 
@@ -1226,10 +1236,15 @@ export const createRuntimeServiceGetFile = <
 /**
  * @summary DeleteFile deletes a file from a repo
  */
-export const runtimeServiceDeleteFile = (instanceId: string, path: string) => {
+export const runtimeServiceDeleteFile = (
+  instanceId: string,
+  path: string,
+  signal?: AbortSignal,
+) => {
   return httpClient<V1DeleteFileResponse>({
     url: `/v1/instances/${instanceId}/files/-/${path}`,
     method: "DELETE",
+    signal,
   });
 };
 
@@ -1294,12 +1309,14 @@ export const runtimeServicePutFile = (
   instanceId: string,
   path: string,
   runtimeServicePutFileBody: RuntimeServicePutFileBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1PutFileResponse>({
     url: `/v1/instances/${instanceId}/files/-/${path}`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: runtimeServicePutFileBody,
+    signal,
   });
 };
 
@@ -1363,12 +1380,14 @@ export const createRuntimeServicePutFile = <
 export const runtimeServiceRenameFile = (
   instanceId: string,
   runtimeServiceRenameFileBody: RuntimeServiceRenameFileBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1RenameFileResponse>({
     url: `/v1/instances/${instanceId}/files/rename`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: runtimeServiceRenameFileBody,
+    signal,
   });
 };
 
@@ -1432,12 +1451,14 @@ export const createRuntimeServiceRenameFile = <
 export const runtimeServiceUnpackEmpty = (
   instanceId: string,
   runtimeServiceUnpackEmptyBody: RuntimeServiceUnpackEmptyBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1UnpackEmptyResponse>({
     url: `/v1/instances/${instanceId}/files/unpack-empty`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: runtimeServiceUnpackEmptyBody,
+    signal,
   });
 };
 
@@ -1502,12 +1523,14 @@ export const createRuntimeServiceUnpackEmpty = <
 export const runtimeServiceUnpackExample = (
   instanceId: string,
   runtimeServiceUnpackExampleBody: RuntimeServiceUnpackExampleBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1UnpackExampleResponse>({
     url: `/v1/instances/${instanceId}/files/unpack-example`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: runtimeServiceUnpackExampleBody,
+    signal,
   });
 };
 
@@ -1876,12 +1899,14 @@ artifacts will be deleted.
 export const runtimeServiceReconcile = (
   instanceId: string,
   runtimeServiceReconcileBody: RuntimeServiceReconcileBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ReconcileResponse>({
     url: `/v1/instances/${instanceId}/reconcile`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: runtimeServiceReconcileBody,
+    signal,
   });
 };
 
@@ -2249,12 +2274,14 @@ Triggers are ephemeral resources that will be cleaned up by the controller.
 export const runtimeServiceCreateTrigger = (
   instanceId: string,
   runtimeServiceCreateTriggerBody: RuntimeServiceCreateTriggerBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1CreateTriggerResponse>({
     url: `/v1/instances/${instanceId}/trigger`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: runtimeServiceCreateTriggerBody,
+    signal,
   });
 };
 
@@ -2387,12 +2414,14 @@ It is equivalent to calling the two RPCs sequentially.
  */
 export const runtimeServicePutFileAndReconcile = (
   v1PutFileAndReconcileRequest: V1PutFileAndReconcileRequest,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1PutFileAndReconcileResponse>({
     url: `/v1/put-and-reconcile`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: v1PutFileAndReconcileRequest,
+    signal,
   });
 };
 
@@ -2456,12 +2485,14 @@ export const createRuntimeServicePutFileAndReconcile = <
 };
 export const runtimeServiceRefreshAndReconcile = (
   v1RefreshAndReconcileRequest: V1RefreshAndReconcileRequest,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1RefreshAndReconcileResponse>({
     url: `/v1/refresh-and-reconcile`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: v1RefreshAndReconcileRequest,
+    signal,
   });
 };
 
@@ -2524,12 +2555,14 @@ export const createRuntimeServiceRefreshAndReconcile = <
  */
 export const runtimeServiceRenameFileAndReconcile = (
   v1RenameFileAndReconcileRequest: V1RenameFileAndReconcileRequest,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1RenameFileAndReconcileResponse>({
     url: `/v1/rename-and-reconcile`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: v1RenameFileAndReconcileRequest,
+    signal,
   });
 };
 
