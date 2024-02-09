@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceEditReport } from "@rilldata/web-admin/client";
-  import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
+  import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
