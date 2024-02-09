@@ -84,10 +84,10 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		WHERE %[2]s IS NOT NULL
   ), buckets AS (
 		SELECT
-		`+numbersCol(olap.Dialect())+`::FLOAT as bucket,
+		`+rangeNumbersCol(olap.Dialect())+`::FLOAT as bucket,
 		  (bucket) * (%[7]v) / %[4]v + (%[5]v) AS low,
 		  (bucket + 1) * (%[7]v) / %[4]v + (%[5]v) AS high
-		FROM `+numbers(olap.Dialect())+`(0, %[4]v)
+		FROM `+rangeNumbers(olap.Dialect())+`(0, %[4]v)
 	),
 	-- bin the values
 	binned_data AS (
@@ -172,7 +172,7 @@ func (q *ColumnRugHistogram) Export(ctx context.Context, rt *runtime.Runtime, in
 	return ErrExportNotSupported
 }
 
-func numbers(dialect drivers.Dialect) string {
+func rangeNumbers(dialect drivers.Dialect) string {
 	switch dialect {
 	case drivers.DialectClickHouse:
 		return "numbers"
@@ -181,7 +181,7 @@ func numbers(dialect drivers.Dialect) string {
 	}
 }
 
-func numbersCol(dialect drivers.Dialect) string {
+func rangeNumbersCol(dialect drivers.Dialect) string {
 	switch dialect {
 	case drivers.DialectClickHouse:
 		return "number"

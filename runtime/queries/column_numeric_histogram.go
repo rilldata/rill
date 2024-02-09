@@ -176,10 +176,10 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
             WHERE %[2]s IS NOT NULL
           ), buckets AS (
             SELECT
-              `+numbersCol(olap.Dialect())+`::DOUBLE as bucket,
+              `+rangeNumbersCol(olap.Dialect())+`::DOUBLE as bucket,
               (bucket) * (%[7]v) / %[4]v + (%[5]v) as low,
               (bucket + 1) * (%[7]v) / %[4]v + (%[5]v) as high
-            FROM `+numbers(olap.Dialect())+`(0, %[4]v)
+            FROM `+rangeNumbers(olap.Dialect())+`(0, %[4]v)
           ),
           -- bin the values
           binned_data AS (
@@ -302,11 +302,11 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 			WHERE %[2]s IS NOT NULL
 		), buckets AS (
 			SELECT
-				`+numbersCol(olap.Dialect())+`::FLOAT as bucket,
+				`+rangeNumbersCol(olap.Dialect())+`::FLOAT as bucket,
 				(bucket * %[7]f::FLOAT + %[5]f) as low,
 				(bucket * %[7]f::FLOAT + %7f::FLOAT / 2 + %[5]f) as midpoint,
 				((bucket + 1) * %[7]f::FLOAT + %[5]f) as high
-			FROM `+numbers(olap.Dialect())+`(0, %[4]d)
+			FROM `+rangeNumbers(olap.Dialect())+`(0, %[4]d)
 		),
 		-- bin the values
 		binned_data AS (
