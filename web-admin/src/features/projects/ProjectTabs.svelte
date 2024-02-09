@@ -1,6 +1,7 @@
 <script lang="ts">
   import { afterNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { createAdminServiceGetProject } from "../../client";
   import Tab from "../../components/tabs/Tab.svelte";
   import TabGroup from "../../components/tabs/TabGroup.svelte";
@@ -10,11 +11,13 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
 
+  const { alerts } = featureFlags;
+
   // Get the list of tabs to display, depending on the user's permissions
   $: tabsQuery = createAdminServiceGetProject(organization, project, {
     query: {
       select: (data) => {
-        const commonTabs = [
+        let commonTabs = [
           {
             route: `/${organization}/${project}`,
             label: "Dashboards",
@@ -24,6 +27,14 @@
             label: "Reports",
           },
         ];
+
+        if ($alerts) {
+          commonTabs.push({
+            route: `/${organization}/${project}/-/alerts`,
+            label: "Alerts",
+          });
+        }
+
         const adminTabs = [
           {
             route: `/${organization}/${project}/-/status`,
