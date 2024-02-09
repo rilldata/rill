@@ -3,7 +3,7 @@
   import { cn } from "../../../lib/shadcn";
 
   type $$Props = TabsPrimitive.ContentProps;
-  
+
   let className: $$Props["class"] = undefined;
   export let value: $$Props["value"];
   export { className as class };
