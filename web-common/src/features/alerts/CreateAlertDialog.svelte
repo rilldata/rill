@@ -5,15 +5,15 @@
     DialogTitle,
   } from "@rgossiaux/svelte-headlessui";
   import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
+  import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
   import { V1Operation } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
-  import AlertDialogCriteriaTab from "web-common/src/features/alerts/criteria-tab/AlertDialogCriteriaTab.svelte";
-  import AlertDialogDeliveryTab from "web-common/src/features/alerts/delivery-tab/AlertDialogDeliveryTab.svelte";
   import * as yup from "yup";
   import { Button } from "../../components/button";
+  import AlertDialogCriteriaTab from "./criteria-tab/AlertDialogCriteriaTab.svelte";
   import AlertDialogDataTab from "./data-tab/AlertDialogDataTab.svelte";
-  import * as DialogTabs from "./dialog-tabs";
+  import AlertDialogDeliveryTab from "./delivery-tab/AlertDialogDeliveryTab.svelte";
 
   export let open: boolean;
 
