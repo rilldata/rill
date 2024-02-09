@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import Tooltip from "../../components/tooltip/Tooltip.svelte";
   import TooltipContent from "../../components/tooltip/TooltipContent.svelte";
   import { getStateManagers } from "../dashboards/state-managers/state-managers";
-  import CreateAlertDialog from "./CreateAlertDialog.svelte";
 
   const {
     selectors: {
@@ -11,6 +11,13 @@
   } = getStateManagers();
 
   let showAlertDialog = false;
+
+  // Only import the Create Alert dialog if in the Cloud context.
+  // This ensures Rill Developer doesn't try and fail to import the admin-client.
+  let CreateAlertDialog;
+  onMount(async () => {
+    CreateAlertDialog = (await import("./CreateAlertDialog.svelte")).default;
+  });
 </script>
 
 <Tooltip location="top" distance={8} suppress={!$isCustomTimeRange}>
