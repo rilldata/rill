@@ -107,12 +107,13 @@ message DashboardState {
    * Pivot related fields
    */
   optional bool pivot_is_active = 22;
-  repeated string pivot_rows = 23;
-  repeated string pivot_columns = 24;
-  map<string, bool> pivot_expanded = 25;
-  repeated PivotColumnSort pivot_sort = 26;
-  optional int32 pivot_column_page = 27;
-  optional PivotRowJoinType pivot_row_join_type = 28;
+  repeated string pivot_row_measures = 23;
+  repeated string pivot_column_measures = 24;
+  repeated string pivot_column_dimensions = 25;
+  map<string, bool> pivot_expanded = 26;
+  repeated PivotColumnSort pivot_sort = 27;
+  optional int32 pivot_column_page = 28;
+  optional PivotRowJoinType pivot_row_join_type = 29;
 }
 
 message DashboardTimeRange {

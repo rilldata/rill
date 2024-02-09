@@ -25,8 +25,8 @@ export type PivotDataStore = Readable<PivotDataState>;
 
 export interface PivotState {
   active: boolean;
-  rows: string[];
-  columns: string[];
+  columns: PivotColumns;
+  rows: PivotRows;
   expanded: ExpandedState;
   sorting: SortingState;
   columnPage: number;
@@ -34,6 +34,15 @@ export interface PivotState {
 }
 
 export type PivotRowJoinType = "flat" | "nest";
+
+export type PivotColumns = {
+  measure: PivotChipData[];
+  dimension: PivotChipData[];
+};
+
+export type PivotRows = {
+  dimension: PivotChipData[];
+};
 
 export interface PivotDataRow {
   subRows?: PivotDataRow[];
@@ -125,7 +134,7 @@ export type PivotChipData = {
 };
 
 export enum PivotChipType {
-  Time = "Time",
-  Measure = "Measure",
-  Dimension = "Dimension",
+  Time = "time",
+  Measure = "measure",
+  Dimension = "dimension",
 }

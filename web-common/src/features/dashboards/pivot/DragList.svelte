@@ -1,22 +1,11 @@
 <script context="module" lang="ts">
   import { dndzone } from "svelte-dnd-action";
   import { flip } from "svelte/animate";
-  import { Chip } from "@rilldata/web-common/components/chip";
-  import {
-    measureChipColors,
-    timeChipColors,
-    defaultChipColors,
-  } from "@rilldata/web-common/components/chip/chip-types";
   import { createEventDispatcher } from "svelte";
-  import type { ChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import type { PivotChipData } from "./types";
   import { PivotChipType } from "./types";
-
-  const colors: Record<PivotChipType, ChipColors> = {
-    Time: timeChipColors,
-    Measure: measureChipColors,
-    Dimension: defaultChipColors,
-  };
+  import PivotChip from "./PivotChip.svelte";
+  import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
 </script>
 
 <script lang="ts">
@@ -35,11 +24,26 @@
     listClasses = "flex flex-col gap-y-2 py-2";
   }
 
-  function handleConsider(e) {
+  function handleConsider(e: CustomEvent<{ items: PivotChipData[] }>) {
     items = e.detail.items;
   }
-  function handleFinalize(e) {
+
+  function handleFinalize(e: CustomEvent<{ items: PivotChipData[] }>) {
     items = e.detail.items;
+    dispatch("update", items);
+  }
+
+  function onSelectTimeGrain(item: PivotChipData, timeGrain: TimeGrain) {
+    items = items.map((i) => {
+      if (i.id !== item.id) return i;
+
+      return {
+        id: timeGrain.grain,
+        title: timeGrain.label,
+        type: PivotChipType.Time,
+      };
+    });
+
     dispatch("update", items);
   }
 </script>
@@ -52,20 +56,17 @@
 >
   {#each items as item (item.id)}
     <div class="item" animate:flip={{ duration: flipDurationMs }}>
-      <Chip
-        outline
+      <PivotChip
         {removable}
-        {...colors[item.type]}
-        extraPadding={false}
-        extraRounded={item.type !== PivotChipType.Measure}
-        label={item.title}
+        {item}
         on:remove={() => {
           items = items.filter((i) => i.id !== item.id);
           dispatch("update", items);
         }}
-      >
-        <div slot="body" class="font-semibold">{item.title}</div>
-      </Chip>
+        on:select-time-grain={(e) => {
+          onSelectTimeGrain(item, e.detail.timeGrain);
+        }}
+      />
     </div>
   {/each}
 </div>

@@ -151,32 +151,37 @@ export class DashboardState extends Message<DashboardState> {
   pivotIsActive?: boolean;
 
   /**
-   * @generated from field: repeated string pivot_rows = 23;
+   * @generated from field: repeated string pivot_row_measures = 23;
    */
-  pivotRows: string[] = [];
+  pivotRowMeasures: string[] = [];
 
   /**
-   * @generated from field: repeated string pivot_columns = 24;
+   * @generated from field: repeated string pivot_column_measures = 24;
    */
-  pivotColumns: string[] = [];
+  pivotColumnMeasures: string[] = [];
 
   /**
-   * @generated from field: map<string, bool> pivot_expanded = 25;
+   * @generated from field: repeated string pivot_column_dimensions = 25;
+   */
+  pivotColumnDimensions: string[] = [];
+
+  /**
+   * @generated from field: map<string, bool> pivot_expanded = 26;
    */
   pivotExpanded: { [key: string]: boolean } = {};
 
   /**
-   * @generated from field: repeated rill.ui.v1.PivotColumnSort pivot_sort = 26;
+   * @generated from field: repeated rill.ui.v1.PivotColumnSort pivot_sort = 27;
    */
   pivotSort: PivotColumnSort[] = [];
 
   /**
-   * @generated from field: optional int32 pivot_column_page = 27;
+   * @generated from field: optional int32 pivot_column_page = 28;
    */
   pivotColumnPage?: number;
 
   /**
-   * @generated from field: optional rill.ui.v1.DashboardState.PivotRowJoinType pivot_row_join_type = 28;
+   * @generated from field: optional rill.ui.v1.DashboardState.PivotRowJoinType pivot_row_join_type = 29;
    */
   pivotRowJoinType?: DashboardState_PivotRowJoinType;
 
@@ -210,12 +215,13 @@ export class DashboardState extends Message<DashboardState> {
     { no: 18, name: "expanded_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 19, name: "pin_index", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 22, name: "pivot_is_active", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
-    { no: 23, name: "pivot_rows", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 24, name: "pivot_columns", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 25, name: "pivot_expanded", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
-    { no: 26, name: "pivot_sort", kind: "message", T: PivotColumnSort, repeated: true },
-    { no: 27, name: "pivot_column_page", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
-    { no: 28, name: "pivot_row_join_type", kind: "enum", T: proto3.getEnumType(DashboardState_PivotRowJoinType), opt: true },
+    { no: 23, name: "pivot_row_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 24, name: "pivot_column_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 25, name: "pivot_column_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 26, name: "pivot_expanded", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
+    { no: 27, name: "pivot_sort", kind: "message", T: PivotColumnSort, repeated: true },
+    { no: 28, name: "pivot_column_page", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 29, name: "pivot_row_join_type", kind: "enum", T: proto3.getEnumType(DashboardState_PivotRowJoinType), opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {

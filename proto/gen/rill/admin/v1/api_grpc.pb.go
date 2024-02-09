@@ -81,12 +81,19 @@ const (
 	AdminService_GetRepoMeta_FullMethodName                  = "/rill.admin.v1.AdminService/GetRepoMeta"
 	AdminService_PullVirtualRepo_FullMethodName              = "/rill.admin.v1.AdminService/PullVirtualRepo"
 	AdminService_GetReportMeta_FullMethodName                = "/rill.admin.v1.AdminService/GetReportMeta"
+	AdminService_GetAlertMeta_FullMethodName                 = "/rill.admin.v1.AdminService/GetAlertMeta"
 	AdminService_CreateReport_FullMethodName                 = "/rill.admin.v1.AdminService/CreateReport"
 	AdminService_EditReport_FullMethodName                   = "/rill.admin.v1.AdminService/EditReport"
 	AdminService_UnsubscribeReport_FullMethodName            = "/rill.admin.v1.AdminService/UnsubscribeReport"
 	AdminService_DeleteReport_FullMethodName                 = "/rill.admin.v1.AdminService/DeleteReport"
 	AdminService_TriggerReport_FullMethodName                = "/rill.admin.v1.AdminService/TriggerReport"
 	AdminService_GenerateReportYAML_FullMethodName           = "/rill.admin.v1.AdminService/GenerateReportYAML"
+	AdminService_CreateAlert_FullMethodName                  = "/rill.admin.v1.AdminService/CreateAlert"
+	AdminService_EditAlert_FullMethodName                    = "/rill.admin.v1.AdminService/EditAlert"
+	AdminService_UnsubscribeAlert_FullMethodName             = "/rill.admin.v1.AdminService/UnsubscribeAlert"
+	AdminService_DeleteAlert_FullMethodName                  = "/rill.admin.v1.AdminService/DeleteAlert"
+	AdminService_GenerateAlertYAML_FullMethodName            = "/rill.admin.v1.AdminService/GenerateAlertYAML"
+	AdminService_GetAlertYAML_FullMethodName                 = "/rill.admin.v1.AdminService/GetAlertYAML"
 	AdminService_Telemetry_FullMethodName                    = "/rill.admin.v1.AdminService/Telemetry"
 )
 
@@ -219,6 +226,8 @@ type AdminServiceClient interface {
 	PullVirtualRepo(ctx context.Context, in *PullVirtualRepoRequest, opts ...grpc.CallOption) (*PullVirtualRepoResponse, error)
 	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
 	GetReportMeta(ctx context.Context, in *GetReportMetaRequest, opts ...grpc.CallOption) (*GetReportMetaResponse, error)
+	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+	GetAlertMeta(ctx context.Context, in *GetAlertMetaRequest, opts ...grpc.CallOption) (*GetAlertMetaResponse, error)
 	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
 	CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error)
 	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
@@ -231,6 +240,18 @@ type AdminServiceClient interface {
 	TriggerReport(ctx context.Context, in *TriggerReportRequest, opts ...grpc.CallOption) (*TriggerReportResponse, error)
 	// GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
 	GenerateReportYAML(ctx context.Context, in *GenerateReportYAMLRequest, opts ...grpc.CallOption) (*GenerateReportYAMLResponse, error)
+	// CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
+	CreateAlert(ctx context.Context, in *CreateAlertRequest, opts ...grpc.CallOption) (*CreateAlertResponse, error)
+	// EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
+	EditAlert(ctx context.Context, in *EditAlertRequest, opts ...grpc.CallOption) (*EditAlertResponse, error)
+	// UnsubscribeAlert removes the calling user from a alert's recipients list
+	UnsubscribeAlert(ctx context.Context, in *UnsubscribeAlertRequest, opts ...grpc.CallOption) (*UnsubscribeAlertResponse, error)
+	// DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
+	DeleteAlert(ctx context.Context, in *DeleteAlertRequest, opts ...grpc.CallOption) (*DeleteAlertResponse, error)
+	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+	GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error)
+	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+	GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error)
 	Telemetry(ctx context.Context, in *TelemetryRequest, opts ...grpc.CallOption) (*TelemetryResponse, error)
 }
 
@@ -800,6 +821,15 @@ func (c *adminServiceClient) GetReportMeta(ctx context.Context, in *GetReportMet
 	return out, nil
 }
 
+func (c *adminServiceClient) GetAlertMeta(ctx context.Context, in *GetAlertMetaRequest, opts ...grpc.CallOption) (*GetAlertMetaResponse, error) {
+	out := new(GetAlertMetaResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetAlertMeta_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error) {
 	out := new(CreateReportResponse)
 	err := c.cc.Invoke(ctx, AdminService_CreateReport_FullMethodName, in, out, opts...)
@@ -848,6 +878,60 @@ func (c *adminServiceClient) TriggerReport(ctx context.Context, in *TriggerRepor
 func (c *adminServiceClient) GenerateReportYAML(ctx context.Context, in *GenerateReportYAMLRequest, opts ...grpc.CallOption) (*GenerateReportYAMLResponse, error) {
 	out := new(GenerateReportYAMLResponse)
 	err := c.cc.Invoke(ctx, AdminService_GenerateReportYAML_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CreateAlert(ctx context.Context, in *CreateAlertRequest, opts ...grpc.CallOption) (*CreateAlertResponse, error) {
+	out := new(CreateAlertResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateAlert_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) EditAlert(ctx context.Context, in *EditAlertRequest, opts ...grpc.CallOption) (*EditAlertResponse, error) {
+	out := new(EditAlertResponse)
+	err := c.cc.Invoke(ctx, AdminService_EditAlert_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UnsubscribeAlert(ctx context.Context, in *UnsubscribeAlertRequest, opts ...grpc.CallOption) (*UnsubscribeAlertResponse, error) {
+	out := new(UnsubscribeAlertResponse)
+	err := c.cc.Invoke(ctx, AdminService_UnsubscribeAlert_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteAlert(ctx context.Context, in *DeleteAlertRequest, opts ...grpc.CallOption) (*DeleteAlertResponse, error) {
+	out := new(DeleteAlertResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteAlert_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error) {
+	out := new(GenerateAlertYAMLResponse)
+	err := c.cc.Invoke(ctx, AdminService_GenerateAlertYAML_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error) {
+	out := new(GetAlertYAMLResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetAlertYAML_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -992,6 +1076,8 @@ type AdminServiceServer interface {
 	PullVirtualRepo(context.Context, *PullVirtualRepoRequest) (*PullVirtualRepoResponse, error)
 	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
 	GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error)
+	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+	GetAlertMeta(context.Context, *GetAlertMetaRequest) (*GetAlertMetaResponse, error)
 	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
 	CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error)
 	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
@@ -1004,6 +1090,18 @@ type AdminServiceServer interface {
 	TriggerReport(context.Context, *TriggerReportRequest) (*TriggerReportResponse, error)
 	// GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
 	GenerateReportYAML(context.Context, *GenerateReportYAMLRequest) (*GenerateReportYAMLResponse, error)
+	// CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
+	CreateAlert(context.Context, *CreateAlertRequest) (*CreateAlertResponse, error)
+	// EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
+	EditAlert(context.Context, *EditAlertRequest) (*EditAlertResponse, error)
+	// UnsubscribeAlert removes the calling user from a alert's recipients list
+	UnsubscribeAlert(context.Context, *UnsubscribeAlertRequest) (*UnsubscribeAlertResponse, error)
+	// DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
+	DeleteAlert(context.Context, *DeleteAlertRequest) (*DeleteAlertResponse, error)
+	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+	GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error)
+	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+	GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error)
 	Telemetry(context.Context, *TelemetryRequest) (*TelemetryResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
@@ -1198,6 +1296,9 @@ func (UnimplementedAdminServiceServer) PullVirtualRepo(context.Context, *PullVir
 func (UnimplementedAdminServiceServer) GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetReportMeta not implemented")
 }
+func (UnimplementedAdminServiceServer) GetAlertMeta(context.Context, *GetAlertMetaRequest) (*GetAlertMetaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAlertMeta not implemented")
+}
 func (UnimplementedAdminServiceServer) CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateReport not implemented")
 }
@@ -1215,6 +1316,24 @@ func (UnimplementedAdminServiceServer) TriggerReport(context.Context, *TriggerRe
 }
 func (UnimplementedAdminServiceServer) GenerateReportYAML(context.Context, *GenerateReportYAMLRequest) (*GenerateReportYAMLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateReportYAML not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateAlert(context.Context, *CreateAlertRequest) (*CreateAlertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAlert not implemented")
+}
+func (UnimplementedAdminServiceServer) EditAlert(context.Context, *EditAlertRequest) (*EditAlertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EditAlert not implemented")
+}
+func (UnimplementedAdminServiceServer) UnsubscribeAlert(context.Context, *UnsubscribeAlertRequest) (*UnsubscribeAlertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnsubscribeAlert not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteAlert(context.Context, *DeleteAlertRequest) (*DeleteAlertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteAlert not implemented")
+}
+func (UnimplementedAdminServiceServer) GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateAlertYAML not implemented")
+}
+func (UnimplementedAdminServiceServer) GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAlertYAML not implemented")
 }
 func (UnimplementedAdminServiceServer) Telemetry(context.Context, *TelemetryRequest) (*TelemetryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Telemetry not implemented")
@@ -2348,6 +2467,24 @@ func _AdminService_GetReportMeta_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetAlertMeta_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAlertMetaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetAlertMeta(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetAlertMeta_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetAlertMeta(ctx, req.(*GetAlertMetaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_CreateReport_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateReportRequest)
 	if err := dec(in); err != nil {
@@ -2452,6 +2589,114 @@ func _AdminService_GenerateReportYAML_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GenerateReportYAML(ctx, req.(*GenerateReportYAMLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CreateAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateAlert(ctx, req.(*CreateAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_EditAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EditAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).EditAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_EditAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).EditAlert(ctx, req.(*EditAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UnsubscribeAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnsubscribeAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UnsubscribeAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UnsubscribeAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UnsubscribeAlert(ctx, req.(*UnsubscribeAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteAlert(ctx, req.(*DeleteAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GenerateAlertYAML_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateAlertYAMLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GenerateAlertYAML(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GenerateAlertYAML_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GenerateAlertYAML(ctx, req.(*GenerateAlertYAMLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetAlertYAML_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAlertYAMLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetAlertYAML(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetAlertYAML_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetAlertYAML(ctx, req.(*GetAlertYAMLRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2730,6 +2975,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetReportMeta_Handler,
 		},
 		{
+			MethodName: "GetAlertMeta",
+			Handler:    _AdminService_GetAlertMeta_Handler,
+		},
+		{
 			MethodName: "CreateReport",
 			Handler:    _AdminService_CreateReport_Handler,
 		},
@@ -2752,6 +3001,30 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateReportYAML",
 			Handler:    _AdminService_GenerateReportYAML_Handler,
+		},
+		{
+			MethodName: "CreateAlert",
+			Handler:    _AdminService_CreateAlert_Handler,
+		},
+		{
+			MethodName: "EditAlert",
+			Handler:    _AdminService_EditAlert_Handler,
+		},
+		{
+			MethodName: "UnsubscribeAlert",
+			Handler:    _AdminService_UnsubscribeAlert_Handler,
+		},
+		{
+			MethodName: "DeleteAlert",
+			Handler:    _AdminService_DeleteAlert_Handler,
+		},
+		{
+			MethodName: "GenerateAlertYAML",
+			Handler:    _AdminService_GenerateAlertYAML_Handler,
+		},
+		{
+			MethodName: "GetAlertYAML",
+			Handler:    _AdminService_GetAlertYAML_Handler,
 		},
 		{
 			MethodName: "Telemetry",

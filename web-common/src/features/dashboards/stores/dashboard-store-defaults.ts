@@ -126,10 +126,18 @@ export function getDefaultMetricsExplorerEntity(
 
   const metricsExplorer: MetricsExplorerEntity = {
     name,
-    visibleMeasureKeys: new Set(defaultMeasureNames),
-    allMeasuresVisible: true,
-    visibleDimensionKeys: new Set(defaultDimNames),
-    allDimensionsVisible: true,
+    visibleMeasureKeys: metricsView.defaultMeasures?.length
+      ? new Set(metricsView.defaultMeasures)
+      : new Set(defaultMeasureNames),
+    allMeasuresVisible:
+      !metricsView.defaultMeasures?.length ||
+      metricsView.defaultMeasures?.length === defaultMeasureNames.length,
+    visibleDimensionKeys: metricsView.defaultDimensions?.length
+      ? new Set(metricsView.defaultDimensions)
+      : new Set(defaultDimNames),
+    allDimensionsVisible:
+      !metricsView.defaultDimensions?.length ||
+      metricsView.defaultDimensions?.length === defaultDimNames.length,
     leaderboardMeasureName: defaultMeasureNames[0],
     whereFilter: createAndExpression([]),
     havingFilter: createAndExpression([]),
@@ -145,8 +153,13 @@ export function getDefaultMetricsExplorerEntity(
     pinIndex: -1,
     pivot: {
       active: false,
-      rows: [],
-      columns: [],
+      rows: {
+        dimension: [],
+      },
+      columns: {
+        dimension: [],
+        measure: [],
+      },
       rowJoinType: "nest",
       expanded: {},
       sorting: [],

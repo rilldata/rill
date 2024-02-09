@@ -1016,6 +1016,11 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
    */
   builtinMeasureArgs: Value[] = [];
 
+  /**
+   * @generated from field: rill.runtime.v1.Expression filter = 4;
+   */
+  filter?: Expression;
+
   constructor(data?: PartialMessage<MetricsViewAggregationMeasure>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1027,6 +1032,7 @@ export class MetricsViewAggregationMeasure extends Message<MetricsViewAggregatio
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "builtin_measure", kind: "enum", T: proto3.getEnumType(BuiltinMeasure) },
     { no: 3, name: "builtin_measure_args", kind: "message", T: Value, repeated: true },
+    { no: 4, name: "filter", kind: "message", T: Expression },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewAggregationMeasure {

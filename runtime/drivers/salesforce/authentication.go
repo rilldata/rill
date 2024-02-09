@@ -29,8 +29,8 @@ func authenticate(options authenticationOptions) (*force.Force, error) {
 		return nil, fmt.Errorf("username missing")
 	}
 
-	isJWTSelected := len(options.JWT) > 0
-	isSOAPSelected := len(options.Password) > 0
+	isJWTSelected := options.JWT != ""
+	isSOAPSelected := options.Password != ""
 
 	endpoint, err := endpoint(options)
 	if err != nil {
@@ -47,7 +47,7 @@ func authenticate(options authenticationOptions) (*force.Force, error) {
 }
 
 func endpoint(options authenticationOptions) (endpoint string, err error) {
-	isEndpointSelected := len(options.Endpoint) > 0
+	isEndpointSelected := options.Endpoint != ""
 
 	if !isEndpointSelected {
 		return defaultEndpoint, nil
