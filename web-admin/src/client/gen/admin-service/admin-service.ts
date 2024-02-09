@@ -40,6 +40,13 @@ import type {
   V1SetOrganizationMemberRoleResponse,
   AdminServiceSetOrganizationMemberRoleBodyBody,
   V1LeaveOrganizationResponse,
+  V1CreateAlertResponse,
+  AdminServiceCreateAlertBodyBody,
+  V1GenerateAlertYAMLResponse,
+  V1DeleteAlertResponse,
+  V1EditAlertResponse,
+  V1UnsubscribeAlertResponse,
+  V1GetAlertYAMLResponse,
   V1GetDeploymentCredentialsResponse,
   AdminServiceGetDeploymentCredentialsBody,
   V1GetGitCredentialsResponse,
@@ -921,6 +928,389 @@ export const createAdminServiceLeaveOrganization = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
+ */
+export const adminServiceCreateAlert = (
+  organization: string,
+  project: string,
+  adminServiceCreateAlertBodyBody: AdminServiceCreateAlertBodyBody,
+) => {
+  return httpClient<V1CreateAlertResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/alerts`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateAlertBodyBody,
+  });
+};
+
+export type AdminServiceCreateAlertMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateAlert>>
+>;
+export type AdminServiceCreateAlertMutationBody =
+  AdminServiceCreateAlertBodyBody;
+export type AdminServiceCreateAlertMutationError = RpcStatus;
+
+export const createAdminServiceCreateAlert = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateAlert>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceCreateAlertBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateAlert>>,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceCreateAlertBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, data } = props ?? {};
+
+    return adminServiceCreateAlert(organization, project, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceCreateAlert>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceCreateAlertBodyBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+ */
+export const adminServiceGenerateAlertYAML = (
+  organization: string,
+  project: string,
+  adminServiceCreateAlertBodyBody: AdminServiceCreateAlertBodyBody,
+) => {
+  return httpClient<V1GenerateAlertYAMLResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/alerts/-/yaml`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateAlertBodyBody,
+  });
+};
+
+export type AdminServiceGenerateAlertYAMLMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGenerateAlertYAML>>
+>;
+export type AdminServiceGenerateAlertYAMLMutationBody =
+  AdminServiceCreateAlertBodyBody;
+export type AdminServiceGenerateAlertYAMLMutationError = RpcStatus;
+
+export const createAdminServiceGenerateAlertYAML = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceGenerateAlertYAML>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceCreateAlertBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceGenerateAlertYAML>>,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceCreateAlertBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, data } = props ?? {};
+
+    return adminServiceGenerateAlertYAML(organization, project, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceGenerateAlertYAML>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceCreateAlertBodyBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
+ */
+export const adminServiceDeleteAlert = (
+  organization: string,
+  project: string,
+  name: string,
+) => {
+  return httpClient<V1DeleteAlertResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/alerts/${name}`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceDeleteAlertMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteAlert>>
+>;
+
+export type AdminServiceDeleteAlertMutationError = RpcStatus;
+
+export const createAdminServiceDeleteAlert = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteAlert>>,
+    TError,
+    { organization: string; project: string; name: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteAlert>>,
+    { organization: string; project: string; name: string }
+  > = (props) => {
+    const { organization, project, name } = props ?? {};
+
+    return adminServiceDeleteAlert(organization, project, name);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceDeleteAlert>>,
+    TError,
+    { organization: string; project: string; name: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
+ */
+export const adminServiceEditAlert = (
+  organization: string,
+  project: string,
+  name: string,
+  adminServiceCreateAlertBodyBody: AdminServiceCreateAlertBodyBody,
+) => {
+  return httpClient<V1EditAlertResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/alerts/${name}`,
+    method: "put",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateAlertBodyBody,
+  });
+};
+
+export type AdminServiceEditAlertMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceEditAlert>>
+>;
+export type AdminServiceEditAlertMutationBody = AdminServiceCreateAlertBodyBody;
+export type AdminServiceEditAlertMutationError = RpcStatus;
+
+export const createAdminServiceEditAlert = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceEditAlert>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceCreateAlertBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceEditAlert>>,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceCreateAlertBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, name, data } = props ?? {};
+
+    return adminServiceEditAlert(organization, project, name, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceEditAlert>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceCreateAlertBodyBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary UnsubscribeAlert removes the calling user from a alert's recipients list
+ */
+export const adminServiceUnsubscribeAlert = (
+  organization: string,
+  project: string,
+  name: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+) => {
+  return httpClient<V1UnsubscribeAlertResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/alerts/${name}/unsubscribe`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export type AdminServiceUnsubscribeAlertMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUnsubscribeAlert>>
+>;
+export type AdminServiceUnsubscribeAlertMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceUnsubscribeAlertMutationError = RpcStatus;
+
+export const createAdminServiceUnsubscribeAlert = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceUnsubscribeAlert>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceUnsubscribeAlert>>,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, name, data } = props ?? {};
+
+    return adminServiceUnsubscribeAlert(organization, project, name, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceUnsubscribeAlert>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      name: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+ */
+export const adminServiceGetAlertYAML = (
+  organization: string,
+  project: string,
+  name: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetAlertYAMLResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/alerts/${name}/yaml`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetAlertYAMLQueryKey = (
+  organization: string,
+  project: string,
+  name: string,
+) => [
+  `/v1/organizations/${organization}/projects/${project}/alerts/${name}/yaml`,
+];
+
+export type AdminServiceGetAlertYAMLQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetAlertYAML>>
+>;
+export type AdminServiceGetAlertYAMLQueryError = RpcStatus;
+
+export const createAdminServiceGetAlertYAML = <
+  TData = Awaited<ReturnType<typeof adminServiceGetAlertYAML>>,
+  TError = RpcStatus,
+>(
+  organization: string,
+  project: string,
+  name: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetAlertYAML>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetAlertYAMLQueryKey(organization, project, name);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetAlertYAML>>
+  > = ({ signal }) =>
+    adminServiceGetAlertYAML(organization, project, name, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetAlertYAML>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project && name),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
  */
