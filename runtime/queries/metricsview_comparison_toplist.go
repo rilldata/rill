@@ -989,7 +989,7 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 			return err
 		}
 	case drivers.DialectClickHouse:
-		if err := q.generalExport(ctx, rt, instanceID, w, opts, q.MetricsView); err != nil {
+		if err := q.generalExport(ctx, rt, instanceID, w, opts, mv); err != nil {
 			return err
 		}
 	default:
