@@ -32,20 +32,19 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import type { Expression } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
-import type { MetricsViewSpec } from "@rilldata/web-common/proto/gen/rill/runtime/v1/resources_pb";
 import {
   DashboardState,
   DashboardState_LeaderboardContextColumn,
   DashboardState_PivotRowJoinType,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import {
-  type MetricsViewSpecDimensionV2,
-  type StructTypeField,
+import type {
+  MetricsViewSpecDimensionV2,
+  StructTypeField,
   V1Expression,
   V1MetricsView,
-  type V1MetricsViewSpec,
-  type V1StructType,
+  V1MetricsViewSpec,
+  V1StructType,
 } from "@rilldata/web-common/runtime-client";
 
 // TODO: make a follow up PR to use the one from the proto directly
@@ -300,15 +299,21 @@ function fromTimeRangeProto(timeRange: DashboardTimeRange) {
 
 function fromPivotProto(
   dashboard: DashboardState,
-  metricsView: MetricsViewSpec,
+  metricsView: V1MetricsViewSpec,
 ): PivotState {
-  const dimensionsMap = getMapFromArray(metricsView.dimensions, (d) => d.name);
+  const dimensionsMap = getMapFromArray(
+    metricsView.dimensions ?? [],
+    (d) => d.name,
+  );
   const mapDimension: (name: string) => PivotChipData = (name: string) => ({
     id: name,
     title: dimensionsMap.get(name)?.label || "Unknown",
     type: PivotChipType.Dimension,
   });
-  const measuresMap = getMapFromArray(metricsView.measures, (m) => m.name);
+  const measuresMap = getMapFromArray(
+    metricsView.measures ?? [],
+    (m) => m.name,
+  );
   const mapMeasure: (name: string) => PivotChipData = (name: string) => ({
     id: name,
     title: measuresMap.get(name)?.label || "Unknown",
