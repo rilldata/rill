@@ -1,3 +1,4 @@
+import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
 import type {
   MetricsViewSpecDimensionV2,
@@ -43,8 +44,9 @@ export type PivotRows = {
 };
 
 export interface PivotDataRow {
-  [key: string]: string | number | PivotDataRow[] | undefined;
   subRows?: PivotDataRow[];
+
+  [key: string]: string | number | PivotDataRow[] | undefined;
 }
 
 export interface TimeFilters {
@@ -70,6 +72,7 @@ export interface PivotDataStoreConfig {
   allMeasures: MetricsViewSpecMeasureV2[];
   allDimensions: MetricsViewSpecDimensionV2[];
   whereFilter: V1Expression;
+  measureFilter: ResolvedMeasureFilter;
   pivot: PivotState;
   time: PivotTimeConfig;
 }
