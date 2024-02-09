@@ -9,10 +9,12 @@ export function getLabelForFieldName(ctx: StateManagers, fieldName: string) {
     },
   } = ctx;
 
-  const measureLabel = get(allMeasures)?.find((m) => m.name === fieldName)
-    ?.label;
-  const dimensionLabel = get(allDimensions)?.find((d) => d.name === fieldName)
-    ?.label;
+  const measureLabel = get(allMeasures)?.find(
+    (m) => m.name === fieldName,
+  )?.label;
+  const dimensionLabel = get(allDimensions)?.find(
+    (d) => d.name === fieldName,
+  )?.label;
 
   return measureLabel || dimensionLabel || fieldName;
 }
