@@ -12,7 +12,7 @@
   const { dashboardStore } = getStateManagers();
 </script>
 
-<div class="flex flex-col gap-y-5">
+<div class="flex flex-col gap-y-3">
   <FormSection
     description="Trigger alert when these conditions are met"
     title="Criteria"

@@ -36,7 +36,7 @@
     $hasAtLeastOneDimensionFilter || $hasAtLeastOneMeasureFilter;
 </script>
 
-<div class="flex flex-col gap-y-5">
+<div class="flex flex-col gap-y-3">
   <FormSection title="Alert name">
     <InputV2
       id="name"

@@ -9,7 +9,7 @@
   const { form } = formState;
 </script>
 
-<div class="flex flex-col gap-y-5">
+<div class="flex flex-col gap-y-3">
   <FormSection
     description="We'll check for this alert whenever the data refreshes"
     title="Schedule"
