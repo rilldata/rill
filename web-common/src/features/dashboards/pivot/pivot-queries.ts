@@ -1,3 +1,7 @@
+import {
+  getTimeGrainFromDimension,
+  isTimeDimension,
+} from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
 import type {
   PivotAxesData,
   PivotDataStoreConfig,
@@ -104,10 +108,10 @@ export function getAxisForDimensions(
   }
 
   const dimensionBody = dimensions.map((d) => {
-    if (d === time.timeDimension) {
+    if (isTimeDimension(d, time.timeDimension)) {
       return {
-        name: d,
-        timeGrain: time.interval,
+        name: time.timeDimension,
+        timeGrain: getTimeGrainFromDimension(d),
         timeZone: time.timeZone,
       };
     } else return { name: d };
@@ -116,7 +120,7 @@ export function getAxisForDimensions(
   return derived(
     dimensionBody.map((dimension) => {
       let sortByForDimension = sortBy;
-      if (dimension.name === time.timeDimension) {
+      if (isTimeDimension(dimension.name, time.timeDimension)) {
         sortByForDimension = timeDimensionSortBy.length
           ? timeDimensionSortBy
           : sortBy;
@@ -144,14 +148,21 @@ export function getAxisForDimensions(
 
       data.forEach((d, i: number) => {
         const dimensionName = dimensions[i];
-        axesMap[dimensionName] = (d?.data?.data || [])?.map(
-          (dimValue) => dimValue[dimensionName] as string,
-        );
-        totalsMap[dimensionName] = d?.data?.data || [];
+
+        if (isTimeDimension(dimensionName, time.timeDimension)) {
+          axesMap[dimensionName] = (d?.data?.data || [])?.map(
+            (dimValue) => dimValue[time.timeDimension] as string,
+          );
+          totalsMap[dimensionName] = d?.data?.data || [];
+        } else {
+          axesMap[dimensionName] = (d?.data?.data || [])?.map(
+            (dimValue) => dimValue[dimensionName] as string,
+          );
+          totalsMap[dimensionName] = d?.data?.data || [];
+        }
       });
 
       if (Object.values(axesMap).some((d) => !d)) return { isFetching: true };
-
       return {
         isFetching: false,
         data: axesMap,

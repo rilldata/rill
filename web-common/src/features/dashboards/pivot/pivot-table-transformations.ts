@@ -50,6 +50,7 @@ export function reduceTableCellDataIntoRows(
   cellData: V1MetricsViewAggregationResponseDataItem[],
 ) {
   const colDimensionNames = config.colDimensionNames;
+  console.log(colDimensionNames, columnDimensionAxes, cellData);
 
   /**
    * Create a map of row dimension values to their index in the row dimension axes.
@@ -66,6 +67,7 @@ export function reduceTableCellDataIntoRows(
   cellData?.forEach((cell) => {
     const accessors = getAccessorForCell(
       colDimensionNames,
+      config.time.timeDimension,
       colValuesIndexMaps,
       config.measureNames.length,
       cell,
