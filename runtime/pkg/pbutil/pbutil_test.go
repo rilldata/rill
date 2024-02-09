@@ -63,6 +63,7 @@ func Test_ToListValueUnknown(t *testing.T) {
 		Type     *runtimev1.Type
 	}{
 		{Input: []int64{1, 2, 3, 4}, Expected: structpbList([]interface{}{1, 2, 3, 4})},
+		{Input: []*uint8{intPtr(1), intPtr(2), intPtr(3), intPtr(4)}, Expected: structpbList([]interface{}{1, 2, 3, 4})},
 		{Input: &[]int16{1, 2, 3, 4}, Expected: structpbList([]interface{}{1, 2, 3, 4})},
 		{Input: listPtr(&[]int16{1, 2, 3, 4}), Expected: structpbList([]interface{}{1, 2, 3, 4})},
 		{Input: &[]*uint8{intPtr(1), intPtr(2), intPtr(3), intPtr(4)}, Expected: structpbList([]interface{}{1, 2, 3, 4})},

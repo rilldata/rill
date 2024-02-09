@@ -82,8 +82,6 @@ type InstanceOptions struct {
 	StageChanges                 bool
 	ModelDefaultMaterialize      bool
 	ModelMaterializeDelaySeconds uint32
-	OLAPDriver                   string
-	OLAPDSN                      string
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.
