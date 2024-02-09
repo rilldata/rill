@@ -2,8 +2,10 @@
   import { Tabs as TabsPrimitive } from "bits-ui";
   import { cn } from "../../../lib/shadcn";
   import NumberedCircle from "./NumberedCircle.svelte";
+
   type $$Props = TabsPrimitive.TriggerProps & { tabIndex: number };
   // type $$Events = TabsPrimitive.TriggerEvents;
+
   let className: $$Props["class"] = undefined;
   export let value: $$Props["value"];
   export let tabIndex: number; // Ideally, we'd instead use `builder["tabindex"]`, but it's 0 for the active tab and -1 for the inactive tabs
