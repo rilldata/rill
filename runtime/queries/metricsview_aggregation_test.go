@@ -43,8 +43,8 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
 	require.NoError(t, err)
 
-	t.Setenv("OLAP_DRIVER", "clickhouse")
-	t.Setenv("OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
 	t.Run("TestMetricsViewsAggregation", func(t *testing.T) { TestMetricsViewsAggregation(t) })
 	t.Run("TestMetricsViewsAggregation_no_limit", func(t *testing.T) { TestMetricsViewsAggregation_no_limit(t) })
 	t.Run("TestMetricsViewsAggregation_no_limit_pivot", func(t *testing.T) { TestMetricsViewsAggregation_no_limit_pivot(t) })

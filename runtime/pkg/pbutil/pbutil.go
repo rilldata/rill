@@ -115,9 +115,6 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 				return structpb.NewStringValue(uid.String()), nil
 			}
 		}
-		if t.Code != runtimev1.Type_CODE_ARRAY { // not a byte array but array of uint8
-			return structpb.NewValue(v)
-		}
 	case net.IP:
 		return structpb.NewStringValue(v.String()), nil
 	// pointers to base types
@@ -290,11 +287,20 @@ func ToListValue(v []interface{}, t *runtimev1.Type) (*structpb.ListValue, error
 // ToListValueUnknown converts a list google.protobuf.List similar to ToListValue but when the type of list is list of unknown type.
 // It uses reflection so should not be used when ToListValue can be used.
 func ToListValueUnknown(s any, t *runtimev1.Type) (*structpb.ListValue, error) {
+	if s == nil { // defensive check, nil is already handled upstream
+		return nil, nil
+	}
+	v := reflect.ValueOf(s)
+	if v.Kind() == reflect.Ptr {
+		return ToListValueUnknown(v.Elem().Interface(), t)
+	}
+	if v.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("received invalid type %T, expected slice", s)
+	}
 	var elemType *runtimev1.Type
 	if t != nil {
 		elemType = t.ArrayElementType
 	}
-	v := reflect.ValueOf(s)
 	x := &structpb.ListValue{Values: make([]*structpb.Value, v.Len())}
 	for i := 0; i < v.Len(); i++ {
 		var err error
@@ -309,13 +315,22 @@ func ToListValueUnknown(s any, t *runtimev1.Type) (*structpb.ListValue, error) {
 // ToStructCoerceKeysUnknown is similar to ToStructCoerceKeys but when type of map is unknown.
 // It uses reflection so should not be used when ToStructCoerceKeys can be used.
 func ToStructCoerceKeysUnknown(s any, t *runtimev1.MapType) (*structpb.Struct, error) {
+	if s == nil { // defensive check, nil is already handled upstream
+		return nil, nil
+	}
+	v := reflect.ValueOf(s)
+	if v.Kind() == reflect.Ptr {
+		return ToStructCoerceKeysUnknown(v.Elem().Interface(), t)
+	}
+	if v.Kind() != reflect.Map {
+		return nil, fmt.Errorf("received invalid type %T, expected map", s)
+	}
+	
 	var keyType, valType *runtimev1.Type
 	if t != nil {
 		keyType = t.KeyType
 		valType = t.ValueType
 	}
-	v := reflect.ValueOf(s)
-
 	x := &structpb.Struct{Fields: make(map[string]*structpb.Value, v.Len())}
 	iter := v.MapRange()
 	for iter.Next() {
@@ -324,7 +339,7 @@ func ToStructCoerceKeysUnknown(s any, t *runtimev1.MapType) (*structpb.Struct, e
 		if !ok {
 			// Encode k1 using ToValue (to correctly coerce time, big numbers, etc.) and then to JSON.
 			// This yields more idiomatic/consistent strings than using fmt.Sprintf("%v", k1).
-			val, err := ToValue(k1, keyType)
+			val, err := ToValue(k1.Interface(), keyType)
 			if err != nil {
 				return nil, err
 			}

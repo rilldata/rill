@@ -525,7 +525,7 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 
 // Splits a type with args in parentheses, for example:
 //
-//	`STRUCT("a" INT, "b" INT)` -> (`STRUCT`, `"a" INT, "b" INT`, true)
+//	`Nullable(UInt64)` -> (`Nullable`, `UInt64`, true)
 func splitBaseAndArgs(s string) (string, string, bool) {
 	// Split on opening parenthesis
 	base, rest, found := strings.Cut(s, "(")

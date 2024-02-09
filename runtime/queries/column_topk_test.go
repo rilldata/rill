@@ -38,8 +38,8 @@ func TestColumnTopKAgainstClickHouse(t *testing.T) {
 	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
 	require.NoError(t, err)
 
-	t.Setenv("OLAP_DRIVER", "clickhouse")
-	t.Setenv("OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
 	t.Run("TestColumnTopK", func(t *testing.T) { TestColumnTopK(t) })
 	t.Run("TestColumnTopKList", func(t *testing.T) { TestColumnTopKList(t) })
 	t.Run("TestColumnTopKStruct", func(t *testing.T) { TestColumnTopKStruct(t) })
@@ -130,7 +130,7 @@ func TestColumnTopKList(t *testing.T) {
 func TestColumnTopKStruct(t *testing.T) {
 	var rt *runtime.Runtime
 	var instanceID string
-	if os.Getenv("OLAP_DRIVER") == "clickhouse" {
+	if os.Getenv("RILL_RUNTIME_TEST_OLAP_DRIVER") == "clickhouse" {
 		rt, instanceID = testruntime.NewInstanceWithModel(t, "test", `SELECT CAST((['x', 'y'], [10, null]), 'Map(String,Nullable(UInt8))') AS col, 1 AS val`)
 	} else {
 		rt, instanceID = testruntime.NewInstanceWithModel(t, "test", `SELECT {'x': 10, 'y': null} AS col, 1 AS val`)

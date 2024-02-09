@@ -39,8 +39,8 @@ func TestMetricsViewsToplistAgainstClickHouse(t *testing.T) {
 	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
 	require.NoError(t, err)
 
-	t.Setenv("OLAP_DRIVER", "clickhouse")
-	t.Setenv("OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
 	t.Run("TestMetricsViewsToplist_measure_filters", func(t *testing.T) { TestMetricsViewsToplist_measure_filters(t) })
 }
 

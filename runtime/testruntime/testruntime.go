@@ -82,6 +82,8 @@ type InstanceOptions struct {
 	StageChanges                 bool
 	ModelDefaultMaterialize      bool
 	ModelMaterializeDelaySeconds uint32
+	OLAPDriver                   string
+	OLAPDSN                      string
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.
@@ -89,11 +91,11 @@ type InstanceOptions struct {
 func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime, string) {
 	rt := New(t)
 
-	olapDriver := os.Getenv("OLAP_DRIVER")
+	olapDriver := os.Getenv("RILL_RUNTIME_TEST_OLAP_DRIVER")
 	if olapDriver == "" {
 		olapDriver = "duckdb"
 	}
-	olapDSN := os.Getenv("OLAP_DSN")
+	olapDSN := os.Getenv("RILL_RUNTIME_TEST_OLAP_DSN")
 
 	tmpDir := t.TempDir()
 	inst := &drivers.Instance{
