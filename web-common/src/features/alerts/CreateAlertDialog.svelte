@@ -1,24 +1,38 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import {
     Dialog,
     DialogOverlay,
     DialogTitle,
   } from "@rgossiaux/svelte-headlessui";
-  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceCreateAlert,
+    createAdminServiceGetCurrentUser,
+  } from "@rilldata/web-admin/client";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
-  import { V1Operation } from "@rilldata/web-common/runtime-client";
+  import {
+    V1Operation,
+    getRuntimeServiceListResourcesQueryKey,
+  } from "@rilldata/web-common/runtime-client";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { Button } from "../../components/button";
+  import { notifications } from "../../components/notifications";
+  import { runtime } from "../../runtime-client/runtime-store";
   import AlertDialogCriteriaTab from "./criteria-tab/AlertDialogCriteriaTab.svelte";
   import AlertDialogDataTab from "./data-tab/AlertDialogDataTab.svelte";
   import AlertDialogDeliveryTab from "./delivery-tab/AlertDialogDeliveryTab.svelte";
 
   export let open: boolean;
 
-  const dispatch = createEventDispatcher();
   const user = createAdminServiceGetCurrentUser();
+  const createAlert = createAdminServiceCreateAlert();
+  $: organization = $page.params.organization;
+  $: project = $page.params.project;
+  const queryClient = useQueryClient();
+  const dispatch = createEventDispatcher();
 
   const formState = createForm({
     initialValues: {
@@ -58,8 +72,50 @@
       ),
     }),
     onSubmit: async (values) => {
-      console.log("submitting alerts form with these values: ", values);
-      // dispatch("close");
+      const queryArgsJson = JSON.stringify({
+        measures: [{ name: values.measure }],
+        dimensions: values.splitByDimension
+          ? [{ name: values.splitByDimension }]
+          : [],
+        where: values.criteria.map((c) => ({
+          field: c.field,
+          operation: c.operation,
+          value: c.value,
+        })),
+      });
+      try {
+        await $createAlert.mutateAsync({
+          organization,
+          project,
+          data: {
+            options: {
+              title: values.name,
+              intervalDuration: undefined, // TODO: this is the "for every" field I think?
+              queryName: "MetricsViewAggregation",
+              queryArgsJson: queryArgsJson,
+              recipients: values.recipients.map((r) => r.email).filter(Boolean),
+              emailRenotify: false, // TODO: get from snooze
+              emailRenotifyAfterSeconds: 0, // TODO: get from snooze
+            },
+          },
+        });
+        queryClient.invalidateQueries(
+          getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
+        );
+        dispatch("close");
+        notifications.send({
+          message: "Alert created",
+          link: {
+            href: `/${organization}/${project}/-/alerts`,
+            text: "Go to alerts",
+          },
+          options: {
+            persistedLink: true,
+          },
+        });
+      } catch (e) {
+        // showing error below
+      }
     },
   });
 
