@@ -39,9 +39,9 @@ function localUserPreferencesActions() {
   function updateKey<K extends keyof LocalUserPreferences>(key: K) {
     return (val: LocalUserPreferences[K]) => {
       if (!localUserPreferences) return;
-      localUserPreferences.update((up) => {
-        up[key] = val;
-        return up;
+      localUserPreferences.update((lup) => {
+        lup[key] = val;
+        return lup;
       });
     };
   }
@@ -53,6 +53,18 @@ function localUserPreferencesActions() {
     updateLeaderboardMeasureName: updateKey("leaderboardMeasureName"),
     updateDashboardSortType: updateKey("dashboardSortType"),
     updateSortDirection: updateKey("sortDirection"),
+    reset() {
+      // cleanup dashboard settings. note that `timeZone` is not reset.
+      // it is intentional because it is an old feature
+      localUserPreferences.update((lup) => {
+        delete lup.visibleMeasures;
+        delete lup.visibleDimensions;
+        delete lup.leaderboardMeasureName;
+        delete lup.dashboardSortType;
+        delete lup.sortDirection;
+        return lup;
+      });
+    },
   };
 }
 
