@@ -417,7 +417,12 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	groupCols := make([]string, 0, len(q.Dimensions))
 	unnestClauses := make([]string, 0)
+	joinConditions := make([]string, 0, len(q.Dimensions))
+	selfJoinCols := make([]string, 0, len(q.Dimensions)+1)
+	selfJoinTableAlias := tempName("self_join")
+	nonNullValue := tempName("non_null")
 	var args []any
+	var subSelectArgs []any
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -431,6 +436,8 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 				unnestClauses = append(unnestClauses, unnestClause)
 			}
 			groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)))
+			joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", mv.Table, safeName(d.Name), selfJoinTableAlias, nonNullValue))
+			selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
 			continue
 		}
 
@@ -446,6 +453,9 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		// Note that the non-timestamp columns also use the numbered group-by for constancy.
 		groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)))
 		args = append(args, exprArgs...)
+		subSelectArgs = append(subSelectArgs, exprArgs...)
+		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", mv.Table, safeName(d.Name), selfJoinTableAlias, nonNullValue))
+		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
 	}
 
 	for _, m := range q.Measures {
@@ -457,18 +467,9 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 				return "", nil, err
 			}
 
-			expr, err = applyFilter(mv, expr, m.Filter, &args, dialect)
-			if err != nil {
-				return "", nil, err
-			}
 			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, sn))
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
-			expr, err := applyFilter(mv, "COUNT(*)", m.Filter, &args, dialect)
-			if err != nil {
-				return "", nil, err
-			}
-
-			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, sn))
+			selectCols = append(selectCols, fmt.Sprintf("%s as %s", "COUNT(*)", sn))
 		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
 			if len(m.BuiltinMeasureArgs) != 1 {
 				return "", nil, fmt.Errorf("builtin measure '%s' expects 1 argument", m.BuiltinMeasure.String())
@@ -477,13 +478,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if arg == "" {
 				return "", nil, fmt.Errorf("builtin measure '%s' expects non-empty string argument, got '%v'", m.BuiltinMeasure.String(), m.BuiltinMeasureArgs[0])
 			}
-
-			expr, err := applyFilter(mv, fmt.Sprintf("COUNT(DISTINCT %s)", safeName(arg)), m.Filter, &args, dialect)
-			if err != nil {
-				return "", nil, err
-			}
-
-			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, sn))
+			selectCols = append(selectCols, fmt.Sprintf("%s as %s", fmt.Sprintf("COUNT(DISTINCT %s)", safeName(arg)), sn))
 		default:
 			return "", nil, fmt.Errorf("unknown builtin measure '%d'", m.BuiltinMeasure)
 		}
@@ -497,11 +492,14 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	whereClause := ""
 	if mv.TimeDimension != "" {
 		timeCol := safeName(mv.TimeDimension)
-		clause, err := timeRangeClause(q.TimeRange, mv, dialect, timeCol, &args)
+		tmArgs := make([]any, 0)
+		clause, err := timeRangeClause(q.TimeRange, mv, dialect, timeCol, &tmArgs)
 		if err != nil {
 			return "", nil, err
 		}
 		whereClause += clause
+		args = append(args, tmArgs...)
+		subSelectArgs = append(subSelectArgs, tmArgs...)
 	}
 	if q.Where != nil {
 		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
@@ -512,12 +510,28 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			whereClause += fmt.Sprintf(" AND (%s)", clause)
 		}
 		args = append(args, clauseArgs...)
+		subSelectArgs = append(subSelectArgs, clauseArgs...)
 	}
+	filterWhereClause := whereClause
+	if len(q.Measures) == 1 && q.Measures[0].Filter != nil {
+		measureExpression, filterArgs, err := buildExpression(mv, q.Measures[0].Filter, nil, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+
+		filterWhereClause += fmt.Sprintf(" AND (%s)", measureExpression)
+		subSelectArgs = append(subSelectArgs, filterArgs...)
+	}
+
 	if policy != nil && policy.RowFilter != "" {
 		whereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+		filterWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
 	}
 	if whereClause != "" {
 		whereClause = "WHERE 1=1" + whereClause
+	}
+	if len(filterWhereClause) > 0 {
+		filterWhereClause = "WHERE 1=1" + filterWhereClause
 	}
 
 	havingClause := ""
@@ -532,6 +546,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			havingClause = "HAVING " + havingClause
 		}
 		args = append(args, havingClauseArgs...)
+		subSelectArgs = append(subSelectArgs, havingClauseArgs...)
 	}
 
 	sortingCriteria := make([]string, 0, len(q.Sort))
@@ -547,7 +562,15 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	}
 	orderClause := ""
 	if len(sortingCriteria) > 0 {
-		orderClause = "ORDER BY " + strings.Join(sortingCriteria, ", ")
+		if len(q.Measures) == 1 && q.Measures[0].Filter != nil {
+			jsc := make([]string, 0, len(sortingCriteria))
+			for _, v := range sortingCriteria {
+				jsc = append(jsc, fmt.Sprintf("%s.%s", safeName(mv.Table), v))
+			}
+			orderClause = "ORDER BY " + strings.Join(jsc, ", ")
+		} else {
+			orderClause = "ORDER BY " + strings.Join(sortingCriteria, ", ")
+		}
 	}
 
 	var limitClause string
@@ -579,32 +602,59 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			limitClause,                     // 8
 		)
 	} else {
-		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
-			strings.Join(selectCols, ", "),
-			safeName(mv.Table),
-			strings.Join(unnestClauses, ""),
-			whereClause,
-			groupClause,
-			havingClause,
-			orderClause,
-			limitClause,
-			q.Offset,
-		)
+		/*
+			Example:
+			SELECT t.d1, t.d2, t.d3, t2.m1 (SELECT d1, d2, d3, m1 FROM t WHERE ...  GROUP BY d1, d2, d3 HAVING ... ) t LEFT JOIN (
+				SELECT d1, d2, d3, m1 FROM t WHERE ... AND (d4 = 'Safari') GROUP BY d1, d2, d3 HAVING ...
+			)  t2 ON (COALESCE(t.d1, 'val') = COALESCE(t2.d1, 'val') and COALESCE(t.d2, 'val') = COALESCE(t2.d2, 'val') and ...) ORDER BY ...
+
+			This JOIN mirrors functionality of SELECT d1, d2, d3, m1 FILTER (WHERE d4 = 'Safari') FROM t WHERE... GROUP BY d1, d2, d3
+			bacause FILTER cannot be applied for arbitrary measure, ie sum(a)/1000
+		*/
+		if len(q.Measures) == 1 && q.Measures[0].Filter != nil {
+			selfJoinCols = append(selfJoinCols, fmt.Sprintf("%[1]s.%[2]s as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
+			sql = fmt.Sprintf(`
+				SELECT %[1]s FROM (
+					SELECT %[10]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s 
+				) %[2]s 
+				LEFT JOIN (
+					SELECT %[10]s FROM %[2]s %[3]s %[9]s %[5]s %[6]s
+				) %[7]s 
+				ON (%[8]s) %[13]s %[11]s  OFFSET %[12]d
+				`,
+				strings.Join(selfJoinCols, ", "),      // 1
+				safeName(mv.Table),                    // 2
+				strings.Join(unnestClauses, ""),       // 3
+				whereClause,                           // 4
+				groupClause,                           // 5
+				havingClause,                          // 6
+				selfJoinTableAlias,                    // 7
+				strings.Join(joinConditions, " AND "), // 8
+				filterWhereClause,                     // 9
+				strings.Join(selectCols, ", "),        // 10
+				limitClause,                           // 11
+				q.Offset,                              // 12
+				orderClause,                           // 13
+			)
+
+			args = append(args, subSelectArgs...)
+			fmt.Println("sql ", sql, args)
+		} else {
+			sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
+				strings.Join(selectCols, ", "),
+				safeName(mv.Table),
+				strings.Join(unnestClauses, ""),
+				whereClause,
+				groupClause,
+				havingClause,
+				orderClause,
+				limitClause,
+				q.Offset,
+			)
+		}
 	}
 
 	return sql, args, nil
-}
-
-func applyFilter(mv *runtimev1.MetricsViewSpec, expr string, filter *runtimev1.Expression, args *[]any, dialect drivers.Dialect) (string, error) {
-	if filter != nil {
-		exprClause, exprArgs, err := buildExpression(mv, filter, nil, dialect)
-		if err != nil {
-			return "", err
-		}
-		expr = fmt.Sprintf("%s FILTER (WHERE %s)", expr, exprClause)
-		*args = append(*args, exprArgs...)
-	}
-	return expr, nil
 }
 
 func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpec, dim *runtimev1.MetricsViewAggregationDimension, dialect drivers.Dialect) (string, []any, error) {

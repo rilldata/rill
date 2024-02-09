@@ -825,9 +825,95 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 	i = 0
 	require.Equal(t, "Facebook,8808", fieldsToString(rows[i], "pub", "measure_1"))
 	i++
-	require.Equal(t, "Google,0", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Google,null", fieldsToString(rows[i], "pub", "measure_1"))
 	i++
-	require.Equal(t, "Microsoft,0", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "pub", "measure_1"))
+}
+
+func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView().Spec
+
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "dom",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name:           "measure_1",
+				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+			},
+		},
+		MetricsView: mv,
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "dom",
+			},
+		},
+	}
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows := q.Result.Data
+	i := 0
+	require.Equal(t, "Facebook,facebook.com,10533", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	i++
+	require.Equal(t, "Facebook,instagram.com,8808", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	i++
+	require.Equal(t, "Google,google.com,10119", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+
+	q.Measures = []*runtimev1.MetricsViewAggregationMeasure{
+		{
+			Name:           "measure_1",
+			BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
+			Filter: &runtimev1.Expression{
+				Expression: &runtimev1.Expression_Cond{
+					Cond: &runtimev1.Condition{
+						Op: runtimev1.Operation_OPERATION_EQ,
+						Exprs: []*runtimev1.Expression{
+							{
+								Expression: &runtimev1.Expression_Ident{
+									Ident: "dom",
+								},
+							},
+							{
+								Expression: &runtimev1.Expression_Val{
+									Val: structpb.NewStringValue("instagram.com"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+
+	rows = q.Result.Data
+	i = 0
+	require.Equal(t, "Facebook,facebook.com,null", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	i++
+	require.Equal(t, "Facebook,instagram.com,8808", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	i++
+	require.Equal(t, "Google,google.com,null", fieldsToString(rows[i], "pub", "dom", "measure_1"))
 }
 
 func fieldsToString(row *structpb.Struct, args ...string) string {
