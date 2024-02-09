@@ -142,6 +142,68 @@ export class DashboardState extends Message<DashboardState> {
    */
   pinIndex?: number;
 
+  /**
+   *
+   * Pivot related fields
+   *
+   * @generated from field: optional bool pivot_is_active = 22;
+   */
+  pivotIsActive?: boolean;
+
+  /**
+   * List of dimensions selected for rows
+   *
+   * @generated from field: repeated string pivot_row_dimensions = 23;
+   */
+  pivotRowDimensions: string[] = [];
+
+  /**
+   * List of time dimensions selected for columns
+   *
+   * @generated from field: repeated rill.runtime.v1.TimeGrain pivot_column_time_dimensions = 24;
+   */
+  pivotColumnTimeDimensions: TimeGrain[] = [];
+
+  /**
+   * List of time dimensions selected for columns
+   *
+   * @generated from field: repeated string pivot_column_dimensions = 25;
+   */
+  pivotColumnDimensions: string[] = [];
+
+  /**
+   * List of time measures selected for columns
+   *
+   * @generated from field: repeated string pivot_column_measures = 26;
+   */
+  pivotColumnMeasures: string[] = [];
+
+  /**
+   * Map of dimensions that are expanded
+   *
+   * @generated from field: map<string, bool> pivot_expanded = 27;
+   */
+  pivotExpanded: { [key: string]: boolean } = {};
+
+  /**
+   * Sort settings
+   *
+   * @generated from field: repeated rill.ui.v1.PivotColumnSort pivot_sort = 28;
+   */
+  pivotSort: PivotColumnSort[] = [];
+
+  /**
+   * Pagination data
+   *
+   * @generated from field: optional int32 pivot_column_page = 29;
+   */
+  pivotColumnPage?: number;
+
+  /**
+   * @generated from field: optional rill.ui.v1.DashboardState.PivotRowJoinType pivot_row_join_type = 30;
+   */
+  pivotRowJoinType?: DashboardState_PivotRowJoinType;
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -171,6 +233,15 @@ export class DashboardState extends Message<DashboardState> {
     { no: 17, name: "comparison_dimension", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 18, name: "expanded_measure", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 19, name: "pin_index", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 22, name: "pivot_is_active", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 23, name: "pivot_row_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 24, name: "pivot_column_time_dimensions", kind: "enum", T: proto3.getEnumType(TimeGrain), repeated: true },
+    { no: 25, name: "pivot_column_dimensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 26, name: "pivot_column_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 27, name: "pivot_expanded", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 8 /* ScalarType.BOOL */} },
+    { no: 28, name: "pivot_sort", kind: "message", T: PivotColumnSort, repeated: true },
+    { no: 29, name: "pivot_column_page", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
+    { no: 30, name: "pivot_row_join_type", kind: "enum", T: proto3.getEnumType(DashboardState_PivotRowJoinType), opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {
@@ -321,6 +392,32 @@ proto3.util.setEnumType(DashboardState_LeaderboardSortType, "rill.ui.v1.Dashboar
 ]);
 
 /**
+ * @generated from enum rill.ui.v1.DashboardState.PivotRowJoinType
+ */
+export enum DashboardState_PivotRowJoinType {
+  /**
+   * @generated from enum value: PIVOT_ROW_JOIN_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: PIVOT_ROW_JOIN_TYPE_FLAT = 1;
+   */
+  FLAT = 1,
+
+  /**
+   * @generated from enum value: PIVOT_ROW_JOIN_TYPE_NEST = 2;
+   */
+  NEST = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(DashboardState_PivotRowJoinType)
+proto3.util.setEnumType(DashboardState_PivotRowJoinType, "rill.ui.v1.DashboardState.PivotRowJoinType", [
+  { no: 0, name: "PIVOT_ROW_JOIN_TYPE_UNSPECIFIED" },
+  { no: 1, name: "PIVOT_ROW_JOIN_TYPE_FLAT" },
+  { no: 2, name: "PIVOT_ROW_JOIN_TYPE_NEST" },
+]);
+
+/**
  * @generated from message rill.ui.v1.DashboardTimeRange
  */
 export class DashboardTimeRange extends Message<DashboardTimeRange> {
@@ -409,6 +506,49 @@ export class DashboardDimensionFilter extends Message<DashboardDimensionFilter> 
 
   static equals(a: DashboardDimensionFilter | PlainMessage<DashboardDimensionFilter> | undefined, b: DashboardDimensionFilter | PlainMessage<DashboardDimensionFilter> | undefined): boolean {
     return proto3.util.equals(DashboardDimensionFilter, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.ui.v1.PivotColumnSort
+ */
+export class PivotColumnSort extends Message<PivotColumnSort> {
+  /**
+   * @generated from field: bool desc = 1;
+   */
+  desc = false;
+
+  /**
+   * @generated from field: string id = 2;
+   */
+  id = "";
+
+  constructor(data?: PartialMessage<PivotColumnSort>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.ui.v1.PivotColumnSort";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "desc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PivotColumnSort {
+    return new PivotColumnSort().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PivotColumnSort {
+    return new PivotColumnSort().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PivotColumnSort {
+    return new PivotColumnSort().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: PivotColumnSort | PlainMessage<PivotColumnSort> | undefined, b: PivotColumnSort | PlainMessage<PivotColumnSort> | undefined): boolean {
+    return proto3.util.equals(PivotColumnSort, a, b);
   }
 }
 
