@@ -32,6 +32,8 @@ import {
 import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
 import { Readable, derived, writable } from "svelte/store";
 import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
+import { PivotChipType, type PivotChipData } from "../pivot/types";
+import type { PivotRows, PivotColumns } from "../pivot/types";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
@@ -231,15 +233,41 @@ const metricViewReducers = {
     });
   },
 
-  setPivotRows(name: string, values: string[]) {
+  setPivotRows(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, rows: values };
+      const dimensions: PivotChipData[] = [];
+
+      value.forEach((val) => {
+        if (val.type !== PivotChipType.Measure) {
+          dimensions.push(val);
+        }
+      });
+
+      metricsExplorer.pivot.rows = {
+        ...metricsExplorer.pivot.rows,
+        dimension: dimensions,
+      };
     });
   },
 
-  setPivotColumns(name: string, values: string[]) {
+  setPivotColumns(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, columns: values };
+      const dimensions: PivotChipData[] = [];
+      const measures: PivotChipData[] = [];
+
+      value.forEach((val) => {
+        if (val.type === PivotChipType.Measure) {
+          measures.push(val);
+        } else {
+          dimensions.push(val);
+        }
+      });
+
+      metricsExplorer.pivot.columns = {
+        ...metricsExplorer.pivot.columns,
+        dimension: dimensions,
+        measure: measures,
+      };
     });
   },
 
@@ -264,7 +292,7 @@ const metricViewReducers = {
     });
   },
 
-  createPivot(name: string, rows: string[], columns: string[]) {
+  createPivot(name: string, rows: PivotRows, columns: PivotColumns) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot = {
         ...metricsExplorer.pivot,
@@ -412,36 +440,6 @@ const metricViewReducers = {
         metricsExplorer.selectedComparisonTimeRange !== undefined &&
           metricsExplorer.selectedComparisonDimension === undefined,
       );
-    });
-  },
-
-  setContextColumn(name: string, contextColumn: LeaderboardContextColumn) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      const initialSort = sortTypeForContextColumnType(
-        metricsExplorer.leaderboardContextColumn,
-      );
-      switch (contextColumn) {
-        case LeaderboardContextColumn.DELTA_ABSOLUTE:
-        case LeaderboardContextColumn.DELTA_PERCENT: {
-          // if there is no time comparison, then we can't show
-          // these context columns, so return with no change
-          if (metricsExplorer.showTimeComparison === false) return;
-
-          metricsExplorer.leaderboardContextColumn = contextColumn;
-          break;
-        }
-        default:
-          metricsExplorer.leaderboardContextColumn = contextColumn;
-      }
-
-      // if we have changed the context column, and the leaderboard is
-      // sorted by the context column from before we made the change,
-      // then we also need to change
-      // the sort type to match the new context column
-      if (metricsExplorer.dashboardSortType === initialSort) {
-        metricsExplorer.dashboardSortType =
-          sortTypeForContextColumnType(contextColumn);
-      }
     });
   },
 

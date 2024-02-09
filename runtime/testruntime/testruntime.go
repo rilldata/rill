@@ -66,7 +66,7 @@ func New(t TestingT) *runtime.Runtime {
 	// logger, err := zap.NewDevelopment()
 	// require.NoError(t, err)
 
-	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient(), email.New(email.NewNoopSender()))
+	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient(), email.New(email.NewTestSender()))
 	require.NoError(t, err)
 	t.Cleanup(func() { rt.Close() })
 
