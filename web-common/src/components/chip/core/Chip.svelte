@@ -74,7 +74,7 @@
     {textClass}
     {bgHoverClass} 
     {active ? bgActiveClass : bgBaseClass}
-    {outline ? outlineBaseClass && outlineHoverClass : ''}}
+    {outline ? outlineBaseClass + ' ' + outlineHoverClass : ''}
     {active && outline ? outlineActiveClass : ''} 
   "
       style:grid-template-columns="{$$slots.icon || removable
