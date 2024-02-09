@@ -6,10 +6,14 @@ import {
   Value,
 } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  PivotChipType,
+  type PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
 import {
   ToProtoOperationMap,
   ToProtoPivotRowJoinTypeMap,
+  ToProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
@@ -24,10 +28,6 @@ import {
   Condition,
   Expression,
 } from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
-import {
-  TimeGrain,
-  TimeGrain as TimeGrainProto,
-} from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
 import {
   DashboardDimensionFilter,
   DashboardState,
@@ -74,7 +74,9 @@ export function getProtoFromDashboardState(
   if (metrics.selectedTimeRange) {
     state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
     if (metrics.selectedTimeRange.interval) {
-      state.timeGrain = toTimeGrainProto(metrics.selectedTimeRange.interval);
+      state.timeGrain =
+        ToProtoTimeGrainMap[metrics.selectedTimeRange.interval] ??
+        V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
     }
   }
   if (metrics.selectedComparisonTimeRange) {
@@ -170,32 +172,6 @@ function toTimeProto(date: Date) {
   });
 }
 
-function toTimeGrainProto(timeGrain: V1TimeGrain) {
-  switch (timeGrain) {
-    case V1TimeGrain.TIME_GRAIN_UNSPECIFIED:
-    default:
-      return TimeGrain.UNSPECIFIED;
-    case V1TimeGrain.TIME_GRAIN_MILLISECOND:
-      return TimeGrain.MILLISECOND;
-    case V1TimeGrain.TIME_GRAIN_SECOND:
-      return TimeGrain.SECOND;
-    case V1TimeGrain.TIME_GRAIN_MINUTE:
-      return TimeGrainProto.MINUTE;
-    case V1TimeGrain.TIME_GRAIN_HOUR:
-      return TimeGrainProto.HOUR;
-    case V1TimeGrain.TIME_GRAIN_DAY:
-      return TimeGrainProto.DAY;
-    case V1TimeGrain.TIME_GRAIN_WEEK:
-      return TimeGrainProto.WEEK;
-    case V1TimeGrain.TIME_GRAIN_MONTH:
-      return TimeGrainProto.MONTH;
-    case V1TimeGrain.TIME_GRAIN_QUARTER:
-      return TimeGrainProto.QUARTER;
-    case V1TimeGrain.TIME_GRAIN_YEAR:
-      return TimeGrainProto.YEAR;
-  }
-}
-
 function toExpressionProto(
   expression: V1Expression | undefined,
 ): Expression | undefined {
@@ -281,10 +257,17 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
       pivotExpanded: {},
       pivotRowJoinType: DashboardState_PivotRowJoinType.UNSPECIFIED,
     };
+  console.log(pivotState.rows, pivotState.columns);
   return {
     pivotIsActive: true,
-    pivotRows: pivotState.rows,
-    pivotColumns: pivotState.columns,
+    pivotRowDimensions: pivotState.rows.dimension.map((d) => d.id),
+    pivotColumnTimeDimensions: pivotState.columns.dimension
+      .filter((d) => d.type === PivotChipType.Time)
+      .map((d) => ToProtoTimeGrainMap[d.id as V1TimeGrain]),
+    pivotColumnDimensions: pivotState.columns.dimension
+      .filter((d) => d.type === PivotChipType.Dimension)
+      .map((d) => d.id),
+    pivotColumnMeasures: pivotState.columns.measure.map((m) => m.id),
     pivotExpanded: pivotState.expanded, // TODO
     pivotSort: pivotState.sorting,
     pivotColumnPage: pivotState.columnPage,
