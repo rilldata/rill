@@ -70,12 +70,6 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView().Spec
-
 	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
@@ -84,7 +78,6 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv,
 		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
@@ -122,7 +115,6 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv,
 		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
@@ -166,12 +158,6 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView()
-
 	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
@@ -180,7 +166,6 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv.Spec,
 		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
@@ -218,12 +203,6 @@ func TestMetricsViewsComparison_dim_order_no_sort_order(t *testing.T) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView()
-
 	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
@@ -232,7 +211,6 @@ func TestMetricsViewsComparison_dim_order_no_sort_order(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv.Spec,
 		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
@@ -267,12 +245,6 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView()
-
 	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
@@ -281,7 +253,6 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv.Spec,
 		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
@@ -319,12 +290,6 @@ func TestMetricsViewsComparison_measure_filters(t *testing.T) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView()
-
 	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
@@ -333,7 +298,6 @@ func TestMetricsViewsComparison_measure_filters(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv.Spec,
 		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
@@ -388,12 +352,6 @@ func TestMetricsViewsComparison_measure_filters_with_compare_no_alias(t *testing
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView()
-
 	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
@@ -402,7 +360,6 @@ func TestMetricsViewsComparison_measure_filters_with_compare_no_alias(t *testing
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv.Spec,
 		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
@@ -456,12 +413,6 @@ func TestMetricsViewsComparison_measure_filters_with_compare_base_measure(t *tes
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView()
-
 	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
@@ -470,7 +421,6 @@ func TestMetricsViewsComparison_measure_filters_with_compare_base_measure(t *tes
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv.Spec,
 		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
@@ -529,12 +479,6 @@ func TestMetricsViewsComparison_measure_filters_with_compare_aliases(t *testing.
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView()
-
 	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
@@ -543,7 +487,6 @@ func TestMetricsViewsComparison_measure_filters_with_compare_aliases(t *testing.
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv.Spec,
 		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
@@ -610,12 +553,6 @@ func TestMetricsViewsComparison_export_xlsx(t *testing.T) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(context.Background(), instanceId)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView()
-
 	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -624,7 +561,6 @@ func TestMetricsViewsComparison_export_xlsx(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv.Spec,
 		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
@@ -668,12 +604,6 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(context.Background(), instanceId)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView()
-
 	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
@@ -682,7 +612,6 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv.Spec,
 		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),

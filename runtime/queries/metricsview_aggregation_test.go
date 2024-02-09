@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -59,12 +58,6 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 func TestMetricsViewsAggregation(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView().Spec
-
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -83,7 +76,6 @@ func TestMetricsViewsAggregation(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv,
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
@@ -95,7 +87,7 @@ func TestMetricsViewsAggregation(t *testing.T) {
 
 		Limit: &limit,
 	}
-	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	for i, row := range q.Result.Data {
@@ -132,12 +124,6 @@ func TestMetricsViewsAggregation(t *testing.T) {
 func TestMetricsViewsAggregation_no_limit(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView().Spec
-
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -155,7 +141,6 @@ func TestMetricsViewsAggregation_no_limit(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv,
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
@@ -165,7 +150,7 @@ func TestMetricsViewsAggregation_no_limit(t *testing.T) {
 			},
 		},
 	}
-	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	require.Equal(t, 3, len(q.Result.Schema.Fields))
@@ -174,12 +159,6 @@ func TestMetricsViewsAggregation_no_limit(t *testing.T) {
 
 func TestMetricsViewsAggregation_no_limit_pivot(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView().Spec
 
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -198,7 +177,6 @@ func TestMetricsViewsAggregation_no_limit_pivot(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv,
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
@@ -206,7 +184,7 @@ func TestMetricsViewsAggregation_no_limit_pivot(t *testing.T) {
 		},
 		PivotOn: []string{"timestamp"},
 	}
-	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	require.Equal(t, 4, len(q.Result.Schema.Fields))
@@ -215,12 +193,6 @@ func TestMetricsViewsAggregation_no_limit_pivot(t *testing.T) {
 
 func TestMetricsViewsAggregation_pivot(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView().Spec
 
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
@@ -240,7 +212,6 @@ func TestMetricsViewsAggregation_pivot(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv,
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
@@ -251,7 +222,7 @@ func TestMetricsViewsAggregation_pivot(t *testing.T) {
 		},
 		Limit: &limit,
 	}
-	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	for i, row := range q.Result.Data {
@@ -282,12 +253,6 @@ func TestMetricsViewsAggregation_pivot(t *testing.T) {
 func TestMetricsViewsAggregation_pivot_2_measures(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView().Spec
-
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -309,7 +274,6 @@ func TestMetricsViewsAggregation_pivot_2_measures(t *testing.T) {
 				Name: "measure_0",
 			},
 		},
-		MetricsView: mv,
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
@@ -320,7 +284,7 @@ func TestMetricsViewsAggregation_pivot_2_measures(t *testing.T) {
 		},
 		Limit: &limit,
 	}
-	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	for i, row := range q.Result.Data {
@@ -355,12 +319,6 @@ func TestMetricsViewsAggregation_pivot_2_measures(t *testing.T) {
 func TestMetricsViewsAggregation_pivot_2_measures_and_filter(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView().Spec
-
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -382,7 +340,6 @@ func TestMetricsViewsAggregation_pivot_2_measures_and_filter(t *testing.T) {
 				Name: "measure_0",
 			},
 		},
-		MetricsView: mv,
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
@@ -401,7 +358,7 @@ func TestMetricsViewsAggregation_pivot_2_measures_and_filter(t *testing.T) {
 		},
 		Limit: &limit,
 	}
-	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	for i, row := range q.Result.Data {
@@ -431,12 +388,6 @@ func TestMetricsViewsAggregation_pivot_2_measures_and_filter(t *testing.T) {
 func TestMetricsViewsAggregation_pivot_dim_and_measure(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView().Spec
-
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -465,7 +416,6 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure(t *testing.T) {
 				},
 			},
 		},
-		MetricsView: mv,
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "dom",
@@ -477,7 +427,7 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure(t *testing.T) {
 		},
 		Limit: &limit,
 	}
-	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	for _, s := range q.Result.Schema.Fields {
@@ -694,12 +644,6 @@ func TestMetricsViewAggregation_measure_filters(t *testing.T) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView()
-
 	lmt := int64(250)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -713,7 +657,6 @@ func TestMetricsViewAggregation_measure_filters(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv.Spec,
 		TimeRange: &runtimev1.TimeRange{
 			Start: ctr.Result.Min,
 			End:   timestamppb.New(maxTime),
@@ -758,12 +701,6 @@ func TestMetricsViewAggregation_measure_filters(t *testing.T) {
 func TestMetricsViewsAggregation_timezone(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView().Spec
-
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
@@ -782,7 +719,6 @@ func TestMetricsViewsAggregation_timezone(t *testing.T) {
 				Name: "measure_1",
 			},
 		},
-		MetricsView: mv,
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
@@ -794,7 +730,7 @@ func TestMetricsViewsAggregation_timezone(t *testing.T) {
 
 		Limit: &limit,
 	}
-	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	rows := q.Result.Data
@@ -824,12 +760,6 @@ func TestMetricsViewsAggregation_timezone(t *testing.T) {
 func TestMetricsViewsAggregation_filter(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView().Spec
-
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -843,14 +773,13 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
-		MetricsView: mv,
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
 			},
 		},
 	}
-	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 

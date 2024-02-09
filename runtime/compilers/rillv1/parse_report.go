@@ -125,7 +125,7 @@ func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 		r.ReportSpec.RefreshSchedule = schedule
 	}
 	if timeout != 0 {
-		r.SourceSpec.TimeoutSeconds = uint32(timeout.Seconds())
+		r.ReportSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
 	r.ReportSpec.QueryName = tmp.Query.Name
 	r.ReportSpec.QueryArgsJson = tmp.Query.ArgsJSON

@@ -153,8 +153,13 @@ export function getDefaultMetricsExplorerEntity(
     pinIndex: -1,
     pivot: {
       active: false,
-      rows: [],
-      columns: [],
+      rows: {
+        dimension: [],
+      },
+      columns: {
+        dimension: [],
+        measure: [],
+      },
       rowJoinType: "nest",
       expanded: {},
       sorting: [],

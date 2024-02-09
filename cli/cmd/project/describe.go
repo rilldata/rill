@@ -105,6 +105,8 @@ func parseResourceKind(k string) string {
 		return runtime.ResourceKindMigration
 	case "report":
 		return runtime.ResourceKindReport
+	case "alert":
+		return runtime.ResourceKindAlert
 	default:
 		return k
 	}

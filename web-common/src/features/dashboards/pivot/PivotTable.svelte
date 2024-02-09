@@ -12,18 +12,11 @@
   import { derived } from "svelte/store";
   import type { PivotDataRow, PivotDataStore } from "./types";
   import { ChevronDown } from "lucide-svelte";
-  import { getMeasureCountInColumn } from "./pivot-utils";
 
   export let pivotDataStore: PivotDataStore;
 
   const stateManagers = getStateManagers();
-  const {
-    dashboardStore,
-    metricsViewName,
-    selectors: {
-      measures: { visibleMeasures },
-    },
-  } = stateManagers;
+  const { dashboardStore, metricsViewName } = stateManagers;
 
   const pivotDashboardStore = derived(dashboardStore, (dashboard) => {
     return dashboard?.pivot;
@@ -59,10 +52,7 @@
   // $: totalColumns = $pivotDataStore.totalColumns;
 
   $: headerGroups = $table.getHeaderGroups();
-  $: measureCount = getMeasureCountInColumn(
-    $dashboardStore.pivot,
-    $visibleMeasures,
-  );
+  $: measureCount = $dashboardStore.pivot?.columns?.measure?.length ?? 0;
 
   function handleExpandedChange(updater) {
     expanded = updater(expanded);
