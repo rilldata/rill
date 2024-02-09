@@ -13,7 +13,7 @@
     <mj-section>
       <mj-column>
         <mj-image container-background-color="#FFF" width="100px" src="https://cdn.rilldata.com/email-transactional/rill-logo-purple.png" />
-
+        
         <mj-spacer height="35px" />
         
         <mj-text font-size="20px" font-weight="bold">
@@ -21,21 +21,31 @@
         </mj-text>
 
         <mj-text padding-bottom="0px">
-          {{ .Body }}
+          {{ if .IsError }}
+          The alert failed to evaluate on <b>{{ .ExecutionTimeString }}</b>. It failed with the following error message: <i>{{ .ErrorMessage }}</i>.
+          {{ else if .IsRecover }}
+          The alert has recovered on <b>{{ .ExecutionTimeString }}</b> from a previous failure.
+          {{ else if .IsPass }}
+          The alert has passed on <b>{{ .ExecutionTimeString }}</b>.
+          {{ end }}
         </mj-text>
 
         <mj-spacer height="20px" />
 
-        <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .ButtonLink }}">
-          {{ .ButtonText }}
+        <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .OpenLink }}">
+          Open in browser
         </mj-button>
-
+        
         <mj-spacer height="20px" />
 
         <mj-divider border-color="#AAA" border-width="1px"></mj-divider>
 
         <mj-spacer height="20px" />
-
+        
+        <mj-text align="center" font-size="12px">
+          To edit or unsubscribe from this alert, <a href="{{ .EditLink }}">click here</a>.
+        </mj-text>
+        
         <mj-text align="center" font-size="12px" line-height="1.5">
           © 2023 Rill Data, Inc<br />
           18 Bartol St. • San Francisco • CA<br />
@@ -43,6 +53,7 @@
           <a href="https://bit.ly/3unvA05">Community</a> •
           <a href="https://www.rilldata.com/legal/privacy">Privacy Policy</a>
         </mj-text>
+
       </mj-column>
     </mj-section>
   </mj-body>

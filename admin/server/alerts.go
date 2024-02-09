@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -19,17 +20,18 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 	"gopkg.in/yaml.v3"
 )
 
-func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRequest) (*adminv1.GetReportMetaResponse, error) {
+func (s *Server) GetAlertMeta(ctx context.Context, req *adminv1.GetAlertMetaRequest) (*adminv1.GetAlertMetaResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.project_id", req.ProjectId),
 		attribute.String("args.branch", req.Branch),
-		attribute.String("args.report", req.Report),
+		attribute.String("args.alert", req.Alert),
+		attribute.Bool("args.query_for", req.GetQueryFor() != nil),
 	)
 
 	proj, err := s.admin.DB.FindProject(ctx, req.ProjectId)
@@ -42,7 +44,7 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 
 	permissions := auth.GetClaims(ctx).ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !permissions.ReadProdStatus {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read report meta")
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read alert meta")
 	}
 
 	if proj.ProdBranch != req.Branch {
@@ -54,14 +56,40 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &adminv1.GetReportMetaResponse{
-		OpenUrl:   s.urls.reportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
-		ExportUrl: s.urls.reportExport(org.Name, proj.Name, req.Report),
-		EditUrl:   s.urls.reportEdit(org.Name, proj.Name, req.Report),
+	var attr map[string]any
+	if req.QueryFor != nil {
+		switch forVal := req.QueryFor.(type) {
+		case *adminv1.GetAlertMetaRequest_QueryForUserId:
+			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, forVal.QueryForUserId, "")
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		case *adminv1.GetAlertMetaRequest_QueryForUserEmail:
+			attr, err = s.getAttributesForUser(ctx, proj.OrganizationID, proj.ID, "", forVal.QueryForUserEmail)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		default:
+			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
+		}
+	}
+
+	var attrPB *structpb.Struct
+	if attr != nil {
+		attrPB, err = structpb.NewStruct(attr)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	return &adminv1.GetAlertMetaResponse{
+		OpenUrl:            s.urls.alertOpen(org.Name, proj.Name, req.Alert),
+		EditUrl:            s.urls.alertEdit(org.Name, proj.Name, req.Alert),
+		QueryForAttributes: attrPB,
 	}, nil
 }
 
-func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequest) (*adminv1.CreateReportResponse, error) {
+func (s *Server) CreateAlert(ctx context.Context, req *adminv1.CreateAlertRequest) (*adminv1.CreateAlertResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -77,12 +105,12 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 
 	claims := auth.GetClaims(ctx)
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
-	if !permissions.CreateReports {
+	if !permissions.CreateAlerts {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project repo")
 	}
 
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.PermissionDenied, "only users can create reports")
+		return nil, status.Error(codes.PermissionDenied, "only users can create alerts")
 	}
 
 	if proj.ProdDeploymentID == nil {
@@ -94,40 +122,40 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	name, err := s.generateReportName(ctx, depl, req.Options.Title)
+	name, err := s.generateAlertName(ctx, depl, req.Options.Title)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, name, claims.OwnerID())
+	data, err := s.yamlForManagedAlert(req.Options, name, claims.OwnerID())
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
 		ProjectID: proj.ID,
 		Branch:    proj.ProdBranch,
-		Path:      virtualFilePathForManagedReport(name),
+		Path:      virtualFilePathForManagedAlert(name),
 		Data:      data,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to insert virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, name, runtime.ResourceKindReport)
+	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, name, runtime.ResourceKindAlert)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be created")
+			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be created")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to reconcile report: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to reconcile alert: %s", err.Error())
 	}
 
-	return &adminv1.CreateReportResponse{
+	return &adminv1.CreateAlertResponse{
 		Name: name,
 	}, nil
 }
 
-func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest) (*adminv1.EditReportResponse, error) {
+func (s *Server) EditAlert(ctx context.Context, req *adminv1.EditAlertRequest) (*adminv1.EditAlertResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -157,48 +185,48 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	spec, err := s.admin.LookupReport(ctx, depl, req.Name)
+	spec, err := s.admin.LookupAlert(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "could not get alert: %s", err.Error())
 	}
-	annotations := parseReportAnnotations(spec.Annotations)
+	annotations := parseAlertAnnotations(spec.Annotations)
 
 	if !annotations.AdminManaged {
-		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
+		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
 	}
 
 	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-	if !permissions.ManageReports && !isOwner {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
+	if !permissions.ManageAlerts && !isOwner {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, req.Name, annotations.AdminOwnerUserID)
+	data, err := s.yamlForManagedAlert(req.Options, req.Name, annotations.AdminOwnerUserID)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 	}
 
 	err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
 		ProjectID: proj.ID,
 		Branch:    proj.ProdBranch,
-		Path:      virtualFilePathForManagedReport(req.Name),
+		Path:      virtualFilePathForManagedAlert(req.Name),
 		Data:      data,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
+	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindAlert)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be updated")
+			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be updated")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to reconcile report: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to reconcile alert: %s", err.Error())
 	}
 
-	return &adminv1.EditReportResponse{}, nil
+	return &adminv1.EditAlertResponse{}, nil
 }
 
-func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.UnsubscribeReportRequest) (*adminv1.UnsubscribeReportResponse, error) {
+func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeAlertRequest) (*adminv1.UnsubscribeAlertResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -228,27 +256,27 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	spec, err := s.admin.LookupReport(ctx, depl, req.Name)
+	spec, err := s.admin.LookupAlert(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "could not get alert: %s", err.Error())
 	}
-	annotations := parseReportAnnotations(spec.Annotations)
+	annotations := parseAlertAnnotations(spec.Annotations)
 
 	if !annotations.AdminManaged {
-		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
+		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
 	}
 
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.PermissionDenied, "only users can unsubscribe from reports")
+		return nil, status.Error(codes.PermissionDenied, "only users can unsubscribe from alerts")
 	}
 	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	opts, err := recreateReportOptionsFromSpec(spec)
+	opts, err := recreateAlertOptionsFromSpec(spec)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to recreate report options: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to recreate alert options: %s", err.Error())
 	}
 
 	found := false
@@ -261,24 +289,24 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	}
 
 	if !found {
-		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to report")
+		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to alert")
 	}
 
 	if len(opts.Recipients) == 0 {
-		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedReport(req.Name))
+		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 		}
 	} else {
-		data, err := s.yamlForManagedReport(opts, req.Name, annotations.AdminOwnerUserID)
+		data, err := s.yamlForManagedAlert(opts, req.Name, annotations.AdminOwnerUserID)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
+			return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 		}
 
 		err = s.admin.DB.UpsertVirtualFile(ctx, &database.InsertVirtualFileOptions{
 			ProjectID: proj.ID,
 			Branch:    proj.ProdBranch,
-			Path:      virtualFilePathForManagedReport(req.Name),
+			Path:      virtualFilePathForManagedAlert(req.Name),
 			Data:      data,
 		})
 		if err != nil {
@@ -286,18 +314,18 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		}
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
+	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindAlert)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be updated")
+			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be updated")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to reconcile report: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to reconcile alert: %s", err.Error())
 	}
 
-	return &adminv1.UnsubscribeReportResponse{}, nil
+	return &adminv1.UnsubscribeAlertResponse{}, nil
 }
 
-func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequest) (*adminv1.DeleteReportResponse, error) {
+func (s *Server) DeleteAlert(ctx context.Context, req *adminv1.DeleteAlertRequest) (*adminv1.DeleteAlertResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -327,38 +355,54 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	spec, err := s.admin.LookupReport(ctx, depl, req.Name)
+	spec, err := s.admin.LookupAlert(ctx, depl, req.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "could not get alert: %s", err.Error())
 	}
-	annotations := parseReportAnnotations(spec.Annotations)
+	annotations := parseAlertAnnotations(spec.Annotations)
 
 	if !annotations.AdminManaged {
-		return nil, status.Error(codes.FailedPrecondition, "can't edit report because it was not created from the UI")
+		return nil, status.Error(codes.FailedPrecondition, "can't edit alert because it was not created from the UI")
 	}
 
 	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-	if !permissions.ManageReports && !isOwner {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
+	if !permissions.ManageAlerts && !isOwner {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit alert")
 	}
 
-	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedReport(req.Name))
+	err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
+	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindAlert)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be deleted")
+			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for alert to be deleted")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to reconcile report: %s", err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to reconcile alert: %s", err.Error())
 	}
 
-	return &adminv1.DeleteReportResponse{}, nil
+	return &adminv1.DeleteAlertResponse{}, nil
 }
 
-func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRequest) (*adminv1.TriggerReportResponse, error) {
+func (s *Server) GenerateAlertYAML(ctx context.Context, req *adminv1.GenerateAlertYAMLRequest) (*adminv1.GenerateAlertYAMLResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	data, err := s.yamlForCommittedAlert(req.Options)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
+	}
+
+	return &adminv1.GenerateAlertYAMLResponse{
+		Yaml: string(data),
+	}, nil
+}
+
+func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequest) (*adminv1.GetAlertYAMLResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -383,65 +427,38 @@ func (s *Server) TriggerReport(ctx context.Context, req *adminv1.TriggerReportRe
 		return nil, status.Error(codes.FailedPrecondition, "project does not have a production deployment")
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	vf, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-
-	spec, err := s.admin.LookupReport(ctx, depl, req.Name)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "could not get report: %s", err.Error())
-	}
-	annotations := parseReportAnnotations(spec.Annotations)
-
-	isOwner := claims.OwnerType() == auth.OwnerTypeUser && annotations.AdminOwnerUserID == claims.OwnerID()
-	if !permissions.ManageReports && !isOwner {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
+	if vf == nil {
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("failed to find file for alert %s", req.Name))
 	}
 
-	err = s.admin.TriggerReport(ctx, depl, req.Name)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to trigger report: %s", err.Error())
-	}
-
-	return &adminv1.TriggerReportResponse{}, nil
-}
-
-func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateReportYAMLRequest) (*adminv1.GenerateReportYAMLResponse, error) {
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.organization", req.Organization),
-		attribute.String("args.project", req.Project),
-	)
-
-	data, err := s.yamlForCommittedReport(req.Options)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
-	}
-
-	return &adminv1.GenerateReportYAMLResponse{
-		Yaml: string(data),
+	return &adminv1.GetAlertYAMLResponse{
+		Yaml: string(vf.Data),
 	}, nil
 }
 
-func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, reportName, ownerUserID string) ([]byte, error) {
-	res := reportYAML{}
-	res.Kind = "report"
+func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, alertName, ownerUserID string) ([]byte, error) {
+	res := alertYAML{}
+	res.Kind = "alert"
 	res.Title = opts.Title
-	res.Refresh.Cron = opts.RefreshCron
-	res.Refresh.TimeZone = opts.RefreshTimeZone
+	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
-	res.Export.Format = opts.ExportFormat.String()
-	res.Export.Limit = uint(opts.ExportLimit)
+	// hard code the user id to run for. this avoids exposing data through alert creation
+	res.Query.For.UserID = ownerUserID
 	res.Email.Recipients = opts.Recipients
+	res.Email.Renotify = opts.EmailRenotify
+	res.Email.RenotifyAfter = opts.EmailRenotifyAfterSeconds
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
-	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
 	return yaml.Marshal(res)
 }
 
-func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, error) {
+func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, error) {
 	// Format args as pretty YAML
 	var args map[string]interface{}
 	if opts.QueryArgsJson != "" {
@@ -451,47 +468,32 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 		}
 	}
 
-	// Format export format as pretty string
-	var exportFormat string
-	switch opts.ExportFormat {
-	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		exportFormat = "csv"
-	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		exportFormat = "parquet"
-	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		exportFormat = "xlsx"
-	default:
-		exportFormat = opts.ExportFormat.String()
-	}
-
-	res := reportYAML{}
-	res.Kind = "report"
+	res := alertYAML{}
+	res.Kind = "alert"
 	res.Title = opts.Title
-	res.Refresh.Cron = opts.RefreshCron
-	res.Refresh.TimeZone = opts.RefreshTimeZone
+	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
-	res.Export.Format = exportFormat
-	res.Export.Limit = uint(opts.ExportLimit)
 	res.Email.Recipients = opts.Recipients
-	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
+	res.Email.Renotify = opts.EmailRenotify
+	res.Email.RenotifyAfter = opts.EmailRenotifyAfterSeconds
 	return yaml.Marshal(res)
 }
 
-// generateReportName generates a random report name with the title as a seed.
-// Example: "My report!" -> "my-report-5b3f7e1a".
+// generateAlertName generates a random alert name with the title as a seed.
+// Example: "My alert!" -> "my-alert-5b3f7e1a".
 // It verifies that the name is not taken (the random component makes any collision unlikely, but we check to be sure).
-func (s *Server) generateReportName(ctx context.Context, depl *database.Deployment, title string) (string, error) {
+func (s *Server) generateAlertName(ctx context.Context, depl *database.Deployment, title string) (string, error) {
 	for i := 0; i < 5; i++ {
-		name := randomReportName(title)
+		name := randomAlertName(title)
 
-		_, err := s.admin.LookupReport(ctx, depl, name)
+		_, err := s.admin.LookupAlert(ctx, depl, name)
 		if err != nil {
 			if s, ok := status.FromError(err); ok && s.Code() == codes.NotFound {
 				// Success! Name isn't taken
 				return name, nil
 			}
-			return "", fmt.Errorf("failed to check report name: %w", err)
+			return "", fmt.Errorf("failed to check alert name: %w", err)
 		}
 	}
 
@@ -499,13 +501,13 @@ func (s *Server) generateReportName(ctx context.Context, depl *database.Deployme
 	return uuid.New().String(), nil
 }
 
-var reportNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)
+var alertNameToDashCharsRegexp = regexp.MustCompile(`[ _]+`)
 
-var reportNameExcludeCharsRegexp = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
+var alertNameExcludeCharsRegexp = regexp.MustCompile(`[^a-zA-Z0-9-]+`)
 
-func randomReportName(title string) string {
-	name := reportNameToDashCharsRegexp.ReplaceAllString(title, "-")
-	name = reportNameExcludeCharsRegexp.ReplaceAllString(name, "")
+func randomAlertName(title string) string {
+	name := alertNameToDashCharsRegexp.ReplaceAllString(title, "-")
+	name = alertNameExcludeCharsRegexp.ReplaceAllString(name, "")
 	name = strings.ToLower(name)
 	name = strings.Trim(name, "-")
 	if name == "" {
@@ -516,68 +518,61 @@ func randomReportName(title string) string {
 	return name
 }
 
-func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportOptions, error) {
-	annotations := parseReportAnnotations(spec.Annotations)
-
-	opts := &adminv1.ReportOptions{}
+func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOptions, error) {
+	opts := &adminv1.AlertOptions{}
 	opts.Title = spec.Title
-	if spec.RefreshSchedule != nil && spec.RefreshSchedule.Cron != "" {
-		opts.RefreshCron = spec.RefreshSchedule.Cron
-		opts.RefreshTimeZone = spec.RefreshSchedule.TimeZone
-	}
+	opts.IntervalDuration = spec.IntervalsIsoDuration
 	opts.QueryName = spec.QueryName
 	opts.QueryArgsJson = spec.QueryArgsJson
-	opts.ExportLimit = spec.ExportLimit
-	opts.ExportFormat = spec.ExportFormat
-	opts.OpenProjectSubpath = annotations.WebOpenProjectSubpath
 	opts.Recipients = spec.EmailRecipients
+	opts.EmailRenotify = spec.EmailRenotify
+	opts.EmailRenotifyAfterSeconds = spec.EmailRenotifyAfterSeconds
 	return opts, nil
 }
 
-// reportYAML is derived from rillv1.ReportYAML, but adapted for generating (as opposed to parsing) the report YAML.
-type reportYAML struct {
-	Kind    string `yaml:"kind"`
-	Title   string `yaml:"title"`
-	Refresh struct {
-		Cron     string `yaml:"cron"`
-		TimeZone string `yaml:"time_zone"`
-	} `yaml:"refresh"`
-	Query struct {
+// alertYAML is derived from rillv1.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
+type alertYAML struct {
+	Kind      string `yaml:"kind"`
+	Title     string `yaml:"title"`
+	Intervals struct {
+		Duration string `yaml:"duration"`
+	} `yaml:"intervals"`
+	Timeout string `yaml:"timeout"`
+	Query   struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args,omitempty"`
 		ArgsJSON string         `yaml:"args_json,omitempty"`
+		For      struct {
+			UserID string `yaml:"user_id"`
+		} `yaml:"for"`
 	} `yaml:"query"`
-	Export struct {
-		Format string `yaml:"format"`
-		Limit  uint   `yaml:"limit"`
-	} `yaml:"export"`
 	Email struct {
-		Recipients []string `yaml:"recipients"`
+		Recipients    []string `yaml:"recipients"`
+		Renotify      bool     `yaml:"renotify"`
+		RenotifyAfter uint32   `yaml:"renotify_after"`
 	} `yaml:"email"`
-	Annotations reportAnnotations `yaml:"annotations,omitempty"`
+	Annotations alertAnnotations `yaml:"annotations,omitempty"`
 }
 
-type reportAnnotations struct {
-	AdminOwnerUserID      string `yaml:"admin_owner_user_id"`
-	AdminManaged          bool   `yaml:"admin_managed"`
-	AdminNonce            string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
-	WebOpenProjectSubpath string `yaml:"web_open_project_subpath"`
+type alertAnnotations struct {
+	AdminOwnerUserID string `yaml:"admin_owner_user_id"`
+	AdminManaged     bool   `yaml:"admin_managed"`
+	AdminNonce       string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitAlert
 }
 
-func parseReportAnnotations(annotations map[string]string) reportAnnotations {
+func parseAlertAnnotations(annotations map[string]string) alertAnnotations {
 	if annotations == nil {
-		return reportAnnotations{}
+		return alertAnnotations{}
 	}
 
-	res := reportAnnotations{}
+	res := alertAnnotations{}
 	res.AdminOwnerUserID = annotations["admin_owner_user_id"]
 	res.AdminManaged, _ = strconv.ParseBool(annotations["admin_managed"])
 	res.AdminNonce = annotations["admin_nonce"]
-	res.WebOpenProjectSubpath = annotations["web_open_project_subpath"]
 
 	return res
 }
 
-func virtualFilePathForManagedReport(name string) string {
-	return path.Join("reports", name+".yaml")
+func virtualFilePathForManagedAlert(name string) string {
+	return path.Join("alerts", name+".yaml")
 }
