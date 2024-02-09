@@ -325,7 +325,7 @@ func ToStructCoerceKeysUnknown(s any, t *runtimev1.MapType) (*structpb.Struct, e
 	if v.Kind() != reflect.Map {
 		return nil, fmt.Errorf("received invalid type %T, expected map", s)
 	}
-	
+
 	var keyType, valType *runtimev1.Type
 	if t != nil {
 		keyType = t.KeyType
