@@ -306,23 +306,6 @@ const metricViewReducers = {
     });
   },
 
-  /**
-   * DEPRECATED!!!
-   * use setLeaderboardMeasureName via:
-   * getStateManagers().actions.setLeaderboardMeasureName
-   *
-   * Still used in tests, so we can't remove it yet, but don't use
-   * it in production code.
-   */
-  setLeaderboardMeasureName(name: string, measureName: string) {
-    console.warn(
-      "setLeaderboardMeasureName is deprecated. Use setLeaderboardMeasureName via `getStateManagers().actions.setLeaderboardMeasureName`. Still used in tests, so we can't remove it yet, but don't use it in production code.",
-    );
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.leaderboardMeasureName = measureName;
-    });
-  },
-
   setExpandedMeasureName(name: string, measureName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.expandedMeasureName = measureName;
