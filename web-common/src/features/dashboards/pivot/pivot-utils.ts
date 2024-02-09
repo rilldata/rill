@@ -255,7 +255,7 @@ export function getAccessorForCell(
       let accessor = `c${i}`;
 
       let colValue = cell[colName] as string;
-      if (isTimeDimension(colName, timeDimension)) {
+      if (!colValue && isTimeDimension(colName, timeDimension)) {
         colValue = cell[timeDimension] as string;
       }
 
