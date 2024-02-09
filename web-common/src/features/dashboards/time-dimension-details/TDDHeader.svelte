@@ -24,14 +24,16 @@
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
+  import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import { featureFlags } from "../../feature-flags";
+  import { PivotChipType } from "../pivot/types";
   import TDDExportButton from "./TDDExportButton.svelte";
   import type { TDDComparison } from "./types";
-  import { PivotChipType } from "../pivot/types";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -124,11 +126,12 @@
     }
   }
 
-  // This needs to be reworked - bgh
   function createPivot() {
     showReplacePivotModal = false;
-    const timeDimension = $metricsView?.data?.timeDimension;
-    if (!timeDimension || !expandedMeasureName) return;
+    const dashboardGrain = $dashboardStore?.selectedTimeRange?.interval;
+    if (!dashboardGrain || !expandedMeasureName) return;
+
+    const timeGrain: TimeGrain = TIME_GRAIN[dashboardGrain];
     const rowDimensions = dimensionName
       ? [
           {
@@ -143,7 +146,11 @@
       { dimension: rowDimensions },
       {
         dimension: [
-          { id: timeDimension, title: timeDimension, type: PivotChipType.Time },
+          {
+            id: dashboardGrain,
+            title: timeGrain.label,
+            type: PivotChipType.Time,
+          },
         ],
         measure: [
           {
@@ -181,12 +188,6 @@
         tooltipText="Choose a measure to display"
       />
     </div>
-
-    <!-- Revisit after Pivot table lands -->
-    <!-- <span> | </span>
-    <div>Time</div>
-    <span> : </span>
-    <div>{selectedMeasureLabel}</div> -->
 
     {#if isFetching}
       <Spinner size="18px" status={EntityStatus.Running} />
