@@ -37,7 +37,7 @@ func checkRefs(ctx context.Context, c *runtime.Controller, refs []*runtimev1.Res
 
 // nextRefreshTime returns the earliest time AFTER t that the schedule should trigger.
 func nextRefreshTime(t time.Time, schedule *runtimev1.Schedule) (time.Time, error) {
-	if schedule == nil {
+	if schedule == nil || schedule.Disable {
 		return time.Time{}, nil
 	}
 
