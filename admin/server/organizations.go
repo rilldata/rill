@@ -690,7 +690,6 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		OrgRoleID: role.ID,
 		Domain:    req.Domain,
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

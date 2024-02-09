@@ -124,6 +124,31 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 		},
 	}
 
+	// Sender for sending transactional emails.
+	// We use a noop sender by default, but you can uncomment the SMTP sender to send emails from localhost for testing.
+	sender := email.NewNoopSender()
+	// Uncomment to send emails for testing:
+	// err = godotenv.Load()
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to load .env file: %w", err)
+	// }
+	// smtpPort, err := strconv.Atoi(os.Getenv("RILL_RUNTIME_EMAIL_SMTP_PORT"))
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to get SMTP port: %w", err)
+	// }
+	// sender, err := email.NewSMTPSender(&email.SMTPOptions{
+	// 	SMTPHost:     os.Getenv("RILL_RUNTIME_EMAIL_SMTP_HOST"),
+	// 	SMTPPort:     smtpPort,
+	// 	SMTPUsername: os.Getenv("RILL_RUNTIME_EMAIL_SMTP_USERNAME"),
+	// 	SMTPPassword: os.Getenv("RILL_RUNTIME_EMAIL_SMTP_PASSWORD"),
+	// 	FromEmail:    os.Getenv("RILL_RUNTIME_EMAIL_SENDER_EMAIL"),
+	// 	FromName:     os.Getenv("RILL_RUNTIME_EMAIL_SENDER_NAME"),
+	// 	BCC:          os.Getenv("RILL_RUNTIME_EMAIL_BCC"),
+	// })
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to create email sender: %w", err)
+	// }
+
 	rtOpts := &runtime.Options{
 		ConnectionCacheSize:          100,
 		MetastoreConnector:           "metastore",
@@ -134,7 +159,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 	}
-	rt, err := runtime.New(ctx, rtOpts, logger, client, email.New(email.NewNoopSender()))
+	rt, err := runtime.New(ctx, rtOpts, logger, client, email.New(sender))
 	if err != nil {
 		return nil, err
 	}

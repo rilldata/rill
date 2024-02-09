@@ -11,153 +11,16 @@ import {
   TimeRangeString,
 } from "@rilldata/web-common/lib/time/types";
 import type {
-  MetricsViewSpecDimensionV2,
-  MetricsViewSpecMeasureV2,
   V1Expression,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import type {
   PivotAxesData,
-  PivotChipData,
   PivotDataStoreConfig,
-  PivotState,
   PivotTimeConfig,
   TimeFilters,
 } from "./types";
-import { PivotChipType } from "./types";
-
-export function getMeasuresInPivotColumns(
-  pivot: PivotState,
-  measures: MetricsViewSpecMeasureV2[],
-): string[] {
-  const { columns } = pivot;
-
-  return columns.filter(
-    (rowName) => measures.findIndex((m) => m?.name === rowName) > -1,
-  );
-}
-
-export function getDimensionsInPivotRow(
-  pivot: PivotState,
-  measures: MetricsViewSpecMeasureV2[],
-): string[] {
-  const { rows } = pivot;
-  return rows.filter(
-    (rowName) => measures.findIndex((m) => m?.name === rowName) === -1,
-  );
-}
-
-export function getDimensionsInPivotColumns(
-  pivot: PivotState,
-  measures: MetricsViewSpecMeasureV2[],
-): string[] {
-  const { columns } = pivot;
-  return columns.filter(
-    (colName) => measures.findIndex((m) => m?.name === colName) === -1,
-  );
-}
-
-export function getFormattedColumn(
-  pivot: PivotState,
-  allMeasures: MetricsViewSpecMeasureV2[],
-  alldimensions: MetricsViewSpecDimensionV2[],
-) {
-  const measures: PivotChipData[] = [];
-  const timeAndDimensions: PivotChipData[] = [];
-
-  const { columns } = pivot;
-
-  columns.forEach((colName) => {
-    let label = "";
-    let id = "";
-    let chipType = PivotChipType.Measure;
-
-    const measure = allMeasures.find((m) => m?.name === colName);
-
-    if (measure && measure.label && measure.name) {
-      chipType = PivotChipType.Measure;
-      label = measure.label;
-      id = measure.name;
-
-      measures.push({ id, title: label, type: chipType });
-
-      return;
-    }
-
-    const dimension = alldimensions.find((d) => d?.name === colName);
-
-    if (dimension && dimension.label && dimension.name) {
-      chipType = PivotChipType.Dimension;
-      label = dimension.label;
-      id = dimension.name;
-    } else {
-      chipType = PivotChipType.Time;
-      label = colName;
-      id = colName;
-    }
-
-    timeAndDimensions.push({ id, title: label, type: chipType });
-  });
-
-  return timeAndDimensions.concat(measures);
-}
-
-export function getFormattedRow(
-  pivot: PivotState,
-  allDimensions: MetricsViewSpecDimensionV2[],
-) {
-  const data: PivotChipData[] = [];
-
-  const { rows } = pivot;
-
-  rows.forEach((rowName) => {
-    let label = "";
-    let id = "";
-    let chipType = PivotChipType.Dimension;
-
-    const dimension = allDimensions.find((m) => m?.name === rowName);
-
-    if (dimension && dimension.label && dimension.name) {
-      chipType = PivotChipType.Dimension;
-      label = dimension.label;
-      id = dimension.name;
-    } else {
-      chipType = PivotChipType.Time;
-      label = rowName;
-      id = rowName;
-    }
-
-    data.push({ id, title: label, type: chipType });
-  });
-
-  return data;
-}
-
-export function getFormattedHeaderValues(
-  pivot: PivotState,
-  allMeasures: MetricsViewSpecMeasureV2[],
-  alldimensions: MetricsViewSpecDimensionV2[],
-) {
-  const rows = getFormattedRow(pivot, alldimensions);
-  const columns = getFormattedColumn(pivot, allMeasures, alldimensions);
-
-  return {
-    rows,
-    columns,
-  };
-}
-
-export function getMeasureCountInColumn(
-  pivot: PivotState,
-  allMeasures: MetricsViewSpecMeasureV2[],
-) {
-  const { columns } = pivot;
-
-  return columns.filter(
-    (rowName) => allMeasures.findIndex((m) => m?.name === rowName) > -1,
-  ).length;
-}
 
 /**
  * Returns a sorted data array by appending the missing values in

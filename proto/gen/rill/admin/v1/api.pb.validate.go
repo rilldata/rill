@@ -16110,6 +16110,280 @@ var _ interface {
 	ErrorName() string
 } = GetReportMetaResponseValidationError{}
 
+// Validate checks the field values on GetAlertMetaRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetAlertMetaRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetAlertMetaRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetAlertMetaRequestMultiError, or nil if none found.
+func (m *GetAlertMetaRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetAlertMetaRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ProjectId
+
+	// no validation rules for Branch
+
+	// no validation rules for Alert
+
+	// no validation rules for Annotations
+
+	switch v := m.QueryFor.(type) {
+	case *GetAlertMetaRequest_QueryForUserId:
+		if v == nil {
+			err := GetAlertMetaRequestValidationError{
+				field:  "QueryFor",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for QueryForUserId
+	case *GetAlertMetaRequest_QueryForUserEmail:
+		if v == nil {
+			err := GetAlertMetaRequestValidationError{
+				field:  "QueryFor",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+		// no validation rules for QueryForUserEmail
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return GetAlertMetaRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetAlertMetaRequestMultiError is an error wrapping multiple validation
+// errors returned by GetAlertMetaRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetAlertMetaRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetAlertMetaRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetAlertMetaRequestMultiError) AllErrors() []error { return m }
+
+// GetAlertMetaRequestValidationError is the validation error returned by
+// GetAlertMetaRequest.Validate if the designated constraints aren't met.
+type GetAlertMetaRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetAlertMetaRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetAlertMetaRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetAlertMetaRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetAlertMetaRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetAlertMetaRequestValidationError) ErrorName() string {
+	return "GetAlertMetaRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetAlertMetaRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetAlertMetaRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetAlertMetaRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetAlertMetaRequestValidationError{}
+
+// Validate checks the field values on GetAlertMetaResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetAlertMetaResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetAlertMetaResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetAlertMetaResponseMultiError, or nil if none found.
+func (m *GetAlertMetaResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetAlertMetaResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for OpenUrl
+
+	// no validation rules for EditUrl
+
+	if all {
+		switch v := interface{}(m.GetQueryForAttributes()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GetAlertMetaResponseValidationError{
+					field:  "QueryForAttributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GetAlertMetaResponseValidationError{
+					field:  "QueryForAttributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetQueryForAttributes()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GetAlertMetaResponseValidationError{
+				field:  "QueryForAttributes",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GetAlertMetaResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetAlertMetaResponseMultiError is an error wrapping multiple validation
+// errors returned by GetAlertMetaResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetAlertMetaResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetAlertMetaResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetAlertMetaResponseMultiError) AllErrors() []error { return m }
+
+// GetAlertMetaResponseValidationError is the validation error returned by
+// GetAlertMetaResponse.Validate if the designated constraints aren't met.
+type GetAlertMetaResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetAlertMetaResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetAlertMetaResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetAlertMetaResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetAlertMetaResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetAlertMetaResponseValidationError) ErrorName() string {
+	return "GetAlertMetaResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetAlertMetaResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetAlertMetaResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetAlertMetaResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetAlertMetaResponseValidationError{}
+
 // Validate checks the field values on CreateReportRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -17489,6 +17763,1386 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GenerateReportYAMLResponseValidationError{}
+
+// Validate checks the field values on CreateAlertRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateAlertRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateAlertRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreateAlertRequestMultiError, or nil if none found.
+func (m *CreateAlertRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateAlertRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
+	if m.GetOptions() == nil {
+		err := CreateAlertRequestValidationError{
+			field:  "Options",
+			reason: "value is required",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if all {
+		switch v := interface{}(m.GetOptions()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CreateAlertRequestValidationError{
+					field:  "Options",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CreateAlertRequestValidationError{
+					field:  "Options",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOptions()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CreateAlertRequestValidationError{
+				field:  "Options",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return CreateAlertRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateAlertRequestMultiError is an error wrapping multiple validation errors
+// returned by CreateAlertRequest.ValidateAll() if the designated constraints
+// aren't met.
+type CreateAlertRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateAlertRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateAlertRequestMultiError) AllErrors() []error { return m }
+
+// CreateAlertRequestValidationError is the validation error returned by
+// CreateAlertRequest.Validate if the designated constraints aren't met.
+type CreateAlertRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateAlertRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateAlertRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateAlertRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateAlertRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateAlertRequestValidationError) ErrorName() string {
+	return "CreateAlertRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateAlertRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateAlertRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateAlertRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateAlertRequestValidationError{}
+
+// Validate checks the field values on CreateAlertResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateAlertResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateAlertResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreateAlertResponseMultiError, or nil if none found.
+func (m *CreateAlertResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateAlertResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	if len(errors) > 0 {
+		return CreateAlertResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateAlertResponseMultiError is an error wrapping multiple validation
+// errors returned by CreateAlertResponse.ValidateAll() if the designated
+// constraints aren't met.
+type CreateAlertResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateAlertResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateAlertResponseMultiError) AllErrors() []error { return m }
+
+// CreateAlertResponseValidationError is the validation error returned by
+// CreateAlertResponse.Validate if the designated constraints aren't met.
+type CreateAlertResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateAlertResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateAlertResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateAlertResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateAlertResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateAlertResponseValidationError) ErrorName() string {
+	return "CreateAlertResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateAlertResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateAlertResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateAlertResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateAlertResponseValidationError{}
+
+// Validate checks the field values on EditAlertRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *EditAlertRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on EditAlertRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// EditAlertRequestMultiError, or nil if none found.
+func (m *EditAlertRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *EditAlertRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
+	// no validation rules for Name
+
+	if m.GetOptions() == nil {
+		err := EditAlertRequestValidationError{
+			field:  "Options",
+			reason: "value is required",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if all {
+		switch v := interface{}(m.GetOptions()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, EditAlertRequestValidationError{
+					field:  "Options",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, EditAlertRequestValidationError{
+					field:  "Options",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOptions()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return EditAlertRequestValidationError{
+				field:  "Options",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return EditAlertRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// EditAlertRequestMultiError is an error wrapping multiple validation errors
+// returned by EditAlertRequest.ValidateAll() if the designated constraints
+// aren't met.
+type EditAlertRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m EditAlertRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m EditAlertRequestMultiError) AllErrors() []error { return m }
+
+// EditAlertRequestValidationError is the validation error returned by
+// EditAlertRequest.Validate if the designated constraints aren't met.
+type EditAlertRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e EditAlertRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e EditAlertRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e EditAlertRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e EditAlertRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e EditAlertRequestValidationError) ErrorName() string { return "EditAlertRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e EditAlertRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sEditAlertRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = EditAlertRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = EditAlertRequestValidationError{}
+
+// Validate checks the field values on EditAlertResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *EditAlertResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on EditAlertResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// EditAlertResponseMultiError, or nil if none found.
+func (m *EditAlertResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *EditAlertResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return EditAlertResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// EditAlertResponseMultiError is an error wrapping multiple validation errors
+// returned by EditAlertResponse.ValidateAll() if the designated constraints
+// aren't met.
+type EditAlertResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m EditAlertResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m EditAlertResponseMultiError) AllErrors() []error { return m }
+
+// EditAlertResponseValidationError is the validation error returned by
+// EditAlertResponse.Validate if the designated constraints aren't met.
+type EditAlertResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e EditAlertResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e EditAlertResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e EditAlertResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e EditAlertResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e EditAlertResponseValidationError) ErrorName() string {
+	return "EditAlertResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e EditAlertResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sEditAlertResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = EditAlertResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = EditAlertResponseValidationError{}
+
+// Validate checks the field values on UnsubscribeAlertRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UnsubscribeAlertRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UnsubscribeAlertRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UnsubscribeAlertRequestMultiError, or nil if none found.
+func (m *UnsubscribeAlertRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UnsubscribeAlertRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
+	// no validation rules for Name
+
+	if len(errors) > 0 {
+		return UnsubscribeAlertRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// UnsubscribeAlertRequestMultiError is an error wrapping multiple validation
+// errors returned by UnsubscribeAlertRequest.ValidateAll() if the designated
+// constraints aren't met.
+type UnsubscribeAlertRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UnsubscribeAlertRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UnsubscribeAlertRequestMultiError) AllErrors() []error { return m }
+
+// UnsubscribeAlertRequestValidationError is the validation error returned by
+// UnsubscribeAlertRequest.Validate if the designated constraints aren't met.
+type UnsubscribeAlertRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UnsubscribeAlertRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UnsubscribeAlertRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UnsubscribeAlertRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UnsubscribeAlertRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UnsubscribeAlertRequestValidationError) ErrorName() string {
+	return "UnsubscribeAlertRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UnsubscribeAlertRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUnsubscribeAlertRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UnsubscribeAlertRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UnsubscribeAlertRequestValidationError{}
+
+// Validate checks the field values on UnsubscribeAlertResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *UnsubscribeAlertResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UnsubscribeAlertResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// UnsubscribeAlertResponseMultiError, or nil if none found.
+func (m *UnsubscribeAlertResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UnsubscribeAlertResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return UnsubscribeAlertResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// UnsubscribeAlertResponseMultiError is an error wrapping multiple validation
+// errors returned by UnsubscribeAlertResponse.ValidateAll() if the designated
+// constraints aren't met.
+type UnsubscribeAlertResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UnsubscribeAlertResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UnsubscribeAlertResponseMultiError) AllErrors() []error { return m }
+
+// UnsubscribeAlertResponseValidationError is the validation error returned by
+// UnsubscribeAlertResponse.Validate if the designated constraints aren't met.
+type UnsubscribeAlertResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UnsubscribeAlertResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UnsubscribeAlertResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UnsubscribeAlertResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UnsubscribeAlertResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UnsubscribeAlertResponseValidationError) ErrorName() string {
+	return "UnsubscribeAlertResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UnsubscribeAlertResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUnsubscribeAlertResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UnsubscribeAlertResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UnsubscribeAlertResponseValidationError{}
+
+// Validate checks the field values on DeleteAlertRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeleteAlertRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteAlertRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeleteAlertRequestMultiError, or nil if none found.
+func (m *DeleteAlertRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteAlertRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
+	// no validation rules for Name
+
+	if len(errors) > 0 {
+		return DeleteAlertRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteAlertRequestMultiError is an error wrapping multiple validation errors
+// returned by DeleteAlertRequest.ValidateAll() if the designated constraints
+// aren't met.
+type DeleteAlertRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteAlertRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteAlertRequestMultiError) AllErrors() []error { return m }
+
+// DeleteAlertRequestValidationError is the validation error returned by
+// DeleteAlertRequest.Validate if the designated constraints aren't met.
+type DeleteAlertRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteAlertRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteAlertRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteAlertRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteAlertRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteAlertRequestValidationError) ErrorName() string {
+	return "DeleteAlertRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteAlertRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteAlertRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteAlertRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteAlertRequestValidationError{}
+
+// Validate checks the field values on DeleteAlertResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeleteAlertResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeleteAlertResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeleteAlertResponseMultiError, or nil if none found.
+func (m *DeleteAlertResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeleteAlertResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return DeleteAlertResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeleteAlertResponseMultiError is an error wrapping multiple validation
+// errors returned by DeleteAlertResponse.ValidateAll() if the designated
+// constraints aren't met.
+type DeleteAlertResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeleteAlertResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeleteAlertResponseMultiError) AllErrors() []error { return m }
+
+// DeleteAlertResponseValidationError is the validation error returned by
+// DeleteAlertResponse.Validate if the designated constraints aren't met.
+type DeleteAlertResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteAlertResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteAlertResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteAlertResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteAlertResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteAlertResponseValidationError) ErrorName() string {
+	return "DeleteAlertResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteAlertResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteAlertResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteAlertResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteAlertResponseValidationError{}
+
+// Validate checks the field values on GenerateAlertYAMLRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateAlertYAMLRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateAlertYAMLRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateAlertYAMLRequestMultiError, or nil if none found.
+func (m *GenerateAlertYAMLRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateAlertYAMLRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
+	if m.GetOptions() == nil {
+		err := GenerateAlertYAMLRequestValidationError{
+			field:  "Options",
+			reason: "value is required",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if all {
+		switch v := interface{}(m.GetOptions()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GenerateAlertYAMLRequestValidationError{
+					field:  "Options",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GenerateAlertYAMLRequestValidationError{
+					field:  "Options",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOptions()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GenerateAlertYAMLRequestValidationError{
+				field:  "Options",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GenerateAlertYAMLRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateAlertYAMLRequestMultiError is an error wrapping multiple validation
+// errors returned by GenerateAlertYAMLRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GenerateAlertYAMLRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateAlertYAMLRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateAlertYAMLRequestMultiError) AllErrors() []error { return m }
+
+// GenerateAlertYAMLRequestValidationError is the validation error returned by
+// GenerateAlertYAMLRequest.Validate if the designated constraints aren't met.
+type GenerateAlertYAMLRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateAlertYAMLRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateAlertYAMLRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateAlertYAMLRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateAlertYAMLRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateAlertYAMLRequestValidationError) ErrorName() string {
+	return "GenerateAlertYAMLRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateAlertYAMLRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateAlertYAMLRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateAlertYAMLRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateAlertYAMLRequestValidationError{}
+
+// Validate checks the field values on GenerateAlertYAMLResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateAlertYAMLResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateAlertYAMLResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateAlertYAMLResponseMultiError, or nil if none found.
+func (m *GenerateAlertYAMLResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateAlertYAMLResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Yaml
+
+	if len(errors) > 0 {
+		return GenerateAlertYAMLResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateAlertYAMLResponseMultiError is an error wrapping multiple validation
+// errors returned by GenerateAlertYAMLResponse.ValidateAll() if the
+// designated constraints aren't met.
+type GenerateAlertYAMLResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateAlertYAMLResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateAlertYAMLResponseMultiError) AllErrors() []error { return m }
+
+// GenerateAlertYAMLResponseValidationError is the validation error returned by
+// GenerateAlertYAMLResponse.Validate if the designated constraints aren't met.
+type GenerateAlertYAMLResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateAlertYAMLResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateAlertYAMLResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateAlertYAMLResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateAlertYAMLResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateAlertYAMLResponseValidationError) ErrorName() string {
+	return "GenerateAlertYAMLResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateAlertYAMLResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateAlertYAMLResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateAlertYAMLResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateAlertYAMLResponseValidationError{}
+
+// Validate checks the field values on GetAlertYAMLRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetAlertYAMLRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetAlertYAMLRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetAlertYAMLRequestMultiError, or nil if none found.
+func (m *GetAlertYAMLRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetAlertYAMLRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
+	// no validation rules for Name
+
+	if len(errors) > 0 {
+		return GetAlertYAMLRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetAlertYAMLRequestMultiError is an error wrapping multiple validation
+// errors returned by GetAlertYAMLRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetAlertYAMLRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetAlertYAMLRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetAlertYAMLRequestMultiError) AllErrors() []error { return m }
+
+// GetAlertYAMLRequestValidationError is the validation error returned by
+// GetAlertYAMLRequest.Validate if the designated constraints aren't met.
+type GetAlertYAMLRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetAlertYAMLRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetAlertYAMLRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetAlertYAMLRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetAlertYAMLRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetAlertYAMLRequestValidationError) ErrorName() string {
+	return "GetAlertYAMLRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetAlertYAMLRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetAlertYAMLRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetAlertYAMLRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetAlertYAMLRequestValidationError{}
+
+// Validate checks the field values on GetAlertYAMLResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GetAlertYAMLResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GetAlertYAMLResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GetAlertYAMLResponseMultiError, or nil if none found.
+func (m *GetAlertYAMLResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetAlertYAMLResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Yaml
+
+	if len(errors) > 0 {
+		return GetAlertYAMLResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetAlertYAMLResponseMultiError is an error wrapping multiple validation
+// errors returned by GetAlertYAMLResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetAlertYAMLResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetAlertYAMLResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetAlertYAMLResponseMultiError) AllErrors() []error { return m }
+
+// GetAlertYAMLResponseValidationError is the validation error returned by
+// GetAlertYAMLResponse.Validate if the designated constraints aren't met.
+type GetAlertYAMLResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetAlertYAMLResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetAlertYAMLResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetAlertYAMLResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetAlertYAMLResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetAlertYAMLResponseValidationError) ErrorName() string {
+	return "GetAlertYAMLResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetAlertYAMLResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetAlertYAMLResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetAlertYAMLResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetAlertYAMLResponseValidationError{}
 
 // Validate checks the field values on TelemetryRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -19012,6 +20666,10 @@ func (m *ProjectPermissions) validate(all bool) error {
 
 	// no validation rules for ManageReports
 
+	// no validation rules for CreateAlerts
+
+	// no validation rules for ManageAlerts
+
 	if len(errors) > 0 {
 		return ProjectPermissionsMultiError(errors)
 	}
@@ -20044,3 +21702,114 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ReportOptionsValidationError{}
+
+// Validate checks the field values on AlertOptions with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *AlertOptions) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AlertOptions with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in AlertOptionsMultiError, or
+// nil if none found.
+func (m *AlertOptions) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AlertOptions) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Title
+
+	// no validation rules for IntervalDuration
+
+	// no validation rules for QueryName
+
+	// no validation rules for QueryArgsJson
+
+	// no validation rules for EmailRenotify
+
+	// no validation rules for EmailRenotifyAfterSeconds
+
+	if len(errors) > 0 {
+		return AlertOptionsMultiError(errors)
+	}
+
+	return nil
+}
+
+// AlertOptionsMultiError is an error wrapping multiple validation errors
+// returned by AlertOptions.ValidateAll() if the designated constraints aren't met.
+type AlertOptionsMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AlertOptionsMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AlertOptionsMultiError) AllErrors() []error { return m }
+
+// AlertOptionsValidationError is the validation error returned by
+// AlertOptions.Validate if the designated constraints aren't met.
+type AlertOptionsValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AlertOptionsValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AlertOptionsValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AlertOptionsValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AlertOptionsValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AlertOptionsValidationError) ErrorName() string { return "AlertOptionsValidationError" }
+
+// Error satisfies the builtin error interface
+func (e AlertOptionsValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAlertOptions.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AlertOptionsValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AlertOptionsValidationError{}

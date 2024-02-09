@@ -365,7 +365,7 @@ func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, buc
 
 func (c *Connection) getAwsSessionConfig(ctx context.Context, conf *sourceProperties, bucket string, creds *credentials.Credentials) (*session.Session, error) {
 	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
-	if len(conf.S3Endpoint) > 0 {
+	if conf.S3Endpoint != "" {
 		region := conf.AWSRegion
 		if region == "" {
 			// Set the default region for bwd compatibility reasons

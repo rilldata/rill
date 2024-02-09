@@ -41,11 +41,11 @@ export const measureChipColors = {
 };
 
 export const timeChipColors = {
-  bgBaseClass: "bg-gray-50 dark:bg-gray-700",
+  bgBaseClass: "bg-white dark:bg-gray-700",
   bgHoverClass: "hover:bg-gray-100 hover:dark:bg-gray-600",
   textClass: "text-gray-600",
   bgActiveClass: "bg-gray-100 dark:bg-gray-600",
-  outlineClass: "",
+  outlineClass: "outline outline-1 outline-gray-200",
   outlineActiveClass: "",
 };
 

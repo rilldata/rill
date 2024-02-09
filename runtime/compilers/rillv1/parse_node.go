@@ -42,6 +42,8 @@ func (p *Parser) parseNode(ctx context.Context, node *Node) error {
 		return p.parseMigration(ctx, node)
 	case ResourceKindReport:
 		return p.parseReport(ctx, node)
+	case ResourceKindAlert:
+		return p.parseAlert(ctx, node)
 	case ResourceKindTheme:
 		return p.parseTheme(ctx, node)
 	default:
@@ -56,7 +58,7 @@ type commonYAML struct {
 	// Name is usually inferred from the filename, but can be specified manually.
 	Name string `yaml:"name"`
 	// Refs are a list of other resources that this resource depends on. They are usually inferred from other fields, but can also be specified manually.
-	Refs []*yaml.Node `yaml:"refs"`
+	Refs []yaml.Node `yaml:"refs"`
 	// ParserConfig enables setting file-level parser config.
 	ParserConfig struct {
 		Templating *bool `yaml:"templating"`
@@ -240,9 +242,11 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 
 // parseYAMLRefs parses a list of YAML nodes into a list of ResourceNames.
 // It's used to parse the "refs" field in baseConfig.
-func parseYAMLRefs(refs []*yaml.Node) ([]ResourceName, error) {
+func parseYAMLRefs(refs []yaml.Node) ([]ResourceName, error) {
 	var res []ResourceName
-	for _, ref := range refs {
+	for i := range refs {
+		ref := refs[i]
+
 		// We support string refs of the form "my-resource" and "Kind/my-resource"
 		if ref.Kind == yaml.ScalarNode {
 			var identifier string
@@ -275,11 +279,26 @@ func parseYAMLRefs(refs []*yaml.Node) ([]ResourceName, error) {
 
 		// We support map refs of the form { kind: "kind", name: "my-resource" }
 		if ref.Kind == yaml.MappingNode {
-			var name ResourceName
-			err := ref.Decode(&name)
+			m := make(map[string]string)
+			err := ref.Decode(m)
 			if err != nil {
 				return nil, fmt.Errorf("invalid refs: %w", err)
 			}
+			if m["name"] == "" {
+				return nil, errors.New(`an object ref must provide the properties "kind" and "name" properties`)
+			}
+
+			var name ResourceName
+			name.Name = m["name"]
+
+			if m["kind"] != "" {
+				kind, err := ParseResourceKind(m["kind"])
+				if err != nil {
+					return nil, fmt.Errorf("invalid refs: %w", err)
+				}
+				name.Kind = kind
+			}
+
 			res = append(res, name)
 			continue
 		}

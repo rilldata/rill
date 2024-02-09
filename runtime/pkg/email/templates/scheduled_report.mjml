@@ -51,9 +51,6 @@
           <a href="https://bit.ly/3unvA05">Community</a> •
           <a href="https://www.rilldata.com/legal/privacy">Privacy Policy</a>
         </mj-text>
-
-        <mj-spacer height="20px" />
-
       </mj-column>
     </mj-section>
   </mj-body>

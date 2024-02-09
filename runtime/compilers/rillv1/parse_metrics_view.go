@@ -24,6 +24,7 @@ type MetricsViewYAML struct {
 	Model              string           `yaml:"model"`
 	Table              string           `yaml:"table"`
 	TimeDimension      string           `yaml:"timeseries"`
+	Watermark          string           `yaml:"watermark"`
 	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
 	DefaultTimeRange   string           `yaml:"default_time_range"`
 	AvailableTimeZones []string         `yaml:"available_time_zones"`
@@ -207,7 +208,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	if tmp.DefaultTimeRange != "" {
-		_, err := parseISO8601(tmp.DefaultTimeRange)
+		err := validateISO8601(tmp.DefaultTimeRange, false, false)
 		if err != nil {
 			return fmt.Errorf(`invalid "default_time_range": %w`, err)
 		}
@@ -303,19 +304,19 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 
 	if tmp.AvailableTimeRanges != nil {
 		for _, r := range tmp.AvailableTimeRanges {
-			_, err := parseISO8601(r.Range)
+			err := validateISO8601(r.Range, false, false)
 			if err != nil {
 				return fmt.Errorf("invalid range in available_time_ranges: %w", err)
 			}
 
 			for _, o := range r.ComparisonOffsets {
-				_, err := parseISO8601(o.Offset)
+				err := validateISO8601(o.Offset, false, false)
 				if err != nil {
 					return fmt.Errorf("invalid offset in comparison_offsets: %w", err)
 				}
 
 				if o.Range != "" {
-					_, err := parseISO8601(o.Range)
+					err := validateISO8601(o.Range, false, false)
 					if err != nil {
 						return fmt.Errorf("invalid range in comparison_offsets: %w", err)
 					}
@@ -423,6 +424,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec.Title = tmp.Title
 	spec.Description = tmp.Description
 	spec.TimeDimension = tmp.TimeDimension
+	spec.WatermarkExpression = tmp.Watermark
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.DefaultTimeRange = tmp.DefaultTimeRange
 	spec.AvailableTimeZones = tmp.AvailableTimeZones
@@ -542,18 +544,55 @@ func parseTimeGrain(s string) (runtimev1.TimeGrain, error) {
 	}
 }
 
-// parseISO8601 is a wrapper around duration.ParseISO8601 that disallows grains < minute
-func parseISO8601(isoDuration string) (duration.Duration, error) {
+// validateISO8601 is a wrapper around duration.ParseISO8601 with additional validation:
+// a) that the duration does not have seconds granularity,
+// b) if onlyStandard is true, that the duration does not use any of the Rill-specific extensions (such as year-to-date).
+// c) if onlySingular is true, that the duration does not consist of more than one component (e.g. P2Y is valid, P2Y3M is not).
+func validateISO8601(isoDuration string, onlyStandard, onlyOneComponent bool) error {
 	d, err := duration.ParseISO8601(isoDuration)
 	if err != nil {
-		return d, err
+		return err
 	}
 
-	if sd, ok := d.(duration.StandardDuration); ok {
+	sd, ok := d.(duration.StandardDuration)
+	if !ok {
+		if onlyStandard {
+			return fmt.Errorf("only standard durations are allowed")
+		}
+		return nil
+	}
+
+	if sd.Second != 0 {
+		return fmt.Errorf("durations with seconds are not allowed")
+	}
+
+	if onlyOneComponent {
+		n := 0
+		if sd.Year != 0 {
+			n++
+		}
+		if sd.Month != 0 {
+			n++
+		}
+		if sd.Week != 0 {
+			n++
+		}
+		if sd.Day != 0 {
+			n++
+		}
+		if sd.Hour != 0 {
+			n++
+		}
+		if sd.Minute != 0 {
+			n++
+		}
 		if sd.Second != 0 {
-			return sd, fmt.Errorf("durations with seconds is not supported")
+			n++
+		}
+		if n > 1 {
+			return fmt.Errorf("only one component is allowed")
 		}
 	}
 
-	return d, nil
+	return nil
 }
