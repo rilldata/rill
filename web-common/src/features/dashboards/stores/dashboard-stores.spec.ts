@@ -27,7 +27,10 @@ import {
   createAndExpression,
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
+import {
+  getLocalUserPreferences,
+  initLocalUserPreferenceStore,
+} from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   MetricsViewSpecComparisonMode,
   V1TimeGrain,
@@ -47,6 +50,7 @@ describe("dashboard-stores", () => {
   });
 
   beforeEach(() => {
+    getLocalUserPreferences().reset();
     resetDashboardStore();
   });
 

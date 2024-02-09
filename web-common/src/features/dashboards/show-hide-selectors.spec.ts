@@ -39,8 +39,7 @@ describe("Show/Hide Selectors", () => {
   });
 
   beforeEach(() => {
-    getLocalUserPreferences().updateVisibleMeasures(undefined);
-    getLocalUserPreferences().updateVisibleDimensions(undefined);
+    getLocalUserPreferences().reset();
     resetDashboardStore();
   });
 
