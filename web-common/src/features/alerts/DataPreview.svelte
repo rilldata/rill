@@ -27,8 +27,8 @@
     {
       measures: [{ name: measure }],
       dimensions: dimension ? [{ name: dimension }] : [],
-      where: sanitiseExpression(filter),
-      having: sanitiseExpression(criteria),
+      where: sanitiseExpression(filter, undefined),
+      having: sanitiseExpression(undefined, criteria),
       timeRange: {
         start: timeControls.timeStart,
         end: timeControls.timeEnd,

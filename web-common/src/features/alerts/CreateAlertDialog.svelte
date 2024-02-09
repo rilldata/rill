@@ -166,7 +166,14 @@
     } else if (tabIndex === 2) {
       // TODO: do better for >1 recipients
       hasRequiredFields = form.snooze !== "" && form.recipients[0].email !== "";
-      hasErrors = !!errors.snooze || !!errors.recipients[0].email;
+
+      // There's a bug in how `svelte-forms-lib` types the `$errors` store for arrays.
+      // See: https://github.com/tjinauyeung/svelte-forms-lib/issues/154#issuecomment-1087331250
+      const receipientErrors = errors.recipients as unknown as {
+        email: string;
+      }[];
+
+      hasErrors = !!errors.snooze || !!receipientErrors[0].email;
     } else {
       throw new Error(`Unexpected tabIndex: ${tabIndex}`);
     }
