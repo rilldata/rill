@@ -31,6 +31,7 @@
   import { featureFlags } from "../../feature-flags";
   import TDDExportButton from "./TDDExportButton.svelte";
   import type { TDDComparison } from "./types";
+  import { PivotChipType } from "../pivot/types";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -112,21 +113,47 @@
   function startPivotForTDD() {
     const pivot = $dashboardStore?.pivot;
 
-    if (pivot.rows.length || pivot.columns.length) {
+    if (
+      pivot.rows.dimension.length ||
+      pivot.columns.measure.length ||
+      pivot.columns.dimension.length
+    ) {
       showReplacePivotModal = true;
     } else {
       createPivot();
     }
   }
+
+  // This needs to be reworked - bgh
   function createPivot() {
     showReplacePivotModal = false;
     const timeDimension = $metricsView?.data?.timeDimension;
     if (!timeDimension || !expandedMeasureName) return;
-    const rowDimensions = dimensionName ? [dimensionName] : [];
-    metricsExplorerStore.createPivot(metricViewName, rowDimensions, [
-      timeDimension,
-      expandedMeasureName,
-    ]);
+    const rowDimensions = dimensionName
+      ? [
+          {
+            id: dimensionName,
+            title: dimensionName,
+            type: PivotChipType.Dimension,
+          },
+        ]
+      : [];
+    metricsExplorerStore.createPivot(
+      metricViewName,
+      { dimension: rowDimensions },
+      {
+        dimension: [
+          { id: timeDimension, title: timeDimension, type: PivotChipType.Time },
+        ],
+        measure: [
+          {
+            id: expandedMeasureName,
+            title: expandedMeasureName,
+            type: PivotChipType.Measure,
+          },
+        ],
+      },
+    );
   }
 </script>
 
