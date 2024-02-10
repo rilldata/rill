@@ -88,9 +88,16 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
       const measureNames = dashboardStore.pivot.columns.measure.map(
         (m) => m.id,
       );
-      const rowDimensionNames = dashboardStore.pivot.rows.dimension.map(
-        (d) => d.id,
-      );
+
+      // This is temporary until we have a better way to handle time grains
+      const rowDimensionNames = dashboardStore.pivot.rows.dimension.map((d) => {
+        if (d.type === PivotChipType.Time) {
+          time.interval = d.id as AvailableTimeGrain;
+          return time.timeDimension;
+        }
+
+        return d.id;
+      });
 
       // This is temporary until we have a better way to handle time grains
       const colDimensionNames = dashboardStore.pivot.columns.dimension.map(
