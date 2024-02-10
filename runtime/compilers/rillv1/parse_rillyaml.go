@@ -33,18 +33,20 @@ type VariableDef struct {
 
 // rillYAML is the raw YAML structure of rill.yaml
 type rillYAML struct {
-	Title       string            `yaml:"title"`
-	Description string            `yaml:"description"`
-	Env         map[string]string `yaml:"env"`
-	Connectors  []struct {
+	Title               string            `yaml:"title"`
+	Description         string            `yaml:"description"`
+	Variables           map[string]string `yaml:"variables"`
+	VariablesDeprecated map[string]string `yaml:"env"`
+	Connectors          []struct {
 		Type     string            `yaml:"type"`
 		Name     string            `yaml:"name"`
 		Defaults map[string]string `yaml:"defaults"`
 	} `yaml:"connectors"`
-	Sources    yaml.Node `yaml:"sources"`
-	Models     yaml.Node `yaml:"models"`
-	Dashboards yaml.Node `yaml:"dashboards"`
-	Migrations yaml.Node `yaml:"migrations"`
+	Sources     yaml.Node            `yaml:"sources"`
+	Models      yaml.Node            `yaml:"models"`
+	Dashboards  yaml.Node            `yaml:"dashboards"`
+	Migrations  yaml.Node            `yaml:"migrations"`
+	Environment map[string]yaml.Node `yaml:"environment"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -57,6 +59,19 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	tmp := &rillYAML{}
 	if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
 		return newYAMLError(err)
+	}
+
+	// Apply environment-specific overrides
+	envNode := tmp.Environment[p.Environment]
+	if !envNode.IsZero() {
+		if err := envNode.Decode(tmp); err != nil {
+			return newYAMLError(err)
+		}
+	}
+
+	// Backwards compatibility for "env" -> "variables"
+	for k, v := range tmp.VariablesDeprecated {
+		tmp.Variables[k] = v
 	}
 
 	// Validate resource defaults
@@ -85,7 +100,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		Title:       tmp.Title,
 		Description: tmp.Description,
 		Connectors:  make([]*ConnectorDef, len(tmp.Connectors)),
-		Variables:   make([]*VariableDef, len(tmp.Env)),
+		Variables:   make([]*VariableDef, len(tmp.Variables)),
 		Defaults: map[ResourceKind]yaml.Node{
 			ResourceKindSource:      tmp.Sources,
 			ResourceKindModel:       tmp.Models,
@@ -106,7 +121,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	i := 0
-	for k, v := range tmp.Env {
+	for k, v := range tmp.Variables {
 		res.Variables[i] = &VariableDef{
 			Name:    k,
 			Default: v,

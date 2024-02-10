@@ -935,7 +935,12 @@ func TestEnvironmentOverrides(t *testing.T) {
 	ctx := context.Background()
 	repo := makeRepo(t, map[string]string{
 		// Provide dashboard defaults in rill.yaml
-		`rill.yaml`: ``,
+		`rill.yaml`: `
+environment:
+  test:
+    sources:
+      limit: 10000
+`,
 		// source s1
 		`sources/s1.yaml`: `
 connector: s3
@@ -963,7 +968,7 @@ environment:
 		Paths: []string{"/sources/s1.yaml"},
 		SourceSpec: &runtimev1.SourceSpec{
 			SourceConnector: "s3",
-			Properties:      must(structpb.NewStruct(map[string]any{"path": "world"})),
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "world", "limit": 10000})),
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 		},
 	}
