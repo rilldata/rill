@@ -317,13 +317,16 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	if tmp.Security != nil {
-		templateData := TemplateData{User: map[string]interface{}{
-			"name":   "dummy",
-			"email":  "mock@example.org",
-			"domain": "example.org",
-			"groups": []interface{}{"all"},
-			"admin":  false,
-		}}
+		templateData := TemplateData{
+			Environment: p.Environment,
+			User: map[string]interface{}{
+				"name":   "dummy",
+				"email":  "mock@example.org",
+				"domain": "example.org",
+				"groups": []interface{}{"all"},
+				"admin":  false,
+			},
+		}
 
 		if tmp.Security.Access != "" {
 			access, err := ResolveTemplate(tmp.Security.Access, templateData)

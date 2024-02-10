@@ -70,8 +70,13 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	// Backwards compatibility for "env" -> "variables"
-	for k, v := range tmp.VariablesDeprecated {
-		tmp.Variables[k] = v
+	if len(tmp.VariablesDeprecated) > 0 {
+		if tmp.Variables == nil {
+			tmp.Variables = make(map[string]string, len(tmp.VariablesDeprecated))
+		}
+		for k, v := range tmp.VariablesDeprecated {
+			tmp.Variables[k] = v
+		}
 	}
 
 	// Validate resource defaults

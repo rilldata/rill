@@ -31,7 +31,7 @@ connectors:
   defaults:
     region: us-east-1
 
-env:
+variables:
   foo: bar
 `,
 	})

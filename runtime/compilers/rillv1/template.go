@@ -42,12 +42,13 @@ import (
 
 // TemplateData contains data for resolving a template.
 type TemplateData struct {
-	User       map[string]any
-	Variables  map[string]string
-	ExtraProps map[string]any
-	Self       TemplateResource
-	Resolve    func(ref ResourceName) (string, error)
-	Lookup     func(name ResourceName) (TemplateResource, error)
+	Environment string
+	User        map[string]any
+	Variables   map[string]string
+	ExtraProps  map[string]any
+	Self        TemplateResource
+	Resolve     func(ref ResourceName) (string, error)
+	Lookup      func(name ResourceName) (TemplateResource, error)
 }
 
 // TemplateResource contains data for a resource for injection into a template.
@@ -73,7 +74,7 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 	refs := map[ResourceName]bool{}
 
 	// Build func map
-	funcMap := newFuncMap()
+	funcMap := newFuncMap("")
 	funcMap["configure"] = func(parts ...any) (string, error) {
 		if len(parts) == 1 {
 			// Configure from YAML
@@ -131,11 +132,13 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 
 	// Build template data
 	dataMap := map[string]interface{}{
-		"user":  map[string]any{},
-		"env":   map[string]any{},
-		"meta":  map[string]any{},
-		"spec":  map[string]any{},
-		"state": map[string]any{},
+		"environment": "",
+		"user":        map[string]any{},
+		"env":         map[string]any{},
+		"variables":   map[string]any{},
+		"meta":        map[string]any{},
+		"spec":        map[string]any{},
+		"state":       map[string]any{},
 	}
 
 	// Resolve template
@@ -144,7 +147,7 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 		return nil, err
 	}
 
-	variables, err := ExtractVariablesFromTemplate(t.Tree)
+	variables, err := extractVariablesFromTemplate(t.Tree)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +168,7 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 // ResolveTemplate resolves a template to a string using the given data.
 func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 	// Base func map
-	funcMap := newFuncMap()
+	funcMap := newFuncMap(data.Environment)
 
 	// Add no-ops
 	funcMap["configure"] = func(parts ...string) error { return nil }
@@ -220,11 +223,13 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 
 	// Build template data
 	dataMap := map[string]interface{}{
-		"user":  data.User,
-		"env":   data.Variables,
-		"meta":  data.Self.Meta,
-		"spec":  data.Self.Spec,
-		"state": data.Self.State,
+		"environment": data.Environment,
+		"user":        data.User,
+		"env":         data.Variables,
+		"variables":   data.Variables,
+		"meta":        data.Self.Meta,
+		"spec":        data.Self.Spec,
+		"state":       data.Self.State,
 	}
 
 	// Add extra props
@@ -242,12 +247,17 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 }
 
 // newFuncMap creates a base func map for templates.
-func newFuncMap() template.FuncMap {
+func newFuncMap(environment string) template.FuncMap {
 	// Add Sprig template functions (removing functions that leak host info)
 	// Derived from Helm: https://github.com/helm/helm/blob/main/pkg/engine/funcs.go
 	funcMap := sprig.TxtFuncMap()
 	delete(funcMap, "env")
 	delete(funcMap, "expandenv")
+
+	// Add helpers for checking for common environments
+	funcMap["development"] = func() bool { return environment == "development" }
+	funcMap["production"] = func() bool { return environment == "production" }
+
 	return funcMap
 }
 
@@ -285,7 +295,7 @@ func EvaluateBoolExpression(expr string) (bool, error) {
 	return result, nil
 }
 
-func ExtractVariablesFromTemplate(tree *parse.Tree) ([]string, error) {
+func extractVariablesFromTemplate(tree *parse.Tree) ([]string, error) {
 	variablesMap := make(map[string]bool)
 	walkNodes(tree.Root, func(n parse.Node) {
 		if vn, ok := n.(*parse.FieldNode); ok {
