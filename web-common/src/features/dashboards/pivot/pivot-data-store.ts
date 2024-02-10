@@ -390,8 +390,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     rowTotals,
                     cellData,
                   );
-
-                  pivotData = tableDataWithCells;
+                  pivotData = structuredClone(tableDataWithCells);
                 }
 
                 const expandedSubTableCellQuery = queryExpandedRowMeasureValues(
