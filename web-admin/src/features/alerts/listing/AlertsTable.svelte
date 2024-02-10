@@ -54,13 +54,9 @@
       accessorFn: (row) => row.alert.state.currentExecution?.executionTime,
     },
     // {
-    //   id: "nextRun",
-    //   accessorFn: (row) => row.nextRun,
-    // },
-    // {
     //   id: "actions",
     //   cell: ({ row }) =>
-    //     flexRender(ReportsTableActionCell, {
+    //     flexRender(AlertsTableActionCell, {
     //       title: row.original.name,
     //     }),
     // },

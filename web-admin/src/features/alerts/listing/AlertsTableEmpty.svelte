@@ -1,1 +1,1 @@
-<span class="text-gray-500"> No reports found. </span>
+<span class="text-gray-500"> No alerts found. </span>
