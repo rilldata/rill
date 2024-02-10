@@ -143,7 +143,7 @@ export class DashboardState extends Message<DashboardState> {
   pinIndex?: number;
 
   /**
-   *
+   * *
    * Pivot related fields
    *
    * @generated from field: optional bool pivot_is_active = 22;

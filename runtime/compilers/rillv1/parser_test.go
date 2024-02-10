@@ -223,7 +223,7 @@ SELECT * FROM {{ ref "m2" }}
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -262,7 +262,7 @@ FRO m1
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, errors)
 }
@@ -302,7 +302,7 @@ SELECT 1
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, errors)
 }
@@ -314,7 +314,7 @@ func TestReparse(t *testing.T) {
 
 	// Create empty project
 	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, nil)
 
@@ -462,7 +462,7 @@ SELECT 10
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
 
@@ -546,7 +546,7 @@ SELECT * FROM m1
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, []*runtimev1.ParseError{
 		{
@@ -595,7 +595,7 @@ path: hello
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{src}, []*runtimev1.ParseError{
 		{
@@ -645,7 +645,7 @@ func TestReparseRillYAML(t *testing.T) {
 	}
 
 	// Parse empty project. Expect rill.yaml error.
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	require.Nil(t, p.RillYAML)
 	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{perr})
@@ -704,7 +704,7 @@ func TestRefInferrence(t *testing.T) {
 		// model foo
 		`models/foo.sql`: `SELECT * FROM bar`,
 	})
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{foo}, nil)
 
@@ -782,7 +782,7 @@ materialize: true
 		},
 	}
 	repo := makeRepo(b, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(b, err)
 	requireResourcesAndErrors(b, p, resources, nil)
 
@@ -841,7 +841,7 @@ SELECT * FROM t2
 	}
 
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -926,9 +926,57 @@ security:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestEnvironmentOverrides(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		// Provide dashboard defaults in rill.yaml
+		`rill.yaml`: ``,
+		// source s1
+		`sources/s1.yaml`: `
+connector: s3
+path: hello
+environment:
+  test:
+    path: world
+    refresh:
+      cron: "0 0 * * *"
+`,
+	})
+
+	s1Base := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+		Paths: []string{"/sources/s1.yaml"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+		},
+	}
+
+	s1Test := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+		Paths: []string{"/sources/s1.yaml"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "world"})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+		},
+	}
+
+	// Parse without environment
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1Base}, nil)
+
+	// Parse in environment "test"
+	p, err = Parse(ctx, repo, "", "test", "", []string{""})
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1Test}, nil)
 }
 
 func TestReport(t *testing.T) {
@@ -982,7 +1030,7 @@ annotations:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1065,7 +1113,7 @@ annotations:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1103,7 +1151,7 @@ measures:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -1142,7 +1190,7 @@ colors:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "", []string{""})
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }

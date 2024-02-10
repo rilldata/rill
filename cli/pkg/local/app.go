@@ -74,7 +74,7 @@ type App struct {
 	activity              activity.Client
 }
 
-func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
+func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool, environment string, olapDriver, olapDSN, projectPath string, logFormat LogFormat, variables []string, client activity.Client) (*App, error) {
 	// Setup logger
 	logger, cleanupFn := initLogger(verbose, logFormat)
 	sugarLogger := logger.Sugar()
@@ -208,6 +208,7 @@ func NewApp(ctx context.Context, ver config.Version, verbose, debug, reset bool,
 	// Create instance with its repo set to the project directory
 	inst := &drivers.Instance{
 		ID:               DefaultInstanceID,
+		Environment:      environment,
 		OLAPConnector:    olapDriver,
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",

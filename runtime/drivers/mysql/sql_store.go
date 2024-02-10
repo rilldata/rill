@@ -26,7 +26,7 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 	} else if url, ok := c.config["dsn"].(string); ok && url != "" { // get from driver configs
 		dsn = url
 	} else {
-		return nil, fmt.Errorf("the property 'dsn' is required for MySQL. Provide 'dsn' in the YAML properties or pass '--env connector.mysql.dsn=...' to 'rill start'")
+		return nil, fmt.Errorf("the property 'dsn' is required for MySQL. Provide 'dsn' in the YAML properties or pass '--variable connector.mysql.dsn=...' to 'rill start'")
 	}
 
 	conf, err := mysql.ParseDSN(dsn)

@@ -9,7 +9,7 @@ Rill uses the Go programming language's native templating engine, known as `text
 
 ## Example
 
-Access an environment variable provided using `rill start --env key=value`:
+Access an environment variable provided using `rill start --variable key=value`:
 ```sql
 SELECT * FROM my_source WHERE foo = '{{ .env.key }}'
 ```

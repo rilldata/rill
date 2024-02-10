@@ -21,6 +21,7 @@ const maxProjectFiles = 1000
 
 // StartCmd represents the start command
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
+	var environment string
 	var olapDriver string
 	var olapDSN string
 	var httpPort int
@@ -32,7 +33,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var noUI bool
 	var noOpen bool
 	var logFormat string
-	var variables []string
+	var variables, variablesDeprecated []string
 
 	startCmd := &cobra.Command{
 		Use:   "start [<path>]",
@@ -40,6 +41,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ch.Config
+
+			// Backwards compatibility for --env renamed to --var
+			if len(variablesDeprecated) > 0 {
+				variables = append(variables, variablesDeprecated...)
+			}
+
 			var projectPath string
 			if len(args) > 0 {
 				projectPath = args[0]
@@ -102,7 +109,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			client := activity.NewNoopClient()
 
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, debug, reset, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, client)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, debug, reset, environment, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, client)
 			if err != nil {
 				return err
 			}
@@ -134,7 +141,14 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&debug, "debug", false, "Collect additional debug info")
 	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
-	startCmd.Flags().StringSliceVarP(&variables, "env", "e", []string{}, "Set project variables")
+	startCmd.Flags().StringVar(&environment, "environment", "development", "Environment name")
+	startCmd.Flags().StringSliceVarP(&variables, "variable", "v", []string{}, "Set project variables")
+
+	// Deprecated flag: replaced by --variable
+	startCmd.Flags().StringSliceVarP(&variablesDeprecated, "env", "e", []string{}, "Set project variables")
+	if err := startCmd.Flags().MarkHidden("env"); err != nil {
+		panic(err)
+	}
 
 	return startCmd
 }

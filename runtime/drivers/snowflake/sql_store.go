@@ -46,7 +46,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 	} else if url, ok := c.config["dsn"].(string); ok && url != "" { // get from driver configs
 		dsn = url
 	} else {
-		return nil, fmt.Errorf("the property 'dsn' is required for Snowflake. Provide 'dsn' in the YAML properties or pass '--env connector.snowflake.dsn=...' to 'rill start'")
+		return nil, fmt.Errorf("the property 'dsn' is required for Snowflake. Provide 'dsn' in the YAML properties or pass '--variable connector.snowflake.dsn=...' to 'rill start'")
 	}
 
 	db, err := sql.Open("snowflake", dsn)
