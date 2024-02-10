@@ -143,7 +143,7 @@ func VariablesFlow(ctx context.Context, projectPath string, tel *telemetry.Telem
 	if err != nil {
 		return nil, err
 	}
-	parser, err := rillv1.Parse(ctx, repo, instanceID, "duckdb", []string{"duckdb"})
+	parser, err := rillv1.Parse(ctx, repo, instanceID, "production", "duckdb", []string{"duckdb"})
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project: %w", err)
 	}
