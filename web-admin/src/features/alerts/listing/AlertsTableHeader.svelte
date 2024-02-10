@@ -1,8 +1,10 @@
 <script lang="ts">
   import { Search } from "@rilldata/web-common/components/search";
+  import type { Table } from "@tanstack/table-core";
   import { getContext } from "svelte";
+  import type { Readable } from "svelte/store";
 
-  const table = getContext("table");
+  const table = getContext<Readable<Table<any>>>("table");
 
   // Search
   let filter = "";
