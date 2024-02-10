@@ -16,7 +16,6 @@
   export let project: string;
 
   $: alerts = useAlerts($runtime.instanceId);
-  $: console.log($alerts);
 
   /**
    * Table column definitions.
