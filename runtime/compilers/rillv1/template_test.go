@@ -49,7 +49,7 @@ func TestAnalyze(t *testing.T) {
 			want: &TemplateMetadata{
 				Refs:                     []ResourceName{{Name: "bar"}, {Kind: ResourceKindModel, Name: "foo"}, {Name: "baz"}},
 				Config:                   map[string]any{"a": "b", "c": "d", "e": "f"},
-				Variables:                []string{"env.world"},
+				Variables:                []string{"variables.world"},
 				UsesTemplating:           true,
 				ResolvedWithPlaceholders: `SELECT * FROM <no value> WHERE hello='<no value>' AND world='<no value>'`,
 			},
@@ -60,7 +60,7 @@ func TestAnalyze(t *testing.T) {
 			want: &TemplateMetadata{
 				Refs:                     []ResourceName{},
 				Config:                   map[string]any{},
-				Variables:                []string{"env.partner_table_name", "user.domain"},
+				Variables:                []string{"variables.partner_table_name", "user.domain"},
 				UsesTemplating:           true,
 				ResolvedWithPlaceholders: `SELECT * FROM <no value> WITH SAMPLING <no value> .... <no value>`,
 			},
