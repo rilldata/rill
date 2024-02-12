@@ -11,10 +11,11 @@
 
 <script lang="ts">
   export let items: PivotChipData[] = [];
-  export let style: "vertical" | "horizontal" = "vertical";
-  export let removable = false;
   export let placeholder: string | null = null;
   export let type: "rows" | "columns" | null = null;
+
+  const removable = Boolean(type);
+  const horizontal = Boolean(type);
 
   const dispatch = createEventDispatcher();
   const flipDurationMs = 200;
@@ -45,7 +46,7 @@
 
 <div
   class="container"
-  class:horizontal={style === "horizontal"}
+  class:horizontal
   use:dndzone={{ items, flipDurationMs }}
   on:consider={handleConsider}
   on:finalize={handleFinalize}
@@ -68,7 +69,7 @@
       />
     </div>
   {/each}
-  {#if style === "horizontal"}
+  {#if removable}
     <AddField {type} />
   {/if}
 </div>
