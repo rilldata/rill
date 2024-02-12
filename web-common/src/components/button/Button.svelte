@@ -66,7 +66,7 @@
     @apply text-xs leading-snug font-normal;
     @apply gap-x-2 min-w-fit;
     @apply rounded-[2px];
-    @apply h-7 min-h-[28px];
+    @apply px-3 h-7 min-h-[28px] cursor-pointer;
   }
 
   button:disabled {
@@ -232,6 +232,6 @@
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
     @apply border border-dashed border-slate-300;
-    @apply bg-white;
+    @apply bg-white px-0;
   }
 </style>
