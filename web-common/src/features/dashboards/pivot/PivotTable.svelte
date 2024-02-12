@@ -125,12 +125,12 @@
                   >
                     {header.column.columnDef.header}
                     {#if sortDirection}
-                      <div
+                      <span
                         class="transition-transform -mr-1"
                         class:-rotate-180={sortDirection === "desc"}
                       >
                         <ArrowDown />
-                      </div>
+                      </span>
                     {/if}
                   </button>
                 {:else}
