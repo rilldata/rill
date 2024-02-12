@@ -94,13 +94,6 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 		if err != nil {
 			return nil, pathError{path: ymlPath, err: newYAMLError(err)}
 		}
-
-		if cfg.Environment != nil {
-			envOverride := cfg.Environment[p.Environment]
-			if !envOverride.IsZero() {
-				res.YAMLOverride = &envOverride
-			}
-		}
 	}
 
 	// Handle YAML config
@@ -111,6 +104,11 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 		res.Connector = cfg.Connector
 		res.SQL = cfg.SQL
 		res.SQLPath = ymlPath
+
+		// Set environment-specific override
+		if envOverride := cfg.Environment[p.Environment]; !envOverride.IsZero() {
+			res.YAMLOverride = &envOverride
+		}
 
 		// Handle templating config
 		if cfg.ParserConfig.Templating != nil {
