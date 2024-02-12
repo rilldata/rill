@@ -833,12 +833,6 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView().Spec
-
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -855,7 +849,6 @@ func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
-		MetricsView: mv,
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
 				Name: "pub",
@@ -865,7 +858,7 @@ func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 			},
 		},
 	}
-	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 
