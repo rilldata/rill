@@ -22,10 +22,7 @@ import type {
   V1MetricsViewToplistResponseDataItem,
 } from "../../../runtime-client";
 
-import type {
-  VirtualizedTableColumns,
-  VirtualizedTableConfig,
-} from "@rilldata/web-common/components/virtualized-table/types";
+import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 
 import type { SvelteComponent } from "svelte";
 import { getDimensionColumn } from "../dashboard-utils";
@@ -36,6 +33,7 @@ import type { MetricsExplorerEntity } from "../stores/metrics-explorer-entity";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
 import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+import type { DimensionTableConfig } from "./DimensionTableConfig";
 
 /** Returns an updated filter set for a given dimension on search */
 export function updateFilterOnSearch(
@@ -192,9 +190,9 @@ export function estimateColumnSizes(
     [key: string]: number;
   },
   containerWidth: number,
-  config: VirtualizedTableConfig,
+  config: DimensionTableConfig,
 ): number[] {
-  const estimateColumnSize = columns.map((column, i) => {
+  const estimatedColumnSizes = columns.map((column, i) => {
     if (column.name.includes("delta")) return config.comparisonColumnWidth;
     if (i != 0) return config.defaultColumnWidth;
 
@@ -232,17 +230,17 @@ export function estimateColumnSizes(
         config.defaultColumnWidth;
   });
 
-  const measureColumnSizeSum = estimateColumnSize
+  const measureColumnSizeSum = estimatedColumnSizes
     .slice(1)
     .reduce((a, b) => a + b, 0);
 
   /* Dimension column should expand to cover whole container */
-  estimateColumnSize[0] = Math.max(
+  estimatedColumnSizes[0] = Math.max(
     containerWidth - measureColumnSizeSum - config.indexWidth,
-    estimateColumnSize[0],
+    estimatedColumnSizes[0],
   );
 
-  return estimateColumnSize;
+  return estimatedColumnSizes;
 }
 
 export function prepareVirtualizedDimTableColumns(

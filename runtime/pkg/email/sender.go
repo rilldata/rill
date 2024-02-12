@@ -106,3 +106,31 @@ func NewNoopSender() Sender {
 func (s *noopSender) Send(toEmail, toName, subject, body string) error {
 	return nil
 }
+
+type TestSender struct {
+	Emails []struct {
+		ToEmail string
+		ToName  string
+		Subject string
+		Body    string
+	}
+}
+
+func NewTestSender() Sender {
+	return &TestSender{}
+}
+
+func (s *TestSender) Send(toEmail, toName, subject, body string) error {
+	s.Emails = append(s.Emails, struct {
+		ToEmail string
+		ToName  string
+		Subject string
+		Body    string
+	}{
+		ToEmail: toEmail,
+		ToName:  toName,
+		Subject: subject,
+		Body:    body,
+	})
+	return nil
+}

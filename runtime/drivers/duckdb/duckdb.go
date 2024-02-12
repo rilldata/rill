@@ -192,7 +192,7 @@ func (d Driver) Drop(cfgMap map[string]any, logger *zap.Logger) error {
 	}
 	if cfg.DBFilePath != "" {
 		err = os.Remove(cfg.DBFilePath)
-		if err != nil {
+		if err != nil && !os.IsNotExist(err) {
 			return err
 		}
 		// Hacky approach to remove the wal file

@@ -28,15 +28,12 @@ type MetricsViewAggregation struct {
 	TimeRange          *runtimev1.TimeRange                         `json:"time_range,omitempty"`
 	Where              *runtimev1.Expression                        `json:"where,omitempty"`
 	Having             *runtimev1.Expression                        `json:"having,omitempty"`
+	Filter             *runtimev1.MetricsViewFilter                 `json:"filter,omitempty"` // Backwards compatibility
 	Priority           int32                                        `json:"priority,omitempty"`
 	Limit              *int64                                       `json:"limit,omitempty"`
 	Offset             int64                                        `json:"offset,omitempty"`
-	MetricsView        *runtimev1.MetricsViewSpec                   `json:"-"`
-	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity         `json:"security"`
 	PivotOn            []string                                     `json:"pivot_on,omitempty"`
-
-	// backwards compatibility
-	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
+	SecurityAttributes map[string]any                               `json:"security_attributes,omitempty"`
 
 	Result *runtimev1.MetricsViewAggregationResponse `json:"-"`
 }
@@ -82,12 +79,18 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	if q.MetricsView.TimeDimension == "" && !isTimeRangeNil(q.TimeRange) {
-		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsView)
+	// Resolve metrics view
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.Dimensions, q.Measures)
+	if err != nil {
+		return err
+	}
+
+	if mv.TimeDimension == "" && !isTimeRangeNil(q.TimeRange) {
+		return fmt.Errorf("metrics view '%s' does not have a time dimension", mv)
 	}
 
 	// backwards compatibility
@@ -99,7 +102,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	// Build query
-	sqlString, args, err := q.buildMetricsAggregationSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
+	sqlString, args, err := q.buildMetricsAggregationSQL(mv, olap.Dialect(), security)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -372,7 +375,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	filename := strings.ReplaceAll(q.MetricsView.Table, `"`, `_`)
+	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
 	if !isTimeRangeNil(q.TimeRange) || q.Where != nil || q.Having != nil {
 		filename += "_filtered"
 	}
@@ -432,7 +435,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 
 		// Handle time dimension
-		expr, exprArgs, err := q.buildTimestampExpr(d, dialect)
+		expr, exprArgs, err := q.buildTimestampExpr(mv, d, dialect)
 		if err != nil {
 			return "", nil, err
 		}
@@ -513,7 +516,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	if policy != nil && policy.RowFilter != "" {
 		whereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
 	}
-	if len(whereClause) > 0 {
+	if whereClause != "" {
 		whereClause = "WHERE 1=1" + whereClause
 	}
 
@@ -604,12 +607,12 @@ func applyFilter(mv *runtimev1.MetricsViewSpec, expr string, filter *runtimev1.E
 	return expr, nil
 }
 
-func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAggregationDimension, dialect drivers.Dialect) (string, []any, error) {
+func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpec, dim *runtimev1.MetricsViewAggregationDimension, dialect drivers.Dialect) (string, []any, error) {
 	var col string
-	if dim.Name == q.MetricsView.TimeDimension {
+	if dim.Name == mv.TimeDimension {
 		col = safeName(dim.Name)
 	} else {
-		d, err := metricsViewDimension(q.MetricsView, dim.Name)
+		d, err := metricsViewDimension(mv, dim.Name)
 		if err != nil {
 			return "", nil, err
 		}
@@ -631,6 +634,11 @@ func (q *MetricsViewAggregation) buildTimestampExpr(dim *runtimev1.MetricsViewAg
 			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
 		}
 		return fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR)))", col, convertToDruidTimeFloorSpecifier(dim.TimeGrain)), []any{dim.TimeZone}, nil
+	case drivers.DialectClickHouse:
+		if dim.TimeZone == "" || dim.TimeZone == "UTC" {
+			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
+		}
+		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, ?)), ?)", convertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", dialect)
 	}
