@@ -45,7 +45,7 @@ func TestAnalyze(t *testing.T) {
 		},
 		{
 			name:     "complex",
-			template: `{{ configure "a: b\nc: d" }}{{ configure "e" "f" }}{{ dependency "bar" }} SELECT * FROM {{ ref "model" "foo" }} WHERE hello='{{ .env.world }}' AND world='{{ (lookup "baz").spec.baz.spaz }}'`,
+			template: `{{ configure "a: b\nc: d" }}{{ configure "e" "f" }}{{ dependency "bar" }} SELECT * FROM {{ ref "model" "foo" }} WHERE hello='{{ .variables.world }}' AND world='{{ (lookup "baz").spec.baz.spaz }}'`,
 			want: &TemplateMetadata{
 				Refs:                     []ResourceName{{Name: "bar"}, {Kind: ResourceKindModel, Name: "foo"}, {Name: "baz"}},
 				Config:                   map[string]any{"a": "b", "c": "d", "e": "f"},
@@ -56,7 +56,7 @@ func TestAnalyze(t *testing.T) {
 		},
 		{
 			name:     "variables",
-			template: `SELECT * FROM {{.env.partner_table_name}} WITH SAMPLING {{.env.partner_table_name}} .... {{.user.domain}}`,
+			template: `SELECT * FROM {{.variables.partner_table_name}} WITH SAMPLING {{.variables.partner_table_name}} .... {{.user.domain}}`,
 			want: &TemplateMetadata{
 				Refs:                     []ResourceName{},
 				Config:                   map[string]any{},

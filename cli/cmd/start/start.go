@@ -42,7 +42,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ch.Config
 
-			// Backwards compatibility for --env renamed to --var
+			// Backwards compatibility for --env renamed to --variable
 			if len(variablesDeprecated) > 0 {
 				variables = append(variables, variablesDeprecated...)
 			}

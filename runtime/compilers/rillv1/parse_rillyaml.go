@@ -62,9 +62,8 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	// Apply environment-specific overrides
-	envNode := tmp.Environment[p.Environment]
-	if !envNode.IsZero() {
-		if err := envNode.Decode(tmp); err != nil {
+	if envOverride := tmp.Environment[p.Environment]; !envOverride.IsZero() {
+		if err := envOverride.Decode(tmp); err != nil {
 			return newYAMLError(err)
 		}
 	}

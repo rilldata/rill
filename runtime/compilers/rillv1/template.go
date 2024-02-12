@@ -16,7 +16,7 @@ import (
 // Template parsing serves a dual purpose of:
 //
 // a) extracting metadata at parse time (such as {{ config ...}} and {{ ref ... }})
-// b) populating values at resolve time (such as {{ .env ... }} and {{ ref ... }})
+// b) populating values at resolve time (such as {{ .variables ... }} and {{ ref ... }})
 //
 // The resolve time of a template varies. For models, the resolve time is when they are created in the database.
 // But for dashboard expressions, the resolve time is when the dashboard is rendered.
@@ -32,7 +32,7 @@ import (
 //     dependency [`kind`] `name`: register a dependency (parse time)
 //     ref [`kind`] `name`: register a dependency at parse-time, resolve it to a name at resolve time (parse time and resolve time)
 //     lookup [`kind`] `name`: lookup another resource (resolve time)
-//     .env.name: access a variable (resolve time)
+//     .variables.name: access a variable (resolve time)
 //     .user.attribute: access an attribute from auth claims (resolve time)
 //     .meta: access the current resource's metadata (resolve time)
 //     .spec: access the current resource's spec (resolve time)
