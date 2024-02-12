@@ -56,7 +56,7 @@ func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, ins
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 

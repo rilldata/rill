@@ -76,6 +76,8 @@ func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime,
 		return q.resolveDuckDB(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Table, policyFilter, priority)
 	case drivers.DialectDruid:
 		return q.resolveDruid(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Table, policyFilter, priority)
+	case drivers.DialectClickHouse:
+		return q.resolveClickHouse(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Table, policyFilter, priority)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
@@ -228,6 +230,67 @@ func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OL
 	}
 
 	return nil
+}
+
+func (q *MetricsViewTimeRange) resolveClickHouse(ctx context.Context, olap drivers.OLAPStore, timeDim, tableName, filter string, priority int) error {
+	if filter != "" {
+		filter = fmt.Sprintf(" WHERE %s", filter)
+	}
+
+	rangeSQL := fmt.Sprintf(
+		"SELECT min(%[1]s) AS \"min\", max(%[1]s) AS \"max\" FROM %[2]s %[3]s",
+		safeName(timeDim),
+		safeName(tableName),
+		filter,
+	)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            rangeSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		summary := &runtimev1.TimeRangeSummary{}
+		var min, max *time.Time
+		err = rows.Scan(&min, &max)
+		if err != nil {
+			return err
+		}
+
+		if min != nil {
+			summary.Min = timestamppb.New(*min)
+		}
+		if max != nil {
+			summary.Max = timestamppb.New(*max)
+		}
+		if min != nil && max != nil {
+			// ignoring months for now since its hard to compute and anyways not being used
+			summary.Interval = &runtimev1.TimeRangeSummary_Interval{}
+			duration := max.Sub(*min)
+			hours := duration.Hours()
+			if hours >= hourInDay {
+				summary.Interval.Days = int32(hours / hourInDay)
+			}
+			summary.Interval.Micros = duration.Microseconds() - microsInDay*int64(summary.Interval.Days)
+		}
+
+		q.Result = &runtimev1.MetricsViewTimeRangeResponse{
+			TimeRangeSummary: summary,
+		}
+		return nil
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
+	return errors.New("no rows returned")
 }
 
 func (q *MetricsViewTimeRange) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {

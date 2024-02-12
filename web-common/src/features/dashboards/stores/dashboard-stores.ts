@@ -32,6 +32,8 @@ import {
   SortDirection,
   SortType,
 } from "web-common/src/features/dashboards/proto-state/derived-types";
+import { PivotChipType, type PivotChipData } from "../pivot/types";
+import type { PivotRows, PivotColumns } from "../pivot/types";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
@@ -229,15 +231,53 @@ const metricViewReducers = {
     });
   },
 
-  setPivotRows(name: string, values: string[]) {
+  setPivotRows(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, rows: values };
+      const dimensions: PivotChipData[] = [];
+
+      value.forEach((val) => {
+        if (val.type !== PivotChipType.Measure) {
+          dimensions.push(val);
+        }
+      });
+
+      metricsExplorer.pivot.rows = {
+        dimension: dimensions,
+      };
     });
   },
 
-  setPivotColumns(name: string, values: string[]) {
+  setPivotColumns(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, columns: values };
+      const dimensions: PivotChipData[] = [];
+      const measures: PivotChipData[] = [];
+
+      value.forEach((val) => {
+        if (val.type === PivotChipType.Measure) {
+          measures.push(val);
+        } else {
+          dimensions.push(val);
+        }
+      });
+
+      metricsExplorer.pivot.columns = {
+        dimension: dimensions,
+        measure: measures,
+      };
+    });
+  },
+
+  addPivotField(name: string, value: PivotChipData, rows: boolean) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      if (value.type === PivotChipType.Measure) {
+        metricsExplorer.pivot.columns.measure.push(value);
+      } else {
+        if (rows) {
+          metricsExplorer.pivot.rows.dimension.push(value);
+        } else {
+          metricsExplorer.pivot.columns.dimension.push(value);
+        }
+      }
     });
   },
 
@@ -262,7 +302,7 @@ const metricViewReducers = {
     });
   },
 
-  createPivot(name: string, rows: string[], columns: string[]) {
+  createPivot(name: string, rows: PivotRows, columns: PivotColumns) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot = {
         ...metricsExplorer.pivot,

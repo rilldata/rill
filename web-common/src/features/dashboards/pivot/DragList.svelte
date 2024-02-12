@@ -1,78 +1,91 @@
 <script context="module" lang="ts">
+  import AddField from "./AddField.svelte";
+  import PivotChip from "./PivotChip.svelte";
   import { dndzone } from "svelte-dnd-action";
   import { flip } from "svelte/animate";
-  import { Chip } from "@rilldata/web-common/components/chip";
-  import {
-    measureChipColors,
-    timeChipColors,
-    defaultChipColors,
-  } from "@rilldata/web-common/components/chip/chip-types";
   import { createEventDispatcher } from "svelte";
-  import type { ChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import type { PivotChipData } from "./types";
   import { PivotChipType } from "./types";
-
-  const colors: Record<PivotChipType, ChipColors> = {
-    Time: timeChipColors,
-    Measure: measureChipColors,
-    Dimension: defaultChipColors,
-  };
+  import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
 </script>
 
 <script lang="ts">
   export let items: PivotChipData[] = [];
-  export let style: "vertical" | "horizontal" = "vertical";
-  export let removable = false;
+  export let placeholder: string | null = null;
+  export let type: "rows" | "columns" | null = null;
+
+  const removable = Boolean(type);
+  const horizontal = Boolean(type);
 
   const dispatch = createEventDispatcher();
   const flipDurationMs = 200;
 
-  let listClasses: string;
-
-  $: if (style === "horizontal") {
-    listClasses = "flex flex-row bg-slate-50 w-full p-2 gap-x-2 h-10";
-  } else {
-    listClasses = "flex flex-col gap-y-2 py-2";
-  }
-
-  function handleConsider(e) {
+  function handleConsider(e: CustomEvent<{ items: PivotChipData[] }>) {
     items = e.detail.items;
   }
-  function handleFinalize(e) {
+
+  function handleFinalize(e: CustomEvent<{ items: PivotChipData[] }>) {
     items = e.detail.items;
+    dispatch("update", items);
+  }
+
+  function onSelectTimeGrain(item: PivotChipData, timeGrain: TimeGrain) {
+    items = items.map((i) => {
+      if (i.id !== item.id) return i;
+
+      return {
+        id: timeGrain.grain,
+        title: timeGrain.label,
+        type: PivotChipType.Time,
+      };
+    });
+
     dispatch("update", items);
   }
 </script>
 
 <div
-  class="{listClasses} rounded-sm"
+  class="container"
+  class:horizontal
   use:dndzone={{ items, flipDurationMs }}
   on:consider={handleConsider}
   on:finalize={handleFinalize}
 >
+  {#if !items.length && placeholder}
+    <p class="text-gray-500">{placeholder}</p>
+  {/if}
   {#each items as item (item.id)}
     <div class="item" animate:flip={{ duration: flipDurationMs }}>
-      <Chip
-        outline
+      <PivotChip
         {removable}
-        {...colors[item.type]}
-        extraPadding={false}
-        extraRounded={item.type !== PivotChipType.Measure}
-        label={item.title}
+        {item}
         on:remove={() => {
           items = items.filter((i) => i.id !== item.id);
           dispatch("update", items);
         }}
-      >
-        <div slot="body" class="font-semibold">{item.title}</div>
-      </Chip>
+        on:select-time-grain={(e) => {
+          onSelectTimeGrain(item, e.detail.timeGrain);
+        }}
+      />
     </div>
   {/each}
+  {#if removable}
+    <AddField {type} />
+  {/if}
 </div>
 
 <style type="postcss">
   .item {
     @apply text-center h-6;
+  }
+
+  .container {
+    @apply flex flex-col gap-y-2 py-2 rounded-sm;
+  }
+
+  .horizontal {
+    @apply flex flex-row bg-slate-50 w-full p-2 gap-x-2 h-10;
+    @apply items-center;
   }
 
   div {

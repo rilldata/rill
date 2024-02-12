@@ -25,7 +25,6 @@
 <div class="flex flex-col gap-1 items-start">
   <button class="flex gap-1" on:click={toggleCollapse}>
     <span class="header">{title}</span>
-
     <div class="transition-transform" class:-rotate-180={!collapsed}>
       <CaretDownIcon size="12px" />
     </div>

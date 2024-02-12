@@ -101,6 +101,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		// Note: Not exiting early. It might need to be created/materialized., and we need to set the correct retrigger time based on the refresh schedule.
 	}
 
+	// Exit early if disabled
+	if model.Spec.RefreshSchedule != nil && model.Spec.RefreshSchedule.Disable {
+		return runtime.ReconcileResult{}
+	}
+
 	// Check refs - stop if any of them are invalid
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
@@ -221,6 +226,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	createErr := r.createModel(ctx, self, stagingTableName, !materialize)
 	if createErr != nil {
 		createErr = fmt.Errorf("failed to create model: %w", createErr)
+	} else if !r.C.Runtime.AllowHostAccess() {
+		// temporarily for debugging
+		logTableNameAndType(ctx, r.C, connector, stagingTableName)
 	}
 
 	if createErr == nil && stage {
@@ -334,17 +342,26 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 			return "", err
 		}
 
-		// Write state version (doesn't matter how the spec or meta has changed, only if/when state changes)
-		r, err := r.C.Get(ctx, ref, false)
-		var stateVersion int64
-		if err == nil {
-			stateVersion = r.Meta.StateVersion
-		} else {
-			stateVersion = -1
-		}
-		err = binary.Write(hash, binary.BigEndian, stateVersion)
-		if err != nil {
-			return "", err
+		// Incorporate the ref's state info in the hash if and only if we are supposed to trigger when a ref has refreshed (denoted by RefreshSchedule.RefUpdate).
+		if spec.RefreshSchedule != nil && spec.RefreshSchedule.RefUpdate {
+			// Note: Only writing the state info to the hash, not spec version, because it doesn't matter whether the spec/meta changes, only whether the state changes.
+			// Note: Also using StateUpdatedOn because the state version is reset when the resource is deleted and recreated.
+			r, err := r.C.Get(ctx, ref, false)
+			var stateVersion, stateUpdatedOn int64
+			if err == nil {
+				stateVersion = r.Meta.StateVersion
+				stateUpdatedOn = r.Meta.StateUpdatedOn.Seconds
+			} else {
+				stateVersion = -1
+			}
+			err = binary.Write(hash, binary.BigEndian, stateVersion)
+			if err != nil {
+				return "", err
+			}
+			err = binary.Write(hash, binary.BigEndian, stateUpdatedOn)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 

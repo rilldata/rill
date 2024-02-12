@@ -10,20 +10,22 @@
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
   import type { ResizeEvent } from "@rilldata/web-common/components/virtualized-table/drag-table-cell";
+  import type { VirtualItem } from "@tanstack/svelte-virtual";
+  import type { DimensionTableRow } from "./dimension-table-types";
 
   const config: VirtualizedTableConfig = getContext("config");
 
   export let totalHeight: number;
-  export let virtualRowItems;
+  export let virtualRowItems: VirtualItem[];
   export let selectedIndex: number[] = [];
   export let column: VirtualizedTableColumns;
-  export let rows;
+  export let rows: DimensionTableRow[];
   export let width = config.indexWidth;
-  export let horizontalScrolling;
+  export let horizontalScrolling: boolean;
 
   // Cell props
-  export let scrolling;
-  export let activeIndex;
+  export let scrolling: boolean;
+  export let activeIndex: number;
   export let excludeMode = false;
 
   const {
@@ -38,11 +40,14 @@
 
   $: atLeastOneSelected = !!selectedIndex?.length;
 
-  const getCellProps = (row) => {
-    const value = rows[row.index][column.name];
+  const getCellProps = (row: VirtualItem) => {
+    const value = rows[row.index]?.[column.name];
     return {
       value,
-      formattedValue: value,
+      // NOTE: for this "header" column, we don't use a
+      // formatted value, we use the dimension value
+      // directly. Thus, we pass `null` as the formatted.
+      formattedValue: null,
       type: column?.type,
       suppressTooltip: scrolling,
       barValue: 0,

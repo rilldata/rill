@@ -190,11 +190,13 @@ export const queryServiceTableColumns = (
   instanceId: string,
   tableName: string,
   params?: QueryServiceTableColumnsParams,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1TableColumnsResponse>({
     url: `/v1/instances/${instanceId}/queries/columns-profile/tables/${tableName}`,
     method: "POST",
     params,
+    signal,
   });
 };
 
@@ -232,7 +234,8 @@ export const getQueryServiceTableColumnsQueryOptions = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceTableColumns>>
-  > = () => queryServiceTableColumns(instanceId, tableName, params);
+  > = ({ signal }) =>
+    queryServiceTableColumns(instanceId, tableName, params, signal);
 
   return {
     queryKey,
@@ -420,12 +423,14 @@ export const createQueryServiceColumnDescriptiveStatistics = <
 export const queryServiceExport = (
   instanceId: string,
   queryServiceExportBody: QueryServiceExportBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ExportResponse>({
     url: `/v1/instances/${instanceId}/queries/export`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: queryServiceExportBody,
+    signal,
   });
 };
 
@@ -1700,12 +1705,14 @@ export const queryServiceColumnRollupInterval = (
   instanceId: string,
   tableName: string,
   queryServiceColumnRollupIntervalBody: QueryServiceColumnRollupIntervalBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ColumnRollupIntervalResponse>({
     url: `/v1/instances/${instanceId}/queries/rollup-interval/tables/${tableName}`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: queryServiceColumnRollupIntervalBody,
+    signal,
   });
 };
 
@@ -1747,11 +1754,12 @@ export const getQueryServiceColumnRollupIntervalQueryOptions = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnRollupInterval>>
-  > = () =>
+  > = ({ signal }) =>
     queryServiceColumnRollupInterval(
       instanceId,
       tableName,
       queryServiceColumnRollupIntervalBody,
+      signal,
     );
 
   return {
@@ -2379,12 +2387,14 @@ export const queryServiceColumnTimeSeries = (
   instanceId: string,
   tableName: string,
   queryServiceColumnTimeSeriesBody: QueryServiceColumnTimeSeriesBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ColumnTimeSeriesResponse>({
     url: `/v1/instances/${instanceId}/queries/timeseries/tables/${tableName}`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: queryServiceColumnTimeSeriesBody,
+    signal,
   });
 };
 
@@ -2426,11 +2436,12 @@ export const getQueryServiceColumnTimeSeriesQueryOptions = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnTimeSeries>>
-  > = () =>
+  > = ({ signal }) =>
     queryServiceColumnTimeSeries(
       instanceId,
       tableName,
       queryServiceColumnTimeSeriesBody,
+      signal,
     );
 
   return {
@@ -2499,12 +2510,14 @@ export const queryServiceColumnTopK = (
   instanceId: string,
   tableName: string,
   queryServiceColumnTopKBody: QueryServiceColumnTopKBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ColumnTopKResponse>({
     url: `/v1/instances/${instanceId}/queries/topk/tables/${tableName}`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: queryServiceColumnTopKBody,
+    signal,
   });
 };
 
@@ -2546,8 +2559,13 @@ export const getQueryServiceColumnTopKQueryOptions = <
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof queryServiceColumnTopK>>
-  > = () =>
-    queryServiceColumnTopK(instanceId, tableName, queryServiceColumnTopKBody);
+  > = ({ signal }) =>
+    queryServiceColumnTopK(
+      instanceId,
+      tableName,
+      queryServiceColumnTopKBody,
+      signal,
+    );
 
   return {
     queryKey,
@@ -2614,12 +2632,14 @@ export const createQueryServiceColumnTopK = <
 export const queryServiceQuery = (
   instanceId: string,
   queryServiceQueryBody: QueryServiceQueryBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1QueryResponse>({
     url: `/v1/instances/${instanceId}/query`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: queryServiceQueryBody,
+    signal,
   });
 };
 
@@ -2695,12 +2715,14 @@ export const createQueryServiceQuery = <
 export const queryServiceQueryBatch = (
   instanceId: string,
   queryServiceQueryBatchBody: QueryServiceQueryBatchBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<QueryServiceQueryBatch200>({
     url: `/v1/instances/${instanceId}/query/batch`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: queryServiceQueryBatchBody,
+    signal,
   });
 };
 
