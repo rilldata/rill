@@ -134,6 +134,15 @@ export function queryExpandedRowMeasureValues(
   return derived(
     Object.keys(expanded)?.map((expandIndex) => {
       const nestLevel = expandIndex?.split(".")?.length;
+
+      if (nestLevel >= rowDimensionNames.length)
+        return writable({
+          isFetching: false,
+          expandIndex,
+          rowDimensionValues: [],
+          data: [],
+          totals: [],
+        });
       const anchorDimension = rowDimensionNames[nestLevel];
       const values = getValuesForExpandedKey(
         tableData,
@@ -252,6 +261,9 @@ export function addExpandedDataToPivot(
   const numRowDimensions = rowDimensions.length;
 
   expandedRowMeasureValues.forEach((expandedRowData) => {
+    const rowValues = expandedRowData.rowDimensionValues;
+
+    if (rowValues.length === 0) return;
     const indices = expandedRowData.expandIndex
       .split(".")
       .map((index) => parseInt(index, 10));
@@ -276,7 +288,6 @@ export function addExpandedDataToPivot(
     // Update the specific array at the position
     if (parent[lastIdx] && parent[lastIdx].subRows) {
       const anchorDimension = rowDimensions[indices.length];
-      const rowValues = expandedRowData.rowDimensionValues;
 
       let skeletonSubTable: PivotDataRow[] = [
         { [anchorDimension]: "LOADING_CELL" },
