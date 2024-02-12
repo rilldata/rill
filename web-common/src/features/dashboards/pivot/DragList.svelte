@@ -45,15 +45,16 @@
 </script>
 
 <div
-  class="container"
+  class="container text-gray-500"
   class:horizontal
   use:dndzone={{ items, flipDurationMs }}
   on:consider={handleConsider}
   on:finalize={handleFinalize}
 >
   {#if !items.length && placeholder}
-    <p class="text-gray-500">{placeholder}</p>
+    {placeholder}
   {/if}
+
   {#each items as item (item.id)}
     <div class="item" animate:flip={{ duration: flipDurationMs }}>
       <PivotChip
@@ -69,10 +70,11 @@
       />
     </div>
   {/each}
-  {#if removable}
-    <AddField {type} />
-  {/if}
 </div>
+
+{#if removable}
+  <AddField {type} />
+{/if}
 
 <style type="postcss">
   .item {

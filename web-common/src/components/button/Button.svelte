@@ -229,7 +229,7 @@
   /* ADD BUTTON STYLES */
 
   .add {
-    @apply w-[34px] h-[26px] rounded-2xl;
+    @apply w-[34px] h-[26px] rounded-2xl flex-shrink-0;
     @apply flex items-center justify-center;
     @apply border border-dashed border-slate-300;
     @apply bg-white px-0;

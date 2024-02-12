@@ -58,6 +58,6 @@
     @apply flex items-center gap-x-2 px-2;
   }
   .row-label {
-    @apply flex items-center gap-x-1 w-20;
+    @apply flex items-center gap-x-1 w-20 flex-shrink-0;
   }
 </style>
