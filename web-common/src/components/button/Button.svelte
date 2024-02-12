@@ -66,7 +66,7 @@
     @apply text-xs leading-snug font-normal;
     @apply gap-x-2 min-w-fit;
     @apply rounded-[2px];
-    @apply h-7 min-h-[28px];
+    @apply px-3 h-7 min-h-[28px];
   }
 
   button:disabled {
