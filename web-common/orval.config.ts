@@ -21,26 +21,31 @@ export default defineConfig({
           QueryService_MetricsViewMeta: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_ColumnRollupInterval: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_ColumnTopK: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_ColumnTimeSeries: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_TableColumns: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_MetricsViewAggregation: {
