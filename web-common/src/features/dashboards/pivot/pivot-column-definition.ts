@@ -179,7 +179,7 @@ export function getColumnDefForPivot(
   const rowDefinitions: ColumnDef<PivotDataRow>[] =
     rowDimensionsForColumnDef.map((d) => {
       return {
-        accessorKey: d.name,
+        accessorFn: (row) => row[d.name],
         header: nestedLabel,
         cell: ({ row, getValue }) =>
           cellComponent(PivotExpandableCell, {
@@ -196,7 +196,7 @@ export function getColumnDefForPivot(
 
   const leafColumns: ColumnDef<PivotDataRow>[] = measures.map((m) => {
     return {
-      accessorKey: m.name,
+      accessorFn: (row) => row[m.name],
       header: m.label || m.name,
       cell: (info) => {
         const value = m.formatter(info.getValue() as number | null | undefined);

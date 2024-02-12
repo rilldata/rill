@@ -4,23 +4,27 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
-  import { getFormattedHeaderValues } from "./pivot-utils";
+
+  import { PivotChipType, PivotChipData } from "./types";
 
   const stateManagers = getStateManagers();
   const {
-    dashboardStore,
     selectors: {
-      measures: { visibleMeasures },
-      dimensions: { visibleDimensions },
+      pivot: { rows, columns },
     },
     metricsViewName,
   } = stateManagers;
 
-  $: headerData = getFormattedHeaderValues(
-    $dashboardStore?.pivot,
-    $visibleMeasures,
-    $visibleDimensions,
-  );
+  function updateColumn(e: CustomEvent<PivotChipData[]>) {
+    metricsExplorerStore.setPivotColumns($metricsViewName, e.detail);
+  }
+
+  function updateRows(e: CustomEvent<PivotChipData[]>) {
+    const filtered = e.detail.filter(
+      (item) => item.type !== PivotChipType.Measure,
+    );
+    metricsExplorerStore.setPivotRows($metricsViewName, filtered);
+  }
 </script>
 
 <div class="header">
@@ -28,14 +32,9 @@
     <span class="row-label"> <Column size="16px" /> Columns</span>
     <DragList
       removable
-      items={headerData.columns}
+      items={$columns.dimension.concat($columns.measure)}
       style="horizontal"
-      on:update={(e) => {
-        metricsExplorerStore.setPivotColumns(
-          $metricsViewName,
-          e.detail?.map((item) => item.id),
-        );
-      }}
+      on:update={updateColumn}
     />
   </div>
   <div class="header-row">
@@ -43,13 +42,8 @@
 
     <DragList
       removable
-      on:update={(e) => {
-        metricsExplorerStore.setPivotRows(
-          $metricsViewName,
-          e.detail?.map((item) => item.id),
-        );
-      }}
-      items={headerData.rows}
+      on:update={updateRows}
+      items={$rows.dimension}
       style="horizontal"
     />
   </div>
@@ -59,10 +53,10 @@
   .header {
     @apply flex flex-col;
     border-bottom: 1px solid #ddd;
-    @apply bg-white;
+    @apply bg-white py-2 px-2.5 gap-y-2;
   }
   .header-row {
-    @apply flex items-center gap-x-2 px-2 py-1;
+    @apply flex items-center gap-x-2 px-2;
   }
   .row-label {
     @apply flex items-center gap-x-1 w-20;

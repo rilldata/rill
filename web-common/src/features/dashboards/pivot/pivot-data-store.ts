@@ -1,3 +1,4 @@
+import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
@@ -27,20 +28,18 @@ import {
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
 import {
-  getDimensionsInPivotColumns,
-  getDimensionsInPivotRow,
   getFilterForPivotTable,
-  getMeasuresInPivotColumns,
   getPivotConfigKey,
   getSortForAccessor,
   getTotalColumnCount,
   reconcileMissingDimensionValues,
 } from "./pivot-utils";
-import type {
-  PivotDataRow,
-  PivotDataStore,
-  PivotDataStoreConfig,
-  PivotTimeConfig,
+import {
+  PivotChipType,
+  type PivotDataRow,
+  type PivotDataStore,
+  type PivotDataStoreConfig,
+  type PivotTimeConfig,
 } from "./types";
 
 /**
@@ -48,10 +47,13 @@ import type {
  */
 function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
   return derived(
-    [useMetricsView(ctx), ctx.dashboardStore, useTimeControlStore(ctx)],
-    ([metricsView, dashboardStore, timeControls]) => {
-      const { rows, columns } = dashboardStore.pivot;
-
+    [
+      useMetricsView(ctx),
+      ctx.dashboardStore,
+      useTimeControlStore(ctx),
+      measureFilterResolutionsStore(ctx),
+    ],
+    ([metricsView, dashboardStore, timeControls, measureFilterResolution]) => {
       let interval: AvailableTimeGrain = "TIME_GRAIN_HOUR";
       const existingTimeGrain = timeControls?.selectedTimeRange?.interval;
 
@@ -73,10 +75,10 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
       };
 
       if (
-        (rows.length == 0 && columns.length == 0) ||
         !metricsView.data?.measures ||
         !metricsView.data?.dimensions ||
-        !timeControls.ready
+        !timeControls.ready ||
+        !measureFilterResolution.ready
       ) {
         return {
           measureNames: [],
@@ -85,22 +87,36 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
           allMeasures: [],
           allDimensions: [],
           whereFilter: dashboardStore.whereFilter,
+          measureFilter: measureFilterResolution,
           pivot: dashboardStore.pivot,
           time,
         };
       }
-      const measureNames = getMeasuresInPivotColumns(
-        dashboardStore.pivot,
-        metricsView.data?.measures,
-      );
-      const rowDimensionNames = getDimensionsInPivotRow(
-        dashboardStore.pivot,
-        metricsView.data?.measures,
+
+      const measureNames = dashboardStore.pivot.columns.measure.map(
+        (m) => m.id,
       );
 
-      const colDimensionNames = getDimensionsInPivotColumns(
-        dashboardStore.pivot,
-        metricsView.data?.measures,
+      // This is temporary until we have a better way to handle time grains
+      const rowDimensionNames = dashboardStore.pivot.rows.dimension.map((d) => {
+        if (d.type === PivotChipType.Time) {
+          time.interval = d.id as AvailableTimeGrain;
+          return time.timeDimension;
+        }
+
+        return d.id;
+      });
+
+      // This is temporary until we have a better way to handle time grains
+      const colDimensionNames = dashboardStore.pivot.columns.dimension.map(
+        (d) => {
+          if (d.type === PivotChipType.Time) {
+            time.interval = d.id as AvailableTimeGrain;
+            return time.timeDimension;
+          }
+
+          return d.id;
+        },
       );
 
       return {
@@ -110,6 +126,7 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
         allMeasures: metricsView.data?.measures,
         allDimensions: metricsView.data?.dimensions,
         whereFilter: dashboardStore.whereFilter,
+        measureFilter: measureFilterResolution,
         pivot: dashboardStore.pivot,
         time,
       };
@@ -168,6 +185,7 @@ export function createTableCellQuery(
     config.measureNames,
     dimensionBody,
     mergedFilter,
+    config.measureFilter,
     sortBy,
     "10000",
   );
@@ -404,6 +422,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                     config.measureNames,
                     [],
                     config.whereFilter,
+                    config.measureFilter,
                     [],
                     "10000", // Using 10000 for cache hit
                   );
