@@ -257,7 +257,6 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
       pivotExpanded: {},
       pivotRowJoinType: DashboardState_PivotRowJoinType.UNSPECIFIED,
     };
-  console.log(pivotState.rows, pivotState.columns);
   return {
     pivotIsActive: true,
     pivotRowDimensions: pivotState.rows.dimension.map((d) => d.id),

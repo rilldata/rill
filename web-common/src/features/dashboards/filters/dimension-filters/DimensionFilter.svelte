@@ -29,7 +29,7 @@
   let allValues: Record<string, string[]> = {};
   let topListQuery: ReturnType<typeof getFilterSearchList> | undefined;
 
-  $: if (isOpen) {
+  $: if (isOpen && !readOnly) {
     topListQuery = getFilterSearchList(StateManagers, {
       dimension: name,
       searchText,
