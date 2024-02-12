@@ -196,7 +196,7 @@ export function getColumnDefForPivot(
 
   const leafColumns: ColumnDef<PivotDataRow>[] = measures.map((m) => {
     return {
-      accessorFn: (row) => row[m.name],
+      accessorKey: m.name,
       header: m.label || m.name,
       cell: (info) => {
         const value = m.formatter(info.getValue() as number | null | undefined);
