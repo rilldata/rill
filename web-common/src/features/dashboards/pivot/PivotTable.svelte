@@ -11,7 +11,6 @@
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
   import type { PivotDataRow, PivotDataStore } from "./types";
-  import { ArrowUp } from "lucide-svelte";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
 
   export let pivotDataStore: PivotDataStore;
