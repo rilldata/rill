@@ -91,17 +91,19 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     rowDimensionNames,
     measureNames,
     whereFilter,
+    measureFilter,
     pivot,
   } = config;
 
   const { sorting } = pivot;
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
+  const measureFilterKey = JSON.stringify(measureFilter);
   const dimsAndMeasures = rowDimensionNames
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${sortingKey}_${filterKey}`;
+  return `${dimsAndMeasures}_${sortingKey}_${filterKey}_${measureFilterKey}`;
 }
 
 /**

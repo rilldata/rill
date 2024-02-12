@@ -10,8 +10,8 @@
     createBinaryExpression,
   } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import {
-    type V1Expression,
     V1Operation,
+    type V1Expression,
   } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
@@ -141,7 +141,6 @@
       error={$errors["value1"]}
       id="value1"
       on:change={(e) => {
-        console.log("trigger", e);
         handleSubmit(e);
       }}
       on:enter-pressed={handleSubmit}
