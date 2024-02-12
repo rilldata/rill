@@ -95,9 +95,11 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 			return nil, pathError{path: ymlPath, err: newYAMLError(err)}
 		}
 
-		envOverride := cfg.Environment[p.Environment]
-		if !envOverride.IsZero() {
-			res.YAMLOverride = &envOverride
+		if cfg.Environment != nil {
+			envOverride := cfg.Environment[p.Environment]
+			if !envOverride.IsZero() {
+				res.YAMLOverride = &envOverride
+			}
 		}
 	}
 
