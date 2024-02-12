@@ -530,7 +530,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	if whereClause != "" {
 		whereClause = "WHERE 1=1" + whereClause
 	}
-	if len(filterWhereClause) > 0 {
+	if filterWhereClause != "" {
 		filterWhereClause = "WHERE 1=1" + filterWhereClause
 	}
 
