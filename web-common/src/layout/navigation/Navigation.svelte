@@ -10,6 +10,7 @@
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
   import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
+  import ExternalTableAssets from "../../features/external-tables/ExternalTableAssets.svelte";
   import OtherFiles from "../../features/project/OtherFiles.svelte";
   import { DEFAULT_NAV_WIDTH } from "../config";
   import { drag } from "../drag";
@@ -18,17 +19,20 @@
 
   /** FIXME: come up with strong defaults here when needed */
   const navigationLayout =
-    (getContext("rill:app:navigation-layout") as Writable<{
-      value: number;
-      visible: boolean;
-    }>) || writable({ value: DEFAULT_NAV_WIDTH, visible: true });
+    getContext<
+      Writable<{
+        value: number;
+        visible: boolean;
+      }>
+    >("rill:app:navigation-layout") ||
+    writable({ value: DEFAULT_NAV_WIDTH, visible: true });
 
   const navigationWidth =
-    (getContext("rill:app:navigation-width-tween") as Readable<number>) ||
+    getContext<Readable<number>>("rill:app:navigation-width-tween") ||
     writable(DEFAULT_NAV_WIDTH);
 
   const navVisibilityTween =
-    (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
+    getContext<Readable<number>>("rill:app:navigation-visibility-tween") ||
     tweened(0, { duration: 50 });
 
   const { readOnly } = featureFlags;
@@ -100,6 +104,7 @@
       <div class="grow">
         <ProjectTitle />
         {#if isModelerEnabled}
+          <ExternalTableAssets />
           <TableAssets />
           <ModelAssets />
         {/if}
