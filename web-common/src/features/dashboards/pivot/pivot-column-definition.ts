@@ -160,18 +160,34 @@ export function getColumnDefForPivot(
     };
   });
 
-  const rowDimensions = rowDimensionNames.map((d) => ({
-    label:
+  const rowDimensions = rowDimensionNames.map((d) => {
+    let label =
       config.allDimensions.find((dimension) => dimension.column === d)?.label ||
-      d,
-    name: d,
-  }));
-  const colDimensions = colDimensionNames.map((d) => ({
-    label:
+      d;
+    if (isTimeDimension(d, config.time.timeDimension)) {
+      const timeGrain = getTimeGrainFromDimension(d);
+      const grainLabel = TIME_GRAIN[timeGrain]?.label || d;
+      label = `Time ${grainLabel}`;
+    }
+    return {
+      label,
+      name: d,
+    };
+  });
+  const colDimensions = colDimensionNames.map((d) => {
+    let label =
       config.allDimensions.find((dimension) => dimension.column === d)?.label ||
-      d,
-    name: d,
-  }));
+      d;
+    if (isTimeDimension(d, config.time.timeDimension)) {
+      const timeGrain = getTimeGrainFromDimension(d);
+      const grainLabel = TIME_GRAIN[timeGrain]?.label || d;
+      label = `Time ${grainLabel}`;
+    }
+    return {
+      label,
+      name: d,
+    };
+  });
 
   let rowDimensionsForColumnDef = rowDimensions;
   let nestedLabel: string;
