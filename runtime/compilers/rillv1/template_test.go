@@ -45,7 +45,7 @@ func TestAnalyze(t *testing.T) {
 		},
 		{
 			name:     "complex",
-			template: `{{ configure "a: b\nc: d" }}{{ configure "e" "f" }}{{ dependency "bar" }} SELECT * FROM {{ ref "model" "foo" }} WHERE hello='{{ .variables.world }}' AND world='{{ (lookup "baz").spec.baz.spaz }}'`,
+			template: `{{ configure "a: b\nc: d" }}{{ configure "e" "f" }}{{ dependency "bar" }} SELECT * FROM {{ ref "model" "foo" }} WHERE hello='{{ .vars.world }}' AND world='{{ (lookup "baz").spec.baz.spaz }}'`,
 			want: &TemplateMetadata{
 				Refs:                     []ResourceName{{Name: "bar"}, {Kind: ResourceKindModel, Name: "foo"}, {Name: "baz"}},
 				Config:                   map[string]any{"a": "b", "c": "d", "e": "f"},
@@ -56,11 +56,11 @@ func TestAnalyze(t *testing.T) {
 		},
 		{
 			name:     "variables",
-			template: `SELECT * FROM {{.variables.partner_table_name}} WITH SAMPLING {{.variables.partner_table_name}} .... {{.user.domain}}`,
+			template: `SELECT * FROM {{.vars.partner_table_name}} WITH SAMPLING {{.vars.partner_table_name}} .... {{.user.domain}}`,
 			want: &TemplateMetadata{
 				Refs:                     []ResourceName{},
 				Config:                   map[string]any{},
-				Variables:                []string{"variables.partner_table_name", "user.domain"},
+				Variables:                []string{"vars.partner_table_name", "user.domain"},
 				UsesTemplating:           true,
 				ResolvedWithPlaceholders: `SELECT * FROM <no value> WITH SAMPLING <no value> .... <no value>`,
 			},
@@ -88,9 +88,9 @@ func TestAnalyze(t *testing.T) {
 }
 
 func TestResolve(t *testing.T) {
-	template := "SELECT partner_id FROM domain_partner_mapping WHERE domain = '{{ .user.domain }}' AND groups IN ('{{ .user.groups | join \"', '\" }}') {{ if development }}OR true{{ end }}"
+	template := "SELECT partner_id FROM domain_partner_mapping WHERE domain = '{{ .user.domain }}' AND groups IN ('{{ .user.groups | join \"', '\" }}') {{ if dev }}OR true{{ end }}"
 	resolved, err := ResolveTemplate(template, TemplateData{
-		Environment: "development",
+		Environment: "dev",
 		User: map[string]any{
 			"domain": "rilldata.com",
 			"groups": []string{"admin", "user"},

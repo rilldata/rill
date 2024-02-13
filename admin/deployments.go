@@ -123,7 +123,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	// Create the instance
 	_, err = rt.CreateInstance(ctx, &runtimev1.CreateInstanceRequest{
 		InstanceId:     instanceID,
-		Environment:    "production",
+		Environment:    "prod",
 		OlapConnector:  olapDriver,
 		RepoConnector:  "admin",
 		AdminConnector: "admin",

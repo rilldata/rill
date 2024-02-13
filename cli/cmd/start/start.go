@@ -21,7 +21,6 @@ const maxProjectFiles = 1000
 
 // StartCmd represents the start command
 func StartCmd(ch *cmdutil.Helper) *cobra.Command {
-	var environment string
 	var olapDriver string
 	var olapDSN string
 	var httpPort int
@@ -33,7 +32,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var noUI bool
 	var noOpen bool
 	var logFormat string
-	var variables, variablesDeprecated []string
+	var env []string
+	var vars []string
 
 	startCmd := &cobra.Command{
 		Use:   "start [<path>]",
@@ -41,11 +41,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ch.Config
-
-			// Backwards compatibility for --env renamed to --variable
-			if len(variablesDeprecated) > 0 {
-				variables = append(variables, variablesDeprecated...)
-			}
 
 			var projectPath string
 			if len(args) > 0 {
@@ -107,9 +102,19 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("invalid log format %q", logFormat)
 			}
 
+			// Backwards compatibility for --env (see comment on the flag definition for details)
+			environment := "dev"
+			for _, v := range env {
+				if strings.Contains(v, "=") {
+					vars = append(vars, v)
+				} else {
+					environment = v
+				}
+			}
+
 			client := activity.NewNoopClient()
 
-			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, debug, reset, environment, olapDriver, olapDSN, projectPath, parsedLogFormat, variables, client)
+			app, err := local.NewApp(cmd.Context(), cfg.Version, verbose, debug, reset, environment, olapDriver, olapDSN, projectPath, parsedLogFormat, vars, client)
 			if err != nil {
 				return err
 			}
@@ -141,14 +146,10 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&debug, "debug", false, "Collect additional debug info")
 	startCmd.Flags().BoolVar(&reset, "reset", false, "Clear and re-ingest source data")
 	startCmd.Flags().StringVar(&logFormat, "log-format", "console", "Log format (options: \"console\", \"json\")")
-	startCmd.Flags().StringVar(&environment, "environment", "development", "Environment name")
-	startCmd.Flags().StringSliceVarP(&variables, "variable", "v", []string{}, "Set project variables")
 
-	// Deprecated flag: replaced by --variable
-	startCmd.Flags().StringSliceVarP(&variablesDeprecated, "env", "e", []string{}, "Set project variables")
-	if err := startCmd.Flags().MarkHidden("env"); err != nil {
-		panic(err)
-	}
+	// --env was previously used for variables, but is now used to set the environment name. We maintain backwards compatibility by keeping --env as a slice var, and setting any value containing an equals sign as a variable.
+	startCmd.Flags().StringSliceVarP(&env, "env", "e", []string{"dev"}, "Environment name")
+	startCmd.Flags().StringSliceVarP(&vars, "var", "v", []string{}, "Set project variables")
 
 	return startCmd
 }

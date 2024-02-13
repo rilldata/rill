@@ -69,7 +69,7 @@ type commonYAML struct {
 	// SQL contains the SQL string for this resource. It may be specified inline, or will be loaded from a file at the same stem. It may not be supported in all resources.
 	SQL string `yaml:"sql"`
 	// Environment-specific overrides
-	Environment map[string]yaml.Node `yaml:"environment"`
+	Env map[string]yaml.Node `yaml:"env"`
 }
 
 // parseStem parses a pair of YAML and SQL files with the same path stem (e.g. "/path/to/file.yaml" for "/path/to/file.sql").
@@ -106,7 +106,7 @@ func (p *Parser) parseStem(ctx context.Context, paths []string, ymlPath, yml, sq
 		res.SQLPath = ymlPath
 
 		// Set environment-specific override
-		if envOverride := cfg.Environment[p.Environment]; !envOverride.IsZero() {
+		if envOverride := cfg.Env[p.Environment]; !envOverride.IsZero() {
 			res.YAMLOverride = &envOverride
 		}
 

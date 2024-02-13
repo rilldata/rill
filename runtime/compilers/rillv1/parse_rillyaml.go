@@ -33,20 +33,19 @@ type VariableDef struct {
 
 // rillYAML is the raw YAML structure of rill.yaml
 type rillYAML struct {
-	Title               string            `yaml:"title"`
-	Description         string            `yaml:"description"`
-	Variables           map[string]string `yaml:"variables"`
-	VariablesDeprecated map[string]string `yaml:"env"`
-	Connectors          []struct {
+	Title       string            `yaml:"title"`
+	Description string            `yaml:"description"`
+	Vars        map[string]string `yaml:"vars"`
+	Connectors  []struct {
 		Type     string            `yaml:"type"`
 		Name     string            `yaml:"name"`
 		Defaults map[string]string `yaml:"defaults"`
 	} `yaml:"connectors"`
-	Sources     yaml.Node            `yaml:"sources"`
-	Models      yaml.Node            `yaml:"models"`
-	Dashboards  yaml.Node            `yaml:"dashboards"`
-	Migrations  yaml.Node            `yaml:"migrations"`
-	Environment map[string]yaml.Node `yaml:"environment"`
+	Env        map[string]yaml.Node `yaml:"env"`
+	Sources    yaml.Node            `yaml:"sources"`
+	Models     yaml.Node            `yaml:"models"`
+	Dashboards yaml.Node            `yaml:"dashboards"`
+	Migrations yaml.Node            `yaml:"migrations"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -61,20 +60,23 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		return newYAMLError(err)
 	}
 
-	// Apply environment-specific overrides
-	if envOverride := tmp.Environment[p.Environment]; !envOverride.IsZero() {
-		if err := envOverride.Decode(tmp); err != nil {
-			return newYAMLError(err)
+	// Ugly backwards compatibility hack: we have renamed "env" to "vars", and now use "env" for environment-specific overrides.
+	// For backwards compatibility, we still consider "env" entries with scalar values as variables.
+	for k := range tmp.Env {
+		v := tmp.Env[k]
+		if v.Kind == yaml.ScalarNode {
+			if tmp.Vars == nil {
+				tmp.Vars = make(map[string]string)
+			}
+			tmp.Vars[k] = v.Value
+			delete(tmp.Env, k)
 		}
 	}
 
-	// Backwards compatibility for "env" -> "variables"
-	if len(tmp.VariablesDeprecated) > 0 {
-		if tmp.Variables == nil {
-			tmp.Variables = make(map[string]string, len(tmp.VariablesDeprecated))
-		}
-		for k, v := range tmp.VariablesDeprecated {
-			tmp.Variables[k] = v
+	// Apply environment-specific overrides
+	if envOverride := tmp.Env[p.Environment]; !envOverride.IsZero() {
+		if err := envOverride.Decode(tmp); err != nil {
+			return newYAMLError(err)
 		}
 	}
 
@@ -104,7 +106,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		Title:       tmp.Title,
 		Description: tmp.Description,
 		Connectors:  make([]*ConnectorDef, len(tmp.Connectors)),
-		Variables:   make([]*VariableDef, len(tmp.Variables)),
+		Variables:   make([]*VariableDef, len(tmp.Vars)),
 		Defaults: map[ResourceKind]yaml.Node{
 			ResourceKindSource:      tmp.Sources,
 			ResourceKindModel:       tmp.Models,
@@ -125,7 +127,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	i := 0
-	for k, v := range tmp.Variables {
+	for k, v := range tmp.Vars {
 		res.Variables[i] = &VariableDef{
 			Name:    k,
 			Default: v,

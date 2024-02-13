@@ -132,13 +132,12 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 
 	// Build template data
 	dataMap := map[string]interface{}{
-		"environment": "",
-		"user":        map[string]any{},
-		"env":         map[string]any{},
-		"variables":   map[string]any{},
-		"meta":        map[string]any{},
-		"spec":        map[string]any{},
-		"state":       map[string]any{},
+		"env":   "",
+		"vars":  map[string]any{},
+		"user":  map[string]any{},
+		"meta":  map[string]any{},
+		"spec":  map[string]any{},
+		"state": map[string]any{},
 	}
 
 	// Resolve template
@@ -223,13 +222,12 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 
 	// Build template data
 	dataMap := map[string]interface{}{
-		"environment": data.Environment,
-		"user":        data.User,
-		"env":         data.Variables,
-		"variables":   data.Variables,
-		"meta":        data.Self.Meta,
-		"spec":        data.Self.Spec,
-		"state":       data.Self.State,
+		"env":   data.Environment,
+		"vars":  data.Variables,
+		"user":  data.User,
+		"meta":  data.Self.Meta,
+		"spec":  data.Self.Spec,
+		"state": data.Self.State,
 	}
 
 	// Add extra props
@@ -255,8 +253,8 @@ func newFuncMap(environment string) template.FuncMap {
 	delete(funcMap, "expandenv")
 
 	// Add helpers for checking for common environments
-	funcMap["development"] = func() bool { return environment == "development" }
-	funcMap["production"] = func() bool { return environment == "production" }
+	funcMap["dev"] = func() bool { return environment == "dev" }
+	funcMap["prod"] = func() bool { return environment == "prod" }
 
 	return funcMap
 }
