@@ -11,7 +11,7 @@ Rill uses the Go programming language's native templating engine, known as `text
 
 Access an environment variable provided using `rill start --var key=value`:
 ```sql
-SELECT * FROM my_source WHERE foo = '{{ .variables.key }}'
+SELECT * FROM my_source WHERE foo = '{{ .vars.key }}'
 ```
 
 ## Useful resources

@@ -16,8 +16,9 @@ Manage service accounts
 ### Global flags
 
 ```
-  -h, --help          Print usage
-      --interactive   Prompt for missing required parameters (default true)
+      --format string   Output format (options: "human", "json", "csv") (default "human")
+  -h, --help            Print usage
+      --interactive     Prompt for missing required parameters (default true)
 ```
 
 ### SEE ALSO
