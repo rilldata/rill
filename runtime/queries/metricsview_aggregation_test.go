@@ -54,7 +54,7 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("TestMetricsViewsAggregation_pivot_dim_and_measure", func(t *testing.T) { TestMetricsViewsAggregation_pivot_dim_and_measure(t) })
 	t.Run("TestMetricsViewAggregation_measure_filters", func(t *testing.T) { TestMetricsViewAggregation_measure_filters(t) })
 	t.Run("TestMetricsViewsAggregation_timezone", func(t *testing.T) { TestMetricsViewsAggregation_timezone(t) })
-	t.Run("TestMetricsViewAggregationClickhouseEnum", func(t *testing.T) { TestMetricsViewAggregationClickhouseEnum(t) })
+	t.Run("TestMetricsViewAggregationClickhouseEnum", func(t *testing.T) { testMetricsViewAggregationClickhouseEnum(t) })
 }
 
 func TestMetricsViewsAggregation(t *testing.T) {
@@ -885,7 +885,7 @@ func TestMetricsViewsAggregation_2time_aggregations(t *testing.T) {
 	require.Equal(t, "Google,2022-02-01,2022-01-01", fieldsToString(rows[i], "pub", "timestamp", "timestamp_year"))
 }
 
-func TestMetricsViewAggregationClickhouseEnum(t *testing.T) {
+func testMetricsViewAggregationClickhouseEnum(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml": "",
