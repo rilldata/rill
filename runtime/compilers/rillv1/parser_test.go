@@ -31,7 +31,7 @@ connectors:
   defaults:
     region: us-east-1
 
-variables:
+vars:
   foo: bar
 `,
 	})
@@ -936,7 +936,7 @@ func TestEnvironmentOverrides(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		// Provide dashboard defaults in rill.yaml
 		`rill.yaml`: `
-environment:
+env:
   test:
     sources:
       limit: 10000
@@ -945,7 +945,7 @@ environment:
 		`sources/s1.yaml`: `
 connector: s3
 path: hello
-environment:
+env:
   test:
     path: world
     refresh:

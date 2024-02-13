@@ -49,7 +49,7 @@ func TestAnalyze(t *testing.T) {
 			want: &TemplateMetadata{
 				Refs:                     []ResourceName{{Name: "bar"}, {Kind: ResourceKindModel, Name: "foo"}, {Name: "baz"}},
 				Config:                   map[string]any{"a": "b", "c": "d", "e": "f"},
-				Variables:                []string{"variables.world"},
+				Variables:                []string{"vars.world"},
 				UsesTemplating:           true,
 				ResolvedWithPlaceholders: `SELECT * FROM <no value> WHERE hello='<no value>' AND world='<no value>'`,
 			},
