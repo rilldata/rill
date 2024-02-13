@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/gocarina/gocsv"
 	"github.com/lensesio/tableprinter"
 )
 
@@ -23,6 +24,7 @@ type Format int
 const (
 	Human Format = iota
 	JSON
+	CSV
 )
 
 func NewFormatValue(val Format, p *Format) *Format {
@@ -32,6 +34,34 @@ func NewFormatValue(val Format, p *Format) *Format {
 
 func (f *Format) Type() string {
 	return "string"
+}
+
+func (f *Format) String() string {
+	switch *f {
+	case Human:
+		return "human"
+	case JSON:
+		return "json"
+	case CSV:
+		return "csv"
+	}
+	return "unknown format"
+}
+
+func (f *Format) Set(s string) error {
+	var v Format
+	switch s {
+	case "human":
+		v = Human
+	case "json":
+		v = JSON
+	case "csv":
+		v = CSV
+	default:
+		return fmt.Errorf("failed to parse Format: %q. Valid values: %+v", s, []string{"human", "json", "csv"})
+	}
+	*f = v
+	return nil
 }
 
 func NewPrinter(format *Format) *Printer {
@@ -71,8 +101,25 @@ func (p *Printer) PrintResource(v interface{}) error {
 		return nil
 	case JSON:
 		return p.PrintJSON(v)
+	case CSV:
+		return p.PrintCSV(v)
 	}
 	return fmt.Errorf("unknown printer.Format: %T", *p.format)
+}
+
+func (p *Printer) PrintCSV(v interface{}) error {
+	var out io.Writer = os.Stdout
+	if p.resourceOut != nil {
+		out = p.resourceOut
+	}
+
+	buf, err := gocsv.MarshalString(v)
+	if err != nil {
+		return fmt.Errorf("failed to marshal CSV: %w", err)
+	}
+
+	fmt.Fprint(out, buf)
+	return nil
 }
 
 func (p *Printer) PrintJSON(v interface{}) error {

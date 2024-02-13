@@ -303,6 +303,7 @@ message MetricsViewAggregationDimension {
   string name = 1;
   TimeGrain time_grain = 2;
   string time_zone = 3;
+  string alias = 4;
 }
 
 message MetricsViewAggregationMeasure {
