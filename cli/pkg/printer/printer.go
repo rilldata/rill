@@ -1,7 +1,6 @@
 package printer
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,7 +25,6 @@ const (
 	Human Format = iota
 	JSON
 	CSV
-	TSV
 )
 
 func NewFormatValue(val Format, p *Format) *Format {
@@ -46,8 +44,6 @@ func (f *Format) String() string {
 		return "json"
 	case CSV:
 		return "csv"
-	case TSV:
-		return "tsv"
 	}
 	return "unknown format"
 }
@@ -61,11 +57,8 @@ func (f *Format) Set(s string) error {
 		v = JSON
 	case "csv":
 		v = CSV
-	case "tsv":
-		v = TSV
 	default:
-		return fmt.Errorf("failed to parse Format: %q. Valid values: %+v",
-			s, []string{"human", "json", "csv", "tsv"})
+		return fmt.Errorf("failed to parse Format: %q. Valid values: %+v", s, []string{"human", "json", "csv"})
 	}
 	*f = v
 	return nil
@@ -110,59 +103,22 @@ func (p *Printer) PrintResource(v interface{}) error {
 		return p.PrintJSON(v)
 	case CSV:
 		return p.PrintCSV(v)
-	case TSV:
-		return p.PrintTSV(v)
 	}
 	return fmt.Errorf("unknown printer.Format: %T", *p.format)
 }
 
-// PrintCSV prints the given data as CSV to the output.
 func (p *Printer) PrintCSV(v interface{}) error {
 	var out io.Writer = os.Stdout
 	if p.resourceOut != nil {
 		out = p.resourceOut
 	}
 
-	type csvvaluer interface {
-		MarshalCSVValue() interface{}
-	}
-	if c, ok := v.(csvvaluer); ok {
-		v = c.MarshalCSVValue()
-	}
-
 	buf, err := gocsv.MarshalString(v)
 	if err != nil {
 		return fmt.Errorf("failed to marshal CSV: %w", err)
 	}
-	fmt.Fprintln(out, buf)
-	return nil
-}
 
-// PrintTSV prints the given data as TSV to the output.
-func (p *Printer) PrintTSV(v interface{}) error {
-	var out io.Writer = os.Stdout
-	if p.resourceOut != nil {
-		out = p.resourceOut
-	}
-
-	type csvvaluer interface {
-		MarshalCSVValue() interface{}
-	}
-	if c, ok := v.(csvvaluer); ok {
-		v = c.MarshalCSVValue()
-	}
-
-	gocsv.SetCSVWriter(func(out io.Writer) *gocsv.SafeCSVWriter {
-		writer := csv.NewWriter(out)
-		writer.Comma = '\t'
-		return gocsv.NewSafeCSVWriter(writer)
-	})
-
-	buf, err := gocsv.MarshalString(v)
-	if err != nil {
-		return fmt.Errorf("failed to marshal TSV: %w", err)
-	}
-	fmt.Fprintln(out, buf)
+	fmt.Fprint(out, buf)
 	return nil
 }
 
