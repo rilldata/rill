@@ -7,7 +7,7 @@
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import EnterIcon from "../../components/icons/EnterIcon.svelte";
+  import Add from "../../components/icons/Add.svelte";
   import { WorkspaceHeader } from "../../layout/workspace";
   import { behaviourEvent } from "../../metrics/initMetrics";
   import { BehaviourEventMedium } from "../../metrics/service/BehaviourEventTypes";
@@ -15,23 +15,28 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "../../metrics/service/MetricsTypes";
-  import { createModelFromSourceV2 } from "../sources/createModel";
+  import { createDashboardFromExternalTable } from "./createDashboardFromExternalTable";
 
-  export let tableName: string;
+  export let fullyQualifiedTableName: string;
+
+  $: tableName = fullyQualifiedTableName.split(".")[1];
 
   const queryClient = useQueryClient();
 
-  const handleCreateModelFromSource = async () => {
-    const modelName = await createModelFromSourceV2(queryClient, tableName);
-    goto(`/model/${modelName}`);
+  async function handleCreateDashboardFromExternalTable() {
+    const newDashboardName = await createDashboardFromExternalTable(
+      queryClient,
+      tableName,
+    );
+    goto(`/dashboard/${newDashboardName}`);
     behaviourEvent.fireNavigationEvent(
-      modelName,
+      newDashboardName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.RightPanel,
       MetricsEventScreenName.ExternalTable,
-      MetricsEventScreenName.Model,
+      MetricsEventScreenName.Dashboard,
     );
-  };
+  }
 
   function isHeaderWidthSmall(width: number) {
     return width < 800;
@@ -43,17 +48,18 @@
     editable={false}
     onChangeCallback={undefined}
     showInspectorToggle={false}
-    {...{ titleInput: tableName }}
+    {...{ titleInput: fullyQualifiedTableName }}
   >
     <svelte:fragment slot="cta" let:width={headerWidth}>
+      {@const collapse = isHeaderWidthSmall(headerWidth)}
       <PanelCTA side="right">
-        <Button on:click={handleCreateModelFromSource}>
-          <ResponsiveButtonText collapse={isHeaderWidthSmall(headerWidth)}>
-            Create model
-          </ResponsiveButtonText>
-          <IconSpaceFixer pullLeft pullRight={isHeaderWidthSmall(headerWidth)}>
-            <EnterIcon size="14px" />
+        <Button on:click={handleCreateDashboardFromExternalTable}>
+          <IconSpaceFixer pullLeft pullRight={collapse}>
+            <Add />
           </IconSpaceFixer>
+          <ResponsiveButtonText {collapse}>
+            Autogenerate dashboard
+          </ResponsiveButtonText>
         </Button>
       </PanelCTA>
     </svelte:fragment>

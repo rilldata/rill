@@ -24,9 +24,6 @@
 </svelte:head>
 
 <WorkspaceContainer assetID={fullyQualifiedTableName} inspector={false}>
-  <ExternalTableWorkspaceHeader
-    tableName={fullyQualifiedTableName}
-    slot="header"
-  />
+  <ExternalTableWorkspaceHeader {fullyQualifiedTableName} slot="header" />
   <ConnectedPreviewTable objectName={table} loading={false} slot="body" />
 </WorkspaceContainer>
