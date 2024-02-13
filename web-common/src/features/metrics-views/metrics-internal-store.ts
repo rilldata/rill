@@ -66,8 +66,8 @@ available_time_zones:
   return template.toString();
 }
 
-export function generateDashboardYAMLForModel(
-  modelName: string,
+export function generateDashboardYAMLForTable(
+  tableName: string,
   schema: V1StructType,
   dashboardTitle = "",
 ) {
@@ -78,7 +78,7 @@ export function generateDashboardYAMLForModel(
   if (dashboardTitle) {
     doc.set("title", dashboardTitle);
   }
-  doc.set("model", modelName);
+  doc.set("table", tableName);
 
   const timestampColumns = selectTimestampColumnFromSchema(schema);
   if (timestampColumns?.length) {

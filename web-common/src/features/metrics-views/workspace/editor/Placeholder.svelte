@@ -11,7 +11,7 @@
   import { waitForResource } from "@rilldata/web-common/features/entity-management/resource-status-utils";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import {
-    generateDashboardYAMLForModel,
+    generateDashboardYAMLForTable,
     initBlankDashboardYAML,
   } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
@@ -65,7 +65,7 @@
     });
 
     const dashboardYAML = schemaResp?.schema
-      ? generateDashboardYAMLForModel(modelName, schemaResp?.schema)
+      ? generateDashboardYAMLForTable(modelName, schemaResp?.schema)
       : "";
 
     await runtimeServicePutFile(
