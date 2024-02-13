@@ -8,6 +8,7 @@
   export let title: PivotSidebarSection;
   export let items: PivotChipData[];
   export let collapsed = false;
+  export let disabled = false;
 
   let showMore = false;
 
@@ -31,7 +32,7 @@
   </button>
 
   {#if !collapsed}
-    <DragList items={items.slice(0, visible)} />
+    <DragList {disabled} items={items.slice(0, visible)} />
 
     {#if !collapsed && items.length > 3}
       <button class="see-more" on:click={toggleShowMore}>

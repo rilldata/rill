@@ -13,6 +13,7 @@
   export let items: PivotChipData[] = [];
   export let placeholder: string | null = null;
   export let type: "rows" | "columns" | null = null;
+  export let disabled = false;
 
   const removable = Boolean(type);
   const horizontal = Boolean(type);
@@ -47,7 +48,7 @@
 <div
   class="container"
   class:horizontal
-  use:dndzone={{ items, flipDurationMs }}
+  use:dndzone={{ items, flipDurationMs, dragDisabled: disabled }}
   on:consider={handleConsider}
   on:finalize={handleFinalize}
 >
@@ -55,7 +56,11 @@
     <p class="text-gray-500">{placeholder}</p>
   {/if}
   {#each items as item (item.id)}
-    <div class="item" animate:flip={{ duration: flipDurationMs }}>
+    <div
+      class="item"
+      class:disabled
+      animate:flip={{ duration: flipDurationMs }}
+    >
       <PivotChip
         {removable}
         {item}
@@ -90,5 +95,9 @@
 
   div {
     outline: none !important;
+  }
+
+  .disabled {
+    @apply cursor-not-allowed opacity-50 pointer-events-none;
   }
 </style>

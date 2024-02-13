@@ -8,7 +8,7 @@
   const stateManagers = getStateManagers();
   const {
     selectors: {
-      pivot: { measures, dimensions },
+      pivot: { measures, dimensions, hasTimePill },
     },
   } = stateManagers;
 
@@ -28,7 +28,8 @@
 
 <div class="sidebar">
   <div class="container">
-    <PivotDrag title="Time" items={timeGrainOptions} />
+    <PivotDrag title="Time" items={timeGrainOptions} disabled={$hasTimePill} />
+
     <PivotDrag title="Measures" items={$measures} />
     <PivotDrag title="Dimensions" items={$dimensions} />
   </div>

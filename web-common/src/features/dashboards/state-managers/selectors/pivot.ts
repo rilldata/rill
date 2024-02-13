@@ -5,6 +5,16 @@ export const pivotSelectors = {
   showPivot: ({ dashboard }: DashboardDataSources) => dashboard.pivot.active,
   rows: ({ dashboard }: DashboardDataSources) => dashboard.pivot.rows,
   columns: ({ dashboard }: DashboardDataSources) => dashboard.pivot.columns,
+  // Temporary limit to have only 1 time pill
+  hasTimePill: ({ dashboard }: DashboardDataSources) => {
+    const columns = dashboard.pivot.columns;
+    const rows = dashboard.pivot.rows;
+
+    return (
+      columns.dimension.find((c) => c.type === PivotChipType.Time) ||
+      rows.dimension.find((r) => r.type === PivotChipType.Time)
+    );
+  },
   measures: ({ metricsSpecQueryResult, dashboard }: DashboardDataSources) => {
     const measures =
       metricsSpecQueryResult.data?.measures?.filter(
