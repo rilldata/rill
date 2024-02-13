@@ -41,3 +41,19 @@ export function useAlertDashboardName(instanceId: string, name: string) {
     },
   );
 }
+
+export function useIsAlertCreatedByCode(instanceId: string, name: string) {
+  return createRuntimeServiceGetResource(
+    instanceId,
+    {
+      "name.name": name,
+      "name.kind": ResourceKind.Alert,
+    },
+    {
+      query: {
+        select: (data) =>
+          !data.resource.alert.spec.annotations["admin_owner_user_id"],
+      },
+    },
+  );
+}
