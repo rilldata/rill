@@ -10,9 +10,9 @@ export const pivotSelectors = {
     const columns = dashboard.pivot.columns;
     const rows = dashboard.pivot.rows;
 
-    return (
+    return Boolean(
       columns.dimension.find((c) => c.type === PivotChipType.Time) ||
-      rows.dimension.find((r) => r.type === PivotChipType.Time)
+        rows.dimension.find((r) => r.type === PivotChipType.Time),
     );
   },
   measures: ({ metricsSpecQueryResult, dashboard }: DashboardDataSources) => {
