@@ -1,6 +1,6 @@
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 import { getLocalIANA } from "@rilldata/web-common/lib/time/timezone";
-import { get, type Readable, type Writable } from "svelte/store";
+import type { Readable, Writable } from "svelte/store";
 
 /**
  *  TODO: We should create a single user preference store for all dashboards

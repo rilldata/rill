@@ -2,9 +2,8 @@ import type {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import type { LocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-import { get, type Readable, type Updater, type Writable } from "svelte/store";
+import { get, type Readable, type Updater } from "svelte/store";
 
 /**
  * Partial state of the dashboard that is stored in local storage.
