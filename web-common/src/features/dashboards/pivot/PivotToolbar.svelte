@@ -14,34 +14,34 @@
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
 
-  function expandVisible() {
-    // const lowestVisibleRow = 0;
-    const nestedLevels = 4;
-    const maxNestedLevelsToExpand = Math.max(3, nestedLevels);
-    const maxExpandPerLevel = 3;
+  // function expandVisible() {
+  //   // const lowestVisibleRow = 0;
+  //   const nestedLevels = 4;
+  //   const maxNestedLevelsToExpand = Math.max(3, nestedLevels);
+  //   const maxExpandPerLevel = 3;
 
-    // Helper function to recursively expand rows
-    function expandRow(rowId: string, level: number) {
-      if (level > maxNestedLevelsToExpand) {
-        return;
-      }
+  //   // Helper function to recursively expand rows
+  //   function expandRow(rowId: string, level: number) {
+  //     if (level > maxNestedLevelsToExpand) {
+  //       return;
+  //     }
 
-      expanded[rowId] = true; // Expand the current row
+  //     expanded[rowId] = true; // Expand the current row
 
-      // Generate and expand child rows
-      for (let i = 0; i < maxExpandPerLevel; i++) {
-        let childRowId = `${rowId}.${i}`;
-        expandRow(childRowId, level + 1);
-      }
-    }
+  //     // Generate and expand child rows
+  //     for (let i = 0; i < maxExpandPerLevel; i++) {
+  //       let childRowId = `${rowId}.${i}`;
+  //       expandRow(childRowId, level + 1);
+  //     }
+  //   }
 
-    // Expand rows starting from the lowest visible row
-    for (let i = 0; i < maxExpandPerLevel; i++) {
-      expandRow(i.toString(), 1); // Start from level 1
-    }
+  //   // Expand rows starting from the lowest visible row
+  //   for (let i = 0; i < maxExpandPerLevel; i++) {
+  //     expandRow(i.toString(), 1); // Start from level 1
+  //   }
 
-    metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
-  }
+  //   metricsExplorerStore.setPivotExpanded($metricsViewName, expanded);
+  // }
 </script>
 
 <div class="flex items-center gap-x-4 p-2 px-4">
@@ -57,7 +57,7 @@
     <PivotPanel size="18px" />
   </Button>
 
-  <Button
+  <!-- <Button
     compact
     type="text"
     on:click={() => {
@@ -65,7 +65,7 @@
     }}
   >
     Expand Visible
-  </Button>
+  </Button> -->
   {#if Object.keys(expanded).length > 0}
     <Button
       compact
