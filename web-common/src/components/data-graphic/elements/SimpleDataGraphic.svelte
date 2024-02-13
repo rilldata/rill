@@ -3,6 +3,7 @@ A simple composable container for SVG-based data graphics.
 -->
 <script lang="ts">
   import type { DomainCoordinates } from "../constants/types";
+  import { ScaleType } from "../state/types";
   import { GraphicContext, SimpleSVGContainer } from "./index";
 
   export let top: number | undefined = undefined;
@@ -15,8 +16,8 @@ A simple composable container for SVG-based data graphics.
   export let height: number | undefined = undefined;
   export let fontSize: number | undefined = undefined;
   export let textGap: number | undefined = undefined;
-  export let xType: "number" | "date" = "date";
-  export let yType: "number" | "date" = "number";
+  export let xType: ScaleType = ScaleType.date;
+  export let yType: ScaleType = ScaleType.number;
 
   export let overflowHidden = true;
 

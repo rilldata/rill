@@ -15,8 +15,9 @@ for any of its children.
     initializeScale,
     pruneProps,
   } from "../state";
-  import type {
+  import {
     ExtremumResolutionStore,
+    ScaleType,
     SimpleDataGraphicConfiguration,
     SimpleDataGraphicConfigurationArguments,
   } from "../state/types";
@@ -34,8 +35,8 @@ for any of its children.
   export let bodyBuffer: number | undefined = undefined;
   export let marginBuffer: number | undefined = undefined;
 
-  export let xType: "number" | "date" = "date";
-  export let yType: "number" | "date" = "number";
+  export let xType: ScaleType = ScaleType.date;
+  export let yType: ScaleType = ScaleType.number;
 
   export let xMin: number | undefined | Date = undefined;
   export let xMax: number | undefined | Date = undefined;
