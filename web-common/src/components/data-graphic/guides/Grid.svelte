@@ -6,7 +6,11 @@
   import { contexts } from "../constants";
   import { getTicks } from "../utils";
 
-  import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
+  import {
+    ScaleType,
+    type ScaleStore,
+    type SimpleConfigurationStore,
+  } from "../state/types";
 
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
   const yScale = getContext(contexts.scale("y")) as ScaleStore;
@@ -32,14 +36,14 @@
       "x",
       $xScale,
       $config.graphicWidth,
-      $config[`xType`] === "date",
+      $config[`xType`] === ScaleType.date,
     );
 
     yTicks = getTicks(
       "y",
       $yScale,
       $config.graphicHeight,
-      $config[`yType`] === "date",
+      $config[`yType`] === ScaleType.date,
     );
   }
 </script>

@@ -26,7 +26,10 @@
   } from "../../../lib/time/types";
   import { getContext } from "svelte";
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
-  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
+  import {
+    ScaleType,
+    type ScaleStore,
+  } from "@rilldata/web-common/components/data-graphic/state/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import MeasureScrub from "./MeasureScrub.svelte";
   import ChartBody from "./ChartBody.svelte";
@@ -227,12 +230,12 @@
     {width}
     xMaxTweenProps={tweenProps}
     xMinTweenProps={tweenProps}
-    xType="date"
+    xType={ScaleType.date}
+    yType={ScaleType.number}
     yMax={internalYMax}
     yMaxTweenProps={tweenProps}
     yMin={internalYMin}
     yMinTweenProps={tweenProps}
-    yType="number"
   >
     <Axis {numberKind} side="right" />
     <Grid />

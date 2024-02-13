@@ -2,6 +2,7 @@
   import { SimpleDataGraphic } from "@rilldata/web-common/components/data-graphic/elements";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import type { AxisSide } from "@rilldata/web-common/components/data-graphic/guides/types";
+  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state/types";
   const width = 132;
   const height = 132;
   const leftRight = 36;
@@ -18,8 +19,8 @@
       side=<i>"{axis}"</i>
       <div class="border border-gray-200 rounded">
         <SimpleDataGraphic
-          xType="number"
-          yType="number"
+          xType={ScaleType.date}
+          yType={ScaleType.date}
           {width}
           {height}
           left={leftRight}

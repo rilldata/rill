@@ -1,6 +1,7 @@
 <script lang="ts">
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { HistogramPrimitive } from "@rilldata/web-common/components/data-graphic/marks";
+  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state/types";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { COLUMN_PROFILE_CONFIG } from "@rilldata/web-common/layout/config";
@@ -18,8 +19,8 @@
 {#if data}
   <Tooltip location="right" alignment="center" distance={8}>
     <SimpleDataGraphic
-      xType="number"
-      yType="number"
+      xType={ScaleType.number}
+      yType={ScaleType.number}
       yMin={0}
       width={summaryWidthSize}
       height={18}
