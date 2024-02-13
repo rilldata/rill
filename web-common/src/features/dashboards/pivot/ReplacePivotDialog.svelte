@@ -1,7 +1,7 @@
 <script>
   import { Button } from "@rilldata/web-common/components/button";
   import { createEventDispatcher } from "svelte";
-  import Dialog from "../../../components/dialog-v2/Dialog.svelte";
+  import Dialog from "../../../components/dialog/Dialog.svelte";
 
   export let open;
 

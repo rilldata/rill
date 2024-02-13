@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
+  import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
   import CheckCircleNew from "@rilldata/web-common/components/icons/CheckCircleNew.svelte";
   import { useCreateDashboardFromSourceUIAction } from "@rilldata/web-common/features/sources/createDashboard";
   import { sourceImportedName } from "@rilldata/web-common/features/sources/sources-store";

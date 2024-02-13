@@ -1,3 +1,4 @@
+import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import {
   getTimeGrainFromDimension,
   isTimeDimension,
@@ -29,6 +30,7 @@ export function createPivotAggregationRowQuery(
   measures: string[],
   dimensions: V1MetricsViewAggregationDimension[],
   whereFilter: V1Expression,
+  measureFilter: ResolvedMeasureFilter | undefined,
   sort: V1MetricsViewAggregationSort[] = [],
   limit = "100",
   offset = "0",
@@ -52,8 +54,7 @@ export function createPivotAggregationRowQuery(
         {
           measures: measures.map((measure) => ({ name: measure })),
           dimensions,
-          where: sanitiseExpression(whereFilter, undefined),
-          // TODO: having filter
+          where: sanitiseExpression(whereFilter, measureFilter?.filter),
           timeRange: {
             start: timeRange?.start ? timeRange.start : timeControls.timeStart,
             end: timeRange?.end ? timeRange.end : timeControls.timeEnd,
@@ -130,6 +131,7 @@ export function getAxisForDimensions(
         measures,
         [dimension],
         whereFilter,
+        config.measureFilter,
         sortByForDimension,
         "100",
         "0",

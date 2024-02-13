@@ -79,7 +79,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -439,7 +439,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		if err != nil {
 			return "", nil, err
 		}
-		selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(d.Name)))
+		alias := safeName(d.Name)
+		if d.Alias != "" {
+			alias = safeName(d.Alias)
+		}
+		selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, alias))
 		// Using expr was causing issues with query arg expansion in duckdb.
 		// Using column name is not possible either since it will take the original column name instead of the aliased column name
 		// But using numbered group we can exactly target the correct selected column.
@@ -634,6 +638,11 @@ func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpe
 			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
 		}
 		return fmt.Sprintf("time_floor(%s, '%s', null, CAST(? AS VARCHAR)))", col, convertToDruidTimeFloorSpecifier(dim.TimeGrain)), []any{dim.TimeZone}, nil
+	case drivers.DialectClickHouse:
+		if dim.TimeZone == "" || dim.TimeZone == "UTC" {
+			return fmt.Sprintf("date_trunc('%s', %s)", convertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
+		}
+		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, ?)), ?)", convertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", dialect)
 	}

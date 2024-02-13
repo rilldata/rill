@@ -39,6 +39,11 @@
   // Set read-only mode so that the user can't edit the dashboard
   featureFlags.set(true, "adminServer", "readOnly");
 
+  // Temporary flag to show/hide the WIP alerts feature
+  if (localStorage.getItem("alerts") === "true") {
+    featureFlags.set(true, "alerts");
+  }
+
   beforeNavigate(retainFeaturesFlags);
   clearViewedAsUserAfterNavigate(queryClient);
   initCloudMetrics();

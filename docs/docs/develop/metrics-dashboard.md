@@ -58,13 +58,14 @@ smallest_time_grain: ""
 timeseries: timestamp_column_name
 
 dimensions:
-  - property: model_column_1
+  - column: model_column_1
     label: Column label 1
     description: ""
   # Add more dimensions here
 
 measures:
   - label: "Count"
+    name: "count"
     expression: count(*)
     description: ""
     format_preset: "humanize"

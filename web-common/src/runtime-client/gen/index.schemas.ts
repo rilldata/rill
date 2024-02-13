@@ -470,11 +470,13 @@ export const V1TypeCode = {
   CODE_INT32: "CODE_INT32",
   CODE_INT64: "CODE_INT64",
   CODE_INT128: "CODE_INT128",
+  CODE_INT256: "CODE_INT256",
   CODE_UINT8: "CODE_UINT8",
   CODE_UINT16: "CODE_UINT16",
   CODE_UINT32: "CODE_UINT32",
   CODE_UINT64: "CODE_UINT64",
   CODE_UINT128: "CODE_UINT128",
+  CODE_UINT256: "CODE_UINT256",
   CODE_FLOAT32: "CODE_FLOAT32",
   CODE_FLOAT64: "CODE_FLOAT64",
   CODE_TIMESTAMP: "CODE_TIMESTAMP",
@@ -1392,6 +1394,7 @@ export interface V1MetricsViewAggregationDimension {
   name?: string;
   timeGrain?: V1TimeGrain;
   timeZone?: string;
+  alias?: string;
 }
 
 export interface V1MetricsViewAggregationRequest {

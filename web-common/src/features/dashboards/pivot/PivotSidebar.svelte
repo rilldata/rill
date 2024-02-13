@@ -8,35 +8,11 @@
   const stateManagers = getStateManagers();
   const {
     selectors: {
-      measures: { visibleMeasures },
-      dimensions: { visibleDimensions },
-      pivot: { columns, rows },
+      pivot: { measures, dimensions },
     },
   } = stateManagers;
 
   const timeControlsStore = useTimeControlStore(getStateManagers());
-
-  // Todo: Move to external selectors
-  $: measures = $visibleMeasures
-    .filter((m) => !$columns.measure.find((c) => c.id === m.name))
-    .map((measure) => ({
-      id: measure.name || "Unknown",
-      title: measure.label || measure.name || "Unknown",
-      type: PivotChipType.Measure,
-    }));
-
-  $: dimensions = $visibleDimensions
-    .filter((d) => {
-      return !(
-        $columns.dimension.find((c) => c.id === d.name) ||
-        $rows.dimension.find((r) => r.id === d.name)
-      );
-    })
-    .map((dimension) => ({
-      id: dimension.name || dimension.column || "Unknown",
-      title: dimension.label || dimension.name || dimension.column || "Unknown",
-      type: PivotChipType.Dimension,
-    }));
 
   $: timeGrainOptions = getAllowedTimeGrains(
     new Date($timeControlsStore.timeStart!),
@@ -53,8 +29,8 @@
 <div class="sidebar">
   <div class="container">
     <PivotDrag title="Time" items={timeGrainOptions} />
-    <PivotDrag title="Measures" items={measures} />
-    <PivotDrag title="Dimensions" items={dimensions} />
+    <PivotDrag title="Measures" items={$measures} />
+    <PivotDrag title="Dimensions" items={$dimensions} />
   </div>
 </div>
 

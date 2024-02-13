@@ -31,20 +31,19 @@
   <div class="header-row">
     <span class="row-label"> <Column size="16px" /> Columns</span>
     <DragList
-      removable
+      type="columns"
       items={$columns.dimension.concat($columns.measure)}
-      style="horizontal"
+      placeholder="Drag dimensions here"
       on:update={updateColumn}
     />
   </div>
   <div class="header-row">
     <span class="row-label"> <Row size="16px" /> Rows</span>
-
     <DragList
-      removable
+      type="rows"
+      placeholder="Drag dimensions or measures here"
       on:update={updateRows}
       items={$rows.dimension}
-      style="horizontal"
     />
   </div>
 </div>
