@@ -36,7 +36,7 @@ Otherwise, the page will jump around as the data is fetched.
   import SummaryNumberPlot from "./SummaryNumberPlot.svelte";
   import TopK from "./TopK.svelte";
   import type { NumericPlotPoint } from "@rilldata/web-common/components/data-graphic/functional-components/types";
-  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state/types";
+  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
 
   export let data: NumericHistogramBinsBin[];
   export let rug: NumericOutliersOutlier[];
@@ -107,8 +107,8 @@ Otherwise, the page will jump around as the data is fetched.
       bottom={0}
       bodyBuffer={0}
       marginBuffer={0}
-      xType={ScaleType.number}
-      yType={ScaleType.number}
+      xType={ScaleType.NUMBER}
+      yType={ScaleType.NUMBER}
     >
       <SimpleDataGraphic let:config let:xScale let:yScale let:mouseoverValue>
         <WithBisector

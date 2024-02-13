@@ -13,7 +13,7 @@
     Area,
     Line,
   } from "@rilldata/web-common/components/data-graphic/marks";
-  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state/types";
+  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
 
   export let width = undefined;
   export let height = undefined;
@@ -31,8 +31,8 @@
 {#if data?.length}
   <WithParentClientRect let:rect>
     <SimpleDataGraphic
-      xType={ScaleType.date}
-      yType={ScaleType.number}
+      xType={ScaleType.DATE}
+      yType={ScaleType.NUMBER}
       width={width || rect?.width || 400}
       height={height || rect?.height}
       {bottom}

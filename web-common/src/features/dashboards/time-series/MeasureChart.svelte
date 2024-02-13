@@ -26,10 +26,7 @@
   } from "../../../lib/time/types";
   import { getContext } from "svelte";
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
-  import {
-    ScaleType,
-    type ScaleStore,
-  } from "@rilldata/web-common/components/data-graphic/state/types";
+  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import MeasureScrub from "./MeasureScrub.svelte";
   import ChartBody from "./ChartBody.svelte";
@@ -40,6 +37,7 @@
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
+  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
@@ -230,8 +228,8 @@
     {width}
     xMaxTweenProps={tweenProps}
     xMinTweenProps={tweenProps}
-    xType={ScaleType.date}
-    yType={ScaleType.number}
+    xType={ScaleType.DATE}
+    yType={ScaleType.NUMBER}
     yMax={internalYMax}
     yMaxTweenProps={tweenProps}
     yMin={internalYMin}

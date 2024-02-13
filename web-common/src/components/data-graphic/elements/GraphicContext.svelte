@@ -10,17 +10,17 @@ for any of its children.
   import { getContext, hasContext, onMount } from "svelte";
   import { contexts } from "../constants";
   import {
+    ScaleType,
     cascadingContextStore,
     initializeMaxMinStores,
     initializeScale,
     pruneProps,
   } from "../state";
-  import {
+  import type {
     ExtremumResolutionStore,
-    ScaleType,
     SimpleDataGraphicConfiguration,
     SimpleDataGraphicConfigurationArguments,
-  } from "../state/types";
+  } from "@rilldata/web-common/components/data-graphic/state/types";
 
   export let width: number | undefined = undefined;
   export let height: number | undefined = undefined;
@@ -35,8 +35,8 @@ for any of its children.
   export let bodyBuffer: number | undefined = undefined;
   export let marginBuffer: number | undefined = undefined;
 
-  export let xType: ScaleType = ScaleType.date;
-  export let yType: ScaleType = ScaleType.number;
+  export let xType: ScaleType = ScaleType.DATE;
+  export let yType: ScaleType = ScaleType.NUMBER;
 
   export let xMin: number | undefined | Date = undefined;
   export let xMax: number | undefined | Date = undefined;

@@ -11,7 +11,7 @@
    */
   import { SimpleDataGraphic } from "../../elements";
   import { Area, Line } from "../../marks";
-  import { ScaleType } from "../../state/types";
+  import { ScaleType } from "../../state";
 
   export let data;
 
@@ -71,8 +71,8 @@
 
 {#if data.length}
   <SimpleDataGraphic
-    xType={ScaleType.date}
-    yType={ScaleType.number}
+    xType={ScaleType.DATE}
+    yType={ScaleType.NUMBER}
     {width}
     {height}
     yMin={0}

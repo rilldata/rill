@@ -21,11 +21,6 @@ export interface ScaleStore extends Readable<GraphicScale> {
   type: string;
 }
 
-export enum ScaleType {
-  "number" = "number",
-  "date" = "date",
-}
-
 export interface SimpleDataGraphicConfigurationArguments {
   id: string;
   width: number;
