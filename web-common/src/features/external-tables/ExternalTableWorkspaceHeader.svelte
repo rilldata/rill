@@ -15,6 +15,8 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "../../metrics/service/MetricsTypes";
+  import { runtime } from "../../runtime-client/runtime-store";
+  import { useDashboardNames } from "../dashboards/selectors";
   import { createDashboardFromExternalTable } from "./createDashboardFromExternalTable";
 
   export let fullyQualifiedTableName: string;
@@ -23,10 +25,13 @@
 
   const queryClient = useQueryClient();
 
+  $: dashboardNames = useDashboardNames($runtime.instanceId);
+
   async function handleCreateDashboardFromExternalTable() {
     const newDashboardName = await createDashboardFromExternalTable(
       queryClient,
       tableName,
+      $dashboardNames.data ?? [],
     );
     goto(`/dashboard/${newDashboardName}`);
     behaviourEvent.fireNavigationEvent(

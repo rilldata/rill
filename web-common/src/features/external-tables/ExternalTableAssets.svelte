@@ -46,15 +46,16 @@
   {#if showTables}
     <div class="pb-3" transition:slide={{ duration: LIST_SLIDE_DURATION }}>
       {#if $tableNames?.data}
-        {#each $tableNames.data as tableName (tableName)}
+        {#each $tableNames.data as fullyQualifiedTableName (fullyQualifiedTableName)}
           <div
             animate:flip={{ duration: 200 }}
             out:slide|global={{ duration: LIST_SLIDE_DURATION }}
           >
             <NavigationEntry
-              name={tableName}
-              href={`/external-table/${tableName}`}
-              open={$page.url.pathname === `/external-table/${tableName}`}
+              name={fullyQualifiedTableName}
+              href={`/external-table/${fullyQualifiedTableName}`}
+              open={$page.url.pathname ===
+                `/external-table/${fullyQualifiedTableName}`}
               expandable={false}
             >
               <!-- on:command-click={() => queryHandler(tableName)} -->
@@ -63,7 +64,10 @@
             </svelte:fragment> -->
 
               <svelte:fragment slot="menu-items" let:toggleMenu>
-                <ExternalTableMenuItems {tableName} {toggleMenu} />
+                <ExternalTableMenuItems
+                  {fullyQualifiedTableName}
+                  {toggleMenu}
+                />
               </svelte:fragment>
             </NavigationEntry>
           </div>

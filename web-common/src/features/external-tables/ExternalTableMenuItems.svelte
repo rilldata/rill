@@ -3,57 +3,31 @@
   import Explore from "@rilldata/web-common/components/icons/Explore.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { MenuItem } from "@rilldata/web-common/components/menu";
-  import { useDashboardFileNames } from "@rilldata/web-common/features/dashboards/selectors";
-  import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { getFileHasErrors } from "@rilldata/web-common/features/entity-management/resources-store";
   import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
-  import { useSource } from "@rilldata/web-common/features/sources/selectors";
   import { appScreen } from "@rilldata/web-common/layout/app-store";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import type { V1SourceV2 } from "@rilldata/web-common/runtime-client";
-  import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { getName } from "../entity-management/name-utils";
-  import { EntityType } from "../entity-management/types";
-  import { useCreateDashboardFromSource } from "../sources/createDashboard";
+  import { useDashboardNames } from "../dashboards/selectors";
   import { createModelFromSource } from "../sources/createModel";
+  import { createDashboardFromExternalTable } from "./createDashboardFromExternalTable";
 
-  export let tableName: string;
+  export let fullyQualifiedTableName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
   export let toggleMenu: () => void;
-  $: filePath = getFilePathFromNameAndType(tableName, EntityType.Table);
 
   const queryClient = useQueryClient();
 
+  $: tableName = fullyQualifiedTableName.split(".")[1];
   $: runtimeInstanceId = $runtime.instanceId;
-
-  $: sourceQuery = useSource(runtimeInstanceId, tableName);
-  let source: V1SourceV2 | undefined;
-  $: source = $sourceQuery.data?.source;
-  $: embedded = false; // TODO: remove embedded support
-  $: path = source?.spec?.properties?.path;
-  $: sourceHasError = getFileHasErrors(
-    queryClient,
-    runtimeInstanceId,
-    filePath,
-  );
-  $: sourceIsIdle =
-    $sourceQuery.data?.meta?.reconcileStatus ===
-    V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-  $: disableCreateDashboard = $sourceHasError || !sourceIsIdle;
-
   $: modelNames = useModelFileNames($runtime.instanceId);
-  $: dashboardNames = useDashboardFileNames($runtime.instanceId);
-
-  const createDashboardFromSourceMutation = useCreateDashboardFromSource();
+  $: dashboardNames = useDashboardNames($runtime.instanceId);
 
   const handleCreateModel = async () => {
     try {
@@ -62,7 +36,7 @@
         runtimeInstanceId,
         $modelNames.data ?? [],
         tableName,
-        embedded ? `"${path}"` : tableName,
+        tableName,
       );
 
       behaviourEvent.fireNavigationEvent(
@@ -77,51 +51,27 @@
     }
   };
 
-  const handleCreateDashboardFromSource = async (sourceName: string) => {
+  async function handleCreateDashboardFromExternalTable(tableName: string) {
     overlay.set({
-      title: "Creating a dashboard for " + sourceName,
+      title: "Creating a dashboard for " + tableName,
     });
-    const newModelName = getName(`${sourceName}_model`, $modelNames.data ?? []);
-    const newDashboardName = getName(
-      `${sourceName}_dashboard`,
+    const newDashboardName = await createDashboardFromExternalTable(
+      queryClient,
+      tableName,
       $dashboardNames.data ?? [],
     );
-
-    await waitUntil(() => !!$sourceQuery.data);
-    if (!$sourceQuery.data) {
-      // this should never happen because of above `waitUntil`,
-      // but adding this guard provides type narrowing below
-      return;
-    }
-
-    $createDashboardFromSourceMutation.mutate(
-      {
-        data: {
-          instanceId: $runtime.instanceId,
-          sourceResource: $sourceQuery.data,
-          newModelName,
-          newDashboardName,
-        },
-      },
-      {
-        onSuccess: async () => {
-          goto(`/dashboard/${newDashboardName}`);
-          const previousActiveEntity = $appScreen?.type;
-          behaviourEvent.fireNavigationEvent(
-            newDashboardName,
-            BehaviourEventMedium.Menu,
-            MetricsEventSpace.LeftPanel,
-            previousActiveEntity,
-            MetricsEventScreenName.Dashboard,
-          );
-        },
-        onSettled: () => {
-          overlay.set(null);
-          toggleMenu(); // unmount component
-        },
-      },
+    goto(`/dashboard/${newDashboardName}`);
+    const previousActiveEntity = $appScreen?.type;
+    behaviourEvent.fireNavigationEvent(
+      newDashboardName,
+      BehaviourEventMedium.Menu,
+      MetricsEventSpace.LeftPanel,
+      previousActiveEntity,
+      MetricsEventScreenName.Dashboard,
     );
-  };
+    overlay.set(null);
+    toggleMenu(); // unmount component
+  }
 </script>
 
 <!-- TODO: exclude if Druid -->
@@ -131,18 +81,10 @@
 </MenuItem>
 
 <MenuItem
-  disabled={disableCreateDashboard}
   icon
-  on:select={() => handleCreateDashboardFromSource(tableName)}
+  on:select={() => handleCreateDashboardFromExternalTable(tableName)}
   propogateSelect={false}
 >
   <Explore slot="icon" />
   Autogenerate dashboard
-  <svelte:fragment slot="description">
-    {#if $sourceHasError}
-      Source has errors
-    {:else if !sourceIsIdle}
-      Source is being ingested
-    {/if}
-  </svelte:fragment>
 </MenuItem>

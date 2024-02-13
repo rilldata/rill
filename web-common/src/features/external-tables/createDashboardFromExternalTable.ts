@@ -7,7 +7,6 @@ import {
   runtimeServicePutFile,
 } from "../../runtime-client";
 import { runtime } from "../../runtime-client/runtime-store";
-import { useDashboardFileNames } from "../dashboards/selectors";
 import {
   getFileAPIPathFromNameAndType,
   getFilePathFromNameAndType,
@@ -20,6 +19,7 @@ import { generateDashboardYAMLForTable } from "../metrics-views/metrics-internal
 export async function createDashboardFromExternalTable(
   queryClient: QueryClient,
   table: string,
+  dashboardNames: string[],
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
@@ -35,11 +35,6 @@ export async function createDashboardFromExternalTable(
   });
 
   // Get a unique name for the new dashboard
-  const dashboardNamesStore = useDashboardFileNames(instanceId);
-  const dashboardNames = get(dashboardNamesStore).data;
-  if (!dashboardNames) {
-    throw new Error("Could not get dashboard names");
-  }
   const newDashboardName = getName(`${table}_dashboard`, dashboardNames);
 
   // Create the dashboard
