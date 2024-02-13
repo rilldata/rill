@@ -111,7 +111,9 @@
         <ProjectTitle />
         {#if isModelerEnabled}
           <ExternalTableAssets />
-          <TableAssets />
+          {#if olapConnector === "duckdb"}
+            <TableAssets />
+          {/if}
           {#if olapConnector && !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapConnector)}
             <ModelAssets />
           {/if}
