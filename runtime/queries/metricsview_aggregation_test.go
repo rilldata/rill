@@ -830,6 +830,59 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 	require.Equal(t, "Microsoft,0", fieldsToString(rows[i], "pub", "measure_1"))
 }
 
+func TestMetricsViewsAggregation_2time_aggregations(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+				Alias:     "timestamp_year",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "timestamp",
+			},
+		},
+
+		Limit: &limit,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	rows := q.Result.Data
+
+	i := 0
+	require.Equal(t, "Facebook,2022-01-01,2022-01-01", fieldsToString(rows[i], "pub", "timestamp", "timestamp_year"))
+	i++
+	require.Equal(t, "Facebook,2022-02-01,2022-01-01", fieldsToString(rows[i], "pub", "timestamp", "timestamp_year"))
+	i++
+	require.Equal(t, "Facebook,2022-03-01,2022-01-01", fieldsToString(rows[i], "pub", "timestamp", "timestamp_year"))
+	i++
+	require.Equal(t, "Google,2022-01-01,2022-01-01", fieldsToString(rows[i], "pub", "timestamp", "timestamp_year"))
+	i++
+	require.Equal(t, "Google,2022-02-01,2022-01-01", fieldsToString(rows[i], "pub", "timestamp", "timestamp_year"))
+}
+
 func fieldsToString(row *structpb.Struct, args ...string) string {
 	s := make([]string, 0, len(args))
 	for _, arg := range args {
