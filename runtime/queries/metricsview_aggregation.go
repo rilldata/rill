@@ -417,12 +417,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 
 	groupCols := make([]string, 0, len(q.Dimensions))
 	unnestClauses := make([]string, 0)
-	joinConditions := make([]string, 0, len(q.Dimensions))
-	selfJoinCols := make([]string, 0, len(q.Dimensions)+1)
-	selfJoinTableAlias := tempName("self_join")
-	nonNullValue := tempName("non_null")
-	var args []any
-	var subSelectArgs []any
+	var selectArgs []any
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -436,8 +431,6 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 				unnestClauses = append(unnestClauses, unnestClause)
 			}
 			groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)))
-			joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", mv.Table, safeName(d.Name), selfJoinTableAlias, nonNullValue))
-			selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
 			continue
 		}
 
@@ -452,10 +445,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		// But using numbered group we can exactly target the correct selected column.
 		// Note that the non-timestamp columns also use the numbered group-by for constancy.
 		groupCols = append(groupCols, fmt.Sprintf("%d", len(selectCols)))
-		args = append(args, exprArgs...)
-		subSelectArgs = append(subSelectArgs, exprArgs...)
-		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", mv.Table, safeName(d.Name), selfJoinTableAlias, nonNullValue))
-		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
+		selectArgs = append(selectArgs, exprArgs...)
 	}
 
 	for _, m := range q.Measures {
@@ -490,16 +480,14 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	}
 
 	whereClause := ""
+	var whereArgs []any
 	if mv.TimeDimension != "" {
 		timeCol := safeName(mv.TimeDimension)
-		tmArgs := make([]any, 0)
-		clause, err := timeRangeClause(q.TimeRange, mv, dialect, timeCol, &tmArgs)
+		clause, err := timeRangeClause(q.TimeRange, mv, dialect, timeCol, &whereArgs)
 		if err != nil {
 			return "", nil, err
 		}
 		whereClause += clause
-		args = append(args, tmArgs...)
-		subSelectArgs = append(subSelectArgs, tmArgs...)
 	}
 	if q.Where != nil {
 		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
@@ -509,44 +497,29 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		if strings.TrimSpace(clause) != "" {
 			whereClause += fmt.Sprintf(" AND (%s)", clause)
 		}
-		args = append(args, clauseArgs...)
-		subSelectArgs = append(subSelectArgs, clauseArgs...)
-	}
-	filterWhereClause := whereClause
-	if len(q.Measures) == 1 && q.Measures[0].Filter != nil {
-		measureExpression, filterArgs, err := buildExpression(mv, q.Measures[0].Filter, nil, dialect)
-		if err != nil {
-			return "", nil, err
-		}
-
-		filterWhereClause += fmt.Sprintf(" AND (%s)", measureExpression)
-		subSelectArgs = append(subSelectArgs, filterArgs...)
+		whereArgs = append(whereArgs, clauseArgs...)
 	}
 
 	if policy != nil && policy.RowFilter != "" {
 		whereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
-		filterWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
 	}
+
 	if whereClause != "" {
 		whereClause = "WHERE 1=1" + whereClause
 	}
-	if filterWhereClause != "" {
-		filterWhereClause = "WHERE 1=1" + filterWhereClause
-	}
 
 	havingClause := ""
+	var havingClauseArgs []any
 	if q.Having != nil {
-		var havingClauseArgs []any
 		var err error
 		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
 		if err != nil {
 			return "", nil, err
 		}
+
 		if strings.TrimSpace(havingClause) != "" {
 			havingClause = "HAVING " + havingClause
 		}
-		args = append(args, havingClauseArgs...)
-		subSelectArgs = append(subSelectArgs, havingClauseArgs...)
 	}
 
 	sortingCriteria := make([]string, 0, len(q.Sort))
@@ -562,15 +535,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	}
 	orderClause := ""
 	if len(sortingCriteria) > 0 {
-		if len(q.Measures) == 1 && q.Measures[0].Filter != nil {
-			jsc := make([]string, 0, len(sortingCriteria))
-			for _, v := range sortingCriteria {
-				jsc = append(jsc, fmt.Sprintf("%s.%s", safeName(mv.Table), v))
-			}
-			orderClause = "ORDER BY " + strings.Join(jsc, ", ")
-		} else {
-			orderClause = "ORDER BY " + strings.Join(sortingCriteria, ", ")
-		}
+		orderClause = "ORDER BY " + strings.Join(sortingCriteria, ", ")
 	}
 
 	var limitClause string
@@ -581,6 +546,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		limitClause = fmt.Sprintf("LIMIT %d", *q.Limit)
 	}
 
+	var args []any
+	args = append(args, selectArgs...)
+	args = append(args, whereArgs...)
+	args = append(args, havingClauseArgs...)
+
 	var sql string
 	if len(q.PivotOn) > 0 {
 		l := maxPivotCells / q.cols()
@@ -590,7 +560,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			return "", nil, fmt.Errorf("offset not supported for pivot queries")
 		}
 
-		// select m1, m2, d1, d2 from t, lateral unnest(t.d1) tbl(unnested_d1_) where d1 = 'a' group by d1, d2
+		// SELECT m1, m2, d1, d2 FROM t, LATERAL UNNEST(t.d1) tbl(unnested_d1_) WHERE d1 = 'a' GROUP BY d1, d2
 		sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s %[7]s %[8]s",
 			strings.Join(selectCols, ", "),  // 1
 			safeName(mv.Table),              // 2
@@ -612,15 +582,41 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			bacause FILTER cannot be applied for arbitrary measure, ie sum(a)/1000
 		*/
 		if len(q.Measures) == 1 && q.Measures[0].Filter != nil {
+			joinConditions := make([]string, 0, len(q.Dimensions))
+			selfJoinCols := make([]string, 0, len(q.Dimensions)+1)
+
+			selfJoinTableAlias := tempName("self_join")
+			nonNullValue := tempName("non_null")
+			for _, d := range q.Dimensions {
+				joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", mv.Table, safeName(d.Name), selfJoinTableAlias, nonNullValue))
+				selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
+			}
 			selfJoinCols = append(selfJoinCols, fmt.Sprintf("%[1]s.%[2]s as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
+			measureExpression, filterArgs, err := buildExpression(mv, q.Measures[0].Filter, nil, dialect)
+			if err != nil {
+				return "", nil, err
+			}
+
+			if whereClause == "" {
+				whereClause = "WHERE 1=1"
+			}
+
+			measureWhereClause := whereClause + fmt.Sprintf(" AND (%s)", measureExpression)
+			if len(sortingCriteria) > 0 {
+				jsc := make([]string, 0, len(sortingCriteria))
+				for _, v := range sortingCriteria {
+					jsc = append(jsc, fmt.Sprintf("%s.%s", safeName(mv.Table), v))
+				}
+				orderClause = "ORDER BY " + strings.Join(jsc, ", ")
+			}
 			sql = fmt.Sprintf(`
-				SELECT %[1]s FROM (
-					SELECT %[10]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s 
-				) %[2]s 
-				LEFT JOIN (
-					SELECT %[10]s FROM %[2]s %[3]s %[9]s %[5]s %[6]s
-				) %[7]s 
-				ON (%[8]s) %[13]s %[11]s  OFFSET %[12]d
+					SELECT %[1]s FROM (
+						SELECT %[10]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s 
+					) %[2]s 
+					LEFT JOIN (
+						SELECT %[10]s FROM %[2]s %[3]s %[9]s %[5]s %[6]s
+					) %[7]s 
+					ON (%[8]s) %[13]s %[11]s  OFFSET %[12]d
 				`,
 				strings.Join(selfJoinCols, ", "),      // 1
 				safeName(mv.Table),                    // 2
@@ -630,14 +626,18 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 				havingClause,                          // 6
 				selfJoinTableAlias,                    // 7
 				strings.Join(joinConditions, " AND "), // 8
-				filterWhereClause,                     // 9
+				measureWhereClause,                    // 9
 				strings.Join(selectCols, ", "),        // 10
 				limitClause,                           // 11
 				q.Offset,                              // 12
 				orderClause,                           // 13
 			)
 
-			args = append(args, subSelectArgs...)
+			args = args[:0]
+			args = append(args, selectArgs...)
+			args = append(args, whereArgs...)
+			args = append(args, filterArgs...)
+			args = append(args, havingClauseArgs...)
 		} else {
 			sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
 				strings.Join(selectCols, ", "),
