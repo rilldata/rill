@@ -411,6 +411,18 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
 		return "", nil, errors.New("no dimensions or measures specified")
 	}
+	filterCount := 0
+	for _, f := range q.Measures {
+		if f.Filter != nil {
+			filterCount++
+		}
+	}
+	if filterCount > 1 {
+		return "", nil, errors.New("multiple measure filters")
+	}
+	if filterCount == 1 && len(q.PivotOn) > 0 {
+		return "", nil, errors.New("measure filter for pivot-on")
+	}
 
 	cols := q.cols()
 	selectCols := make([]string, 0, cols)
@@ -581,7 +593,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			This JOIN mirrors functionality of SELECT d1, d2, d3, m1 FILTER (WHERE d4 = 'Safari') FROM t WHERE... GROUP BY d1, d2, d3
 			bacause FILTER cannot be applied for arbitrary measure, ie sum(a)/1000
 		*/
-		if len(q.Measures) == 1 && q.Measures[0].Filter != nil {
+		if filterCount == 1 {
 			joinConditions := make([]string, 0, len(q.Dimensions))
 			selfJoinCols := make([]string, 0, len(q.Dimensions)+1)
 
