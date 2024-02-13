@@ -146,6 +146,7 @@ export function getDefaultMetricsExplorerEntity(
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,
     dashboardSortType: SortType.VALUE,
     sortDirection: SortDirection.DESCENDING,
+    selectedTimezone: "UTC",
 
     showTimeComparison: false,
     dimensionSearchText: "",
