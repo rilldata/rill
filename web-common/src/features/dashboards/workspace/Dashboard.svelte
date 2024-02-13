@@ -47,9 +47,9 @@
   // the navigationVisibilityTween is a tweened value that is used
   // to animate the extra padding that needs to be added to the
   // dashboard container when the navigation pane is collapsed
-  const navigationVisibilityTween = getContext(
+  const navigationVisibilityTween = getContext<Tweened<number>>(
     "rill:app:navigation-visibility-tween",
-  ) as Tweened<number>;
+  );
 
   const { readOnly } = featureFlags;
 
@@ -68,6 +68,8 @@
   $: dashboard = useDashboard($runtime.instanceId, metricViewName);
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
+
+  const FILTERS_MIN_CONTAINER_HEIGHT = "34px";
 </script>
 
 <section
@@ -99,7 +101,13 @@
         <TimeControls {metricViewName} />
         <div class="flex justify-between">
           {#key metricViewName}
-            <Filters />
+            <section
+              class="pl-2 grid gap-x-2 items-start"
+              style:grid-template-columns="max-content auto"
+              style:min-height={FILTERS_MIN_CONTAINER_HEIGHT}
+            >
+              <Filters />
+            </section>
             <TabBar />
           {/key}
         </div>

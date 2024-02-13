@@ -3590,6 +3590,8 @@ definitions:
         $ref: '#/definitions/v1TimeGrain'
       timeZone:
         type: string
+      alias:
+        type: string
   v1MetricsViewAggregationMeasure:
     type: object
     properties:

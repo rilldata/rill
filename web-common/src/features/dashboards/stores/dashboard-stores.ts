@@ -242,7 +242,6 @@ const metricViewReducers = {
       });
 
       metricsExplorer.pivot.rows = {
-        ...metricsExplorer.pivot.rows,
         dimension: dimensions,
       };
     });
@@ -262,10 +261,23 @@ const metricViewReducers = {
       });
 
       metricsExplorer.pivot.columns = {
-        ...metricsExplorer.pivot.columns,
         dimension: dimensions,
         measure: measures,
       };
+    });
+  },
+
+  addPivotField(name: string, value: PivotChipData, rows: boolean) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      if (value.type === PivotChipType.Measure) {
+        metricsExplorer.pivot.columns.measure.push(value);
+      } else {
+        if (rows) {
+          metricsExplorer.pivot.rows.dimension.push(value);
+        } else {
+          metricsExplorer.pivot.columns.dimension.push(value);
+        }
+      }
     });
   },
 

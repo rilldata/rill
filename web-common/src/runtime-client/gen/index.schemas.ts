@@ -1395,6 +1395,7 @@ export interface V1MetricsViewAggregationDimension {
   name?: string;
   timeGrain?: V1TimeGrain;
   timeZone?: string;
+  alias?: string;
 }
 
 export interface V1MetricsViewAggregationRequest {
