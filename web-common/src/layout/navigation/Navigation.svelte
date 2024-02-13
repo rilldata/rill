@@ -11,7 +11,10 @@
   import { Readable, Writable, writable } from "svelte/store";
   import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
   import ExternalTableAssets from "../../features/external-tables/ExternalTableAssets.svelte";
+  import { OLAP_DRIVERS_WITHOUT_MODELING } from "../../features/external-tables/config";
   import OtherFiles from "../../features/project/OtherFiles.svelte";
+  import { createRuntimeServiceGetInstance } from "../../runtime-client";
+  import { runtime } from "../../runtime-client/runtime-store";
   import { DEFAULT_NAV_WIDTH } from "../config";
   import { drag } from "../drag";
   import Footer from "./Footer.svelte";
@@ -40,6 +43,9 @@
   let previousWidth: number;
 
   $: isModelerEnabled = $readOnly === false;
+
+  $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
+  $: olapConnector = $instance.data?.instance?.olapConnector;
 
   function handleResize(
     e: UIEvent & {
@@ -106,7 +112,9 @@
         {#if isModelerEnabled}
           <ExternalTableAssets />
           <TableAssets />
-          <ModelAssets />
+          {#if olapConnector && !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapConnector)}
+            <ModelAssets />
+          {/if}
         {/if}
         <DashboardAssets />
         {#if isModelerEnabled}

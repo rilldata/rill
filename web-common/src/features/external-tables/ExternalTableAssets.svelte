@@ -14,15 +14,15 @@
 
   $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
   $: connectorInstanceId = $instance.data?.instance?.instanceId;
-  $: connectorName = $instance.data?.instance?.olapConnector;
+  $: olapConnector = $instance.data?.instance?.olapConnector;
   $: tableNames = createConnectorServiceOLAPListTables(
     {
       instanceId: connectorInstanceId,
-      connector: connectorName,
+      connector: olapConnector,
     },
     {
       query: {
-        enabled: !!connectorInstanceId && !!connectorName,
+        enabled: !!connectorInstanceId && !!olapConnector,
         select: (data) => {
           return (
             data?.tables?.map((table) => table.database + "." + table.name) ||

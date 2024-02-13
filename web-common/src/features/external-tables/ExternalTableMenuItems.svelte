@@ -13,9 +13,11 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { createRuntimeServiceGetInstance } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useDashboardNames } from "../dashboards/selectors";
   import { createModelFromSource } from "../sources/createModel";
+  import { OLAP_DRIVERS_WITHOUT_MODELING } from "./config";
   import { createDashboardFromExternalTable } from "./createDashboardFromExternalTable";
 
   export let fullyQualifiedTableName: string;
@@ -24,6 +26,8 @@
 
   const queryClient = useQueryClient();
 
+  $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
+  $: olapConnector = $instance.data?.instance?.olapConnector;
   $: tableName = fullyQualifiedTableName.split(".")[1];
   $: runtimeInstanceId = $runtime.instanceId;
   $: modelNames = useModelFileNames($runtime.instanceId);
@@ -74,11 +78,12 @@
   }
 </script>
 
-<!-- TODO: exclude if Druid -->
-<MenuItem icon on:select={() => handleCreateModel()}>
-  <Model slot="icon" />
-  Create new model
-</MenuItem>
+{#if olapConnector && !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapConnector)}
+  <MenuItem icon on:select={() => handleCreateModel()}>
+    <Model slot="icon" />
+    Create new model
+  </MenuItem>
+{/if}
 
 <MenuItem
   icon
