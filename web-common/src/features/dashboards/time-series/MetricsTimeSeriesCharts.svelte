@@ -280,7 +280,7 @@
             {metricViewName}
             data={formattedData}
             {dimensionData}
-            zone={$dashboardStore?.selectedTimezone}
+            zone={$dashboardStore.selectedTimezone}
             xAccessor="ts_position"
             labelAccessor="ts"
             timeGrain={interval}

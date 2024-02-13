@@ -114,11 +114,9 @@ export interface MetricsExplorerEntity {
   selectedComparisonDimension?: string;
 
   /**
-   * user selected timezone
-   *
-   * if this is undefined, use "UTC" as default
+   * user selected timezone, should default to "UTC" if no other value is set
    */
-  selectedTimezone?: string;
+  selectedTimezone: string;
 
   /**
    * Search text state for dimension tables. This search text state

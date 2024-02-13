@@ -43,7 +43,7 @@ export function setDefaultTimeRange(
     ...timeRange,
     interval: timeGrain.grain,
   };
-  metricsExplorer.selectedTimezone = timeZone;
+  metricsExplorer.selectedTimezone = timeZone ?? "UTC";
   // TODO: refactor all sub methods and call setSelectedScrubRange here
   metricsExplorer.selectedScrubRange = undefined;
   metricsExplorer.lastDefinedScrubRange = undefined;
