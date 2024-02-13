@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import EmailRecipients from "@rilldata/web-admin/features/scheduled-reports/metadata/EmailRecipients.svelte";
   import IconButton from "@rilldata/web-common/components/button/IconButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
@@ -161,19 +162,9 @@
     </div>
 
     <!-- Recipients -->
-    <div class="flex flex-col gap-y-3">
-      <MetadataLabel
-        >Recipients ({$reportQuery.data.resource.report.spec.emailRecipients
-          .length})</MetadataLabel
-      >
-      <div class="flex flex-wrap gap-2">
-        {#each $reportQuery.data.resource.report.spec.emailRecipients as recipient}
-          <Tag>
-            {recipient}
-          </Tag>
-        {/each}
-      </div>
-    </div>
+    <EmailRecipients
+      emailRecipients={$reportQuery.data.resource.report.spec.emailRecipients}
+    />
   </div>
 {/if}
 
