@@ -142,6 +142,7 @@ export function createTableCellQuery(
         name: time.timeDimension,
         timeGrain: getTimeGrainFromDimension(dimension),
         timeZone: time.timeZone,
+        alias: dimension,
       };
     } else return { name: dimension };
   });

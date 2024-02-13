@@ -214,7 +214,7 @@ export function getFilterForPivotTable(
   if (
     isInitialTable &&
     anchorDimension &&
-    isTimeDimension(anchorDimension, time.timeDimension)
+    !isTimeDimension(anchorDimension, time.timeDimension)
   ) {
     rowFilters = createInExpression(
       rowDimensionNames[0],
@@ -256,11 +256,7 @@ export function getAccessorForCell(
     .map((colName, i) => {
       let accessor = `c${i}`;
 
-      let colValue = cell[colName] as string;
-      if (!colValue && isTimeDimension(colName, timeDimension)) {
-        colValue = cell[timeDimension] as string;
-      }
-
+      const colValue = cell[colName] as string;
       const colValueIndex = colValuesIndexMaps[i].get(colValue);
       accessor += `v${colValueIndex}`;
 

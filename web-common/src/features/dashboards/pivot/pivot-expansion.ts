@@ -78,9 +78,10 @@ export function createSubTableCellQuery(
   const dimensionBody = allDimensions.map((dimension) => {
     if (isTimeDimension(dimension, time.timeDimension)) {
       return {
-        name: dimension,
+        name: time.timeDimension,
         timeGrain: getTimeGrainFromDimension(dimension),
         timeZone: time.timeZone,
+        alias: dimension,
       };
     } else return { name: dimension };
   });
