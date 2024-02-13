@@ -638,7 +638,6 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			)
 
 			args = append(args, subSelectArgs...)
-			fmt.Println("sql ", sql, args)
 		} else {
 			sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
 				strings.Join(selectCols, ", "),
