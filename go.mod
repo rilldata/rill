@@ -17,7 +17,7 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/XSAM/otelsql v0.27.0
 	github.com/alicebob/miniredis v2.5.0+incompatible
-	github.com/apache/arrow/go/v14 v14.0.1
+	github.com/apache/arrow/go/v14 v14.0.2
 	github.com/apache/calcite-avatica-go/v5 v5.3.0
 	github.com/aws/aws-sdk-go v1.44.314
 	github.com/aws/aws-sdk-go-v2 v1.21.0
@@ -67,7 +67,7 @@ require (
 	github.com/redis/go-redis/v9 v9.0.2
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/cors v1.9.0
-	github.com/snowflakedb/gosnowflake v1.7.0
+	github.com/snowflakedb/gosnowflake v1.7.2
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
@@ -119,7 +119,7 @@ require (
 	github.com/apache/arrow/go/v12 v12.0.0 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
-	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
+	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
@@ -308,10 +308,6 @@ require (
 // details on breaking changes here : https://github.com/marcboeker/go-duckdb/pull/147#issuecomment-1895771714
 // changes done on top of v1.5.5 : https://github.com/rilldata/go-duckdb/compare/branch_v1.5.5...rilldata:go-duckdb:appender_revert
 replace github.com/marcboeker/go-duckdb v1.5.5 => github.com/rilldata/go-duckdb v0.0.0-20240205054225-f83b5ddead91
-
-// snowflake uses arrow v12 but we need arrow v14 so we need to use a fork of snowflake upgraded to v14
-// revert to original SDK once this PR is merged : https://github.com/snowflakedb/gosnowflake/pull/977
-replace github.com/snowflakedb/gosnowflake v1.7.0 => github.com/esevastyanov/gosnowflake v0.0.0-20231129090721-012eca4e3448
 
 // Fixes a security warning. Remove when testcontainers-go v0.27.0 is released.
 replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testcontainers/testcontainers-go v0.26.1-0.20231102155908-6aac7412c81a
