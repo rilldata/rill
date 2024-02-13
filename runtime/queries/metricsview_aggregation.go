@@ -439,7 +439,11 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		if err != nil {
 			return "", nil, err
 		}
-		selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(d.Name)))
+		alias := safeName(d.Name)
+		if d.Alias != "" {
+			alias = safeName(d.Alias)
+		}
+		selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, alias))
 		// Using expr was causing issues with query arg expansion in duckdb.
 		// Using column name is not possible either since it will take the original column name instead of the aliased column name
 		// But using numbered group we can exactly target the correct selected column.
