@@ -182,7 +182,9 @@ const metricViewReducers = {
         metricsView,
         fullTimeRange,
       );
-      mergeDashboardWithLocalPreferences(state.entities[name]);
+      state.entities[name] = mergeDashboardWithLocalPreferences(
+        state.entities[name],
+      );
 
       updateMetricsExplorerProto(state.entities[name]);
 

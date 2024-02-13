@@ -8,10 +8,8 @@ import {
   contextColWidthDefaults,
   type MetricsExplorerEntity,
 } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import {
-  getLocalUserPreferences,
-  getLocalUserPreferencesState,
-} from "@rilldata/web-common/features/dashboards/user-preferences";
+import { getPersistentDashboardState } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+import { getLocalUserPreferences } from "@rilldata/web-common/features/dashboards/user-preferences";
 import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
 import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
 import { getDefaultTimeGrain } from "@rilldata/web-common/lib/time/grains";
@@ -179,7 +177,7 @@ export function getDefaultMetricsExplorerEntity(
 export function mergeDashboardWithLocalPreferences(
   metricsExplorer: MetricsExplorerEntity,
 ) {
-  const defaults = getLocalUserPreferencesState();
+  const defaults = getPersistentDashboardState();
   if (defaults.visibleMeasures) {
     metricsExplorer.allMeasuresVisible =
       defaults.visibleMeasures.length ===
@@ -201,4 +199,5 @@ export function mergeDashboardWithLocalPreferences(
   if (defaults.sortDirection) {
     metricsExplorer.sortDirection = defaults.sortDirection;
   }
+  return metricsExplorer;
 }

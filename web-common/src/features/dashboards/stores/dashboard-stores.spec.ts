@@ -28,9 +28,10 @@ import {
   createInExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
-  getLocalUserPreferences,
-  initLocalUserPreferenceStore,
-} from "@rilldata/web-common/features/dashboards/user-preferences";
+  getPersistentDashboardStore,
+  initPersistentDashboardStore,
+} from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
+import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
 import {
   MetricsViewSpecComparisonMode,
   V1TimeGrain,
@@ -42,6 +43,7 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 describe("dashboard-stores", () => {
   beforeAll(() => {
     initLocalUserPreferenceStore(AD_BIDS_NAME);
+    initPersistentDashboardStore(AD_BIDS_NAME);
     runtime.set({
       instanceId: "",
       jwt: "",
@@ -50,7 +52,7 @@ describe("dashboard-stores", () => {
   });
 
   beforeEach(() => {
-    getLocalUserPreferences().reset();
+    getPersistentDashboardStore().reset();
     resetDashboardStore();
   });
 
