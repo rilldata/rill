@@ -203,7 +203,7 @@
         boundaryEnd={allTimeRange.end}
         showComparison={$timeControlsStore?.showComparison}
         selectedComparison={$timeControlsStore?.selectedComparisonTimeRange}
-        zone={$dashboardStore?.selectedTimezone || "UTC"}
+        zone={$dashboardStore.selectedTimezone}
       />
     {/if}
     <TimeGrainSelector

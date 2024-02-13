@@ -31,11 +31,6 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-    server: {
-      fs: {
-        cachedChecks: false,
-      },
-    },
     resolve: {
       alias,
     },
