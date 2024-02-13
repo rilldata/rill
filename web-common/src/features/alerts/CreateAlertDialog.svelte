@@ -129,7 +129,7 @@
    * 1) The tab's required fields are filled out
    * 2) The tab's fields don't have errors.
    */
-  $: isTabValid = checkIsTabValid(selectedTabIndex, $form, $errors);
+  $: isTabValid = checkIsTabValid(currentTabIndex, $form, $errors);
 
   function checkIsTabValid(
     tabIndex: number,
@@ -181,18 +181,18 @@
     return hasRequiredFields && !hasErrors;
   }
 
-  let selectedTabIndex = 0;
+  let currentTabIndex = 0;
 
   function handleCancel() {
     dispatch("close");
   }
 
   function handleBack() {
-    selectedTabIndex -= 1;
+    currentTabIndex -= 1;
   }
 
   function handleNextTab() {
-    selectedTabIndex += 1;
+    currentTabIndex += 1;
   }
 </script>
 
@@ -211,7 +211,7 @@
     >
       Create alert
     </DialogTitle>
-    <DialogTabs.Root value={tabs[selectedTabIndex]}>
+    <DialogTabs.Root value={tabs[currentTabIndex]}>
       <DialogTabs.List class="border-t border-gray-200">
         {#each tabs as tab, i}
           <DialogTabs.Trigger value={tab} tabIndex={i}>
@@ -220,25 +220,25 @@
         {/each}
       </DialogTabs.List>
       <div class="p-3 bg-slate-100">
-        <DialogTabs.Content value={tabs[0]}>
+        <DialogTabs.Content value={tabs[0]} tabIndex={0} {currentTabIndex}>
           <AlertDialogDataTab {formState} />
         </DialogTabs.Content>
-        <DialogTabs.Content value={tabs[1]}>
+        <DialogTabs.Content value={tabs[1]} tabIndex={1} {currentTabIndex}>
           <AlertDialogCriteriaTab {formState} />
         </DialogTabs.Content>
-        <DialogTabs.Content value={tabs[2]}>
+        <DialogTabs.Content value={tabs[2]} tabIndex={2} {currentTabIndex}>
           <AlertDialogDeliveryTab {formState} />
         </DialogTabs.Content>
       </div>
     </DialogTabs.Root>
     <div class="px-6 py-3 flex items-center gap-x-2">
       <div class="grow" />
-      {#if selectedTabIndex === 0}
+      {#if currentTabIndex === 0}
         <Button on:click={handleCancel} type="secondary">Cancel</Button>
       {:else}
         <Button on:click={handleBack} type="secondary">Back</Button>
       {/if}
-      {#if selectedTabIndex !== 2}
+      {#if currentTabIndex !== 2}
         <Button type="primary" disabled={!isTabValid} on:click={handleNextTab}>
           Next
         </Button>
