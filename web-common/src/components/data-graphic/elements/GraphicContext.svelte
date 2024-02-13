@@ -34,8 +34,8 @@ for any of its children.
   export let bodyBuffer: number | undefined = undefined;
   export let marginBuffer: number | undefined = undefined;
 
-  export let xType: string | undefined = undefined;
-  export let yType: string | undefined = undefined;
+  export let xType: "number" | "date" = "date";
+  export let yType: "number" | "date" = "number";
 
   export let xMin: number | undefined | Date = undefined;
   export let xMax: number | undefined | Date = undefined;
@@ -94,7 +94,12 @@ for any of its children.
       marginBuffer,
       id,
     }),
-  };
+    // FIXME: this cast is not provably safe,
+    // but we've been treating this as if it's true
+    // for at least 19 months, so hopefully it's safe enough.
+    // In any case, this cascading context store approach is
+    // ridiculously over engineered and needs to be rethought
+  } as SimpleDataGraphicConfigurationArguments;
 
   $: parameters = {
     ...DEFAULTS,
@@ -118,7 +123,12 @@ for any of its children.
       id,
       devicePixelRatio,
     }),
-  };
+    // FIXME: this cast is not provably safe,
+    // but we've been treating this as if it's true
+    // for at least 19 months, so hopefully it's safe enough.
+    // In any case, this cascading context store approach is
+    // ridiculously over engineered and needs to be rethought
+  } as SimpleDataGraphicConfigurationArguments;
 
   const config = cascadingContextStore<
     SimpleDataGraphicConfigurationArguments,

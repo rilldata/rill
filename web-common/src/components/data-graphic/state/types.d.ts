@@ -31,8 +31,8 @@ export interface SimpleDataGraphicConfigurationArguments {
   bottom: number;
   fontSize: number;
   textGap: number;
-  xType: string; // FIXME: we should have an enum here
-  yType: string; // FIXME: we should have an enum here
+  xType: "number" | "date";
+  yType: "number" | "date";
   xMin: number | Date;
   xMax: number | Date;
   yMin: number | Date;

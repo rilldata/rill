@@ -1,4 +1,4 @@
 export interface DomainCoordinates {
-  x?: number;
+  x?: number | Date;
   y?: number;
 }

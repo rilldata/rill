@@ -115,6 +115,8 @@ export interface MetricsExplorerEntity {
 
   /**
    * user selected timezone
+   *
+   * if this is undefined, use "UTC" as default
    */
   selectedTimezone?: string;
 

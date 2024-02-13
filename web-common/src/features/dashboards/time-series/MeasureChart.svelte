@@ -36,15 +36,16 @@
   import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
-  export let width: number = undefined;
-  export let height: number = undefined;
-  export let xMin: Date = undefined;
-  export let xMax: Date = undefined;
-  export let yMin: number = undefined;
-  export let yMax: number = undefined;
+  export let width: number | undefined = undefined;
+  export let height: number | undefined = undefined;
+  export let xMin: Date | undefined = undefined;
+  export let xMax: Date | undefined = undefined;
+  export let yMin: number | undefined = undefined;
+  export let yMax: number | undefined = undefined;
 
   export let timeGrain: V1TimeGrain;
   export let zone: string;
@@ -55,7 +56,7 @@
   export let xAccessor = "ts";
   export let labelAccessor = "label";
   export let yAccessor = "value";
-  export let mouseoverValue;
+  export let mouseoverValue: DomainCoordinates | undefined = undefined;
   export let validPercTotal: number | null = null;
 
   // control point for scrub functionality.
@@ -72,12 +73,14 @@
   const tweenProps = { duration: 400, easing: cubicOut };
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
 
-  let hovered: boolean | undefined = false;
+  let hovered: boolean = false;
   let scrub;
   let cursorClass;
   let preventScrubReset;
 
-  $: hoveredTime = mouseoverValue?.x || $tableInteractionStore.time;
+  $: hoveredTime =
+    (mouseoverValue?.x instanceof Date && mouseoverValue?.x) ||
+    $tableInteractionStore.time;
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
@@ -195,7 +198,13 @@
     if (!hasSubrangeSelected) return;
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
-    if (mouseoverValue?.x < start || mouseoverValue?.x > end) resetScrub();
+
+    if (
+      mouseoverValue?.x &&
+      (mouseoverValue?.x < start || mouseoverValue?.x > end)
+    ) {
+      resetScrub();
+    }
   }
 </script>
 
@@ -232,7 +241,7 @@
         {data}
         {dimensionData}
         dimensionValue={$tableInteractionStore?.dimensionValue}
-        isHovering={hoveredTime}
+        isHovering={Boolean(hoveredTime)}
         {scrubEnd}
         {scrubStart}
         {showComparison}

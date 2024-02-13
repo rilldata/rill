@@ -333,7 +333,7 @@ const metricViewReducers = {
     });
   },
 
-  setExpandedMeasureName(name: string, measureName: string) {
+  setExpandedMeasureName(name: string, measureName: string | undefined) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.expandedMeasureName = measureName;
 
@@ -402,7 +402,7 @@ const metricViewReducers = {
     });
   },
 
-  setSelectedScrubRange(name: string, scrubRange: ScrubRange) {
+  setSelectedScrubRange(name: string, scrubRange: ScrubRange | undefined) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       setSelectedScrubRange(metricsExplorer, scrubRange);
     });
@@ -602,7 +602,7 @@ export function sortTypeForContextColumnType(
 
 function setSelectedScrubRange(
   metricsExplorer: MetricsExplorerEntity,
-  scrubRange: ScrubRange,
+  scrubRange: ScrubRange | undefined,
 ) {
   if (scrubRange === undefined) {
     metricsExplorer.lastDefinedScrubRange = undefined;

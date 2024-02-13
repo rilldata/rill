@@ -15,15 +15,15 @@ A simple composable container for SVG-based data graphics.
   export let height: number | undefined = undefined;
   export let fontSize: number | undefined = undefined;
   export let textGap: number | undefined = undefined;
-  export let xType: string | undefined = undefined;
-  export let yType: string | undefined = undefined;
+  export let xType: "number" | "date" = "date";
+  export let yType: "number" | "date" = "number";
 
   export let overflowHidden = true;
 
-  export let xMin: number | undefined = undefined;
-  export let xMax: number | undefined = undefined;
-  export let yMin: number | undefined = undefined;
-  export let yMax: number | undefined = undefined;
+  export let xMin: number | Date | undefined = undefined;
+  export let xMax: number | Date | undefined = undefined;
+  export let yMin: number | Date | undefined = undefined;
+  export let yMax: number | Date | undefined = undefined;
 
   export let xMinTweenProps = { duration: 0 };
   export let xMaxTweenProps = { duration: 0 };
@@ -34,7 +34,7 @@ A simple composable container for SVG-based data graphics.
   export let shareYScale = true;
 
   export let mouseoverValue: DomainCoordinates | undefined = undefined;
-  export let hovered = undefined;
+  export let hovered = false;
 
   /** this makes a wide variety of normal events, such as on:click, available
    * to the consumer
