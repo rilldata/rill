@@ -182,7 +182,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
               primary?.data?.data,
               comparison?.data?.data,
               TIME_GRAIN[interval]?.duration,
-              dashboardStore.selectedTimezone || "Etc/UTC",
+              dashboardStore.selectedTimezone || "UTC",
             );
           }
           return {
