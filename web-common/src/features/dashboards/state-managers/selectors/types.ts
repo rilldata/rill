@@ -21,8 +21,11 @@ import type { Expand } from "../types";
  * outside of component code,
  * and utimately wrapped in Readables for use in components.
  */
-export type DashboardDataSources = {
-  dashboard: MetricsExplorerEntity;
+export type DashboardDataSources<
+  DerivedDashboard extends
+    Partial<MetricsExplorerEntity> = MetricsExplorerEntity,
+> = {
+  dashboard: DerivedDashboard;
   metricsSpecQueryResult: QueryObserverResult<V1MetricsViewSpec, RpcStatus>;
   timeRangeSummary: QueryObserverResult<
     V1MetricsViewTimeRangeResponse,

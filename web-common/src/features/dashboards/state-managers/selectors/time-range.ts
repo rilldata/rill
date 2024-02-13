@@ -6,9 +6,12 @@ import type { DashboardDataSources } from "./types";
 import {
   selectedTimeRangeSelector,
   timeControlStateSelector,
+  type TimeStoreDerivedDashboard,
 } from "../../time-controls/time-control-store";
 
-export const timeControlsState = (dashData: DashboardDataSources) =>
+export const timeControlsState = (
+  dashData: DashboardDataSources<TimeStoreDerivedDashboard>,
+) =>
   timeControlStateSelector([
     dashData.metricsSpecQueryResult,
     dashData.timeRangeSummary,

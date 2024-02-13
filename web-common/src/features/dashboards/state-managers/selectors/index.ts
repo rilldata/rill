@@ -1,18 +1,20 @@
 import type { ImmerLayer } from "@rilldata/web-common/features/dashboards/state-managers/immer-layer";
 import { measureFilterSelectors } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
-import { DashboardKeysUsedInTimeStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type {
   RpcStatus,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
-import { derived, get, type Readable } from "svelte/store";
+import { derived, type Readable } from "svelte/store";
 import type { MetricsExplorerEntity } from "../../stores/metrics-explorer-entity";
 import { activeMeasureSelectors } from "./active-measure";
 import { comparisonSelectors } from "./comparisons";
 import { contextColSelectors } from "./context-column";
-import { leaderboardQuerySelectors } from "./dashboard-queries";
+import {
+  DashboardKeysInDimensionTable,
+  leaderboardQuerySelectors,
+} from "./dashboard-queries";
 import { formattingSelectors } from "./data-formatting";
 import { dimensionFilterSelectors } from "./dimension-filters";
 import { dimensionTableSelectors } from "./dimension-table";
@@ -142,15 +144,7 @@ export const createStateManagerReadables = (
     dashboardQueries: createDerivedReadablesFromSelectors(
       leaderboardQuerySelectors,
       dashboardDataReadables,
-      [
-        "whereFilter",
-        "dimensionSearchText",
-        "selectedDimensionName",
-        "visibleMeasureKeys",
-        ...DashboardKeysUsedInTimeStore,
-        "dashboardSortType",
-        "sortDirection",
-      ],
+      DashboardKeysInDimensionTable,
     ),
 
     /**

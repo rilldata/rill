@@ -1,3 +1,4 @@
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 import { isSummableMeasure } from "../../dashboard-utils";
@@ -21,7 +22,9 @@ export const activeMeasureName = (dashData: DashboardDataSources): string => {
 };
 
 export const selectedMeasureNames = (
-  dashData: DashboardDataSources,
+  dashData: DashboardDataSources<
+    Pick<MetricsExplorerEntity, "visibleMeasureKeys">
+  >,
 ): string[] => {
   return [...dashData.dashboard.visibleMeasureKeys];
 };

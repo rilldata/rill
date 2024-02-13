@@ -70,14 +70,21 @@ export type TimeControlState = {
   ComparisonTimeRangeState;
 export type TimeControlStore = Readable<TimeControlState>;
 
-export const DashboardKeysUsedInTimeStore: Array<keyof MetricsExplorerEntity> =
-  [
-    "selectedTimezone",
-    "selectedTimeRange",
-    "showTimeComparison",
-    "selectedComparisonTimeRange",
-    "lastDefinedScrubRange",
-  ];
+export const DashboardKeysInTimeStore: Array<keyof MetricsExplorerEntity> = [
+  "selectedTimezone",
+  "selectedTimeRange",
+  "showTimeComparison",
+  "selectedComparisonTimeRange",
+  "lastDefinedScrubRange",
+];
+export type TimeStoreDerivedDashboard = Pick<
+  MetricsExplorerEntity,
+  | "selectedTimezone"
+  | "selectedTimeRange"
+  | "showTimeComparison"
+  | "selectedComparisonTimeRange"
+  | "lastDefinedScrubRange"
+>;
 
 export const timeControlStateSelector = ([
   metricsView,
@@ -86,7 +93,7 @@ export const timeControlStateSelector = ([
 ]: [
   QueryObserverResult<V1MetricsViewSpec, RpcStatus>,
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
-  MetricsExplorerEntity,
+  TimeStoreDerivedDashboard,
 ]): TimeControlState => {
   const hasTimeSeries = Boolean(metricsView.data?.timeDimension);
   if (
@@ -131,7 +138,7 @@ export const timeControlStateSelector = ([
   }
 
   const comparisonTimeRangeState = calculateComparisonTimeRangePartial(
-    metricsView,
+    metricsView.data,
     metricsExplorer,
     allTimeRange,
     timeRangeState,
@@ -169,7 +176,7 @@ export const useTimeControlStore = memoizeMetricsStore<TimeControlStore>(
  * Also adds start, end and their adjusted counterparts as strings ready to use in requests.
  */
 function calculateTimeRangePartial(
-  metricsExplorer: MetricsExplorerEntity,
+  metricsExplorer: TimeStoreDerivedDashboard,
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain,
@@ -221,7 +228,7 @@ function calculateTimeRangePartial(
  */
 function calculateComparisonTimeRangePartial(
   metricsView: V1MetricsViewSpec,
-  metricsExplorer: MetricsExplorerEntity,
+  metricsExplorer: TimeStoreDerivedDashboard,
   allTimeRange: DashboardTimeControls,
   timeRangeState: TimeRangeState,
 ): ComparisonTimeRangeState {
@@ -279,7 +286,7 @@ function calculateComparisonTimeRangePartial(
 }
 
 function getTimeRange(
-  metricsExplorer: MetricsExplorerEntity,
+  metricsExplorer: TimeStoreDerivedDashboard,
   allTimeRange: DashboardTimeControls,
   defaultTimeRange: DashboardTimeControls,
 ) {
@@ -324,7 +331,7 @@ function getTimeRange(
 }
 
 function getTimeGrain(
-  metricsExplorer: MetricsExplorerEntity,
+  metricsExplorer: TimeStoreDerivedDashboard,
   timeRange: DashboardTimeControls,
   minTimeGrain: V1TimeGrain,
 ) {
@@ -355,7 +362,7 @@ function getTimeGrain(
 
 function getComparisonTimeRange(
   metricsView: V1MetricsViewSpec,
-  metricsExplorer: MetricsExplorerEntity,
+  metricsExplorer: TimeStoreDerivedDashboard,
   allTimeRange: DashboardTimeControls,
   timeRange: DashboardTimeControls,
   comparisonTimeRange: DashboardTimeControls,

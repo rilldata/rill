@@ -1,6 +1,11 @@
 import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { additionalMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import {
+  DashboardKeysInTimeStore,
+  type TimeStoreDerivedDashboard,
+} from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type {
   QueryServiceMetricsViewComparisonBody,
   QueryServiceMetricsViewTotalsBody,
@@ -12,11 +17,34 @@ import {
   isAnyMeasureSelected,
   selectedMeasureNames,
 } from "./active-measure";
-import { sortingSelectors } from "./sorting";
+import {
+  DashboardKeysInSorting,
+  type SortingDashboard,
+  sortingSelectors,
+} from "./sorting";
 import { isTimeControlReady, timeControlsState } from "./time-range";
 import { getFiltersForOtherDimensions } from "./dimension-filters";
 import { updateFilterOnSearch } from "../../dimension-table/dimension-table-utils";
 import { dimensionTableSearchString } from "./dimension-table";
+
+export const DashboardKeysInDimensionTable: Array<keyof MetricsExplorerEntity> =
+  [
+    "whereFilter",
+    "dimensionSearchText",
+    "selectedDimensionName",
+    "visibleMeasureKeys",
+    ...DashboardKeysInTimeStore,
+    ...DashboardKeysInSorting,
+  ];
+export type DimensionTableDerivedDashboard = Pick<
+  MetricsExplorerEntity,
+  | "whereFilter"
+  | "dimensionSearchText"
+  | "selectedDimensionName"
+  | "visibleMeasureKeys"
+> &
+  TimeStoreDerivedDashboard &
+  SortingDashboard;
 
 /**
  * Returns the sorted query body for the dimension table for the
@@ -26,7 +54,7 @@ import { dimensionTableSearchString } from "./dimension-table";
  * is not undefined, ie then the dimension table is visible.
  */
 export function dimensionTableSortedQueryBody(
-  dashData: DashboardDataSources,
+  dashData: DashboardDataSources<DimensionTableDerivedDashboard>,
 ): (
   resolvedMeasureFilter: ResolvedMeasureFilter,
 ) => QueryServiceMetricsViewComparisonBody {
