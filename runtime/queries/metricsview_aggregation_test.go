@@ -889,7 +889,8 @@ func TestMetricsViewAggregationClickhouseEnum(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml": "",
-			"models/foo.sql": `SELECT
+			"models/foo.sql": `
+				SELECT
 				-- Enum
 				CAST('a', 'Enum(\'a\' = 1, \'b\' = 2)') as a,
 				-- Nullable enum
