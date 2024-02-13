@@ -14,10 +14,10 @@ on org configuration) to authenticate against a Salesforce org.
 
 ### Configure credentials for local development
 
-When working on a local project, you have the option to specify credentials when running Rill using the `--variable` flag.
+When working on a local project, you have the option to specify credentials when running Rill using the `--var` flag.
 An example of using this syntax in terminal:
 ```
-rill start --variable connector.salesforce.username="user@example.com" --variable connector.salesforce.password="MyPasswordMyToken"
+rill start --var connector.salesforce.username="user@example.com" --var connector.salesforce.password="MyPasswordMyToken"
 ```
 
 Alternatively, you can include the credentials string directly in the source code by adding the `username` and `password` parameters. 

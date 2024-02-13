@@ -14,10 +14,10 @@ How you configure postgres connection string depends on whether you are developi
 
 ### Configure credentials for local development
 
-When working on a local project, you have the option to specify a connection string when running Rill using the `--variable` flag.
+When working on a local project, you have the option to specify a connection string when running Rill using the `--var` flag.
 An example of using this syntax in terminal:
 ```
-rill start --variable connector.postgres.database_url="postgresql://postgres:postgres@localhost:5432/postgres"
+rill start --var connector.postgres.database_url="postgresql://postgres:postgres@localhost:5432/postgres"
 ```
 
 Alternatively, you can include the connection string directly in the source code by adding the `database_url` parameter. 

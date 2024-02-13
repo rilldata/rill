@@ -30,7 +30,7 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 	} else if url, ok := c.config["database_url"].(string); ok && url != "" { // get from driver configs
 		dsn = url
 	} else {
-		return nil, fmt.Errorf("the property 'database_url' is required for Postgres. Provide 'database_url' in the YAML properties or pass '--variable connector.postgres.database_url=...' to 'rill start'")
+		return nil, fmt.Errorf("the property 'database_url' is required for Postgres. Provide 'database_url' in the YAML properties or pass '--var connector.postgres.database_url=...' to 'rill start'")
 	}
 
 	pool, err := pgxpool.New(ctx, dsn)

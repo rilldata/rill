@@ -32,7 +32,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			Href:        "https://pkg.go.dev/github.com/snowflakedb/gosnowflake#hdr-Connection_String",
 			Placeholder: "my_user_name:my_password@ac123456/my_database/my_schema?warehouse=my_warehouse&role=my_user_role",
-			Hint:        "Either set this or pass --variable connector.snowflake.dsn=... to rill start",
+			Hint:        "Either set this or pass --var connector.snowflake.dsn=... to rill start",
 		},
 	},
 	ConfigProperties: []drivers.PropertySchema{
