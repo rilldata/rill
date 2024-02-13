@@ -11,7 +11,7 @@
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
   import type { PivotDataRow, PivotDataStore } from "./types";
-  import { ChevronDown } from "lucide-svelte";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
 
   export let pivotDataStore: PivotDataStore;
 
@@ -113,22 +113,24 @@
       {#each headerGroups as headerGroup}
         <tr>
           {#each headerGroup.headers as header}
+            {@const sortDirection = header.column.getIsSorted()}
             <th colSpan={header.colSpan}>
               <div class="header-cell">
                 {#if !header.isPlaceholder}
                   <button
+                    class="flex items-center gap-x-1"
                     class:cursor-pointer={header.column.getCanSort()}
                     class:select-none={header.column.getCanSort()}
                     on:click={header.column.getToggleSortingHandler()}
                   >
                     {header.column.columnDef.header}
-                    {#if header.column.getIsSorted()}
-                      {#if header.column.getIsSorted().toString() === "asc"}
-                        <span>▼</span>
-                        <ChevronDown />
-                      {:else}
-                        <span>▲</span>
-                      {/if}
+                    {#if sortDirection}
+                      <span
+                        class="transition-transform -mr-1"
+                        class:-rotate-180={sortDirection === "desc"}
+                      >
+                        <ArrowDown />
+                      </span>
                     {/if}
                   </button>
                 {:else}
