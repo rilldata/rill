@@ -19,6 +19,8 @@ import {
   getFilterForPivotTable,
   getSortForAccessor,
   getTimeForQuery,
+  getTimeGrainFromDimension,
+  isTimeDimension,
 } from "./pivot-utils";
 import type { PivotDataRow, PivotDataStoreConfig, TimeFilters } from "./types";
 
@@ -74,11 +76,12 @@ export function createSubTableCellQuery(
   const { time } = config;
 
   const dimensionBody = allDimensions.map((dimension) => {
-    if (dimension === time.timeDimension) {
+    if (isTimeDimension(dimension, time.timeDimension)) {
       return {
-        name: dimension,
-        timeGrain: time.interval,
+        name: time.timeDimension,
+        timeGrain: getTimeGrainFromDimension(dimension),
         timeZone: time.timeZone,
+        alias: dimension,
       };
     } else return { name: dimension };
   });
@@ -171,10 +174,14 @@ export function queryExpandedRowMeasureValues(
         )
         .filter((f) => {
           // We map first and filter later to ensure that dimensions are in order
-          if (f.cond?.exprs?.[0].ident === config.time.timeDimension) {
+          if (
+            isTimeDimension(f.cond?.exprs?.[0].ident, config.time.timeDimension)
+          ) {
             timeFilters.push({
               timeStart: f.cond?.exprs?.[1].val as string,
-              interval: config.time.interval,
+              interval: getTimeGrainFromDimension(
+                f.cond?.exprs?.[0].ident as string,
+              ),
             });
             return false;
           } else return true;
