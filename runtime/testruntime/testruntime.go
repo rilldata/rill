@@ -97,6 +97,7 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 
 	tmpDir := t.TempDir()
 	inst := &drivers.Instance{
+		Environment:      "test",
 		OLAPConnector:    olapDriver,
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
@@ -177,6 +178,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	projectPath := filepath.Join(currentFile, "..", "testdata", name)
 
 	inst := &drivers.Instance{
+		Environment:      "test",
 		OLAPConnector:    "duckdb",
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",

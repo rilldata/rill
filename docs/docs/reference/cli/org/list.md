@@ -21,6 +21,7 @@ rill org list [flags]
 
 ```
       --api-token string   Token for authenticating with the admin API
+      --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
 ```
