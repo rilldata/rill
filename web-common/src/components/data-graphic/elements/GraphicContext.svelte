@@ -73,6 +73,7 @@ for any of its children.
         marginBuffer: 4,
         devicePixelRatio,
       };
+
   let parameters = {
     ...DEFAULTS,
     ...pruneProps({
@@ -95,12 +96,7 @@ for any of its children.
       marginBuffer,
       id,
     }),
-    // FIXME: this cast is not provably safe,
-    // but we've been treating this as if it's true
-    // for at least 19 months, so hopefully it's safe enough.
-    // In any case, this cascading context store approach is
-    // ridiculously over engineered and needs to be rethought
-  } as SimpleDataGraphicConfigurationArguments;
+  };
 
   $: parameters = {
     ...DEFAULTS,
@@ -124,12 +120,7 @@ for any of its children.
       id,
       devicePixelRatio,
     }),
-    // FIXME: this cast is not provably safe,
-    // but we've been treating this as if it's true
-    // for at least 19 months, so hopefully it's safe enough.
-    // In any case, this cascading context store approach is
-    // ridiculously over engineered and needs to be rethought
-  } as SimpleDataGraphicConfigurationArguments;
+  };
 
   const config = cascadingContextStore<
     SimpleDataGraphicConfigurationArguments,
