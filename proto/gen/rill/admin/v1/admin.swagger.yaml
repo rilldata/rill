@@ -2143,7 +2143,7 @@ definitions:
         type: string
       queryArgsJson:
         type: string
-      dashboardName:
+      metricsViewName:
         type: string
       recipients:
         type: array

@@ -809,10 +809,10 @@ export interface V1Bookmark {
 }
 
 export interface V1AlertOptions {
-  dashboardName?: string;
   emailRenotify?: boolean;
   emailRenotifyAfterSeconds?: number;
   intervalDuration?: string;
+  metricsViewName?: string;
   queryArgsJson?: string;
   queryName?: string;
   recipients?: string[];

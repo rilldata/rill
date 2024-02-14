@@ -107,7 +107,7 @@
               intervalDuration: undefined, // TODO: this is the "for every" field I think?
               queryName: "MetricsViewAggregation",
               queryArgsJson: queryArgsJson,
-              dashboardName: $metricsViewName,
+              metricsViewName: $metricsViewName,
               recipients: values.recipients.map((r) => r.email).filter(Boolean),
               emailRenotify: false, // TODO: get from snooze
               emailRenotifyAfterSeconds: 0, // TODO: get from snooze
