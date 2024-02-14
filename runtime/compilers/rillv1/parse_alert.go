@@ -11,7 +11,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/protobuf/types/known/structpb"
-	"gopkg.in/yaml.v3"
 )
 
 // AlertYAML is the raw structure of an Alert resource defined in YAML (does not include common fields)
@@ -51,13 +50,9 @@ type AlertYAML struct {
 func (p *Parser) parseAlert(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &AlertYAML{}
-	if node.YAMLRaw != "" {
-		// Can't use node.YAML because we want to set KnownFields for alerts
-		dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
-		dec.KnownFields(true)
-		if err := dec.Decode(tmp); err != nil {
-			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
-		}
+	err := p.decodeNodeYAML(node, true, tmp)
+	if err != nil {
+		return err
 	}
 
 	// Validate SQL or connector isn't set

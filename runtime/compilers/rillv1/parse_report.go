@@ -10,7 +10,6 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"gopkg.in/yaml.v3"
 )
 
 // ReportYAML is the raw structure of a Report resource defined in YAML (does not include common fields)
@@ -38,13 +37,9 @@ type ReportYAML struct {
 func (p *Parser) parseReport(ctx context.Context, node *Node) error {
 	// Parse YAML
 	tmp := &ReportYAML{}
-	if node.YAMLRaw != "" {
-		// Can't use node.YAML because we want to set KnownFields for reports
-		dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
-		dec.KnownFields(true)
-		if err := dec.Decode(tmp); err != nil {
-			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
-		}
+	err := p.decodeNodeYAML(node, true, tmp)
+	if err != nil {
+		return err
 	}
 
 	// Validate SQL or connector isn't set

@@ -35,6 +35,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	sql := fmt.Sprintf(`
 		SELECT
 			id,
+			environment,
 			olap_connector,
 			repo_connector,
 			admin_connector,
@@ -67,6 +68,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 		i := &drivers.Instance{}
 		err := rows.Scan(
 			&i.ID,
+			&i.Environment,
 			&i.OLAPConnector,
 			&i.RepoConnector,
 			&i.AdminConnector,
@@ -160,6 +162,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		`
 		INSERT INTO instances(
 			id,
+			environment,
 			olap_connector,
 			repo_connector,
 			admin_connector,
@@ -177,9 +180,10 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			model_default_materialize,
 			model_materialize_delay_seconds
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 		`,
 		inst.ID,
+		inst.Environment,
 		inst.OLAPConnector,
 		inst.RepoConnector,
 		inst.AdminConnector,
@@ -243,24 +247,26 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		ctx,
 		`
 		UPDATE instances SET
-			olap_connector = $2,
-			repo_connector = $3,
-			admin_connector = $4,
-			catalog_connector = $5,
-			updated_on = $6,
-			connectors = $7,
-			project_connectors = $8,
-			variables = $9,
-			project_variables = $10,
-			annotations = $11,
-			embed_catalog = $12,
-			watch_repo = $13,
-			stage_changes = $14,
-			model_default_materialize = $15,
-			model_materialize_delay_seconds = $16
+			environment = $2,
+			olap_connector = $3,
+			repo_connector = $4,
+			admin_connector = $5,
+			catalog_connector = $6,
+			updated_on = $7,
+			connectors = $8,
+			project_connectors = $9,
+			variables = $10,
+			project_variables = $11,
+			annotations = $12,
+			embed_catalog = $13,
+			watch_repo = $14,
+			stage_changes = $15,
+			model_default_materialize = $16,
+			model_materialize_delay_seconds = $17
 		WHERE id = $1
 		`,
 		inst.ID,
+		inst.Environment,
 		inst.OLAPConnector,
 		inst.RepoConnector,
 		inst.AdminConnector,

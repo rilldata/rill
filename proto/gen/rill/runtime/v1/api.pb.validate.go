@@ -297,6 +297,8 @@ func (m *Instance) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Environment
+
 	// no validation rules for OlapConnector
 
 	// no validation rules for RepoConnector
@@ -1156,6 +1158,8 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	}
 
+	// no validation rules for Environment
+
 	// no validation rules for OlapConnector
 
 	// no validation rules for RepoConnector
@@ -1712,6 +1716,10 @@ func (m *EditInstanceRequest) validate(all bool) error {
 	// no validation rules for Variables
 
 	// no validation rules for Annotations
+
+	if m.Environment != nil {
+		// no validation rules for Environment
+	}
 
 	if m.OlapConnector != nil {
 		// no validation rules for OlapConnector
