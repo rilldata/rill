@@ -37,7 +37,7 @@
   $: tableName = getTableOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
 
   // check to see if this model name exists.
-  $: modelQuery = useModel($runtime.instanceId, modelName);
+  $: modelQuery = useModel($runtime.instanceId, modelName ?? "");
 
   $: allModels = useModels($runtime.instanceId);
 
