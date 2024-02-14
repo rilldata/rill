@@ -369,8 +369,8 @@ export function getAdjustedFetchTime(
  * time series charts
  */
 export function getAdjustedChartTime(
-  start: Date,
-  end: Date,
+  start: Date | undefined,
+  end: Date | undefined,
   zone: string,
   interval: V1TimeGrain,
   timePreset: TimeRangePreset,
