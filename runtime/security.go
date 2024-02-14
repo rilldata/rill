@@ -81,7 +81,7 @@ func computeCacheKey(instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdat
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func (p *securityEngine) resolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
+func (p *securityEngine) resolveMetricsViewSecurity(instanceID, environment string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time, attributes map[string]any) (*ResolvedMetricsViewSecurity, error) {
 	if mv.Security == nil {
 		return nil, nil
 	}
@@ -106,7 +106,10 @@ func (p *securityEngine) resolveMetricsViewSecurity(attributes map[string]any, i
 	}
 
 	resolved := &ResolvedMetricsViewSecurity{}
-	templateData := rillv1.TemplateData{User: attributes}
+	templateData := rillv1.TemplateData{
+		Environment: environment,
+		User:        attributes,
+	}
 
 	if mv.Security.Access != "" {
 		access, err := rillv1.ResolveTemplate(mv.Security.Access, templateData)

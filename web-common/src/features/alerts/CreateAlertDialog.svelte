@@ -10,9 +10,15 @@
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import {
+    createAndExpression,
+    createBinaryExpression,
+  } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import {
     V1Operation,
     getRuntimeServiceListResourcesQueryKey,
+    type V1MetricsViewAggregationRequest,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
@@ -33,6 +39,8 @@
   $: project = $page.params.project;
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
+
+  const { metricsViewName, dashboardStore } = getStateManagers();
 
   const formState = createForm({
     initialValues: {
@@ -73,16 +81,22 @@
     }),
     onSubmit: async (values) => {
       const queryArgsJson = JSON.stringify({
+        metricsView: $metricsViewName,
         measures: [{ name: values.measure }],
         dimensions: values.splitByDimension
           ? [{ name: values.splitByDimension }]
           : [],
-        where: values.criteria.map((c) => ({
-          field: c.field,
-          operation: c.operation,
-          value: c.value,
-        })),
-      });
+        where: $dashboardStore.whereFilter,
+        having: createAndExpression(
+          values.criteria.map((c) =>
+            createBinaryExpression(
+              c.field,
+              c.operation as V1Operation,
+              c.value,
+            ),
+          ),
+        ),
+      } as V1MetricsViewAggregationRequest);
       try {
         await $createAlert.mutateAsync({
           organization,
@@ -196,7 +210,7 @@
   }
 </script>
 
-<Dialog {open} class="fixed inset-0 flex items-center justify-center z-50">
+<Dialog class="fixed inset-0 flex items-center justify-center z-50" {open}>
   <DialogOverlay
     class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
   />
@@ -220,13 +234,13 @@
         {/each}
       </DialogTabs.List>
       <div class="p-3 bg-slate-100">
-        <DialogTabs.Content value={tabs[0]} tabIndex={0} {currentTabIndex}>
+        <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
           <AlertDialogDataTab {formState} />
         </DialogTabs.Content>
-        <DialogTabs.Content value={tabs[1]} tabIndex={1} {currentTabIndex}>
+        <DialogTabs.Content {currentTabIndex} tabIndex={1} value={tabs[1]}>
           <AlertDialogCriteriaTab {formState} />
         </DialogTabs.Content>
-        <DialogTabs.Content value={tabs[2]} tabIndex={2} {currentTabIndex}>
+        <DialogTabs.Content {currentTabIndex} tabIndex={2} value={tabs[2]}>
           <AlertDialogDeliveryTab {formState} />
         </DialogTabs.Content>
       </div>

@@ -448,6 +448,8 @@ paths:
           schema:
             type: object
             properties:
+              environment:
+                type: string
               olapConnector:
                 type: string
               repoConnector:
@@ -3161,6 +3163,8 @@ definitions:
     properties:
       instanceId:
         type: string
+      environment:
+        type: string
       olapConnector:
         type: string
       repoConnector:
@@ -3381,6 +3385,8 @@ definitions:
     type: object
     properties:
       instanceId:
+        type: string
+      environment:
         type: string
       olapConnector:
         type: string
