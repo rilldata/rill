@@ -29,7 +29,7 @@ export enum MetricsEventSpace {
 }
 
 export enum MetricsEventScreenName {
-  ExternalTable = "external-table",
+  Table = "table",
   Source = "source",
   Model = "model",
   Dashboard = "dashboard",

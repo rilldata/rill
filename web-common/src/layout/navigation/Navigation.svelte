@@ -5,14 +5,14 @@
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { ModelAssets } from "@rilldata/web-common/features/models";
   import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
-  import TableAssets from "@rilldata/web-common/features/sources/navigation/TableAssets.svelte";
+  import SourceAssets from "@rilldata/web-common/features/sources/navigation/SourceAssets.svelte";
   import { getContext } from "svelte";
   import { tweened } from "svelte/motion";
   import { Readable, Writable, writable } from "svelte/store";
   import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
-  import ExternalTableAssets from "../../features/external-tables/ExternalTableAssets.svelte";
-  import { OLAP_DRIVERS_WITHOUT_MODELING } from "../../features/external-tables/config";
   import OtherFiles from "../../features/project/OtherFiles.svelte";
+  import TableAssets from "../../features/tables/TableAssets.svelte";
+  import { OLAP_DRIVERS_WITHOUT_MODELING } from "../../features/tables/config";
   import { createRuntimeServiceGetInstance } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { DEFAULT_NAV_WIDTH } from "../config";
@@ -110,9 +110,9 @@
       <div class="grow">
         <ProjectTitle />
         {#if isModelerEnabled}
-          <ExternalTableAssets />
+          <TableAssets />
           {#if olapConnector === "duckdb"}
-            <TableAssets />
+            <SourceAssets />
           {/if}
           {#if olapConnector && !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapConnector)}
             <ModelAssets />

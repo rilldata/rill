@@ -18,7 +18,7 @@
   import { useDashboardNames } from "../dashboards/selectors";
   import { createModelFromSource } from "../sources/createModel";
   import { OLAP_DRIVERS_WITHOUT_MODELING } from "./config";
-  import { createDashboardFromExternalTable } from "./createDashboardFromExternalTable";
+  import { createDashboardFromTable } from "./createDashboardFromTable";
 
   export let fullyQualifiedTableName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
@@ -55,11 +55,11 @@
     }
   };
 
-  async function handleCreateDashboardFromExternalTable(tableName: string) {
+  async function handleCreateDashboardFromTable(tableName: string) {
     overlay.set({
       title: "Creating a dashboard for " + tableName,
     });
-    const newDashboardName = await createDashboardFromExternalTable(
+    const newDashboardName = await createDashboardFromTable(
       queryClient,
       tableName,
       $dashboardNames.data ?? [],
@@ -87,7 +87,7 @@
 
 <MenuItem
   icon
-  on:select={() => handleCreateDashboardFromExternalTable(tableName)}
+  on:select={() => handleCreateDashboardFromTable(tableName)}
   propogateSelect={false}
 >
   <Explore slot="icon" />

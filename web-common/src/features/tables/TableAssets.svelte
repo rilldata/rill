@@ -10,7 +10,7 @@
     createRuntimeServiceGetInstance,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import ExternalTableMenuItems from "./ExternalTableMenuItems.svelte";
+  import TableMenuItems from "./TableMenuItems.svelte";
 
   $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
   $: connectorInstanceId = $instance.data?.instance?.instanceId;
@@ -39,8 +39,8 @@
 </script>
 
 {#if hasAssets}
-  <NavigationHeader bind:show={showTables} toggleText="external tables">
-    External tables
+  <NavigationHeader bind:show={showTables} toggleText="tables">
+    Tables
   </NavigationHeader>
 
   {#if showTables}
@@ -53,9 +53,8 @@
           >
             <NavigationEntry
               name={fullyQualifiedTableName}
-              href={`/external-table/${fullyQualifiedTableName}`}
-              open={$page.url.pathname ===
-                `/external-table/${fullyQualifiedTableName}`}
+              href={`/table/${fullyQualifiedTableName}`}
+              open={$page.url.pathname === `/table/${fullyQualifiedTableName}`}
               expandable={false}
             >
               <!-- on:command-click={() => queryHandler(tableName)} -->
@@ -64,10 +63,7 @@
             </svelte:fragment> -->
 
               <svelte:fragment slot="menu-items" let:toggleMenu>
-                <ExternalTableMenuItems
-                  {fullyQualifiedTableName}
-                  {toggleMenu}
-                />
+                <TableMenuItems {fullyQualifiedTableName} {toggleMenu} />
               </svelte:fragment>
             </NavigationEntry>
           </div>

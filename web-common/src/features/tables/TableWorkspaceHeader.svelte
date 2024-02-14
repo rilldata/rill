@@ -17,7 +17,7 @@
   } from "../../metrics/service/MetricsTypes";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useDashboardNames } from "../dashboards/selectors";
-  import { createDashboardFromExternalTable } from "./createDashboardFromExternalTable";
+  import { createDashboardFromTable } from "./createDashboardFromTable";
 
   export let fullyQualifiedTableName: string;
 
@@ -27,8 +27,8 @@
 
   $: dashboardNames = useDashboardNames($runtime.instanceId);
 
-  async function handleCreateDashboardFromExternalTable() {
-    const newDashboardName = await createDashboardFromExternalTable(
+  async function handleCreateDashboardFromTable() {
+    const newDashboardName = await createDashboardFromTable(
       queryClient,
       tableName,
       $dashboardNames.data ?? [],
@@ -38,7 +38,7 @@
       newDashboardName,
       BehaviourEventMedium.Button,
       MetricsEventSpace.RightPanel,
-      MetricsEventScreenName.ExternalTable,
+      MetricsEventScreenName.Table,
       MetricsEventScreenName.Dashboard,
     );
   }
@@ -58,7 +58,7 @@
     <svelte:fragment slot="cta" let:width={headerWidth}>
       {@const collapse = isHeaderWidthSmall(headerWidth)}
       <PanelCTA side="right">
-        <Button on:click={handleCreateDashboardFromExternalTable}>
+        <Button on:click={handleCreateDashboardFromTable}>
           <IconSpaceFixer pullLeft pullRight={collapse}>
             <Add />
           </IconSpaceFixer>

@@ -16,7 +16,7 @@ import { waitForResource } from "../entity-management/resource-status-utils";
 import { EntityType } from "../entity-management/types";
 import { generateDashboardYAMLForTable } from "../metrics-views/metrics-internal-store";
 
-export async function createDashboardFromExternalTable(
+export async function createDashboardFromTable(
   queryClient: QueryClient,
   table: string,
   dashboardNames: string[],
