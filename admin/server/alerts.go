@@ -444,6 +444,8 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, alertName, owne
 	res := alertYAML{}
 	res.Kind = "alert"
 	res.Title = opts.Title
+	// manually add the ref
+	res.Refs = []string{fmt.Sprintf("dashboard/%s", opts.DashboardName)}
 	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
@@ -471,6 +473,8 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res := alertYAML{}
 	res.Kind = "alert"
 	res.Title = opts.Title
+	// manually add the ref
+	res.Refs = []string{fmt.Sprintf("dashboard/%s", opts.DashboardName)}
 	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
@@ -530,10 +534,16 @@ func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOpti
 	return opts, nil
 }
 
+type alertRefYAML struct {
+	Kind string `yaml:"kind"`
+	Name string `yaml:"name"`
+}
+
 // alertYAML is derived from rillv1.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
 type alertYAML struct {
-	Kind      string `yaml:"kind"`
-	Title     string `yaml:"title"`
+	Kind      string   `yaml:"kind"`
+	Title     string   `yaml:"title"`
+	Refs      []string `yaml:"refs"`
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
