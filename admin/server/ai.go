@@ -13,7 +13,12 @@ func (s *Server) Complete(ctx context.Context, req *adminv1.CompleteRequest) (*a
 		attribute.Int("args.prompt_len", len(req.Prompt)),
 	)
 
-	// TODO: Invoke OpenAI API to complete the prompt
+	data, err := s.admin.AI.Complete(ctx, req.Prompt)
+	if err != nil {
+		return nil, err
+	}
 
-	return &adminv1.CompleteResponse{}, nil
+	return &adminv1.CompleteResponse{
+		Data: data,
+	}, nil
 }
