@@ -53,7 +53,8 @@
     {
       id: "table",
       heading: "Explore your tables",
-      description: "Explore your tables and understand the data structure.",
+      description:
+        "Find your database tables in the left-hand-side navigational sidebar.",
     },
     {
       id: "metrics",
