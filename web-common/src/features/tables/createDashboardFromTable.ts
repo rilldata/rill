@@ -38,9 +38,11 @@ export async function createDashboardFromTable(
   const newDashboardName = getName(`${table}_dashboard`, dashboardNames);
 
   // Create the dashboard
+  const isModel = false;
   const defaultTimeRange = "P4W";
   const dashboardYAML = generateDashboardYAMLForTable(
     table,
+    isModel,
     tableSchema.schema as V1StructType,
     newDashboardName,
     defaultTimeRange,

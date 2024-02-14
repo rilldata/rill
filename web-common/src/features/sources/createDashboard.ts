@@ -87,8 +87,10 @@ export const useCreateDashboardFromSource = <
       table: data.sourceResource.source.state.table,
     });
 
+    const isModel = true;
     const dashboardYAML = generateDashboardYAMLForTable(
       data.newModelName,
+      isModel,
       sourceSchema.schema,
       data.newDashboardName,
     );

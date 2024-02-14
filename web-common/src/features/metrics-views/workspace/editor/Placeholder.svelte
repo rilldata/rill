@@ -64,8 +64,9 @@
         }),
     });
 
+    const isModel = true;
     const dashboardYAML = schemaResp?.schema
-      ? generateDashboardYAMLForTable(modelName, schemaResp?.schema)
+      ? generateDashboardYAMLForTable(modelName, isModel, schemaResp?.schema)
       : "";
 
     await runtimeServicePutFile(

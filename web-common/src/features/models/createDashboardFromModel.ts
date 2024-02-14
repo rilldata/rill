@@ -65,8 +65,10 @@ export const useCreateDashboardFromModel = <
     const { data } = props ?? {};
 
     // create dashboard from model
+    const isModel = true;
     const dashboardYAML = generateDashboardYAMLForTable(
       data.modelName,
+      isModel,
       data.schema,
       data.newDashboardName,
     );

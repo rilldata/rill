@@ -68,6 +68,7 @@ available_time_zones:
 
 export function generateDashboardYAMLForTable(
   tableName: string,
+  isModel: boolean,
   schema: V1StructType,
   dashboardTitle = "",
   defaultTimeRange = "",
@@ -79,7 +80,12 @@ export function generateDashboardYAMLForTable(
   if (dashboardTitle) {
     doc.set("title", dashboardTitle);
   }
-  doc.set("table", tableName);
+
+  if (isModel) {
+    doc.set("model", tableName);
+  } else {
+    doc.set("table", tableName);
+  }
 
   const timestampColumns = selectTimestampColumnFromSchema(schema);
   if (timestampColumns?.length) {
