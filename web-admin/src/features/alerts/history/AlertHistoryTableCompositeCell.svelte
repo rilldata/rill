@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AlertHistoryStatusChip from "@rilldata/web-admin/features/alerts/history/AlertHistoryStatusChip.svelte";
   import { formatRunDate } from "@rilldata/web-admin/features/scheduled-reports/tableUtils";
   import type { V1AssertionResult } from "@rilldata/web-common/runtime-client";
 
@@ -11,4 +12,5 @@
   <div class="text-gray-700 text-sm">
     Checking {formatRunDate(alertTime, timeZone)}
   </div>
+  <AlertHistoryStatusChip {result} />
 </div>
