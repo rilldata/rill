@@ -12,7 +12,7 @@
   import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
   import OtherFiles from "../../features/project/OtherFiles.svelte";
   import TableAssets from "../../features/tables/TableAssets.svelte";
-  import { OLAP_DRIVERS_WITHOUT_MODELING } from "../../features/tables/config";
+  import { useIsModelingSupportedForCurrentOlapDriver } from "../../features/tables/selectors";
   import { createRuntimeServiceGetInstance } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { DEFAULT_NAV_WIDTH } from "../config";
@@ -46,6 +46,8 @@
 
   $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
   $: olapConnector = $instance.data?.instance?.olapConnector;
+  $: isModelingSupportedForCurrentOlapDriver =
+    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
 
   function handleResize(
     e: UIEvent & {
@@ -114,7 +116,7 @@
           {#if olapConnector === "duckdb"}
             <SourceAssets />
           {/if}
-          {#if olapConnector && !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapConnector)}
+          {#if $isModelingSupportedForCurrentOlapDriver}
             <ModelAssets />
           {/if}
         {/if}

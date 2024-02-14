@@ -25,14 +25,13 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { useIsModelingSupportedForOlapDriver } from "../../../tables/selectors";
+  import { useIsModelingSupportedForCurrentOlapDriver } from "../../../tables/selectors";
 
   export let metricsName: string;
   export let view: EditorView | undefined = undefined;
 
-  $: isModelingSupportedForOlapDriver = useIsModelingSupportedForOlapDriver(
-    $runtime.instanceId,
-  );
+  $: isModelingSupportedForCurrentOlapDriver =
+    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
   $: models = useModelFileNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
@@ -133,7 +132,7 @@
 </script>
 
 <div class="whitespace-normal">
-  {#if $isModelingSupportedForOlapDriver.data}
+  {#if $isModelingSupportedForCurrentOlapDriver.data}
     Auto-generate a <WithTogglableFloatingElement
       distance={8}
       inline
@@ -170,7 +169,7 @@
     on:click={async () => {
       onCreateSkeletonMetricsConfig();
     }}
-    >{#if $isModelingSupportedForOlapDriver.data}s{:else}S{/if}tart with a
-    skeleton</button
+    >{#if $isModelingSupportedForCurrentOlapDriver.data}s{:else}S{/if}tart with
+    a skeleton</button
   >, or just start typing.
 </div>

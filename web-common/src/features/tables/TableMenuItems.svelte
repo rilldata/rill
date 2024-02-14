@@ -13,12 +13,11 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { createRuntimeServiceGetInstance } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useDashboardNames } from "../dashboards/selectors";
   import { createModelFromSource } from "../sources/createModel";
-  import { OLAP_DRIVERS_WITHOUT_MODELING } from "./config";
   import { createDashboardFromTable } from "./createDashboardFromTable";
+  import { useIsModelingSupportedForCurrentOlapDriver } from "./selectors";
 
   export let fullyQualifiedTableName: string;
   // manually toggle menu to workaround: https://stackoverflow.com/questions/70662482/react-query-mutate-onsuccess-function-not-responding
@@ -26,8 +25,8 @@
 
   const queryClient = useQueryClient();
 
-  $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
-  $: olapConnector = $instance.data?.instance?.olapConnector;
+  $: isModelingSupportedForCurrentOlapDriver =
+    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
   $: tableName = fullyQualifiedTableName.split(".")[1];
   $: runtimeInstanceId = $runtime.instanceId;
   $: modelNames = useModelFileNames($runtime.instanceId);
@@ -78,7 +77,7 @@
   }
 </script>
 
-{#if olapConnector && !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapConnector)}
+{#if $isModelingSupportedForCurrentOlapDriver.data}
   <MenuItem icon on:select={() => handleCreateModel()}>
     <Model slot="icon" />
     Create new model

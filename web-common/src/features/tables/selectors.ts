@@ -1,7 +1,7 @@
 import { createRuntimeServiceGetInstance } from "../../runtime-client";
 import { OLAP_DRIVERS_WITHOUT_MODELING } from "./config";
 
-export function useIsModelingSupportedForOlapDriver(instanceId: string) {
+export function useIsModelingSupportedForCurrentOlapDriver(instanceId: string) {
   return createRuntimeServiceGetInstance(instanceId, {
     query: {
       select: (data) => {
