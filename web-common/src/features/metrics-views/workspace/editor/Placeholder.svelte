@@ -25,10 +25,14 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import { useIsModelingSupportedForOlapDriver } from "../../../tables/selectors";
 
   export let metricsName: string;
   export let view: EditorView | undefined = undefined;
 
+  $: isModelingSupportedForOlapDriver = useIsModelingSupportedForOlapDriver(
+    $runtime.instanceId,
+  );
   $: models = useModelFileNames($runtime.instanceId);
 
   const queryClient = useQueryClient();
@@ -129,40 +133,44 @@
 </script>
 
 <div class="whitespace-normal">
-  Auto-generate a <WithTogglableFloatingElement
-    distance={8}
-    inline
-    let:toggleFloatingElement
-  >
-    <button
-      class={buttonClasses}
-      disabled={!$models?.data?.length}
-      on:click={toggleFloatingElement}
-      >metrics configuration from an existing model</button
-    >,
-    <Menu
-      dark
-      on:click-outside={toggleFloatingElement}
-      on:escape={toggleFloatingElement}
-      slot="floating-element"
+  {#if $isModelingSupportedForOlapDriver.data}
+    Auto-generate a <WithTogglableFloatingElement
+      distance={8}
+      inline
       let:toggleFloatingElement
     >
-      {#each $models?.data ?? [] as model}
-        <MenuItem
-          on:select={() => {
-            onAutogenerateConfigFromModel(model);
-            toggleFloatingElement();
-          }}
-        >
-          {model}
-        </MenuItem>
-      {/each}
-    </Menu>
-  </WithTogglableFloatingElement>
+      <button
+        class={buttonClasses}
+        disabled={!$models?.data?.length}
+        on:click={toggleFloatingElement}
+        >metrics configuration from an existing model</button
+      >,
+      <Menu
+        dark
+        on:click-outside={toggleFloatingElement}
+        on:escape={toggleFloatingElement}
+        slot="floating-element"
+        let:toggleFloatingElement
+      >
+        {#each $models?.data ?? [] as model}
+          <MenuItem
+            on:select={() => {
+              onAutogenerateConfigFromModel(model);
+              toggleFloatingElement();
+            }}
+          >
+            {model}
+          </MenuItem>
+        {/each}
+      </Menu>
+    </WithTogglableFloatingElement>
+  {/if}
   <button
     class={buttonClasses}
     on:click={async () => {
       onCreateSkeletonMetricsConfig();
-    }}>start with a skeleton</button
+    }}
+    >{#if $isModelingSupportedForOlapDriver.data}s{:else}S{/if}tart with a
+    skeleton</button
   >, or just start typing.
 </div>

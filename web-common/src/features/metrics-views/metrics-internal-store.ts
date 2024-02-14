@@ -44,7 +44,7 @@ export function initBlankDashboardYAML(dashboardTitle: string) {
 # Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
 title: ""
-model: ""
+table: ""
 default_time_range: ""
 smallest_time_grain: ""
 timeseries: ""
