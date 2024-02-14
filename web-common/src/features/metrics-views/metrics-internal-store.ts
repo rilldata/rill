@@ -70,6 +70,7 @@ export function generateDashboardYAMLForTable(
   tableName: string,
   schema: V1StructType,
   dashboardTitle = "",
+  defaultTimeRange = "",
 ) {
   const doc = new Document();
 
@@ -85,6 +86,10 @@ export function generateDashboardYAMLForTable(
     doc.set("timeseries", timestampColumns[0]);
   } else {
     doc.set("timeseries", "");
+  }
+
+  if (defaultTimeRange) {
+    doc.set("default_time_range", defaultTimeRange);
   }
 
   const fields = schema.fields;
