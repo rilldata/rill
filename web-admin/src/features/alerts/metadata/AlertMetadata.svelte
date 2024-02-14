@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
+  import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
   import {
     useAlert,
@@ -14,9 +16,13 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
-  import type { V1MetricsViewAggregationRequest } from "@rilldata/web-common/runtime-client";
+  import {
+    getRuntimeServiceListResourcesQueryKey,
+    type V1MetricsViewAggregationRequest,
+  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import AlertFilters from "@rilldata/web-admin/features/alerts/metadata/AlertFilters.svelte";
+  import { useQueryClient } from "@tanstack/svelte-query";
 
   export let organization: string;
   export let project: string;
@@ -31,19 +37,34 @@
   // Get dashboard
   $: dashboardName = useAlertDashboardName($runtime.instanceId, alert);
   $: dashboard = useDashboard($runtime.instanceId, $dashboardName.data);
-  $: dashboardTitle = $dashboard.data?.metricsView.spec.title;
+  $: dashboardTitle =
+    $dashboard.data?.metricsView.spec.title || $dashboardName.data;
 
   $: metricsViewAggregationRequest = JSON.parse(
-    $alertQuery.data.resource.alert.spec.queryArgsJson,
+    $alertQuery.data?.resource?.alert?.spec?.queryArgsJson ?? "{}",
   ) as V1MetricsViewAggregationRequest;
 
-  // TODO: delete and edit
+  // Actions
+  const queryClient = useQueryClient();
+  const deleteAlert = createAdminServiceDeleteAlert();
+
+  // TODO: edit
   function handleEditReport() {}
 
-  function handleDeleteReport() {}
+  async function handleDeleteReport() {
+    await $deleteAlert.mutateAsync({
+      organization,
+      project,
+      name: $alertQuery.data.resource.meta.name.name,
+    });
+    queryClient.invalidateQueries(
+      getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
+    );
+    goto(`/${organization}/${project}/-/alerts`);
+  }
 </script>
 
-{#if $alertQuery.data}
+{#if $alertQuery.data?.resource?.alert?.spec}
   <div class="flex flex-col gap-y-9 w-full max-w-full 2xl:max-w-[1200px]">
     <div class="flex flex-col gap-y-2">
       <!-- Header row 1 -->
@@ -63,13 +84,9 @@
           </svelte:fragment>
         </ProjectAccessControls>
       </div>
-      <!-- Header row 2 -->
-      <div class="text-xl text-gray-500 font-bold">
-        {$alertQuery.data.resource.alert.spec.title}
-      </div>
       <div class="flex gap-x-2 items-center">
         <h1 class="text-gray-700 text-lg font-bold">
-          {$alertQuery.data.resource.report.spec.title}
+          {$alertQuery.data.resource.alert.spec.title}
         </h1>
         <div class="grow" />
         {#if !$isReportCreatedByCode.data}

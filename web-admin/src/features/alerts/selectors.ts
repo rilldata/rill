@@ -34,7 +34,7 @@ export function useAlertDashboardName(instanceId: string, name: string) {
           return (
             queryArgsJson?.metrics_view_name ??
             queryArgsJson?.metricsViewName ??
-            null
+            queryArgsJson?.metricsView
           );
         },
       },

@@ -1,6 +1,6 @@
 <script lang="ts">
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
-  import DimensionFilter from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilter.svelte";
+  import DimensionFilterReadOnlyChip from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterReadOnlyChip.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { getDimensionFilterItemsForFilter } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
@@ -36,12 +36,9 @@
         {@const dimension = dimensions.find((d) => d.name === name)}
         <div animate:flip={{ duration: 200 }}>
           {#if dimension?.column}
-            <DimensionFilter
-              {name}
-              {label}
-              {selectedValues}
-              column={dimension.column}
-              readOnly
+            <DimensionFilterReadOnlyChip
+              label={label ?? name}
+              values={selectedValues}
             />
           {/if}
         </div>
