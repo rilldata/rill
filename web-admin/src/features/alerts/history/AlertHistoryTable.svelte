@@ -1,7 +1,7 @@
 <script lang="ts">
   import AlertHistoryTableCompositeCell from "@rilldata/web-admin/features/alerts/history/AlertHistoryTableCompositeCell.svelte";
+  import NoAlertRunsYet from "@rilldata/web-admin/features/alerts/history/NoAlertRunsYet.svelte";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
-  import NoRunsYet from "@rilldata/web-admin/features/scheduled-reports/history/NoRunsYet.svelte";
   import ReportHistoryTableHeader from "@rilldata/web-admin/features/scheduled-reports/history/ReportHistoryTableHeader.svelte";
   import type { V1AlertExecution } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -41,8 +41,7 @@
   {:else if $alertQuery.isLoading}
     <div class="text-gray-500">Loading...</div>
   {:else if !$alertQuery.data?.resource.alert.state.executionHistory.length}
-    <!-- TODO: change to alert -->
-    <NoRunsYet />
+    <NoAlertRunsYet />
   {:else}
     <Table
       {columns}
