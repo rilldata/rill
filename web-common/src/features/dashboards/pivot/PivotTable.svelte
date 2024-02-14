@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import {
@@ -11,7 +12,6 @@
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
   import type { PivotDataRow, PivotDataStore } from "./types";
-  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
 
   export let pivotDataStore: PivotDataStore;
 
@@ -255,5 +255,10 @@
   td:last-of-type,
   th:last-of-type > .header-cell {
     @apply border-r-0;
+  }
+
+  tr:hover,
+  tr:hover .cell {
+    @apply bg-slate-100;
   }
 </style>
