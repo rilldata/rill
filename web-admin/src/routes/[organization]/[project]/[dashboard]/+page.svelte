@@ -102,10 +102,7 @@
   {:else}
     {#key dashboardName}
       <StateManagersProvider metricsViewName={dashboardName}>
-        <DashboardStateProvider
-          metricViewName={dashboardName}
-          additionalKey={"__" + orgName + "__" + projectName}
-        >
+        <DashboardStateProvider metricViewName={dashboardName}>
           <DashboardURLStateProvider metricViewName={dashboardName}>
             <DashboardThemeProvider>
               <Dashboard metricViewName={dashboardName} leftMargin={"48px"} />

@@ -11,9 +11,8 @@
   import { EntityStatus } from "../../entity-management/types";
 
   export let metricViewName: string;
-  export let additionalKey = ""; // used in cloud to add org and project
 
-  $: initLocalUserPreferenceStore(metricViewName + additionalKey);
+  $: initLocalUserPreferenceStore(metricViewName);
   const stateManagers = getStateManagers();
   const metricsView = useMetricsView(stateManagers);
   const hasTimeSeries = useModelHasTimeSeries(stateManagers);
