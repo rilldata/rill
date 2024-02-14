@@ -605,7 +605,7 @@ dimensions:
     ).toBeDisabled();
 
     // the inspector should be empty.
-    await expect(await page.getByText("Model not defined.")).toBeVisible();
+    await expect(await page.getByText("Table not defined.")).toBeVisible();
 
     // now let's scaffold things in
     await updateCodeEditor(page, "");
