@@ -194,10 +194,11 @@ func resolveTemplatedProps(ctx context.Context, c *runtime.Controller, self comp
 	vars := inst.ResolveVariables()
 
 	templateData := compilerv1.TemplateData{
-		User:       map[string]interface{}{},
-		Variables:  vars,
-		ExtraProps: map[string]interface{}{},
-		Self:       self,
+		Environment: inst.Environment,
+		User:        map[string]interface{}{},
+		Variables:   vars,
+		ExtraProps:  map[string]interface{}{},
+		Self:        self,
 		Resolve: func(ref compilerv1.ResourceName) (string, error) {
 			return safeSQLName(ref.Name), nil
 		},

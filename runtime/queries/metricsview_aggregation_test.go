@@ -44,6 +44,7 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 
 	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
 	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
+
 	t.Run("TestMetricsViewsAggregation", func(t *testing.T) { TestMetricsViewsAggregation(t) })
 	t.Run("TestMetricsViewsAggregation_no_limit", func(t *testing.T) { TestMetricsViewsAggregation_no_limit(t) })
 	t.Run("TestMetricsViewsAggregation_no_limit_pivot", func(t *testing.T) { TestMetricsViewsAggregation_no_limit_pivot(t) })
@@ -53,6 +54,7 @@ func TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("TestMetricsViewsAggregation_pivot_dim_and_measure", func(t *testing.T) { TestMetricsViewsAggregation_pivot_dim_and_measure(t) })
 	t.Run("TestMetricsViewAggregation_measure_filters", func(t *testing.T) { TestMetricsViewAggregation_measure_filters(t) })
 	t.Run("TestMetricsViewsAggregation_timezone", func(t *testing.T) { TestMetricsViewsAggregation_timezone(t) })
+	t.Run("TestMetricsViewAggregationClickhouseEnum", func(t *testing.T) { testMetricsViewAggregationClickhouseEnum(t) })
 }
 
 func TestMetricsViewsAggregation(t *testing.T) {
@@ -828,6 +830,99 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 	require.Equal(t, "Google,0", fieldsToString(rows[i], "pub", "measure_1"))
 	i++
 	require.Equal(t, "Microsoft,0", fieldsToString(rows[i], "pub", "measure_1"))
+}
+
+func TestMetricsViewsAggregation_2time_aggregations(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
+			},
+			{
+				Name:      "timestamp",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+				Alias:     "timestamp_year",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_1",
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "timestamp",
+			},
+		},
+
+		Limit: &limit,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	rows := q.Result.Data
+
+	i := 0
+	require.Equal(t, "Facebook,2022-01-01,2022-01-01", fieldsToString(rows[i], "pub", "timestamp", "timestamp_year"))
+	i++
+	require.Equal(t, "Facebook,2022-02-01,2022-01-01", fieldsToString(rows[i], "pub", "timestamp", "timestamp_year"))
+	i++
+	require.Equal(t, "Facebook,2022-03-01,2022-01-01", fieldsToString(rows[i], "pub", "timestamp", "timestamp_year"))
+	i++
+	require.Equal(t, "Google,2022-01-01,2022-01-01", fieldsToString(rows[i], "pub", "timestamp", "timestamp_year"))
+	i++
+	require.Equal(t, "Google,2022-02-01,2022-01-01", fieldsToString(rows[i], "pub", "timestamp", "timestamp_year"))
+}
+
+func testMetricsViewAggregationClickhouseEnum(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
+		Files: map[string]string{
+			"rill.yaml": "",
+			"models/foo.sql": `
+				SELECT
+				-- Enum
+				CAST('a', 'Enum(\'a\' = 1, \'b\' = 2)') as a,
+				-- Nullable enum
+				CAST(null, 'Nullable(Enum(\'a\' = 1, \'b\' = 2))') as b
+			`,
+			"dashboards/bar.yaml": `
+model: foo
+dimensions:
+- column: a
+- column: b
+measures:
+- name: count
+  expression: count(*)
+`}})
+
+	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
+
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "bar",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{Name: "a"},
+			{Name: "b"},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{Name: "count"},
+		},
+	}
+
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result.Data)
+	require.Equal(t, "a,null,1", fieldsToString(q.Result.Data[0], "a", "b", "count"))
 }
 
 func fieldsToString(row *structpb.Struct, args ...string) string {

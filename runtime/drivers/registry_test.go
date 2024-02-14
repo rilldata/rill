@@ -14,6 +14,7 @@ import (
 func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	ctx := context.Background()
 	inst := &drivers.Instance{
+		Environment:      "test",
 		OLAPConnector:    "duckdb",
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
@@ -40,6 +41,7 @@ func testRegistry(t *testing.T, reg drivers.RegistryStore) {
 	require.NoError(t, err)
 	_, err = uuid.Parse(inst.ID)
 	require.NoError(t, err)
+	require.Equal(t, "test", inst.Environment)
 	require.Equal(t, "duckdb", inst.OLAPConnector)
 	require.Equal(t, "repo", inst.RepoConnector)
 	require.Equal(t, "catalog", inst.CatalogConnector)

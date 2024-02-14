@@ -19,11 +19,9 @@ type ThemeYAML struct {
 // parseTheme parses a theme definition and adds the resulting resource to p.Resources.
 func (p *Parser) parseTheme(ctx context.Context, node *Node) error {
 	tmp := &ThemeYAML{}
-	// TODO: get from defaults
-	if node.YAML != nil {
-		if err := node.YAML.Decode(tmp); err != nil {
-			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
-		}
+	err := p.decodeNodeYAML(node, false, tmp)
+	if err != nil {
+		return err
 	}
 
 	// Parse the colors now to get the parse error before inserting resource
@@ -31,7 +29,6 @@ func (p *Parser) parseTheme(ctx context.Context, node *Node) error {
 	hasPc := false
 	var sc csscolorparser.Color
 	hasSc := false
-	var err error
 	if tmp.Colors.Primary != "" {
 		pc, err = csscolorparser.Parse(tmp.Colors.Primary)
 		if err != nil {

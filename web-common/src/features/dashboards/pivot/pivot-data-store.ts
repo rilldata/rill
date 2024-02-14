@@ -4,11 +4,9 @@ import { useMetricsView } from "@rilldata/web-common/features/dashboards/selecto
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-import type { AvailableTimeGrain } from "@rilldata/web-common/lib/time/types";
-import {
-  V1TimeGrain,
-  type V1MetricsViewAggregationResponse,
-  type V1MetricsViewAggregationResponseDataItem,
+import type {
+  V1MetricsViewAggregationResponse,
+  V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query/build/lib/types";
 import type { ColumnDef } from "@tanstack/svelte-table";
@@ -31,7 +29,9 @@ import {
   getFilterForPivotTable,
   getPivotConfigKey,
   getSortForAccessor,
+  getTimeGrainFromDimension,
   getTotalColumnCount,
+  isTimeDimension,
   reconcileMissingDimensionValues,
 } from "./pivot-utils";
 import {
@@ -54,24 +54,11 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
       measureFilterResolutionsStore(ctx),
     ],
     ([metricsView, dashboardStore, timeControls, measureFilterResolution]) => {
-      let interval: AvailableTimeGrain = "TIME_GRAIN_HOUR";
-      const existingTimeGrain = timeControls?.selectedTimeRange?.interval;
-
-      if (existingTimeGrain) {
-        if (
-          existingTimeGrain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED &&
-          existingTimeGrain !== V1TimeGrain.TIME_GRAIN_MILLISECOND &&
-          existingTimeGrain !== V1TimeGrain.TIME_GRAIN_SECOND
-        )
-          interval = existingTimeGrain;
-      }
-
       const time: PivotTimeConfig = {
         timeStart: timeControls.timeStart,
         timeEnd: timeControls.timeEnd,
         timeZone: dashboardStore?.selectedTimezone || "UTC",
         timeDimension: metricsView?.data?.timeDimension || "",
-        interval,
       };
 
       if (
@@ -100,21 +87,16 @@ function getPivotConfig(ctx: StateManagers): Readable<PivotDataStoreConfig> {
       // This is temporary until we have a better way to handle time grains
       const rowDimensionNames = dashboardStore.pivot.rows.dimension.map((d) => {
         if (d.type === PivotChipType.Time) {
-          time.interval = d.id as AvailableTimeGrain;
-          return time.timeDimension;
+          return `${time.timeDimension}_rill_${d.id}`;
         }
-
         return d.id;
       });
 
-      // This is temporary until we have a better way to handle time grains
       const colDimensionNames = dashboardStore.pivot.columns.dimension.map(
         (d) => {
           if (d.type === PivotChipType.Time) {
-            time.interval = d.id as AvailableTimeGrain;
-            return time.timeDimension;
+            return `${time.timeDimension}_rill_${d.id}`;
           }
-
           return d.id;
         },
       );
@@ -155,11 +137,12 @@ export function createTableCellQuery(
 
   const { time } = config;
   const dimensionBody = allDimensions.map((dimension) => {
-    if (dimension === time.timeDimension) {
+    if (isTimeDimension(dimension, time.timeDimension)) {
       return {
-        name: dimension,
-        timeGrain: time.interval,
+        name: time.timeDimension,
+        timeGrain: getTimeGrainFromDimension(dimension),
         timeZone: time.timeZone,
+        alias: dimension,
       };
     } else return { name: dimension };
   });

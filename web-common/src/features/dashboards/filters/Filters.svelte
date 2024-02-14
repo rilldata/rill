@@ -1,6 +1,3 @@
-<!-- @component
-The main feature-set component for dashboard filters
- -->
 <script lang="ts">
   import { Chip } from "@rilldata/web-common/components/chip";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";

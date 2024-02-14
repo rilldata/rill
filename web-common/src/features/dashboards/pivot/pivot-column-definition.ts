@@ -12,6 +12,8 @@ import {
   cellComponent,
   createIndexMap,
   getAccessorForCell,
+  getTimeGrainFromDimension,
+  isTimeDimension,
 } from "./pivot-utils";
 import type {
   PivotDataRow,
@@ -46,6 +48,7 @@ function createColumnDefinitionForDimensions(
     if (level === levels) {
       const accessors = getAccessorForCell(
         dimensionNames,
+        config.time.timeDimension,
         colValuesIndexMaps,
         leafData.length,
         colValuePair,
@@ -66,8 +69,10 @@ function createColumnDefinitionForDimensions(
     return headerValues
       ?.map((value) => {
         let displayValue = value;
-        if (timeConfig?.timeDimension === dimensionNames?.[level]) {
-          const timeGrain = timeConfig?.interval;
+        if (
+          isTimeDimension(dimensionNames?.[level], timeConfig?.timeDimension)
+        ) {
+          const timeGrain = getTimeGrainFromDimension(dimensionNames?.[level]);
           const dt = addZoneOffset(
             removeLocalTimezoneOffset(new Date(value)),
             timeConfig?.timeZone,
@@ -83,11 +88,6 @@ function createColumnDefinitionForDimensions(
           ...colValuePair,
           [dimensionNames[level]]: value,
         });
-
-        // // Filter out headers without child columns
-        // if (nestedColumns.length === 0) {
-        //   return null;
-        // }
 
         return {
           header: displayValue,
@@ -129,9 +129,9 @@ function formatRowDimensionValue(
   rowDimensionNames: string[],
 ) {
   const dimension = rowDimensionNames?.[depth];
-  if (dimension === timeConfig?.timeDimension) {
+  if (isTimeDimension(dimension, timeConfig?.timeDimension)) {
     if (value === "Total") return "Total";
-    const timeGrain = timeConfig?.interval;
+    const timeGrain = getTimeGrainFromDimension(dimension);
     const dt = addZoneOffset(
       removeLocalTimezoneOffset(new Date(value)),
       timeConfig?.timeZone,
@@ -172,18 +172,34 @@ export function getColumnDefForPivot(
     };
   });
 
-  const rowDimensions = rowDimensionNames.map((d) => ({
-    label:
+  const rowDimensions = rowDimensionNames.map((d) => {
+    let label =
       config.allDimensions.find((dimension) => dimension.column === d)?.label ||
-      d,
-    name: d,
-  }));
-  const colDimensions = colDimensionNames.map((d) => ({
-    label:
+      d;
+    if (isTimeDimension(d, config.time.timeDimension)) {
+      const timeGrain = getTimeGrainFromDimension(d);
+      const grainLabel = TIME_GRAIN[timeGrain]?.label || d;
+      label = `Time ${grainLabel}`;
+    }
+    return {
+      label,
+      name: d,
+    };
+  });
+  const colDimensions = colDimensionNames.map((d) => {
+    let label =
       config.allDimensions.find((dimension) => dimension.column === d)?.label ||
-      d,
-    name: d,
-  }));
+      d;
+    if (isTimeDimension(d, config.time.timeDimension)) {
+      const timeGrain = getTimeGrainFromDimension(d);
+      const grainLabel = TIME_GRAIN[timeGrain]?.label || d;
+      label = `Time ${grainLabel}`;
+    }
+    return {
+      label,
+      name: d,
+    };
+  });
 
   let rowDimensionsForColumnDef = rowDimensions;
   let nestedLabel: string;
@@ -194,6 +210,7 @@ export function getColumnDefForPivot(
   const rowDefinitions: ColumnDef<PivotDataRow>[] =
     rowDimensionsForColumnDef.map((d) => {
       return {
+        id: d.name,
         accessorFn: (row) => row[d.name],
         header: nestedLabel,
         cell: ({ row, getValue }) =>
