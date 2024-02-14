@@ -1,3 +1,4 @@
+import { createAdminServiceSearchProjectUsers } from "@rilldata/web-admin/client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   createRuntimeServiceGetResource,
@@ -37,6 +38,27 @@ export function useAlertDashboardName(instanceId: string, name: string) {
             null
           );
         },
+      },
+    },
+  );
+}
+
+export function useAlertOwnerName(
+  organization: string,
+  project: string,
+  ownerId: string,
+) {
+  return createAdminServiceSearchProjectUsers(
+    organization,
+    project,
+    {
+      emailQuery: "%",
+      pageSize: 1000,
+      pageToken: undefined,
+    },
+    {
+      query: {
+        select: (data) => data.users.find((u) => u.id === ownerId)?.displayName,
       },
     },
   );
