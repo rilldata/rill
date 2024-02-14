@@ -10,11 +10,28 @@
     createRuntimeServiceGetInstance,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import {
+    ResourceKind,
+    useFilteredResourceNames,
+  } from "../entity-management/resource-selectors";
   import TableMenuItems from "./TableMenuItems.svelte";
 
   $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
   $: connectorInstanceId = $instance.data?.instance?.instanceId;
   $: olapConnector = $instance.data?.instance?.olapConnector;
+
+  // Get managed table names
+  $: sourceNamesQuery = useFilteredResourceNames(
+    $runtime.instanceId,
+    ResourceKind.Source,
+  );
+  $: modelNamesQuery = useFilteredResourceNames(
+    $runtime.instanceId,
+    ResourceKind.Model,
+  );
+  $: sourceNames = $sourceNamesQuery.data;
+  $: modelNames = $modelNamesQuery.data;
+
   $: tableNames = createConnectorServiceOLAPListTables(
     {
       instanceId: connectorInstanceId,
@@ -22,10 +39,22 @@
     },
     {
       query: {
-        enabled: !!connectorInstanceId && !!olapConnector,
+        enabled:
+          !!connectorInstanceId &&
+          !!olapConnector &&
+          !!sourceNames &&
+          !!modelNames,
         select: (data) => {
+          // filter out managed tables (sources and models)
+          const filteredTables = data?.tables?.filter(
+            (table) =>
+              !(sourceNames as string[]).includes(table.name as string) &&
+              !(modelNames as string[]).includes(table.name as string),
+          );
+
+          // return the fully qualified table names
           return (
-            data?.tables?.map((table) => table.database + "." + table.name) ||
+            filteredTables?.map((table) => table.database + "." + table.name) ||
             []
           );
         },
