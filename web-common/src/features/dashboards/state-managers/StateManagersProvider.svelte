@@ -13,7 +13,8 @@
   const stateManagers = createStateManagers({
     queryClient,
     metricsViewName,
-    extraKey: orgName && projectName ? `__${orgName}__${projectName}` : "",
+    extraKeyPrefix:
+      orgName && projectName ? `__${orgName}__${projectName}` : "",
   });
   setContext(DEFAULT_STORE_KEY, stateManagers);
 

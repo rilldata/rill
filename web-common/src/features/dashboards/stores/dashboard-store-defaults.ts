@@ -174,30 +174,35 @@ export function getDefaultMetricsExplorerEntity(
   return metricsExplorer;
 }
 
-export function mergeDashboardWithLocalPreferences(
+export function restorePersistedDashboardState(
   metricsExplorer: MetricsExplorerEntity,
 ) {
-  const defaults = getPersistentDashboardState();
-  if (defaults.visibleMeasures) {
+  const persistedState = getPersistentDashboardState();
+  if (persistedState.visibleMeasures) {
     metricsExplorer.allMeasuresVisible =
-      defaults.visibleMeasures.length ===
+      persistedState.visibleMeasures.length ===
       metricsExplorer.visibleMeasureKeys.size; // TODO: check values
-    metricsExplorer.visibleMeasureKeys = new Set(defaults.visibleMeasures);
+    metricsExplorer.visibleMeasureKeys = new Set(
+      persistedState.visibleMeasures,
+    );
   }
-  if (defaults.visibleDimensions) {
+  if (persistedState.visibleDimensions) {
     metricsExplorer.allDimensionsVisible =
-      defaults.visibleDimensions.length ===
+      persistedState.visibleDimensions.length ===
       metricsExplorer.visibleDimensionKeys.size; // TODO: check values
-    metricsExplorer.visibleDimensionKeys = new Set(defaults.visibleDimensions);
+    metricsExplorer.visibleDimensionKeys = new Set(
+      persistedState.visibleDimensions,
+    );
   }
-  if (defaults.leaderboardMeasureName) {
-    metricsExplorer.leaderboardMeasureName = defaults.leaderboardMeasureName;
+  if (persistedState.leaderboardMeasureName) {
+    metricsExplorer.leaderboardMeasureName =
+      persistedState.leaderboardMeasureName;
   }
-  if (defaults.dashboardSortType) {
-    metricsExplorer.dashboardSortType = defaults.dashboardSortType;
+  if (persistedState.dashboardSortType) {
+    metricsExplorer.dashboardSortType = persistedState.dashboardSortType;
   }
-  if (defaults.sortDirection) {
-    metricsExplorer.sortDirection = defaults.sortDirection;
+  if (persistedState.sortDirection) {
+    metricsExplorer.sortDirection = persistedState.sortDirection;
   }
   return metricsExplorer;
 }

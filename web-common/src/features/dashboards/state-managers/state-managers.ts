@@ -72,11 +72,11 @@ export function getStateManagers(): StateManagers {
 export function createStateManagers({
   queryClient,
   metricsViewName,
-  extraKey,
+  extraKeyPrefix,
 }: {
   queryClient: QueryClient;
   metricsViewName: string;
-  extraKey?: string;
+  extraKeyPrefix?: string;
 }): StateManagers {
   const metricsViewNameStore = writable(metricsViewName);
   const dashboardStore: Readable<MetricsExplorerEntity> = derived(
@@ -131,7 +131,7 @@ export function createStateManagers({
   );
 
   // TODO: once we move everything from dashboard-stores to here, we can get rid of the global
-  initPersistentDashboardStore(metricsViewName + (extraKey ?? ""));
+  initPersistentDashboardStore((extraKeyPrefix || "") + metricsViewName);
   const persistentDashboardStore = getPersistentDashboardStore();
 
   return {

@@ -17,7 +17,7 @@ export type PersistentDashboardState = {
   sortDirection?: SortDirection;
 };
 
-function persistentDashboardActions(
+function persistentDashboardStoreActions(
   update: (this: void, updater: Updater<PersistentDashboardState>) => void,
 ) {
   function updateKey<K extends keyof PersistentDashboardState>(key: K) {
@@ -51,15 +51,15 @@ function persistentDashboardActions(
 }
 
 export type PersistentDashboardStore = Readable<PersistentDashboardState> &
-  ReturnType<typeof persistentDashboardActions>;
+  ReturnType<typeof persistentDashboardStoreActions>;
 export function createPersistentDashboardStore(storeKey: string) {
   const { subscribe, update } = localStorageStore<PersistentDashboardState>(
-    `${storeKey}-userPreference`,
+    `${storeKey}-persistentDashboardStore`,
     {},
   );
   return {
     subscribe,
-    ...persistentDashboardActions(update),
+    ...persistentDashboardStoreActions(update),
   };
 }
 

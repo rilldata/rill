@@ -32,7 +32,7 @@ export function createUpdateMetricsCallback(
     });
     // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
     metricsExplorerStore.remove(metricsDefName);
-    // Reset local user preferences for the metrics view
+    // Reset local persisted dashboard state for the metrics view
     createPersistentDashboardStore(metricsDefName).reset();
   }
 

@@ -4,7 +4,7 @@ import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashbo
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
   getDefaultMetricsExplorerEntity,
-  mergeDashboardWithLocalPreferences,
+  restorePersistedDashboardState,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
   createAndExpression,
@@ -182,7 +182,7 @@ const metricViewReducers = {
         metricsView,
         fullTimeRange,
       );
-      state.entities[name] = mergeDashboardWithLocalPreferences(
+      state.entities[name] = restorePersistedDashboardState(
         state.entities[name],
       );
 
