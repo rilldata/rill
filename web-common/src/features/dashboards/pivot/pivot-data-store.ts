@@ -22,6 +22,7 @@ import {
   getAxisForDimensions,
 } from "./pivot-queries";
 import {
+  getTotalsRow,
   prepareNestedPivotData,
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
@@ -348,28 +349,12 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               });
             }
 
-            let totalsRow: PivotDataRow = {};
-            let totalsRowTable: PivotDataRow[] = [];
-            if (rowDimensionNames.length && measureNames.length) {
-              const totalsRowData = totalsRowResponse?.data?.data;
-
-              const globalTotalsData = globalTotalsResponse?.data?.data || [];
-              totalsRowTable = reduceTableCellDataIntoRows(
-                config,
-                "",
-                [],
-                columnDimensionAxes?.data || {},
-                [],
-                totalsRowData || [],
-              );
-
-              totalsRow = totalsRowTable[0] || {};
-              totalsRow[anchorDimension] = "Total";
-
-              globalTotalsData.forEach((total) => {
-                totalsRow = { ...total, ...totalsRow };
-              });
-            }
+            const totalsRow = getTotalsRow(
+              config,
+              columnDimensionAxes?.data,
+              totalsRowResponse?.data?.data,
+              globalTotalsResponse?.data?.data,
+            );
 
             const { rows: rowDimensionValues, totals: rowTotals } =
               reconcileMissingDimensionValues(

@@ -103,3 +103,34 @@ export function reduceTableCellDataIntoRows(
 
   return tableData;
 }
+
+export function getTotalsRow(
+  config: PivotDataStoreConfig,
+  columnDimensionAxes: Record<string, string[]> = {},
+  totalsRowData: V1MetricsViewAggregationResponseDataItem[] = [],
+  globalTotalsData: V1MetricsViewAggregationResponseDataItem[] = [],
+) {
+  const { rowDimensionNames, measureNames } = config;
+  let totalsRow: PivotDataRow = {};
+  if (rowDimensionNames.length && measureNames.length) {
+    const anchorDimensionName = rowDimensionNames[0];
+
+    const totalsRowTable = reduceTableCellDataIntoRows(
+      config,
+      "",
+      [],
+      columnDimensionAxes || {},
+      [],
+      totalsRowData || [],
+    );
+
+    totalsRow = totalsRowTable[0] || {};
+    totalsRow[anchorDimensionName] = "Total";
+
+    globalTotalsData.forEach((total) => {
+      totalsRow = { ...total, ...totalsRow };
+    });
+  }
+
+  return totalsRow;
+}

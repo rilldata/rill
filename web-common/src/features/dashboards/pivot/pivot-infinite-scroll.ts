@@ -55,7 +55,8 @@ function getColumnPage(
   return groups;
 }
 
-/** Slice column axes databased on page
+/**
+ * Slice column axes data based on page
  * number. This is used for column definition in pivot table.
  */
 export function sliceColumnAxesDataForDef(
