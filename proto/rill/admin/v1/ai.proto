@@ -1,0 +1,22 @@
+syntax = "proto3";
+package rill.admin.v1;
+
+import "google/api/annotations.proto";
+
+service AIService {
+  // Complete sends a prompt to the AI to complete.
+  rpc Complete(CompleteRequest) returns (CompleteResponse) {
+    option (google.api.http) = {
+      post: "/v1/ai/complete",
+      body: "*"
+    };
+  }
+}
+
+message CompleteRequest {
+    string prompt = 1;
+}
+
+message CompleteResponse {
+  string data = 1;
+}

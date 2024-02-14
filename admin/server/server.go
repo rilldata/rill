@@ -64,6 +64,7 @@ type Options struct {
 
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
+	adminv1.UnsafeAIServiceServer
 	logger        *zap.Logger
 	admin         *admin.Service
 	opts          *Options
@@ -77,6 +78,7 @@ type Server struct {
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
+var _ adminv1.AIServiceServer = (*Server)(nil)
 
 func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, uiActivity activity.Client, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
@@ -142,6 +144,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	)
 
 	adminv1.RegisterAdminServiceServer(server, s)
+	adminv1.RegisterAIServiceServer(server, s)
 	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
@@ -168,6 +171,10 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	grpcAddress := fmt.Sprintf(":%d", s.opts.GRPCPort)
 	err := adminv1.RegisterAdminServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
+	if err != nil {
+		return nil, err
+	}
+	err = adminv1.RegisterAIServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -233,18 +240,24 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 }
 
 func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
-	var limitKey string
 	method, ok := grpc.Method(ctx)
 	if !ok {
 		return ctx, fmt.Errorf("server context does not have a method")
 	}
+
+	var limitKey string
 	if auth.GetClaims(ctx).OwnerType() == auth.OwnerTypeAnon {
 		limitKey = ratelimit.AnonLimitKey(method, observability.GrpcPeer(ctx))
 	} else {
 		limitKey = ratelimit.AuthLimitKey(method, auth.GetClaims(ctx).OwnerID())
 	}
 
-	if err := s.limiter.Limit(ctx, limitKey, ratelimit.Default); err != nil {
+	limit := ratelimit.Default
+	if strings.HasPrefix(method, "/rill.admin.v1.AIService") {
+		limit = ratelimit.Sensitive
+	}
+
+	if err := s.limiter.Limit(ctx, limitKey, limit); err != nil {
 		if errors.As(err, &ratelimit.QuotaExceededError{}) {
 			return ctx, status.Errorf(codes.ResourceExhausted, err.Error())
 		}
@@ -300,6 +313,9 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 }
 
 func timeoutSelector(fullMethodName string) time.Duration {
+	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
+		return time.Minute * 2
+	}
 	return time.Minute
 }
 

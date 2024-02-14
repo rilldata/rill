@@ -166,6 +166,11 @@ func (h *Handle) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return h, true
 }
 
+// AsAI implements drivers.Handle.
+func (h *Handle) AsAI(instanceID string) (drivers.AIService, bool) {
+	return h, true
+}
+
 // AsOLAP implements drivers.Handle.
 func (h *Handle) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false

@@ -137,30 +137,39 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	rootCmd.PersistentFlags().Var(printer.NewFormatValue(printer.Human, &format), "format", `Output format (options: "human", "json", "csv")`)
 	rootCmd.Flags().BoolP("version", "v", false, "Show rill version") // Adds option to get version by passing --version or -v
 
-	// Add sub-commands
-	rootCmd.AddCommand(start.StartCmd(ch))
-	rootCmd.AddCommand(admin.AdminCmd(ch))
-	rootCmd.AddCommand(runtime.RuntimeCmd(ch))
-	rootCmd.AddCommand(docs.DocsCmd(ch, rootCmd))
-	rootCmd.AddCommand(completionCmd)
-	rootCmd.AddCommand(verifyInstallCmd(ch))
-	rootCmd.AddCommand(versioncmd.VersionCmd())
-	rootCmd.AddCommand(upgrade.UpgradeCmd(ch))
-	rootCmd.AddCommand(whoami.WhoamiCmd(ch))
-	rootCmd.AddCommand(devtool.DevtoolCmd(ch))
+	// Create sub-commands
+	startCmd := start.StartCmd(ch)
+	deployCmd := deploy.DeployCmd(ch)
+	envCmd := env.EnvCmd(ch)
+	userCmd := user.UserCmd(ch)
+	orgCmd := org.OrgCmd(ch)
+	projectCmd := project.ProjectCmd(ch)
+	serviceCmd := service.ServiceCmd(ch)
+	loginCmd := auth.LoginCmd(ch)
+	logoutCmd := auth.LogoutCmd(ch)
+	whoamiCmd := whoami.WhoamiCmd(ch)
+	docsCmd := docs.DocsCmd(ch, rootCmd)
+	versionCmd := versioncmd.VersionCmd()
+	upgradeCmd := upgrade.UpgradeCmd(ch)
+	sudoCmd := sudo.SudoCmd(ch)
+	devtoolCmd := devtool.DevtoolCmd(ch)
+	adminCmd := admin.AdminCmd(ch)
+	runtimeCmd := runtime.RuntimeCmd(ch)
+	verifyCmd := verifyInstallCmd(ch)
 
-	// Add sub-commands for admin
-	// (This allows us to add persistent flags that apply only to the admin-related commands.)
+	// Add persistent flags that apply only to admin-related commands
 	adminCmds := []*cobra.Command{
-		org.OrgCmd(ch),
-		project.ProjectCmd(ch),
-		deploy.DeployCmd(ch),
-		user.UserCmd(ch),
-		env.EnvCmd(ch),
-		auth.LoginCmd(ch),
-		auth.LogoutCmd(ch),
-		sudo.SudoCmd(ch),
-		service.ServiceCmd(ch),
+		startCmd,
+		deployCmd,
+		envCmd,
+		userCmd,
+		orgCmd,
+		projectCmd,
+		serviceCmd,
+		loginCmd,
+		logoutCmd,
+		whoamiCmd,
+		sudoCmd,
 	}
 	for _, cmd := range adminCmds {
 		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
@@ -170,7 +179,30 @@ func runCmd(ctx context.Context, ver config.Version) error {
 			}
 		}
 		cmd.PersistentFlags().StringVar(&cfg.AdminTokenOverride, "api-token", "", "Token for authenticating with the admin API")
-		rootCmd.AddCommand(cmd)
 	}
+
+	// Add sub-commands
+	rootCmd.AddCommand(
+		startCmd,
+		deployCmd,
+		envCmd,
+		userCmd,
+		orgCmd,
+		projectCmd,
+		serviceCmd,
+		loginCmd,
+		logoutCmd,
+		whoamiCmd,
+		docsCmd,
+		completionCmd,
+		versionCmd,
+		upgradeCmd,
+		sudoCmd,
+		devtoolCmd,
+		adminCmd,
+		runtimeCmd,
+		verifyCmd,
+	)
+
 	return rootCmd.ExecuteContext(ctx)
 }
