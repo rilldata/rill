@@ -57,6 +57,27 @@ for any of its children.
     devicePixelRatio = window.devicePixelRatio;
   });
 
+  const props = {
+    width,
+    height,
+    top,
+    bottom,
+    left,
+    right,
+    fontSize,
+    textGap,
+    devicePixelRatio,
+    xType,
+    yType,
+    xMin,
+    xMax,
+    yMin,
+    yMax,
+    bodyBuffer,
+    marginBuffer,
+    id,
+  };
+
   const DEFAULTS = hasContext(contexts.config)
     ? {}
     : {
@@ -73,52 +94,9 @@ for any of its children.
         devicePixelRatio,
       };
 
-  let parameters = {
-    ...DEFAULTS,
-    ...pruneProps({
-      width,
-      height,
-      top,
-      bottom,
-      left,
-      right,
-      fontSize,
-      textGap,
-      devicePixelRatio,
-      xType,
-      yType,
-      xMin,
-      xMax,
-      yMin,
-      yMax,
-      bodyBuffer,
-      marginBuffer,
-      id,
-    }),
-  };
-
   $: parameters = {
     ...DEFAULTS,
-    ...pruneProps({
-      width,
-      height,
-      top,
-      bottom,
-      left,
-      right,
-      fontSize,
-      textGap,
-      xType,
-      yType,
-      xMin,
-      xMax,
-      yMin,
-      yMax,
-      bodyBuffer,
-      marginBuffer,
-      id,
-      devicePixelRatio,
-    }),
+    ...pruneProps(props),
   };
 
   const config = cascadingContextStore(contexts.config, parameters);
