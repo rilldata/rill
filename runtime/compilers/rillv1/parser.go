@@ -135,6 +135,7 @@ type Parser struct {
 	// Options
 	Repo             drivers.RepoStore
 	InstanceID       string
+	Environment      string
 	DefaultConnector string
 	DuckDBConnectors []string
 
@@ -176,10 +177,11 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 //
 // Note on SQL parsing: For DuckDB SQL specifically, the parser can use a SQL parser to extract refs and annotations (instead of relying on templating or YAML).
 // To enable SQL parsing for a connector, pass it in duckDBConnectors. If DuckDB SQL parsing should be used on files where no connector is specified, put the defaultConnector in duckDBConnectors.
-func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, defaultConnector string, duckDBConnectors []string) (*Parser, error) {
+func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment, defaultConnector string, duckDBConnectors []string) (*Parser, error) {
 	p := &Parser{
 		Repo:             repo,
 		InstanceID:       instanceID,
+		Environment:      environment,
 		DefaultConnector: defaultConnector,
 		DuckDBConnectors: duckDBConnectors,
 	}

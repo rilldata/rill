@@ -77,6 +77,7 @@ func (s *Server) CreateInstance(ctx context.Context, req *runtimev1.CreateInstan
 
 	inst := &drivers.Instance{
 		ID:                           req.InstanceId,
+		Environment:                  req.Environment,
 		OLAPConnector:                req.OlapConnector,
 		RepoConnector:                req.RepoConnector,
 		AdminConnector:               req.AdminConnector,
@@ -143,6 +144,7 @@ func (s *Server) EditInstance(ctx context.Context, req *runtimev1.EditInstanceRe
 
 	inst := &drivers.Instance{
 		ID:                           req.InstanceId,
+		Environment:                  valOrDefault(req.Environment, oldInst.Environment),
 		OLAPConnector:                valOrDefault(req.OlapConnector, oldInst.OLAPConnector),
 		RepoConnector:                valOrDefault(req.RepoConnector, oldInst.RepoConnector),
 		AdminConnector:               valOrDefault(req.AdminConnector, oldInst.AdminConnector),

@@ -361,6 +361,7 @@ export type RuntimeServiceEditInstanceBodyVariables = { [key: string]: string };
 See message Instance for field descriptions.
  */
 export type RuntimeServiceEditInstanceBody = {
+  environment?: string;
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;
@@ -1502,6 +1503,7 @@ just a single instance.
  */
 export interface V1Instance {
   instanceId?: string;
+  environment?: string;
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;
@@ -1687,6 +1689,7 @@ See message Instance for field descriptions.
  */
 export interface V1CreateInstanceRequest {
   instanceId?: string;
+  environment?: string;
   olapConnector?: string;
   repoConnector?: string;
   adminConnector?: string;
