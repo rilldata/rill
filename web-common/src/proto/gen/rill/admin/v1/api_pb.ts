@@ -7915,9 +7915,9 @@ export class AlertOptions extends Message<AlertOptions> {
   queryArgsJson = "";
 
   /**
-   * @generated from field: string dashboard_name = 5;
+   * @generated from field: string metrics_view_name = 5;
    */
-  dashboardName = "";
+  metricsViewName = "";
 
   /**
    * @generated from field: repeated string recipients = 6;
@@ -7946,7 +7946,7 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 2, name: "interval_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "dashboard_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "email_renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "email_renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },

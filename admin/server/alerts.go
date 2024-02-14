@@ -445,7 +445,7 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, alertName, owne
 	res.Kind = "alert"
 	res.Title = opts.Title
 	// manually add the ref
-	res.Refs = []string{fmt.Sprintf("dashboard/%s", opts.DashboardName)}
+	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
@@ -474,7 +474,7 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Kind = "alert"
 	res.Title = opts.Title
 	// manually add the ref
-	res.Refs = []string{fmt.Sprintf("dashboard/%s", opts.DashboardName)}
+	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
