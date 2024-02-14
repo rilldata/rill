@@ -248,6 +248,7 @@ message PingResponse {
 // just a single instance.
 message Instance {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  string environment = 20;
   string olap_connector = 2;
   string repo_connector = 4;
   string admin_connector = 19;
@@ -303,6 +304,7 @@ message CreateInstanceRequest {
     ignore_empty: true,
     pattern: "^[_\\-a-zA-Z0-9]+$"
   }];
+  string environment = 16;
   string olap_connector = 2;
   string repo_connector = 4;
   string admin_connector = 15;
@@ -334,6 +336,7 @@ message DeleteInstanceResponse {}
 // See message Instance for field descriptions.
 message EditInstanceRequest {
   string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+  optional string environment = 17;
   optional string olap_connector = 2;
   optional string repo_connector = 4;
   optional string admin_connector = 16;

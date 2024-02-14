@@ -29,7 +29,7 @@ export function useAlertDashboardName(instanceId: string, name: string) {
       query: {
         select: (data) => {
           const queryArgsJson = JSON.parse(
-            data.resource.report.spec.queryArgsJson,
+            data.resource.alert.spec.queryArgsJson,
           );
 
           return (
@@ -74,7 +74,7 @@ export function useIsAlertCreatedByCode(instanceId: string, name: string) {
     {
       query: {
         select: (data) =>
-          !data.resource.report.spec.annotations["admin_owner_user_id"],
+          !data.resource.alert.spec.annotations["admin_owner_user_id"],
       },
     },
   );

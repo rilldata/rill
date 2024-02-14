@@ -15,15 +15,7 @@ type RillYAML struct {
 	Description string
 	Connectors  []*ConnectorDef
 	Variables   []*VariableDef
-	Defaults    RillYAMLDefaults
-}
-
-// RillYAMLDefaults contains project-wide default YAML properties for different resources
-type RillYAMLDefaults struct {
-	Sources      yaml.Node
-	Models       yaml.Node
-	MetricsViews yaml.Node
-	Migrations   yaml.Node
+	Defaults    map[ResourceKind]yaml.Node
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -43,16 +35,17 @@ type VariableDef struct {
 type rillYAML struct {
 	Title       string            `yaml:"title"`
 	Description string            `yaml:"description"`
-	Env         map[string]string `yaml:"env"`
+	Vars        map[string]string `yaml:"vars"`
 	Connectors  []struct {
 		Type     string            `yaml:"type"`
 		Name     string            `yaml:"name"`
 		Defaults map[string]string `yaml:"defaults"`
 	} `yaml:"connectors"`
-	Sources    yaml.Node `yaml:"sources"`
-	Models     yaml.Node `yaml:"models"`
-	Dashboards yaml.Node `yaml:"dashboards"`
-	Migrations yaml.Node `yaml:"migrations"`
+	Env        map[string]yaml.Node `yaml:"env"`
+	Sources    yaml.Node            `yaml:"sources"`
+	Models     yaml.Node            `yaml:"models"`
+	Dashboards yaml.Node            `yaml:"dashboards"`
+	Migrations yaml.Node            `yaml:"migrations"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -65,6 +58,26 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	tmp := &rillYAML{}
 	if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
 		return newYAMLError(err)
+	}
+
+	// Ugly backwards compatibility hack: we have renamed "env" to "vars", and now use "env" for environment-specific overrides.
+	// For backwards compatibility, we still consider "env" entries with scalar values as variables.
+	for k := range tmp.Env {
+		v := tmp.Env[k]
+		if v.Kind == yaml.ScalarNode {
+			if tmp.Vars == nil {
+				tmp.Vars = make(map[string]string)
+			}
+			tmp.Vars[k] = v.Value
+			delete(tmp.Env, k)
+		}
+	}
+
+	// Apply environment-specific overrides
+	if envOverride := tmp.Env[p.Environment]; !envOverride.IsZero() {
+		if err := envOverride.Decode(tmp); err != nil {
+			return newYAMLError(err)
+		}
 	}
 
 	// Validate resource defaults
@@ -93,12 +106,12 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		Title:       tmp.Title,
 		Description: tmp.Description,
 		Connectors:  make([]*ConnectorDef, len(tmp.Connectors)),
-		Variables:   make([]*VariableDef, len(tmp.Env)),
-		Defaults: RillYAMLDefaults{
-			Sources:      tmp.Sources,
-			Models:       tmp.Models,
-			MetricsViews: tmp.Dashboards,
-			Migrations:   tmp.Migrations,
+		Variables:   make([]*VariableDef, len(tmp.Vars)),
+		Defaults: map[ResourceKind]yaml.Node{
+			ResourceKindSource:      tmp.Sources,
+			ResourceKindModel:       tmp.Models,
+			ResourceKindMetricsView: tmp.Dashboards,
+			ResourceKindMigration:   tmp.Migrations,
 		},
 	}
 
@@ -114,7 +127,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	i := 0
-	for k, v := range tmp.Env {
+	for k, v := range tmp.Vars {
 		res.Variables[i] = &VariableDef{
 			Name:    k,
 			Default: v,

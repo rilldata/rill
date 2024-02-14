@@ -384,20 +384,23 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
-// databaseTypeToPB converts clikchouse types to rill internal types
-// refer the list of types here : https://clickhouse.com/docs/en/sql-reference/data-types
-// excludes mapping for Aggregation function types, Nested data structures, Tuples, Geo types, Special data types
+// databaseTypeToPB converts Clickhouse types to Rill's generic schema type.
+// Refer the list of types here: https://clickhouse.com/docs/en/sql-reference/data-types
+// NOTE: Doesn't handle aggregation function types, nested data structures, tuples, geo types, special data types.
 func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 	dbt = strings.ToUpper(dbt)
-	// for nullable the datatype is Nullable(X)
+
+	// For nullable the datatype is Nullable(X)
 	if strings.HasPrefix(dbt, "NULLABLE(") {
 		dbt = dbt[9 : len(dbt)-1]
 		nullable = true
 	}
-	// for LowCardinality the datatype is LowCardinality(X)
+
+	// For LowCardinality the datatype is LowCardinality(X)
 	if strings.HasPrefix(dbt, "LOWCARDINALITY(") {
 		dbt = dbt[15 : len(dbt)-1]
 	}
+
 	match := true
 	t := &runtimev1.Type{Nullable: nullable}
 	switch dbt {
@@ -514,8 +517,9 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 			KeyType:   keyType,
 			ValueType: valType,
 		}
-	case "ENUM":
-		t.Code = runtimev1.Type_CODE_STRING // representing enums as strings for now
+	case "ENUM", "ENUM8", "ENUM16":
+		// Representing enums as strings
+		t.Code = runtimev1.Type_CODE_STRING
 	default:
 		return nil, fmt.Errorf("encountered unsupported clickhouse type '%s'", dbt)
 	}
