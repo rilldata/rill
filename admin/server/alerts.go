@@ -534,11 +534,6 @@ func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOpti
 	return opts, nil
 }
 
-type alertRefYAML struct {
-	Kind string `yaml:"kind"`
-	Name string `yaml:"name"`
-}
-
 // alertYAML is derived from rillv1.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
 type alertYAML struct {
 	Kind      string   `yaml:"kind"`
