@@ -116,7 +116,7 @@
           {#if olapConnector === "duckdb"}
             <SourceAssets />
           {/if}
-          {#if $isModelingSupportedForCurrentOlapDriver}
+          {#if $isModelingSupportedForCurrentOlapDriver.data}
             <ModelAssets />
           {/if}
         {/if}
