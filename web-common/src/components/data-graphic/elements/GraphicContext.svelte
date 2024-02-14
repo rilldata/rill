@@ -19,7 +19,6 @@ for any of its children.
   import type {
     ExtremumResolutionStore,
     SimpleDataGraphicConfiguration,
-    SimpleDataGraphicConfigurationArguments,
   } from "@rilldata/web-common/components/data-graphic/state/types";
 
   export let width: number | undefined = undefined;
@@ -122,40 +121,7 @@ for any of its children.
     }),
   };
 
-  const config = cascadingContextStore<
-    SimpleDataGraphicConfigurationArguments,
-    SimpleDataGraphicConfiguration
-  >(
-    contexts.config,
-    parameters,
-    /** these values are derived from the existing SimpleDataGraphicConfigurationArguments */
-    {
-      plotLeft: (config: SimpleDataGraphicConfiguration) => config.left,
-      plotRight: (config: SimpleDataGraphicConfiguration) =>
-        config.width - config.right,
-      plotTop: (config: SimpleDataGraphicConfiguration) => config.top,
-      plotBottom: (config: SimpleDataGraphicConfiguration) =>
-        config.height - config.bottom,
-      bodyLeft: (config: SimpleDataGraphicConfiguration) =>
-        config.left + (config.bodyBuffer || 0),
-      bodyRight: (config: SimpleDataGraphicConfiguration) =>
-        config.width - config.right - (config.bodyBuffer || 0),
-      bodyTop: (config: SimpleDataGraphicConfiguration) =>
-        config.top + config.bodyBuffer || 0,
-      bodyBottom: (config: SimpleDataGraphicConfiguration) =>
-        config.height - config.bottom - (config.bodyBuffer || 0),
-      graphicWidth: (config: SimpleDataGraphicConfiguration) =>
-        config.width -
-        config.left -
-        config.right -
-        2 * (config.bodyBuffer || 0),
-      graphicHeight: (config: SimpleDataGraphicConfiguration) =>
-        config.height -
-        config.top -
-        config.bottom -
-        2 * (config.bodyBuffer || 0),
-    },
-  );
+  const config = cascadingContextStore(contexts.config, parameters);
 
   $: config.reconcileProps(parameters);
 

@@ -1,5 +1,6 @@
 import { get, writable } from "svelte/store";
 import { setContext, getContext, hasContext } from "svelte";
+import type { SimpleDataGraphicConfiguration, SimpleDataGraphicConfigurationArguments } from "./types";
 
 export function pruneProps<T extends object>(props: T): T {
   return Object.keys(props).reduce((next, prop) => {
@@ -27,20 +28,46 @@ function addDerivations(store, derivations) {
  * reactive data viz component compositions.
  * Most consumers of the data graphic components won't need to worry about this store.
  */
-export function cascadingContextStore<Props extends object, StoreValue>(
+export function cascadingContextStore(
   namespace: string,
-  props: Props,
-  derivations = {}
+  props: SimpleDataGraphicConfigurationArguments,
 ) {
+  const derivations = {
+    plotLeft: (config: SimpleDataGraphicConfiguration) => config.left,
+    plotRight: (config: SimpleDataGraphicConfiguration) =>
+      config.width - config.right,
+    plotTop: (config: SimpleDataGraphicConfiguration) => config.top,
+    plotBottom: (config: SimpleDataGraphicConfiguration) =>
+      config.height - config.bottom,
+    bodyLeft: (config: SimpleDataGraphicConfiguration) =>
+      config.left + (config.bodyBuffer || 0),
+    bodyRight: (config: SimpleDataGraphicConfiguration) =>
+      config.width - config.right - (config.bodyBuffer || 0),
+    bodyTop: (config: SimpleDataGraphicConfiguration) =>
+      config.top + config.bodyBuffer || 0,
+    bodyBottom: (config: SimpleDataGraphicConfiguration) =>
+      config.height - config.bottom - (config.bodyBuffer || 0),
+    graphicWidth: (config: SimpleDataGraphicConfiguration) =>
+      config.width -
+      config.left -
+      config.right -
+      2 * (config.bodyBuffer || 0),
+    graphicHeight: (config: SimpleDataGraphicConfiguration) =>
+      config.height -
+      config.top -
+      config.bottom -
+      2 * (config.bodyBuffer || 0),
+  };
+
   // check to see if namespace exists.
   const hasParentCascade = hasContext(namespace);
 
-  const prunedProps = pruneProps<Props>(props);
+  const prunedProps = pruneProps<SimpleDataGraphicConfigurationArguments>(props);
 
   let lastProps = props;
   let lastParentState = {};
 
-  const store = writable<Props | StoreValue>(prunedProps);
+  const store = writable<SimpleDataGraphicConfigurationArguments | SimpleDataGraphicConfiguration>(prunedProps);
   let parentStore;
 
   if (hasParentCascade) {
@@ -69,7 +96,7 @@ export function cascadingContextStore<Props extends object, StoreValue>(
   return {
     hasParentCascade,
     subscribe: store.subscribe,
-    reconcileProps(props: Props) {
+    reconcileProps(props: SimpleDataGraphicConfigurationArguments) {
       lastProps = { ...props };
 
       /** let's update the store with the latest props. */
