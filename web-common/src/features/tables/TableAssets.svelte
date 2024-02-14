@@ -44,7 +44,10 @@
   </NavigationHeader>
 
   {#if showTables}
-    <div class="pb-3" transition:slide={{ duration: LIST_SLIDE_DURATION }}>
+    <div
+      class="pb-3 max-h-96 overflow-auto"
+      transition:slide={{ duration: LIST_SLIDE_DURATION }}
+    >
       {#if $tableNames?.data}
         {#each $tableNames.data as fullyQualifiedTableName (fullyQualifiedTableName)}
           <div
@@ -57,11 +60,6 @@
               open={$page.url.pathname === `/table/${fullyQualifiedTableName}`}
               expandable={false}
             >
-              <!-- on:command-click={() => queryHandler(tableName)} -->
-              <!-- <svelte:fragment slot="tooltip-content">
-              <SourceTooltip {tableName} connector="" />
-            </svelte:fragment> -->
-
               <svelte:fragment slot="menu-items" let:toggleMenu>
                 <TableMenuItems {fullyQualifiedTableName} {toggleMenu} />
               </svelte:fragment>
