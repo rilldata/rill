@@ -7915,17 +7915,22 @@ export class AlertOptions extends Message<AlertOptions> {
   queryArgsJson = "";
 
   /**
-   * @generated from field: repeated string recipients = 5;
+   * @generated from field: string dashboard_name = 5;
+   */
+  dashboardName = "";
+
+  /**
+   * @generated from field: repeated string recipients = 6;
    */
   recipients: string[] = [];
 
   /**
-   * @generated from field: bool email_renotify = 6;
+   * @generated from field: bool email_renotify = 7;
    */
   emailRenotify = false;
 
   /**
-   * @generated from field: uint32 email_renotify_after_seconds = 7;
+   * @generated from field: uint32 email_renotify_after_seconds = 8;
    */
   emailRenotifyAfterSeconds = 0;
 
@@ -7941,9 +7946,10 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 2, name: "interval_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 6, name: "email_renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "email_renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 5, name: "dashboard_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "recipients", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "email_renotify", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "email_renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertOptions {

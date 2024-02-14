@@ -1440,7 +1440,8 @@ message AlertOptions {
   string interval_duration = 2;
   string query_name = 3;
   string query_args_json = 4;
-  repeated string recipients = 5;
-  bool email_renotify = 6;
-  uint32 email_renotify_after_seconds = 7;
+  string dashboard_name = 5;
+  repeated string recipients = 6;
+  bool email_renotify = 7;
+  uint32 email_renotify_after_seconds = 8;
 }
