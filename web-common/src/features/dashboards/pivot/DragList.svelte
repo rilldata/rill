@@ -5,8 +5,6 @@
   import { flip } from "svelte/animate";
   import { createEventDispatcher } from "svelte";
   import type { PivotChipData } from "./types";
-  import { PivotChipType } from "./types";
-  import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
 </script>
 
 <script lang="ts">
@@ -26,20 +24,6 @@
 
   function handleFinalize(e: CustomEvent<{ items: PivotChipData[] }>) {
     items = e.detail.items;
-    dispatch("update", items);
-  }
-
-  function onSelectTimeGrain(item: PivotChipData, timeGrain: TimeGrain) {
-    items = items.map((i) => {
-      if (i.id !== item.id) return i;
-
-      return {
-        id: timeGrain.grain,
-        title: timeGrain.label,
-        type: PivotChipType.Time,
-      };
-    });
-
     dispatch("update", items);
   }
 </script>
@@ -62,9 +46,6 @@
         on:remove={() => {
           items = items.filter((i) => i.id !== item.id);
           dispatch("update", items);
-        }}
-        on:select-time-grain={(e) => {
-          onSelectTimeGrain(item, e.detail.timeGrain);
         }}
       />
     </div>

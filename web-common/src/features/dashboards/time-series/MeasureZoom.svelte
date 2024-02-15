@@ -30,15 +30,20 @@
   }
 
   function zoomScrub() {
-    const { start, end } = getOrderedStartEnd(
-      $dashboardStore?.selectedScrubRange?.start,
-      $dashboardStore?.selectedScrubRange?.end,
-    );
-    metricsExplorerStore.setSelectedTimeRange(metricViewName, {
-      name: TimeRangePreset.CUSTOM,
-      start,
-      end,
-    });
+    if (
+      $dashboardStore?.selectedScrubRange?.start instanceof Date &&
+      $dashboardStore?.selectedScrubRange?.end instanceof Date
+    ) {
+      const { start, end } = getOrderedStartEnd(
+        $dashboardStore.selectedScrubRange.start,
+        $dashboardStore.selectedScrubRange.end,
+      );
+      metricsExplorerStore.setSelectedTimeRange(metricViewName, {
+        name: TimeRangePreset.CUSTOM,
+        start,
+        end,
+      });
+    }
   }
 </script>
 

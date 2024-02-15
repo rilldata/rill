@@ -40,7 +40,7 @@ to the props.
   });
 
   export let mouseoverValue: DomainCoordinates | undefined = undefined;
-  export let hovered: boolean | undefined = undefined;
+  export let hovered: boolean = false;
   export let overflowHidden = true;
 
   $: mouseoverValue = $coordinates;

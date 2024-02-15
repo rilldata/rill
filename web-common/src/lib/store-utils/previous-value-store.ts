@@ -1,20 +1,13 @@
-import { get, writable } from "svelte/store";
+import { Writable, get, writable } from "svelte/store";
 
-export function previousValueStore(anotherStore) {
+export function previousValueStore<T extends number | string>(
+  anotherStore: Writable<T>,
+): Writable<T> {
   let previousValue = get(anotherStore);
   const store = writable(previousValue);
   anotherStore.subscribe(($currentValue) => {
-    if (Array.isArray(previousValue)) {
-      store.set([...previousValue]);
-    } else if (typeof previousValue === "object" && previousValue !== null) {
-      store.set({ ...previousValue });
-    } else {
-      store.set(previousValue);
-    }
+    store.set(previousValue);
     previousValue = $currentValue;
   });
-  return {
-    subscribe: store.subscribe,
-    set: store.set,
-  };
+  return store;
 }

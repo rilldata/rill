@@ -1,5 +1,4 @@
 import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   getTimeGrainFromDimension,
   isTimeDimension,
@@ -26,6 +25,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { Readable, derived, readable } from "svelte/store";
+import { mergeFilters } from "./pivot-merge-filters";
 
 /**
  * Wrapper function for Aggregate Query API

@@ -151,9 +151,8 @@ export function getDashboardStateFromProto(
   if (dashboard.pinIndex !== undefined) {
     entity.pinIndex = dashboard.pinIndex;
   }
-  if (dashboard.selectedTimezone) {
-    entity.selectedTimezone = dashboard.selectedTimezone;
-  }
+
+  entity.selectedTimezone = dashboard.selectedTimezone ?? "UTC";
 
   if (dashboard.allMeasuresVisible) {
     entity.allMeasuresVisible = true;
