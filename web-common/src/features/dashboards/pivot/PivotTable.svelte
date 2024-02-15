@@ -19,7 +19,7 @@
 
   export let pivotDataStore: PivotDataStore;
 
-  const OVERSCAN = 50;
+  const OVERSCAN = 80;
   const ROW_HEIGHT = 24;
   const HEADER_HEIGHT = 30;
 
@@ -61,7 +61,7 @@
   $: headerGroups = $table.getHeaderGroups();
   $: measureCount = $dashboardStore.pivot?.columns?.measure?.length ?? 0;
   $: rows = $table.getRowModel().rows;
-  $: headerHeight = headerGroups.length * HEADER_HEIGHT;
+  $: totalHeaderHeight = headerGroups.length * HEADER_HEIGHT;
 
   $: virtualizer = createVirtualizer<HTMLDivElement, HTMLTableRowElement>({
     count: rows.length,
@@ -76,13 +76,12 @@
   });
 
   $: virtualRows = $virtualizer.getVirtualItems();
-  $: totalSize = $virtualizer.getTotalSize();
+  $: totalRowSize = $virtualizer.getTotalSize();
 
   $: [before, after] = virtualRows.length
     ? [
         (virtualRows[1]?.start ?? virtualRows[0].start) - ROW_HEIGHT,
-
-        totalSize - virtualRows[virtualRows.length - 1].end,
+        totalRowSize - virtualRows[virtualRows.length - 1].end,
       ]
     : [0, 0];
 
@@ -102,11 +101,12 @@
 </script>
 
 <div
-  style:--header-length="{headerHeight}px"
+  style:--row-height="{ROW_HEIGHT}px"
+  style:--header-length="{totalHeaderHeight}px"
   class="overflow-scroll h-fit max-h-full border rounded-md bg-white"
   bind:this={containerRefElement}
 >
-  <div style:height="{totalSize + headerHeight}px">
+  <div style:height="{totalRowSize + totalHeaderHeight}px">
     <table>
       <thead>
         {#each headerGroups as headerGroup}
@@ -147,8 +147,7 @@
         </tr>
         {#each virtualRows as row (row.index)}
           {@const cells = rows[row.index].getVisibleCells()}
-          <!-- <PivotRow {cells} {measureCount} {assembled} {beforeColumn} /> -->
-          <tr style:height="{ROW_HEIGHT}px">
+          <tr>
             {#each cells as cell, i (cell.id)}
               {@const result =
                 typeof cell.column.columnDef.cell === "function"
@@ -158,7 +157,7 @@
                 class="ui-copy-number"
                 class:border-right={i % measureCount === 0 && i}
               >
-                <div class="cell" style:height="{ROW_HEIGHT}px">
+                <div class="cell">
                   {#if result?.component && result?.props}
                     <svelte:component
                       this={result.component}
@@ -249,6 +248,7 @@
 
   .cell {
     @apply p-1 px-2;
+    height: var(--row-height);
   }
 
   tbody > tr:nth-of-type(2) {
