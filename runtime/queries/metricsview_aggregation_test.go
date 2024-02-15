@@ -650,14 +650,10 @@ func Ignore_TestMetricsViewsAggregation_Druid_measure_filter(t *testing.T) {
 			{
 				Name: "publisher",
 			},
-			{
-				Name:      "__time",
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
-			},
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_1",
+				Name:           "bp",
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 				Filter: &runtimev1.Expression{
 					Expression: &runtimev1.Expression_Cond{
@@ -671,7 +667,7 @@ func Ignore_TestMetricsViewsAggregation_Druid_measure_filter(t *testing.T) {
 								},
 								{
 									Expression: &runtimev1.Expression_Val{
-										Val: structpb.NewStringValue("instagram.com"),
+										Val: structpb.NewStringValue("news.google.com"),
 									},
 								},
 							},
@@ -684,9 +680,6 @@ func Ignore_TestMetricsViewsAggregation_Druid_measure_filter(t *testing.T) {
 			{
 				Name: "publisher",
 			},
-			{
-				Name: "__time",
-			},
 		},
 	}
 
@@ -694,45 +687,66 @@ func Ignore_TestMetricsViewsAggregation_Druid_measure_filter(t *testing.T) {
 	if err != nil {
 		require.NoError(t, err)
 	}
+
 	rows := resp.Data
-
-	for _, s := range resp.Schema.Fields {
-		fmt.Printf("%v ", s.Name)
-	}
-	fmt.Println()
-	for i, row := range resp.Data {
-		for _, s := range resp.Schema.Fields {
-			fmt.Printf("%v ", row.Fields[s.Name].AsInterface())
-		}
-		fmt.Printf(" %d \n", i)
-
-	}
 	i := 0
-	require.Equal(t, ",2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	require.Equal(t, "null,4239", fieldsToString(rows[i], "publisher", "bp"))
 	i++
-	require.Equal(t, ",2022-02-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	require.Equal(t, "Facebook,null", fieldsToString(rows[i], "publisher", "bp"))
 	i++
-	require.Equal(t, ",2022-03-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	require.Equal(t, "Google,8644", fieldsToString(rows[i], "publisher", "bp"))
 	i++
-	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "publisher", "bp"))
 	i++
-	require.Equal(t, "Facebook,2022-02-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	require.Equal(t, "Yahoo,null", fieldsToString(rows[i], "publisher", "bp"))
+
+	// check where
+	req.Where = expressionpb.In(expressionpb.Identifier("publisher"), []*runtimev1.Expression{
+		expressionpb.Value(structpb.NewStringValue("Google")),
+		expressionpb.Value(structpb.NewStringValue("Microsoft")),
+	})
+
+	resp, err = client.MetricsViewAggregation(context.Background(), req)
+	if err != nil {
+		require.NoError(t, err)
+	}
+
+	rows = resp.Data
+	i = 0
+	require.Equal(t, "Google,8644", fieldsToString(rows[i], "publisher", "bp"))
 	i++
-	require.Equal(t, "Facebook,2022-03-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
-	i++
-	require.Equal(t, "Google,2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
-	i++
-	require.Equal(t, "Google,2022-02-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
-	i++
-	require.Equal(t, "Google,2022-03-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
-	i++
-	require.Equal(t, "Microsoft,2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
-	i++
-	require.Equal(t, "Microsoft,2022-02-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
-	i++
-	require.Equal(t, "Microsoft,2022-03-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
-	i++
-	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z", fieldsToString(rows[i], "publisher", "__time"))
+	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "publisher", "bp"))
+
+	// check having
+	req.Having = &runtimev1.Expression{
+		Expression: &runtimev1.Expression_Cond{
+			Cond: &runtimev1.Condition{
+				Op: runtimev1.Operation_OPERATION_GT,
+				Exprs: []*runtimev1.Expression{
+					{
+						Expression: &runtimev1.Expression_Ident{
+							Ident: "bp",
+						},
+					},
+					{
+						Expression: &runtimev1.Expression_Val{
+							Val: structpb.NewNumberValue(10),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	resp, err = client.MetricsViewAggregation(context.Background(), req)
+	if err != nil {
+		require.NoError(t, err)
+	}
+
+	rows = resp.Data
+	i = 0
+	require.Equal(t, "Google,8644", fieldsToString(rows[i], "publisher", "bp"))
+
 }
 
 func TestMetricsViewAggregation_measure_filters(t *testing.T) {

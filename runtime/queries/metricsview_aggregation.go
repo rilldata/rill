@@ -607,7 +607,12 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 				joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", mv.Table, safeName(d.Name), selfJoinTableAlias, nonNullValue))
 				selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
 			}
-			selfJoinCols = append(selfJoinCols, fmt.Sprintf("%[1]s.%[2]s as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
+			if dialect == drivers.DialectDruid { // Apache Druid cannot order without timestamp or GROUP BY
+				selfJoinCols = append(selfJoinCols, fmt.Sprintf("ANY_VALUE(%[1]s.%[2]s) as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
+			} else {
+				selfJoinCols = append(selfJoinCols, fmt.Sprintf("%[1]s.%[2]s as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
+			}
+
 			measureExpression, measureWhereArgs, err := buildExpression(mv, q.Measures[0].Filter, nil, dialect)
 			if err != nil {
 				return "", nil, err
@@ -630,8 +635,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			if q.Having != nil {
 				aliases := [1]*runtimev1.MetricsViewComparisonMeasureAlias{
 					{
-						Name: fmt.Sprintf("%s.%s", selfJoinTableAlias, q.Measures[0].Name),
-						// Name: fmt.Sprintf("%s", q.Measures[0].Name),
+						Name:  fmt.Sprintf("%s.%s", selfJoinTableAlias, q.Measures[0].Name),
 						Alias: q.Measures[0].Name,
 					},
 				}
@@ -651,6 +655,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 					) %[7]s 
 					ON (%[8]s)
 					%[14]s
+					%[5]s
 					%[13]s 
 					%[11]s  
 					OFFSET %[12]d
