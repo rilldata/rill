@@ -181,6 +181,7 @@ export function getTotalsRowQuery(
   const { colDimensionNames } = config;
 
   const { time } = config;
+  const measureBody = config.measureNames.map((m) => ({ name: m }));
   const dimensionBody = colDimensionNames.map((dimension) => {
     if (isTimeDimension(dimension, time.timeDimension)) {
       return {
@@ -211,7 +212,7 @@ export function getTotalsRowQuery(
   ];
   return createPivotAggregationRowQuery(
     ctx,
-    config.measureNames,
+    measureBody,
     dimensionBody,
     mergedFilter,
     config.measureFilter,
