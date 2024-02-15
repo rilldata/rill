@@ -6,6 +6,7 @@ import {
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import { getOffset } from "@rilldata/web-common/lib/time/transforms";
 import {
+  AvailableTimeGrain,
   Period,
   TimeOffsetType,
   TimeRangeString,
@@ -91,17 +92,19 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     rowDimensionNames,
     measureNames,
     whereFilter,
+    measureFilter,
     pivot,
   } = config;
 
   const { sorting } = pivot;
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
+  const measureFilterKey = JSON.stringify(measureFilter);
   const dimsAndMeasures = rowDimensionNames
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${sortingKey}_${filterKey}`;
+  return `${dimsAndMeasures}_${sortingKey}_${filterKey}_${measureFilterKey}`;
 }
 
 /**
@@ -140,6 +143,19 @@ export function getTimeForQuery(
   });
 
   return { start: timeStart, end: timeEnd };
+}
+
+export function isTimeDimension(
+  dimension: string | undefined,
+  timeDimension: string,
+) {
+  if (!dimension) return false;
+  return dimension.startsWith(`${timeDimension}_rill_`);
+}
+
+export function getTimeGrainFromDimension(dimension: string) {
+  const grainLabel = dimension.split("_rill_")[1];
+  return grainLabel as AvailableTimeGrain;
 }
 
 /**
@@ -198,7 +214,7 @@ export function getFilterForPivotTable(
   if (
     isInitialTable &&
     anchorDimension &&
-    anchorDimension !== time.timeDimension
+    !isTimeDimension(anchorDimension, time.timeDimension)
   ) {
     rowFilters = createInExpression(
       rowDimensionNames[0],
@@ -208,7 +224,7 @@ export function getFilterForPivotTable(
 
   const colFiltersForPage = getColumnFiltersForPage(
     colDimensionNames.filter(
-      (dimension) => dimension !== config.time.timeDimension,
+      (dimension) => !isTimeDimension(dimension, time.timeDimension),
     ),
     colDimensionAxes,
     config.pivot.columnPage,
@@ -231,6 +247,7 @@ export function getFilterForPivotTable(
  */
 export function getAccessorForCell(
   colDimensionNames: string[],
+  timeDimension: string,
   colValuesIndexMaps: Map<string, number>[],
   numMeasures: number,
   cell: { [key: string]: string | number },
@@ -348,10 +365,17 @@ export function getSortForAccessor(
         return createInExpression(columnDimensionName, [value]);
       })
       .filter((colFilter) => {
-        if (colFilter.cond?.exprs?.[0].ident === config.time.timeDimension) {
+        if (
+          isTimeDimension(
+            colFilter.cond?.exprs?.[0].ident,
+            config.time.timeDimension,
+          )
+        ) {
           timeFilters.push({
             timeStart: colFilter.cond?.exprs?.[1].val as string,
-            interval: config.time.interval,
+            interval: getTimeGrainFromDimension(
+              colFilter.cond?.exprs?.[0].ident as string,
+            ),
           });
           return false;
         } else return true;

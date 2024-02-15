@@ -57,7 +57,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -65,7 +65,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 	if err != nil {
 		return err
 	}
-	if !min.Valid || !max.Valid || !rng.Valid {
+	if min == nil || max == nil || rng == nil {
 		return nil
 	}
 
@@ -84,10 +84,10 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		WHERE %[2]s IS NOT NULL
   ), buckets AS (
 		SELECT
-		  range as bucket,
-		  (range) * (%[7]v) / %[4]v + (%[5]v) as low,
-		  (range + 1) * (%[7]v) / %[4]v + (%[5]v) as high
-		FROM range(0, %[4]v, 1)
+		`+rangeNumbersCol(olap.Dialect())+`::FLOAT as bucket,
+		  (bucket) * (%[7]v) / %[4]v + (%[5]v) AS low,
+		  (bucket + 1) * (%[7]v) / %[4]v + (%[5]v) AS high
+		FROM `+rangeNumbers(olap.Dialect())+`(0, %[4]v)
 	),
 	-- bin the values
 	binned_data AS (
@@ -125,7 +125,7 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		low,
 		high,
 		CASE WHEN count>0 THEN true ELSE false END AS present,
-		count
+		ifNull(count, 0)
 	  FROM histrogram_with_edge
 	  WHERE present=true
 `,
@@ -133,9 +133,9 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 		sanitizedColumnName,
 		safeName(q.TableName),
 		outlierPseudoBucketSize,
-		min.Float64,
-		max.Float64,
-		rng.Float64,
+		*min,
+		*max,
+		*rng,
 	)
 
 	outlierResults, err := olap.Execute(ctx, &drivers.Statement{
@@ -170,4 +170,22 @@ func (q *ColumnRugHistogram) Resolve(ctx context.Context, rt *runtime.Runtime, i
 
 func (q *ColumnRugHistogram) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	return ErrExportNotSupported
+}
+
+func rangeNumbers(dialect drivers.Dialect) string {
+	switch dialect {
+	case drivers.DialectClickHouse:
+		return "numbers"
+	default:
+		return "range"
+	}
+}
+
+func rangeNumbersCol(dialect drivers.Dialect) string {
+	switch dialect {
+	case drivers.DialectClickHouse:
+		return "number"
+	default:
+		return "range"
+	}
 }

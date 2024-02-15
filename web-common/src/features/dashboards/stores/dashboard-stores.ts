@@ -246,7 +246,6 @@ const metricViewReducers = {
       });
 
       metricsExplorer.pivot.rows = {
-        ...metricsExplorer.pivot.rows,
         dimension: dimensions,
       };
     });
@@ -266,10 +265,23 @@ const metricViewReducers = {
       });
 
       metricsExplorer.pivot.columns = {
-        ...metricsExplorer.pivot.columns,
         dimension: dimensions,
         measure: measures,
       };
+    });
+  },
+
+  addPivotField(name: string, value: PivotChipData, rows: boolean) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      if (value.type === PivotChipType.Measure) {
+        metricsExplorer.pivot.columns.measure.push(value);
+      } else {
+        if (rows) {
+          metricsExplorer.pivot.rows.dimension.push(value);
+        } else {
+          metricsExplorer.pivot.columns.dimension.push(value);
+        }
+      }
     });
   },
 
@@ -308,7 +320,7 @@ const metricViewReducers = {
     });
   },
 
-  setExpandedMeasureName(name: string, measureName: string) {
+  setExpandedMeasureName(name: string, measureName: string | undefined) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.expandedMeasureName = measureName;
 
@@ -336,7 +348,7 @@ const metricViewReducers = {
     });
   },
 
-  setSelectedScrubRange(name: string, scrubRange: ScrubRange) {
+  setSelectedScrubRange(name: string, scrubRange: ScrubRange | undefined) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       setSelectedScrubRange(metricsExplorer, scrubRange);
     });
@@ -506,7 +518,7 @@ export function sortTypeForContextColumnType(
 
 function setSelectedScrubRange(
   metricsExplorer: MetricsExplorerEntity,
-  scrubRange: ScrubRange,
+  scrubRange: ScrubRange | undefined,
 ) {
   if (scrubRange === undefined) {
     metricsExplorer.lastDefinedScrubRange = undefined;

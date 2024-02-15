@@ -8,9 +8,11 @@
   export let open: boolean;
   export let titleMarginBottomOverride: string | null = null;
   export let widthOverride: string | null = null;
+  export let heightOverride: string | null = null;
 
   let titleMarginBottom = titleMarginBottomOverride ?? "mb-2";
   let width = widthOverride ?? "max-w-lg w-full";
+  let height = heightOverride ?? "max-h-screen";
 </script>
 
 <Dialog
@@ -22,7 +24,7 @@
     class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
   />
   <div
-    class="transform p-6 bg-white rounded-md border border-slate-300 flex flex-col shadow-lg {width}"
+    class="p-6 transform bg-white rounded-md border border-slate-300 flex flex-col shadow-lg {width} {height}"
   >
     <DialogTitle
       class="text-gray-900 text-lg font-semibold leading-7 {titleMarginBottom}"

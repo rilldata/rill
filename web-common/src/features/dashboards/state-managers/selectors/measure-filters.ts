@@ -153,9 +153,18 @@ export const getResolvedFilterForMeasureFilters = (
   );
 };
 
+export const hasAtLeastOneMeasureFilter = (
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
+) => {
+  return dashData.dashboard.dimensionThresholdFilters.some(
+    (dtf) => dtf.filter.cond?.exprs?.length,
+  );
+};
+
 export const measureFilterSelectors = {
   measureHasFilter,
   getMeasureFilterItems,
   getAllMeasureFilterItems,
   getResolvedFilterForMeasureFilters,
+  hasAtLeastOneMeasureFilter,
 };

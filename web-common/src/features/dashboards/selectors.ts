@@ -88,10 +88,8 @@ export const useMetaMeasure = (
   metricViewName: string,
   measureName: string,
 ) =>
-  useMetricsView(
-    instanceId,
-    metricViewName,
-    (meta) => meta?.measures?.find((measure) => measure.name === measureName),
+  useMetricsView(instanceId, metricViewName, (meta) =>
+    meta?.measures?.find((measure) => measure.name === measureName),
   );
 
 export const useMetaDimension = (

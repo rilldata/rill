@@ -19,6 +19,7 @@ import (
 	// Load database drivers for testing.
 	_ "github.com/rilldata/rill/runtime/drivers/admin"
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
+	_ "github.com/rilldata/rill/runtime/drivers/clickhouse"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
@@ -88,9 +89,16 @@ type InstanceOptions struct {
 func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime, string) {
 	rt := New(t)
 
+	olapDriver := os.Getenv("RILL_RUNTIME_TEST_OLAP_DRIVER")
+	if olapDriver == "" {
+		olapDriver = "duckdb"
+	}
+	olapDSN := os.Getenv("RILL_RUNTIME_TEST_OLAP_DSN")
+
 	tmpDir := t.TempDir()
 	inst := &drivers.Instance{
-		OLAPConnector:    "duckdb",
+		Environment:      "test",
+		OLAPConnector:    olapDriver,
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
@@ -100,9 +108,9 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 				Config: map[string]string{"dsn": tmpDir},
 			},
 			{
-				Type:   "duckdb",
-				Name:   "duckdb",
-				Config: map[string]string{"dsn": ""},
+				Type:   olapDriver,
+				Name:   olapDriver,
+				Config: map[string]string{"dsn": olapDSN},
 			},
 			{
 				Type: "sqlite",
@@ -170,6 +178,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	projectPath := filepath.Join(currentFile, "..", "testdata", name)
 
 	inst := &drivers.Instance{
+		Environment:      "test",
 		OLAPConnector:    "duckdb",
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",

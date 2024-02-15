@@ -6,9 +6,11 @@ import {
   getValuesInExpression,
   matchExpressionByName,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type {
+  MetricsViewSpecDimensionV2,
+  V1Expression,
+} from "@rilldata/web-common/runtime-client";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
-import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { AtLeast } from "../types";
 import type { DashboardDataSources } from "./types";
 
@@ -176,6 +178,13 @@ export const includedDimensionValues = (
   };
 };
 
+export const hasAtLeastOneDimensionFilter = (
+  dashData: AtLeast<DashboardDataSources, "dashboard">,
+) => {
+  const whereFilter = dashData.dashboard.whereFilter;
+  return whereFilter.cond?.exprs?.length && whereFilter.cond.exprs.length > 0;
+};
+
 export const dimensionFilterSelectors = {
   /**
    * Returns a function that can be used to get
@@ -219,4 +228,5 @@ export const dimensionFilterSelectors = {
 
   unselectedDimensionValues,
   includedDimensionValues,
+  hasAtLeastOneDimensionFilter,
 };

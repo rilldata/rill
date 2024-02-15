@@ -226,6 +226,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	createErr := r.createModel(ctx, self, stagingTableName, !materialize)
 	if createErr != nil {
 		createErr = fmt.Errorf("failed to create model: %w", createErr)
+	} else if !r.C.Runtime.AllowHostAccess() {
+		// temporarily for debugging
+		logTableNameAndType(ctx, r.C, connector, stagingTableName)
 	}
 
 	if createErr == nil && stage {
@@ -423,8 +426,9 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 	var sql string
 	if spec.UsesTemplating {
 		sql, err = compilerv1.ResolveTemplate(spec.Sql, compilerv1.TemplateData{
-			User:      map[string]interface{}{},
-			Variables: inst.ResolveVariables(),
+			Environment: inst.Environment,
+			User:        map[string]interface{}{},
+			Variables:   inst.ResolveVariables(),
 			Self: compilerv1.TemplateResource{
 				Meta:  self.Meta,
 				Spec:  spec,

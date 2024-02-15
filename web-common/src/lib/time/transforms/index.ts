@@ -27,7 +27,7 @@ export function getPresentTime() {
 export function getStartOfPeriod(
   referenceTime: Date,
   period: Period,
-  zone = "Etc/UTC",
+  zone = "UTC",
 ) {
   const date = DateTime.fromJSDate(referenceTime, { zone });
   return date.startOf(TimeUnit[period]).toJSDate();
@@ -37,7 +37,7 @@ export function getStartOfPeriod(
 export function getEndOfPeriod(
   referenceTime: Date,
   period: Period,
-  zone = "Etc/UTC",
+  zone = "UTC",
 ) {
   const date = DateTime.fromJSDate(referenceTime, { zone });
   return date.endOf(TimeUnit[period]).toJSDate();
@@ -48,7 +48,7 @@ export function getOffset(
   referenceTime: Date,
   duration: string,
   direction: TimeOffsetType,
-  zone = "Etc/UTC",
+  zone = "UTC",
 ) {
   const durationObj = Duration.fromISO(duration);
   return DateTime.fromJSDate(referenceTime, { zone })
@@ -69,7 +69,7 @@ export function getTimeWidth(start: Date, end: Date) {
 export function transformDate(
   referenceTime: Date,
   transformations: RelativeTimeTransformation[],
-  zone = "Etc/UTC",
+  zone = "UTC",
 ) {
   let absoluteTime = referenceTime;
   for (const transformation of transformations) {

@@ -205,6 +205,11 @@ export class Instance extends Message<Instance> {
   instanceId = "";
 
   /**
+   * @generated from field: string environment = 20;
+   */
+  environment = "";
+
+  /**
    * @generated from field: string olap_connector = 2;
    */
   olapConnector = "";
@@ -288,6 +293,7 @@ export class Instance extends Message<Instance> {
   static readonly typeName = "rill.runtime.v1.Instance";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 20, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 19, name: "admin_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -558,6 +564,11 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   instanceId = "";
 
   /**
+   * @generated from field: string environment = 16;
+   */
+  environment = "";
+
+  /**
    * @generated from field: string olap_connector = 2;
    */
   olapConnector = "";
@@ -621,6 +632,7 @@ export class CreateInstanceRequest extends Message<CreateInstanceRequest> {
   static readonly typeName = "rill.runtime.v1.CreateInstanceRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "admin_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -781,6 +793,11 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   instanceId = "";
 
   /**
+   * @generated from field: optional string environment = 17;
+   */
+  environment?: string;
+
+  /**
    * @generated from field: optional string olap_connector = 2;
    */
   olapConnector?: string;
@@ -844,6 +861,7 @@ export class EditInstanceRequest extends Message<EditInstanceRequest> {
   static readonly typeName = "rill.runtime.v1.EditInstanceRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "environment", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 2, name: "olap_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 4, name: "repo_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 16, name: "admin_connector", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },

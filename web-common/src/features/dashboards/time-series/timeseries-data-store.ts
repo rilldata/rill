@@ -75,7 +75,7 @@ function createMetricsViewTimeSeries(
           timeGranularity:
             timeControls.selectedTimeRange?.interval ??
             timeControls.minTimeGrain,
-          timeZone: dashboardStore?.selectedTimezone,
+          timeZone: dashboardStore.selectedTimezone,
         },
         {
           query: {
@@ -182,7 +182,7 @@ export function createTimeSeriesDataStore(ctx: StateManagers) {
               primary?.data?.data,
               comparison?.data?.data,
               TIME_GRAIN[interval]?.duration,
-              dashboardStore.selectedTimezone || "Etc/UTC",
+              dashboardStore.selectedTimezone,
             );
           }
           return {

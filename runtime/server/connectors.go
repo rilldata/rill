@@ -63,13 +63,18 @@ func (s *Server) ListConnectors(ctx context.Context, req *runtimev1.ListConnecto
 }
 
 func (s *Server) ScanConnectors(ctx context.Context, req *runtimev1.ScanConnectorsRequest) (*runtimev1.ScanConnectorsResponse, error) {
+	inst, err := s.runtime.Instance(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+
 	repo, release, err := s.runtime.Repo(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	p, err := rillv1.Parse(ctx, repo, req.InstanceId, "", nil)
+	p, err := rillv1.Parse(ctx, repo, req.InstanceId, inst.Environment, "", nil)
 	if err != nil {
 		return nil, err
 	}
