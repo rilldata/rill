@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { Chip } from "@rilldata/web-common/components/chip";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
-  import FilterRemove from "@rilldata/web-common/components/icons/FilterRemove.svelte";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type { V1Expression } from "@rilldata/web-common/runtime-client";

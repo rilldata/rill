@@ -68,8 +68,6 @@
   $: dashboard = useDashboard($runtime.instanceId, metricViewName);
   $: mockUserHasNoAccess =
     $selectedMockUserStore && $dashboard.error?.response?.status === 404;
-
-  const FILTERS_MIN_CONTAINER_HEIGHT = "34px";
 </script>
 
 <section
