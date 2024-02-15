@@ -599,19 +599,18 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		*/
 		if filterCount == 1 {
 			return q.buildMeasureFilterSQL(mv, unnestClauses, selectCols, limitClause, orderClause, havingClause, whereClause, groupClause, args, selectArgs, whereArgs, havingClauseArgs, dialect)
-		} else {
-			sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
-				strings.Join(selectCols, ", "),
-				safeName(mv.Table),
-				strings.Join(unnestClauses, ""),
-				whereClause,
-				groupClause,
-				havingClause,
-				orderClause,
-				limitClause,
-				q.Offset,
-			)
 		}
+		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
+			strings.Join(selectCols, ", "),
+			safeName(mv.Table),
+			strings.Join(unnestClauses, ""),
+			whereClause,
+			groupClause,
+			havingClause,
+			orderClause,
+			limitClause,
+			q.Offset,
+		)
 	}
 
 	return sql, args, nil
