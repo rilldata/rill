@@ -598,46 +598,66 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			bacause FILTER cannot be applied for arbitrary measure, ie sum(a)/1000
 		*/
 		if filterCount == 1 {
-			joinConditions := make([]string, 0, len(q.Dimensions))
-			selfJoinCols := make([]string, 0, len(q.Dimensions)+1)
+			return q.buildMeasureFilterSQL(mv, unnestClauses, selectCols, limitClause, orderClause, havingClause, whereClause, groupClause, args, selectArgs, whereArgs, havingClauseArgs, dialect)
+		} else {
+			sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
+				strings.Join(selectCols, ", "),
+				safeName(mv.Table),
+				strings.Join(unnestClauses, ""),
+				whereClause,
+				groupClause,
+				havingClause,
+				orderClause,
+				limitClause,
+				q.Offset,
+			)
+		}
+	}
 
-			selfJoinTableAlias := tempName("self_join")
-			nonNullValue := tempName("non_null")
-			for _, d := range q.Dimensions {
-				joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", mv.Table, safeName(d.Name), selfJoinTableAlias, nonNullValue))
-				selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
-			}
-			if dialect == drivers.DialectDruid { // Apache Druid cannot order without timestamp or GROUP BY
-				selfJoinCols = append(selfJoinCols, fmt.Sprintf("ANY_VALUE(%[1]s.%[2]s) as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
-			} else {
-				selfJoinCols = append(selfJoinCols, fmt.Sprintf("%[1]s.%[2]s as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
-			}
+	return sql, args, nil
+}
 
-			measureExpression, measureWhereArgs, err := buildExpression(mv, q.Measures[0].Filter, nil, dialect)
-			if err != nil {
-				return "", nil, err
-			}
+func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsViewSpec, unnestClauses, selectCols []string, limitClause, orderClause, havingClause, whereClause, groupClause string, args, selectArgs, whereArgs, havingClauseArgs []any, dialect drivers.Dialect) (string, []any, error) {
+	joinConditions := make([]string, 0, len(q.Dimensions))
+	selfJoinCols := make([]string, 0, len(q.Dimensions)+1)
 
-			if whereClause == "" {
-				whereClause = "WHERE 1=1"
-			}
+	selfJoinTableAlias := tempName("self_join")
+	nonNullValue := tempName("non_null")
+	for _, d := range q.Dimensions {
+		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", mv.Table, safeName(d.Name), selfJoinTableAlias, nonNullValue))
+		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", safeName(mv.Table), safeName(d.Name)))
+	}
+	if dialect == drivers.DialectDruid { // Apache Druid cannot order without timestamp or GROUP BY
+		selfJoinCols = append(selfJoinCols, fmt.Sprintf("ANY_VALUE(%[1]s.%[2]s) as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
+	} else {
+		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%[1]s.%[2]s as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
+	}
 
-			measureWhereClause := whereClause + fmt.Sprintf(" AND (%s)", measureExpression)
-			var extraWhere string
-			var extraWhereArgs []any
-			if q.Having != nil {
-				extraWhere, extraWhereArgs, err = buildExpression(mv, q.Having, nil, dialect)
-				if err != nil {
-					return "", nil, err
-				}
-				extraWhere = "WHERE " + extraWhere
-			}
-			druidGroupBy := ""
-			if dialect == drivers.DialectDruid {
-				druidGroupBy = groupClause
-			}
+	measureExpression, measureWhereArgs, err := buildExpression(mv, q.Measures[0].Filter, nil, dialect)
+	if err != nil {
+		return "", nil, err
+	}
 
-			sql = fmt.Sprintf(`
+	if whereClause == "" {
+		whereClause = "WHERE 1=1"
+	}
+
+	measureWhereClause := whereClause + fmt.Sprintf(" AND (%s)", measureExpression)
+	var extraWhere string
+	var extraWhereArgs []any
+	if q.Having != nil {
+		extraWhere, extraWhereArgs, err = buildExpression(mv, q.Having, nil, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		extraWhere = "WHERE " + extraWhere
+	}
+	druidGroupBy := ""
+	if dialect == drivers.DialectDruid {
+		druidGroupBy = groupClause
+	}
+
+	sql := fmt.Sprintf(`
 					SELECT * FROM (
 						SELECT %[1]s FROM (
 							SELECT %[10]s FROM %[2]s %[3]s %[4]s %[5]s %[6]s 
@@ -653,45 +673,31 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 					%[11]s  
 					OFFSET %[12]d
 				`,
-				strings.Join(selfJoinCols, ", "),      // 1
-				safeName(mv.Table),                    // 2
-				strings.Join(unnestClauses, ""),       // 3
-				whereClause,                           // 4
-				groupClause,                           // 5
-				havingClause,                          // 6
-				selfJoinTableAlias,                    // 7
-				strings.Join(joinConditions, " AND "), // 8
-				measureWhereClause,                    // 9
-				strings.Join(selectCols, ", "),        // 10
-				limitClause,                           // 11
-				q.Offset,                              // 12
-				orderClause,                           // 13
-				extraWhere,                            // 14
-				druidGroupBy,                          // 15
-			)
+		strings.Join(selfJoinCols, ", "),      // 1
+		safeName(mv.Table),                    // 2
+		strings.Join(unnestClauses, ""),       // 3
+		whereClause,                           // 4
+		groupClause,                           // 5
+		havingClause,                          // 6
+		selfJoinTableAlias,                    // 7
+		strings.Join(joinConditions, " AND "), // 8
+		measureWhereClause,                    // 9
+		strings.Join(selectCols, ", "),        // 10
+		limitClause,                           // 11
+		q.Offset,                              // 12
+		orderClause,                           // 13
+		extraWhere,                            // 14
+		druidGroupBy,                          // 15
+	)
 
-			args = args[:0]
-			args = append(args, selectArgs...)
-			args = append(args, whereArgs...)
-			args = append(args, havingClauseArgs...)
-			args = append(args, whereArgs...)
-			args = append(args, measureWhereArgs...)
-			args = append(args, havingClauseArgs...)
-			args = append(args, extraWhereArgs...)
-		} else {
-			sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
-				strings.Join(selectCols, ", "),
-				safeName(mv.Table),
-				strings.Join(unnestClauses, ""),
-				whereClause,
-				groupClause,
-				havingClause,
-				orderClause,
-				limitClause,
-				q.Offset,
-			)
-		}
-	}
+	args = args[:0]
+	args = append(args, selectArgs...)
+	args = append(args, whereArgs...)
+	args = append(args, havingClauseArgs...)
+	args = append(args, whereArgs...)
+	args = append(args, measureWhereArgs...)
+	args = append(args, havingClauseArgs...)
+	args = append(args, extraWhereArgs...)
 
 	return sql, args, nil
 }
